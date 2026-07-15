@@ -1,9 +1,9 @@
 ## Hard rule: Use only termrock public API (no exceptions)
 
-Every story and interactor **must** call the same public API the rest of the jackin❯ ecosystem uses. Non-negotiable.
+Every story and interactor **must** call the same public API downstream applications use. Non-negotiable.
 
 **In practice:**
-- Call the same `render_*()` helper the console or capsule calls — not the underlying widget constructor.
+- Call the public widget or render helper directly — never a private lookbook-only implementation.
 - Use the same `*State::handle_key()` callers use — not custom key dispatch reimplementing it.
 - Use the same `*State::new()` constructor and public builder methods — not internal fields.
 - If a story needs something `termrock` doesn't expose publicly, **stop and fix the API first**. The story reveals an API gap, not a reason to add workarounds.

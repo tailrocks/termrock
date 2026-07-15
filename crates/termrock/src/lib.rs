@@ -46,8 +46,7 @@ pub enum ModalOutcome<T> {
 }
 
 /// Three-byte RGB triple. Constructors below are the canonical
-/// phosphor palette used everywhere a jackin TUI surface needs to
-/// pick a colour.
+/// phosphor palette used by downstream terminal surfaces.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rgb {
     pub r: u8,
@@ -111,8 +110,7 @@ pub const WHITE: Rgb = Rgb::new(255, 255, 255);
 
 /// Logo block green: the canonical phosphor green (`#00FF41`), the same green
 /// the digital rain uses. The brand pill sits on this block with a black word
-/// and a white chevron — the logo uses the real jackin green, not the muted
-/// `#5CF07A` chevron-accent.
+/// and a white accent glyph.
 pub const BRAND_BLOCK: Rgb = PHOSPHOR_GREEN;
 
 /// Almost-invisible dim background for the input band inside a

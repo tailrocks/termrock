@@ -225,7 +225,7 @@ impl DialogScroll {
     }
 }
 
-/// Full-cell thumb geometry for jackin-owned renderers.
+/// Full-cell thumb geometry for downstream renderers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FullCellThumb {
     /// 0-based cell inside the track where the thumb starts.

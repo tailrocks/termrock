@@ -96,7 +96,7 @@ impl Perform for StyledPerformer {
                   parameter byte covering every CSI SGR sequence the styled- \
                   spans consumer supports. Extracting per-SGR-code sub-dispatchers \
                   would require re-borrowing the parser state across fn \
-                  boundaries — same constraint as jackin-term's csi_dispatch."
+                  boundaries imposed by the parser dispatch contract."
     )]
     fn csi_dispatch(&mut self, params: &Params, _intermediates: &[u8], _ignore: bool, action: u8) {
         if action != b'm' {
