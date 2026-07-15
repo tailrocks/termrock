@@ -10,10 +10,14 @@ pub mod interaction;
 pub mod keymap;
 pub mod layout;
 pub mod osc;
+pub mod runtime;
 pub mod scroll;
 pub mod style;
 pub mod text;
 pub mod widgets;
+
+#[cfg(feature = "crossterm")]
+pub mod crossterm;
 
 pub use style as theme;
 pub use style::Theme;
