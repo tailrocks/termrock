@@ -32,3 +32,11 @@ unicode-width.workspace = true
 
 [lints]
 workspace = true
+
+[[example]]
+name = "crossterm_manual"
+required-features = ["crossterm"]
+
+[[example]]
+name = "crossterm_managed"
+required-features = ["crossterm"]
