@@ -209,3 +209,35 @@ fn action_and_status_regions_match_painted_geometry() {
     assert_eq!(regions[1].area.right(), area.right());
     (&status).render(area, &mut buffer);
 }
+
+#[test]
+fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
+    let lines = [
+        Line::from("zero"),
+        Line::from("one"),
+        Line::from("two"),
+        Line::from("three"),
+    ];
+    let viewport = Viewport {
+        lines: &lines,
+        title: Some(" Log "),
+        content_style: Style::new(),
+        border_style: Style::new(),
+        title_style: Style::new(),
+        scroll_track_style: Style::new(),
+        scroll_thumb_style: Style::new(),
+    };
+    let area = Rect::new(0, 0, 12, 4);
+    let mut buffer = Buffer::empty(area);
+    let mut state = crate::scroll::DialogScroll {
+        scroll_x: 0,
+        scroll_y: 1,
+    };
+
+    StatefulWidget::render(&viewport, area, &mut buffer, &mut state);
+
+    assert_eq!(state.scroll_y, 1);
+    assert_eq!(buffer[(1, 1)].symbol(), "o");
+    assert_eq!(buffer[(11, 1)].symbol(), "·");
+    assert_eq!(buffer[(11, 2)].symbol(), "┃");
+}
