@@ -16,7 +16,7 @@ Interactive component lookbook for `termrock` — the reference rendering of eve
 
 | Module | Owns | Tests |
 |---|---|---|
-| [`main.rs`](src/main.rs) | lookbook runner + `--check` drift gate | — |
+| [`main.rs`](src/main.rs) | lookbook runner + `check --dir` drift gate | — |
 | [`stories.rs`](src/stories.rs) · [`stories/`](src/stories) | one story per component variant | [`tests.rs`](src/stories/tests.rs) |
 | [`interactors.rs`](src/interactors.rs) | interactive state drivers | — |
 | [`svg.rs`](src/svg.rs) | SVG preview rendering for the docs | — |
@@ -24,13 +24,13 @@ Interactive component lookbook for `termrock` — the reference rendering of eve
 
 ## Public API
 
-None consumed; this crate is a consumer of `termrock`. Its own surface is the lookbook binary (`cargo run -p termrock-lookbook -- docs/public/tui-lookbook` to regenerate, `-- --check …` to verify no drift).
+None consumed; this crate is a consumer of `termrock`. Its own surface is the lookbook binary (`cargo run -p termrock-lookbook -- render --out docs/public/component-previews` to regenerate, `check --dir …` to verify no drift).
 
 ## How to verify
 
 ```sh
 cargo nextest run -p termrock-lookbook
-cargo run -p termrock-lookbook -- --check docs/public/tui-lookbook
+cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
 ```
 
 The hard rule — *use only `termrock` public API* — applies to every story and interactor.
