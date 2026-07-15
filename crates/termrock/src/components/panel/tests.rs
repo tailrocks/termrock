@@ -56,3 +56,17 @@ fn panel_unfocused_uses_phosphor_dark() {
         "PanelFocus::Unfocused must use PHOSPHOR_DARK"
     );
 }
+
+#[test]
+fn focused_panel_has_non_color_border_cue() {
+    let backend = TestBackend::new(3, 3);
+    let mut term = Terminal::new(backend).unwrap();
+    term.draw(|frame| {
+        frame.render_widget(
+            Panel::new().focus(PanelFocus::Focused).block(),
+            Rect::new(0, 0, 3, 3),
+        );
+    })
+    .unwrap();
+    assert_eq!(term.backend().buffer()[(0, 0)].symbol(), "╔");
+}
