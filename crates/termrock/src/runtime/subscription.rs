@@ -2,14 +2,20 @@ use std::sync::mpsc::{Receiver, TryRecvError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubscriptionPoll<Event> {
-    Event(Event),
+    Ready(Event),
     Pending,
     Closed,
 }
+impl<Event> SubscriptionPoll<Event> {
+    #[must_use]
+    pub const fn is_pending(&self) -> bool {
+        matches!(self, Self::Pending)
+    }
+}
 
 pub trait Subscription {
-    type Event;
-    fn poll(&mut self) -> SubscriptionPoll<Self::Event>;
+    type Output;
+    fn poll_next(&mut self) -> SubscriptionPoll<Self::Output>;
 }
 
 pub struct ClosureSubscription<F>(pub F);
@@ -17,18 +23,18 @@ impl<Event, F> Subscription for ClosureSubscription<F>
 where
     F: FnMut() -> SubscriptionPoll<Event>,
 {
-    type Event = Event;
-    fn poll(&mut self) -> SubscriptionPoll<Event> {
+    type Output = Event;
+    fn poll_next(&mut self) -> SubscriptionPoll<Event> {
         (self.0)()
     }
 }
 
 pub struct StdSubscription<Event>(pub Receiver<Event>);
 impl<Event> Subscription for StdSubscription<Event> {
-    type Event = Event;
-    fn poll(&mut self) -> SubscriptionPoll<Event> {
+    type Output = Event;
+    fn poll_next(&mut self) -> SubscriptionPoll<Event> {
         match self.0.try_recv() {
-            Ok(event) => SubscriptionPoll::Event(event),
+            Ok(event) => SubscriptionPoll::Ready(event),
             Err(TryRecvError::Empty) => SubscriptionPoll::Pending,
             Err(TryRecvError::Disconnected) => SubscriptionPoll::Closed,
         }
@@ -44,9 +50,9 @@ mod tests {
         let mut subscription = ClosureSubscription(|| {
             value
                 .take()
-                .map_or(SubscriptionPoll::Closed, SubscriptionPoll::Event)
+                .map_or(SubscriptionPoll::Closed, SubscriptionPoll::Ready)
         });
-        assert_eq!(subscription.poll(), SubscriptionPoll::Event(7));
-        assert_eq!(subscription.poll(), SubscriptionPoll::Closed);
+        assert_eq!(subscription.poll_next(), SubscriptionPoll::Ready(7));
+        assert_eq!(subscription.poll_next(), SubscriptionPoll::Closed);
     }
 }

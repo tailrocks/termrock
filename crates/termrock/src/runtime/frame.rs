@@ -1,17 +1,26 @@
+use super::View;
 use ratatui_core::{
     backend::Backend,
+    layout::Rect,
     terminal::{CompletedFrame, Frame, Terminal},
 };
 
-pub fn drive_frame<'a, B, F>(
+pub fn drive_frame<'a, B, Model, V, F>(
     terminal: &'a mut Terminal<B>,
-    render: F,
+    view: &V,
+    model: &Model,
+    area: Rect,
+    overlay: F,
 ) -> Result<CompletedFrame<'a>, B::Error>
 where
     B: Backend,
+    V: View<Model>,
     F: FnOnce(&mut Frame<'_>),
 {
-    terminal.draw(render)
+    terminal.draw(|frame| {
+        view.render(model, frame, area);
+        overlay(frame);
+    })
 }
 
 pub fn drive_render<'a, B, F>(
@@ -22,5 +31,5 @@ where
     B: Backend,
     F: FnOnce(&mut Frame<'_>),
 {
-    drive_frame(terminal, render)
+    terminal.draw(render)
 }

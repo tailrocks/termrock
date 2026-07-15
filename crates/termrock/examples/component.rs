@@ -1,13 +1,9 @@
 mod support;
-use termrock::runtime::{Component, UpdateResult};
+use termrock::runtime::Component;
 struct Screen;
 impl Component<(), ()> for Screen {
-    type Effect = ();
-    fn event(&mut self, (): ()) -> Option<()> {
+    fn handle_event(&mut self, (): &()) -> Option<()> {
         Some(())
-    }
-    fn update(&mut self, (): ()) -> UpdateResult<()> {
-        UpdateResult::redraw()
     }
 }
 fn main() {
