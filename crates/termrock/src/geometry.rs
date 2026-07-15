@@ -104,11 +104,15 @@ pub fn is_terminal_control_char(c: char) -> bool {
 /// upstream input.
 #[must_use]
 pub fn display_cols(s: &str) -> usize {
-    use unicode_width::UnicodeWidthChar;
-    s.chars()
-        .filter(|c| !is_terminal_control_char(*c))
-        .map(|c| c.width().unwrap_or(0))
-        .sum()
+    if s.chars().any(is_terminal_control_char) {
+        let sanitized: String = s
+            .chars()
+            .filter(|c| !is_terminal_control_char(*c))
+            .collect();
+        UnicodeWidthStr::width(sanitized.as_str())
+    } else {
+        UnicodeWidthStr::width(s)
+    }
 }
 
 /// Take the longest prefix of `s` whose display width fits inside

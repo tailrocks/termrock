@@ -259,3 +259,11 @@ fn plain_popup_renders_danger_border_and_ok_chip() {
         .expect("OK chip should render");
     assert_eq!(buffer[ok_cell].bg, WHITE);
 }
+
+#[test]
+fn message_rows_use_terminal_columns() {
+    let combining = ErrorPopupState::new("Error", "e\u{301}e\u{301}");
+    let wide = ErrorPopupState::new("Error", "界界");
+    assert_eq!(estimated_message_rows(&combining, 2), 1);
+    assert_eq!(estimated_message_rows(&wide, 2), 2);
+}

@@ -6,6 +6,10 @@ title: Quality migrations
 
 Widget geometry now measures Unicode display columns instead of scalar-value counts. CJK, combining marks, emoji sequences, and regional indicators no longer drift from painted hit regions.
 
+This closes `WIDTH-HINT`, `WIDTH-LIST`, `WIDTH-STATUS`, and `WIDTH-ERROR`. Consumers need no API change; labels may wrap or reveal horizontal scrolling at different columns when their scalar count differs from their terminal width.
+
 ## Focused panel cue
 
 Focused panels use a double border in addition to the semantic focus color. This makes focus observable without color perception while retaining caller style overrides.
+
+This closes `FOCUS-PANEL`. Focused panel fixtures intentionally change from single-line to double-line border glyphs.

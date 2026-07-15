@@ -163,7 +163,7 @@ fn estimated_plain_message_rows(state: &ErrorPopupState, inner_width: u16) -> u1
     let width = usize::from(inner_width.max(1));
     let mut rows: u32 = 0;
     for line in state.message.lines() {
-        let len = line.chars().count().max(1);
+        let len = crate::display_cols(line).max(1);
         rows = rows.saturating_add(u32::try_from(len.div_ceil(width)).unwrap_or(u32::MAX));
     }
     u16::try_from(rows.max(1)).unwrap_or(u16::MAX)

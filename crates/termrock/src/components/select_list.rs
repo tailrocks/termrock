@@ -163,7 +163,7 @@ impl SelectListState {
     pub fn max_label_width(&self) -> u16 {
         self.items
             .iter()
-            .map(|label| label.chars().count())
+            .map(|label| crate::display_cols(label))
             .max()
             .unwrap_or(0)
             .try_into()
