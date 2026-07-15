@@ -7,9 +7,14 @@ pub mod diff_view;
 pub mod error_dialog;
 pub mod filter_input;
 pub mod focus_owner;
+pub mod hover_tracker;
+pub mod modal_backdrop;
+pub mod modal_lifecycle;
 pub mod panel;
+pub mod save_discard_dialog;
 pub mod scrollable_panel;
 pub mod select_list;
+pub mod status_popup;
 pub mod text_input;
 
 pub use button_strip::{
@@ -36,7 +41,14 @@ pub use error_dialog::{
 };
 pub use filter_input::{FilterInput, filter_input_line, render_filter_input};
 pub use focus_owner::{ButtonFocus, FocusOwner};
+pub use hover_tracker::HoverTracker;
+pub use modal_backdrop::ModalBackdrop;
+pub use modal_lifecycle::{ModalClickResult, ModalStack, classify_click, render_backdrop};
 pub use panel::{Panel, PanelFocus, modal_block, panel_body_area, unfocused_block};
+pub use save_discard_dialog::{
+    SAVE_DISCARD_KEYMAP, SaveDiscardAction, SaveDiscardChoice, SaveDiscardFocus, SaveDiscardState,
+    render_save_discard_dialog, save_discard_hint_spans,
+};
 pub use scrollable_panel::{
     SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollableList, ScrollbarStyle,
     apply_scroll_delta, apply_scroll_delta_unclamped, apply_term_width_scroll_delta,
@@ -52,6 +64,7 @@ pub use select_list::{
     PickerRow, SELECT_LIST_KEYMAP, SelectListAction, SelectListState, render_picker_lines,
     render_picker_list, render_select_list, select_list_hint_spans,
 };
+pub use status_popup::{StatusPopupState, render_status_popup};
 pub use text_input::{
     BorderStyle, TEXT_INPUT_KEYMAP, TextField, TextInputAction, TextInputState,
     render_labeled_text_input_dialog, render_text_input, text_input_hint_spans,
