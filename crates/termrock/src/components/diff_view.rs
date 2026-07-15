@@ -70,7 +70,7 @@ impl DiffViewState {
     /// Equal context lines appear on both sides; removed lines land on the
     /// left with an empty right; added lines land on the right with an empty left.
     #[must_use]
-    #[expect(
+    #[allow(
         clippy::excessive_nesting,
         reason = "Diff-pairing state machine with per-change-tag (Equal / Delete \
                   / Insert) branching, paired-row flushing, and equal-block \

@@ -43,7 +43,7 @@ fn shortcuts_commit_or_cancel() {
 #[test]
 fn enter_commits_focused_button() {
     let mut s = SaveDiscardState::new("?");
-    drop(s.handle_key(key(KeyCode::Tab)));
+    let _ = s.handle_key(key(KeyCode::Tab));
     assert!(matches!(
         s.handle_key(key(KeyCode::Enter)),
         ModalOutcome::Commit(SaveDiscardChoice::Save)

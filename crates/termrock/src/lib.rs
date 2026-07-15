@@ -14,6 +14,7 @@ pub mod osc;
 pub mod scroll;
 pub mod style;
 pub mod text;
+pub mod widgets;
 
 pub use style as theme;
 

@@ -24,7 +24,7 @@ unicode-width = "0.2.2"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
-rust_2018_idioms = "deny"
+rust_2018_idioms = { level = "deny", priority = -1 }
 
 [workspace.lints.clippy]
 correctness = "deny"

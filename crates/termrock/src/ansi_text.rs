@@ -89,7 +89,7 @@ impl Perform for StyledPerformer {
         }
     }
 
-    #[expect(
+    #[allow(
         clippy::excessive_nesting,
         reason = "vte::Perform trait dispatcher (`csi_dispatch`) for the styled- \
                   spans parser requires a single exhaustive match on the SGR \
