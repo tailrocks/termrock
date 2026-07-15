@@ -36,9 +36,7 @@ use termrock::{
     theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN, PREVIEW_CARD},
 };
 
-const USAGE: &str =
-    "usage: tui-lookbook --terminal | tui-lookbook [out-dir] | tui-lookbook --check <dir>";
-const CHECK_USAGE: &str = "usage: tui-lookbook --check <docs/public/tui-lookbook>";
+const USAGE: &str = "usage: termrock-lookbook <terminal|list|render|check>";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SidebarAction {
@@ -174,7 +172,7 @@ enum Focus {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);
     let Some(first) = args.next() else {
-        return write_svgs(PathBuf::from("target/tui-lookbook"));
+        return Err(USAGE.into());
     };
 
     if first == OsStr::new("terminal") {
@@ -238,27 +236,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return check_svgs(PathBuf::from(dir));
     }
 
-    if first == OsStr::new("--check") {
-        let Some(dir) = args.next() else {
-            return Err(CHECK_USAGE.into());
-        };
-        if args.next().is_some() {
-            return Err(CHECK_USAGE.into());
-        }
-        return check_svgs(PathBuf::from(dir));
-    }
-
-    if first == OsStr::new("--terminal") {
-        if args.next().is_some() {
-            return Err("usage: tui-lookbook --terminal".into());
-        }
-        return run_terminal();
-    }
-
-    if args.next().is_some() {
-        return Err(USAGE.into());
-    }
-    write_svgs(PathBuf::from(first))
+    Err(USAGE.into())
 }
 
 #[allow(
