@@ -177,6 +177,67 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return write_svgs(PathBuf::from("target/tui-lookbook"));
     };
 
+    if first == OsStr::new("terminal") {
+        if args.next().is_some() {
+            return Err("usage: termrock-lookbook terminal".into());
+        }
+        return run_terminal();
+    }
+
+    if first == OsStr::new("list") {
+        let format = args.next();
+        if format.as_deref() == Some(OsStr::new("--format"))
+            && args.next().as_deref() == Some(OsStr::new("json"))
+            && args.next().is_none()
+        {
+            let entries = stories()
+                .iter()
+                .map(|story| {
+                    format!(
+                        r#"{{"id":"{}","title":"{}","component":"{}"}}"#,
+                        story.id, story.title, story.component
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(",");
+            println!("[{entries}]");
+            return Ok(());
+        }
+        if format.is_none() {
+            for story in stories() {
+                println!("{}\t{}", story.id, story.title);
+            }
+            return Ok(());
+        }
+        return Err("usage: termrock-lookbook list [--format json]".into());
+    }
+
+    if first == OsStr::new("render") {
+        if args.next().as_deref() != Some(OsStr::new("--out")) {
+            return Err("usage: termrock-lookbook render --out <dir>".into());
+        }
+        let Some(dir) = args.next() else {
+            return Err("usage: termrock-lookbook render --out <dir>".into());
+        };
+        if args.next().is_some() {
+            return Err("usage: termrock-lookbook render --out <dir>".into());
+        }
+        return write_svgs(PathBuf::from(dir));
+    }
+
+    if first == OsStr::new("check") {
+        if args.next().as_deref() != Some(OsStr::new("--dir")) {
+            return Err("usage: termrock-lookbook check --dir <dir>".into());
+        }
+        let Some(dir) = args.next() else {
+            return Err("usage: termrock-lookbook check --dir <dir>".into());
+        };
+        if args.next().is_some() {
+            return Err("usage: termrock-lookbook check --dir <dir>".into());
+        }
+        return check_svgs(PathBuf::from(dir));
+    }
+
     if first == OsStr::new("--check") {
         let Some(dir) = args.next() else {
             return Err(CHECK_USAGE.into());

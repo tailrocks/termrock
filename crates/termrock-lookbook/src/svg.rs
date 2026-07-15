@@ -98,6 +98,18 @@ pub(crate) fn write_story_svgs(out_dir: impl AsRef<Path>) -> io::Result<Vec<Path
         fs::write(&path, render_story_to_svg(story))?;
         paths.push(path);
     }
+    let manifest = stories()
+        .iter()
+        .map(|story| {
+            format!(
+                r#"  {{"id":"{}","file":"{}"}}"#,
+                story.id,
+                story_svg_filename(*story)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",\n");
+    fs::write(out_dir.join("manifest.json"), format!("[\n{manifest}\n]\n"))?;
     Ok(paths)
 }
 
