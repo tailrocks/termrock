@@ -1,0 +1,20 @@
+---
+title: Components
+---
+
+Every component accepts consumer-owned labels and borrowed data. Keyboard routing is expressed as logical actions; focus and hover state remain explicit and stable IDs survive filtering and reordering.
+
+- `ActionBar`: caller-defined actions and activation regions. Story `action-bar/basic`.
+- `Backdrop`: backdrop without lifecycle ownership. Story `backdrop/basic`.
+- `DetailTable`: label/value rows with copy/link capabilities. Story `detail-table/basic`.
+- `Dialog`, `ChoiceDialog`, `MessageDialog`: shells and caller choices. Story `dialog/message`.
+- `DiffView`: borrowed projected lines. Story `diff/basic`.
+- `HintBar`: prioritized chord descriptors. Story `hint-bar/wrapped`.
+- `List`: borrowed stable-ID rows. Story `list/selection`.
+- `Panel`: semantic framing. Story `panel/focused`.
+- `StatusBar`: caller-owned slots. Story `status-bar/basic`.
+- `Tabs`: stable IDs, glyphs, and explicit state. Story `tabs/status`.
+- `TextInput`: grapheme-safe editing and external validation. Story `text-input/filter`.
+- `Toast`: severity and anchor metadata. Story `toast/success`.
+
+All widgets tolerate empty and narrow rectangles. Disabled items are not hit targets. Mouse regions derive from painted geometry. Consumers own navigation policy and dialog stacking.
