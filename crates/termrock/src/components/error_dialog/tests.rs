@@ -208,22 +208,6 @@ fn row_value_rects_are_inside_inner_area_and_non_overlapping() {
 }
 
 #[test]
-fn hyperlink_overlay_emits_osc8_for_link_rows() {
-    let state = ErrorPopupState::new("Launch failed", "build failed").with_rows(vec![
-        ErrorPopupRow::new("Run", "jk-run-123"),
-        ErrorPopupRow::new("Log", "/workspace/logs/run.jsonl")
-            .hyperlink("file:///workspace/logs/run.jsonl"),
-    ]);
-    let inner = Rect::new(1, 1, 58, 8);
-    let overlay = String::from_utf8(hyperlink_overlay(inner, &state)).unwrap();
-
-    assert!(overlay.contains("\u{1b}]8;;file:///workspace/logs/run.jsonl\u{1b}\\"));
-    assert!(overlay.contains("/workspace/logs/run.jsonl"));
-    assert!(overlay.contains("\u{1b}]8;;\u{1b}\\"));
-    assert!(!overlay.contains("jk-run-123"));
-}
-
-#[test]
 fn rendering_rows_places_label_text_at_expected_cells() {
     let state = ErrorPopupState::new("Launch failed", "build failed")
         .with_rows(vec![ErrorPopupRow::new("Run", "jk-run-123")]);

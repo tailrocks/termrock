@@ -409,44 +409,5 @@ pub fn hyperlink_regions(inner: Rect, state: &ErrorPopupState) -> Vec<(Rect, Str
         .collect()
 }
 
-#[must_use]
-pub fn hyperlink_overlay(inner: Rect, state: &ErrorPopupState) -> Vec<u8> {
-    let rects = row_value_rect_entries(inner, state);
-    let mut out = Vec::new();
-    for (row, rects) in state.rows.iter().zip(rects) {
-        let Some(href) = row.href.as_ref() else {
-            continue;
-        };
-        let value_chunks = error_row_value_chunks(row, inner.width);
-        for (idx, rect) in rects {
-            let Some(chunk) = value_chunks.get(idx) else {
-                continue;
-            };
-            let visible = crate::display_cols_slice(chunk, 0, usize::from(rect.width));
-            if visible.is_empty() {
-                continue;
-            }
-            out.extend_from_slice(
-                format!(
-                    "\x1b[{};{}H",
-                    rect.y.saturating_add(1),
-                    rect.x.saturating_add(1)
-                )
-                .as_bytes(),
-            );
-            out.extend_from_slice(&crate::osc::encode_hyperlink_open(None, href));
-            let color = crate::LINK_FG;
-            out.extend_from_slice(
-                format!("\x1b[38;2;{};{};{}m", color.r, color.g, color.b).as_bytes(),
-            );
-            out.extend_from_slice(b"\x1b[1;4m");
-            out.extend_from_slice(visible.as_bytes());
-            out.extend_from_slice(&crate::osc::encode_hyperlink_close());
-            out.extend_from_slice(b"\x1b[0m");
-        }
-    }
-    out
-}
-
 #[cfg(test)]
 mod tests;

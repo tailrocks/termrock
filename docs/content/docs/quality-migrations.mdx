@@ -13,3 +13,11 @@ This closes `WIDTH-HINT`, `WIDTH-LIST`, `WIDTH-STATUS`, and `WIDTH-ERROR`. Consu
 Focused panels use a double border in addition to the semantic focus color. This makes focus observable without color perception while retaining caller style overrides.
 
 This closes `FOCUS-PANEL`. Focused panel fixtures intentionally change from single-line to double-line border glyphs.
+
+## Typed terminal overlays
+
+This closes `RAW-OVERLAYS`. Error dialogs expose layout-derived hyperlink regions; consumers decide how and when to emit OSC requests. The raw post-frame byte-vector helper was removed.
+
+## Canonical palette adapters
+
+This closes `COLOR-LAYERS`. Ratatui colors derive from the canonical RGB tokens, and the SVG encoder serializes arbitrary Ratatui RGB values instead of maintaining a second semantic palette table.

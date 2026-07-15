@@ -35,9 +35,8 @@ pub use dialog_layout::{
 pub use diff_view::{DiffViewState, SinglePaneKind, diff_view_hint_spans, render_diff_view};
 pub use error_dialog::{
     ERROR_POPUP_KEYMAP, ErrorPopupAction, ErrorPopupRow, ErrorPopupState, error_popup_hint_spans,
-    estimated_message_rows, hyperlink_overlay as error_popup_hyperlink_overlay,
-    hyperlink_regions as error_popup_hyperlink_regions, render_error_dialog,
-    render_error_dialog_in, required_height,
+    estimated_message_rows, hyperlink_regions as error_popup_hyperlink_regions,
+    render_error_dialog, render_error_dialog_in, required_height,
     row_value_rect_groups as error_popup_row_value_rect_groups,
     row_value_rects as error_popup_row_value_rects,
 };
