@@ -3,13 +3,13 @@
 
 //! Transient non-blocking overlay toast.
 
-use ratatui::{
-    Frame,
+use ratatui_core::{
     layout::Rect,
     style::{Modifier, Style},
+    terminal::Frame,
     text::Span,
-    widgets::{Block, Borders, Clear, Paragraph},
 };
+use ratatui_widgets::{block::Block, borders::Borders, clear::Clear, paragraph::Paragraph};
 
 use crate::display_cols;
 use crate::theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN, WHITE};

@@ -113,7 +113,7 @@ fn save_discard_focus_keys_keep_existing_next_prev_semantics() {
 #[test]
 fn save_discard_dialog_has_symmetric_vertical_padding() {
     // The dialog must have: top border + leading spacer + prompt + spacer + buttons + trailing + bottom border = 7 total.
-    use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+    use ratatui_core::{backend::TestBackend, layout::Rect, terminal::Terminal};
 
     let s = SaveDiscardState::new("Save workspace changes before leaving?");
     let area = Rect::new(0, 0, 60, 7);

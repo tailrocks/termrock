@@ -7,10 +7,10 @@
 //! (added / untracked / deleted). Uses `similar::TextDiff` for hunk computation.
 
 use crate::input::{KeyCode, KeyEvent};
-use ratatui::Frame;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Modifier, Style};
-use ratatui::text::Line;
+use ratatui_core::layout::{Constraint, Direction, Layout, Rect};
+use ratatui_core::style::{Modifier, Style};
+use ratatui_core::terminal::Frame;
+use ratatui_core::text::Line;
 use similar::{ChangeTag, TextDiff};
 
 use crate::components::scrollable_panel::{effective_offset, render_scrollable_block_at};

@@ -3,7 +3,7 @@
 
 //! Shared bottom-chrome row layout.
 
-use ratatui::layout::Rect;
+use ratatui_core::layout::Rect;
 
 /// Standard status-preserving bottom stack:
 ///

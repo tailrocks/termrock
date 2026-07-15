@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use ratatui::layout::Rect;
+use ratatui_core::layout::Rect;
 
 #[test]
 fn dialog_inner_height_accounts_for_all_five_slots() {
@@ -208,9 +208,9 @@ fn sgr_wheel_button_scroll_uses_shared_axis_gates() {
 
 #[test]
 fn scrollable_body_shows_horizontal_bar_only_on_overflow_and_scroll_reveals_tail() {
-    use ratatui::Terminal;
-    use ratatui::backend::TestBackend;
-    use ratatui::text::Line;
+    use ratatui_core::backend::TestBackend;
+    use ratatui_core::terminal::Terminal;
+    use ratatui_core::text::Line;
 
     fn render(lines: &[Line<'static>], scroll_x: u16) -> String {
         let mut terminal = Terminal::new(TestBackend::new(20, 6)).unwrap();

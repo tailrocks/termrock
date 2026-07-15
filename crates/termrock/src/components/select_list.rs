@@ -4,11 +4,14 @@
 //! Generic modal filter-picker over labelled string items.
 
 use crate::input::{KeyCode, KeyEvent};
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
-use ratatui::style::{Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Clear, HighlightSpacing, ListItem, Paragraph, Widget};
+use ratatui_core::buffer::Buffer;
+use ratatui_core::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui_core::style::{Modifier, Style};
+use ratatui_core::text::{Line, Span};
+use ratatui_core::widgets::Widget;
+use ratatui_widgets::{
+    clear::Clear, list::ListItem, paragraph::Paragraph, table::HighlightSpacing,
+};
 
 use crate::components::FilterInput;
 use crate::components::panel::{Panel, PanelFocus};
@@ -347,7 +350,7 @@ fn render_select_list_in(
 }
 
 pub fn render_select_list(
-    frame: &mut ratatui::Frame<'_>,
+    frame: &mut ratatui_core::terminal::Frame<'_>,
     area: Rect,
     state: &SelectListState,
     title: &str,

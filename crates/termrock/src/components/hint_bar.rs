@@ -3,11 +3,12 @@
 
 //! Footer hint bar component.
 
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Rect};
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Paragraph, Widget};
+use ratatui_core::buffer::Buffer;
+use ratatui_core::layout::{Alignment, Rect};
+use ratatui_core::style::{Color, Modifier, Style};
+use ratatui_core::text::{Line, Span};
+use ratatui_core::widgets::Widget;
+use ratatui_widgets::paragraph::Paragraph;
 
 use crate::HintSpan;
 
@@ -49,11 +50,19 @@ impl Widget for HintBar<'_> {
     }
 }
 
-pub fn render_hint_bar(frame: &mut ratatui::Frame<'_>, area: Rect, spans: &[HintSpan<'_>]) {
+pub fn render_hint_bar(
+    frame: &mut ratatui_core::terminal::Frame<'_>,
+    area: Rect,
+    spans: &[HintSpan<'_>],
+) {
     frame.render_widget(HintBar::new(spans), area);
 }
 
-pub fn render_wrapped_hint_bar(frame: &mut ratatui::Frame<'_>, area: Rect, spans: &[HintSpan<'_>]) {
+pub fn render_wrapped_hint_bar(
+    frame: &mut ratatui_core::terminal::Frame<'_>,
+    area: Rect,
+    spans: &[HintSpan<'_>],
+) {
     frame.render_widget(HintBar::new(spans).wrapped(), area);
 }
 

@@ -4,10 +4,10 @@
 //! Single-button error dialog component.
 
 use crate::input::KeyEvent;
-use ratatui::layout::Rect;
-use ratatui::style::{Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::Widget;
+use ratatui_core::layout::Rect;
+use ratatui_core::style::{Modifier, Style};
+use ratatui_core::text::{Line, Span};
+use ratatui_core::widgets::Widget;
 
 use super::button_strip::{ButtonStrip, ButtonStripItem};
 use super::dialog_layout::{
@@ -188,14 +188,22 @@ pub fn required_height(state: &ErrorPopupState, inner_width: u16, max_rows: u16)
     body.saturating_add(6).min(max_rows.max(7))
 }
 
-pub fn render_error_dialog(frame: &mut ratatui::Frame<'_>, area: Rect, state: &ErrorPopupState) {
+pub fn render_error_dialog(
+    frame: &mut ratatui_core::terminal::Frame<'_>,
+    area: Rect,
+    state: &ErrorPopupState,
+) {
     let inner_width = area.width.saturating_sub(2);
     let height = required_height(state, inner_width, area.height);
     let dialog_area = centered_rect(area.width, height, area);
     render_error_dialog_in(frame, dialog_area, state);
 }
 
-pub fn render_error_dialog_in(frame: &mut ratatui::Frame<'_>, area: Rect, state: &ErrorPopupState) {
+pub fn render_error_dialog_in(
+    frame: &mut ratatui_core::terminal::Frame<'_>,
+    area: Rect,
+    state: &ErrorPopupState,
+) {
     let inner = render_dialog_shell(frame, area, Some(&state.title), DialogBorder::Danger);
     let body_rows = estimated_message_rows(state, inner.width).min(inner.height.saturating_sub(4));
     let chunks = dialog_inner_chunks(inner, Some(body_rows));

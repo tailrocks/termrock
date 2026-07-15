@@ -8,8 +8,8 @@
 //! definitions.
 
 use anstyle_parse::{DefaultCharAccumulator, Params, Parser, Perform};
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::Span;
+use ratatui_core::style::{Color, Modifier, Style};
+use ratatui_core::text::Span;
 
 #[must_use]
 pub fn strip_bytes(bytes: &[u8]) -> Vec<u8> {

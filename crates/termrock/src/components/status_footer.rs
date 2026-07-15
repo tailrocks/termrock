@@ -3,11 +3,12 @@
 
 //! White bottom status footer component.
 
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
-use ratatui::style::{Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, Widget};
+use ratatui_core::buffer::Buffer;
+use ratatui_core::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui_core::style::{Modifier, Style};
+use ratatui_core::text::{Line, Span};
+use ratatui_core::widgets::Widget;
+use ratatui_widgets::{block::Block, paragraph::Paragraph};
 
 use crate::display_cols;
 use crate::theme::{DANGER_RED, DEBUG_AMBER, INK, LINK_BLUE, WHITE, faded};
@@ -344,7 +345,7 @@ impl Widget for StatusFooter<'_> {
 }
 
 pub fn render_status_footer(
-    frame: &mut ratatui::Frame<'_>,
+    frame: &mut ratatui_core::terminal::Frame<'_>,
     area: Rect,
     left: &str,
     right: &str,
@@ -366,7 +367,7 @@ pub fn render_status_footer(
 }
 
 pub fn render_status_footer_right_group(
-    frame: &mut ratatui::Frame<'_>,
+    frame: &mut ratatui_core::terminal::Frame<'_>,
     area: Rect,
     left: &str,
     right: StatusRightGroup<'_>,

@@ -27,10 +27,11 @@
 //! | 4     | Trailing spacer (1 row) |
 
 use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
-use ratatui::Frame;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::text::Line;
-use ratatui::widgets::{Paragraph, Widget};
+use ratatui_core::layout::{Constraint, Direction, Layout, Rect};
+use ratatui_core::terminal::Frame;
+use ratatui_core::text::Line;
+use ratatui_core::widgets::Widget;
+use ratatui_widgets::paragraph::Paragraph;
 
 pub use crate::scroll::{ScrollAxes, ScrollAxis, mouse_scroll_delta};
 
@@ -393,12 +394,12 @@ pub fn render_dialog_shell(
     border: DialogBorder,
 ) -> Rect {
     use crate::components::panel::{Panel, PanelFocus, modal_block};
-    use ratatui::style::Style;
-    use ratatui::text::Span;
-    use ratatui::widgets::Widget;
-    use ratatui::widgets::{Block, Borders};
+    use ratatui_core::style::Style;
+    use ratatui_core::text::Span;
+    use ratatui_core::widgets::Widget;
+    use ratatui_widgets::{block::Block, borders::Borders, clear::Clear};
 
-    ratatui::widgets::Clear.render(area, frame.buffer_mut());
+    Clear.render(area, frame.buffer_mut());
 
     let block = match border {
         DialogBorder::Default => {

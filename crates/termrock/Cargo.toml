@@ -22,9 +22,9 @@ crossterm = ["dep:crossterm", "dep:ratatui-crossterm"]
 anstyle-parse.workspace = true
 base64.workspace = true
 crossterm = { workspace = true, optional = true }
-ratatui.workspace = true
 ratatui-core.workspace = true
 ratatui-crossterm = { workspace = true, optional = true }
+ratatui-widgets.workspace = true
 similar.workspace = true
 tui-scrollbar.workspace = true
 unicode-segmentation.workspace = true

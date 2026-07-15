@@ -146,7 +146,7 @@ fn y_still_works_regardless_of_focus() {
 
 #[test]
 fn details_prompt_renders_readable_source_details() {
-    use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+    use ratatui_core::{backend::TestBackend, layout::Rect, terminal::Terminal};
 
     let s = ConfirmState::details(
         "Review source",
@@ -183,7 +183,7 @@ fn details_prompt_renders_readable_source_details() {
 
 #[test]
 fn confirm_button_hit_matches_data_loss_rendered_buttons() {
-    use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+    use ratatui_core::{backend::TestBackend, layout::Rect, terminal::Terminal};
 
     let s = exit_confirm_state_with_data_loss();
     let area = Rect::new(0, 0, 80, required_height(&s));
@@ -216,7 +216,7 @@ fn default_dialog_has_symmetric_vertical_padding() {
     // The canonical dialog layout has exactly 1 leading spacer (row 1, after the top border)
     // and 1 trailing spacer (last inner row, before the bottom border). Verify that neither
     // the prompt nor the button row touches the top or bottom border.
-    use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+    use ratatui_core::{backend::TestBackend, layout::Rect, terminal::Terminal};
 
     let s = ConfirmState::new("Delete workspace?");
     let height = required_height(&s);
@@ -269,7 +269,7 @@ fn default_dialog_has_symmetric_vertical_padding() {
 
 #[test]
 fn default_dialog_renders_followup_lines_as_dim_explanation() {
-    use ratatui::{Terminal, backend::TestBackend, layout::Rect, style::Modifier};
+    use ratatui_core::{backend::TestBackend, layout::Rect, style::Modifier, terminal::Terminal};
 
     let s = ConfirmState::new("Purge instance?\nRemoves recovery state.");
     let height = required_height(&s);

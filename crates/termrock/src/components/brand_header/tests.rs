@@ -3,7 +3,7 @@
 
 //! Tests for `brand_header`.
 use super::*;
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
 #[test]
 fn renders_brand_pill_and_label() {

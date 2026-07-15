@@ -8,13 +8,13 @@
 //! Enter commits the focused button.
 
 use crate::input::KeyEvent;
-use ratatui::{
-    Frame,
+use ratatui_core::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
+    terminal::Frame,
     text::{Line, Span},
-    widgets::Paragraph,
 };
+use ratatui_widgets::paragraph::Paragraph;
 
 use crate::{
     HintSpan, ModalOutcome,

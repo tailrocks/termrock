@@ -3,7 +3,7 @@
 
 //! Shared modal backdrop.
 
-use ratatui::{
+use ratatui_core::{
     buffer::Buffer,
     style::{Color, Modifier},
     widgets::Widget,
@@ -17,7 +17,7 @@ use ratatui::{
 pub struct ModalBackdrop;
 
 impl Widget for ModalBackdrop {
-    fn render(self, area: ratatui::layout::Rect, buf: &mut Buffer) {
+    fn render(self, area: ratatui_core::layout::Rect, buf: &mut Buffer) {
         let bg = crate::theme::DIALOG_BACKDROP;
         for y in area.top()..area.bottom() {
             for x in area.left()..area.right() {

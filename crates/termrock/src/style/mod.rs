@@ -7,7 +7,7 @@
 //! (`BOLD_WHITE`, `BOLD_GREEN`, `DIM`, `DANGER`) so callers avoid writing
 //! `crate::theme::BOLD_WHITE` inline.
 
-use ratatui::style::{Color, Modifier, Style};
+use ratatui_core::style::{Color, Modifier, Style};
 
 use crate::{
     ACTION_ACCENT as ACTION_ACCENT_RGB, BORDER_GRAY as BORDER_GRAY_RGB,

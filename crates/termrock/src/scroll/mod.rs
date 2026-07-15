@@ -11,7 +11,7 @@
 //! `TailScroll` + the `is_scrollable` / `max_line_width` / `max_offset`
 //! helpers are reimplemented from the donor compatibility layer and owned here.
 
-use ratatui::text::Line;
+use ratatui_core::text::Line;
 use tui_scrollbar::{SUBCELL, ScrollLengths, ScrollMetrics};
 
 use crate::input::{KeyModifiers, MouseEventKind};

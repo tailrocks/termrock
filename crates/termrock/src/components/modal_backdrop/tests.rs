@@ -3,7 +3,7 @@
 
 //! Tests for `modal_backdrop`.
 use super::*;
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
 #[test]
 fn modal_backdrop_fills_area_with_dialog_backdrop() {

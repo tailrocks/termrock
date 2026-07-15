@@ -3,11 +3,11 @@
 
 //! Shared bordered panel primitive.
 
-use ratatui::{
+use ratatui_core::{
     style::{Modifier, Style},
     text::Span,
-    widgets::{Block, Borders},
 };
+use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN, WHITE};
 
@@ -81,8 +81,11 @@ impl Default for Panel<'_> {
 /// never touches the left or right border. Use in place of `block.inner(area)` when
 /// rendering non-scrollable text content into a titled panel.
 #[must_use]
-pub fn panel_body_area(block: &Block<'_>, area: ratatui::layout::Rect) -> ratatui::layout::Rect {
-    use ratatui::layout::Margin;
+pub fn panel_body_area(
+    block: &Block<'_>,
+    area: ratatui_core::layout::Rect,
+) -> ratatui_core::layout::Rect {
+    use ratatui_core::layout::Margin;
     block.inner(area).inner(Margin {
         horizontal: 1,
         vertical: 0,

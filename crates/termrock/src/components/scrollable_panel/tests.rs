@@ -11,7 +11,9 @@ use super::{
     scrollbar_thumb_geometry,
 };
 use crate::theme::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK, PHOSPHOR_GREEN};
-use ratatui::{Terminal, backend::TestBackend, layout::Rect, style::Style, text::Line};
+use ratatui_core::{
+    backend::TestBackend, layout::Rect, style::Style, terminal::Terminal, text::Line,
+};
 
 #[test]
 fn scrollbar_thumb_length_is_offset_invariant() {

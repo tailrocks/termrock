@@ -3,11 +3,12 @@
 
 //! Canonical single-row filter input component.
 
-use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
-use ratatui::style::{Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Paragraph, Widget};
+use ratatui_core::buffer::Buffer;
+use ratatui_core::layout::Rect;
+use ratatui_core::style::{Modifier, Style};
+use ratatui_core::text::{Line, Span};
+use ratatui_core::widgets::Widget;
+use ratatui_widgets::paragraph::Paragraph;
 
 use crate::theme::{INK, PHOSPHOR_DARK, PHOSPHOR_GREEN, WHITE};
 
@@ -51,7 +52,11 @@ pub fn filter_input_line(filter: &str) -> Line<'static> {
     }
 }
 
-pub fn render_filter_input(frame: &mut ratatui::Frame<'_>, area: Rect, filter: &str) {
+pub fn render_filter_input(
+    frame: &mut ratatui_core::terminal::Frame<'_>,
+    area: Rect,
+    filter: &str,
+) {
     frame.render_widget(FilterInput::new(filter), area);
 }
 

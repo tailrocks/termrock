@@ -3,12 +3,12 @@
 
 //! Generic non-interactive status popup.
 
-use ratatui::{
-    Frame,
+use ratatui_core::{
     layout::{Alignment, Rect},
     style::Style,
-    widgets::{Paragraph, Wrap},
+    terminal::Frame,
 };
+use ratatui_widgets::paragraph::{Paragraph, Wrap};
 
 use crate::theme::WHITE;
 

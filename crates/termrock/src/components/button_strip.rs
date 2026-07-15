@@ -3,7 +3,7 @@
 
 //! Shared centered button row.
 
-use ratatui::{
+use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+use ratatui_core::{backend::TestBackend, layout::Rect, terminal::Terminal};
 
 use super::*;
 

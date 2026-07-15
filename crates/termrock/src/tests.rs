@@ -12,8 +12,11 @@ fn component_contract_example_compiles() {
         ModalOutcome::Commit(_) | ModalOutcome::Cancel | ModalOutcome::Continue => {}
     }
 
-    let _render: fn(&mut ratatui::Frame<'_>, ratatui::layout::Rect, &ConfirmState) =
-        render_confirm_dialog;
+    let _render: fn(
+        &mut ratatui_core::terminal::Frame<'_>,
+        ratatui_core::layout::Rect,
+        &ConfirmState,
+    ) = render_confirm_dialog;
     let _hints = confirm_hint_spans();
 }
 

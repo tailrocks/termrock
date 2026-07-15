@@ -3,7 +3,7 @@
 
 //! Tests for `status_footer`.
 use super::*;
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
 fn dump(left: &str, right: &str, width: u16) -> String {
     let backend = TestBackend::new(width, 1);

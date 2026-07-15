@@ -3,7 +3,7 @@
 
 //! Tests for `container_info`.
 use crate::input::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
 use super::*;
 

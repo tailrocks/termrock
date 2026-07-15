@@ -1,9 +1,9 @@
 use super::{PickerRow, SelectListState, render_picker_list, render_select_list_in};
 use crate::input::{KeyCode, KeyEvent, KeyModifiers};
 use crate::theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN};
-use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
-use ratatui::widgets::ListItem;
+use ratatui_core::buffer::Buffer;
+use ratatui_core::layout::Rect;
+use ratatui_widgets::list::ListItem;
 
 fn row_symbols(buf: &Buffer, y: u16, width: u16) -> String {
     (0..width)
@@ -74,12 +74,12 @@ fn rich_picker_lines_get_shared_selection_chrome() {
     };
     let mut buf = Buffer::empty(area);
     let lines = vec![
-        ratatui::text::Line::from(vec![
-            ratatui::text::Span::raw("alpha"),
-            ratatui::text::Span::raw("  "),
-            ratatui::text::Span::raw("dim context"),
+        ratatui_core::text::Line::from(vec![
+            ratatui_core::text::Span::raw("alpha"),
+            ratatui_core::text::Span::raw("  "),
+            ratatui_core::text::Span::raw("dim context"),
         ]),
-        ratatui::text::Line::from("beta"),
+        ratatui_core::text::Line::from("beta"),
     ];
 
     super::render_picker_lines(area, &mut buf, lines, Some(1));

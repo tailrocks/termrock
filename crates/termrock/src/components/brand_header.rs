@@ -3,11 +3,12 @@
 
 //! Brand header component.
 
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Rect};
-use ratatui::style::{Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Paragraph, Widget};
+use ratatui_core::buffer::Buffer;
+use ratatui_core::layout::{Alignment, Rect};
+use ratatui_core::style::{Modifier, Style};
+use ratatui_core::text::{Line, Span};
+use ratatui_core::widgets::Widget;
+use ratatui_widgets::paragraph::Paragraph;
 
 use crate::theme::{BRAND_BLOCK, INK, PHOSPHOR_DARK, WHITE};
 
@@ -46,7 +47,7 @@ pub fn brand_header_line(label: &str) -> Line<'static> {
     ])
 }
 
-pub fn render_brand_header(frame: &mut ratatui::Frame<'_>, area: Rect, label: &str) {
+pub fn render_brand_header(frame: &mut ratatui_core::terminal::Frame<'_>, area: Rect, label: &str) {
     frame.render_widget(BrandHeader::new(label), area);
 }
 

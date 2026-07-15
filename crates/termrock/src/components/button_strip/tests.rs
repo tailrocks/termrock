@@ -3,7 +3,7 @@
 
 //! Tests for `button_strip`.
 use super::{ButtonStrip, ButtonStripItem, button_strip_line};
-use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+use ratatui_core::{backend::TestBackend, layout::Rect, terminal::Terminal};
 
 #[test]
 fn button_strip_pads_and_separates_labels() {

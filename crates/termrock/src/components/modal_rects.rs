@@ -5,7 +5,7 @@
 //! so callers keep owning footer/status reservation while modal sizing stays in
 //! one place.
 
-use ratatui::layout::Rect;
+use ratatui_core::layout::Rect;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ModalRectSpec {

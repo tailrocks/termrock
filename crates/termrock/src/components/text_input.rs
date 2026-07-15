@@ -6,11 +6,12 @@
 use std::marker::PhantomData;
 
 use crate::input::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear, Paragraph, Widget};
+use ratatui_core::buffer::Buffer;
+use ratatui_core::layout::{Constraint, Direction, Layout, Rect};
+use ratatui_core::style::{Modifier, Style};
+use ratatui_core::text::{Line, Span};
+use ratatui_core::widgets::Widget;
+use ratatui_widgets::{block::Block, clear::Clear, paragraph::Paragraph};
 
 use crate::centered_rect;
 use crate::keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Mods, Visibility};
@@ -447,7 +448,11 @@ fn render_input_value(area: Rect, buf: &mut Buffer, state: &TextInputState<'_>) 
     render_input_value_from_parts(area, buf, state.field.value(), state.field.cursor());
 }
 
-pub fn render_text_input(frame: &mut ratatui::Frame<'_>, area: Rect, state: &TextInputState<'_>) {
+pub fn render_text_input(
+    frame: &mut ratatui_core::terminal::Frame<'_>,
+    area: Rect,
+    state: &TextInputState<'_>,
+) {
     render_text_input_in(area, frame.buffer_mut(), state);
 }
 
@@ -467,7 +472,7 @@ pub fn text_input_prompt_rect(area: Rect) -> Rect {
 /// field label. Use this when the dialog title ("Rename tab") is not the same
 /// text as the editable field label ("Name").
 pub fn render_labeled_text_input_dialog(
-    frame: &mut ratatui::Frame<'_>,
+    frame: &mut ratatui_core::terminal::Frame<'_>,
     area: Rect,
     dialog_title: &str,
     label: &str,

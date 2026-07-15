@@ -4,7 +4,7 @@
 //! Tests for `error_dialog`.
 use super::*;
 use crate::input::{KeyCode, KeyEventKind, KeyEventState, KeyModifiers};
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
 fn key(code: KeyCode) -> KeyEvent {
     KeyEvent {

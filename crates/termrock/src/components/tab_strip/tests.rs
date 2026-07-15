@@ -4,7 +4,7 @@
 //! Tests for `tab_strip`.
 use super::{TabStrip, tab_cell_style, tab_underline_line};
 use crate::{components::HoverTracker, lay_out_tabs};
-use ratatui::layout::Rect;
+use ratatui_core::layout::Rect;
 
 #[test]
 fn underline_marks_only_active_tab_when_focused() {
@@ -22,8 +22,8 @@ fn underline_marks_only_active_tab_when_focused() {
 #[test]
 fn tab_strip_exposes_two_rows() {
     let labels = [("General", true), ("Mounts", false)];
-    let backend = ratatui::backend::TestBackend::new(24, 2);
-    let mut terminal = ratatui::Terminal::new(backend).unwrap();
+    let backend = ratatui_core::backend::TestBackend::new(24, 2);
+    let mut terminal = ratatui_core::terminal::Terminal::new(backend).unwrap();
 
     terminal
         .draw(|frame| {

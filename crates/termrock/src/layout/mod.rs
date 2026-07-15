@@ -1,6 +1,6 @@
 //! Responsive layout specifications and caller-defined bottom slots.
 
-use ratatui::layout::Rect;
+use ratatui_core::layout::Rect;
 
 pub use crate::interaction::HitRegion;
 

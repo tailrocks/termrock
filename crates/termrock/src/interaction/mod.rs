@@ -1,6 +1,6 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
-use ratatui::layout::{Position, Rect};
+use ratatui_core::layout::{Position, Rect};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct FocusState<Id> {

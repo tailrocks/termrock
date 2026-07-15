@@ -12,7 +12,7 @@
 //! booleans and gives each surface a single code path for both OSC 22 pointer
 //! shape and hover-colour styling.
 
-use ratatui::layout::Rect;
+use ratatui_core::layout::Rect;
 
 /// A clickable element identified by an application-defined key `K`.
 #[derive(Debug, Clone)]
@@ -60,7 +60,7 @@ impl<K: Clone + PartialEq> HoverTracker<K> {
         self.entries.iter().find_map(|entry| {
             if entry
                 .rect
-                .contains(ratatui::layout::Position { x: col, y: row })
+                .contains(ratatui_core::layout::Position { x: col, y: row })
             {
                 Some(&entry.key)
             } else {

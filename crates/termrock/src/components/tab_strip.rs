@@ -3,13 +3,14 @@
 
 //! Shared Ratatui tab strip.
 
-use ratatui::{
+use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Paragraph, Widget},
+    widgets::Widget,
 };
+use ratatui_widgets::paragraph::Paragraph;
 
 use crate::{
     TabCell,

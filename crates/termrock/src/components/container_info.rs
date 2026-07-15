@@ -4,10 +4,10 @@
 //! Shared read-only container/session information dialog.
 
 use crate::input::{KeyCode, KeyEvent};
-use ratatui::{
-    Frame,
+use ratatui_core::{
     layout::Rect,
     style::{Color, Modifier, Style},
+    terminal::Frame,
     text::{Line, Span},
 };
 

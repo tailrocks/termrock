@@ -4,12 +4,12 @@
 //! Three-way dirty-exit confirmation dialog.
 
 use crate::input::KeyEvent;
-use ratatui::{
-    Frame,
+use ratatui_core::{
     layout::{Alignment, Rect},
+    terminal::Frame,
     text::Span,
-    widgets::Paragraph,
 };
+use ratatui_widgets::paragraph::Paragraph;
 
 use crate::keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Visibility};
 use crate::{HintSpan, ModalOutcome, components::ButtonFocus};

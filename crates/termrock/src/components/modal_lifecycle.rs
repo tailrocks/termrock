@@ -11,8 +11,8 @@
 //! This centralises the three behaviors that previously had to be
 //! re-implemented per surface (console, launch, capsule).
 
-use ratatui::Frame;
-use ratatui::layout::Rect;
+use ratatui_core::layout::Rect;
+use ratatui_core::terminal::Frame;
 
 use crate::components::ModalBackdrop;
 
@@ -153,7 +153,7 @@ pub enum ModalClickResult {
 /// - `InsideHit` if inside (caller decides what to do within the modal).
 #[must_use]
 pub fn classify_click(modal_rect: Rect, col: u16, row: u16) -> ModalClickResult {
-    if modal_rect.contains(ratatui::layout::Position { x: col, y: row }) {
+    if modal_rect.contains(ratatui_core::layout::Position { x: col, y: row }) {
         ModalClickResult::InsideHit
     } else {
         ModalClickResult::OutsideDismiss

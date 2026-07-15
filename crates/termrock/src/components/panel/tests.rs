@@ -3,7 +3,7 @@
 
 //! Tests for `panel`.
 use super::*;
-use ratatui::{Terminal, backend::TestBackend, layout::Rect, style::Color};
+use ratatui_core::{backend::TestBackend, layout::Rect, style::Color, terminal::Terminal};
 
 /// Render a block into a 3×3 terminal and return the fg color of the top-left
 /// corner cell — that cell is always a border character, so its fg is the border color.

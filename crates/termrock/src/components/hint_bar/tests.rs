@@ -3,8 +3,8 @@
 
 //! Tests for `hint_bar`.
 use super::*;
-use ratatui::style::Modifier;
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui_core::style::Modifier;
+use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
 #[test]
 fn line_styles_keys_and_text_distinctly() {

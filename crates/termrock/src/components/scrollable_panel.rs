@@ -3,15 +3,19 @@
 
 //! Shared scroll geometry, panels, and scrollbar rendering.
 
-use ratatui::{
-    Frame,
+use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},
+    terminal::Frame,
     text::{Line, Span, Text},
-    widgets::{
-        Block, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget, Widget,
-    },
+    widgets::{StatefulWidget, Widget},
+};
+use ratatui_widgets::{
+    block::Block,
+    list::{List, ListItem, ListState},
+    paragraph::Paragraph,
+    table::HighlightSpacing,
 };
 
 use crate::{

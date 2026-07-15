@@ -3,7 +3,7 @@
 
 //! Text measurement, tab layout, and terminal-title helpers for jackin❯ TUI surfaces.
 
-use ratatui::layout::Rect;
+use ratatui_core::layout::Rect;
 
 /// Per-tab descriptor consumed by both ratatui and ANSI tab
 /// renderers. `cell_cols` is the number of display columns the cell

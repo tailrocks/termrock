@@ -3,7 +3,7 @@
 
 //! Tests for `filter_input`.
 use super::*;
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
 #[test]
 fn empty_filter_shows_placeholder() {

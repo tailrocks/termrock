@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use ratatui::{Terminal, backend::TestBackend, buffer::Buffer, layout::Rect};
+use ratatui_core::{backend::TestBackend, buffer::Buffer, layout::Rect, terminal::Terminal};
 
 #[test]
 fn labeled_text_input_dialog_renders_shared_shell_and_cursor() {
