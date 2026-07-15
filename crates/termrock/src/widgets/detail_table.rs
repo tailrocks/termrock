@@ -38,6 +38,29 @@ pub struct DetailTable<'a, Id> {
     pub label_width: u16,
 }
 
+impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
+    #[must_use]
+    pub fn hyperlink_regions<'a>(
+        &'a self,
+        state: &'a DetailTableState<Id>,
+    ) -> Vec<crate::osc::HyperlinkRegion<'a, Id>> {
+        state
+            .regions
+            .iter()
+            .filter_map(|region| {
+                self.rows
+                    .iter()
+                    .find(|row| row.id == region.id && row.capability == DetailCapability::Link)
+                    .map(|row| crate::osc::HyperlinkRegion {
+                        id: row.id.clone(),
+                        area: region.area,
+                        url: row.value,
+                    })
+            })
+            .collect()
+    }
+}
+
 impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
     type State = DetailTableState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
