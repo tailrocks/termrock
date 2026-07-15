@@ -25,3 +25,6 @@ pub use status_bar::{StatusBar, StatusSlot};
 pub use tabs::{Tab, Tabs, TabsState};
 pub use text_input::{EditAction, TextInput, TextInputState, Validation};
 pub use toast::{Anchor, Severity, Toast};
+
+#[cfg(test)]
+mod tests;
