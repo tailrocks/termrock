@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Text measurement, tab layout, and terminal-title helpers for jackin❯ TUI surfaces.
+//! Text measurement, tab layout, and terminal-title helpers.
 
 use ratatui_core::layout::Rect;
+use unicode_width::UnicodeWidthStr;
 
 /// Per-tab descriptor consumed by both ratatui and ANSI tab
 /// renderers. `cell_cols` is the number of display columns the cell
@@ -70,10 +71,10 @@ impl HintSpan<'_> {
     #[must_use]
     pub fn display_cols(&self) -> usize {
         match self {
-            Self::Key(k) => k.chars().count(),
-            Self::DynKey(k) => k.chars().count(),
-            Self::Text(t) => 1 + t.chars().count(),
-            Self::Dyn(t) => 1 + t.chars().count(),
+            Self::Key(k) => UnicodeWidthStr::width(*k),
+            Self::DynKey(k) => UnicodeWidthStr::width(k.as_str()),
+            Self::Text(t) => 1 + UnicodeWidthStr::width(*t),
+            Self::Dyn(t) => 1 + UnicodeWidthStr::width(t.as_str()),
             Self::Sep | Self::GroupSep => 3,
         }
     }

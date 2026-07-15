@@ -1,5 +1,6 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::Widget};
 use ratatui_widgets::{block::Block, clear::Clear, paragraph::Paragraph};
+use unicode_width::UnicodeWidthStr;
 
 use super::Action;
 
@@ -54,9 +55,7 @@ impl<Id> Widget for &ChoiceDialog<'_, Id> {
         let y = area.bottom().saturating_sub(2);
         for item in self.actions {
             let label = item.action.label;
-            let width = label
-                .chars()
-                .count()
+            let width = UnicodeWidthStr::width(label)
                 .saturating_add(2)
                 .min(u16::MAX as usize) as u16;
             let rect = Rect::new(x, y, width.min(area.right().saturating_sub(x)), 1);

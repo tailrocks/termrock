@@ -5,6 +5,7 @@ use ratatui_core::{
     widgets::{StatefulWidget, Widget},
 };
 use ratatui_widgets::paragraph::Paragraph;
+use unicode_width::UnicodeWidthStr;
 
 use crate::interaction::HitRegion;
 
@@ -34,10 +35,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
         state.regions.clear();
         let mut x = area.x;
         for action in self.actions {
-            let width = action
-                .label
-                .chars()
-                .count()
+            let width = UnicodeWidthStr::width(action.label)
                 .saturating_add(2)
                 .min(u16::MAX as usize) as u16;
             let rect = Rect::new(
@@ -63,7 +61,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
             });
             x = x
                 .saturating_add(width)
-                .saturating_add(self.gap.chars().count() as u16);
+                .saturating_add(UnicodeWidthStr::width(self.gap).min(u16::MAX as usize) as u16);
             if x >= area.right() {
                 break;
             }

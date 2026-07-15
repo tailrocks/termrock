@@ -1,6 +1,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget};
 
 use crate::interaction::HitRegion;
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug, Clone)]
 pub struct StatusSlot<'a, Id> {
@@ -24,10 +25,7 @@ impl<Id: Clone> StatusBar<'_, Id> {
         let mut regions = Vec::new();
         let mut x = area.x;
         for slot in self.left.iter().filter(|slot| slot.enabled) {
-            let width = slot
-                .content
-                .chars()
-                .count()
+            let width = UnicodeWidthStr::width(slot.content)
                 .max(slot.min_width as usize)
                 .min(u16::MAX as usize) as u16;
             regions.push(HitRegion {
@@ -38,10 +36,7 @@ impl<Id: Clone> StatusBar<'_, Id> {
         }
         let mut right = area.right();
         for slot in self.right.iter().rev().filter(|slot| slot.enabled) {
-            let width = slot
-                .content
-                .chars()
-                .count()
+            let width = UnicodeWidthStr::width(slot.content)
                 .max(slot.min_width as usize)
                 .min(u16::MAX as usize) as u16;
             let start = right.saturating_sub(width).max(area.x);

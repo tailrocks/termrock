@@ -1,6 +1,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 
 use crate::interaction::HitRegion;
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug, Clone)]
 pub struct Tab<'a, Id> {
@@ -35,9 +36,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
                 Some(glyph) => format!("{glyph} {}", tab.label),
                 None => tab.label.to_owned(),
             };
-            let width = label
-                .chars()
-                .count()
+            let width = UnicodeWidthStr::width(label.as_str())
                 .saturating_add(2)
                 .min(u16::MAX as usize) as u16;
             let rect = Rect::new(
