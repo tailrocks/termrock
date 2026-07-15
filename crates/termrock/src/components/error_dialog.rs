@@ -3,7 +3,7 @@
 
 //! Single-button error dialog component.
 
-use crossterm::event::KeyEvent;
+use crate::input::KeyEvent;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};

@@ -7,7 +7,7 @@
 //! Tab / left / right / h/l cycle focus between Yes and No.
 //! Enter commits the focused button.
 
-use crossterm::event::KeyEvent;
+use crate::input::KeyEvent;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},

@@ -3,7 +3,7 @@
 
 //! Generic modal filter-picker over labelled string items.
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crate::input::{KeyCode, KeyEvent};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};

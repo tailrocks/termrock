@@ -153,7 +153,7 @@ fn selectable_list_that_fits_keeps_selection_and_clears_offset() {
 
 #[test]
 fn mouse_scroll_delta_honors_visible_axes() {
-    use crossterm::event::{KeyModifiers, MouseEventKind};
+    use crate::input::{KeyModifiers, MouseEventKind};
 
     assert_eq!(
         mouse_scroll_delta(

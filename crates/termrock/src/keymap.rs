@@ -137,9 +137,9 @@ impl KeyChord {
 /// shifted character is already encoded in the `char` value (`'Q'` vs `'q'`).
 /// Unknown key codes (function keys, media keys, …) map to
 /// `LogicalKey::Char('\0')` which will never match a real binding.
-impl From<crossterm::event::KeyEvent> for KeyChord {
-    fn from(ev: crossterm::event::KeyEvent) -> Self {
-        use crossterm::event::{KeyCode, KeyModifiers};
+impl From<crate::input::KeyEvent> for KeyChord {
+    fn from(ev: crate::input::KeyEvent) -> Self {
+        use crate::input::{KeyCode, KeyModifiers};
         let is_char = matches!(ev.code, KeyCode::Char(_));
         let key = match ev.code {
             KeyCode::Char(c) => LogicalKey::Char(c),
@@ -157,7 +157,6 @@ impl From<crossterm::event::KeyEvent> for KeyChord {
             KeyCode::PageDown => LogicalKey::PageDown,
             KeyCode::Backspace => LogicalKey::Backspace,
             KeyCode::Delete => LogicalKey::Delete,
-            _ => LogicalKey::Char('\0'),
         };
         let mut mods = Mods::NONE;
         if ev.modifiers.contains(KeyModifiers::CONTROL) {
@@ -180,9 +179,9 @@ impl From<crossterm::event::KeyEvent> for KeyChord {
 /// context, because the modified chords like `Ctrl+Q` are intercepted
 /// upstream) build chords through this conversion, keeping their keymap
 /// dispatch identical in spirit to the `KeyEvent`-based surfaces.
-impl From<crossterm::event::KeyCode> for KeyChord {
-    fn from(code: crossterm::event::KeyCode) -> Self {
-        use crossterm::event::KeyCode;
+impl From<crate::input::KeyCode> for KeyChord {
+    fn from(code: crate::input::KeyCode) -> Self {
+        use crate::input::KeyCode;
         let key = match code {
             KeyCode::Char(c) => LogicalKey::Char(c),
             KeyCode::Enter => LogicalKey::Enter,
@@ -199,7 +198,6 @@ impl From<crossterm::event::KeyCode> for KeyChord {
             KeyCode::PageDown => LogicalKey::PageDown,
             KeyCode::Backspace => LogicalKey::Backspace,
             KeyCode::Delete => LogicalKey::Delete,
-            _ => LogicalKey::Char('\0'),
         };
         Self {
             key,

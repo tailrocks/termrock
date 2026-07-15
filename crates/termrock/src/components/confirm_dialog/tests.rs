@@ -4,14 +4,14 @@
 //! Tests for `confirm_dialog`.
 use super::*;
 use crate::components::ButtonFocus;
-use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
+use crate::input::{KeyCode, KeyEventKind, KeyEventState, KeyModifiers};
 
 fn key(code: KeyCode) -> KeyEvent {
     KeyEvent {
         code,
         modifiers: KeyModifiers::NONE,
         kind: KeyEventKind::Press,
-        state: crossterm::event::KeyEventState::NONE,
+        state: KeyEventState::NONE,
     }
 }
 

@@ -194,7 +194,7 @@ impl StoryInteraction for SelectListInteractor {
             return false;
         }
         // Delegate to SelectListState and report consumed for all keys it acts on.
-        self.state.handle_key(key);
+        self.state.handle_key(key.into());
         matches!(
             key.code,
             KeyCode::Up | KeyCode::Down | KeyCode::Enter | KeyCode::Char(_) | KeyCode::Backspace
@@ -301,8 +301,8 @@ impl StoryInteraction for ScrollablePanelInteractor {
             horizontal: scroll::is_scrollable(content_width, viewport_width),
         };
         scroll::apply_mouse_scroll_u16(
-            mouse.kind,
-            mouse.modifiers,
+            mouse.kind.into(),
+            mouse.modifiers.into(),
             axes,
             ScrollSpan::new(content_width, viewport_width),
             ScrollSpan::new(content_height, viewport_height),
@@ -361,7 +361,7 @@ impl StoryInteraction for ConfirmInteractor {
         if key.kind != KeyEventKind::Press {
             return false;
         }
-        self.state.handle_key(key);
+        self.state.handle_key(key.into());
         true
     }
 
@@ -412,7 +412,7 @@ impl StoryInteraction for TextInputInteractor {
         }
         // Delegate everything to the real TextInputState — it handles what it
         // knows and ignores the rest. We always return true so the preview redraws.
-        self.state.handle_key(key);
+        self.state.handle_key(key.into());
         true
     }
 
@@ -499,7 +499,7 @@ impl StoryInteraction for SaveDiscardInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        self.state.handle_key(key);
+        self.state.handle_key(key.into());
         true
     }
 

@@ -3,7 +3,7 @@
 
 //! Shared read-only container/session information dialog.
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crate::input::{KeyCode, KeyEvent};
 use ratatui::{
     Frame,
     layout::Rect,

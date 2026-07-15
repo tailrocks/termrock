@@ -229,7 +229,7 @@ fn mods_bit_flags_combine_correctly() {
 
 #[test]
 fn from_crossterm_key_event_converts_basic_keys() {
-    use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
+    use crate::input::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 
     let ev = KeyEvent {
         code: KeyCode::Char('q'),

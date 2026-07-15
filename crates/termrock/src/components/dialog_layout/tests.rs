@@ -92,7 +92,7 @@ fn dialog_scroll_axes_match_scrollbar_overflow_gate() {
 
 #[test]
 fn on_mouse_scroll_routes_axes_and_shift_fallback() {
-    use crossterm::event::{KeyModifiers, MouseEventKind};
+    use crate::input::{KeyModifiers, MouseEventKind};
     let none = KeyModifiers::NONE;
     let shift = KeyModifiers::SHIFT;
 
@@ -116,7 +116,7 @@ fn on_mouse_scroll_routes_axes_and_shift_fallback() {
 
 #[test]
 fn key_scroll_ignores_axes_without_visible_scrollbars() {
-    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use crate::input::{KeyCode, KeyEvent, KeyModifiers};
     let mut scroll = DialogBodyScroll::new();
 
     assert!(
@@ -151,7 +151,7 @@ fn key_scroll_ignores_axes_without_visible_scrollbars() {
 
 #[test]
 fn mouse_scroll_ignores_axes_without_visible_scrollbars() {
-    use crossterm::event::{KeyModifiers, MouseEventKind};
+    use crate::input::{KeyModifiers, MouseEventKind};
     let mut scroll = DialogBodyScroll::new();
 
     assert!(!scroll.on_mouse_scroll_for_axes(

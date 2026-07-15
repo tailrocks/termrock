@@ -3,7 +3,7 @@
 
 use super::*;
 use crate::components::{ConfirmState, confirm_hint_spans, render_confirm_dialog};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crate::input::{KeyCode, KeyEvent, KeyModifiers};
 
 #[test]
 fn component_contract_example_compiles() {

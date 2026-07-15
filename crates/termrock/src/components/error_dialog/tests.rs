@@ -3,7 +3,7 @@
 
 //! Tests for `error_dialog`.
 use super::*;
-use crossterm::event::{KeyCode, KeyEventKind, KeyEventState, KeyModifiers};
+use crate::input::{KeyCode, KeyEventKind, KeyEventState, KeyModifiers};
 use ratatui::{Terminal, backend::TestBackend};
 
 fn key(code: KeyCode) -> KeyEvent {

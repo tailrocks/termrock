@@ -1,5 +1,5 @@
 use super::{DiffViewState, SinglePaneKind, diff_view_hint_spans};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crate::input::{KeyCode, KeyEvent, KeyModifiers};
 
 #[test]
 fn side_by_side_empty_before() {

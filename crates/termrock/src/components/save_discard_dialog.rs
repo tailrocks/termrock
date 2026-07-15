@@ -3,7 +3,7 @@
 
 //! Three-way dirty-exit confirmation dialog.
 
-use crossterm::event::KeyEvent;
+use crate::input::KeyEvent;
 use ratatui::{
     Frame,
     layout::{Alignment, Rect},

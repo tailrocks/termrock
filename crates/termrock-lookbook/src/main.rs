@@ -534,8 +534,8 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
                         };
                         let mut ignored_scroll_x = 0;
                         scroll::apply_mouse_scroll_u16(
-                            mouse.kind,
-                            mouse.modifiers,
+                            mouse.kind.into(),
+                            mouse.modifiers.into(),
                             axes,
                             ScrollSpan::new(0, 0),
                             ScrollSpan::new(preview_content_rows, last_preview_viewport_rows),
@@ -553,7 +553,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
                 if key.kind != KeyEventKind::Press {
                     continue;
                 }
-                let chord = KeyChord::from(key);
+                let chord = KeyChord::from(termrock::input::KeyEvent::from(key));
                 match focus {
                     Focus::Preview => {
                         match PREVIEW_KEYMAP

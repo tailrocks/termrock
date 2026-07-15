@@ -4,7 +4,7 @@
 //! Tests for `save_discard_dialog`.
 use super::*;
 use crate::components::ButtonFocus;
-use crossterm::event::{KeyCode, KeyEventKind, KeyEventState, KeyModifiers};
+use crate::input::{KeyCode, KeyEventKind, KeyEventState, KeyModifiers};
 
 fn key(code: KeyCode) -> KeyEvent {
     KeyEvent {

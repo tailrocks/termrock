@@ -14,7 +14,7 @@
 use ratatui::text::Line;
 use tui_scrollbar::{SUBCELL, ScrollLengths, ScrollMetrics};
 
-use crossterm::event::{KeyModifiers, MouseEventKind};
+use crate::input::{KeyModifiers, MouseEventKind};
 
 /// Tail-relative scroll offset helper.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]

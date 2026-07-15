@@ -26,7 +26,7 @@
 //! | 3     | Action / button row     |
 //! | 4     | Trailing spacer (1 row) |
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
+use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::text::Line;

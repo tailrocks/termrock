@@ -1,6 +1,6 @@
 use super::{PickerRow, SelectListState, render_picker_list, render_select_list_in};
+use crate::input::{KeyCode, KeyEvent, KeyModifiers};
 use crate::theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::ListItem;

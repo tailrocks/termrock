@@ -6,7 +6,7 @@
 //! Two modes: side-by-side (modified files, before │ after) and single-pane
 //! (added / untracked / deleted). Uses `similar::TextDiff` for hunk computation.
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crate::input::{KeyCode, KeyEvent};
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};

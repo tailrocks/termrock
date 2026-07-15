@@ -15,7 +15,7 @@ readme = "README.md"
 name = "termrock"
 
 [features]
-default = ["crossterm"]
+default = []
 crossterm = ["dep:crossterm", "dep:ratatui-crossterm"]
 
 [dependencies]
