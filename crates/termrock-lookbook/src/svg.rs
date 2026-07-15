@@ -248,16 +248,6 @@ fn escape_xml(value: &str) -> String {
         .replace('"', "&quot;")
 }
 
-#[cfg(test)]
-mod color_tests {
-    use super::*;
-
-    #[test]
-    fn arbitrary_rgb_is_serialized_without_palette_table() {
-        assert_eq!(color_to_css(Color::Rgb(1, 35, 255)), "#0123ff");
-    }
-}
-
 /// Render a story's buffer to plain text (for debugging / snapshot tests).
 #[must_use]
 #[expect(
@@ -276,4 +266,14 @@ pub(crate) fn render_story_to_text(story: Story) -> String {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod color_tests {
+    use super::*;
+
+    #[test]
+    fn arbitrary_rgb_is_serialized_without_palette_table() {
+        assert_eq!(color_to_css(Color::Rgb(1, 35, 255)), "#0123ff");
+    }
 }
