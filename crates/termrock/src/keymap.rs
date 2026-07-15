@@ -279,7 +279,7 @@ impl<A: Copy + 'static> Keymap<A> {
 
     /// Like [`hint_spans`] but omits scroll-axis arrow bindings when the
     /// corresponding scroll axis is unavailable (matching the behaviour of
-    /// [`crate::components::scroll_hint_spans`]).
+    /// a caller-defined scroll hint renderer.
     #[must_use]
     pub fn hint_spans_for_axes(&self, axes: ScrollAxes) -> Vec<HintSpan<'static>> {
         self.hint_spans_filtered(|b| Self::axis_gate_passes(b, axes))

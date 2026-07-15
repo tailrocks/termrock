@@ -26,19 +26,12 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
 };
 use stories::stories;
 use svg::{check_svgs, write_story_svgs};
 use termrock::{
-    components::{
-        KeyBinding, KeyChord, Keymap, LogicalKey, Visibility,
-        hint_bar::render_hint_bar,
-        panel::{Panel, PanelFocus, panel_body_area},
-        render_brand_header,
-        scrollable_panel::max_offset,
-    },
-    keymap::glyph,
+    keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Visibility, glyph},
     scroll::{self, ScrollSpan},
     theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN, PREVIEW_CARD},
 };
@@ -256,7 +249,10 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
             .areas(area);
 
             // Full-width brand header on black background.
-            render_brand_header(frame, brand_area, "lookbook");
+            frame.render_widget(
+                Paragraph::new("TermRock  lookbook").style(termrock::theme::BOLD_WHITE),
+                brand_area,
+            );
 
             // Main: sidebar(30) | right
             let [sidebar_area, right_area] =
@@ -270,15 +266,15 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
                     .areas(right_area);
 
             // ── Sidebar ───────────────────────────────────────────────────────
-            let sidebar_panel_focus = if focus == Focus::Sidebar {
-                PanelFocus::Focused
+            let sidebar_style = if focus == Focus::Sidebar {
+                Style::new().fg(PHOSPHOR_GREEN)
             } else {
-                PanelFocus::Unfocused
+                termrock::theme::BORDER
             };
-            let sidebar_block = Panel::new()
+            let sidebar_block = Block::default()
+                .borders(Borders::ALL)
                 .title(" Stories ")
-                .focus(sidebar_panel_focus)
-                .block();
+                .border_style(sidebar_style);
             let sidebar_inner = sidebar_block.inner(sidebar_area);
             frame.render_widget(sidebar_block, sidebar_area);
 
@@ -287,13 +283,13 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
             last_sidebar_viewport_items = sidebar_viewport_items;
             let total_stories = stories.len();
             // Cursor-follow: keep selected item visible.
-            let eff_scroll = termrock::components::cursor_follow_offset(
+            let eff_scroll = termrock::scroll::cursor_follow_offset(
                 selected,
                 total_stories,
                 sidebar_viewport_items,
-                sidebar_scroll,
+                usize::from(sidebar_scroll),
             );
-            sidebar_scroll = eff_scroll;
+            sidebar_scroll = eff_scroll.min(u16::MAX as usize) as u16;
 
             let items: Vec<ListItem<'_>> = stories
                 .iter()
@@ -305,7 +301,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
                 })
                 .collect();
             let mut list_state = ListState::default()
-                .with_offset(usize::from(eff_scroll))
+                .with_offset(eff_scroll)
                 .with_selected(Some(selected));
             frame.render_stateful_widget(
                 List::new(items)
@@ -323,23 +319,16 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
             // Vertical scrollbar: render in row units (2 rows per story).
             let sidebar_content_rows = total_stories * 2;
             let sidebar_viewport_rows = usize::from(sidebar_inner.height);
-            if termrock::components::is_scrollable(sidebar_content_rows, sidebar_viewport_rows) {
-                termrock::components::render_vertical_scrollbar(
-                    frame,
-                    sidebar_area,
-                    sidebar_content_rows,
-                    eff_scroll.saturating_mul(2),
-                );
-            }
+            let _ = (sidebar_content_rows, sidebar_viewport_rows);
 
             last_sidebar_area = sidebar_area;
 
             // ── Description block ─────────────────────────────────────────────
-            let desc_block = Panel::new()
+            let desc_block = Block::default()
+                .borders(Borders::ALL)
                 .title(" About ")
-                .focus(PanelFocus::Unfocused)
-                .block();
-            let desc_inner = panel_body_area(&desc_block, desc_area);
+                .border_style(termrock::theme::BORDER);
+            let desc_inner = desc_block.inner(desc_area);
             frame.render_widget(desc_block, desc_area);
 
             let [title_row, spacer_row, desc_row] = Layout::vertical([
@@ -373,15 +362,15 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
             );
 
             // ── Preview block ─────────────────────────────────────────────────
-            let preview_panel_focus = if focus == Focus::Preview {
-                PanelFocus::Focused
+            let preview_style = if focus == Focus::Preview {
+                Style::new().fg(PHOSPHOR_GREEN)
             } else {
-                PanelFocus::Unfocused
+                termrock::theme::BORDER
             };
-            let preview_block = Panel::new()
+            let preview_block = Block::default()
+                .borders(Borders::ALL)
                 .title(" Preview ")
-                .focus(preview_panel_focus)
-                .block();
+                .border_style(preview_style);
             let preview_inner = preview_block.inner(preview_area);
             frame.render_widget(preview_block, preview_area);
 
@@ -408,8 +397,10 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
             let content_width = story.width.min(vp_width);
             let content_height = story.height;
 
-            let effective_scroll =
-                preview_scroll.min(max_offset(content_height as usize, vp_height as usize));
+            let effective_scroll = preview_scroll.min(termrock::scroll::max_offset(
+                content_height as usize,
+                vp_height as usize,
+            ) as u16);
 
             // Horizontal: centred within padded canvas.
             let cx = canvas.x + vp_width.saturating_sub(content_width) / 2;
@@ -455,7 +446,17 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
                 Focus::Preview => PREVIEW_KEYMAP.hint_spans(),
                 Focus::Sidebar => SIDEBAR_KEYMAP.hint_spans(),
             };
-            render_hint_bar(frame, hint_area, &hint_spans);
+            let hint_text = hint_spans
+                .iter()
+                .map(|span| match span {
+                    termrock::HintSpan::Key(v) | termrock::HintSpan::Text(v) => (*v).to_owned(),
+                    termrock::HintSpan::DynKey(v) | termrock::HintSpan::Dyn(v) => v.clone(),
+                    termrock::HintSpan::Sep => " · ".to_owned(),
+                    termrock::HintSpan::GroupSep => "   ".to_owned(),
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            frame.render_widget(Paragraph::new(hint_text), hint_area);
         })?;
 
         // event::poll returns false quickly when no event; avoids busy-loop.

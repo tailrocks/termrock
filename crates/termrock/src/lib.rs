@@ -4,7 +4,6 @@
 //! Entry point: [`Theme`] — shared TUI theme tokens.
 
 pub mod ansi_text;
-pub mod components;
 pub mod geometry;
 pub mod input;
 pub mod interaction;
@@ -19,10 +18,6 @@ pub mod widgets;
 pub use style as theme;
 pub use style::Theme;
 
-pub use components::text_input::TextField;
-pub use components::{
-    BOTTOM_CHROME_ROWS, BottomChromeAreas, DialogBodyScroll, StatusFooterHover, bottom_chrome_areas,
-};
 pub use geometry::{
     FixedPrefixSegment, HintSpan, TAB_GAP, TabCell, agent_display_name, centered_rect,
     display_cols, display_cols_slice, fixed_prefix_scroll_segments, hint_row_cols,
@@ -255,6 +250,3 @@ pub const fn clickable_pointer_shape(clickable: bool) -> PointerShape {
 pub fn osc22_pointer_shape(shape: PointerShape) -> String {
     format!("\x1b]22;{}\x1b\\", shape.as_osc22_name())
 }
-
-#[cfg(test)]
-mod tests;

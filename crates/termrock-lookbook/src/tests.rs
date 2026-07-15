@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-use termrock::components::{KeyChord, LogicalKey};
 use termrock::keymap::glyph;
+use termrock::keymap::{KeyChord, LogicalKey};
 
 use crate::{PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction};
 
