@@ -538,7 +538,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
                         // Click in sidebar: select the story at the clicked row and
                         // focus the sidebar. Each story occupies 2 rows in the list
                         // (component name line + id line). Per TUI design decisions:
-                        // clicking a focusable container transfers focus immediately.
+                        // Clicking a focusable region transfers focus immediately.
                         let s = last_sidebar_inner_area;
                         if col >= s.x && col < s.x + s.width && row >= s.y && row < s.y + s.height {
                             let row_in_inner = usize::from(row - s.y);

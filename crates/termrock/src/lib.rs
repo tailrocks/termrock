@@ -23,10 +23,10 @@ pub use style as theme;
 pub use style::Theme;
 
 pub use geometry::{
-    FixedPrefixSegment, HintSpan, TAB_GAP, TabCell, agent_display_name, centered_rect,
-    display_cols, display_cols_slice, fixed_prefix_scroll_segments, hint_row_cols,
-    is_terminal_control_char, lay_out_tabs, leading_space_cols, padded_line_display_cols,
-    sanitize_terminal_title, tab_at_column, take_display_cols,
+    FixedPrefixSegment, HintSpan, TAB_GAP, TabCell, centered_rect, display_cols,
+    display_cols_slice, fixed_prefix_scroll_segments, hint_row_cols, is_terminal_control_char,
+    lay_out_tabs, leading_space_cols, padded_line_display_cols, sanitize_terminal_title,
+    tab_at_column, take_display_cols,
 };
 pub use scroll::{TailScroll, is_scrollable, max_line_width, max_offset};
 
@@ -34,8 +34,7 @@ pub use scroll::{TailScroll, is_scrollable, max_line_width, max_offset};
 ///
 /// Surface-specific state machines use this to decide whether to keep a
 /// component open, commit its value, or cancel the interaction. Keeping the
-/// type in `termrock` lets host, launch, and capsule components share the
-/// same update contract without depending on one surface's widget module.
+/// Shared surfaces use this without depending on one another's widget modules.
 #[derive(Debug, Clone)]
 pub enum ModalOutcome<T> {
     /// User is still interacting with the component.
@@ -119,14 +118,10 @@ pub const BRAND_BLOCK: Rgb = PHOSPHOR_GREEN;
 /// Almost-invisible dim background for the input band inside a
 /// text-input dialog. Picked so the input region is visible even when
 /// empty without competing with the dialog's `PHOSPHOR_DARK` border.
-/// Used by the host TUI's `text_input` widget and the
-/// `jackin-capsule` rename dialog so both surfaces share the same
-/// "this is where you type" cue.
+/// Used by text-input surfaces as a consistent "this is where you type" cue.
 pub const INPUT_BG_DIM: Rgb = Rgb::new(20, 24, 22);
 
-/// Tab-cell backgrounds shared by the in-container multiplexer status bar
-/// (`jackin-capsule`) and the host console tab strips (workspace editor,
-/// settings) so the two surfaces render identical tab chrome. Inactive
+/// Tab-cell backgrounds shared by terminal tab strips. Inactive
 /// tabs sit on a subtle dark grey; the active tab lifts to a graphite that
 /// stays distinct from the brand-green pill; hover lifts each one cell
 /// further.
@@ -136,16 +131,14 @@ pub const TAB_BG_ACTIVE: Rgb = Rgb::new(42, 42, 42);
 pub const TAB_BG_ACTIVE_HOVER: Rgb = Rgb::new(58, 58, 58);
 
 /// Link/clickable foreground used on the white bottom status bar (the
-/// container/instance-id chip) by both the in-container multiplexer and the
-/// host loading screen, so a clickable id reads the same on both surfaces.
+/// identifier chip), so clickable IDs read consistently across surfaces.
 /// Reserved for clickable text on a *light* (white) background, where the
 /// dark-surface `LINK_FG` cyan would have too little contrast.
 pub const LINK_BLUE: Rgb = Rgb::new(0, 80, 180);
 
 /// Copyable / clickable value foreground on a *dark* dialog surface. Used by
-/// every "Debug info" row whose value can be clicked to copy (paths, IDs) so
-/// the affordance reads identically across the console, launch cockpit, and
-/// capsule. Cyan, not blue: distinct from the brand-green focus colour and
+/// every detail row whose value can be clicked to copy (paths, IDs). Cyan is
+/// distinct from the focus colour and
 /// readable on the black dialog backdrop. Always paired with an underline so
 /// the value reads as a link per the W3C native-link convention.
 pub const LINK_FG: Rgb = Rgb::new(0, 200, 200);
@@ -164,10 +157,7 @@ pub const DEBUG_AMBER: Rgb = Rgb::new(204, 92, 0);
 /// `#ffaa00`
 pub const AMBER: Rgb = Rgb::new(255, 170, 0);
 
-/// Neutral gray for unfocused chrome borders — the in-container multiplexer's
-/// inactive pane border and the host's full-screen non-interactive frames
-/// (the launch cockpit box, the exit summary box) so chrome reads identically
-/// across surfaces and stays out of the way of focused, brand-green content.
+/// Neutral gray for unfocused chrome borders and non-interactive frames.
 pub const BORDER_GRAY: Rgb = Rgb::new(80, 80, 80);
 
 /// Lighter neutral gray used for unfocused scroll thumbs on pane borders.
@@ -182,17 +172,17 @@ pub const DANGER_RED: Rgb = Rgb::new(255, 94, 122);
 /// Status-tab blocked glyph: saturated red reserved for "waiting for operator".
 pub const STATUS_BLOCKED_RED: Rgb = Rgb::new(255, 60, 60);
 
-/// Capsule menu button background, idle state.
-pub const CAPSULE_MENU_IDLE_BG: Rgb = Rgb::new(18, 70, 130);
+/// Menu button background, idle state.
+pub const MENU_IDLE_BG: Rgb = Rgb::new(18, 70, 130);
 
-/// Capsule menu button background while pointer-hovered.
-pub const CAPSULE_MENU_IDLE_HOVER_BG: Rgb = Rgb::new(32, 92, 158);
+/// Menu button background while pointer-hovered.
+pub const MENU_IDLE_HOVER_BG: Rgb = Rgb::new(32, 92, 158);
 
-/// Capsule menu button background while the prefix key is awaiting a command.
-pub const CAPSULE_MENU_AWAITING_BG: Rgb = Rgb::new(96, 180, 255);
+/// Menu button background while awaiting a command.
+pub const MENU_AWAITING_BG: Rgb = Rgb::new(96, 180, 255);
 
-/// Capsule menu button background for hovered awaiting state.
-pub const CAPSULE_MENU_AWAITING_HOVER_BG: Rgb = Rgb::new(132, 202, 255);
+/// Menu button background for hovered awaiting state.
+pub const MENU_AWAITING_HOVER_BG: Rgb = Rgb::new(132, 202, 255);
 
 /// Live / active state indicator (cyan). Shared between the editor's
 /// running-instance status badge and any other "this is live" cue.

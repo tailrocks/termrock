@@ -6,7 +6,7 @@
 //! `tui-scrollbar` owns proportional metrics and pointer interaction math.
 //! Consumers own rendering, so this module exposes small helpers that convert
 //! those metrics into the full-cell thumbs and clamped offsets used by the
-//! host console, launch progress overlay, and capsule renderer.
+//! terminal surfaces and renderers.
 //!
 //! `TailScroll` + the `is_scrollable` / `max_line_width` / `max_offset`
 //! helpers are reimplemented from the donor compatibility layer and owned here.

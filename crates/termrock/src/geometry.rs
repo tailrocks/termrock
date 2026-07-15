@@ -19,11 +19,11 @@ pub struct TabCell<'a> {
 }
 
 /// Single space between adjacent tab cells. Console TUI and
-/// jackin-capsule both follow this spacing.
+/// terminal tab surfaces follow this spacing.
 pub const TAB_GAP: u16 = 1;
 
 /// One footer-hint span — the single hint vocabulary shared by every TUI
-/// surface (host cockpit, workspace manager, in-container multiplexer). Each
+/// terminal surface. Each
 /// backend has its own renderer over these spans, but the vocabulary and
 /// styling rule are one: `Key` white + bold, `Text`/`Dyn` phosphor green /
 /// dim, `Sep` a gray dot, `GroupSep` a wide gap.
@@ -282,22 +282,6 @@ pub fn sanitize_terminal_title(title: &str) -> String {
     out
 }
 
-/// Title-case display name for an agent slug. Mirrors the console
-/// TUI's `agent_picker_label` so both surfaces use the same casing.
-/// Returns `None` for unrecognised slugs so callers can fall back to
-/// the raw slug rather than silently displaying a wrong label.
-#[must_use]
-pub fn agent_display_name(slug: &str) -> Option<&'static str> {
-    match slug {
-        "claude" => Some("Claude"),
-        "codex" => Some("Codex"),
-        "amp" => Some("Amp"),
-        "kimi" => Some("Kimi"),
-        "opencode" => Some("OpenCode"),
-        _ => None,
-    }
-}
-
 /// Build a row of `TabCell` descriptors from `(label, active)` pairs,
 /// starting at `start_col`. Used by both consumers to compute
 /// click-region bounds and to know where to paint the active-tab
@@ -328,7 +312,7 @@ pub fn lay_out_tabs<'a>(labels: &[(&'a str, bool)], start_col: u16) -> Vec<TabCe
 }
 
 /// Index of the tab cell whose column range contains `col`, if any. Shared
-/// by every tab strip (console editor/settings, in-container status bar) so
+/// by every tab strip so
 /// click and hover hit-testing resolve the same tab as `lay_out_tabs`
 /// painted — no surface re-derives the column maths. `col` and the cells'
 /// `start_col` are in the same 0-based column space.

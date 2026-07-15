@@ -15,7 +15,7 @@ use crate::scroll::ScrollAxes;
 // ── Neutral logical key ──────────────────────────────────────────────────────
 
 /// Platform-neutral key identity. Both the crossterm surfaces (host, launch) and
-/// the capsule's raw-byte parser produce and match this type, so a single
+/// raw-byte parsers produce and match this type, so a single
 /// [`Keymap`] covers all surfaces.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LogicalKey {
@@ -368,13 +368,12 @@ impl<A: Copy + PartialEq + 'static> Keymap<A> {
     }
 }
 
-// ── Capsule raw-byte → chord ─────────────────────────────────────────────────
+// ── Raw bytes → chord ────────────────────────────────────────────────────────
 
-/// Convert a raw PTY byte sequence from the capsule's input parser into a
-/// [`KeyChord`] so the capsule can dispatch through the same [`Keymap`] tables
+/// Convert a raw PTY byte sequence into a [`KeyChord`] for dispatch through [`Keymap`]
 /// as the crossterm surfaces.
 ///
-/// Covers the subset of VT100 / xterm sequences the capsule actively uses:
+/// Covers the supported subset of VT100 / xterm sequences:
 /// printable ASCII, the common control bytes (`Ctrl+C`, `Ctrl+Q`, `Ctrl+\`,
 /// `Ctrl+L`, `Ctrl+H`), Enter, Esc, Tab, and CSI / SS3 cursor-key sequences in
 /// both legacy form (`\x1b[A-D`, `\x1bOA-D`) and kitty-extended form for
