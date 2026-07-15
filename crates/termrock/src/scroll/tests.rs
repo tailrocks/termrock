@@ -181,3 +181,36 @@ fn mouse_scroll_delta_honors_visible_axes() {
         })
     );
 }
+
+#[test]
+fn dialog_scroll_handles_keys_and_clamps_to_viewport() {
+    use crate::input::{KeyCode, KeyEvent, KeyModifiers};
+
+    let mut scroll = DialogScroll::new();
+    let axes = ScrollAxes {
+        vertical: true,
+        horizontal: true,
+    };
+    assert!(scroll.handle_key_for_axes(
+        KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE),
+        12,
+        5,
+        20,
+        8,
+        axes,
+    ));
+    assert_eq!(scroll.y, 5);
+    assert!(scroll.handle_key_for_axes(
+        KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+        12,
+        5,
+        20,
+        8,
+        axes,
+    ));
+    assert_eq!(scroll.x, 1);
+    scroll.x = u16::MAX;
+    scroll.y = u16::MAX;
+    scroll.clamp(12, 5, 20, 8);
+    assert_eq!((scroll.x, scroll.y), (12, 7));
+}

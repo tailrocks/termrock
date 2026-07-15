@@ -111,6 +111,113 @@ pub struct ScrollDelta {
     pub amount: i16,
 }
 
+/// Two-axis scroll state for dialog bodies and other bounded viewports.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DialogScroll {
+    pub x: u16,
+    pub y: u16,
+}
+
+impl DialogScroll {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self { x: 0, y: 0 }
+    }
+
+    pub fn handle_key(
+        &mut self,
+        key: crate::input::KeyEvent,
+        content_height: usize,
+        viewport_height: usize,
+        content_width: usize,
+        viewport_width: usize,
+    ) -> bool {
+        self.handle_key_for_axes(
+            key,
+            content_height,
+            viewport_height,
+            content_width,
+            viewport_width,
+            ScrollAxes {
+                vertical: is_scrollable(content_height, viewport_height),
+                horizontal: is_scrollable(content_width, viewport_width),
+            },
+        )
+    }
+
+    pub fn handle_key_for_axes(
+        &mut self,
+        key: crate::input::KeyEvent,
+        content_height: usize,
+        viewport_height: usize,
+        content_width: usize,
+        viewport_width: usize,
+        axes: ScrollAxes,
+    ) -> bool {
+        use crate::input::KeyCode;
+        match key.code {
+            KeyCode::Up | KeyCode::Char('k' | 'K') if axes.vertical => {
+                self.y = self.y.saturating_sub(1);
+            }
+            KeyCode::Down | KeyCode::Char('j' | 'J') if axes.vertical => {
+                self.y = self
+                    .y
+                    .saturating_add(1)
+                    .min(max_offset_u16(content_height, viewport_height));
+            }
+            KeyCode::PageUp if axes.vertical => {
+                self.y = self
+                    .y
+                    .saturating_sub(viewport_height.min(u16::MAX as usize) as u16);
+            }
+            KeyCode::PageDown if axes.vertical => {
+                self.y = self
+                    .y
+                    .saturating_add(viewport_height.min(u16::MAX as usize) as u16)
+                    .min(max_offset_u16(content_height, viewport_height));
+            }
+            KeyCode::Left | KeyCode::Char('h' | 'H') if axes.horizontal => {
+                self.x = self.x.saturating_sub(1);
+            }
+            KeyCode::Right | KeyCode::Char('l' | 'L') if axes.horizontal => {
+                self.x = self
+                    .x
+                    .saturating_add(1)
+                    .min(max_offset_u16(content_width, viewport_width));
+            }
+            _ => return false,
+        }
+        true
+    }
+
+    pub fn handle_mouse(
+        &mut self,
+        kind: crate::input::MouseEventKind,
+        modifiers: crate::input::KeyModifiers,
+        axes: ScrollAxes,
+    ) -> bool {
+        let Some(delta) = mouse_scroll_delta(kind, modifiers, axes) else {
+            return false;
+        };
+        match delta.axis {
+            ScrollAxis::Vertical => apply_delta_unclamped_u16(&mut self.y, delta.amount),
+            ScrollAxis::Horizontal => apply_delta_unclamped_u16(&mut self.x, delta.amount),
+        }
+        true
+    }
+
+    pub fn clamp(
+        &mut self,
+        content_height: usize,
+        viewport_height: usize,
+        content_width: usize,
+        viewport_width: usize,
+    ) {
+        self.y = self.y.min(max_offset_u16(content_height, viewport_height));
+        self.x = self.x.min(max_offset_u16(content_width, viewport_width));
+    }
+}
+
 /// Full-cell thumb geometry for jackin-owned renderers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FullCellThumb {
