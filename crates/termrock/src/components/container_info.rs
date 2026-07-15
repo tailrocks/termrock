@@ -12,12 +12,12 @@ use ratatui::{
 };
 
 use crate::ModalOutcome;
-use crate::ansi;
 use crate::components::dialog_layout::{
     DialogBodyScroll, DialogBorder, render_dialog_shell, render_scrollable_dialog_body,
 };
 use crate::components::panel::{Panel, PanelFocus};
 use crate::components::scrollable_panel::effective_offset;
+use crate::osc as ansi;
 use crate::theme::{LINK_FG, LINK_FG_HOVER, PHOSPHOR_DARK, PHOSPHOR_GREEN, WHITE};
 
 /// Body line indent (matches the canonical dialog content padding).

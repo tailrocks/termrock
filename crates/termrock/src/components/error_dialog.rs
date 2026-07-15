@@ -14,8 +14,8 @@ use super::dialog_layout::{
     DialogBodyScroll, DialogBorder, dialog_inner_chunks, render_dialog_shell,
     render_scrollable_dialog_body,
 };
-use crate::ansi;
 use crate::keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Visibility};
+use crate::osc as ansi;
 use crate::theme::{LINK_FG, PHOSPHOR_DARK, PHOSPHOR_GREEN, WHITE};
 use crate::{HintSpan, ModalOutcome, centered_rect};
 

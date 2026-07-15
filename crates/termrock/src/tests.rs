@@ -116,7 +116,7 @@ fn encode_osc52_clipboard_write_uses_bel_terminated_base64_framing() {
     // nothing on the operator's terminal.
     use base64::Engine as _;
     let payload = "jk-run-42f9aa";
-    let bytes = ansi::encode_osc52_clipboard_write(payload);
+    let bytes = osc::encode_osc52_clipboard_write(payload);
     let encoded = base64::engine::general_purpose::STANDARD.encode(payload.as_bytes());
     let mut expected = Vec::new();
     expected.extend_from_slice(b"\x1b]52;c;");
@@ -129,7 +129,7 @@ fn encode_osc52_clipboard_write_uses_bel_terminated_base64_framing() {
 fn encode_osc52_clipboard_write_handles_empty_payload() {
     // Empty payloads still produce a well-formed OSC 52 sequence with an
     // empty base64 body; the terminal interprets that as "clear".
-    let bytes = ansi::encode_osc52_clipboard_write("");
+    let bytes = osc::encode_osc52_clipboard_write("");
     assert_eq!(bytes, b"\x1b]52;c;\x07");
 }
 
@@ -143,11 +143,11 @@ fn pointer_shape_osc22_names_are_shared() {
     assert_eq!(PointerShape::Grabbing.as_osc22_name(), "grabbing");
     assert_eq!(
         osc22_pointer_shape(PointerShape::Pointer),
-        ansi::POINTER_HAND
+        osc::POINTER_HAND
     );
     assert_eq!(
         osc22_pointer_shape(PointerShape::Default),
-        ansi::POINTER_DEFAULT
+        osc::POINTER_DEFAULT
     );
 }
 
@@ -221,60 +221,4 @@ fn fixed_prefix_scroll_segments_keep_combining_mark_with_base() {
         .collect();
 
     assert!(rendered.contains(&"e\u{301}"));
-}
-
-#[test]
-fn version_splash_has_mark_version_byline_under_six_lines() {
-    let s = ansi::version_splash("9.9.9");
-    assert!(s.contains("jackin"));
-    assert!(s.contains("9.9.9"));
-    assert!(s.contains("by tailrocks"));
-    // Green block + white chevron (never the same colour as the word).
-    assert!(s.contains("\x1b[48;2;0;255;65m"));
-    assert!(s.contains("\x1b[38;2;255;255;255m"));
-    assert!(s.lines().count() <= 6, "version splash exceeds six lines");
-}
-
-#[test]
-#[expect(
-    clippy::excessive_nesting,
-    reason = "Test that walks every char of the banner output verifying \
-                  determinism + width + phosphor-prefix — the nested `if ch == ESC` \
-                  + `for c in chars` loop is the ANSI-stripping logic the test \
-                  depends on."
-)]
-fn help_banner_is_deterministic_bounded_phosphor() {
-    fn visible_cols(line: &str) -> usize {
-        let mut n = 0;
-        let mut chars = line.chars();
-        while let Some(ch) = chars.next() {
-            if ch == '\x1b' {
-                for c in chars.by_ref() {
-                    if c == 'm' {
-                        break;
-                    }
-                }
-            } else {
-                n += 1;
-            }
-        }
-        n
-    }
-
-    let a = ansi::help_banner(80);
-    // Deterministic: identical bytes for the same width on every call.
-    assert_eq!(a, ansi::help_banner(80));
-    // Centered lockup: the green block, the word, and the byline.
-    assert!(a.contains("\x1b[48;2;0;255;65m"));
-    assert!(a.contains("jackin"));
-    assert!(a.contains("by tailrocks"));
-    // Phosphor rain present (not a blank field).
-    assert!(a.contains("\x1b[38;2;0;255;65m"));
-    // Bounded so it never wraps the terminal it was sized for.
-    for line in a.lines() {
-        assert!(
-            visible_cols(line) <= 80,
-            "help banner line exceeds terminal width: {line:?}"
-        );
-    }
 }

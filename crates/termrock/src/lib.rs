@@ -3,8 +3,6 @@
 //! **Architecture Invariant:** T1.
 //! Entry point: [`Theme`] — shared TUI theme tokens.
 
-pub mod animation;
-pub mod ansi;
 pub mod ansi_text;
 pub mod components;
 pub mod geometry;
@@ -12,7 +10,7 @@ pub mod input;
 pub mod interaction;
 pub mod keymap;
 pub mod layout;
-pub mod output;
+pub mod osc;
 pub mod scroll;
 pub mod style;
 pub mod text;
@@ -61,13 +59,6 @@ impl Rgb {
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
-}
-
-/// Adapt an [`Rgb`] token to the `owo_colors` raw-ANSI colour type used by the
-/// stderr output, spinner, and animation helpers across every surface crate.
-#[must_use]
-pub fn owo_rgb(rgb: Rgb) -> owo_colors::Rgb {
-    owo_colors::Rgb(rgb.r, rgb.g, rgb.b)
 }
 
 /// `--jk-brand` — the bright phosphor green used for selection
