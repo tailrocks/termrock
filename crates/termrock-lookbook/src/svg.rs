@@ -217,35 +217,26 @@ fn buffer_to_svg(buffer: &Buffer, title: &str) -> String {
     out
 }
 
-fn color_to_css(color: Color) -> &'static str {
+fn color_to_css(color: Color) -> String {
     match color {
-        Color::Black => "#000000",
-        Color::Red => "#ff0000",
-        Color::Green => "#00ff41",
-        Color::Yellow => "#ffd85e",
-        Color::Blue => "#0050b4",
-        Color::Magenta => "#ff00ff",
-        Color::Cyan => "#00ffff",
-        Color::Gray | Color::DarkGray => "#808080",
-        Color::LightRed => "#ff5e7a",
-        Color::LightGreen => "#00ff41",
-        Color::LightYellow => "#ffd85e",
-        Color::LightBlue => "#7aa2ff",
-        Color::LightMagenta => "#ff7aff",
-        Color::LightCyan => "#7affff",
-        Color::White => "#ffffff",
-        Color::Rgb(0, 255, 65) => "#00ff41",
-        Color::Rgb(0, 140, 30) => "#008c1e",
-        Color::Rgb(0, 80, 18) => "#005012",
-        Color::Rgb(255, 94, 122) => "#ff5e7a",
-        Color::Rgb(255, 216, 94) => "#ffd85e",
-        Color::Rgb(0, 80, 180) => "#0050b4",
-        Color::Rgb(204, 92, 0) => "#cc5c00",
-        Color::Rgb(80, 80, 80) => "#505050",
-        Color::Rgb(28, 28, 28) => "#1c1c1c",
-        Color::Rgb(180, 180, 180) => "#b4b4b4",
-        Color::Reset => "#000000",
-        Color::Rgb(_, _, _) | Color::Indexed(_) => "#ffffff",
+        Color::Black => "#000000".into(),
+        Color::Red => "#ff0000".into(),
+        Color::Green => "#00ff41".into(),
+        Color::Yellow => "#ffd85e".into(),
+        Color::Blue => "#0050b4".into(),
+        Color::Magenta => "#ff00ff".into(),
+        Color::Cyan => "#00ffff".into(),
+        Color::Gray | Color::DarkGray => "#808080".into(),
+        Color::LightRed => "#ff5e7a".into(),
+        Color::LightGreen => "#00ff41".into(),
+        Color::LightYellow => "#ffd85e".into(),
+        Color::LightBlue => "#7aa2ff".into(),
+        Color::LightMagenta => "#ff7aff".into(),
+        Color::LightCyan => "#7affff".into(),
+        Color::White => "#ffffff".into(),
+        Color::Rgb(r, g, b) => format!("#{r:02x}{g:02x}{b:02x}"),
+        Color::Reset => "#000000".into(),
+        Color::Indexed(_) => "#ffffff".into(),
     }
 }
 
@@ -255,6 +246,16 @@ fn escape_xml(value: &str) -> String {
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&quot;")
+}
+
+#[cfg(test)]
+mod color_tests {
+    use super::*;
+
+    #[test]
+    fn arbitrary_rgb_is_serialized_without_palette_table() {
+        assert_eq!(color_to_css(Color::Rgb(1, 35, 255)), "#0123ff");
+    }
 }
 
 /// Render a story's buffer to plain text (for debugging / snapshot tests).
