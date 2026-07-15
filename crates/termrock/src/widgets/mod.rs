@@ -18,7 +18,7 @@ pub use detail_table::{
 };
 pub use dialog::{Backdrop, ChoiceDialog, Dialog, DialogAction, MessageDialog};
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
-pub use hint_bar::{Hint, HintBar};
+pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans};
 pub use list::{List, ListOutcome, ListRow, ListState, RowRole};
 pub use panel::{Panel, PanelEmphasis};
 pub use status_bar::{StatusBar, StatusSlot};
