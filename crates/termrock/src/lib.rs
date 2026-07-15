@@ -4,23 +4,18 @@
 //! Entry point: [`Theme`] — shared TUI theme tokens.
 
 pub mod animation;
+pub mod ansi;
 pub mod ansi_text;
 pub mod components;
 pub mod geometry;
-pub mod host_colors;
 pub mod input;
 pub mod interaction;
 pub mod keymap;
 pub mod layout;
 pub mod output;
-pub mod ownership;
-pub mod prune_output;
-pub mod runtime;
 pub mod scroll;
 pub mod style;
-pub mod terminal_modes;
 pub mod text;
-pub mod url_text;
 
 pub use style as theme;
 
@@ -229,9 +224,6 @@ pub const WARNING_YELLOW: Rgb = Rgb::new(255, 216, 94);
 /// pure black and the phosphor-dark panel borders so components have a
 /// distinct bounded backdrop without the green tint of `PHOSPHOR_DARK`.
 pub const PREVIEW_CARD: Rgb = Rgb::new(28, 28, 28);
-
-/// Shared ANSI helpers.
-pub mod ansi;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PointerShape {
