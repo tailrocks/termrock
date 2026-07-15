@@ -36,6 +36,26 @@ impl<Id: Clone> StatusBar<'_, Id> {
             });
             x = x.saturating_add(width);
         }
+        let mut right = area.right();
+        for slot in self.right.iter().rev().filter(|slot| slot.enabled) {
+            let width = slot
+                .content
+                .chars()
+                .count()
+                .max(slot.min_width as usize)
+                .min(u16::MAX as usize) as u16;
+            let start = right.saturating_sub(width).max(area.x);
+            regions.push(HitRegion {
+                id: slot.id.clone(),
+                area: Rect::new(
+                    start,
+                    area.y,
+                    right.saturating_sub(start),
+                    area.height.min(1),
+                ),
+            });
+            right = start;
+        }
         regions
     }
 }
@@ -43,7 +63,12 @@ impl<Id: Clone> StatusBar<'_, Id> {
 impl<Id: Clone + PartialEq> Widget for &StatusBar<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         for region in self.regions(area) {
-            if let Some(slot) = self.left.iter().find(|slot| slot.id == region.id) {
+            if let Some(slot) = self
+                .left
+                .iter()
+                .chain(self.right)
+                .find(|slot| slot.id == region.id)
+            {
                 buffer.set_stringn(
                     region.area.x,
                     region.area.y,

@@ -52,17 +52,31 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         {
             let rect = Rect::new(area.x, area.y.saturating_add(visible as u16), area.width, 1);
             let selected = state.selected.as_ref() == Some(&row.id);
-            let style = if selected {
+            let style = if !row.enabled {
+                ratatui_core::style::Style::new().dim()
+            } else if selected {
                 ratatui_core::style::Style::new().reversed()
             } else {
                 ratatui_core::style::Style::new()
             };
-            buffer.set_line(rect.x, rect.y, &row.label, rect.width);
+            if row.role == RowRole::Separator {
+                buffer.set_stringn(
+                    rect.x,
+                    rect.y,
+                    "─".repeat(rect.width as usize),
+                    rect.width as usize,
+                    style,
+                );
+            } else {
+                buffer.set_line(rect.x, rect.y, &row.label, rect.width);
+            }
             buffer.set_style(rect, style);
-            state.regions.push(HitRegion {
-                id: row.id.clone(),
-                area: rect,
-            });
+            if row.enabled && row.role == RowRole::Item {
+                state.regions.push(HitRegion {
+                    id: row.id.clone(),
+                    area: rect,
+                });
+            }
         }
     }
 }
