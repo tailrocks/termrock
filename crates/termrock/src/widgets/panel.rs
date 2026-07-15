@@ -1,5 +1,5 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget};
-use ratatui_widgets::block::Block;
+use ratatui_widgets::{block::Block, borders::BorderType};
 
 use crate::style::{Role, Theme};
 
@@ -24,8 +24,13 @@ impl Widget for &Panel<'_> {
         } else {
             Role::Border
         };
-        let mut block =
-            Block::bordered().border_style(self.style.unwrap_or(self.theme.style(role)));
+        let mut block = Block::bordered()
+            .border_type(if self.emphasis == PanelEmphasis::Focused {
+                BorderType::Double
+            } else {
+                BorderType::Plain
+            })
+            .border_style(self.style.unwrap_or(self.theme.style(role)));
         if let Some(title) = self.title {
             block = block.title(title);
         }

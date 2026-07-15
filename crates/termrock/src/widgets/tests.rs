@@ -58,6 +58,21 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 }
 
 #[test]
+fn focused_panel_has_a_non_color_border_cue() {
+    let theme = Theme::default();
+    let area = Rect::new(0, 0, 10, 3);
+    let mut buffer = Buffer::empty(area);
+    let panel = Panel {
+        title: None,
+        emphasis: PanelEmphasis::Focused,
+        style: None,
+        theme: &theme,
+    };
+    (&panel).render(area, &mut buffer);
+    assert_eq!(buffer[(0, 0)].symbol(), "╔");
+}
+
+#[test]
 fn stable_ids_survive_reordering() {
     let first = [
         ListRow {

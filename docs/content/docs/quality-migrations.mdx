@@ -1,0 +1,11 @@
+---
+title: Quality migrations
+---
+
+## Display-column measurement
+
+Widget geometry now measures Unicode display columns instead of scalar-value counts. CJK, combining marks, emoji sequences, and regional indicators no longer drift from painted hit regions.
+
+## Focused panel cue
+
+Focused panels use a double border in addition to the semantic focus color. This makes focus observable without color perception while retaining caller style overrides.
