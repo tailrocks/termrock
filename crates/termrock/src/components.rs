@@ -7,6 +7,7 @@ pub mod diff_view;
 pub mod error_dialog;
 pub mod filter_input;
 pub mod focus_owner;
+pub mod hint_bar;
 pub mod hover_tracker;
 pub mod modal_backdrop;
 pub mod modal_lifecycle;
@@ -15,6 +16,7 @@ pub mod save_discard_dialog;
 pub mod scrollable_panel;
 pub mod select_list;
 pub mod status_popup;
+pub mod tab_strip;
 pub mod text_input;
 
 pub use button_strip::{
@@ -41,6 +43,10 @@ pub use error_dialog::{
 };
 pub use filter_input::{FilterInput, filter_input_line, render_filter_input};
 pub use focus_owner::{ButtonFocus, FocusOwner};
+pub use hint_bar::{
+    HintBar, line as hint_line, render_hint_bar, render_wrapped_hint_bar, styled_hint_spans,
+    wrapped_height, wrapped_lines,
+};
 pub use hover_tracker::HoverTracker;
 pub use modal_backdrop::ModalBackdrop;
 pub use modal_lifecycle::{ModalClickResult, ModalStack, classify_click, render_backdrop};
@@ -65,6 +71,7 @@ pub use select_list::{
     render_picker_list, render_select_list, select_list_hint_spans,
 };
 pub use status_popup::{StatusPopupState, render_status_popup};
+pub use tab_strip::{TabStrip, tab_cell_style, tab_label_line, tab_underline_line};
 pub use text_input::{
     BorderStyle, TEXT_INPUT_KEYMAP, TextField, TextInputAction, TextInputState,
     render_labeled_text_input_dialog, render_text_input, text_input_hint_spans,
