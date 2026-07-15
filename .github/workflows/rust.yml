@@ -25,3 +25,16 @@ jobs:
       - uses: jdx/mise-action@v2
       - run: cargo check -p termrock --features crossterm --all-targets --locked
       - run: cargo test -p termrock --features crossterm --locked
+  semver-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: jdx/mise-action@v2
+      - name: Compare with the first API baseline
+        run: |
+          if git rev-parse --verify refs/tags/v0.6.0 >/dev/null 2>&1; then
+            cargo semver-checks check-release -p termrock --baseline-rev v0.6.0
+          else
+            echo 'v0.6.0 baseline is created after the final bootstrap checkpoint'
+          fi
