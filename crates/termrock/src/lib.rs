@@ -17,6 +17,7 @@ pub mod text;
 pub mod widgets;
 
 pub use style as theme;
+pub use style::Theme;
 
 pub use components::text_input::TextField;
 pub use components::{

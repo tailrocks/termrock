@@ -207,14 +207,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     write_svgs(PathBuf::from(first))
 }
 
-#[expect(
+#[allow(
     clippy::too_many_lines,
     reason = "Lookbook binary's terminal-driver fn: runs the story catalog loop \
               that mounts each story as the active pane and dispatches key \
               events. Single-binary entry point — the inline shape is the \
               canonical lookbook runner."
 )]
-#[expect(
+#[allow(
     clippy::excessive_nesting,
     reason = "Same as too_many_lines: per-event / per-pane nested dispatch \
               through the catalog loop. Per-region helpers would obscure the \
