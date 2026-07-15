@@ -114,14 +114,17 @@ pub struct ScrollDelta {
 /// Two-axis scroll state for dialog bodies and other bounded viewports.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DialogScroll {
-    pub x: u16,
-    pub y: u16,
+    pub scroll_x: u16,
+    pub scroll_y: u16,
 }
 
 impl DialogScroll {
     #[must_use]
     pub const fn new() -> Self {
-        Self { x: 0, y: 0 }
+        Self {
+            scroll_x: 0,
+            scroll_y: 0,
+        }
     }
 
     pub fn handle_key(
@@ -157,31 +160,31 @@ impl DialogScroll {
         use crate::input::KeyCode;
         match key.code {
             KeyCode::Up | KeyCode::Char('k' | 'K') if axes.vertical => {
-                self.y = self.y.saturating_sub(1);
+                self.scroll_y = self.scroll_y.saturating_sub(1);
             }
             KeyCode::Down | KeyCode::Char('j' | 'J') if axes.vertical => {
-                self.y = self
-                    .y
+                self.scroll_y = self
+                    .scroll_y
                     .saturating_add(1)
                     .min(max_offset_u16(content_height, viewport_height));
             }
             KeyCode::PageUp if axes.vertical => {
-                self.y = self
-                    .y
+                self.scroll_y = self
+                    .scroll_y
                     .saturating_sub(viewport_height.min(u16::MAX as usize) as u16);
             }
             KeyCode::PageDown if axes.vertical => {
-                self.y = self
-                    .y
+                self.scroll_y = self
+                    .scroll_y
                     .saturating_add(viewport_height.min(u16::MAX as usize) as u16)
                     .min(max_offset_u16(content_height, viewport_height));
             }
             KeyCode::Left | KeyCode::Char('h' | 'H') if axes.horizontal => {
-                self.x = self.x.saturating_sub(1);
+                self.scroll_x = self.scroll_x.saturating_sub(1);
             }
             KeyCode::Right | KeyCode::Char('l' | 'L') if axes.horizontal => {
-                self.x = self
-                    .x
+                self.scroll_x = self
+                    .scroll_x
                     .saturating_add(1)
                     .min(max_offset_u16(content_width, viewport_width));
             }
@@ -200,8 +203,8 @@ impl DialogScroll {
             return false;
         };
         match delta.axis {
-            ScrollAxis::Vertical => apply_delta_unclamped_u16(&mut self.y, delta.amount),
-            ScrollAxis::Horizontal => apply_delta_unclamped_u16(&mut self.x, delta.amount),
+            ScrollAxis::Vertical => apply_delta_unclamped_u16(&mut self.scroll_y, delta.amount),
+            ScrollAxis::Horizontal => apply_delta_unclamped_u16(&mut self.scroll_x, delta.amount),
         }
         true
     }
@@ -213,8 +216,12 @@ impl DialogScroll {
         content_width: usize,
         viewport_width: usize,
     ) {
-        self.y = self.y.min(max_offset_u16(content_height, viewport_height));
-        self.x = self.x.min(max_offset_u16(content_width, viewport_width));
+        self.scroll_y = self
+            .scroll_y
+            .min(max_offset_u16(content_height, viewport_height));
+        self.scroll_x = self
+            .scroll_x
+            .min(max_offset_u16(content_width, viewport_width));
     }
 }
 

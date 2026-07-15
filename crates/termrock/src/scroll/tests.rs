@@ -199,7 +199,7 @@ fn dialog_scroll_handles_keys_and_clamps_to_viewport() {
         8,
         axes,
     ));
-    assert_eq!(scroll.y, 5);
+    assert_eq!(scroll.scroll_y, 5);
     assert!(scroll.handle_key_for_axes(
         KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
         12,
@@ -208,9 +208,9 @@ fn dialog_scroll_handles_keys_and_clamps_to_viewport() {
         8,
         axes,
     ));
-    assert_eq!(scroll.x, 1);
-    scroll.x = u16::MAX;
-    scroll.y = u16::MAX;
+    assert_eq!(scroll.scroll_x, 1);
+    scroll.scroll_x = u16::MAX;
+    scroll.scroll_y = u16::MAX;
     scroll.clamp(12, 5, 20, 8);
-    assert_eq!((scroll.x, scroll.y), (12, 7));
+    assert_eq!((scroll.scroll_x, scroll.scroll_y), (12, 7));
 }
