@@ -22,6 +22,31 @@ pub struct DialogSpec {
     pub placement: Placement,
 }
 
+/// Resolve a dialog specification inside `outer` without assuming a rendering backend.
+#[must_use]
+pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
+    let available_width = outer.width.saturating_sub(spec.margin);
+    let available_height = outer.height.saturating_sub(spec.margin);
+    let width = spec
+        .preferred_width
+        .clamp(spec.min_width, spec.max_width.max(spec.min_width))
+        .min(available_width.max(spec.min_width));
+    let height = spec
+        .preferred_height
+        .clamp(spec.min_height, spec.max_height.max(spec.min_height))
+        .min(available_height.max(spec.min_height));
+    let x = outer
+        .x
+        .saturating_add(outer.width.saturating_sub(width) / 2);
+    let y = match spec.placement {
+        Placement::Centered => outer
+            .y
+            .saturating_add(outer.height.saturating_sub(height) / 2),
+        Placement::Top => outer.y,
+    };
+    Rect::new(x, y, width, height)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Slots {
     pub body: Rect,
@@ -45,5 +70,46 @@ impl Slots {
                 bottom_height,
             ),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dialog_resolution_centers_and_honors_margins() {
+        let rect = resolve_dialog(
+            Rect::new(10, 5, 100, 30),
+            DialogSpec {
+                min_width: 40,
+                preferred_width: 60,
+                max_width: 80,
+                min_height: 8,
+                preferred_height: 20,
+                max_height: 24,
+                margin: 4,
+                placement: Placement::Centered,
+            },
+        );
+        assert_eq!(rect, Rect::new(30, 10, 60, 20));
+    }
+
+    #[test]
+    fn top_dialog_keeps_the_outer_origin() {
+        let rect = resolve_dialog(
+            Rect::new(7, 3, 20, 10),
+            DialogSpec {
+                min_width: 8,
+                preferred_width: 12,
+                max_width: 16,
+                min_height: 4,
+                preferred_height: 6,
+                max_height: 8,
+                margin: 0,
+                placement: Placement::Top,
+            },
+        );
+        assert_eq!(rect, Rect::new(11, 3, 12, 6));
     }
 }
