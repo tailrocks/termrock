@@ -105,3 +105,77 @@ pub fn faded(color: Color, alpha: f32) -> Color {
         other => other,
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Role {
+    Canvas,
+    Surface,
+    Elevated,
+    Backdrop,
+    Text,
+    TextMuted,
+    TextDisabled,
+    Border,
+    BorderFocused,
+    Selection,
+    Focus,
+    Accent,
+    Success,
+    Warning,
+    Danger,
+    Info,
+    Link,
+    LinkHover,
+    Input,
+    InputInvalid,
+    ScrollTrack,
+    ScrollThumb,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Theme {
+    roles: [Style; 22],
+}
+
+impl Theme {
+    #[must_use]
+    pub fn tailrocks_phosphor() -> Self {
+        Self {
+            roles: [
+                Style::new(),
+                Style::new(),
+                Style::new(),
+                Style::new(),
+                BOLD_WHITE,
+                DIM,
+                Style::new().fg(BORDER_GRAY),
+                BORDER,
+                GREEN,
+                Style::new().bg(PHOSPHOR_GREEN).fg(INK),
+                GREEN,
+                GREEN,
+                GREEN,
+                Style::new().fg(WARNING_YELLOW),
+                DANGER,
+                Style::new().fg(CYAN),
+                Style::new().fg(LINK_FG),
+                Style::new().fg(LINK_FG_HOVER),
+                Style::new().bg(INPUT_BG_DIM),
+                Style::new().bg(INPUT_BG_DIM).fg(DANGER_RED),
+                Style::new().fg(DIALOG_SCROLL_TRACK),
+                Style::new().fg(DIALOG_SCROLL_THUMB),
+            ],
+        }
+    }
+
+    #[must_use]
+    pub const fn style(&self, role: Role) -> Style {
+        self.roles[role as usize]
+    }
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self::tailrocks_phosphor()
+    }
+}

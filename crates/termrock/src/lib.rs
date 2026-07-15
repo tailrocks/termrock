@@ -8,15 +8,21 @@ pub mod ansi_text;
 pub mod components;
 pub mod geometry;
 pub mod host_colors;
+pub mod input;
+pub mod interaction;
 pub mod keymap;
+pub mod layout;
 pub mod output;
 pub mod ownership;
 pub mod prune_output;
 pub mod runtime;
 pub mod scroll;
+pub mod style;
 pub mod terminal_modes;
-pub mod theme;
+pub mod text;
 pub mod url_text;
+
+pub use style as theme;
 
 pub use components::text_input::TextField;
 pub use components::{
