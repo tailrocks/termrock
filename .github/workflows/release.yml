@@ -1,0 +1,21 @@
+name: Release
+on: { workflow_dispatch: { inputs: { tag: { required: true, type: string } } } }
+concurrency: { group: release, cancel-in-progress: false }
+permissions: { contents: write }
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: jdx/mise-action@v2
+      - run: test "v$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="termrock") | .version')" = "${{ inputs.tag }}"
+      - run: cargo test --workspace --all-features --locked
+      - run: cargo package -p termrock --locked
+      - working-directory: docs
+        run: bun install --frozen-lockfile && bun run build
+      - run: git tag -a "${{ inputs.tag }}" -m "TermRock ${{ inputs.tag }}"
+      - run: git push origin "${{ inputs.tag }}"
+      - env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh release create "${{ inputs.tag }}" --generate-notes

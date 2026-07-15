@@ -7,5 +7,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
-      - run: RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
+      - working-directory: docs
+        run: bun install --frozen-lockfile
+      - working-directory: docs
+        run: bun run types:check
+      - working-directory: docs
+        run: bun run build
       - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+      - run: rm -rf target/render-a target/render-b
+      - run: cargo run -p termrock-lookbook -- render --out target/render-a >/dev/null
+      - run: cargo run -p termrock-lookbook -- render --out target/render-b >/dev/null
+      - run: diff -r target/render-a target/render-b
