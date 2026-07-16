@@ -9,6 +9,7 @@ jobs:
       - uses: jdx/mise-action@v4
         with: { install: false }
       - run: mise install rust cargo-binstall
+      - run: rustup toolchain install nightly --profile minimal
       - run: mise install
       - uses: Swatinem/rust-cache@v2
       - run: rustup component add rustfmt clippy
