@@ -1,7 +1,7 @@
 schema = 1
-recorded_at = "2026-07-15"
+recorded_at = "2026-07-16"
 release = "v0.6.0"
-termrock_implementation_revision = "41db0be7a6b166200b4b3661b5594a49700b5570"
+termrock_implementation_revision = "8a6f76233a539ed126cda36ee2205656c5a8adc7"
 jackin_implementation_revision = "6549d18be34bbe9a908fda875ae28475821ba42e"
 rust_version_floor = "1.95"
 tested_toolchain = "1.97.0"
@@ -40,3 +40,9 @@ repository = "tailrocks/termrock"
 platform = "macos"
 command = "GitHub required rust-required and docs-required workflows"
 result = "required compatibility contract; canonical SVG generation remains Linux-only"
+
+[[verification]]
+repository = "tailrocks/termrock"
+platform = "macos"
+command = "cargo fmt --all -- --check && cargo clippy --workspace --all-targets --all-features --locked -- -D warnings && cargo test --workspace --all-features --locked && cargo test --doc --workspace --locked && cargo test -p termrock --test tree_hot_path -- --nocapture && cargo semver-checks check-release -p termrock --baseline-rev 41482e9fdb3dff96177410f64a5026016d805ae4 && cargo deny check advisories bans licenses sources && cargo shear --deny-warnings && cargo package -p termrock --locked"
+result = "pass at 8a6f76233a539ed126cda36ee2205656c5a8adc7; 200 workspace tests, including 11/11 Tree suite tests; warmed 10,000-node Tree rendered 100 times in 40.40 ms with zero allocations or reallocations under the 250 ms debug-profile budget"
