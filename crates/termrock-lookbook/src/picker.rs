@@ -47,8 +47,7 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         }
         if self
             .list
-            .selected
-            .as_ref()
+            .selected()
             .is_some_and(|selected| selectable.contains(selected))
         {
             self.previous_visible = selectable;
@@ -56,8 +55,7 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         }
         let fallback = self
             .list
-            .selected
-            .as_ref()
+            .selected()
             .and_then(|selected| self.previous_visible.iter().position(|id| id == selected))
             .unwrap_or(0)
             .min(selectable.len() - 1);
@@ -136,7 +134,11 @@ mod tests {
             let mut state = PickerState::new(selected);
             state.reconcile(&rows(&["alpha", "beta", "gamma"]));
             state.reconcile(&rows(filtered));
-            assert_eq!(state.list.selected, expected, "visible={filtered:?}");
+            assert_eq!(
+                state.list.selected().copied(),
+                expected,
+                "visible={filtered:?}"
+            );
         }
     }
 
@@ -188,7 +190,7 @@ mod tests {
             state.handle_key(&visible, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
             PickerOutcome::SelectionChanged
         );
-        assert_eq!(state.list.selected, Some("beta"));
+        assert_eq!(state.list.selected(), Some(&"beta"));
         assert!(state.query_text().is_empty());
     }
 

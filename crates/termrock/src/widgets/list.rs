@@ -42,22 +42,14 @@ pub struct ListRow<'a, Id> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `List`.
 pub struct ListState<Id> {
-    /// Whether this item is selected.
-    pub selected: Option<Id>,
-    /// Whether this item is hovered.
-    pub hovered: Option<Id>,
-    /// Whether this item is focused.
-    pub focused: bool,
-    /// Offset in terminal cells or rows.
-    pub offset: usize,
-    /// Viewport height in terminal rows.
-    pub viewport_height: usize,
-    /// Hit regions produced by the most recent render.
-    pub regions: Vec<HitRegion<Id>>,
-    /// Ordered checked identities when multi-select is enabled.
-    pub selection: Option<Selection<Id>>,
-    /// Hit regions produced by the most recent render.
-    pub check_regions: Vec<HitRegion<Id>>,
+    selected: Option<Id>,
+    hovered: Option<Id>,
+    focused: bool,
+    offset: usize,
+    viewport_height: usize,
+    regions: Vec<HitRegion<Id>>,
+    selection: Option<Selection<Id>>,
+    check_regions: Vec<HitRegion<Id>>,
 }
 
 impl<Id> Default for ListState<Id> {
@@ -75,7 +67,7 @@ impl<Id> Default for ListState<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> ListState<Id> {
+impl<Id> ListState<Id> {
     #[must_use]
     /// Creates list state with no selection, hover, checks, or scroll.
     pub const fn new(selected: Option<Id>) -> Self {
@@ -94,6 +86,41 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     /// Replace the stable selected identity.
     pub fn select(&mut self, selected: Option<Id>) {
         self.selected = selected;
+    }
+
+    #[must_use]
+    /// Returns the stable identity selected for keyboard interaction.
+    pub const fn selected(&self) -> Option<&Id> {
+        self.selected.as_ref()
+    }
+
+    #[must_use]
+    /// Returns the stable identity currently under the pointer.
+    pub const fn hovered(&self) -> Option<&Id> {
+        self.hovered.as_ref()
+    }
+
+    #[must_use]
+    /// Returns whether the list owns keyboard focus.
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Updates whether the list owns keyboard focus.
+    pub const fn set_focused(&mut self, focused: bool) {
+        self.focused = focused;
+    }
+
+    #[must_use]
+    /// Returns the first visible row index.
+    pub const fn offset(&self) -> usize {
+        self.offset
+    }
+
+    #[must_use]
+    /// Returns the painted item hit regions from the most recent render.
+    pub fn regions(&self) -> &[HitRegion<Id>] {
+        &self.regions
     }
 
     /// Enables ordered multi-selection with an empty selection.
@@ -117,6 +144,38 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         self.selection.as_mut()
     }
 
+    /// Moves the scroll position by a signed delta and clamps it to valid content.
+    pub fn scroll_by(&mut self, delta: isize, rows_len: usize) -> bool {
+        let before = self.offset;
+        let max = max_offset(rows_len, self.viewport_height);
+        self.offset = if delta.is_negative() {
+            self.offset.saturating_sub(delta.unsigned_abs())
+        } else {
+            self.offset.saturating_add(delta.unsigned_abs()).min(max)
+        };
+        before != self.offset
+    }
+
+    /// Scrolls toward a pointer position within the painted viewport.
+    pub fn scroll_to_position(&mut self, position: Position, rows_len: usize) -> bool {
+        if self.viewport_height == 0 || self.regions.is_empty() {
+            return false;
+        }
+        let first = self.regions[0].area;
+        if position.y < first.y {
+            return self.scroll_by(-1, rows_len);
+        }
+        let bottom = first.y.saturating_add(
+            u16::try_from(self.viewport_height.saturating_sub(1)).unwrap_or(u16::MAX),
+        );
+        if position.y > bottom {
+            return self.scroll_by(1, rows_len);
+        }
+        false
+    }
+}
+
+impl<Id: Clone + PartialEq> ListState<Id> {
     /// Handles the `handle_key` interaction.
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
@@ -147,7 +206,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             return Outcome::Ignored;
         };
         selection.toggle(&row.id);
-        Outcome::Changed
+        Outcome::CheckToggled(row.id.clone())
     }
 
     /// Moves selection to the next enabled item, wrapping at the end.
@@ -255,7 +314,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             self.selected = Some(id.clone());
             if let Some(selection) = self.selection.as_mut() {
                 selection.toggle(&id);
-                return Outcome::Changed;
+                return Outcome::CheckToggled(id);
             }
         }
         let Some(region) = self
@@ -267,36 +326,6 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         };
         self.selected = Some(region.id.clone());
         Outcome::Activated(region.id.clone())
-    }
-
-    /// Moves the scroll position by a signed delta and clamps it to valid content.
-    pub fn scroll_by(&mut self, delta: isize, rows_len: usize) -> bool {
-        let before = self.offset;
-        let max = max_offset(rows_len, self.viewport_height);
-        self.offset = if delta.is_negative() {
-            self.offset.saturating_sub(delta.unsigned_abs())
-        } else {
-            self.offset.saturating_add(delta.unsigned_abs()).min(max)
-        };
-        before != self.offset
-    }
-
-    /// Scrolls toward a pointer position within the painted viewport.
-    pub fn scroll_to_position(&mut self, position: Position, rows_len: usize) -> bool {
-        if self.viewport_height == 0 || self.regions.is_empty() {
-            return false;
-        }
-        let first = self.regions[0].area;
-        if position.y < first.y {
-            return self.scroll_by(-1, rows_len);
-        }
-        let bottom = first.y.saturating_add(
-            u16::try_from(self.viewport_height.saturating_sub(1)).unwrap_or(u16::MAX),
-        );
-        if position.y > bottom {
-            return self.scroll_by(1, rows_len);
-        }
-        false
     }
 }
 
@@ -383,7 +412,7 @@ impl ListState<usize> {
 /// let mut state = ListState::new(Some("a"));
 /// let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
 /// assert!(matches!(outcome, Outcome::Changed));
-/// assert_eq!(state.selected, Some("b"));
+/// assert_eq!(state.selected(), Some(&"b"));
 /// ```
 pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
@@ -622,12 +651,12 @@ mod tests {
             state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
             Outcome::Changed
         );
-        assert_eq!(state.selected, Some("first"));
+        assert_eq!(state.selected(), Some(&"first"));
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
             Outcome::Changed
         );
-        assert_eq!(state.selected, Some("second"));
+        assert_eq!(state.selected(), Some(&"second"));
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             Outcome::Activated("second")
@@ -646,8 +675,8 @@ mod tests {
         let area = Rect::new(4, 3, 12, 1);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
-        assert_eq!(state.offset, 3);
-        assert_eq!(state.regions.len(), 1);
+        assert_eq!(state.offset(), 3);
+        assert_eq!(state.regions().len(), 1);
         let position = Position::new(area.x, area.y);
         assert_eq!(state.hover(position), Some(&"second"));
         assert_eq!(state.click(position), Outcome::Activated("second"));
@@ -709,7 +738,7 @@ mod tests {
     }
 
     #[test]
-    fn multi_select_toggles_by_space_and_painted_checkbox() {
+    fn list_check_toggle_reports_id() {
         let rows = rows();
         let theme = Theme::default();
         let mut state = ListState::new(Some("first"));
@@ -717,7 +746,7 @@ mod tests {
 
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
-            Outcome::Changed
+            Outcome::CheckToggled("first")
         );
         assert!(state.selection().unwrap().is_checked(&"first"));
 
@@ -726,7 +755,10 @@ mod tests {
         (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(2, 2)].symbol(), "[");
         assert_eq!(buffer[(3, 2)].symbol(), "x");
-        assert_eq!(state.click(Position::new(2, 3)), Outcome::Changed);
+        assert_eq!(
+            state.click(Position::new(2, 3)),
+            Outcome::CheckToggled("second")
+        );
         assert_eq!(state.selection().unwrap().checked(), ["first", "second"]);
 
         state.selection_mut().unwrap().clear();
@@ -739,21 +771,41 @@ mod tests {
     }
 
     #[test]
+    fn list_state_accessors_preserve_semantic_ownership() {
+        let mut state = ListState::new(Some("first"));
+
+        assert_eq!(state.selected(), Some(&"first"));
+        assert_eq!(state.hovered(), None);
+        assert!(state.is_focused());
+        assert_eq!(state.offset(), 0);
+        assert!(state.regions().is_empty());
+
+        state.select(Some("second"));
+        state.set_focused(false);
+        state.enable_multi_select();
+        assert!(state.selection_mut().unwrap().toggle(&"second"));
+
+        assert_eq!(state.selected(), Some(&"second"));
+        assert!(!state.is_focused());
+        assert_eq!(state.selection().unwrap().checked(), ["second"]);
+    }
+
+    #[test]
     fn indexed_picker_navigation_wraps_keys_and_bounds_gestures() {
         let mut state = ListState::for_count(3);
-        assert_eq!(state.selected, Some(0));
+        assert_eq!(state.selected(), Some(&0));
         assert!(state.cycle_index(3, -1));
-        assert_eq!(state.selected, Some(2));
+        assert_eq!(state.selected(), Some(&2));
         assert!(state.cycle_index(3, 1));
-        assert_eq!(state.selected, Some(0));
+        assert_eq!(state.selected(), Some(&0));
         assert!(state.move_index(3, 9));
-        assert_eq!(state.selected, Some(2));
+        assert_eq!(state.selected(), Some(&2));
         assert!(!state.move_index(3, 9));
         assert_eq!(state.selected_item(&["a", "b", "c"]), Some(&"c"));
 
         state.reconcile_count(1);
-        assert_eq!(state.selected, Some(0));
+        assert_eq!(state.selected(), Some(&0));
         state.reconcile_count(0);
-        assert_eq!(state.selected, None);
+        assert_eq!(state.selected(), None);
     }
 }

@@ -66,7 +66,7 @@ number is `0004`; always check `ls migrations/` before claiming.
 | 034 | SPIKE: TextArea multi-line editor | P3 | L | 011, 013, 017 | DONE — grapheme-safe line buffer + remembered goal-column prototype |
 | 035 | Input-contract completion: Paste(String), unknown-event degradation, preset value pinning | P1 | S-M | — | DONE |
 | 036 | Rustdoc placeholder sweep (~330 stubs) + CI stub-phrase tripwire + README runtime note | P1 | M | — | DONE |
-| 037 | List/Tree multi-select contract alignment (outcome shape + state visibility) | P2 | S-M | — | TODO |
+| 037 | List/Tree multi-select contract alignment (outcome shape + state visibility) | P2 | S-M | — | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).

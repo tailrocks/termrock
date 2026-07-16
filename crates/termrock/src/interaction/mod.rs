@@ -95,6 +95,8 @@ pub enum Outcome<T> {
     Ignored,
     /// State changed without activating an identity.
     Changed,
+    /// A check gesture toggled the item with this stable identity.
+    CheckToggled(T),
     /// The identified item was activated.
     Activated(T),
     /// The interaction was cancelled.

@@ -376,7 +376,7 @@ impl Lookbook {
             })
             .collect::<Vec<_>>();
         let mut state = ComponentListState::new(Some(self.knob_selected));
-        state.focused = self.focus.is_focused(FocusId::Controls);
+        state.set_focused(self.focus.is_focused(FocusId::Controls));
         frame.render_stateful_widget(
             &ComponentList::new(&rows, &self.theme),
             list_area,

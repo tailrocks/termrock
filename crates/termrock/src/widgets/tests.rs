@@ -114,19 +114,16 @@ fn stable_ids_survive_reordering() {
         },
     ];
     let second = [first[1].clone(), first[0].clone()];
-    let mut state = ListState {
-        selected: Some("b"),
-        ..ListState::default()
-    };
+    let mut state = ListState::new(Some("b"));
     let area = Rect::new(0, 0, 20, 2);
     let mut buffer = Buffer::empty(area);
     let theme = Theme::default();
     StatefulWidget::render(&List::new(&first, &theme), area, &mut buffer, &mut state);
     StatefulWidget::render(&List::new(&second, &theme), area, &mut buffer, &mut state);
-    assert_eq!(state.selected, Some("b"));
+    assert_eq!(state.selected(), Some(&"b"));
     assert_eq!(
         state
-            .regions
+            .regions()
             .iter()
             .find(|region| region.id == "b")
             .unwrap()
@@ -166,9 +163,9 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
     let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 10));
     let theme = Theme::default();
     StatefulWidget::render(&List::new(&rows, &theme), area, &mut buffer, &mut state);
-    assert_eq!(state.regions.len(), 1);
-    assert_eq!(state.regions[0].id, 3);
-    assert_eq!(state.regions[0].area, Rect::new(4, 5, 20, 1));
+    assert_eq!(state.regions().len(), 1);
+    assert_eq!(state.regions()[0].id, 3);
+    assert_eq!(state.regions()[0].area, Rect::new(4, 5, 20, 1));
 }
 
 #[test]

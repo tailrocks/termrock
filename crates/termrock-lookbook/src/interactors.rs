@@ -179,9 +179,9 @@ impl StoryInteraction for ListInteractor {
 
 impl PointerTarget for ListInteractor {
     fn hover_at(&mut self, position: Position) -> bool {
-        let before = self.state.hovered;
+        let before = self.state.hovered().cloned();
         self.state.hover(position);
-        self.state.hovered != before
+        self.state.hovered() != before.as_ref()
     }
     fn click_at(&mut self, position: Position) -> bool {
         !matches!(self.state.click(position), Outcome::Ignored)
