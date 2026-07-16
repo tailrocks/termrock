@@ -4,13 +4,20 @@
 //! Scrollbar painting and the fixed-prefix line primitive.
 
 use ratatui_core::{
-    buffer::Buffer, layout::Rect, style::Style, terminal::Frame, text::Line, widgets::Widget,
+    buffer::Buffer,
+    layout::Rect,
+    style::Style,
+    terminal::Frame,
+    text::{Line, Span},
+    widgets::Widget,
 };
+use ratatui_widgets::paragraph::Paragraph;
 
 use crate::{
     scroll,
-    style::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK},
+    style::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK, Role, Theme},
     text::{display_cols, fixed_prefix_scroll_segments},
+    widgets::{Panel, PanelEmphasis},
 };
 
 /// Dim track glyph shared by every scrollbar.
@@ -272,6 +279,133 @@ pub fn render_vertical_scrollbar_to_buffer(
         style,
     }
     .render(area, buffer);
+}
+
+/// Render borrowed lines into a rectangle with a vertical offset and optional
+/// list-edge scrollbar.
+pub fn render_lines_with_offset_in_area(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    lines: Vec<Line<'_>>,
+    offset: u16,
+) {
+    let viewport = usize::from(area.height);
+    let total = lines.len();
+    let clamped = scroll::effective_offset(total, viewport, offset);
+    let visible: Vec<Line<'_>> = lines
+        .into_iter()
+        .skip(usize::from(clamped))
+        .take(viewport)
+        .collect();
+    frame.render_widget(Paragraph::new(visible), area);
+    if scroll::is_scrollable(total, viewport) {
+        render_vertical_scrollbar_in_area(
+            frame,
+            vertical_list_scrollbar_area(area),
+            total,
+            viewport,
+            clamped,
+        );
+    }
+}
+
+const fn vertical_list_scrollbar_area(area: Rect) -> Rect {
+    Rect {
+        x: area.x + area.width.saturating_sub(1),
+        y: area.y,
+        width: 1,
+        height: area.height,
+    }
+}
+
+fn leading_space_count(line: &Line<'_>) -> usize {
+    let mut count = 0usize;
+    for span in &line.spans {
+        for ch in span.content.chars() {
+            if ch == ' ' {
+                count = count.saturating_add(1);
+            } else {
+                return count;
+            }
+        }
+    }
+    count
+}
+
+fn add_trailing_padding(mut lines: Vec<Line<'_>>) -> Vec<Line<'_>> {
+    for line in &mut lines {
+        let padding = leading_space_count(line);
+        if padding > 0 {
+            line.spans.push(Span::raw(" ".repeat(padding)));
+        }
+    }
+    lines
+}
+
+/// Render a bordered scrollable block, clamping offsets and painting scrollbars.
+///
+/// Focus maps to [`PanelEmphasis::Focused`] so the active container uses
+/// [`Role::BorderFocused`] without consumer-side theme remapping.
+pub fn render_scrollable_block(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    lines: Vec<Line<'_>>,
+    scroll_x: &mut u16,
+    scroll_y: &mut u16,
+    focused: bool,
+    title: Option<&str>,
+) {
+    let content_width = scroll::max_line_width(&lines);
+    let content_height = lines.len();
+    let viewport_w = viewport_width(area);
+    let viewport_h = viewport_height(area);
+    let eff_x = scroll::effective_offset(content_width, viewport_w, *scroll_x);
+    let eff_y = scroll::effective_offset(content_height, viewport_h, *scroll_y);
+    *scroll_x = eff_x;
+    *scroll_y = eff_y;
+    render_scrollable_block_at(frame, area, lines, eff_x, eff_y, focused, title);
+}
+
+/// Render a bordered scrollable block with explicit scroll offsets.
+pub fn render_scrollable_block_at(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    lines: Vec<Line<'_>>,
+    scroll_x: u16,
+    scroll_y: u16,
+    focused: bool,
+    title: Option<&str>,
+) {
+    let content_width = scroll::max_line_width(&lines);
+    let content_height = lines.len();
+    let viewport_w = viewport_width(area);
+    let viewport_h = viewport_height(area);
+    let emphasis = if focused {
+        PanelEmphasis::Focused
+    } else {
+        PanelEmphasis::Normal
+    };
+    let theme = Theme::default();
+    let mut panel = Panel::new(&theme).emphasis(emphasis);
+    if let Some(title) = title {
+        panel = panel.title(title);
+    }
+    let eff_x = scroll::effective_offset(content_width, viewport_w, scroll_x);
+    let eff_y = scroll::effective_offset(content_height, viewport_h, scroll_y);
+    let visible = lines
+        .into_iter()
+        .skip(usize::from(eff_y))
+        .take(viewport_h)
+        .collect();
+    frame.render_widget(
+        Paragraph::new(add_trailing_padding(visible))
+            .block(panel.block())
+            .style(theme.style(Role::Accent))
+            .scroll((0, eff_x)),
+        area,
+    );
+    render_horizontal_scrollbar(frame, area, content_width, eff_x);
+    render_vertical_scrollbar(frame, area, content_height, eff_y);
 }
 
 #[derive(Clone, Copy, Debug)]

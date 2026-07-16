@@ -17,6 +17,7 @@ pub use render::{
     SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarStyle, apply_scroll_delta,
     apply_scroll_delta_unclamped, apply_term_width_scroll_delta, clamp_scroll_offset,
     horizontal_scrollbar_area, render_horizontal_scrollbar, render_line_with_fixed_prefix_scroll,
+    render_lines_with_offset_in_area, render_scrollable_block, render_scrollable_block_at,
     render_vertical_scrollbar, render_vertical_scrollbar_in_area,
     render_vertical_scrollbar_in_area_with_style, render_vertical_scrollbar_to_buffer,
     render_vertical_scrollbar_with_style, scrollbar_offset_for_track_position,
@@ -208,6 +209,25 @@ impl ScrollAxes {
     pub const fn any(self) -> bool {
         self.vertical || self.horizontal
     }
+}
+
+/// Derive available scroll axes for a one-cell-bordered dialog body.
+#[must_use]
+pub const fn dialog_scroll_axes(
+    content_width: usize,
+    content_height: usize,
+    block_area: ratatui_core::layout::Rect,
+) -> ScrollAxes {
+    ScrollAxes {
+        vertical: is_scrollable(content_height, viewport_height(block_area)),
+        horizontal: is_scrollable(content_width, viewport_width(block_area)),
+    }
+}
+
+/// Scroll-key hint spans reflecting per-axis availability.
+#[must_use]
+pub fn scroll_hint_spans(axes: ScrollAxes) -> Vec<crate::widgets::HintSpan<'static>> {
+    crate::keymap::SCROLL_HINT_KEYMAP.hint_spans_for_axes(axes)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

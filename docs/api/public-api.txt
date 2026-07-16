@@ -2431,6 +2431,7 @@ pub fn termrock::scroll::apply_term_width_scroll_delta(&mut u16, i16, u16, usize
 pub const fn termrock::scroll::clamp_offset_u16(usize, usize, &mut u16) -> u16
 pub const fn termrock::scroll::clamp_scroll_offset(usize, usize, &mut u16) -> u16
 pub fn termrock::scroll::cursor_follow_offset(usize, usize, usize, usize) -> usize
+pub const fn termrock::scroll::dialog_scroll_axes(usize, usize, ratatui_core::layout::rect::Rect) -> termrock::scroll::ScrollAxes
 pub const fn termrock::scroll::effective_offset(usize, usize, u16) -> u16
 pub fn termrock::scroll::full_cell_thumb(usize, usize, u16, usize) -> core::option::Option<termrock::scroll::FullCellThumb>
 pub const fn termrock::scroll::horizontal_scrollbar_area(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
@@ -2444,11 +2445,15 @@ pub fn termrock::scroll::offset_for_track_position(usize, usize, u16, usize) -> 
 pub fn termrock::scroll::offset_for_track_position_u16(usize, usize, usize, usize) -> u16
 pub fn termrock::scroll::render_horizontal_scrollbar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, u16)
 pub fn termrock::scroll::render_line_with_fixed_prefix_scroll(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, u16, ratatui_core::text::line::Line<'static>, usize, usize)
+pub fn termrock::scroll::render_lines_with_offset_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, alloc::vec::Vec<ratatui_core::text::line::Line<'_>>, u16)
+pub fn termrock::scroll::render_scrollable_block(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, alloc::vec::Vec<ratatui_core::text::line::Line<'_>>, &mut u16, &mut u16, bool, core::option::Option<&str>)
+pub fn termrock::scroll::render_scrollable_block_at(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, alloc::vec::Vec<ratatui_core::text::line::Line<'_>>, u16, u16, bool, core::option::Option<&str>)
 pub fn termrock::scroll::render_vertical_scrollbar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, u16)
 pub fn termrock::scroll::render_vertical_scrollbar_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize, u16)
 pub fn termrock::scroll::render_vertical_scrollbar_in_area_with_style(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize, u16, termrock::scroll::ScrollbarStyle)
 pub fn termrock::scroll::render_vertical_scrollbar_to_buffer(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, termrock::scroll::ScrollbarStyle)
 pub fn termrock::scroll::render_vertical_scrollbar_with_style(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, u16, termrock::scroll::ScrollbarStyle)
+pub fn termrock::scroll::scroll_hint_spans(termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
 pub fn termrock::scroll::scroll_selectable_list(&mut usize, &mut u16, usize, usize, isize) -> bool
 pub fn termrock::scroll::scrollbar_offset_for_track_position(usize, usize, usize, usize) -> u16
 pub fn termrock::scroll::tail_vertical_thumb(u16, usize, usize) -> core::option::Option<termrock::scroll::FullCellThumb>
