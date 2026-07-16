@@ -26,15 +26,16 @@ pub struct DialogSpec {
     pub min_height: u16,
     pub preferred_height: u16,
     pub max_height: u16,
-    pub margin: u16,
+    pub horizontal_margin: u16,
+    pub vertical_margin: u16,
     pub placement: Placement,
 }
 
 /// Resolve a dialog specification inside `outer` without assuming a rendering backend.
 #[must_use]
 pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
-    let available_width = outer.width.saturating_sub(spec.margin);
-    let available_height = outer.height.saturating_sub(spec.margin);
+    let available_width = outer.width.saturating_sub(spec.horizontal_margin);
+    let available_height = outer.height.saturating_sub(spec.vertical_margin);
     let width = spec
         .preferred_width
         .clamp(spec.min_width, spec.max_width.max(spec.min_width))
@@ -96,7 +97,8 @@ mod tests {
                 min_height: 8,
                 preferred_height: 20,
                 max_height: 24,
-                margin: 4,
+                horizontal_margin: 4,
+                vertical_margin: 4,
                 placement: Placement::Centered,
             },
         );
@@ -114,10 +116,30 @@ mod tests {
                 min_height: 4,
                 preferred_height: 6,
                 max_height: 8,
-                margin: 0,
+                horizontal_margin: 0,
+                vertical_margin: 0,
                 placement: Placement::Top,
             },
         );
         assert_eq!(rect, Rect::new(11, 3, 12, 6));
+    }
+
+    #[test]
+    fn dialog_margins_are_axis_independent() {
+        let rect = resolve_dialog(
+            Rect::new(0, 0, 20, 10),
+            DialogSpec {
+                min_width: 0,
+                preferred_width: 20,
+                max_width: 20,
+                min_height: 0,
+                preferred_height: 10,
+                max_height: 10,
+                horizontal_margin: 4,
+                vertical_margin: 0,
+                placement: Placement::Centered,
+            },
+        );
+        assert_eq!(rect, Rect::new(2, 0, 16, 10));
     }
 }
