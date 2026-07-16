@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `MessageDialog`, `Panel`, `SplitPane`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, and `Tree`.
+The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `MessageDialog`, `Panel`, `SplitPane`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
 
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,
@@ -37,6 +37,12 @@ hit regions. Keyboard, wheel, click, and scrollbar-position methods return or
 apply semantic selection/toggle/activation/scroll outcomes; callers retain
 hierarchy, filtering, lazy loading, and expansion policy.
 
+`List` owns selection, hover, focus, viewport offset, painted regions, and a
+reserved proportional-scrollbar gutter. Stable-ID rows use the general
+navigation contract. Index-addressed pickers use the `ListState<usize>` count,
+wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
+consumers do not retain a second list-state crate or generic picker helpers.
+
 The `tree_hot_path` evidence renders a warmed 40-row viewport over 10,000
 borrowed nodes 100 times in the Cargo test/debug profile, asserts bounded
 painted regions, rejects allocator or reallocator calls, and enforces a 250 ms
@@ -45,4 +51,4 @@ M1 Max with 64 GiB, macOS 26.5.2, and Rust 1.97.0. The 250 ms threshold is the
 cross-run/CI tolerance; a slower result blocks the component gate until measured
 and deliberately revised with new environment evidence.
 
-Every component uses borrowed render data and stable IDs where interaction identity is required. Consumers own labels, validation, filtering, lifecycle, output, and domain models. Canonical neutral stories and SVG previews are maintained by `termrock-lookbook`; the catalog coverage check binds story IDs to documentation and preview files.
+Every component uses borrowed render data and stable IDs where interaction identity is required. Consumers own labels, validation, filtering, lifecycle, output, and domain models. Canonical neutral stories and SVG previews are maintained by `termrock-lookbook`; the catalog coverage check derives the component inventory from `docs/api/public-api.txt`, requires at least one typed story, documented story ID, and deterministic preview per public widget, and requires an exact keyboard/mouse/focus/non-color/Unicode/narrow-terminal classification in `docs/api/component-contracts.json`.

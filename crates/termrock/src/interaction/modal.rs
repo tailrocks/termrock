@@ -14,7 +14,7 @@
 use ratatui_core::layout::Rect;
 use ratatui_core::terminal::Frame;
 
-use crate::components::ModalBackdrop;
+use crate::widgets::Backdrop;
 
 /// Stack of modal dialogs with "Esc walks back one step" semantics.
 ///
@@ -134,7 +134,7 @@ impl<M> ModalStack<M> {
 /// Render the full-screen opaque backdrop. Call this before drawing the modal
 /// so everything behind it (other dialogs, main UI) is hidden.
 pub fn render_backdrop(frame: &mut Frame<'_>, full_area: Rect) {
-    frame.render_widget(ModalBackdrop, full_area);
+    frame.render_widget(&Backdrop::default(), full_area);
 }
 
 /// Classify a mouse click relative to an open modal rect.

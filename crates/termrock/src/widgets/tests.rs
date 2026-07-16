@@ -38,12 +38,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
         hints: &hints,
         separator: " · ",
     };
-    let toast = Toast {
-        message: "Updated",
-        severity: Severity::Success,
-        anchor: Anchor::TopRight,
-        style: Style::new(),
-    };
+    let toast = Toast::new(&theme, "Updated", Severity::Success).anchor(Anchor::TopRight);
     let backdrop = Backdrop {
         symbol: ' ',
         style: Style::new().dim(),
@@ -95,8 +90,25 @@ fn stable_ids_survive_reordering() {
     };
     let area = Rect::new(0, 0, 20, 2);
     let mut buffer = Buffer::empty(area);
-    StatefulWidget::render(&List { rows: &first }, area, &mut buffer, &mut state);
-    StatefulWidget::render(&List { rows: &second }, area, &mut buffer, &mut state);
+    let theme = Theme::default();
+    StatefulWidget::render(
+        &List {
+            rows: &first,
+            theme: &theme,
+        },
+        area,
+        &mut buffer,
+        &mut state,
+    );
+    StatefulWidget::render(
+        &List {
+            rows: &second,
+            theme: &theme,
+        },
+        area,
+        &mut buffer,
+        &mut state,
+    );
     assert_eq!(state.selected, Some("b"));
     assert_eq!(
         state
@@ -135,7 +147,16 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
     let mut state = ListState::default();
     let area = Rect::new(4, 3, 20, 3);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 10));
-    StatefulWidget::render(&List { rows: &rows }, area, &mut buffer, &mut state);
+    let theme = Theme::default();
+    StatefulWidget::render(
+        &List {
+            rows: &rows,
+            theme: &theme,
+        },
+        area,
+        &mut buffer,
+        &mut state,
+    );
     assert_eq!(state.regions.len(), 1);
     assert_eq!(state.regions[0].id, 3);
     assert_eq!(state.regions[0].area, Rect::new(4, 5, 20, 1));
@@ -192,6 +213,7 @@ fn action_and_status_regions_match_painted_geometry() {
         min_width: 0,
         enabled: true,
         style: Style::new(),
+        hover_style: None,
     }];
     let right = [StatusSlot {
         id: "right",
@@ -200,14 +222,17 @@ fn action_and_status_regions_match_painted_geometry() {
         min_width: 0,
         enabled: true,
         style: Style::new(),
+        hover_style: None,
     }];
     let status = StatusBar {
         left: &left,
         right: &right,
+        style: Style::new(),
+        alpha: 1.0,
     };
     let regions = status.regions(area);
     assert_eq!(regions[1].area.right(), area.right());
-    (&status).render(area, &mut buffer);
+    (&status).render(area, &mut buffer, &mut StatusBarState::default());
 }
 
 #[test]

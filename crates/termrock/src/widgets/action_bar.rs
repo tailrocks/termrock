@@ -46,7 +46,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
             );
             let focused = state.focused.as_ref() == Some(&action.id);
             let style = action.style.unwrap_or_else(|| {
-                if focused {
+                if !action.enabled {
+                    Style::new().dim()
+                } else if focused {
                     Style::new().reversed()
                 } else {
                     Style::new()
@@ -55,10 +57,12 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
             Paragraph::new(format!(" {} ", action.label))
                 .style(style)
                 .render(rect, buffer);
-            state.regions.push(HitRegion {
-                id: action.id.clone(),
-                area: rect,
-            });
+            if action.enabled && !rect.is_empty() {
+                state.regions.push(HitRegion {
+                    id: action.id.clone(),
+                    area: rect,
+                });
+            }
             x = x
                 .saturating_add(width)
                 .saturating_add(UnicodeWidthStr::width(self.gap).min(u16::MAX as usize) as u16);

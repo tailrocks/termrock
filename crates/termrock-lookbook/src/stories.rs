@@ -6,18 +6,22 @@
 use ratatui::{Frame, layout::Rect, style::Style, text::Line, widgets::Paragraph};
 use termrock::{
     Theme,
+    scroll::DialogScroll,
+    style::Role,
     widgets::{
-        Action, ActionBar, ActionBarState, Anchor, Backdrop, DetailCapability, DetailRow,
-        DetailTable, DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Form,
-        FormField, FormSection, FormState, Hint, HintBar, List, ListRow, ListState, Panel,
-        PanelEmphasis, RowRole, Severity, SplitDirection, SplitPane, SplitPaneState, SplitRatio,
-        StatusBar, StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState, Toast, Tree,
-        TreeNode, TreeNodeStatus, TreeState, Validation,
+        Action, ActionBar, ActionBarState, Anchor, Backdrop, ChoiceDialog, ChoiceDialogState,
+        DetailCapability, DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine,
+        DiffState, DiffView, Form, FormField, FormSection, FormState, Hint, HintBar, List, ListRow,
+        ListState, MessageDialog, Panel, PanelEmphasis, RowRole, Severity, SplitDirection,
+        SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Tab, Tabs,
+        TabsState, TextInput, TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState,
+        Validation, Viewport,
     },
 };
 
 use crate::interactors::{
-    FormInteractor, SplitPaneInteractor, StaticStory, StoryInteraction, TreeInteractor,
+    ChoiceDialogInteractor, FormInteractor, ListInteractor, SplitPaneInteractor, StaticStory,
+    StoryInteraction, TextInputInteractor, TreeInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect);
@@ -84,6 +88,18 @@ fn split_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(SplitPaneInteractor::new())
 }
 
+fn choice_dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ChoiceDialogInteractor::new())
+}
+
+fn list_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ListInteractor::new())
+}
+
+fn text_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TextInputInteractor::new())
+}
+
 pub(crate) fn stories() -> Vec<Story> {
     vec![
         Story::new(
@@ -130,7 +146,8 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             6,
             list,
-        ),
+        )
+        .with_interactor(list_interactor),
         Story::new(
             "tree/navigation",
             "Tree navigation",
@@ -169,7 +186,8 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             1,
             text_input,
-        ),
+        )
+        .with_interactor(text_input_interactor),
         Story::new(
             "detail-table/basic",
             "Detail table",
@@ -198,6 +216,25 @@ pub(crate) fn stories() -> Vec<Story> {
             dialog,
         ),
         Story::new(
+            "choice-dialog/basic",
+            "Choice dialog",
+            "ChoiceDialog",
+            "Caller-owned stable actions in a neutral dialog shell.",
+            48,
+            7,
+            choice_dialog,
+        )
+        .with_interactor(choice_dialog_interactor),
+        Story::new(
+            "message-dialog/details",
+            "Detailed message dialog",
+            "MessageDialog",
+            "Caller-owned detail rows composed into a neutral message shell.",
+            52,
+            8,
+            message_dialog,
+        ),
+        Story::new(
             "diff/basic",
             "Diff view",
             "DiffView",
@@ -224,18 +261,24 @@ pub(crate) fn stories() -> Vec<Story> {
             4,
             backdrop,
         ),
+        Story::new(
+            "viewport/both-axes",
+            "Scrollable viewport",
+            "Viewport",
+            "Borrowed lines with bounded horizontal and vertical scroll state.",
+            44,
+            7,
+            viewport,
+        ),
     ]
 }
 
 fn panel(frame: &mut Frame<'_>, area: Rect) {
     let theme = Theme::default();
     frame.render_widget(
-        &Panel {
-            title: Some("Summary"),
-            emphasis: PanelEmphasis::Focused,
-            style: None,
-            theme: &theme,
-        },
+        &Panel::new(&theme)
+            .title("Summary")
+            .emphasis(PanelEmphasis::Focused),
         area,
     );
     if area.width > 2 && area.height > 2 {
@@ -466,7 +509,27 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn list(frame: &mut Frame<'_>, area: Rect) {
-    let rows = [
+    let rows = list_rows();
+    let theme = Theme::default();
+    let mut state = ListState::new(Some("beta"));
+    frame.render_stateful_widget(
+        &List {
+            rows: &rows,
+            theme: &theme,
+        },
+        area,
+        &mut state,
+    );
+}
+
+pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
+    [
+        ListRow {
+            id: "section",
+            label: Line::from("Workspace"),
+            role: RowRole::Separator,
+            enabled: true,
+        },
         ListRow {
             id: "alpha",
             label: Line::from("Alpha"),
@@ -485,22 +548,18 @@ fn list(frame: &mut Frame<'_>, area: Rect) {
             role: RowRole::Item,
             enabled: false,
         },
-    ];
-    let mut state = ListState {
-        selected: Some("beta"),
-        ..ListState::default()
-    };
-    frame.render_stateful_widget(&List { rows: &rows }, area, &mut state);
+    ]
 }
 
 fn text_input(frame: &mut Frame<'_>, area: Rect) {
     let mut state = TextInputState::new("search");
+    let theme = Theme::default();
     frame.render_stateful_widget(
         &TextInput {
             label: "Filter",
             placeholder: "Type to filter",
             validation: Validation::Valid,
-            style: Style::new(),
+            theme: &theme,
         },
         area,
         &mut state,
@@ -513,20 +572,29 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect) {
             id: "state",
             label: "State",
             value: "Ready",
-            capability: DetailCapability::None,
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: true,
+            style: None,
         },
         DetailRow {
             id: "link",
             label: "Reference",
             value: "https://example.invalid",
-            capability: DetailCapability::Link,
+            href: Some("https://example.invalid"),
+            capability: DetailCapability::CopyAndLink,
+            emphasis: false,
+            style: None,
         },
     ];
     let mut state = DetailTableState::default();
+    let theme = Theme::default();
     frame.render_stateful_widget(
         &DetailTable {
             rows: &rows,
             label_width: 14,
+            wrap: true,
+            theme: &theme,
         },
         area,
         &mut state,
@@ -541,6 +609,7 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect) {
         min_width: 0,
         enabled: true,
         style: Style::new().reversed(),
+        hover_style: Some(Style::new().bold().reversed()),
     }];
     let right = [StatusSlot {
         id: "position",
@@ -549,24 +618,120 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect) {
         min_width: 0,
         enabled: true,
         style: Style::new().dim(),
+        hover_style: Some(Style::new().bold()),
     }];
-    frame.render_widget(
+    let mut state = StatusBarState::default();
+    frame.render_stateful_widget(
         &StatusBar {
             left: &left,
             right: &right,
+            style: Style::new(),
+            alpha: 1.0,
+        },
+        area,
+        &mut state,
+    );
+}
+
+fn dialog(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::default();
+    frame.render_widget(
+        &Dialog {
+            title: "Notice",
+            body: Line::from("The operation completed.").into(),
+            style: Style::new(),
+            theme: &theme,
+            emphasis: termrock::widgets::PanelEmphasis::Focused,
         },
         area,
     );
 }
 
-fn dialog(frame: &mut Frame<'_>, area: Rect) {
-    frame.render_widget(
-        &Dialog {
-            title: "Notice",
-            body: Line::from("The operation completed."),
-            style: Style::new(),
+fn choice_dialog(frame: &mut Frame<'_>, area: Rect) {
+    let mut state = ChoiceDialogState::new(Some("continue"));
+    render_choice_dialog(frame, area, &mut state);
+}
+
+pub(crate) fn choice_actions() -> [Action<'static, &'static str>; 2] {
+    [
+        Action {
+            id: "continue",
+            label: "Continue",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "cancel",
+            label: "Cancel",
+            enabled: true,
+            style: Some(Style::new().bold()),
+        },
+    ]
+}
+
+pub(crate) fn render_choice_dialog(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    state: &mut ChoiceDialogState<&'static str>,
+) {
+    let actions = choice_actions();
+    let theme = Theme::default();
+    frame.render_stateful_widget(
+        &ChoiceDialog {
+            dialog: Dialog {
+                title: "Choose",
+                body: Line::from("Continue with this operation?").into(),
+                style: Style::new(),
+                theme: &theme,
+                emphasis: termrock::widgets::PanelEmphasis::Focused,
+            },
+            actions: &actions,
+            gap: " ",
         },
         area,
+        state,
+    );
+}
+
+fn message_dialog(frame: &mut Frame<'_>, area: Rect) {
+    let details = [
+        DetailRow {
+            id: "state",
+            label: "State",
+            value: "Ready",
+            href: None,
+            capability: DetailCapability::None,
+            emphasis: false,
+            style: None,
+        },
+        DetailRow {
+            id: "reference",
+            label: "Reference",
+            value: "example-42",
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: false,
+            style: None,
+        },
+    ];
+    let theme = Theme::default();
+    let mut state = DetailTableState::default();
+    frame.render_stateful_widget(
+        &MessageDialog {
+            dialog: Dialog {
+                title: "Result",
+                body: Line::from("The operation completed.").into(),
+                style: Style::new(),
+                theme: &theme,
+                emphasis: termrock::widgets::PanelEmphasis::Focused,
+            },
+            details: &details,
+            label_width: 14,
+            wrap: true,
+            theme: &theme,
+        },
+        area,
+        &mut state,
     );
 }
 
@@ -597,13 +762,9 @@ fn diff(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn toast(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::default();
     frame.render_widget(
-        &Toast {
-            message: "Updated",
-            severity: Severity::Success,
-            anchor: Anchor::TopRight,
-            style: Style::new(),
-        },
+        &Toast::new(&theme, "Updated", Severity::Success).anchor(Anchor::TopRight),
         area,
     );
 }
@@ -614,5 +775,31 @@ fn backdrop(frame: &mut Frame<'_>, area: Rect) {
             style: Style::new().dim(),
         },
         area,
+    );
+}
+
+fn viewport(frame: &mut Frame<'_>, area: Rect) {
+    let lines = [
+        Line::from("alpha: short"),
+        Line::from("beta: a deliberately wide borrowed row for horizontal scrolling"),
+        Line::from("gamma: 🧪 Unicode"),
+        Line::from("delta: fourth row"),
+        Line::from("epsilon: fifth row"),
+        Line::from("zeta: sixth row"),
+    ];
+    let theme = Theme::default();
+    let mut state = DialogScroll::default();
+    frame.render_stateful_widget(
+        &Viewport {
+            lines: &lines,
+            title: Some("Viewport"),
+            content_style: Style::new(),
+            border_style: theme.style(Role::BorderFocused),
+            title_style: theme.style(Role::Text),
+            scroll_track_style: theme.style(Role::ScrollTrack),
+            scroll_thumb_style: theme.style(Role::ScrollThumb),
+        },
+        area,
+        &mut state,
     );
 }

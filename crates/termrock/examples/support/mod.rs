@@ -1,4 +1,5 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
+use termrock::Theme;
 use termrock::widgets::{List, ListRow, ListState, RowRole};
 
 pub fn render() {
@@ -22,6 +23,15 @@ pub fn render() {
     };
     let area = Rect::new(0, 0, 24, 4);
     let mut buffer = Buffer::empty(area);
-    StatefulWidget::render(&List { rows: &rows }, area, &mut buffer, &mut state);
+    let theme = Theme::default();
+    StatefulWidget::render(
+        &List {
+            rows: &rows,
+            theme: &theme,
+        },
+        area,
+        &mut buffer,
+        &mut state,
+    );
     assert_eq!(state.selected, Some("first"));
 }

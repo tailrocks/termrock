@@ -1,5 +1,13 @@
 //! Responsive layout specifications and caller-defined bottom slots.
 
+mod dialog;
+
+pub use dialog::{
+    DIALOG_HORIZONTAL_SCROLL_STEP, DialogBodyScroll, DialogBorder, ScrollAxes, ScrollAxis,
+    dialog_inner_chunks, dialog_inner_height, dialog_scroll_axes, mouse_scroll_delta,
+    render_dialog_shell, render_scrollable_dialog_body, scroll_hint_spans,
+};
+
 use ratatui_core::layout::Rect;
 
 pub use crate::interaction::HitRegion;
@@ -18,15 +26,16 @@ pub struct DialogSpec {
     pub min_height: u16,
     pub preferred_height: u16,
     pub max_height: u16,
-    pub margin: u16,
+    pub horizontal_margin: u16,
+    pub vertical_margin: u16,
     pub placement: Placement,
 }
 
 /// Resolve a dialog specification inside `outer` without assuming a rendering backend.
 #[must_use]
 pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
-    let available_width = outer.width.saturating_sub(spec.margin);
-    let available_height = outer.height.saturating_sub(spec.margin);
+    let available_width = outer.width.saturating_sub(spec.horizontal_margin);
+    let available_height = outer.height.saturating_sub(spec.vertical_margin);
     let width = spec
         .preferred_width
         .clamp(spec.min_width, spec.max_width.max(spec.min_width))
@@ -73,6 +82,31 @@ impl Slots {
     }
 }
 
+/// Split fixed rows from the bottom of an area in top-to-bottom order.
+///
+/// The body receives all remaining height. Rows that do not fit collapse to
+/// zero height at the bottom edge, so consumers share one tiny-terminal
+/// contract instead of reimplementing `row_from_bottom` arithmetic.
+#[must_use]
+pub fn bottom_rows<const N: usize>(area: Rect, heights: [u16; N]) -> (Rect, [Rect; N]) {
+    let mut allocated = [0_u16; N];
+    let mut remaining = area.height;
+    for index in (0..N).rev() {
+        allocated[index] = heights[index].min(remaining);
+        remaining = remaining.saturating_sub(allocated[index]);
+    }
+    let rows_height = area.height.saturating_sub(remaining);
+    let body = Rect::new(area.x, area.y, area.width, area.height - rows_height);
+    let mut y = body.bottom();
+    let rows = std::array::from_fn(|index| {
+        let height = allocated[index];
+        let row = Rect::new(area.x, y, area.width, height);
+        y = y.saturating_add(height);
+        row
+    });
+    (body, rows)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,7 +122,8 @@ mod tests {
                 min_height: 8,
                 preferred_height: 20,
                 max_height: 24,
-                margin: 4,
+                horizontal_margin: 4,
+                vertical_margin: 4,
                 placement: Placement::Centered,
             },
         );
@@ -106,10 +141,39 @@ mod tests {
                 min_height: 4,
                 preferred_height: 6,
                 max_height: 8,
-                margin: 0,
+                horizontal_margin: 0,
+                vertical_margin: 0,
                 placement: Placement::Top,
             },
         );
         assert_eq!(rect, Rect::new(11, 3, 12, 6));
+    }
+
+    #[test]
+    fn dialog_margins_are_axis_independent() {
+        let rect = resolve_dialog(
+            Rect::new(0, 0, 20, 10),
+            DialogSpec {
+                min_width: 0,
+                preferred_width: 20,
+                max_width: 20,
+                min_height: 0,
+                preferred_height: 10,
+                max_height: 10,
+                horizontal_margin: 4,
+                vertical_margin: 0,
+                placement: Placement::Centered,
+            },
+        );
+        assert_eq!(rect, Rect::new(2, 0, 16, 10));
+    }
+
+    #[test]
+    fn bottom_rows_share_tiny_area_collapse_geometry() {
+        let (body, rows) = bottom_rows(Rect::new(4, 2, 20, 2), [1, 1, 1]);
+        assert_eq!(body, Rect::new(4, 2, 20, 0));
+        assert_eq!(rows[0], Rect::new(4, 2, 20, 0));
+        assert_eq!(rows[1], Rect::new(4, 2, 20, 1));
+        assert_eq!(rows[2], Rect::new(4, 3, 20, 1));
     }
 }

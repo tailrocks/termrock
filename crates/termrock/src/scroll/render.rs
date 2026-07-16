@@ -24,7 +24,7 @@ use crate::{
     theme::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK},
 };
 
-use super::{Panel, PanelFocus};
+use crate::widgets::{Panel, PanelEmphasis};
 
 /// Dim track glyph shared by every scrollbar, both orientations and styles.
 pub const SCROLLBAR_TRACK: &str = "·";
@@ -329,16 +329,39 @@ pub fn render_vertical_scrollbar_in_area_with_style(
     if !is_scrollable(content_height, viewport) || area.height == 0 {
         return;
     }
-    frame.render_widget(
-        FixedScrollbar {
-            content_length: content_height,
-            viewport,
-            offset: scroll_y,
-            orientation: FixedScrollbarOrientation::Vertical,
-            style,
-        },
+    render_vertical_scrollbar_to_buffer(
+        frame.buffer_mut(),
         area,
+        content_height,
+        viewport,
+        scroll_y,
+        style,
     );
+}
+
+/// Paint a vertical scrollbar directly into a widget buffer.
+///
+/// Stateful widgets use this form so their content and scrollbar derive from
+/// the same viewport and offset without requiring a nested `Frame`.
+pub fn render_vertical_scrollbar_to_buffer(
+    buffer: &mut Buffer,
+    area: Rect,
+    content_height: usize,
+    viewport: usize,
+    scroll_y: u16,
+    style: ScrollbarStyle,
+) {
+    if !is_scrollable(content_height, viewport) || area.height == 0 {
+        return;
+    }
+    FixedScrollbar {
+        content_length: content_height,
+        viewport,
+        offset: scroll_y,
+        orientation: FixedScrollbarOrientation::Vertical,
+        style,
+    }
+    .render(area, buffer);
 }
 
 pub fn render_selected_lines_in_area(
@@ -645,19 +668,14 @@ pub fn render_scrollable_block_at(
     let content_height = lines.len();
     let viewport_w = viewport_width(area);
     let viewport_h = viewport_height(area);
-    // All focused blocks get PHOSPHOR_GREEN border (WCAG focus-visible rule).
-    // FocusedScrollable vs Focused is kept so callers can distinguish scroll
-    // affordance, but both render green — the difference is informational only.
-    let has_scroll =
-        is_scrollable(content_width, viewport_w) || is_scrollable(content_height, viewport_h);
-    let focus = if focused && has_scroll {
-        PanelFocus::FocusedScrollable
-    } else if focused {
-        PanelFocus::Focused
+    // Focus remains an explicit non-color state even when the content fits.
+    let emphasis = if focused {
+        PanelEmphasis::Focused
     } else {
-        PanelFocus::Unfocused
+        PanelEmphasis::Normal
     };
-    let mut panel = Panel::new().focus(focus);
+    let theme = crate::Theme::default();
+    let mut panel = Panel::new(&theme).emphasis(emphasis);
     if let Some(title) = title {
         panel = panel.title(title);
     }

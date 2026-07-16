@@ -245,19 +245,13 @@ impl DialogBodyScroll {
         content_height: usize,
         content_width: usize,
     ) {
-        use crate::components::scrollable_panel::{
+        use crate::scroll::{
             is_scrollable, render_horizontal_scrollbar, render_vertical_scrollbar,
         };
-        if is_scrollable(
-            content_height,
-            crate::components::scrollable_panel::viewport_height(block_area),
-        ) {
+        if is_scrollable(content_height, crate::scroll::viewport_height(block_area)) {
             render_vertical_scrollbar(frame, block_area, content_height, self.scroll_y);
         }
-        if is_scrollable(
-            content_width,
-            crate::components::scrollable_panel::viewport_width(block_area),
-        ) {
+        if is_scrollable(content_width, crate::scroll::viewport_width(block_area)) {
             render_horizontal_scrollbar(frame, block_area, content_width, self.scroll_x);
         }
     }
@@ -285,7 +279,7 @@ pub fn render_scrollable_dialog_body(
     lines: &[Line<'_>],
     scroll: &mut DialogBodyScroll,
 ) -> (usize, usize) {
-    use crate::components::scrollable_panel::{effective_offset, line_width};
+    use crate::scroll::{effective_offset, line_width};
 
     // Real rendered width — NOT max_line_width, which mirrors a row's leading
     // indent as trailing scroll-pad (that is for the mounts *panel*, which
@@ -317,7 +311,7 @@ pub fn dialog_scroll_axes(
     content_height: usize,
     block_area: Rect,
 ) -> ScrollAxes {
-    use crate::components::scrollable_panel::{is_scrollable, viewport_height, viewport_width};
+    use crate::scroll::{is_scrollable, viewport_height, viewport_width};
     ScrollAxes {
         vertical: is_scrollable(content_height, viewport_height(block_area)),
         horizontal: is_scrollable(content_width, viewport_width(block_area)),
@@ -393,7 +387,7 @@ pub fn render_dialog_shell(
     title: Option<&str>,
     border: DialogBorder,
 ) -> Rect {
-    use crate::components::panel::{Panel, PanelFocus, modal_block};
+    use crate::widgets::{Panel, PanelEmphasis};
     use ratatui_core::style::Style;
     use ratatui_core::text::Span;
     use ratatui_core::widgets::Widget;
@@ -401,12 +395,16 @@ pub fn render_dialog_shell(
 
     Clear.render(area, frame.buffer_mut());
 
+    let theme = crate::Theme::default();
     let block = match border {
         DialogBorder::Default => {
             if let Some(t) = title {
-                Panel::new().title(t).focus(PanelFocus::Focused).block()
+                Panel::new(&theme)
+                    .title(t)
+                    .emphasis(PanelEmphasis::Focused)
+                    .block()
             } else {
-                modal_block()
+                Panel::new(&theme).emphasis(PanelEmphasis::Focused).block()
             }
         }
         DialogBorder::Danger => {

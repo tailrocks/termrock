@@ -1,5 +1,13 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
+mod focus_owner;
+mod hover_tracker;
+mod modal;
+
+pub use focus_owner::{ButtonFocus, FocusOwner};
+pub use hover_tracker::HoverTracker;
+pub use modal::{ModalClickResult, ModalStack, classify_click, render_backdrop};
+
 use ratatui_core::layout::{Position, Rect};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
