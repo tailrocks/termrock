@@ -4,6 +4,7 @@ mod action_bar;
 mod detail_table;
 mod dialog;
 mod diff;
+mod form;
 mod hint_bar;
 mod list;
 mod panel;
@@ -20,6 +21,7 @@ pub use detail_table::{
 };
 pub use dialog::{Backdrop, ChoiceDialog, Dialog, DialogAction, MessageDialog};
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
+pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
 pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans};
 pub use list::{List, ListOutcome, ListRow, ListState, RowRole};
 pub use panel::{Panel, PanelEmphasis};

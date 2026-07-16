@@ -34,6 +34,16 @@ pub const STORIES: &[StoryMetadata] = &[
         component: "List",
     },
     StoryMetadata {
+        id: "tree/navigation",
+        title: "Tree navigation",
+        component: "Tree",
+    },
+    StoryMetadata {
+        id: "form/responsive",
+        title: "Responsive form",
+        component: "Form",
+    },
+    StoryMetadata {
         id: "text-input/filter",
         title: "Filter composition",
         component: "TextInput",

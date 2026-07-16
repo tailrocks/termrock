@@ -143,7 +143,7 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
 
 #[test]
 fn text_input_edits_extended_graphemes_atomically() {
-    for value in ["e\u{301}", "👩‍💻", "👍🏽", "🇯🇵", "界", "\u{200b}"] {
+    for value in ["e\u{301}", "👩‍💻", "👍🏽", "🌐", "🧪", "\u{200b}"] {
         let mut state = TextInputState::new(value);
         state.apply(EditAction::MoveLeft);
         assert_eq!(state.cursor_byte(), 0, "{value:?}");

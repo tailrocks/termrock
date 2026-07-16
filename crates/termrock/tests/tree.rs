@@ -33,7 +33,7 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
         },
         TreeNode {
             id: "leaf",
-            label: Line::from("資料界"),
+            label: Line::from("Wide 🧪"),
             depth: 1,
             branch: false,
             expanded: false,
@@ -344,7 +344,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
 fn narrow_clipping_never_splits_a_wide_grapheme() {
     let rows = vec![TreeNode {
         id: 0,
-        label: Line::from("界e\u{301}Z"),
+        label: Line::from("🧪e\u{301}Z"),
         depth: 0,
         branch: false,
         expanded: false,
@@ -363,7 +363,7 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
 
     let mut four_cells = Buffer::empty(Rect::new(0, 0, 4, 1));
     tree.render(Rect::new(0, 0, 4, 1), &mut four_cells, &mut state);
-    assert_eq!(four_cells[(2, 0)].symbol(), "界");
+    assert_eq!(four_cells[(2, 0)].symbol(), "🧪");
     assert_eq!(four_cells[(3, 0)].symbol(), " ");
 
     let deeply_nested = vec![TreeNode {
@@ -381,7 +381,7 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
 fn status_suffix_reserves_space_before_clipping_wide_labels() {
     let rows = vec![TreeNode {
         id: 0,
-        label: Line::from("界界"),
+        label: Line::from("🧪🧪"),
         depth: 0,
         branch: false,
         expanded: false,

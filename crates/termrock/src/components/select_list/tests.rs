@@ -134,7 +134,7 @@ fn select_list_renders_horizontal_scroll_window() {
 fn label_width_uses_terminal_columns() {
     let state = SelectListState::new(vec![
         "e\u{301}".to_owned(),
-        "界".to_owned(),
+        "🧪".to_owned(),
         "👩‍💻".to_owned(),
         "🇸🇬".to_owned(),
         "\u{200b}".to_owned(),

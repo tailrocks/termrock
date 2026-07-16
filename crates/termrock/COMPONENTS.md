@@ -1,6 +1,16 @@
 # TermRock component inventory
 
-The public widget set is `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `HintBar`, `List`, `MessageDialog`, `Panel`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, and `Tree`.
+The public widget set is `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `MessageDialog`, `Panel`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, and `Tree`.
+
+`Form` consumes caller-owned borrowed sections and stable-ID fields. It renders
+required, disabled, help, and validation-error states in responsive one/two
+column layouts. `FormState` owns only active focus, hover, viewport offset,
+column count, and painted field/scrollbar geometry. Partially clipped fields
+retain a union hit region plus optional visible label/value/support subregions.
+Required and disabled states reserve the neutral non-color markers `*` and `⊘`.
+Keyboard, click, wheel, and scrollbar-position methods expose semantic
+focus/activation or bounded scroll; callers retain field values, wording,
+editing, validation, submission, and lifecycle.
 
 `Tree` consumes a caller-flattened borrowed node projection with stable IDs,
 depth, disclosure, enabled, and loading/error facts. `TreeState` owns only

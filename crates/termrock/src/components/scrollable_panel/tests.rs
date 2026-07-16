@@ -218,7 +218,7 @@ fn fixed_prefix_scroll_uses_display_columns_for_wide_chars() {
     let backend = TestBackend::new(8, 1);
     let mut terminal = Terminal::new(backend).unwrap();
     let style = Style::default().bg(PHOSPHOR_GREEN);
-    let line = Line::styled("▸  a日本z", style);
+    let line = Line::styled("▸  a🧪🌐z", style);
 
     terminal
         .draw(|frame| {
@@ -228,8 +228,8 @@ fn fixed_prefix_scroll_uses_display_columns_for_wide_chars() {
 
     let buffer = terminal.backend().buffer();
     assert_eq!(buffer[(0, 0)].symbol(), "▸");
-    assert_eq!(buffer[(3, 0)].symbol(), "日");
-    assert_eq!(buffer[(5, 0)].symbol(), "本");
+    assert_eq!(buffer[(3, 0)].symbol(), "🧪");
+    assert_eq!(buffer[(5, 0)].symbol(), "🌐");
     assert_eq!(buffer[(7, 0)].symbol(), "z");
     for x in [0, 1, 2, 3, 5, 7] {
         assert_eq!(buffer[(x, 0)].bg, PHOSPHOR_GREEN, "x={x}");

@@ -8,14 +8,14 @@ use termrock::{
     Theme,
     widgets::{
         Action, ActionBar, ActionBarState, Anchor, Backdrop, DetailCapability, DetailRow,
-        DetailTable, DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Hint,
-        HintBar, List, ListRow, ListState, Panel, PanelEmphasis, RowRole, Severity, StatusBar,
-        StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState, Toast, Tree, TreeNode,
-        TreeNodeStatus, TreeState, Validation,
+        DetailTable, DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Form,
+        FormField, FormSection, FormState, Hint, HintBar, List, ListRow, ListState, Panel,
+        PanelEmphasis, RowRole, Severity, StatusBar, StatusSlot, Tab, Tabs, TabsState, TextInput,
+        TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
     },
 };
 
-use crate::interactors::{StaticStory, StoryInteraction, TreeInteractor};
+use crate::interactors::{FormInteractor, StaticStory, StoryInteraction, TreeInteractor};
 
 type RenderFn = fn(&mut Frame<'_>, Rect);
 type InteractorFactory = fn(RenderFn) -> Box<dyn StoryInteraction>;
@@ -71,6 +71,10 @@ fn static_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
 
 fn tree_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(TreeInteractor::new())
+}
+
+fn form_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(FormInteractor::new())
 }
 
 pub(crate) fn stories() -> Vec<Story> {
@@ -130,6 +134,16 @@ pub(crate) fn stories() -> Vec<Story> {
             tree,
         )
         .with_interactor(tree_interactor),
+        Story::new(
+            "form/responsive",
+            "Responsive form",
+            "Form",
+            "Sections, validation, disabled state, and stable-ID focus.",
+            68,
+            12,
+            form,
+        )
+        .with_interactor(form_interactor),
         Story::new(
             "text-input/filter",
             "Filter composition",
@@ -275,7 +289,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
         },
         TreeNode {
             id: "notes",
-            label: Line::from("資料 notes"),
+            label: Line::from("Wide 🧪 notes"),
             depth: 1,
             branch: false,
             expanded: false,
@@ -283,6 +297,49 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             status: TreeNodeStatus::Ready,
         },
     ]
+}
+
+pub(crate) fn form_fields() -> Vec<FormField<'static, &'static str>> {
+    vec![
+        FormField {
+            id: "name",
+            label: Line::from("Name"),
+            value: Line::from("Example profile"),
+            help: Some(Line::from("A recognizable display name")),
+            error: None,
+            required: true,
+            enabled: true,
+        },
+        FormField {
+            id: "endpoint",
+            label: Line::from("Endpoint"),
+            value: Line::from("localhost"),
+            help: None,
+            error: Some(Line::from("Enter a reachable address")),
+            required: true,
+            enabled: true,
+        },
+        FormField {
+            id: "mode",
+            label: Line::from("Managed mode"),
+            value: Line::from("Unavailable"),
+            help: None,
+            error: None,
+            required: false,
+            enabled: false,
+        },
+    ]
+}
+
+fn form(frame: &mut Frame<'_>, area: Rect) {
+    let fields = form_fields();
+    let sections = [FormSection {
+        title: Line::from("General"),
+        fields: &fields,
+    }];
+    let theme = Theme::default();
+    let mut state = FormState::new(Some("name"));
+    frame.render_stateful_widget(&Form::new(&sections, &theme), area, &mut state);
 }
 
 fn tree(frame: &mut Frame<'_>, area: Rect) {

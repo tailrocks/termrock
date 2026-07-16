@@ -3737,6 +3737,92 @@ pub const fn termrock::components::viewport_height(ratatui_core::layout::rect::R
 pub const fn termrock::components::viewport_width(ratatui_core::layout::rect::Rect) -> usize
 pub fn termrock::components::wrapped_height(&[termrock::geometry::HintSpan<'_>], u16) -> u16
 pub fn termrock::components::wrapped_lines(&[termrock::geometry::HintSpan<'_>], u16) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
+pub mod termrock::crossterm
+pub use termrock::crossterm::CrosstermBackend
+pub use termrock::crossterm::Event
+pub use termrock::crossterm::KeyEvent
+pub use termrock::crossterm::MouseEvent
+pub struct termrock::crossterm::Session<W: core::io::write::Write>
+impl<W: core::io::write::Write> termrock::crossterm::Session<W>
+pub fn termrock::crossterm::Session<W>::enter(W, termrock::crossterm::SessionOptions) -> core::io::error::Result<Self>
+pub fn termrock::crossterm::Session<W>::restore(&mut self) -> core::io::error::Result<()>
+pub fn termrock::crossterm::Session<W>::writer_mut(&mut self) -> &mut W
+impl<W: core::io::write::Write> core::ops::drop::Drop for termrock::crossterm::Session<W>
+pub fn termrock::crossterm::Session<W>::drop(&mut self)
+impl<W> core::marker::Freeze for termrock::crossterm::Session<W> where W: core::marker::Freeze
+impl<W> core::marker::Send for termrock::crossterm::Session<W> where W: core::marker::Send
+impl<W> core::marker::Sync for termrock::crossterm::Session<W> where W: core::marker::Sync
+impl<W> core::marker::Unpin for termrock::crossterm::Session<W> where W: core::marker::Unpin
+impl<W> core::marker::UnsafeUnpin for termrock::crossterm::Session<W> where W: core::marker::UnsafeUnpin
+impl<W> core::panic::unwind_safe::RefUnwindSafe for termrock::crossterm::Session<W> where W: core::panic::unwind_safe::RefUnwindSafe
+impl<W> core::panic::unwind_safe::UnwindSafe for termrock::crossterm::Session<W> where W: core::panic::unwind_safe::UnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::crossterm::Session<W> where U: core::convert::From<T>
+pub fn termrock::crossterm::Session<W>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::crossterm::Session<W> where U: core::convert::Into<T>
+pub type termrock::crossterm::Session<W>::Error = core::convert::Infallible
+pub fn termrock::crossterm::Session<W>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::crossterm::Session<W> where U: core::convert::TryFrom<T>
+pub type termrock::crossterm::Session<W>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::crossterm::Session<W>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> core::any::Any for termrock::crossterm::Session<W> where T: 'static + ?core::marker::Sized
+pub fn termrock::crossterm::Session<W>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::crossterm::Session<W> where T: ?core::marker::Sized
+pub fn termrock::crossterm::Session<W>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::crossterm::Session<W> where T: ?core::marker::Sized
+pub fn termrock::crossterm::Session<W>::borrow_mut(&mut self) -> &mut T
+impl<T> core::convert::From<T> for termrock::crossterm::Session<W>
+pub fn termrock::crossterm::Session<W>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::crossterm::Session<W>
+pub struct termrock::crossterm::SessionOptions
+pub termrock::crossterm::SessionOptions::alternate_screen: bool
+pub termrock::crossterm::SessionOptions::bracketed_paste: bool
+pub termrock::crossterm::SessionOptions::mouse_capture: bool
+pub termrock::crossterm::SessionOptions::raw_mode: bool
+impl core::clone::Clone for termrock::crossterm::SessionOptions
+pub fn termrock::crossterm::SessionOptions::clone(&self) -> termrock::crossterm::SessionOptions
+impl core::cmp::Eq for termrock::crossterm::SessionOptions
+impl core::cmp::PartialEq for termrock::crossterm::SessionOptions
+pub fn termrock::crossterm::SessionOptions::eq(&self, &termrock::crossterm::SessionOptions) -> bool
+impl core::default::Default for termrock::crossterm::SessionOptions
+pub fn termrock::crossterm::SessionOptions::default() -> Self
+impl core::fmt::Debug for termrock::crossterm::SessionOptions
+pub fn termrock::crossterm::SessionOptions::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::crossterm::SessionOptions
+impl core::marker::StructuralPartialEq for termrock::crossterm::SessionOptions
+impl core::marker::Freeze for termrock::crossterm::SessionOptions
+impl core::marker::Send for termrock::crossterm::SessionOptions
+impl core::marker::Sync for termrock::crossterm::SessionOptions
+impl core::marker::Unpin for termrock::crossterm::SessionOptions
+impl core::marker::UnsafeUnpin for termrock::crossterm::SessionOptions
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::crossterm::SessionOptions
+impl core::panic::unwind_safe::UnwindSafe for termrock::crossterm::SessionOptions
+impl<Q, K> equivalent::Equivalent<K> for termrock::crossterm::SessionOptions where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::crossterm::SessionOptions::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::crossterm::SessionOptions where U: core::convert::From<T>
+pub fn termrock::crossterm::SessionOptions::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::crossterm::SessionOptions where U: core::convert::Into<T>
+pub type termrock::crossterm::SessionOptions::Error = core::convert::Infallible
+pub fn termrock::crossterm::SessionOptions::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::crossterm::SessionOptions where U: core::convert::TryFrom<T>
+pub type termrock::crossterm::SessionOptions::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::crossterm::SessionOptions::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::crossterm::SessionOptions where T: core::clone::Clone
+pub type termrock::crossterm::SessionOptions::Owned = T
+pub fn termrock::crossterm::SessionOptions::clone_into(&self, &mut T)
+pub fn termrock::crossterm::SessionOptions::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::crossterm::SessionOptions where T: 'static + ?core::marker::Sized
+pub fn termrock::crossterm::SessionOptions::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::crossterm::SessionOptions where T: ?core::marker::Sized
+pub fn termrock::crossterm::SessionOptions::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::crossterm::SessionOptions where T: ?core::marker::Sized
+pub fn termrock::crossterm::SessionOptions::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::crossterm::SessionOptions where T: core::clone::Clone
+pub unsafe fn termrock::crossterm::SessionOptions::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::crossterm::SessionOptions
+pub fn termrock::crossterm::SessionOptions::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::crossterm::SessionOptions
+pub fn termrock::crossterm::key(crossterm::event::KeyEvent) -> termrock::input::KeyEvent
+pub fn termrock::crossterm::mouse_kind(crossterm::event::MouseEvent) -> termrock::input::MouseEventKind
 pub mod termrock::geometry
 pub enum termrock::geometry::HintSpan<'a>
 pub termrock::geometry::HintSpan::Dyn(alloc::string::String)
@@ -3907,6 +3993,8 @@ pub fn termrock::input::KeyCode::clone(&self) -> termrock::input::KeyCode
 impl core::cmp::Eq for termrock::input::KeyCode
 impl core::cmp::PartialEq for termrock::input::KeyCode
 pub fn termrock::input::KeyCode::eq(&self, &termrock::input::KeyCode) -> bool
+impl core::convert::From<crossterm::event::KeyCode> for termrock::input::KeyCode
+pub fn termrock::input::KeyCode::from(crossterm::event::KeyCode) -> Self
 impl core::convert::From<termrock::input::KeyCode> for termrock::keymap::KeyChord
 pub fn termrock::keymap::KeyChord::from(termrock::input::KeyCode) -> Self
 impl core::fmt::Debug for termrock::input::KeyCode
@@ -4066,6 +4154,8 @@ pub fn termrock::input::MouseEventKind::clone(&self) -> termrock::input::MouseEv
 impl core::cmp::Eq for termrock::input::MouseEventKind
 impl core::cmp::PartialEq for termrock::input::MouseEventKind
 pub fn termrock::input::MouseEventKind::eq(&self, &termrock::input::MouseEventKind) -> bool
+impl core::convert::From<crossterm::event::MouseEventKind> for termrock::input::MouseEventKind
+pub fn termrock::input::MouseEventKind::from(crossterm::event::MouseEventKind) -> Self
 impl core::fmt::Debug for termrock::input::MouseEventKind
 pub fn termrock::input::MouseEventKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for termrock::input::MouseEventKind
@@ -4249,6 +4339,8 @@ pub fn termrock::input::KeyEvent::clone(&self) -> termrock::input::KeyEvent
 impl core::cmp::Eq for termrock::input::KeyEvent
 impl core::cmp::PartialEq for termrock::input::KeyEvent
 pub fn termrock::input::KeyEvent::eq(&self, &termrock::input::KeyEvent) -> bool
+impl core::convert::From<crossterm::event::KeyEvent> for termrock::input::KeyEvent
+pub fn termrock::input::KeyEvent::from(crossterm::event::KeyEvent) -> Self
 impl core::convert::From<termrock::input::KeyEvent> for termrock::keymap::KeyChord
 pub fn termrock::keymap::KeyChord::from(termrock::input::KeyEvent) -> Self
 impl core::fmt::Debug for termrock::input::KeyEvent
@@ -4349,6 +4441,8 @@ pub fn termrock::input::KeyModifiers::clone(&self) -> termrock::input::KeyModifi
 impl core::cmp::Eq for termrock::input::KeyModifiers
 impl core::cmp::PartialEq for termrock::input::KeyModifiers
 pub fn termrock::input::KeyModifiers::eq(&self, &termrock::input::KeyModifiers) -> bool
+impl core::convert::From<crossterm::event::KeyModifiers> for termrock::input::KeyModifiers
+pub fn termrock::input::KeyModifiers::from(crossterm::event::KeyModifiers) -> Self
 impl core::default::Default for termrock::input::KeyModifiers
 pub fn termrock::input::KeyModifiers::default() -> termrock::input::KeyModifiers
 impl core::fmt::Debug for termrock::input::KeyModifiers
@@ -6586,6 +6680,50 @@ pub unsafe fn termrock::widgets::EditAction::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::EditAction
 pub fn termrock::widgets::EditAction::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::EditAction
+pub enum termrock::widgets::FormOutcome<Id>
+pub termrock::widgets::FormOutcome::Activated(Id)
+pub termrock::widgets::FormOutcome::FocusChanged(Id)
+pub termrock::widgets::FormOutcome::Ignored
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormOutcome<Id>::clone(&self) -> termrock::widgets::FormOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FormOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormOutcome<Id>::eq(&self, &termrock::widgets::FormOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FormOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::FormOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::FormOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::FormOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::FormOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::FormOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FormOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FormOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FormOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FormOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FormOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FormOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FormOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FormOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FormOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FormOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FormOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FormOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FormOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::FormOutcome<Id>::Owned = T
+pub fn termrock::widgets::FormOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FormOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FormOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FormOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FormOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FormOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FormOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FormOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FormOutcome<Id>
 pub enum termrock::widgets::ListOutcome<Id>
 pub termrock::widgets::ListOutcome::Activated(Id)
 pub termrock::widgets::ListOutcome::Changed
@@ -7432,6 +7570,232 @@ pub unsafe fn termrock::widgets::DiffView<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DiffView<'a>
 pub fn termrock::widgets::DiffView<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffView<'a>
+pub struct termrock::widgets::Form<'a, Id>
+impl<'a, Id> termrock::widgets::Form<'a, Id>
+pub const fn termrock::widgets::Form<'a, Id>::new(&'a [termrock::widgets::FormSection<'a, Id>], &'a termrock::style::Theme) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Form<'a, Id>
+pub fn termrock::widgets::Form<'a, Id>::clone(&self) -> termrock::widgets::Form<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Form<'a, Id>
+pub fn termrock::widgets::Form<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Form<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Form<'_, Id>
+pub type &termrock::widgets::Form<'_, Id>::State = termrock::widgets::FormState<Id>
+pub fn &termrock::widgets::Form<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::Form<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::Form<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::Form<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::Form<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::Form<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Form<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Form<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::Form<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::Form<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Form<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::Form<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::Form<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Form<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Form<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Form<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Form<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::Form<'a, Id>::Owned = T
+pub fn termrock::widgets::Form<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Form<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Form<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Form<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Form<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Form<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Form<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Form<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Form<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Form<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Form<'a, Id>
+pub fn termrock::widgets::Form<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Form<'a, Id>
+pub struct termrock::widgets::FormField<'a, Id>
+pub termrock::widgets::FormField::enabled: bool
+pub termrock::widgets::FormField::error: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::FormField::help: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::FormField::id: Id
+pub termrock::widgets::FormField::label: ratatui_core::text::line::Line<'a>
+pub termrock::widgets::FormField::required: bool
+pub termrock::widgets::FormField::value: ratatui_core::text::line::Line<'a>
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormField<'a, Id>
+pub fn termrock::widgets::FormField<'a, Id>::clone(&self) -> termrock::widgets::FormField<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FormField<'a, Id>
+pub fn termrock::widgets::FormField<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::FormField<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::FormField<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::FormField<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::FormField<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::FormField<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FormField<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FormField<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::FormField<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FormField<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FormField<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FormField<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FormField<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FormField<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FormField<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FormField<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FormField<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::FormField<'a, Id>::Owned = T
+pub fn termrock::widgets::FormField<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FormField<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FormField<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FormField<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FormField<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormField<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FormField<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormField<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FormField<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FormField<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FormField<'a, Id>
+pub fn termrock::widgets::FormField<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FormField<'a, Id>
+pub struct termrock::widgets::FormFieldRegion<Id>
+pub termrock::widgets::FormFieldRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::FormFieldRegion::id: Id
+pub termrock::widgets::FormFieldRegion::label: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::FormFieldRegion::supporting: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::FormFieldRegion::value: core::option::Option<ratatui_core::layout::rect::Rect>
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormFieldRegion<Id>
+pub fn termrock::widgets::FormFieldRegion<Id>::clone(&self) -> termrock::widgets::FormFieldRegion<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FormFieldRegion<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FormFieldRegion<Id>
+pub fn termrock::widgets::FormFieldRegion<Id>::eq(&self, &termrock::widgets::FormFieldRegion<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FormFieldRegion<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FormFieldRegion<Id>
+pub fn termrock::widgets::FormFieldRegion<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::FormFieldRegion<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::FormFieldRegion<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::FormFieldRegion<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::FormFieldRegion<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::FormFieldRegion<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FormFieldRegion<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FormFieldRegion<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FormFieldRegion<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FormFieldRegion<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FormFieldRegion<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FormFieldRegion<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FormFieldRegion<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FormFieldRegion<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FormFieldRegion<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FormFieldRegion<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FormFieldRegion<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FormFieldRegion<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FormFieldRegion<Id> where T: core::clone::Clone
+pub type termrock::widgets::FormFieldRegion<Id>::Owned = T
+pub fn termrock::widgets::FormFieldRegion<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FormFieldRegion<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FormFieldRegion<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FormFieldRegion<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FormFieldRegion<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormFieldRegion<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FormFieldRegion<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormFieldRegion<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FormFieldRegion<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FormFieldRegion<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FormFieldRegion<Id>
+pub fn termrock::widgets::FormFieldRegion<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FormFieldRegion<Id>
+pub struct termrock::widgets::FormSection<'a, Id>
+pub termrock::widgets::FormSection::fields: &'a [termrock::widgets::FormField<'a, Id>]
+pub termrock::widgets::FormSection::title: ratatui_core::text::line::Line<'a>
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormSection<'a, Id>
+pub fn termrock::widgets::FormSection<'a, Id>::clone(&self) -> termrock::widgets::FormSection<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FormSection<'a, Id>
+pub fn termrock::widgets::FormSection<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::FormSection<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::FormSection<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::FormSection<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::FormSection<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::FormSection<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FormSection<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FormSection<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::FormSection<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FormSection<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FormSection<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FormSection<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FormSection<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FormSection<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FormSection<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FormSection<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FormSection<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::FormSection<'a, Id>::Owned = T
+pub fn termrock::widgets::FormSection<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FormSection<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FormSection<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FormSection<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FormSection<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormSection<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FormSection<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormSection<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FormSection<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FormSection<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FormSection<'a, Id>
+pub fn termrock::widgets::FormSection<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FormSection<'a, Id>
+pub struct termrock::widgets::FormState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::FormState<Id>
+pub fn termrock::widgets::FormState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormState<Id>::handle_key(&mut self, &[termrock::widgets::FormSection<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
+impl<Id> termrock::widgets::FormState<Id>
+pub const fn termrock::widgets::FormState<Id>::column_count(&self) -> u8
+pub fn termrock::widgets::FormState<Id>::field_regions(&self) -> &[termrock::widgets::FormFieldRegion<Id>]
+pub fn termrock::widgets::FormState<Id>::focus(&mut self, core::option::Option<Id>)
+pub const fn termrock::widgets::FormState<Id>::focused(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::FormState<Id>::hovered(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::FormState<Id>::is_active(&self) -> bool
+pub const fn termrock::widgets::FormState<Id>::new(core::option::Option<Id>) -> Self
+pub const fn termrock::widgets::FormState<Id>::offset(&self) -> usize
+pub fn termrock::widgets::FormState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
+pub fn termrock::widgets::FormState<Id>::scroll_by(&mut self, i32) -> usize
+pub fn termrock::widgets::FormState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position) -> bool
+pub const fn termrock::widgets::FormState<Id>::set_active(&mut self, bool)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormState<Id>
+pub fn termrock::widgets::FormState<Id>::clone(&self) -> termrock::widgets::FormState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FormState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FormState<Id>
+pub fn termrock::widgets::FormState<Id>::eq(&self, &termrock::widgets::FormState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FormState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FormState<Id>
+pub fn termrock::widgets::FormState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::FormState<Id>
+pub fn termrock::widgets::FormState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::FormState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::FormState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::FormState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::FormState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::FormState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FormState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FormState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FormState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FormState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FormState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FormState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FormState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FormState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FormState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FormState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FormState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FormState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FormState<Id> where T: core::clone::Clone
+pub type termrock::widgets::FormState<Id>::Owned = T
+pub fn termrock::widgets::FormState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FormState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FormState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FormState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FormState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FormState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FormState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FormState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FormState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FormState<Id>
+pub fn termrock::widgets::FormState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FormState<Id>
 pub struct termrock::widgets::Hint<'a>
 pub termrock::widgets::Hint::chord: &'a str
 pub termrock::widgets::Hint::label: &'a str

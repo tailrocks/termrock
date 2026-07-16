@@ -5,10 +5,10 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{Frame, layout::Rect};
 use termrock::{
     Theme,
-    widgets::{Tree, TreeNode, TreeOutcome, TreeState},
+    widgets::{Form, FormOutcome, FormSection, FormState, Tree, TreeNode, TreeOutcome, TreeState},
 };
 
-use crate::stories::tree_nodes;
+use crate::stories::{form_fields, tree_nodes};
 
 pub(crate) trait StoryInteraction {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect);
@@ -70,7 +70,9 @@ impl StoryInteraction for TreeInteractor {
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
         let position = ratatui::layout::Position::new(mouse.column, mouse.row);
         if !preview_area.contains(position) {
-            return false;
+            let changed = self.state.hovered().is_some();
+            self.state.hover(position);
+            return changed;
         }
         match mouse.kind {
             crossterm::event::MouseEventKind::Moved => {
@@ -94,5 +96,112 @@ impl StoryInteraction for TreeInteractor {
             }
             _ => false,
         }
+    }
+}
+
+pub(crate) struct FormInteractor {
+    state: FormState<&'static str>,
+    theme: Theme,
+}
+
+impl FormInteractor {
+    pub(crate) fn new() -> Self {
+        Self {
+            state: FormState::new(Some("name")),
+            theme: Theme::default(),
+        }
+    }
+}
+
+impl StoryInteraction for FormInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        let fields = form_fields();
+        let sections = [FormSection {
+            title: ratatui::text::Line::from("General"),
+            fields: &fields,
+        }];
+        frame.render_stateful_widget(&Form::new(&sections, &self.theme), area, &mut self.state);
+    }
+
+    fn handle_key(&mut self, key: KeyEvent) -> bool {
+        let fields = form_fields();
+        let sections = [FormSection {
+            title: ratatui::text::Line::from("General"),
+            fields: &fields,
+        }];
+        !matches!(
+            self.state.handle_key(&sections, key.into()),
+            FormOutcome::Ignored
+        )
+    }
+
+    fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
+        let position = ratatui::layout::Position::new(mouse.column, mouse.row);
+        if !preview_area.contains(position) {
+            let changed = self.state.hovered().is_some();
+            self.state.hover(position);
+            return changed;
+        }
+        match mouse.kind {
+            crossterm::event::MouseEventKind::Moved => {
+                self.state.hover(position);
+                true
+            }
+            crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
+                self.state.scroll_to_position(position)
+                    || !matches!(self.state.click(position), FormOutcome::Ignored)
+            }
+            crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) => {
+                self.state.scroll_to_position(position)
+            }
+            crossterm::event::MouseEventKind::ScrollUp => {
+                self.state.scroll_by(-1);
+                true
+            }
+            crossterm::event::MouseEventKind::ScrollDown => {
+                self.state.scroll_by(1);
+                true
+            }
+            _ => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crossterm::event::{KeyModifiers, MouseEvent, MouseEventKind};
+    use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+
+    use super::{FormInteractor, StoryInteraction};
+
+    #[test]
+    fn form_hover_clears_when_pointer_leaves_preview() {
+        let area = Rect::new(0, 0, 68, 12);
+        let mut interactor = FormInteractor::new();
+        let mut terminal = Terminal::new(TestBackend::new(area.width, area.height)).unwrap();
+        terminal
+            .draw(|frame| interactor.render(frame, area))
+            .unwrap();
+
+        assert!(interactor.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                column: 0,
+                row: 2,
+                modifiers: KeyModifiers::NONE,
+            },
+            area,
+        ));
+        assert_eq!(interactor.state.hovered(), Some(&"name"));
+        assert!(interactor.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                column: area.right(),
+                row: area.bottom(),
+                modifiers: KeyModifiers::NONE,
+            },
+            area,
+        ));
+        assert_eq!(interactor.state.hovered(), None);
     }
 }
