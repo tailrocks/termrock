@@ -7,10 +7,7 @@ use ratatui_core::{
     style::{Modifier, Style},
     text::Span,
 };
-use ratatui_widgets::{
-    block::Block,
-    borders::{BorderType, Borders},
-};
+use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN, WHITE};
 
@@ -62,12 +59,6 @@ impl<'a> Panel<'a> {
         let mut block = Block::default()
             .borders(Borders::ALL)
             .border_style(self.focus.border_style());
-        if matches!(
-            self.focus,
-            PanelFocus::Focused | PanelFocus::FocusedScrollable
-        ) {
-            block = block.border_type(BorderType::Double);
-        }
         if let Some(title) = self.title {
             // Normalize to " Title " so callers never need to add padding manually.
             let padded = format!(" {} ", title.trim());

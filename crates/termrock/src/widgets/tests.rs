@@ -58,7 +58,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 }
 
 #[test]
-fn focused_panel_has_a_non_color_border_cue() {
+fn focused_panel_preserves_plain_border_glyphs() {
     let theme = Theme::default();
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
@@ -69,7 +69,7 @@ fn focused_panel_has_a_non_color_border_cue() {
         theme: &theme,
     };
     (&panel).render(area, &mut buffer);
-    assert_eq!(buffer[(0, 0)].symbol(), "╔");
+    assert_eq!(buffer[(0, 0)].symbol(), "┌");
 }
 
 #[test]
