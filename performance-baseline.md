@@ -1,5 +1,12 @@
 # Performance baseline
 
+> **Staleness note (2026-07-16):** the measurements below predate the
+> v0.7/v0.8 widget additions (Form, SplitPane, Tree) and describe the
+> v0.6.0 candidate. The current enforced hot-path budget lives in
+> `crates/termrock/COMPONENTS.md` (tree_hot_path, 250 ms batch budget).
+> Re-measure on equivalent hardware before citing these numbers for the
+> 0.8.x line.
+
 Measured on 2026-07-15 on Linux aarch64 after jackin❯ parity, using Rust 1.97.0. These budgets compare against the frozen donor baseline; they guard behavior as well as speed.
 
 | Measurement | Donor | v0.6.0 candidate | Verdict |

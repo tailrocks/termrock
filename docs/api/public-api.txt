@@ -4146,10 +4146,10 @@ impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ActionBarState<Id>
 impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ActionBarState<Id>
 pub fn termrock::widgets::ActionBarState<Id>::eq(&self, &termrock::widgets::ActionBarState<Id>) -> bool
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ActionBarState<Id>
-impl<Id: core::default::Default> core::default::Default for termrock::widgets::ActionBarState<Id>
-pub fn termrock::widgets::ActionBarState<Id>::default() -> termrock::widgets::ActionBarState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ActionBarState<Id>
 pub fn termrock::widgets::ActionBarState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::ActionBarState<Id>
+pub fn termrock::widgets::ActionBarState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::ActionBarState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::ActionBarState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::ActionBarState<Id> where Id: core::marker::Sync
@@ -4281,10 +4281,10 @@ impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ChoiceDialogState<I
 impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ChoiceDialogState<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::eq(&self, &termrock::widgets::ChoiceDialogState<Id>) -> bool
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ChoiceDialogState<Id>
-impl<Id: core::default::Default> core::default::Default for termrock::widgets::ChoiceDialogState<Id>
-pub fn termrock::widgets::ChoiceDialogState<Id>::default() -> termrock::widgets::ChoiceDialogState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ChoiceDialogState<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::ChoiceDialogState<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::ChoiceDialogState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::ChoiceDialogState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::ChoiceDialogState<Id> where Id: core::marker::Sync
@@ -4429,10 +4429,10 @@ impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::DetailTableState<Id
 impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::DetailTableState<Id>
 pub fn termrock::widgets::DetailTableState<Id>::eq(&self, &termrock::widgets::DetailTableState<Id>) -> bool
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::DetailTableState<Id>
-impl<Id: core::default::Default> core::default::Default for termrock::widgets::DetailTableState<Id>
-pub fn termrock::widgets::DetailTableState<Id>::default() -> termrock::widgets::DetailTableState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DetailTableState<Id>
 pub fn termrock::widgets::DetailTableState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::DetailTableState<Id>
+pub fn termrock::widgets::DetailTableState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::DetailTableState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::DetailTableState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::DetailTableState<Id> where Id: core::marker::Sync
@@ -5048,10 +5048,10 @@ impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ListState<Id>
 impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::eq(&self, &termrock::widgets::ListState<Id>) -> bool
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ListState<Id>
-impl<Id: core::default::Default> core::default::Default for termrock::widgets::ListState<Id>
-pub fn termrock::widgets::ListState<Id>::default() -> termrock::widgets::ListState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::ListState<Id>
+pub fn termrock::widgets::ListState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::ListState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::ListState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::ListState<Id> where Id: core::marker::Sync
@@ -5439,10 +5439,10 @@ impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::StatusBarState<Id>
 impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::StatusBarState<Id>
 pub fn termrock::widgets::StatusBarState<Id>::eq(&self, &termrock::widgets::StatusBarState<Id>) -> bool
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::StatusBarState<Id>
-impl<Id: core::default::Default> core::default::Default for termrock::widgets::StatusBarState<Id>
-pub fn termrock::widgets::StatusBarState<Id>::default() -> termrock::widgets::StatusBarState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::StatusBarState<Id>
 pub fn termrock::widgets::StatusBarState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::StatusBarState<Id>
+pub fn termrock::widgets::StatusBarState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::StatusBarState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::StatusBarState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::StatusBarState<Id> where Id: core::marker::Sync
@@ -5520,7 +5520,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::StatusSlot<'a, Id
 pub struct termrock::widgets::Tab<'a, Id>
 pub termrock::widgets::Tab::active: bool
 pub termrock::widgets::Tab::enabled: bool
-pub termrock::widgets::Tab::glyph: core::option::Option<&'a str>
+pub termrock::widgets::Tab::glyph: core::option::Option<ratatui_core::text::span::Span<'a>>
 pub termrock::widgets::Tab::id: Id
 pub termrock::widgets::Tab::label: &'a str
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tab<'a, Id>
@@ -5609,10 +5609,10 @@ impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TabsState<Id>
 impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TabsState<Id>
 pub fn termrock::widgets::TabsState<Id>::eq(&self, &termrock::widgets::TabsState<Id>) -> bool
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TabsState<Id>
-impl<Id: core::default::Default> core::default::Default for termrock::widgets::TabsState<Id>
-pub fn termrock::widgets::TabsState<Id>::default() -> termrock::widgets::TabsState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TabsState<Id>
 pub fn termrock::widgets::TabsState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::TabsState<Id>
+pub fn termrock::widgets::TabsState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::TabsState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::TabsState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::TabsState<Id> where Id: core::marker::Sync

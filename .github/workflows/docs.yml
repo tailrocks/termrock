@@ -11,10 +11,14 @@ jobs:
       - run: mise install rust
       - uses: Swatinem/rust-cache@v2
       - run: mise install bun
+      - run: mise install cargo-binstall cargo:cargo-public-api
       - working-directory: docs
         run: bun install --frozen-lockfile
       - working-directory: docs
         run: bun run types:check
+      - run: |
+          mise x -- cargo public-api -p termrock --all-features > /tmp/public-api-fresh.txt
+          diff -u docs/api/public-api.txt /tmp/public-api-fresh.txt
       - working-directory: docs
         run: bun run build
       - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
