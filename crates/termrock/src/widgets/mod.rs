@@ -20,19 +20,21 @@ pub use action_bar::{Action, ActionBar, ActionBarState};
 pub use detail_table::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState,
 };
-pub use dialog::{Backdrop, ChoiceDialog, Dialog, DialogAction, MessageDialog};
+pub use dialog::{Backdrop, ChoiceDialog, ChoiceDialogState, Dialog, MessageDialog};
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
-pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans};
+pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans, wrapped_hint_lines};
 pub use list::{List, ListOutcome, ListRow, ListState, RowRole};
 pub use panel::{Panel, PanelEmphasis};
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,
     SplitSide,
 };
-pub use status_bar::{StatusBar, StatusSlot};
+pub use status_bar::{StatusBar, StatusBarState, StatusSlot};
 pub use tabs::{Tab, Tabs, TabsState};
-pub use text_input::{EditAction, TextInput, TextInputState, Validation};
+pub use text_input::{
+    EditAction, TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation,
+};
 pub use toast::{Anchor, Severity, Toast};
 pub use tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState};
 pub use viewport::Viewport;

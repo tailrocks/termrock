@@ -11,7 +11,10 @@
   {"id":"detail-table/basic","file":"detail-table-basic.svg"},
   {"id":"status-bar/basic","file":"status-bar-basic.svg"},
   {"id":"dialog/message","file":"dialog-message.svg"},
+  {"id":"choice-dialog/basic","file":"choice-dialog-basic.svg"},
+  {"id":"message-dialog/details","file":"message-dialog-details.svg"},
   {"id":"diff/basic","file":"diff-basic.svg"},
   {"id":"toast/success","file":"toast-success.svg"},
-  {"id":"backdrop/basic","file":"backdrop-basic.svg"}
+  {"id":"backdrop/basic","file":"backdrop-basic.svg"},
+  {"id":"viewport/both-axes","file":"viewport-both-axes.svg"}
 ]

@@ -6,18 +6,21 @@ Every component accepts consumer-owned labels and borrowed data. Keyboard routin
 
 - `ActionBar`: caller-defined actions and activation regions. Story `action-bar/basic`.
 - `Backdrop`: backdrop without lifecycle ownership. Story `backdrop/basic`.
-- `DetailTable`: label/value rows with copy/link capabilities. Story `detail-table/basic`.
-- `Dialog`, `ChoiceDialog`, `MessageDialog`: shells and caller choices. Story `dialog/message`.
+- `DetailTable`: borrowed stable-ID label/value rows with selection, hover, emphasis, wrapping or bounded two-axis scrolling, exact copy/link hit regions, typed outcomes, and typed hyperlink regions. Story `detail-table/basic`.
+- `Dialog`: neutral shell and caller-owned content. Story `dialog/message`.
+- `ChoiceDialog`: neutral shell with caller-owned stable actions plus canonical focus traversal and painted keyboard/mouse activation outcomes. Story `choice-dialog/basic`.
+- `MessageDialog`: wrapped neutral message shell composed with the canonical `DetailTable` state and non-overlapping responsive body allocation. Story `message-dialog/details`.
 - `DiffView`: borrowed projected lines. Story `diff/basic`.
 - `Form`: borrowed sections/fields, stable-ID focus traversal, validation/help/required/disabled states with neutral non-color markers, responsive columns, scrolling, and clipped label/value/support hit regions. Story `form/responsive`.
-- `HintBar`: prioritized chord descriptors. Story `hint-bar/wrapped`.
-- `List`: borrowed stable-ID rows. Story `list/selection`.
+- `HintBar`: prioritized chord descriptors and semantic group wrapping that never splits a key/label pair. Story `hint-bar/wrapped`.
+- `List`: borrowed stable-ID rows with owned keyboard navigation, scrolling, activation, hover, and painted click regions. Story `list/selection`.
 - `Panel`: semantic framing. Story `panel/focused`.
 - `SplitPane`: horizontal/vertical bounded pane geometry, integer remembered ratio, proportional minimum degradation in tiny areas, render-authorized divider focus/hover/drag, and caller-mapped collapse/expand. Story `split-pane/horizontal`.
-- `StatusBar`: caller-owned slots. Story `status-bar/basic`.
+- `StatusBar`: caller-owned left/right slots with priority and minimum-width allocation, Unicode-safe truncation, painted hit regions, hover styles, and bar-wide fade. Story `status-bar/basic`.
 - `Tabs`: stable IDs, glyphs, and explicit state. Story `tabs/status`.
-- `TextInput`: grapheme-safe editing and external validation. Story `text-input/filter`.
+- `TextInput`: grapheme-safe editing, validated external cursor placement, cursor viewport, submission/cancellation outcomes, maximum-length and duplicate validation, and external validation styling. Story `text-input/filter`.
 - `Toast`: severity and anchor metadata. Story `toast/success`.
 - `Tree`: caller-flattened hierarchy, stable disclosure/selection IDs, explicit focus/loading/error rows, Page/wheel/scrollbar navigation, and painted hit regions. Story `tree/navigation`.
+- `Viewport`: borrowed lines with bounded two-axis scroll state. Story `viewport/both-axes`.
 
-All widgets tolerate empty and narrow rectangles. Disabled items are not hit targets. Mouse regions derive from painted geometry. Consumers own navigation policy and dialog stacking.
+All widgets tolerate empty and narrow rectangles. Disabled items are not hit targets. Mouse regions derive from painted geometry. Consumers own navigation policy and dialog stacking. The reviewed contract matrix in `docs/api/component-contracts.json` classifies keyboard, mouse, focus, non-color, Unicode, and narrow-terminal responsibility for every widget derived from the public API report; the catalog gate rejects missing or stale classifications.
