@@ -1,7 +1,7 @@
 schema = 1
 recorded_at = "2026-07-16"
 release = "v0.6.0"
-termrock_implementation_revision = "824783b0b46c47b91418d227047d7fdaf35ddde7"
+termrock_implementation_revision = "f4368a35f51cd258fc2f2635101e897c961832c3"
 jackin_implementation_revision = "27c450e9af7a299171034f98267e0fa26bd3057f"
 rust_version_floor = "1.95"
 tested_toolchain = "1.97.0"
@@ -40,6 +40,18 @@ repository = "jackin-project/jackin"
 platform = "macos"
 command = "temporarily pin TermRock 179745902bd0dbe266cbf54481afeaf0212b1d06, cargo update -p termrock --precise 179745902bd0dbe266cbf54481afeaf0212b1d06, then cargo check --workspace --all-targets --locked at 27c450e9af7a299171034f98267e0fa26bd3057f"
 result = "pass; temporary Cargo.toml and Cargo.lock changes restored afterward; Jackin working tree clean"
+
+[[verification]]
+repository = "tailrocks/termrock"
+platform = "macos"
+command = "cargo test -p termrock --features crossterm --lib session::tests --locked && cargo test --workspace --all-features --locked && cargo clippy --workspace --all-targets --all-features --locked -- -D warnings && cargo semver-checks check-release -p termrock --baseline-rev v0.6.0 && cargo deny check advisories bans licenses sources && cargo shear --deny-warnings && gitleaks detect --no-banner --redact --source ."
+result = "pass at f4368a35f51cd258fc2f2635101e897c961832c3; 224 workspace tests including 7/7 session lifecycle tests; 196/196 semver checks; two distinct cleanup failures prove continued cleanup and earliest-error identity"
+
+[[verification]]
+repository = "jackin-project/jackin"
+platform = "macos"
+command = "consumer evidence inherited from direct all-target compilation against 824783b0b46c47b91418d227047d7fdaf35ddde7"
+result = "valid for f4368a35f51cd258fc2f2635101e897c961832c3 because the descendant adds only private cfg(test) evidence; its non-test library compilation and public contract are unchanged from the directly compiled implementation revision"
 
 [[verification]]
 repository = "jackin-project/jackin"
