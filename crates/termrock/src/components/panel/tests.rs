@@ -58,7 +58,7 @@ fn panel_unfocused_uses_phosphor_dark() {
 }
 
 #[test]
-fn focused_panel_has_non_color_border_cue() {
+fn focused_panel_preserves_plain_border_glyphs() {
     let backend = TestBackend::new(3, 3);
     let mut term = Terminal::new(backend).unwrap();
     term.draw(|frame| {
@@ -68,5 +68,5 @@ fn focused_panel_has_non_color_border_cue() {
         );
     })
     .unwrap();
-    assert_eq!(term.backend().buffer()[(0, 0)].symbol(), "╔");
+    assert_eq!(term.backend().buffer()[(0, 0)].symbol(), "┌");
 }
