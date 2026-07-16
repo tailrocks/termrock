@@ -319,7 +319,7 @@ mod tests {
     #[test]
     fn render_reveals_wide_cursor_in_narrow_viewport() {
         let theme = Theme::default();
-        let mut state = TextInputState::new("alpha界");
+        let mut state = TextInputState::new("alpha🧪");
         let area = Rect::new(3, 2, 4, 1);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 10, 5));
         (&TextInput {
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn external_cursor_accepts_grapheme_boundaries_and_rejects_splits() {
-        let mut state = TextInputState::new("a👩‍💻界");
+        let mut state = TextInputState::new("a👩‍💻🧪");
 
         assert!(state.set_cursor_byte(1));
         assert_eq!(state.cursor_byte(), 1);

@@ -527,8 +527,8 @@ mod tests {
             DetailRow {
                 id: "log",
                 label: "Diagnostics",
-                value: "/wide/診断/path",
-                href: Some("file:///wide/診断/path"),
+                value: "/wide/🧪🔬/path",
+                href: Some("file:///wide/🧪🔬/path"),
                 capability: DetailCapability::CopyAndLink,
                 emphasis: true,
                 style: None,
@@ -650,7 +650,7 @@ mod tests {
         let links = table.hyperlink_regions(&state);
         assert_eq!(links.len(), 1);
         assert_eq!(links[0].id, "log");
-        assert_eq!(links[0].url, "file:///wide/診断/path");
+        assert_eq!(links[0].url, "file:///wide/🧪🔬/path");
         assert!(links[0].area.width > 0);
     }
 }

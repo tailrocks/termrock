@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn unicode_truncation_never_paints_half_a_wide_grapheme() {
-        let left = [slot("wide", " 診断🧪 ", 1, 3)];
+        let left = [slot("wide", " 🧪🔬🧭 ", 1, 3)];
         let bar = StatusBar {
             left: &left,
             right: &[],
