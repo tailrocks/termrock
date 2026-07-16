@@ -1,12 +1,17 @@
 //! Public harness metadata for TermRock component stories.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Catalog metadata for one deterministic component story.
 pub struct StoryMetadata {
+    /// Stable story identifier used by previews and documentation.
     pub id: &'static str,
+    /// Human-readable story title.
     pub title: &'static str,
+    /// Public TermRock component exercised by the story.
     pub component: &'static str,
 }
 
+/// Generated inventory of every catalog story.
 pub const STORIES: &[StoryMetadata] = &[
     StoryMetadata {
         id: "panel/focused",
@@ -100,6 +105,8 @@ pub const STORIES: &[StoryMetadata] = &[
     },
 ];
 
+#[must_use]
+/// Returns the generated catalog story inventory.
 #[must_use]
 pub fn stories() -> &'static [StoryMetadata] {
     STORIES
