@@ -19,7 +19,7 @@ Lookbook is the reference implementation. A developer using `SelectList` or `Tex
 
 **On finding a violation:**
 1. Identify the missing public API (e.g. `ConfirmState::with_focus_no()`).
-2. Add the method to `termrock` in the same PR.
+2. Add the method to `termrock` in the same commit.
 3. Update the story to call the new method.
 4. Verify `cargo clippy -p termrock-lookbook -- -D warnings` produces no errors.
 

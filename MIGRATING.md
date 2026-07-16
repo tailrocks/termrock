@@ -2,6 +2,15 @@
 
 Pin a reviewed full Git revision and commit the Cargo lockfile. TermRock keeps executor, output, validation, wording, and application models consumer-owned.
 
+TermRock optimizes for the best forward design rather than API compatibility.
+Breaking releases expose only the new model: no deprecated aliases,
+compatibility facades, or transition shims. Each breaking release section must
+provide an old-to-new map, identify changes in state or rendering ownership,
+and call out local consumer implementations that should be removed. Signature
+or composition changes include before/after Rust examples when the mapping is
+not obvious. Consumers should read every section between their pinned revision
+and the target revision before updating the full Git revision and lockfile.
+
 ## `v0.7.0` canonical namespace migration
 
 `v0.7.0` is the intentional pre-1.0 breaking release that removes the donor-shaped `components` facade. Consumers must move to the canonical namespaces described below before updating their exact revision pin.

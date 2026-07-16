@@ -26,6 +26,28 @@ missing, extend or refactor TermRock rather than implementing a local visual
 substitute. Breaking API changes are welcome during the pre-release period when
 they improve the shared design; do not add migration shims.
 
+## Breaking-change documentation
+
+Backward compatibility must not constrain a better component model, but every
+breaking or dramatic behavioral change must be understandable without reading
+the implementation or commit history. Ship the change and its migration
+documentation together on `main`:
+
+- add a versioned section to `MIGRATING.md` that names the removed API or old
+  concept, its replacement, and the downstream code or ownership change;
+- use an old-to-new table when more than one symbol, namespace, state owner, or
+  behavior changes;
+- include short before/after Rust examples when a type signature or composition
+  pattern changes and prose alone is ambiguous;
+- state explicitly when consumers must delete a local implementation, move
+  state into TermRock, or retain product-owned state/effects;
+- update the component catalog, generated API inventory, contract docs, and
+  relevant guide pages so they describe only the new design.
+
+Do not add deprecated aliases, compatibility facades, or migration shims. The
+migration document explains the transition; the library exposes the new model
+only. A breaking change is incomplete until this documentation is committed.
+
 Every public widget must be represented by the catalog's generated API
 inventory, contract matrix, documentation, story, and deterministic preview.
 The current distribution unit is the Rust crate. Preserve open, inspectable
