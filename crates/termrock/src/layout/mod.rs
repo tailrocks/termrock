@@ -82,6 +82,31 @@ impl Slots {
     }
 }
 
+/// Split fixed rows from the bottom of an area in top-to-bottom order.
+///
+/// The body receives all remaining height. Rows that do not fit collapse to
+/// zero height at the bottom edge, so consumers share one tiny-terminal
+/// contract instead of reimplementing `row_from_bottom` arithmetic.
+#[must_use]
+pub fn bottom_rows<const N: usize>(area: Rect, heights: [u16; N]) -> (Rect, [Rect; N]) {
+    let mut allocated = [0_u16; N];
+    let mut remaining = area.height;
+    for index in (0..N).rev() {
+        allocated[index] = heights[index].min(remaining);
+        remaining = remaining.saturating_sub(allocated[index]);
+    }
+    let rows_height = area.height.saturating_sub(remaining);
+    let body = Rect::new(area.x, area.y, area.width, area.height - rows_height);
+    let mut y = body.bottom();
+    let rows = std::array::from_fn(|index| {
+        let height = allocated[index];
+        let row = Rect::new(area.x, y, area.width, height);
+        y = y.saturating_add(height);
+        row
+    });
+    (body, rows)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -141,5 +166,14 @@ mod tests {
             },
         );
         assert_eq!(rect, Rect::new(2, 0, 16, 10));
+    }
+
+    #[test]
+    fn bottom_rows_share_tiny_area_collapse_geometry() {
+        let (body, rows) = bottom_rows(Rect::new(4, 2, 20, 2), [1, 1, 1]);
+        assert_eq!(body, Rect::new(4, 2, 20, 0));
+        assert_eq!(rows[0], Rect::new(4, 2, 20, 0));
+        assert_eq!(rows[1], Rect::new(4, 2, 20, 1));
+        assert_eq!(rows[2], Rect::new(4, 3, 20, 1));
     }
 }
