@@ -123,6 +123,36 @@ mod backdrop_tests {
             Outcome::Activated("accept")
         );
     }
+
+    #[test]
+    fn message_details_start_after_wrapped_body() {
+        let details = [DetailRow {
+            id: "stage",
+            label: "Stage",
+            value: "Build",
+            href: None,
+            capability: super::super::DetailCapability::None,
+            emphasis: false,
+            style: None,
+        }];
+        let theme = Theme::default();
+        let dialog = MessageDialog {
+            dialog: Dialog {
+                title: "Failure",
+                body: Text::from("a message that wraps"),
+                style: Style::new(),
+            },
+            details: &details,
+            label_width: 0,
+            wrap: true,
+            theme: &theme,
+        };
+        let area = Rect::new(0, 0, 12, 8);
+        let mut buffer = Buffer::empty(area);
+        let mut state = DetailTableState::default();
+        (&dialog).render(area, &mut buffer, &mut state);
+        assert_eq!(state.viewport.y, 3);
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -277,7 +307,22 @@ impl<Id: Clone + PartialEq> StatefulWidget for &MessageDialog<'_, Id> {
             state.regions.clear();
             return;
         }
-        let inner = Rect::new(area.x + 1, area.y + 2, area.width - 2, area.height - 3);
+        let content_width = usize::from(area.width.saturating_sub(2)).max(1);
+        let body_height = self
+            .dialog
+            .body
+            .lines
+            .iter()
+            .map(|line| line.width().div_ceil(content_width).max(1))
+            .sum::<usize>()
+            .min(usize::from(area.height.saturating_sub(2)));
+        let body_height = u16::try_from(body_height).unwrap_or(u16::MAX);
+        let inner = Rect::new(
+            area.x + 1,
+            area.y.saturating_add(1).saturating_add(body_height),
+            area.width - 2,
+            area.height.saturating_sub(body_height).saturating_sub(2),
+        );
         (&DetailTable {
             rows: self.details,
             label_width: self.label_width,
