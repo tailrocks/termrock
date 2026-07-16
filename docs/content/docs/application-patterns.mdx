@@ -13,3 +13,37 @@ cargo run -p termrock --example showcase --features crossterm
 TermRock does not require an application architecture. Consumers may use a
 direct loop, Elm-style update flow, components, or another state model while
 keeping rendering and interaction primitives shared.
+
+## Crossterm runner
+
+With the `crossterm` feature, `runtime::run` centralizes terminal mode setup,
+neutral event conversion, redraw cadence, deadline-aware polling, and reverse
+restoration. Mutable render state remains valid; effects and process policy
+remain application-owned.
+
+```rust
+use std::ops::ControlFlow;
+use termrock::runtime::{RunOptions, run};
+
+# struct App;
+# impl App {
+#   fn render(&mut self, _: &mut ratatui_core::terminal::Frame<'_>, _: termrock::runtime::FrameTick) {}
+#   fn update(&mut self, _: termrock::input::Event, _: termrock::runtime::FrameTick) -> ControlFlow<()> { ControlFlow::Break(()) }
+#   fn next_deadline(&self) -> Option<std::time::Instant> { None }
+# }
+# let mut app = App;
+run(
+    &mut app,
+    RunOptions::default(),
+    App::render,
+    App::update,
+    App::next_deadline,
+)?;
+# Ok::<(), std::io::Error>(())
+```
+
+Runner samples one `FrameTick` before each draw and passes the same value to
+that cycle's update. It polls for the lesser of `RunOptions::poll_timeout` and
+the model's next deadline. Return `None` when no animation or TTL needs a timed
+wakeup. Widgets consume time only through passed `FrameTick` values, making
+tests deterministic through `FrameTick::manual`.

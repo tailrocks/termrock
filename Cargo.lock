@@ -1333,7 +1333,6 @@ dependencies = [
 name = "termrock-lookbook"
 version = "0.11.0"
 dependencies = [
- "crossterm",
  "ratatui",
  "termrock",
  "unicode-segmentation",

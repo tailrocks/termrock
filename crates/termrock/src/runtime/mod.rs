@@ -1,9 +1,10 @@
-//! Executor-neutral component and rendering contracts.
+//! Application-loop infrastructure with immutable frame time.
 
-mod contract;
-mod frame;
-mod subscription;
+mod time;
 
-pub use contract::{Component, Dirty, NoEffect, UpdateResult, View};
-pub use frame::{drive_frame, drive_render};
-pub use subscription::{ClosureSubscription, StdSubscription, Subscription, SubscriptionPoll};
+#[cfg(feature = "crossterm")]
+mod runner;
+
+#[cfg(feature = "crossterm")]
+pub use runner::{RunOptions, run};
+pub use time::FrameTick;

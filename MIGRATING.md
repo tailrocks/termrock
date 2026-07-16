@@ -37,6 +37,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0021 | `v0.11.0` | [Responsive Progress percentage](migrations/0021-v0.11.0-responsive-progress-percentage.md) |
 | 0022 | `v0.11.0` | [Paste payloads in neutral events](migrations/0022-v0.11.0-paste-payload.md) |
 | 0023 | `v0.11.0` | [List multi-select contract alignment](migrations/0023-v0.11.0-list-multiselect-contract.md) |
+| 0024 | `v0.11.0` | [Closure runner and immutable frame time](migrations/0024-v0.11.0-closure-runner-and-frame-time.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

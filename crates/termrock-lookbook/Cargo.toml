@@ -18,7 +18,6 @@ path = "src/main.rs"
 [dependencies]
 termrock = { version = "0.11.0", path = "../termrock", features = ["crossterm"] }
 ratatui.workspace = true
-crossterm.workspace = true
 
 [dev-dependencies]
 unicode-segmentation.workspace = true

@@ -45,7 +45,7 @@ pub use tabs::{TAB_GAP, Tab, TabCell, Tabs, TabsState, lay_out_tabs, tab_at_colu
 pub use text_input::{
     EditAction, TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation,
 };
-pub use toast::{Anchor, Severity, Toast};
+pub use toast::{Anchor, Severity, Toast, ToastLifetime, ToastState};
 pub use tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState};
 pub use viewport::Viewport;
 

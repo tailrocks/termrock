@@ -11,12 +11,11 @@ mod interactors;
 mod json;
 mod knobs;
 mod picker;
-mod runner;
 mod stories;
 mod svg;
 mod table;
 
-use std::{ffi::OsStr, io, path::PathBuf, time::Duration};
+use std::{ffi::OsStr, io, path::PathBuf};
 
 use app::Lookbook;
 use json::json_escape;
@@ -236,11 +235,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = Lookbook::new();
-    runner::run(
+    termrock::runtime::run(
         &mut app,
-        Duration::from_millis(120),
+        termrock::runtime::RunOptions::default(),
         Lookbook::render_at,
         Lookbook::update_at,
+        Lookbook::next_deadline,
     )?;
     Ok(())
 }

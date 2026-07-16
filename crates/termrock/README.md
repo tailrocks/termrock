@@ -53,9 +53,10 @@ phosphor green and neutral gray.
 Run the interactive showcase with
 `cargo run -p termrock --example showcase --features crossterm`.
 
-The `runtime` update-loop contracts are provisional and under active design
-review; expect this surface to change as the frame-clock and application-runner
-designs mature (see [`plans/018`](../../plans/018-spike-runtime-disposition-app-runner.md)).
+With the `crossterm` feature, `runtime::run` owns terminal setup, neutral event
+conversion, frame cadence, and deterministic restoration. Its callbacks receive
+one shared `FrameTick` per frame. Application effects, messages, and process
+policy remain consumer-owned.
 
 See the [migration guide](../../MIGRATING.md) for exact consumer edits after
 breaking releases. The public API is always allowed to change. TermRock is

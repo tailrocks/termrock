@@ -227,15 +227,17 @@ let mut state = TextInputState::new("").with_max_graphemes(80);
 let changed = state.apply(EditAction::Insert('a'));`,
   },
   Toast: {
-    description: 'A transient severity notification with caller-owned lifetime and placement.',
+    description: 'A transient severity notification with reusable placement and deterministic lifetime state.',
     primaryStory: 'toast/success',
     usage: `use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{Anchor, Severity, Toast}};
+use std::time::Duration;
+use termrock::{Theme, widgets::{Anchor, Severity, Toast, ToastLifetime, ToastState}};
 
 let theme = Theme::default();
 let toast = Toast::new(&theme, "Saved", Severity::Success)
     .anchor(Anchor::BottomRight)
     .margins(1, 1);
+let state = ToastState::new(ToastLifetime::ExpiresAfter(Duration::from_secs(2)));
 let rect = toast.rect(Rect::new(0, 0, 80, 24));`,
   },
   Tree: {

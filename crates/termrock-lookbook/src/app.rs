@@ -1,9 +1,6 @@
 //! Lookbook-owned model, rendering, and interaction routing.
 
-use std::{
-    ops::ControlFlow,
-    time::{Duration, Instant},
-};
+use std::{ops::ControlFlow, time::Duration};
 
 use ratatui::{
     Frame,
@@ -23,12 +20,13 @@ use termrock::{
     interaction::{ModalStack, Outcome, render_backdrop},
     keymap::KeyChord,
     layout::centered_rect,
+    runtime::FrameTick,
     scroll::{self, ScrollSpan},
     style::Role,
     widgets::{
         Action, ChoiceDialog, ChoiceDialogState, Dialog, List as ComponentList, ListRow,
         ListState as ComponentListState, Panel, PanelEmphasis, Progress, ProgressKind, RowRole,
-        Severity, Toast,
+        Severity, Toast, ToastLifetime, ToastState,
     },
 };
 
@@ -36,28 +34,10 @@ use crate::{
     PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction,
     focus::{FocusId, FocusRing, FocusScope},
     interactors::StoryInteraction,
-    runner::FrameTick,
     stories::gallery_stories,
 };
 
 const PROTOTYPE_TOAST_TTL: Duration = Duration::from_secs(2);
-
-#[derive(Debug, Default)]
-struct PrototypeToastState {
-    shown_at: Option<Instant>,
-}
-
-impl PrototypeToastState {
-    fn show(&mut self, tick: FrameTick) {
-        self.shown_at = Some(tick.now());
-    }
-
-    fn is_visible(&self, tick: FrameTick) -> bool {
-        self.shown_at.is_some_and(|shown_at| {
-            tick.now().saturating_duration_since(shown_at) < PROTOTYPE_TOAST_TTL
-        })
-    }
-}
 
 #[derive(Debug)]
 struct PrototypeModal {
@@ -109,7 +89,7 @@ pub(crate) struct Lookbook {
     preview_viewport_rows: usize,
     theme: Theme,
     knob_selected: usize,
-    prototype_toast: PrototypeToastState,
+    prototype_toast: ToastState,
     modals: ModalStack<PrototypeModal>,
 }
 
@@ -132,9 +112,13 @@ impl Lookbook {
             preview_viewport_rows: 1,
             theme,
             knob_selected: 0,
-            prototype_toast: PrototypeToastState::default(),
+            prototype_toast: ToastState::new(ToastLifetime::ExpiresAfter(PROTOTYPE_TOAST_TTL)),
             modals: ModalStack::new(),
         }
+    }
+
+    pub(crate) fn next_deadline(&self) -> Option<std::time::Instant> {
+        self.prototype_toast.next_deadline()
     }
 
     pub(crate) fn render_at(&mut self, frame: &mut Frame<'_>, tick: FrameTick) {

@@ -1740,261 +1740,100 @@ pub fn termrock::osc::encode_hyperlink_close() -> alloc::vec::Vec<u8>
 pub fn termrock::osc::encode_hyperlink_open(core::option::Option<&str>, &str) -> alloc::vec::Vec<u8>
 pub fn termrock::osc::encode_pointer(termrock::osc::PointerShape) -> alloc::vec::Vec<u8>
 pub mod termrock::runtime
-pub enum termrock::runtime::Dirty
-pub termrock::runtime::Dirty::Clean
-pub termrock::runtime::Dirty::Redraw
-impl termrock::runtime::Dirty
-pub const fn termrock::runtime::Dirty::is_dirty(self) -> bool
-pub const fn termrock::runtime::Dirty::merge(self, Self) -> Self
-impl core::clone::Clone for termrock::runtime::Dirty
-pub fn termrock::runtime::Dirty::clone(&self) -> termrock::runtime::Dirty
-impl core::cmp::Eq for termrock::runtime::Dirty
-impl core::cmp::PartialEq for termrock::runtime::Dirty
-pub fn termrock::runtime::Dirty::eq(&self, &termrock::runtime::Dirty) -> bool
-impl core::fmt::Debug for termrock::runtime::Dirty
-pub fn termrock::runtime::Dirty::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::runtime::Dirty
-impl core::marker::StructuralPartialEq for termrock::runtime::Dirty
-impl core::marker::Freeze for termrock::runtime::Dirty
-impl core::marker::Send for termrock::runtime::Dirty
-impl core::marker::Sync for termrock::runtime::Dirty
-impl core::marker::Unpin for termrock::runtime::Dirty
-impl core::marker::UnsafeUnpin for termrock::runtime::Dirty
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::Dirty
-impl core::panic::unwind_safe::UnwindSafe for termrock::runtime::Dirty
-impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::Dirty where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::runtime::Dirty::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::runtime::Dirty where U: core::convert::From<T>
-pub fn termrock::runtime::Dirty::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::runtime::Dirty where U: core::convert::Into<T>
-pub type termrock::runtime::Dirty::Error = core::convert::Infallible
-pub fn termrock::runtime::Dirty::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::runtime::Dirty where U: core::convert::TryFrom<T>
-pub type termrock::runtime::Dirty::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::runtime::Dirty::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::runtime::Dirty where T: core::clone::Clone
-pub type termrock::runtime::Dirty::Owned = T
-pub fn termrock::runtime::Dirty::clone_into(&self, &mut T)
-pub fn termrock::runtime::Dirty::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::runtime::Dirty where T: 'static + ?core::marker::Sized
-pub fn termrock::runtime::Dirty::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::runtime::Dirty where T: ?core::marker::Sized
-pub fn termrock::runtime::Dirty::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::runtime::Dirty where T: ?core::marker::Sized
-pub fn termrock::runtime::Dirty::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::runtime::Dirty where T: core::clone::Clone
-pub unsafe fn termrock::runtime::Dirty::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::runtime::Dirty
-pub fn termrock::runtime::Dirty::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::runtime::Dirty
-pub enum termrock::runtime::NoEffect
-impl core::clone::Clone for termrock::runtime::NoEffect
-pub fn termrock::runtime::NoEffect::clone(&self) -> termrock::runtime::NoEffect
-impl core::cmp::Eq for termrock::runtime::NoEffect
-impl core::cmp::PartialEq for termrock::runtime::NoEffect
-pub fn termrock::runtime::NoEffect::eq(&self, &termrock::runtime::NoEffect) -> bool
-impl core::fmt::Debug for termrock::runtime::NoEffect
-pub fn termrock::runtime::NoEffect::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::runtime::NoEffect
-impl core::marker::StructuralPartialEq for termrock::runtime::NoEffect
-impl core::marker::Freeze for termrock::runtime::NoEffect
-impl core::marker::Send for termrock::runtime::NoEffect
-impl core::marker::Sync for termrock::runtime::NoEffect
-impl core::marker::Unpin for termrock::runtime::NoEffect
-impl core::marker::UnsafeUnpin for termrock::runtime::NoEffect
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::NoEffect
-impl core::panic::unwind_safe::UnwindSafe for termrock::runtime::NoEffect
-impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::NoEffect where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::runtime::NoEffect::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::runtime::NoEffect where U: core::convert::From<T>
-pub fn termrock::runtime::NoEffect::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::runtime::NoEffect where U: core::convert::Into<T>
-pub type termrock::runtime::NoEffect::Error = core::convert::Infallible
-pub fn termrock::runtime::NoEffect::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::runtime::NoEffect where U: core::convert::TryFrom<T>
-pub type termrock::runtime::NoEffect::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::runtime::NoEffect::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::runtime::NoEffect where T: core::clone::Clone
-pub type termrock::runtime::NoEffect::Owned = T
-pub fn termrock::runtime::NoEffect::clone_into(&self, &mut T)
-pub fn termrock::runtime::NoEffect::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::runtime::NoEffect where T: 'static + ?core::marker::Sized
-pub fn termrock::runtime::NoEffect::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::runtime::NoEffect where T: ?core::marker::Sized
-pub fn termrock::runtime::NoEffect::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::runtime::NoEffect where T: ?core::marker::Sized
-pub fn termrock::runtime::NoEffect::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::runtime::NoEffect where T: core::clone::Clone
-pub unsafe fn termrock::runtime::NoEffect::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::runtime::NoEffect
-pub fn termrock::runtime::NoEffect::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::runtime::NoEffect
-pub enum termrock::runtime::SubscriptionPoll<Event>
-pub termrock::runtime::SubscriptionPoll::Closed
-pub termrock::runtime::SubscriptionPoll::Pending
-pub termrock::runtime::SubscriptionPoll::Ready(Event)
-impl<Event> termrock::runtime::SubscriptionPoll<Event>
-pub const fn termrock::runtime::SubscriptionPoll<Event>::is_pending(&self) -> bool
-impl<Event: core::clone::Clone> core::clone::Clone for termrock::runtime::SubscriptionPoll<Event>
-pub fn termrock::runtime::SubscriptionPoll<Event>::clone(&self) -> termrock::runtime::SubscriptionPoll<Event>
-impl<Event: core::cmp::Eq> core::cmp::Eq for termrock::runtime::SubscriptionPoll<Event>
-impl<Event: core::cmp::PartialEq> core::cmp::PartialEq for termrock::runtime::SubscriptionPoll<Event>
-pub fn termrock::runtime::SubscriptionPoll<Event>::eq(&self, &termrock::runtime::SubscriptionPoll<Event>) -> bool
-impl<Event: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::runtime::SubscriptionPoll<Event>
-impl<Event: core::fmt::Debug> core::fmt::Debug for termrock::runtime::SubscriptionPoll<Event>
-pub fn termrock::runtime::SubscriptionPoll<Event>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Event> core::marker::Freeze for termrock::runtime::SubscriptionPoll<Event> where Event: core::marker::Freeze
-impl<Event> core::marker::Send for termrock::runtime::SubscriptionPoll<Event> where Event: core::marker::Send
-impl<Event> core::marker::Sync for termrock::runtime::SubscriptionPoll<Event> where Event: core::marker::Sync
-impl<Event> core::marker::Unpin for termrock::runtime::SubscriptionPoll<Event> where Event: core::marker::Unpin
-impl<Event> core::marker::UnsafeUnpin for termrock::runtime::SubscriptionPoll<Event> where Event: core::marker::UnsafeUnpin
-impl<Event> core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::SubscriptionPoll<Event> where Event: core::panic::unwind_safe::RefUnwindSafe
-impl<Event> core::panic::unwind_safe::UnwindSafe for termrock::runtime::SubscriptionPoll<Event> where Event: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::SubscriptionPoll<Event> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::runtime::SubscriptionPoll<Event>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::runtime::SubscriptionPoll<Event> where U: core::convert::From<T>
-pub fn termrock::runtime::SubscriptionPoll<Event>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::runtime::SubscriptionPoll<Event> where U: core::convert::Into<T>
-pub type termrock::runtime::SubscriptionPoll<Event>::Error = core::convert::Infallible
-pub fn termrock::runtime::SubscriptionPoll<Event>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::runtime::SubscriptionPoll<Event> where U: core::convert::TryFrom<T>
-pub type termrock::runtime::SubscriptionPoll<Event>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::runtime::SubscriptionPoll<Event>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::runtime::SubscriptionPoll<Event> where T: core::clone::Clone
-pub type termrock::runtime::SubscriptionPoll<Event>::Owned = T
-pub fn termrock::runtime::SubscriptionPoll<Event>::clone_into(&self, &mut T)
-pub fn termrock::runtime::SubscriptionPoll<Event>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::runtime::SubscriptionPoll<Event> where T: 'static + ?core::marker::Sized
-pub fn termrock::runtime::SubscriptionPoll<Event>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::runtime::SubscriptionPoll<Event> where T: ?core::marker::Sized
-pub fn termrock::runtime::SubscriptionPoll<Event>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::runtime::SubscriptionPoll<Event> where T: ?core::marker::Sized
-pub fn termrock::runtime::SubscriptionPoll<Event>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::runtime::SubscriptionPoll<Event> where T: core::clone::Clone
-pub unsafe fn termrock::runtime::SubscriptionPoll<Event>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::runtime::SubscriptionPoll<Event>
-pub fn termrock::runtime::SubscriptionPoll<Event>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::runtime::SubscriptionPoll<Event>
-pub struct termrock::runtime::ClosureSubscription<F>(pub F)
-impl<Event, F> termrock::runtime::Subscription for termrock::runtime::ClosureSubscription<F> where F: core::ops::function::FnMut() -> termrock::runtime::SubscriptionPoll<Event>
-pub type termrock::runtime::ClosureSubscription<F>::Output = Event
-pub fn termrock::runtime::ClosureSubscription<F>::poll_next(&mut self) -> termrock::runtime::SubscriptionPoll<Event>
-impl<F> core::marker::Freeze for termrock::runtime::ClosureSubscription<F> where F: core::marker::Freeze
-impl<F> core::marker::Send for termrock::runtime::ClosureSubscription<F> where F: core::marker::Send
-impl<F> core::marker::Sync for termrock::runtime::ClosureSubscription<F> where F: core::marker::Sync
-impl<F> core::marker::Unpin for termrock::runtime::ClosureSubscription<F> where F: core::marker::Unpin
-impl<F> core::marker::UnsafeUnpin for termrock::runtime::ClosureSubscription<F> where F: core::marker::UnsafeUnpin
-impl<F> core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::ClosureSubscription<F> where F: core::panic::unwind_safe::RefUnwindSafe
-impl<F> core::panic::unwind_safe::UnwindSafe for termrock::runtime::ClosureSubscription<F> where F: core::panic::unwind_safe::UnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::runtime::ClosureSubscription<F> where U: core::convert::From<T>
-pub fn termrock::runtime::ClosureSubscription<F>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::runtime::ClosureSubscription<F> where U: core::convert::Into<T>
-pub type termrock::runtime::ClosureSubscription<F>::Error = core::convert::Infallible
-pub fn termrock::runtime::ClosureSubscription<F>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::runtime::ClosureSubscription<F> where U: core::convert::TryFrom<T>
-pub type termrock::runtime::ClosureSubscription<F>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::runtime::ClosureSubscription<F>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> core::any::Any for termrock::runtime::ClosureSubscription<F> where T: 'static + ?core::marker::Sized
-pub fn termrock::runtime::ClosureSubscription<F>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::runtime::ClosureSubscription<F> where T: ?core::marker::Sized
-pub fn termrock::runtime::ClosureSubscription<F>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::runtime::ClosureSubscription<F> where T: ?core::marker::Sized
-pub fn termrock::runtime::ClosureSubscription<F>::borrow_mut(&mut self) -> &mut T
-impl<T> core::convert::From<T> for termrock::runtime::ClosureSubscription<F>
-pub fn termrock::runtime::ClosureSubscription<F>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::runtime::ClosureSubscription<F>
-pub struct termrock::runtime::StdSubscription<Event>(pub std::sync::mpsc::Receiver<Event>)
-impl<Event> termrock::runtime::Subscription for termrock::runtime::StdSubscription<Event>
-pub type termrock::runtime::StdSubscription<Event>::Output = Event
-pub fn termrock::runtime::StdSubscription<Event>::poll_next(&mut self) -> termrock::runtime::SubscriptionPoll<Event>
-impl<Event> core::marker::Freeze for termrock::runtime::StdSubscription<Event>
-impl<Event> core::marker::Send for termrock::runtime::StdSubscription<Event> where Event: core::marker::Send
-impl<Event> !core::marker::Sync for termrock::runtime::StdSubscription<Event>
-impl<Event> core::marker::Unpin for termrock::runtime::StdSubscription<Event>
-impl<Event> core::marker::UnsafeUnpin for termrock::runtime::StdSubscription<Event>
-impl<Event> core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::StdSubscription<Event>
-impl<Event> core::panic::unwind_safe::UnwindSafe for termrock::runtime::StdSubscription<Event>
-impl<T, U> core::convert::Into<U> for termrock::runtime::StdSubscription<Event> where U: core::convert::From<T>
-pub fn termrock::runtime::StdSubscription<Event>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::runtime::StdSubscription<Event> where U: core::convert::Into<T>
-pub type termrock::runtime::StdSubscription<Event>::Error = core::convert::Infallible
-pub fn termrock::runtime::StdSubscription<Event>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::runtime::StdSubscription<Event> where U: core::convert::TryFrom<T>
-pub type termrock::runtime::StdSubscription<Event>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::runtime::StdSubscription<Event>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> core::any::Any for termrock::runtime::StdSubscription<Event> where T: 'static + ?core::marker::Sized
-pub fn termrock::runtime::StdSubscription<Event>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::runtime::StdSubscription<Event> where T: ?core::marker::Sized
-pub fn termrock::runtime::StdSubscription<Event>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::runtime::StdSubscription<Event> where T: ?core::marker::Sized
-pub fn termrock::runtime::StdSubscription<Event>::borrow_mut(&mut self) -> &mut T
-impl<T> core::convert::From<T> for termrock::runtime::StdSubscription<Event>
-pub fn termrock::runtime::StdSubscription<Event>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::runtime::StdSubscription<Event>
-pub struct termrock::runtime::UpdateResult<Effect>
-impl<Effect> termrock::runtime::UpdateResult<Effect>
-pub const fn termrock::runtime::UpdateResult<Effect>::clean() -> Self
-pub const fn termrock::runtime::UpdateResult<Effect>::dirty(&self) -> termrock::runtime::Dirty
-pub fn termrock::runtime::UpdateResult<Effect>::effects(&self) -> &[Effect]
-pub const fn termrock::runtime::UpdateResult<Effect>::is_dirty(&self) -> bool
-pub fn termrock::runtime::UpdateResult<Effect>::merge(self, Self) -> Self
-pub const fn termrock::runtime::UpdateResult<Effect>::redraw() -> Self
-pub fn termrock::runtime::UpdateResult<Effect>::with_effect(Effect) -> Self
-impl<Effect: core::clone::Clone> core::clone::Clone for termrock::runtime::UpdateResult<Effect>
-pub fn termrock::runtime::UpdateResult<Effect>::clone(&self) -> termrock::runtime::UpdateResult<Effect>
-impl<Effect: core::cmp::Eq> core::cmp::Eq for termrock::runtime::UpdateResult<Effect>
-impl<Effect: core::cmp::PartialEq> core::cmp::PartialEq for termrock::runtime::UpdateResult<Effect>
-pub fn termrock::runtime::UpdateResult<Effect>::eq(&self, &termrock::runtime::UpdateResult<Effect>) -> bool
-impl<Effect: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::runtime::UpdateResult<Effect>
-impl<Effect: core::fmt::Debug> core::fmt::Debug for termrock::runtime::UpdateResult<Effect>
-pub fn termrock::runtime::UpdateResult<Effect>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Effect> core::marker::Freeze for termrock::runtime::UpdateResult<Effect>
-impl<Effect> core::marker::Send for termrock::runtime::UpdateResult<Effect> where Effect: core::marker::Send
-impl<Effect> core::marker::Sync for termrock::runtime::UpdateResult<Effect> where Effect: core::marker::Sync
-impl<Effect> core::marker::Unpin for termrock::runtime::UpdateResult<Effect> where Effect: core::marker::Unpin
-impl<Effect> core::marker::UnsafeUnpin for termrock::runtime::UpdateResult<Effect>
-impl<Effect> core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::UpdateResult<Effect> where Effect: core::panic::unwind_safe::RefUnwindSafe
-impl<Effect> core::panic::unwind_safe::UnwindSafe for termrock::runtime::UpdateResult<Effect> where Effect: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::UpdateResult<Effect> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::runtime::UpdateResult<Effect>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::runtime::UpdateResult<Effect> where U: core::convert::From<T>
-pub fn termrock::runtime::UpdateResult<Effect>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::runtime::UpdateResult<Effect> where U: core::convert::Into<T>
-pub type termrock::runtime::UpdateResult<Effect>::Error = core::convert::Infallible
-pub fn termrock::runtime::UpdateResult<Effect>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::runtime::UpdateResult<Effect> where U: core::convert::TryFrom<T>
-pub type termrock::runtime::UpdateResult<Effect>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::runtime::UpdateResult<Effect>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::runtime::UpdateResult<Effect> where T: core::clone::Clone
-pub type termrock::runtime::UpdateResult<Effect>::Owned = T
-pub fn termrock::runtime::UpdateResult<Effect>::clone_into(&self, &mut T)
-pub fn termrock::runtime::UpdateResult<Effect>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::runtime::UpdateResult<Effect> where T: 'static + ?core::marker::Sized
-pub fn termrock::runtime::UpdateResult<Effect>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::runtime::UpdateResult<Effect> where T: ?core::marker::Sized
-pub fn termrock::runtime::UpdateResult<Effect>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::runtime::UpdateResult<Effect> where T: ?core::marker::Sized
-pub fn termrock::runtime::UpdateResult<Effect>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::runtime::UpdateResult<Effect> where T: core::clone::Clone
-pub unsafe fn termrock::runtime::UpdateResult<Effect>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::runtime::UpdateResult<Effect>
-pub fn termrock::runtime::UpdateResult<Effect>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::runtime::UpdateResult<Effect>
-pub trait termrock::runtime::Component<Event, Message>
-pub fn termrock::runtime::Component::handle_event(&mut self, &Event) -> core::option::Option<Message>
-pub trait termrock::runtime::Subscription
-pub type termrock::runtime::Subscription::Output
-pub fn termrock::runtime::Subscription::poll_next(&mut self) -> termrock::runtime::SubscriptionPoll<Self::Output>
-impl<Event, F> termrock::runtime::Subscription for termrock::runtime::ClosureSubscription<F> where F: core::ops::function::FnMut() -> termrock::runtime::SubscriptionPoll<Event>
-pub type termrock::runtime::ClosureSubscription<F>::Output = Event
-pub fn termrock::runtime::ClosureSubscription<F>::poll_next(&mut self) -> termrock::runtime::SubscriptionPoll<Event>
-impl<Event> termrock::runtime::Subscription for termrock::runtime::StdSubscription<Event>
-pub type termrock::runtime::StdSubscription<Event>::Output = Event
-pub fn termrock::runtime::StdSubscription<Event>::poll_next(&mut self) -> termrock::runtime::SubscriptionPoll<Event>
-pub trait termrock::runtime::View<Model>
-pub fn termrock::runtime::View::render(&self, &Model, &mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect)
-pub fn termrock::runtime::drive_frame<'a, B, Model, V, F>(&'a mut ratatui_core::terminal::Terminal<B>, &V, &Model, ratatui_core::layout::rect::Rect, F) -> core::result::Result<ratatui_core::terminal::frame::CompletedFrame<'a>, <B as ratatui_core::backend::Backend>::Error> where B: ratatui_core::backend::Backend, V: termrock::runtime::View<Model>, F: core::ops::function::FnOnce(&mut ratatui_core::terminal::frame::Frame<'_>)
-pub fn termrock::runtime::drive_render<'a, B, F>(&'a mut ratatui_core::terminal::Terminal<B>, F) -> core::result::Result<ratatui_core::terminal::frame::CompletedFrame<'a>, <B as ratatui_core::backend::Backend>::Error> where B: ratatui_core::backend::Backend, F: core::ops::function::FnOnce(&mut ratatui_core::terminal::frame::Frame<'_>)
+pub struct termrock::runtime::FrameTick
+impl termrock::runtime::FrameTick
+pub const fn termrock::runtime::FrameTick::delta(self) -> core::time::Duration
+pub const fn termrock::runtime::FrameTick::elapsed(self) -> core::time::Duration
+pub const fn termrock::runtime::FrameTick::manual(std::time::Instant, core::time::Duration, core::time::Duration) -> Self
+pub const fn termrock::runtime::FrameTick::now(self) -> std::time::Instant
+impl core::clone::Clone for termrock::runtime::FrameTick
+pub fn termrock::runtime::FrameTick::clone(&self) -> termrock::runtime::FrameTick
+impl core::cmp::Eq for termrock::runtime::FrameTick
+impl core::cmp::PartialEq for termrock::runtime::FrameTick
+pub fn termrock::runtime::FrameTick::eq(&self, &termrock::runtime::FrameTick) -> bool
+impl core::fmt::Debug for termrock::runtime::FrameTick
+pub fn termrock::runtime::FrameTick::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::runtime::FrameTick
+impl core::marker::StructuralPartialEq for termrock::runtime::FrameTick
+impl core::marker::Freeze for termrock::runtime::FrameTick
+impl core::marker::Send for termrock::runtime::FrameTick
+impl core::marker::Sync for termrock::runtime::FrameTick
+impl core::marker::Unpin for termrock::runtime::FrameTick
+impl core::marker::UnsafeUnpin for termrock::runtime::FrameTick
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::FrameTick
+impl core::panic::unwind_safe::UnwindSafe for termrock::runtime::FrameTick
+impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::FrameTick where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::runtime::FrameTick::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::runtime::FrameTick where U: core::convert::From<T>
+pub fn termrock::runtime::FrameTick::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::runtime::FrameTick where U: core::convert::Into<T>
+pub type termrock::runtime::FrameTick::Error = core::convert::Infallible
+pub fn termrock::runtime::FrameTick::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::runtime::FrameTick where U: core::convert::TryFrom<T>
+pub type termrock::runtime::FrameTick::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::runtime::FrameTick::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::runtime::FrameTick where T: core::clone::Clone
+pub type termrock::runtime::FrameTick::Owned = T
+pub fn termrock::runtime::FrameTick::clone_into(&self, &mut T)
+pub fn termrock::runtime::FrameTick::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::runtime::FrameTick where T: 'static + ?core::marker::Sized
+pub fn termrock::runtime::FrameTick::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::runtime::FrameTick where T: ?core::marker::Sized
+pub fn termrock::runtime::FrameTick::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::runtime::FrameTick where T: ?core::marker::Sized
+pub fn termrock::runtime::FrameTick::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::runtime::FrameTick where T: core::clone::Clone
+pub unsafe fn termrock::runtime::FrameTick::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::runtime::FrameTick
+pub fn termrock::runtime::FrameTick::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::runtime::FrameTick
+pub struct termrock::runtime::RunOptions
+pub termrock::runtime::RunOptions::poll_timeout: core::time::Duration
+pub termrock::runtime::RunOptions::session: termrock::crossterm::SessionOptions
+impl core::clone::Clone for termrock::runtime::RunOptions
+pub fn termrock::runtime::RunOptions::clone(&self) -> termrock::runtime::RunOptions
+impl core::cmp::Eq for termrock::runtime::RunOptions
+impl core::cmp::PartialEq for termrock::runtime::RunOptions
+pub fn termrock::runtime::RunOptions::eq(&self, &termrock::runtime::RunOptions) -> bool
+impl core::default::Default for termrock::runtime::RunOptions
+pub fn termrock::runtime::RunOptions::default() -> Self
+impl core::fmt::Debug for termrock::runtime::RunOptions
+pub fn termrock::runtime::RunOptions::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::runtime::RunOptions
+impl core::marker::StructuralPartialEq for termrock::runtime::RunOptions
+impl core::marker::Freeze for termrock::runtime::RunOptions
+impl core::marker::Send for termrock::runtime::RunOptions
+impl core::marker::Sync for termrock::runtime::RunOptions
+impl core::marker::Unpin for termrock::runtime::RunOptions
+impl core::marker::UnsafeUnpin for termrock::runtime::RunOptions
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::RunOptions
+impl core::panic::unwind_safe::UnwindSafe for termrock::runtime::RunOptions
+impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::RunOptions where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::runtime::RunOptions::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::runtime::RunOptions where U: core::convert::From<T>
+pub fn termrock::runtime::RunOptions::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::runtime::RunOptions where U: core::convert::Into<T>
+pub type termrock::runtime::RunOptions::Error = core::convert::Infallible
+pub fn termrock::runtime::RunOptions::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::runtime::RunOptions where U: core::convert::TryFrom<T>
+pub type termrock::runtime::RunOptions::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::runtime::RunOptions::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::runtime::RunOptions where T: core::clone::Clone
+pub type termrock::runtime::RunOptions::Owned = T
+pub fn termrock::runtime::RunOptions::clone_into(&self, &mut T)
+pub fn termrock::runtime::RunOptions::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::runtime::RunOptions where T: 'static + ?core::marker::Sized
+pub fn termrock::runtime::RunOptions::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::runtime::RunOptions where T: ?core::marker::Sized
+pub fn termrock::runtime::RunOptions::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::runtime::RunOptions where T: ?core::marker::Sized
+pub fn termrock::runtime::RunOptions::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::runtime::RunOptions where T: core::clone::Clone
+pub unsafe fn termrock::runtime::RunOptions::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::runtime::RunOptions
+pub fn termrock::runtime::RunOptions::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::runtime::RunOptions
+pub fn termrock::runtime::run<Model>(&mut Model, termrock::runtime::RunOptions, impl core::ops::function::FnMut(&mut Model, &mut ratatui_core::terminal::frame::Frame<'_>, termrock::runtime::FrameTick), impl core::ops::function::FnMut(&mut Model, termrock::input::Event, termrock::runtime::FrameTick) -> core::ops::control_flow::ControlFlow<()>, impl core::ops::function::FnMut(&Model) -> core::option::Option<std::time::Instant>) -> core::io::error::Result<()>
 pub mod termrock::scroll
 pub enum termrock::scroll::ScrollAxis
 pub termrock::scroll::ScrollAxis::Horizontal
@@ -3563,6 +3402,52 @@ pub unsafe fn termrock::widgets::TextInputValidity::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::TextInputValidity
 pub fn termrock::widgets::TextInputValidity::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TextInputValidity
+#[non_exhaustive] pub enum termrock::widgets::ToastLifetime
+pub termrock::widgets::ToastLifetime::ExpiresAfter(core::time::Duration)
+pub termrock::widgets::ToastLifetime::Persistent
+impl core::clone::Clone for termrock::widgets::ToastLifetime
+pub fn termrock::widgets::ToastLifetime::clone(&self) -> termrock::widgets::ToastLifetime
+impl core::cmp::Eq for termrock::widgets::ToastLifetime
+impl core::cmp::PartialEq for termrock::widgets::ToastLifetime
+pub fn termrock::widgets::ToastLifetime::eq(&self, &termrock::widgets::ToastLifetime) -> bool
+impl core::default::Default for termrock::widgets::ToastLifetime
+pub fn termrock::widgets::ToastLifetime::default() -> termrock::widgets::ToastLifetime
+impl core::fmt::Debug for termrock::widgets::ToastLifetime
+pub fn termrock::widgets::ToastLifetime::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::ToastLifetime
+impl core::marker::StructuralPartialEq for termrock::widgets::ToastLifetime
+impl core::marker::Freeze for termrock::widgets::ToastLifetime
+impl core::marker::Send for termrock::widgets::ToastLifetime
+impl core::marker::Sync for termrock::widgets::ToastLifetime
+impl core::marker::Unpin for termrock::widgets::ToastLifetime
+impl core::marker::UnsafeUnpin for termrock::widgets::ToastLifetime
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastLifetime
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastLifetime
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToastLifetime where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastLifetime::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastLifetime where U: core::convert::From<T>
+pub fn termrock::widgets::ToastLifetime::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastLifetime where U: core::convert::Into<T>
+pub type termrock::widgets::ToastLifetime::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastLifetime::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastLifetime where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastLifetime::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastLifetime::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastLifetime where T: core::clone::Clone
+pub type termrock::widgets::ToastLifetime::Owned = T
+pub fn termrock::widgets::ToastLifetime::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastLifetime::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastLifetime where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastLifetime::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastLifetime where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastLifetime::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastLifetime where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastLifetime::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastLifetime where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastLifetime::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastLifetime
+pub fn termrock::widgets::ToastLifetime::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastLifetime
 #[non_exhaustive] pub enum termrock::widgets::TreeNodeStatus
 pub termrock::widgets::TreeNodeStatus::Error
 pub termrock::widgets::TreeNodeStatus::Loading
@@ -5730,6 +5615,56 @@ pub unsafe fn termrock::widgets::Toast<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Toast<'a>
 pub fn termrock::widgets::Toast<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Toast<'a>
+pub struct termrock::widgets::ToastState
+impl termrock::widgets::ToastState
+pub const fn termrock::widgets::ToastState::dismiss(&mut self)
+pub fn termrock::widgets::ToastState::is_visible(&self, termrock::runtime::FrameTick) -> bool
+pub const fn termrock::widgets::ToastState::new(termrock::widgets::ToastLifetime) -> Self
+pub fn termrock::widgets::ToastState::next_deadline(&self) -> core::option::Option<std::time::Instant>
+pub fn termrock::widgets::ToastState::show(&mut self, termrock::runtime::FrameTick)
+impl core::clone::Clone for termrock::widgets::ToastState
+pub fn termrock::widgets::ToastState::clone(&self) -> termrock::widgets::ToastState
+impl core::cmp::Eq for termrock::widgets::ToastState
+impl core::cmp::PartialEq for termrock::widgets::ToastState
+pub fn termrock::widgets::ToastState::eq(&self, &termrock::widgets::ToastState) -> bool
+impl core::default::Default for termrock::widgets::ToastState
+pub fn termrock::widgets::ToastState::default() -> termrock::widgets::ToastState
+impl core::fmt::Debug for termrock::widgets::ToastState
+pub fn termrock::widgets::ToastState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::ToastState
+impl core::marker::StructuralPartialEq for termrock::widgets::ToastState
+impl core::marker::Freeze for termrock::widgets::ToastState
+impl core::marker::Send for termrock::widgets::ToastState
+impl core::marker::Sync for termrock::widgets::ToastState
+impl core::marker::Unpin for termrock::widgets::ToastState
+impl core::marker::UnsafeUnpin for termrock::widgets::ToastState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToastState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastState where U: core::convert::From<T>
+pub fn termrock::widgets::ToastState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastState where U: core::convert::Into<T>
+pub type termrock::widgets::ToastState::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastState where T: core::clone::Clone
+pub type termrock::widgets::ToastState::Owned = T
+pub fn termrock::widgets::ToastState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastState where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastState where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastState
+pub fn termrock::widgets::ToastState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastState
 pub struct termrock::widgets::Tree<'a, Id>
 impl<'a, Id> termrock::widgets::Tree<'a, Id>
 pub const fn termrock::widgets::Tree<'a, Id>::new(&'a [termrock::widgets::TreeNode<'a, Id>], &'a termrock::style::Theme) -> Self
