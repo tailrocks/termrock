@@ -220,13 +220,15 @@ The build is one forward-only redesign with the next migration file:
   focus coordination.
 - No deprecated aliases, parallel rings, or compatibility facade remain.
 
-The live contract matrix currently marks focus caller-owned for `Dialog`,
-`DiffView`, `LogPane`, `MessageDialog`, and `Viewport`. The build flips each to
-`covered` only after adding a deterministic focus story showing registry
-registration, semantic focused/inactive chrome, and input gating. Existing
-`ChoiceDialog`, Form, List, SplitPane, Tabs, TextInput, and Tree focus claims
-must also remain backed by stories after their state flags are projected from
-the ring.
+The live contract matrix marks focus caller-owned for passive render surfaces
+(`Dialog`, `DiffView`, `LogPane`, `MessageDialog`, and `Viewport`). Graduation
+deliberately retains that classification: `FocusRing` removes bespoke routing,
+but the consumer still registers screen composition and projects focus into
+those widgets. Flipping them to `covered` would falsely claim widget-owned
+interaction. Existing `ChoiceDialog`, Form, List, SplitPane, Tabs, TextInput,
+and Tree focus claims remain backed by their widget-state stories; the lookbook
+app deterministically tests shared-ring traversal, scoped trapping, canonical
+ChoiceDialog regions, and restoration.
 
 ## Prototype verification checklist
 
@@ -255,8 +257,8 @@ the ring.
    nested open/pop/clear.
 3. Migrate first-party focus projections; delete `FocusState`, `FocusOwner`,
    and `ButtonFocus` in the same breaking change.
-4. Move lookbook from local prototype to library API; add focus stories for
-   every contract-matrix flip.
+4. Move lookbook from local prototype to library API; retain caller-owned
+   contract rows where screen-level registration remains consumer-owned.
 5. Add migration documentation with before/after edits, regenerate public API
    and component docs/previews, then run full gate and PTY checklist.
 

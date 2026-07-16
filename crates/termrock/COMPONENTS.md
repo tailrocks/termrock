@@ -60,3 +60,9 @@ cross-run/CI tolerance; a slower result blocks the component gate until measured
 and deliberately revised with new environment evidence.
 
 Every component uses borrowed render data and stable IDs where interaction identity is required. Consumers own labels, validation, filtering, lifecycle, output, and domain models. Canonical neutral stories and SVG previews are maintained by `termrock-lookbook`; the catalog coverage check derives the component inventory from `docs/api/public-api.txt`, requires at least one typed story, documented story ID, and deterministic preview per public widget, and requires an exact keyboard/mouse/focus/non-color/Unicode/narrow-terminal classification in `docs/api/component-contracts.json`.
+
+Cross-widget focus uses `FocusRing`: consumers register stable IDs, enabled
+state, and optional painted rectangles every frame. TermRock owns ordered
+Tab/BackTab traversal, dynamic reconciliation, pointer transfer, semantic
+panel emphasis, modal trapping, and opener restoration. Composite widgets
+remain one screen target and retain their domain-neutral internal navigation.

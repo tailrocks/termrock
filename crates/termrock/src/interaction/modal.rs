@@ -44,27 +44,6 @@ impl<M> ModalStack<M> {
     }
 
     #[must_use]
-    /// Creates a root stack containing one active modal.
-    pub fn from_current(current: M) -> Self {
-        Self {
-            current: Some(current),
-            parents: Vec::new(),
-        }
-    }
-
-    #[must_use]
-    /// Restores an active modal and its suspended parent chain.
-    pub fn from_parts(current: Option<M>, parents: Vec<M>) -> Self {
-        Self { current, parents }
-    }
-
-    #[must_use]
-    /// Splits the modal stack into its current modal and parent chain.
-    pub fn into_parts(self) -> (Option<M>, Vec<M>) {
-        (self.current, self.parents)
-    }
-
-    #[must_use]
     /// Returns the currently active modal.
     pub const fn current(&self) -> Option<&M> {
         self.current.as_ref()
@@ -80,12 +59,6 @@ impl<M> ModalStack<M> {
     /// Returns the suspended parent-modal chain.
     pub fn parents(&self) -> &[M] {
         &self.parents
-    }
-
-    #[must_use]
-    /// Returns mutable access to the suspended parent-modal chain.
-    pub fn parents_mut(&mut self) -> &mut Vec<M> {
-        &mut self.parents
     }
 
     #[must_use]
@@ -107,13 +80,13 @@ impl<M> ModalStack<M> {
     }
 
     /// Open a new root modal and discard any existing parent chain.
-    pub fn open(&mut self, modal: M) {
+    pub(super) fn open(&mut self, modal: M) {
         self.current = Some(modal);
         self.parents.clear();
     }
 
     /// Open a child modal, preserving the existing active modal as the parent.
-    pub fn open_sub(&mut self, child: M) {
+    pub(super) fn open_sub(&mut self, child: M) {
         if let Some(parent) = self.current.take() {
             self.parents.push(parent);
         } else {
@@ -123,22 +96,14 @@ impl<M> ModalStack<M> {
     }
 
     /// Close the active modal and restore one parent, if any.
-    pub fn pop(&mut self) {
+    pub(super) fn pop(&mut self) {
         self.current = self.parents.pop();
     }
 
     /// Close the active modal and every saved parent.
-    pub fn clear_chain(&mut self) {
+    pub(super) fn clear_chain(&mut self) {
         self.current = None;
         self.parents.clear();
-    }
-
-    /// Removes and returns the active modal without discarding saved parents.
-    ///
-    /// Use [`Self::pop`] to restore a parent or [`Self::clear_chain`] to discard
-    /// the complete modal flow after taking the active value.
-    pub fn take_current(&mut self) -> Option<M> {
-        self.current.take()
     }
 }
 

@@ -2,4 +2,12 @@
 title: Interaction conventions
 ---
 
+`FocusRing` coordinates focus between widgets from stable identities registered
+in traversal order each frame. Dynamic or disabled targets reconcile without
+durable indices; pointer focus uses the same painted rectangles. Modal open,
+sub-modal open, pop, and clear operations update the existing `ModalStack` and
+focus-scope stack atomically, trapping traversal and restoring the opener.
+Composite widgets remain one screen focus target and keep their own internal
+field, tab, or row navigation.
+
 Tabs use one focus stop with arrow navigation. Their painted label and active-indicator rows share the same hit geometry. Disabled items are not hit targets. Hover never moves keyboard focus. Scroll only over the owning region. Dialog geometry and inside/outside classification are pure; `DialogSpec` expresses independent horizontal and vertical margins, and applications own modal stacks. `bottom_rows` provides one tiny-terminal collapse contract for product-defined bottom chrome slots. Hints advertise primary bindings and hide aliases. Navigation uses stable IDs, never durable indices.

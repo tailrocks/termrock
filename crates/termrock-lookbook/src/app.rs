@@ -17,7 +17,7 @@ use termrock::{
         Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
         MouseEventKind,
     },
-    interaction::{ModalStack, Outcome, render_backdrop},
+    interaction::{FocusOutcome, FocusTarget, ModalStack, Outcome, render_backdrop},
     keymap::KeyChord,
     layout::centered_rect,
     runtime::FrameTick,
@@ -56,7 +56,7 @@ fn prototype_modal_actions() -> [Action<'static, FocusId>; 3] {
     [
         Action {
             id: FocusId::ModalContinue,
-            label: "Continue",
+            label: "続ける",
             enabled: true,
             style: None,
         },
@@ -68,7 +68,7 @@ fn prototype_modal_actions() -> [Action<'static, FocusId>; 3] {
         },
         Action {
             id: FocusId::ModalCancel,
-            label: "Cancel",
+            label: "Cancel 🚫",
             enabled: true,
             style: None,
         },
@@ -102,7 +102,7 @@ impl Lookbook {
             selected: 0,
             preview_scroll: 0,
             sidebar_scroll: 0,
-            focus: FocusRing::new(Some(FocusId::Sidebar)),
+            focus: FocusRing::new(FocusScope::Screen, Some(FocusId::Sidebar)),
             interactor,
             component_area: Rect::default(),
             preview_panel_area: Rect::default(),
@@ -145,25 +145,37 @@ impl Lookbook {
         let modal_area = centered_rect(52, 9, frame.area());
 
         self.focus.begin_frame();
-        self.focus
-            .register(FocusScope::Screen, FocusId::Sidebar, sidebar_area, true);
-        self.focus
-            .register(FocusScope::Screen, FocusId::Preview, preview_area, true);
+        self.focus.register(FocusTarget {
+            scope: FocusScope::Screen,
+            id: FocusId::Sidebar,
+            area: Some(sidebar_area),
+            enabled: true,
+        });
+        self.focus.register(FocusTarget {
+            scope: FocusScope::Screen,
+            id: FocusId::Preview,
+            area: Some(preview_area),
+            enabled: true,
+        });
         if let Some(controls_area) = controls_area {
-            self.focus
-                .register(FocusScope::Screen, FocusId::Controls, controls_area, true);
+            self.focus.register(FocusTarget {
+                scope: FocusScope::Screen,
+                id: FocusId::Controls,
+                area: Some(controls_area),
+                enabled: true,
+            });
         }
         if self.modals.is_open() {
             for action in prototype_modal_actions() {
-                self.focus.register(
-                    FocusScope::Modal,
-                    action.id,
-                    Rect::default(),
-                    action.enabled,
-                );
+                self.focus.register(FocusTarget {
+                    scope: FocusScope::Modal,
+                    id: action.id,
+                    area: None,
+                    enabled: action.enabled,
+                });
             }
         }
-        self.focus.reconcile();
+        let _ = self.focus.reconcile();
 
         let [brand_title_area, brand_progress_area] =
             Layout::horizontal([Constraint::Min(1), Constraint::Length(24)]).areas(brand_area);
@@ -212,7 +224,7 @@ impl Lookbook {
         let catalog = gallery_stories();
         let block = Panel::new(&self.theme)
             .title("Stories")
-            .emphasis(self.focus.panel_emphasis_for(FocusId::Sidebar))
+            .emphasis(self.focus.panel_emphasis_for(&FocusId::Sidebar))
             .block();
         let inner = block.inner(area);
         frame.render_widget(block, area);
@@ -291,7 +303,7 @@ impl Lookbook {
         let story = gallery_stories()[self.selected];
         let block = Panel::new(&self.theme)
             .title("Preview")
-            .emphasis(self.focus.panel_emphasis_for(FocusId::Preview))
+            .emphasis(self.focus.panel_emphasis_for(&FocusId::Preview))
             .block();
         let inner = block.inner(area);
         frame.render_widget(block, area);
@@ -338,7 +350,7 @@ impl Lookbook {
     fn render_knobs(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let panel = Panel::new(&self.theme)
             .title("Controls")
-            .emphasis(self.focus.panel_emphasis_for(FocusId::Controls));
+            .emphasis(self.focus.panel_emphasis_for(&FocusId::Controls));
         let inner = panel.inner(area);
         frame.render_widget(panel, area);
         let [list_area, editor_area] = Layout::vertical([
@@ -360,7 +372,7 @@ impl Lookbook {
             })
             .collect::<Vec<_>>();
         let mut state = ComponentListState::new(Some(self.knob_selected));
-        state.set_focused(self.focus.is_focused(FocusId::Controls));
+        state.set_focused(self.focus.is_focused(&FocusId::Controls));
         frame.render_stateful_widget(
             &ComponentList::new(&rows, &self.theme),
             list_area,
@@ -378,7 +390,7 @@ impl Lookbook {
             );
             return;
         }
-        if self.focus.is_focused(FocusId::Controls) {
+        if self.focus.is_focused(&FocusId::Controls) {
             frame.render_widget(
                 Paragraph::new("↑↓ knob   ←→ change   type edit   Esc back   t/^t theme"),
                 area,
@@ -439,10 +451,10 @@ impl Lookbook {
                     let index = (usize::from(self.sidebar_scroll) + row / 2)
                         .min(gallery_stories().len().saturating_sub(1));
                     self.select(index);
-                    self.focus.request_focus(FocusId::Sidebar);
+                    let _ = self.focus.request_focus(FocusId::Sidebar);
                 }
                 if self.preview_panel_area.contains(mouse.position) {
-                    self.focus.request_focus(FocusId::Preview);
+                    let _ = self.focus.request_focus(FocusId::Preview);
                 }
                 let _ = self.focus.focus_at(mouse.position);
             }
@@ -471,7 +483,7 @@ impl Lookbook {
             | MouseEventKind::ScrollDown
             | MouseEventKind::ScrollLeft
             | MouseEventKind::ScrollRight
-                if self.focus.is_focused(FocusId::Preview) =>
+                if self.focus.is_focused(&FocusId::Preview) =>
             {
                 let mut ignored_x = 0;
                 scroll::apply_mouse_scroll_u16(
@@ -508,8 +520,9 @@ impl Lookbook {
             Some(FocusId::Sidebar) | None => false,
             Some(FocusId::ModalContinue | FocusId::ModalDisabled | FocusId::ModalCancel) => false,
         };
-        if matches!(key.code, KeyCode::Tab | KeyCode::BackTab) {
-            let _ = self.focus.handle_key(key.code);
+        if matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
+            && !matches!(self.focus.handle_key(key), FocusOutcome::Ignored)
+        {
             return ControlFlow::Continue(());
         }
         if key.code == KeyCode::Char('m') && !captures_text {
@@ -548,7 +561,7 @@ impl Lookbook {
             .unwrap_or(PreviewAction::Forward)
         {
             PreviewAction::BackToList => {
-                self.focus.request_focus(FocusId::Sidebar);
+                let _ = self.focus.request_focus(FocusId::Sidebar);
             }
             PreviewAction::MovePreviewDown => self.scroll_preview(content, 1),
             PreviewAction::MovePreviewUp => self.scroll_preview(content, -1),
@@ -631,19 +644,18 @@ impl Lookbook {
     }
 
     fn open_focus_modal(&mut self) {
-        self.modals.open(PrototypeModal::new());
-        self.focus.push_scope(FocusScope::Modal);
+        self.focus
+            .open_modal(&mut self.modals, PrototypeModal::new(), FocusScope::Modal);
     }
 
     fn close_focus_modal(&mut self) {
-        self.modals.pop();
-        self.focus.pop_scope();
+        self.focus.pop_modal(&mut self.modals);
     }
 
     fn handle_modal_key(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Tab | KeyCode::BackTab => {
-                let _ = self.focus.handle_key(key.code);
+                let _ = self.focus.handle_key(key);
             }
             KeyCode::Esc => self.close_focus_modal(),
             KeyCode::Enter => {
@@ -651,7 +663,7 @@ impl Lookbook {
                 let Some(modal) = self.modals.current_mut() else {
                     return;
                 };
-                modal.state.focused = self.focus.focused();
+                modal.state.focused = self.focus.focused().copied();
                 if matches!(
                     modal.state.activate_selected(&actions),
                     Outcome::Activated(_)
@@ -671,7 +683,7 @@ impl Lookbook {
         let Some(modal) = self.modals.current_mut() else {
             return;
         };
-        modal.state.focused = self.focus.focused();
+        modal.state.focused = self.focus.focused().copied();
         if matches!(modal.state.click(mouse.position), Outcome::Activated(_)) {
             self.close_focus_modal();
         }
@@ -683,7 +695,7 @@ impl Lookbook {
         let Some(modal) = self.modals.current_mut() else {
             return;
         };
-        modal.state.focused = self.focus.focused();
+        modal.state.focused = self.focus.focused().copied();
         frame.render_stateful_widget(
             &ChoiceDialog::new(
                 Dialog::new(
@@ -693,7 +705,8 @@ impl Lookbook {
                 )
                 .emphasis(PanelEmphasis::Focused),
                 &actions,
-            ),
+            )
+            .gap(" · "),
             area,
             &mut modal.state,
         );
@@ -704,7 +717,9 @@ impl Lookbook {
             .map(|region| (region.id, region.area))
             .collect::<Vec<_>>();
         for (id, action_area) in regions {
-            let _ = self.focus.attach_area(FocusScope::Modal, id, action_area);
+            let _ = self
+                .focus
+                .attach_region(&FocusScope::Modal, &id, action_area);
         }
     }
 }
@@ -738,13 +753,16 @@ mod tests {
             .unwrap();
         app.select(toast);
         render_app(&mut app, tick);
-        assert!(app.focus.request_focus(FocusId::Preview));
+        assert!(!matches!(
+            app.focus.request_focus(FocusId::Preview),
+            termrock::interaction::FocusOutcome::Ignored
+        ));
 
         assert_eq!(
             app.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE), tick),
             ControlFlow::Continue(())
         );
-        assert_eq!(app.focus.focused(), Some(FocusId::Controls));
+        assert_eq!(app.focus.focused(), Some(&FocusId::Controls));
         let _ = app.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), tick);
         assert_eq!(app.interactor.knobs()[0].display_value(), "Warning");
         let _ = app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), tick);
@@ -763,7 +781,10 @@ mod tests {
             .unwrap();
         app.select(toast);
         render_app(&mut app, tick);
-        assert!(app.focus.request_focus(FocusId::Controls));
+        assert!(!matches!(
+            app.focus.request_focus(FocusId::Controls),
+            termrock::interaction::FocusOutcome::Ignored
+        ));
 
         let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
 
@@ -780,7 +801,10 @@ mod tests {
             .unwrap();
         app.select(picker);
         render_app(&mut app, tick);
-        assert!(app.focus.request_focus(FocusId::Preview));
+        assert!(!matches!(
+            app.focus.request_focus(FocusId::Preview),
+            termrock::interaction::FocusOutcome::Ignored
+        ));
 
         let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
         assert_eq!(app.theme, Theme::default());
@@ -802,7 +826,10 @@ mod tests {
         let start = Instant::now();
         let action_tick = tick_at(start, 100);
         render_app(&mut app, action_tick);
-        assert!(app.focus.request_focus(FocusId::Controls));
+        assert!(!matches!(
+            app.focus.request_focus(FocusId::Controls),
+            termrock::interaction::FocusOutcome::Ignored
+        ));
 
         app.handle_knob_key(
             KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
@@ -819,18 +846,21 @@ mod tests {
         let mut app = Lookbook::new();
         let tick = tick_at(Instant::now(), 0);
         render_app(&mut app, tick);
-        assert!(app.focus.request_focus(FocusId::Preview));
+        assert!(!matches!(
+            app.focus.request_focus(FocusId::Preview),
+            termrock::interaction::FocusOutcome::Ignored
+        ));
 
         app.open_focus_modal();
         render_app(&mut app, tick);
-        assert_eq!(app.focus.focused(), Some(FocusId::ModalContinue));
+        assert_eq!(app.focus.focused(), Some(&FocusId::ModalContinue));
 
         app.handle_modal_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
-        assert_eq!(app.focus.focused(), Some(FocusId::ModalCancel));
+        assert_eq!(app.focus.focused(), Some(&FocusId::ModalCancel));
         app.handle_modal_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
 
         assert!(!app.modals.is_open());
-        assert_eq!(app.focus.focused(), Some(FocusId::Preview));
+        assert_eq!(app.focus.focused(), Some(&FocusId::Preview));
     }
 
     #[test]
@@ -838,7 +868,10 @@ mod tests {
         let mut app = Lookbook::new();
         let tick = tick_at(Instant::now(), 0);
         render_app(&mut app, tick);
-        assert!(app.focus.request_focus(FocusId::Preview));
+        assert!(!matches!(
+            app.focus.request_focus(FocusId::Preview),
+            termrock::interaction::FocusOutcome::Ignored
+        ));
         app.open_focus_modal();
         render_app(&mut app, tick);
 
@@ -851,7 +884,7 @@ mod tests {
             tick,
         );
         assert!(app.modals.is_open());
-        assert_eq!(app.focus.focused(), Some(FocusId::ModalContinue));
+        assert_eq!(app.focus.focused(), Some(&FocusId::ModalContinue));
 
         let cancel = app
             .modals
@@ -873,6 +906,6 @@ mod tests {
         );
 
         assert!(!app.modals.is_open());
-        assert_eq!(app.focus.focused(), Some(FocusId::Preview));
+        assert_eq!(app.focus.focused(), Some(&FocusId::Preview));
     }
 }

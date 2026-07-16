@@ -1,37 +1,12 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
-mod focus_owner;
+mod focus;
 mod modal;
 
-pub use focus_owner::{ButtonFocus, FocusOwner};
+pub use focus::{FocusOutcome, FocusRing, FocusTarget};
 pub use modal::{ModalClickResult, ModalStack, classify_click, render_backdrop};
 
 use ratatui_core::layout::{Position, Rect};
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-/// Runtime state for `Focus`.
-pub struct FocusState<Id> {
-    focused: Option<Id>,
-}
-
-impl<Id> FocusState<Id> {
-    #[must_use]
-    /// Creates an unfocused state cell.
-    pub const fn new(focused: Option<Id>) -> Self {
-        Self { focused }
-    }
-
-    #[must_use]
-    /// Returns the stable identity that currently owns focus.
-    pub const fn focused(&self) -> Option<&Id> {
-        self.focused.as_ref()
-    }
-
-    /// Updates whether this focus state owns focus.
-    pub fn set(&mut self, focused: Option<Id>) {
-        self.focused = focused;
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// A stable identity paired with its painted terminal rectangle.

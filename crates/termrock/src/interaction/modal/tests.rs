@@ -38,7 +38,8 @@ fn modal_stack_opens_root_without_parents() {
 
 #[test]
 fn modal_stack_pushes_current_when_opening_sub_modal() {
-    let mut stack = ModalStack::from_current("root");
+    let mut stack = ModalStack::new();
+    stack.open("root");
 
     stack.open_sub("child");
 
@@ -49,7 +50,8 @@ fn modal_stack_pushes_current_when_opening_sub_modal() {
 
 #[test]
 fn modal_stack_pop_restores_one_parent_at_a_time() {
-    let mut stack = ModalStack::from_current("root");
+    let mut stack = ModalStack::new();
+    stack.open("root");
     stack.open_sub("child");
     stack.open_sub("grandchild");
 
@@ -71,7 +73,8 @@ fn modal_stack_pop_restores_one_parent_at_a_time() {
 
 #[test]
 fn modal_stack_clear_chain_drops_current_and_parents() {
-    let mut stack = ModalStack::from_current("root");
+    let mut stack = ModalStack::new();
+    stack.open("root");
     stack.open_sub("child");
     stack.open_sub("grandchild");
 
@@ -84,25 +87,12 @@ fn modal_stack_clear_chain_drops_current_and_parents() {
 
 #[test]
 fn modal_stack_open_replaces_existing_chain() {
-    let mut stack = ModalStack::from_current("root");
+    let mut stack = ModalStack::new();
+    stack.open("root");
     stack.open_sub("child");
 
     stack.open("replacement");
 
     assert_eq!(stack.current(), Some(&"replacement"));
     assert!(stack.parents().is_empty());
-}
-
-#[test]
-fn open_sub_after_take_current_starts_a_clean_root() {
-    let mut stack = ModalStack::from_current("root");
-    stack.open_sub("child");
-    assert_eq!(stack.take_current(), Some("child"));
-
-    stack.open_sub("replacement");
-
-    assert_eq!(stack.current(), Some(&"replacement"));
-    assert!(stack.parents().is_empty());
-    stack.pop();
-    assert_eq!(stack.current(), None);
 }
