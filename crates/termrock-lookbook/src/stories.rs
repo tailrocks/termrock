@@ -10,11 +10,15 @@ use termrock::{
         Action, ActionBar, ActionBarState, Anchor, Backdrop, DetailCapability, DetailRow,
         DetailTable, DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Hint,
         HintBar, List, ListRow, ListState, Panel, PanelEmphasis, RowRole, Severity, StatusBar,
-        StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState, Toast, Validation,
+        StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState, Toast, Tree, TreeNode,
+        TreeNodeStatus, TreeState, Validation,
     },
 };
 
-use crate::interactors::{StaticStory, StoryInteraction};
+use crate::interactors::{StaticStory, StoryInteraction, TreeInteractor};
+
+type RenderFn = fn(&mut Frame<'_>, Rect);
+type InteractorFactory = fn(RenderFn) -> Box<dyn StoryInteraction>;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Story {
@@ -24,7 +28,8 @@ pub(crate) struct Story {
     pub description: &'static str,
     pub width: u16,
     pub height: u16,
-    render: fn(&mut Frame<'_>, Rect),
+    render: RenderFn,
+    interactor: InteractorFactory,
 }
 
 impl Story {
@@ -35,7 +40,7 @@ impl Story {
         description: &'static str,
         width: u16,
         height: u16,
-        render: fn(&mut Frame<'_>, Rect),
+        render: RenderFn,
     ) -> Self {
         Self {
             id,
@@ -45,16 +50,27 @@ impl Story {
             width,
             height,
             render,
+            interactor: static_interactor,
         }
+    }
+    const fn with_interactor(mut self, interactor: InteractorFactory) -> Self {
+        self.interactor = interactor;
+        self
     }
     pub(crate) fn render(self, frame: &mut Frame<'_>, area: Rect) {
         (self.render)(frame, area);
     }
     pub(crate) fn make_interactor(&self) -> Box<dyn StoryInteraction> {
-        Box::new(StaticStory {
-            render_fn: self.render,
-        })
+        (self.interactor)(self.render)
     }
+}
+
+fn static_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(StaticStory { render_fn: render })
+}
+
+fn tree_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TreeInteractor::new())
 }
 
 pub(crate) fn stories() -> Vec<Story> {
@@ -104,6 +120,16 @@ pub(crate) fn stories() -> Vec<Story> {
             6,
             list,
         ),
+        Story::new(
+            "tree/navigation",
+            "Tree navigation",
+            "Tree",
+            "Stable-ID hierarchy with disclosure and status states.",
+            42,
+            7,
+            tree,
+        )
+        .with_interactor(tree_interactor),
         Story::new(
             "text-input/filter",
             "Filter composition",
@@ -212,6 +238,61 @@ fn action_bar(frame: &mut Frame<'_>, area: Rect) {
         &ActionBar {
             actions: &actions,
             gap: "  ",
+        },
+        area,
+        &mut state,
+    );
+}
+
+pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
+    vec![
+        TreeNode {
+            id: "workspace",
+            label: Line::from("Workspace"),
+            depth: 0,
+            branch: true,
+            expanded: true,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+        TreeNode {
+            id: "documents",
+            label: Line::from("Documents"),
+            depth: 1,
+            branch: true,
+            expanded: false,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+        TreeNode {
+            id: "loading",
+            label: Line::from("Remote items"),
+            depth: 1,
+            branch: true,
+            expanded: false,
+            enabled: false,
+            status: TreeNodeStatus::Loading,
+        },
+        TreeNode {
+            id: "notes",
+            label: Line::from("資料 notes"),
+            depth: 1,
+            branch: false,
+            expanded: false,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+    ]
+}
+
+fn tree(frame: &mut Frame<'_>, area: Rect) {
+    let nodes = tree_nodes();
+    let mut state = TreeState::new(Some("workspace"));
+    let theme = Theme::default();
+    frame.render_stateful_widget(
+        &Tree {
+            nodes: &nodes,
+            theme: &theme,
         },
         area,
         &mut state,

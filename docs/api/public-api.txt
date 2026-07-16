@@ -6764,6 +6764,96 @@ pub unsafe fn termrock::widgets::Severity::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Severity
 pub fn termrock::widgets::Severity::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Severity
+pub enum termrock::widgets::TreeNodeStatus
+pub termrock::widgets::TreeNodeStatus::Error
+pub termrock::widgets::TreeNodeStatus::Loading
+pub termrock::widgets::TreeNodeStatus::Ready
+impl core::clone::Clone for termrock::widgets::TreeNodeStatus
+pub fn termrock::widgets::TreeNodeStatus::clone(&self) -> termrock::widgets::TreeNodeStatus
+impl core::cmp::Eq for termrock::widgets::TreeNodeStatus
+impl core::cmp::PartialEq for termrock::widgets::TreeNodeStatus
+pub fn termrock::widgets::TreeNodeStatus::eq(&self, &termrock::widgets::TreeNodeStatus) -> bool
+impl core::fmt::Debug for termrock::widgets::TreeNodeStatus
+pub fn termrock::widgets::TreeNodeStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::TreeNodeStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::TreeNodeStatus
+impl core::marker::Freeze for termrock::widgets::TreeNodeStatus
+impl core::marker::Send for termrock::widgets::TreeNodeStatus
+impl core::marker::Sync for termrock::widgets::TreeNodeStatus
+impl core::marker::Unpin for termrock::widgets::TreeNodeStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::TreeNodeStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeNodeStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeNodeStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeNodeStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TreeNodeStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TreeNodeStatus where U: core::convert::From<T>
+pub fn termrock::widgets::TreeNodeStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TreeNodeStatus where U: core::convert::Into<T>
+pub type termrock::widgets::TreeNodeStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::TreeNodeStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TreeNodeStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TreeNodeStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TreeNodeStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TreeNodeStatus where T: core::clone::Clone
+pub type termrock::widgets::TreeNodeStatus::Owned = T
+pub fn termrock::widgets::TreeNodeStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::TreeNodeStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TreeNodeStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TreeNodeStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TreeNodeStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNodeStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TreeNodeStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNodeStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TreeNodeStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TreeNodeStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TreeNodeStatus
+pub fn termrock::widgets::TreeNodeStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TreeNodeStatus
+pub enum termrock::widgets::TreeOutcome<Id>
+pub termrock::widgets::TreeOutcome::Activated(Id)
+pub termrock::widgets::TreeOutcome::Ignored
+pub termrock::widgets::TreeOutcome::SelectionChanged(Id)
+pub termrock::widgets::TreeOutcome::Toggle(Id)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeOutcome<Id>
+pub fn termrock::widgets::TreeOutcome<Id>::clone(&self) -> termrock::widgets::TreeOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TreeOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TreeOutcome<Id>
+pub fn termrock::widgets::TreeOutcome<Id>::eq(&self, &termrock::widgets::TreeOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TreeOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeOutcome<Id>
+pub fn termrock::widgets::TreeOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::TreeOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TreeOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TreeOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TreeOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TreeOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TreeOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TreeOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TreeOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TreeOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TreeOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TreeOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TreeOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TreeOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TreeOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::TreeOutcome<Id>::Owned = T
+pub fn termrock::widgets::TreeOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TreeOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TreeOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TreeOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TreeOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TreeOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TreeOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TreeOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TreeOutcome<Id>
+pub fn termrock::widgets::TreeOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TreeOutcome<Id>
 pub enum termrock::widgets::Validation<'a>
 pub termrock::widgets::Validation::Invalid(&'a str)
 pub termrock::widgets::Validation::Valid
@@ -7972,6 +8062,147 @@ pub unsafe fn termrock::widgets::Toast<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Toast<'a>
 pub fn termrock::widgets::Toast<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Toast<'a>
+pub struct termrock::widgets::Tree<'a, Id>
+pub termrock::widgets::Tree::nodes: &'a [termrock::widgets::TreeNode<'a, Id>]
+pub termrock::widgets::Tree::theme: &'a termrock::style::Theme
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tree<'a, Id>
+pub fn termrock::widgets::Tree<'a, Id>::clone(&self) -> termrock::widgets::Tree<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Tree<'a, Id>
+pub fn termrock::widgets::Tree<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Tree<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Tree<'_, Id>
+pub type &termrock::widgets::Tree<'_, Id>::State = termrock::widgets::TreeState<Id>
+pub fn &termrock::widgets::Tree<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::Tree<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::Tree<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::Tree<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::Tree<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::Tree<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Tree<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Tree<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::Tree<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::Tree<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Tree<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::Tree<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::Tree<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Tree<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Tree<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Tree<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Tree<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::Tree<'a, Id>::Owned = T
+pub fn termrock::widgets::Tree<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Tree<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Tree<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Tree<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Tree<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Tree<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Tree<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Tree<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Tree<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Tree<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Tree<'a, Id>
+pub fn termrock::widgets::Tree<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Tree<'a, Id>
+pub struct termrock::widgets::TreeNode<'a, Id>
+pub termrock::widgets::TreeNode::branch: bool
+pub termrock::widgets::TreeNode::depth: u16
+pub termrock::widgets::TreeNode::enabled: bool
+pub termrock::widgets::TreeNode::expanded: bool
+pub termrock::widgets::TreeNode::id: Id
+pub termrock::widgets::TreeNode::label: ratatui_core::text::line::Line<'a>
+pub termrock::widgets::TreeNode::status: termrock::widgets::TreeNodeStatus
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeNode<'a, Id>
+pub fn termrock::widgets::TreeNode<'a, Id>::clone(&self) -> termrock::widgets::TreeNode<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeNode<'a, Id>
+pub fn termrock::widgets::TreeNode<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::TreeNode<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::TreeNode<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::TreeNode<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::TreeNode<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::TreeNode<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeNode<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeNode<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::TreeNode<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TreeNode<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TreeNode<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TreeNode<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TreeNode<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TreeNode<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TreeNode<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TreeNode<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TreeNode<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::TreeNode<'a, Id>::Owned = T
+pub fn termrock::widgets::TreeNode<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TreeNode<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TreeNode<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TreeNode<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TreeNode<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNode<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TreeNode<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNode<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TreeNode<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TreeNode<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TreeNode<'a, Id>
+pub fn termrock::widgets::TreeNode<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TreeNode<'a, Id>
+pub struct termrock::widgets::TreeState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::TreeState<Id>
+pub fn termrock::widgets::TreeState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::TreeOutcome<Id>
+pub fn termrock::widgets::TreeState<Id>::handle_key(&mut self, &[termrock::widgets::TreeNode<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::TreeOutcome<Id>
+pub fn termrock::widgets::TreeState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
+impl<Id> termrock::widgets::TreeState<Id>
+pub const fn termrock::widgets::TreeState<Id>::hovered(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::TreeState<Id>::is_focused(&self) -> bool
+pub const fn termrock::widgets::TreeState<Id>::new(core::option::Option<Id>) -> Self
+pub const fn termrock::widgets::TreeState<Id>::offset(&self) -> usize
+pub fn termrock::widgets::TreeState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
+pub fn termrock::widgets::TreeState<Id>::scroll_by(&mut self, i32, usize) -> usize
+pub fn termrock::widgets::TreeState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
+pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<Id>)
+pub const fn termrock::widgets::TreeState<Id>::selected(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::TreeState<Id>::set_focused(&mut self, bool)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeState<Id>
+pub fn termrock::widgets::TreeState<Id>::clone(&self) -> termrock::widgets::TreeState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TreeState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TreeState<Id>
+pub fn termrock::widgets::TreeState<Id>::eq(&self, &termrock::widgets::TreeState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TreeState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeState<Id>
+pub fn termrock::widgets::TreeState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::TreeState<Id>
+pub fn termrock::widgets::TreeState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::TreeState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TreeState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TreeState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TreeState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TreeState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TreeState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TreeState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TreeState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TreeState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TreeState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TreeState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TreeState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TreeState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TreeState<Id> where T: core::clone::Clone
+pub type termrock::widgets::TreeState<Id>::Owned = T
+pub fn termrock::widgets::TreeState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TreeState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TreeState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TreeState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TreeState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TreeState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TreeState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TreeState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TreeState<Id>
+pub fn termrock::widgets::TreeState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TreeState<Id>
 pub struct termrock::widgets::Viewport<'a>
 pub termrock::widgets::Viewport::border_style: ratatui_core::style::Style
 pub termrock::widgets::Viewport::content_style: ratatui_core::style::Style

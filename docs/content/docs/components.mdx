@@ -16,5 +16,6 @@ Every component accepts consumer-owned labels and borrowed data. Keyboard routin
 - `Tabs`: stable IDs, glyphs, and explicit state. Story `tabs/status`.
 - `TextInput`: grapheme-safe editing and external validation. Story `text-input/filter`.
 - `Toast`: severity and anchor metadata. Story `toast/success`.
+- `Tree`: caller-flattened hierarchy, stable disclosure/selection IDs, explicit focus/loading/error rows, Page/wheel/scrollbar navigation, and painted hit regions. Story `tree/navigation`.
 
 All widgets tolerate empty and narrow rectangles. Disabled items are not hit targets. Mouse regions derive from painted geometry. Consumers own navigation policy and dialog stacking.
