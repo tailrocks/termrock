@@ -1,6 +1,9 @@
 //! Lookbook-owned model, rendering, and interaction routing.
 
-use std::ops::ControlFlow;
+use std::{
+    ops::ControlFlow,
+    time::{Duration, Instant},
+};
 
 use ratatui::{
     Frame,
@@ -20,14 +23,33 @@ use termrock::{
     style::Role,
     widgets::{
         List as ComponentList, ListRow, ListState as ComponentListState, Panel, PanelEmphasis,
-        RowRole,
+        Progress, ProgressKind, RowRole, Severity, Toast,
     },
 };
 
 use crate::{
     Focus, PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction,
-    interactors::StoryInteraction, stories::stories,
+    interactors::StoryInteraction, runner::FrameTick, stories::stories,
 };
+
+const PROTOTYPE_TOAST_TTL: Duration = Duration::from_secs(2);
+
+#[derive(Debug, Default)]
+struct PrototypeToastState {
+    shown_at: Option<Instant>,
+}
+
+impl PrototypeToastState {
+    fn show(&mut self, tick: FrameTick) {
+        self.shown_at = Some(tick.now());
+    }
+
+    fn is_visible(&self, tick: FrameTick) -> bool {
+        self.shown_at.is_some_and(|shown_at| {
+            tick.now().saturating_duration_since(shown_at) < PROTOTYPE_TOAST_TTL
+        })
+    }
+}
 
 pub(crate) struct Lookbook {
     selected: usize,
@@ -43,6 +65,7 @@ pub(crate) struct Lookbook {
     preview_viewport_rows: usize,
     theme: Theme,
     knob_selected: usize,
+    prototype_toast: PrototypeToastState,
 }
 
 impl Lookbook {
@@ -64,10 +87,11 @@ impl Lookbook {
             preview_viewport_rows: 1,
             theme,
             knob_selected: 0,
+            prototype_toast: PrototypeToastState::default(),
         }
     }
 
-    pub(crate) fn render(&mut self, frame: &mut Frame<'_>) {
+    pub(crate) fn render_at(&mut self, frame: &mut Frame<'_>, tick: FrameTick) {
         let [brand_area, main_area, _, hint_area] = Layout::vertical([
             Constraint::Length(2),
             Constraint::Min(1),
@@ -80,9 +104,26 @@ impl Lookbook {
         let [description_area, preview_area] =
             Layout::vertical([Constraint::Length(6), Constraint::Min(4)]).areas(right_area);
 
+        let [brand_title_area, brand_progress_area] =
+            Layout::horizontal([Constraint::Min(1), Constraint::Length(24)]).areas(brand_area);
         frame.render_widget(
             Paragraph::new("TermRock  lookbook").style(self.theme.style(Role::Text)),
-            brand_area,
+            brand_title_area,
+        );
+        let spinner_tick = u64::try_from(tick.elapsed().as_millis() / 100).unwrap_or(u64::MAX);
+        let live_label = format!("live · {}ms", tick.delta().as_millis());
+        frame.render_widget(
+            Progress::new(
+                ProgressKind::Indeterminate { tick: spinner_tick },
+                &self.theme,
+            )
+            .label(&live_label),
+            Rect::new(
+                brand_progress_area.x,
+                brand_progress_area.y,
+                brand_progress_area.width,
+                1,
+            ),
         );
         self.render_sidebar(frame, sidebar_area);
         self.render_description(frame, description_area);
@@ -96,6 +137,16 @@ impl Lookbook {
             self.render_knobs(frame, knobs_area);
         }
         self.render_hints(frame, hint_area);
+        if self.prototype_toast.is_visible(tick) {
+            frame.render_widget(
+                Toast::new(
+                    &self.theme,
+                    "Preview updated · expires in 2s",
+                    Severity::Success,
+                ),
+                frame.area(),
+            );
+        }
     }
 
     fn render_sidebar(&mut self, frame: &mut Frame<'_>, area: Rect) {
@@ -307,10 +358,12 @@ impl Lookbook {
         frame.render_widget(Paragraph::new(text), area);
     }
 
-    pub(crate) fn update(&mut self, event: Event) -> ControlFlow<()> {
+    pub(crate) fn update_at(&mut self, event: Event, tick: FrameTick) -> ControlFlow<()> {
         match event {
             Event::Mouse(mouse) => self.handle_mouse(mouse),
-            Event::Key(key) if key.kind == KeyEventKind::Press => return self.handle_key(key),
+            Event::Key(key) if key.kind == KeyEventKind::Press => {
+                return self.handle_key(key, tick);
+            }
             Event::Resize { .. } | Event::FocusGained | Event::FocusLost => {}
             Event::Key(_) | Event::Paste | Event::Unknown => {}
             _ => {}
@@ -387,7 +440,7 @@ impl Lookbook {
         }
     }
 
-    fn handle_key(&mut self, key: KeyEvent) -> ControlFlow<()> {
+    fn handle_key(&mut self, key: KeyEvent, tick: FrameTick) -> ControlFlow<()> {
         let chord = KeyChord::from(key);
         let captures_text = match self.focus {
             Focus::Preview => self.interactor.captures_text_input(),
@@ -408,7 +461,7 @@ impl Lookbook {
         match self.focus {
             Focus::Preview => self.handle_preview_key(key, chord),
             Focus::Sidebar => return self.handle_sidebar_key(chord),
-            Focus::Knobs => self.handle_knob_key(key, chord),
+            Focus::Knobs => self.handle_knob_key(key, chord, tick),
         }
         ControlFlow::Continue(())
     }
@@ -443,7 +496,7 @@ impl Lookbook {
         }
     }
 
-    fn handle_knob_key(&mut self, key: KeyEvent, chord: KeyChord) {
+    fn handle_knob_key(&mut self, key: KeyEvent, chord: KeyChord, tick: FrameTick) {
         match chord.key {
             KeyCode::Esc => self.focus = Focus::Sidebar,
             KeyCode::Tab | KeyCode::BackTab => self.focus = Focus::Preview,
@@ -453,7 +506,10 @@ impl Lookbook {
                     (self.knob_selected + 1).min(self.interactor.knobs().len().saturating_sub(1));
             }
             _ => {
-                self.interactor.handle_knob_key(self.knob_selected, key);
+                let changed = self.interactor.handle_knob_key(self.knob_selected, key);
+                if changed && stories()[self.selected].component == "Toast" {
+                    self.prototype_toast.show(tick);
+                }
             }
         }
     }
@@ -506,15 +562,21 @@ impl Lookbook {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::ControlFlow;
+    use std::{ops::ControlFlow, time::Instant};
 
     use termrock::input::{KeyEvent, KeyModifiers};
 
     use super::*;
 
+    fn tick_at(start: Instant, milliseconds: u64) -> FrameTick {
+        let elapsed = Duration::from_millis(milliseconds);
+        FrameTick::manual(start + elapsed, elapsed, Duration::ZERO)
+    }
+
     #[test]
     fn toast_controls_route_focus_and_update_live_values() {
         let mut app = Lookbook::new();
+        let tick = tick_at(Instant::now(), 0);
         let toast = stories()
             .iter()
             .position(|story| story.id == "toast/success")
@@ -523,24 +585,25 @@ mod tests {
         app.focus = Focus::Preview;
 
         assert_eq!(
-            app.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            app.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE), tick),
             ControlFlow::Continue(())
         );
         assert_eq!(app.focus, Focus::Knobs);
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE));
+        let _ = app.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), tick);
         assert_eq!(app.interactor.knobs()[0].display_value(), "Warning");
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE));
+        let _ = app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), tick);
+        let _ = app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), tick);
+        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE), tick);
         assert_eq!(app.interactor.knobs()[2].display_value(), "Updated!");
     }
 
     #[test]
     fn theme_toggle_changes_gallery_theme_from_every_focus_target() {
         let mut app = Lookbook::new();
+        let tick = tick_at(Instant::now(), 0);
         app.focus = Focus::Knobs;
 
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE));
+        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
 
         assert_eq!(app.theme, Theme::slate());
     }
@@ -548,6 +611,7 @@ mod tests {
     #[test]
     fn text_story_keeps_plain_t_and_uses_control_t_for_theme() {
         let mut app = Lookbook::new();
+        let tick = tick_at(Instant::now(), 0);
         let picker = stories()
             .iter()
             .position(|story| story.id == "text-input/filter")
@@ -555,9 +619,34 @@ mod tests {
         app.select(picker);
         app.focus = Focus::Preview;
 
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE));
+        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
         assert_eq!(app.theme, Theme::default());
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::CONTROL));
+        let _ = app.handle_key(
+            KeyEvent::new(KeyCode::Char('t'), KeyModifiers::CONTROL),
+            tick,
+        );
         assert_eq!(app.theme, Theme::slate());
+    }
+
+    #[test]
+    fn toast_interactor_action_starts_and_expires_local_ttl() {
+        let mut app = Lookbook::new();
+        let toast = stories()
+            .iter()
+            .position(|story| story.id == "toast/success")
+            .unwrap();
+        app.select(toast);
+        app.focus = Focus::Knobs;
+        let start = Instant::now();
+        let action_tick = tick_at(start, 100);
+
+        app.handle_knob_key(
+            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+            KeyChord::plain(KeyCode::Right),
+            action_tick,
+        );
+
+        assert!(app.prototype_toast.is_visible(tick_at(start, 2_099)));
+        assert!(!app.prototype_toast.is_visible(tick_at(start, 2_100)));
     }
 }

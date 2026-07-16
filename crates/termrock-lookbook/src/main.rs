@@ -242,8 +242,8 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
     runner::run(
         &mut app,
         Duration::from_millis(120),
-        Lookbook::render,
-        Lookbook::update,
+        Lookbook::render_at,
+        Lookbook::update_at,
     )?;
     Ok(())
 }

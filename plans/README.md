@@ -60,7 +60,7 @@ number is `0004`; always check `ls migrations/` before claiming.
 | 028 | Per-component reference pages (preview + usage + contract table) | P2 | L | 027; prefer 011, 013 | DONE |
 | 029 | LogPane completion (REWRITTEN round 3 — residual gaps of shipped `log_pane.rs`; core superseded by commit `ccf0646`) | P2 | M | — | DONE |
 | 030 | Progress completion (REWRITTEN round 3 — residual gaps of shipped `progress.rs`; core superseded by commit `b5928dc`) | P2 | S-M | — | DONE |
-| 031 | SPIKE: frame-clock/tick primitive (Toast TTL, spinner frames) | P3 | M | 018, 030 | TODO |
+| 031 | SPIKE: frame-clock/tick primitive (Toast TTL, spinner frames) | P3 | M | 018, 030 | DONE — immutable `FrameTick`; runner samples once, widgets consume time as data |
 | 032 | SPIKE: cross-widget focus system + modal focus trap | P3 | L | 011, 024 | TODO |
 | 033 | SPIKE: columnar data Table widget | P3 | L | 011, 013 | TODO |
 | 034 | SPIKE: TextArea multi-line editor | P3 | L | 011, 013, 017 | TODO |
