@@ -8,6 +8,7 @@ mod form;
 mod hint_bar;
 mod list;
 mod panel;
+mod split_pane;
 mod status_bar;
 mod tabs;
 mod text_input;
@@ -25,6 +26,10 @@ pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormS
 pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans};
 pub use list::{List, ListOutcome, ListRow, ListState, RowRole};
 pub use panel::{Panel, PanelEmphasis};
+pub use split_pane::{
+    SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,
+    SplitSide,
+};
 pub use status_bar::{StatusBar, StatusSlot};
 pub use tabs::{Tab, Tabs, TabsState};
 pub use text_input::{EditAction, TextInput, TextInputState, Validation};

@@ -1,6 +1,16 @@
 # TermRock component inventory
 
-The public widget set is `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `MessageDialog`, `Panel`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, and `Tree`.
+The public widget set is `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `MessageDialog`, `Panel`, `SplitPane`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, and `Tree`.
+
+`SplitPane` maps an integer remembered ratio, horizontal/vertical direction,
+and caller minimums into bounded first/divider/second rectangles. Tiny areas
+degrade proportionally without escaping the input rectangle. `SplitPaneState`
+owns ratio, divider focus/hover/drag, collapse side, and last painted geometry;
+render alone publishes direction-tagged pointer hit geometry. Keyboard resize
+and pointer methods emit semantic ratio/focus outcomes; explicit
+`collapse`/`expand` methods preserve the remembered ratio. The caller maps
+collapse bindings and owns pane content, persistence, focus routing, and
+collapse policy.
 
 `Form` consumes caller-owned borrowed sections and stable-ID fields. It renders
 required, disabled, help, and validation-error states in responsive one/two
