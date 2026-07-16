@@ -22,8 +22,9 @@ pub use render::{
     render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area,
     render_scrollable_block, render_scrollable_block_at, render_selected_lines_in_area,
     render_vertical_scrollbar, render_vertical_scrollbar_in_area,
-    render_vertical_scrollbar_in_area_with_style, render_vertical_scrollbar_with_style,
-    scrollbar_offset_for_track_position, vertical_scrollbar_area, viewport_height, viewport_width,
+    render_vertical_scrollbar_in_area_with_style, render_vertical_scrollbar_to_buffer,
+    render_vertical_scrollbar_with_style, scrollbar_offset_for_track_position,
+    vertical_scrollbar_area, viewport_height, viewport_width,
 };
 
 use ratatui_core::text::Line;

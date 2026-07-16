@@ -329,16 +329,39 @@ pub fn render_vertical_scrollbar_in_area_with_style(
     if !is_scrollable(content_height, viewport) || area.height == 0 {
         return;
     }
-    frame.render_widget(
-        FixedScrollbar {
-            content_length: content_height,
-            viewport,
-            offset: scroll_y,
-            orientation: FixedScrollbarOrientation::Vertical,
-            style,
-        },
+    render_vertical_scrollbar_to_buffer(
+        frame.buffer_mut(),
         area,
+        content_height,
+        viewport,
+        scroll_y,
+        style,
     );
+}
+
+/// Paint a vertical scrollbar directly into a widget buffer.
+///
+/// Stateful widgets use this form so their content and scrollbar derive from
+/// the same viewport and offset without requiring a nested `Frame`.
+pub fn render_vertical_scrollbar_to_buffer(
+    buffer: &mut Buffer,
+    area: Rect,
+    content_height: usize,
+    viewport: usize,
+    scroll_y: u16,
+    style: ScrollbarStyle,
+) {
+    if !is_scrollable(content_height, viewport) || area.height == 0 {
+        return;
+    }
+    FixedScrollbar {
+        content_length: content_height,
+        viewport,
+        offset: scroll_y,
+        orientation: FixedScrollbarOrientation::Vertical,
+        style,
+    }
+    .render(area, buffer);
 }
 
 pub fn render_selected_lines_in_area(

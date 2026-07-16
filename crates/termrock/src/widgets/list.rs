@@ -216,6 +216,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         state.regions.clear();
         state.viewport_height = usize::from(area.height);
+        let scrollable = crate::scroll::is_scrollable(self.rows.len(), state.viewport_height);
+        let content_width = area.width.saturating_sub(u16::from(scrollable));
         state.offset = state
             .offset
             .min(max_offset(self.rows.len(), state.viewport_height));
@@ -241,7 +243,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 area.x,
                 area.y
                     .saturating_add(u16::try_from(visible).unwrap_or(u16::MAX)),
-                area.width,
+                content_width,
                 1,
             );
             let selected = state.selected.as_ref() == Some(&row.id);
@@ -274,6 +276,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     area: rect,
                 });
             }
+        }
+        if scrollable {
+            crate::scroll::render_vertical_scrollbar_to_buffer(
+                buffer,
+                Rect::new(area.right().saturating_sub(1), area.y, 1, area.height),
+                self.rows.len(),
+                state.viewport_height,
+                u16::try_from(state.offset).unwrap_or(u16::MAX),
+                crate::scroll::ScrollbarStyle::Line,
+            );
         }
     }
 }
