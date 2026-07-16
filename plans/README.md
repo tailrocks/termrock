@@ -38,7 +38,7 @@ number is `0004`; always check `ls migrations/` before claiming.
 | 015 | Viewport/dialog slice-before-clone (per-frame O(viewport)) | P2 | M | — | DONE |
 | 016 | Measurement caching + visible-window paint loops | P2 | M | 015 | DONE |
 | 017 | Core-math test coverage (geometry/ANSI/focus/diff) + 2 small fixes | P2 | M | — | DONE |
-| 018 | SPIKE: runtime disposition + app-runner design | P3 | M-L | 011 | TODO |
+| 018 | SPIKE: runtime disposition + app-runner design | P3 | M-L | 011 | DONE — graduate closure runner; delete legacy runtime |
 | 019 | SPIKE: runtime-configurable keymaps | P3 | M | 006 | TODO |
 | 020 | SPIKE: lookbook → storybook (knobs, theme switcher, installable) | P3 | M | 010, 018 | TODO |
 | 021 | SPIKE: Picker / command-palette composition | P3 | M | 011 | TODO |

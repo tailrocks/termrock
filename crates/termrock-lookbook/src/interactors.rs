@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{Frame, layout::Rect};
 use termrock::{
     Theme,
+    input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::Outcome,
     widgets::{
         ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListState, LogPane,
@@ -62,18 +62,17 @@ impl StoryInteraction for ChoiceDialogInteractor {
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         !matches!(
-            self.state.handle_key(&choice_actions(), key.into()),
+            self.state.handle_key(&choice_actions(), key),
             Outcome::Ignored
         )
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        let position = ratatui::layout::Position::new(mouse.column, mouse.row);
+        let position = mouse.position;
         if !preview_area.contains(position) {
             return false;
         }
-        if mouse.kind == crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left)
-        {
+        if mouse.kind == MouseEventKind::Down(MouseButton::Left) {
             return !matches!(self.state.click(position), Outcome::Ignored);
         }
         false
@@ -104,36 +103,29 @@ impl StoryInteraction for ListInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        !matches!(
-            self.state.handle_key(&list_rows(), key.into()),
-            Outcome::Ignored
-        )
+        !matches!(self.state.handle_key(&list_rows(), key), Outcome::Ignored)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        let position = ratatui::layout::Position::new(mouse.column, mouse.row);
+        let position = mouse.position;
         if !preview_area.contains(position) {
             let changed = self.state.hovered.is_some();
             self.state.hover(position);
             return changed;
         }
         match mouse.kind {
-            crossterm::event::MouseEventKind::Moved => {
+            MouseEventKind::Moved => {
                 self.state.hover(position);
                 true
             }
-            crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
+            MouseEventKind::Down(MouseButton::Left) => {
                 !matches!(self.state.click(position), Outcome::Ignored)
             }
-            crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) => {
+            MouseEventKind::Drag(MouseButton::Left) => {
                 self.state.scroll_to_position(position, list_rows().len())
             }
-            crossterm::event::MouseEventKind::ScrollUp => {
-                self.state.scroll_by(-1, list_rows().len())
-            }
-            crossterm::event::MouseEventKind::ScrollDown => {
-                self.state.scroll_by(1, list_rows().len())
-            }
+            MouseEventKind::ScrollUp => self.state.scroll_by(-1, list_rows().len()),
+            MouseEventKind::ScrollDown => self.state.scroll_by(1, list_rows().len()),
             _ => false,
         }
     }
@@ -165,7 +157,7 @@ impl StoryInteraction for TextInputInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        !matches!(self.state.handle_key(key.into()), TextInputOutcome::Ignored)
+        !matches!(self.state.handle_key(key), TextInputOutcome::Ignored)
     }
 
     fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
@@ -208,7 +200,7 @@ impl StoryInteraction for LogPaneInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        !matches!(self.state.handle_key(key.into()), Outcome::Ignored)
+        !matches!(self.state.handle_key(key), Outcome::Ignored)
     }
 
     fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
@@ -242,35 +234,35 @@ impl StoryInteraction for TreeInteractor {
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         !matches!(
-            self.state.handle_key(&self.nodes, key.into()),
+            self.state.handle_key(&self.nodes, key),
             TreeOutcome::Ignored
         )
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        let position = ratatui::layout::Position::new(mouse.column, mouse.row);
+        let position = mouse.position;
         if !preview_area.contains(position) {
             let changed = self.state.hovered().is_some();
             self.state.hover(position);
             return changed;
         }
         match mouse.kind {
-            crossterm::event::MouseEventKind::Moved => {
+            MouseEventKind::Moved => {
                 self.state.hover(position);
                 true
             }
-            crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
+            MouseEventKind::Down(MouseButton::Left) => {
                 self.state.scroll_to_position(position, self.nodes.len())
                     || !matches!(self.state.click(position), TreeOutcome::Ignored)
             }
-            crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) => {
+            MouseEventKind::Drag(MouseButton::Left) => {
                 self.state.scroll_to_position(position, self.nodes.len())
             }
-            crossterm::event::MouseEventKind::ScrollUp => {
+            MouseEventKind::ScrollUp => {
                 self.state.scroll_by(-1, self.nodes.len());
                 true
             }
-            crossterm::event::MouseEventKind::ScrollDown => {
+            MouseEventKind::ScrollDown => {
                 self.state.scroll_by(1, self.nodes.len());
                 true
             }
@@ -309,37 +301,32 @@ impl StoryInteraction for FormInteractor {
             title: ratatui::text::Line::from("General"),
             fields: &fields,
         }];
-        !matches!(
-            self.state.handle_key(&sections, key.into()),
-            FormOutcome::Ignored
-        )
+        !matches!(self.state.handle_key(&sections, key), FormOutcome::Ignored)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        let position = ratatui::layout::Position::new(mouse.column, mouse.row);
+        let position = mouse.position;
         if !preview_area.contains(position) {
             let changed = self.state.hovered().is_some();
             self.state.hover(position);
             return changed;
         }
         match mouse.kind {
-            crossterm::event::MouseEventKind::Moved => {
+            MouseEventKind::Moved => {
                 self.state.hover(position);
                 true
             }
-            crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
+            MouseEventKind::Down(MouseButton::Left) => {
                 self.state.scroll_to_position(position)
                     || !matches!(self.state.click(position), FormOutcome::Ignored)
             }
-            crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) => {
-                self.state.scroll_to_position(position)
-            }
-            crossterm::event::MouseEventKind::ScrollUp => {
+            MouseEventKind::Drag(MouseButton::Left) => self.state.scroll_to_position(position),
+            MouseEventKind::ScrollUp => {
                 let content_len = self.state.content_height();
                 self.state.scroll_by(-1, content_len);
                 true
             }
-            crossterm::event::MouseEventKind::ScrollDown => {
+            MouseEventKind::ScrollDown => {
                 let content_len = self.state.content_height();
                 self.state.scroll_by(1, content_len);
                 true
@@ -371,29 +358,25 @@ impl StoryInteraction for SplitPaneInteractor {
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         let split = SplitPane::new(SplitDirection::Horizontal, 12, 16, &self.theme);
         !matches!(
-            self.state.handle_key(&split, key.into()),
+            self.state.handle_key(&split, key),
             SplitPaneOutcome::Ignored
         )
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
-        let position = ratatui::layout::Position::new(mouse.column, mouse.row);
+        let position = mouse.position;
         let split = SplitPane::new(SplitDirection::Horizontal, 12, 16, &self.theme);
         match mouse.kind {
-            crossterm::event::MouseEventKind::Moved => self.state.hover(&split, position),
-            crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
-                !matches!(
-                    self.state.drag_start(&split, position),
-                    SplitPaneOutcome::Ignored
-                )
-            }
-            crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) => {
-                !matches!(
-                    self.state.drag_move(&split, position),
-                    SplitPaneOutcome::Ignored
-                )
-            }
-            crossterm::event::MouseEventKind::Up(crossterm::event::MouseButton::Left) => {
+            MouseEventKind::Moved => self.state.hover(&split, position),
+            MouseEventKind::Down(MouseButton::Left) => !matches!(
+                self.state.drag_start(&split, position),
+                SplitPaneOutcome::Ignored
+            ),
+            MouseEventKind::Drag(MouseButton::Left) => !matches!(
+                self.state.drag_move(&split, position),
+                SplitPaneOutcome::Ignored
+            ),
+            MouseEventKind::Up(MouseButton::Left) => {
                 let changed = self.state.is_dragging();
                 self.state.drag_end();
                 changed
@@ -405,8 +388,12 @@ impl StoryInteraction for SplitPaneInteractor {
 
 #[cfg(test)]
 mod tests {
-    use crossterm::event::{KeyModifiers, MouseEvent, MouseEventKind};
-    use ratatui::{Terminal, backend::TestBackend, layout::Rect};
+    use ratatui::{
+        Terminal,
+        backend::TestBackend,
+        layout::{Position, Rect},
+    };
+    use termrock::input::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 
     use super::{FormInteractor, SplitPaneInteractor, StoryInteraction};
 
@@ -422,8 +409,7 @@ mod tests {
         assert!(interactor.handle_mouse(
             MouseEvent {
                 kind: MouseEventKind::Moved,
-                column: 0,
-                row: 2,
+                position: Position::new(0, 2),
                 modifiers: KeyModifiers::NONE,
             },
             area,
@@ -432,8 +418,7 @@ mod tests {
         assert!(interactor.handle_mouse(
             MouseEvent {
                 kind: MouseEventKind::Moved,
-                column: area.right(),
-                row: area.bottom(),
+                position: Position::new(area.right(), area.bottom()),
                 modifiers: KeyModifiers::NONE,
             },
             area,
@@ -454,27 +439,24 @@ mod tests {
 
         assert!(interactor.handle_mouse(
             MouseEvent {
-                kind: MouseEventKind::Down(crossterm::event::MouseButton::Left),
-                column: divider.x,
-                row: divider.y,
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(divider.x, divider.y),
                 modifiers: KeyModifiers::NONE,
             },
             area,
         ));
         assert!(interactor.handle_mouse(
             MouseEvent {
-                kind: MouseEventKind::Drag(crossterm::event::MouseButton::Left),
-                column: 50,
-                row: divider.y,
+                kind: MouseEventKind::Drag(MouseButton::Left),
+                position: Position::new(50, divider.y),
                 modifiers: KeyModifiers::NONE,
             },
             area,
         ));
         assert!(interactor.handle_mouse(
             MouseEvent {
-                kind: MouseEventKind::Up(crossterm::event::MouseButton::Left),
-                column: 50,
-                row: divider.y,
+                kind: MouseEventKind::Up(MouseButton::Left),
+                position: Position::new(50, divider.y),
                 modifiers: KeyModifiers::NONE,
             },
             area,
