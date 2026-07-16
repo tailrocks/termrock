@@ -6,6 +6,10 @@ without compatibility shims or parallel legacy paths. TermRock keeps executor,
 output, validation, wording, and application models consumer-owned unless a
 migration explicitly changes that boundary.
 
+Migration versions correspond to immutable Git tags from `v0.7.0` onward.
+Release-boundary rules and tag ownership are documented in
+[`RELEASING.md`](RELEASING.md).
+
 Apply every migration after the consumer's pinned version in numeric order:
 
 | Sequence | Version | Migration |

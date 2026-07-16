@@ -16,7 +16,8 @@ under `migrations/` and link it from `MIGRATING.md`, with an old-to-new surface
 map, required consumer edits, before/after examples, removed concepts, ownership
 changes, and validation commands. Do not rewrite older migration boundaries.
 After `v0.6.0`, `semver-candidate`, `rust-required`, and `docs-required` are
-release gates; incompatible changes require an intentional version decision.
+release gates; incompatible changes follow the intentional version procedure in
+[`RELEASING.md`](RELEASING.md).
 Prefer the best forward design over backward compatibility; migration
 documentation replaces compatibility shims, deprecated aliases, and parallel
 legacy implementations.

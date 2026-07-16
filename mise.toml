@@ -9,6 +9,7 @@ rust = "1.97.0"
 "cargo:cargo-shear" = "1.13.0"
 "cargo:cargo-public-api" = "0.52.0"
 "cargo:cargo-semver-checks" = "0.46.0"
+"cargo:git-cliff" = "2.13.1"
 "pipx:reuse" = { version = "6.2.0", extras = "charset-normalizer" }
 "ubi:gitleaks/gitleaks" = "8.28.0"
 

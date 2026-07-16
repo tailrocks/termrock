@@ -15,7 +15,25 @@ jobs:
       - run: cargo package -p termrock --locked
       - working-directory: docs
         run: bun install --frozen-lockfile && bun run build
+      - name: Build release notes
+        run: |
+          mise x -- git-cliff --unreleased --tag "${{ inputs.tag }}" --strip all --output /tmp/cliff-notes.md
+          set -- migrations/*-"${{ inputs.tag }}"-*.md
+          if [ -e "$1" ]; then
+            {
+              echo '## Migration guides'
+              echo
+              for file in "$@"; do
+                name=${file#migrations/}
+                echo "- [$name](https://github.com/tailrocks/termrock/blob/main/$file)"
+              done
+              echo
+              cat /tmp/cliff-notes.md
+            } > /tmp/notes.md
+          else
+            cp /tmp/cliff-notes.md /tmp/notes.md
+          fi
       - run: git tag -a "${{ inputs.tag }}" -m "TermRock ${{ inputs.tag }}"
       - run: git push origin "${{ inputs.tag }}"
       - env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh release create "${{ inputs.tag }}" --generate-notes
+        run: gh release create "${{ inputs.tag }}" --notes-file /tmp/notes.md
