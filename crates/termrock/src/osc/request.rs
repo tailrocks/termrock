@@ -27,8 +27,25 @@ pub struct HyperlinkRegion<'a, Id> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ClipboardSelection {
+    /// The system clipboard (`c`).
+    Clipboard,
+    /// The primary selection (`p`).
+    Primary,
+}
+
+impl ClipboardSelection {
+    pub(crate) const fn letter(self) -> &'static str {
+        match self {
+            Self::Clipboard => "c",
+            Self::Primary => "p",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ClipboardWrite<'a> {
-    pub selection: &'a str,
+    pub selection: ClipboardSelection,
     pub text: &'a str,
 }
 

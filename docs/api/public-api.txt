@@ -1967,6 +1967,50 @@ pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::termin
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::scroll_hint_spans(termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::geometry::HintSpan<'static>>
 pub mod termrock::osc
+pub enum termrock::osc::ClipboardSelection
+pub termrock::osc::ClipboardSelection::Clipboard
+pub termrock::osc::ClipboardSelection::Primary
+impl core::clone::Clone for termrock::osc::ClipboardSelection
+pub fn termrock::osc::ClipboardSelection::clone(&self) -> termrock::osc::ClipboardSelection
+impl core::cmp::Eq for termrock::osc::ClipboardSelection
+impl core::cmp::PartialEq for termrock::osc::ClipboardSelection
+pub fn termrock::osc::ClipboardSelection::eq(&self, &termrock::osc::ClipboardSelection) -> bool
+impl core::fmt::Debug for termrock::osc::ClipboardSelection
+pub fn termrock::osc::ClipboardSelection::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::osc::ClipboardSelection
+impl core::marker::StructuralPartialEq for termrock::osc::ClipboardSelection
+impl core::marker::Freeze for termrock::osc::ClipboardSelection
+impl core::marker::Send for termrock::osc::ClipboardSelection
+impl core::marker::Sync for termrock::osc::ClipboardSelection
+impl core::marker::Unpin for termrock::osc::ClipboardSelection
+impl core::marker::UnsafeUnpin for termrock::osc::ClipboardSelection
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::osc::ClipboardSelection
+impl core::panic::unwind_safe::UnwindSafe for termrock::osc::ClipboardSelection
+impl<Q, K> equivalent::Equivalent<K> for termrock::osc::ClipboardSelection where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::osc::ClipboardSelection::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::osc::ClipboardSelection where U: core::convert::From<T>
+pub fn termrock::osc::ClipboardSelection::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::osc::ClipboardSelection where U: core::convert::Into<T>
+pub type termrock::osc::ClipboardSelection::Error = core::convert::Infallible
+pub fn termrock::osc::ClipboardSelection::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::osc::ClipboardSelection where U: core::convert::TryFrom<T>
+pub type termrock::osc::ClipboardSelection::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::osc::ClipboardSelection::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::osc::ClipboardSelection where T: core::clone::Clone
+pub type termrock::osc::ClipboardSelection::Owned = T
+pub fn termrock::osc::ClipboardSelection::clone_into(&self, &mut T)
+pub fn termrock::osc::ClipboardSelection::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::osc::ClipboardSelection where T: 'static + ?core::marker::Sized
+pub fn termrock::osc::ClipboardSelection::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::osc::ClipboardSelection where T: ?core::marker::Sized
+pub fn termrock::osc::ClipboardSelection::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::osc::ClipboardSelection where T: ?core::marker::Sized
+pub fn termrock::osc::ClipboardSelection::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::osc::ClipboardSelection where T: core::clone::Clone
+pub unsafe fn termrock::osc::ClipboardSelection::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::osc::ClipboardSelection
+pub fn termrock::osc::ClipboardSelection::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::osc::ClipboardSelection
 pub enum termrock::osc::PointerShape
 pub termrock::osc::PointerShape::Crosshair
 pub termrock::osc::PointerShape::Default
@@ -2062,7 +2106,7 @@ impl<T> core::convert::From<T> for termrock::osc::Request<'a>
 pub fn termrock::osc::Request<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::osc::Request<'a>
 pub struct termrock::osc::ClipboardWrite<'a>
-pub termrock::osc::ClipboardWrite::selection: &'a str
+pub termrock::osc::ClipboardWrite::selection: termrock::osc::ClipboardSelection
 pub termrock::osc::ClipboardWrite::text: &'a str
 impl<'a> core::clone::Clone for termrock::osc::ClipboardWrite<'a>
 pub fn termrock::osc::ClipboardWrite<'a>::clone(&self) -> termrock::osc::ClipboardWrite<'a>
