@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+//! Integration coverage for the tree rendering hot path.
 
 use std::{
     alloc::System,

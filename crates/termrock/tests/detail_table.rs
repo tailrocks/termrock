@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+//! Integration coverage for detail-table rendering and interaction.
 
 use ratatui_core::{
     buffer::Buffer,

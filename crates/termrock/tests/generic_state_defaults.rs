@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+//! Integration coverage for unconstrained generic state defaults.
 
 use termrock::widgets::{
     ActionBarState, ChoiceDialogState, DetailTableState, ListState, StatusBarState, TabsState,
