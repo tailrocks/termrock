@@ -1,13 +1,5 @@
 //! Responsive layout specifications and caller-defined bottom slots.
 
-mod dialog;
-
-pub use dialog::{
-    DIALOG_HORIZONTAL_SCROLL_STEP, DialogBodyScroll, DialogBorder, ScrollAxes, ScrollAxis,
-    dialog_inner_chunks, dialog_inner_height, dialog_scroll_axes, mouse_scroll_delta,
-    render_dialog_shell, render_scrollable_dialog_body, scroll_hint_spans,
-};
-
 use ratatui_core::layout::Rect;
 
 pub use crate::interaction::HitRegion;

@@ -116,6 +116,8 @@ impl<M> ModalStack<M> {
     pub fn open_sub(&mut self, child: M) {
         if let Some(parent) = self.current.take() {
             self.parents.push(parent);
+        } else {
+            self.parents.clear();
         }
         self.current = Some(child);
     }
@@ -123,12 +125,6 @@ impl<M> ModalStack<M> {
     /// Close the active modal and restore one parent, if any.
     pub fn pop(&mut self) {
         self.current = self.parents.pop();
-    }
-
-    /// Dismiss only the active modal, leaving parents intact for callers that
-    /// intentionally manage parent restoration themselves.
-    pub fn dismiss_current(&mut self) {
-        self.current = None;
     }
 
     /// Close the active modal and every saved parent.

@@ -1,11 +1,9 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
 mod focus_owner;
-mod hover_tracker;
 mod modal;
 
 pub use focus_owner::{ButtonFocus, FocusOwner};
-pub use hover_tracker::HoverTracker;
 pub use modal::{ModalClickResult, ModalStack, classify_click, render_backdrop};
 
 use ratatui_core::layout::{Position, Rect};
@@ -45,9 +43,31 @@ pub struct HitRegion<Id> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-/// Runtime state for `Hover`.
+/// Cached stable-ID hover state driven from painted [`HitRegion`]s.
+///
+/// Widgets may expose their painted regions for a consumer-owned hover state,
+/// or own equivalent stateful `hover` methods when input belongs to the widget.
 pub struct HoverState<Id> {
     hovered: Option<Id>,
+}
+
+#[cfg(test)]
+mod hover_tests {
+    use super::*;
+
+    #[test]
+    fn hover_state_caches_hit_and_clears_on_miss() {
+        let regions = [HitRegion {
+            id: "action",
+            area: Rect::new(2, 3, 4, 2),
+        }];
+        let mut hover = HoverState::default();
+
+        assert_eq!(hover.update(Position::new(3, 3), &regions), Some(&"action"));
+        assert_eq!(hover.hovered(), Some(&"action"));
+        assert_eq!(hover.update(Position::new(0, 0), &regions), None);
+        assert_eq!(hover.hovered(), None);
+    }
 }
 
 impl<Id: Clone> HoverState<Id> {

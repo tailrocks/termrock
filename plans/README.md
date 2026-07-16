@@ -53,7 +53,7 @@ number is `0004`; always check `ls migrations/` before claiming.
 | 021 | SPIKE: Picker / command-palette composition | P3 | M | 011 | DONE — graduate state + default widget |
 | 022 | Lookbook SVG correctness (invisible-text fix) + JSON/CLI hardening | P1 | M | — | DONE |
 | 023 | Contract-axis stories (narrow/unicode) + interactor dedup | P2 | M | 022 | DONE |
-| 024 | Scroll/hover support-API unification (kill dead twins, orphaned render family) | P2 | L | 012, 015, 016 | TODO |
+| 024 | Scroll/hover support-API unification (kill dead twins, orphaned render family) | P2 | L | 012, 015, 016 | DONE |
 | 025 | Session option decoupling (cursor/line-wrap independent of alt-screen) | P2 | S | — | TODO |
 | 026 | Release & versioning process (semver gate, tag backfill, git-cliff, RELEASING.md) | P2 | M | 001 | TODO |
 | 027 | Docs website shell + CI build + deploy | P2 | L | — | TODO |

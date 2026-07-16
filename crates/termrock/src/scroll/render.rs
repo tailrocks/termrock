@@ -1,57 +1,36 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Shared scroll geometry, panels, and scrollbar rendering.
+//! Scrollbar painting and the fixed-prefix line primitive.
 
 use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::{Modifier, Style},
-    terminal::Frame,
-    text::{Line, Span, Text},
-    widgets::{StatefulWidget, Widget},
-};
-use ratatui_widgets::{
-    block::Block,
-    list::{List, ListItem, ListState},
-    paragraph::Paragraph,
-    table::HighlightSpacing,
+    buffer::Buffer, layout::Rect, style::Style, terminal::Frame, text::Line, widgets::Widget,
 };
 
 use crate::{
     scroll,
     style::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK},
-    text::{
-        display_cols, fixed_prefix_scroll_segments, leading_space_cols, padded_line_display_cols,
-    },
+    text::{display_cols, fixed_prefix_scroll_segments},
 };
 
-use crate::widgets::{Panel, PanelEmphasis};
-
-/// Dim track glyph shared by every scrollbar, both orientations and styles.
+/// Dim track glyph shared by every scrollbar.
 pub const SCROLLBAR_TRACK: &str = "·";
-
-/// Horizontal scrollbar thumb glyph. Style-independent: the heavy line is the
-/// only horizontal thumb. A full block reads poorly as a horizontal bar, so
-/// [`ScrollbarStyle`] applies to the vertical thumb only.
+/// Heavy horizontal scrollbar thumb glyph.
 pub const SCROLLBAR_HORIZONTAL_THUMB: &str = "━";
 
-/// Visual weight of the **vertical** scrollbar thumb. The track is always
-/// [`SCROLLBAR_TRACK`] and the horizontal thumb is always
-/// [`SCROLLBAR_HORIZONTAL_THUMB`]; this enum only chooses the vertical glyph.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+/// Visual weight of the vertical scrollbar thumb.
 pub enum ScrollbarStyle {
-    /// Heavy box-drawing line `┃` — a thin centre rule matching the horizontal
-    /// `━`. The default everywhere.
+    /// Thin heavy-line thumb.
     #[default]
     Line,
-    /// Full block `█` — a solid, heavy vertical bar.
+    /// Solid block thumb.
     Block,
 }
 
 impl ScrollbarStyle {
-    /// Vertical thumb glyph: heavy line `┃` (Line) or full block `█` (Block).
     #[must_use]
+    /// Return the vertical thumb glyph.
     pub const fn vertical_thumb(self) -> &'static str {
         match self {
             Self::Line => "┃",
@@ -60,85 +39,34 @@ impl ScrollbarStyle {
     }
 }
 
-/// Performs the `viewport_width` operation.
+#[must_use]
+/// Width inside a one-cell bordered block.
 pub const fn viewport_width(area: Rect) -> usize {
     area.width.saturating_sub(2) as usize
 }
 
-/// Performs the `viewport_height` operation.
+#[must_use]
+/// Height inside a one-cell bordered block.
 pub const fn viewport_height(area: Rect) -> usize {
     area.height.saturating_sub(2) as usize
 }
 
-/// Performs the `max_offset` operation.
-pub const fn max_offset(content_len: usize, viewport: usize) -> u16 {
-    scroll::max_offset_u16(content_len, viewport)
-}
-
-pub const fn is_scrollable(content_len: usize, viewport: usize) -> bool {
-    scroll::is_scrollable(content_len, viewport)
-}
-
-/// Performs the `effective_offset` operation.
-pub const fn effective_offset(content_len: usize, viewport: usize, offset: u16) -> u16 {
-    scroll::effective_offset_u16(content_len, viewport, offset)
-}
-
-/// Performs the `clamp_scroll_offset` operation.
+/// Clamp and store a `u16` scroll offset.
 pub const fn clamp_scroll_offset(content_len: usize, viewport: usize, offset: &mut u16) -> u16 {
     scroll::clamp_offset_u16(content_len, viewport, offset)
 }
 
-/// Performs the `cursor_follow_offset` operation.
-pub fn cursor_follow_offset(
-    cursor: usize,
-    content_length: usize,
-    viewport: usize,
-    stored_offset: u16,
-) -> u16 {
-    scroll::cursor_follow_offset(cursor, content_length, viewport, usize::from(stored_offset))
-        .min(usize::from(u16::MAX)) as u16
-}
-
-fn scrollbar_thumb_geometry(
-    content_length: usize,
-    viewport: usize,
-    track_len: usize,
-    offset: usize,
-) -> (usize, usize) {
-    scroll::full_cell_thumb(
-        content_length,
-        viewport,
-        track_len.min(usize::from(u16::MAX)) as u16,
-        offset,
-    )
-    .map_or((0, 0), |thumb| {
-        (usize::from(thumb.start), usize::from(thumb.len))
-    })
-}
-
-/// Performs the `scrollbar_offset_for_track_position` operation.
-pub fn scrollbar_offset_for_track_position(
-    content_length: usize,
-    viewport: usize,
-    track_len: usize,
-    track_position: usize,
-) -> u16 {
-    scroll::offset_for_track_position_u16(content_length, viewport, track_len, track_position)
-}
-
-// No upper clamp: every caller's render path calls effective_offset, which clamps.
-/// Performs the `apply_scroll_delta_unclamped` operation.
+/// Apply an unclamped signed delta.
 pub const fn apply_scroll_delta_unclamped(value: &mut u16, delta: i16) {
     scroll::apply_delta_unclamped_u16(value, delta);
 }
 
-/// Performs the `apply_scroll_delta` operation.
+/// Apply a signed delta and clamp to content.
 pub fn apply_scroll_delta(value: &mut u16, delta: i16, viewport: usize, content_len: usize) {
     scroll::apply_delta_u16(content_len, viewport, value, isize::from(delta));
 }
 
-/// Performs the `apply_term_width_scroll_delta` operation.
+/// Apply horizontal scrolling using a bordered terminal width.
 pub fn apply_term_width_scroll_delta(
     value: &mut u16,
     delta: i16,
@@ -153,15 +81,17 @@ pub fn apply_term_width_scroll_delta(
     );
 }
 
-/// Performs the `line_width` operation.
-pub fn line_width(line: &Line<'_>) -> usize {
-    line.spans
-        .iter()
-        .map(|span| display_cols(&span.content))
-        .sum()
+/// Map a pointer position on a scrollbar track to a content offset.
+pub fn scrollbar_offset_for_track_position(
+    content_length: usize,
+    viewport: usize,
+    track_len: usize,
+    track_position: usize,
+) -> u16 {
+    scroll::offset_for_track_position_u16(content_length, viewport, track_len, track_position)
 }
 
-/// Renders `render_line_with_fixed_prefix_scroll` output.
+/// Paint a line whose prefix remains fixed while its suffix scrolls.
 pub fn render_line_with_fixed_prefix_scroll(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -182,14 +112,12 @@ pub fn render_line_with_fixed_prefix_scroll(
         styled_spans.push((span.content.into_owned(), style, base_col));
         base_col += span_width;
     }
-
     let width = usize::from(area.width);
     for col in 0..width {
         frame
             .buffer_mut()
             .set_string(area.x + col as u16, area.y + row, " ", fill_style);
     }
-
     for (text, style, base_col) in styled_spans {
         for segment in
             fixed_prefix_scroll_segments(&text, base_col, fixed_prefix_cols, scroll_x, width)
@@ -207,56 +135,29 @@ pub fn render_line_with_fixed_prefix_scroll(
     }
 }
 
-// Trailing padding mirrors leading spaces so indented content scrolls
-// symmetrically — without it the rightmost indent column is unreachable.
-fn leading_space_count(line: &Line<'_>) -> usize {
-    leading_space_cols(line.spans.iter().map(|span| span.content.as_ref()))
-}
-
-/// Performs the `max_line_width` operation.
-pub fn max_line_width(lines: &[Line<'_>]) -> usize {
-    // Adds leading_space_count a second time to account for the matching trailing
-    // padding that add_trailing_padding appends; the padded line is genuinely that
-    // wide, so content_width must reflect it to keep the scrollbar range correct.
-    lines
-        .iter()
-        .map(|line| padded_line_display_cols(line.spans.iter().map(|span| span.content.as_ref())))
-        .max()
-        .unwrap_or(0)
-}
-
-fn add_trailing_padding(mut lines: Vec<Line<'_>>) -> Vec<Line<'_>> {
-    for line in &mut lines {
-        let padding = leading_space_count(line);
-        if padding > 0 {
-            line.spans.push(Span::raw(" ".repeat(padding)));
-        }
-    }
-    lines
-}
-
-/// Performs the `horizontal_scrollbar_area` operation.
+#[must_use]
+/// Horizontal track inside the bottom border.
 pub const fn horizontal_scrollbar_area(block_area: Rect) -> Rect {
-    Rect {
-        x: block_area.x + 1,
-        y: block_area.y + block_area.height.saturating_sub(1),
-        width: block_area.width.saturating_sub(2),
-        height: 1,
-    }
+    Rect::new(
+        block_area.x + 1,
+        block_area.y + block_area.height.saturating_sub(1),
+        block_area.width.saturating_sub(2),
+        1,
+    )
 }
 
-/// Performs the `vertical_scrollbar_area` operation.
+#[must_use]
+/// Vertical track inside the right border.
 pub const fn vertical_scrollbar_area(block_area: Rect) -> Rect {
-    Rect {
-        x: block_area.x + block_area.width.saturating_sub(1),
-        y: block_area.y + 1,
-        width: 1,
-        height: block_area.height.saturating_sub(2),
-    }
+    Rect::new(
+        block_area.x + block_area.width.saturating_sub(1),
+        block_area.y + 1,
+        1,
+        block_area.height.saturating_sub(2),
+    )
 }
 
-/// Horizontal scrollbars have no style variant — the thumb is always
-/// [`SCROLLBAR_HORIZONTAL_THUMB`] (the full block reads poorly horizontally).
+/// Render a horizontal scrollbar on a block border.
 pub fn render_horizontal_scrollbar(
     frame: &mut Frame<'_>,
     block_area: Rect,
@@ -264,24 +165,22 @@ pub fn render_horizontal_scrollbar(
     scroll_x: u16,
 ) {
     let viewport = viewport_width(block_area);
-    if !is_scrollable(content_width, viewport) {
+    if !scroll::is_scrollable(content_width, viewport) {
         return;
     }
-    let area = horizontal_scrollbar_area(block_area);
     frame.render_widget(
         FixedScrollbar {
             content_length: content_width,
             viewport,
             offset: scroll_x,
             orientation: FixedScrollbarOrientation::Horizontal,
-            // Ignored for horizontal; the glyph is always the heavy line.
             style: ScrollbarStyle::Line,
         },
-        area,
+        horizontal_scrollbar_area(block_area),
     );
 }
 
-/// Renders `render_vertical_scrollbar` output.
+/// Render a line-style vertical scrollbar on a block border.
 pub fn render_vertical_scrollbar(
     frame: &mut Frame<'_>,
     block_area: Rect,
@@ -297,7 +196,7 @@ pub fn render_vertical_scrollbar(
     );
 }
 
-/// Renders `render_vertical_scrollbar_with_style` output.
+/// Render a styled vertical scrollbar on a block border.
 pub fn render_vertical_scrollbar_with_style(
     frame: &mut Frame<'_>,
     block_area: Rect,
@@ -306,13 +205,9 @@ pub fn render_vertical_scrollbar_with_style(
     style: ScrollbarStyle,
 ) {
     let viewport = viewport_height(block_area);
-    if !is_scrollable(content_height, viewport) {
-        return;
-    }
-    let area = vertical_scrollbar_area(block_area);
     render_vertical_scrollbar_in_area_with_style(
         frame,
-        area,
+        vertical_scrollbar_area(block_area),
         content_height,
         viewport,
         scroll_y,
@@ -320,7 +215,7 @@ pub fn render_vertical_scrollbar_with_style(
     );
 }
 
-/// Renders `render_vertical_scrollbar_in_area` output.
+/// Render a line-style vertical scrollbar in an explicit track.
 pub fn render_vertical_scrollbar_in_area(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -338,7 +233,7 @@ pub fn render_vertical_scrollbar_in_area(
     );
 }
 
-/// Renders `render_vertical_scrollbar_in_area_with_style` output.
+/// Render a styled vertical scrollbar in an explicit track.
 pub fn render_vertical_scrollbar_in_area_with_style(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -347,9 +242,6 @@ pub fn render_vertical_scrollbar_in_area_with_style(
     scroll_y: u16,
     style: ScrollbarStyle,
 ) {
-    if !is_scrollable(content_height, viewport) || area.height == 0 {
-        return;
-    }
     render_vertical_scrollbar_to_buffer(
         frame.buffer_mut(),
         area,
@@ -361,9 +253,6 @@ pub fn render_vertical_scrollbar_in_area_with_style(
 }
 
 /// Paint a vertical scrollbar directly into a widget buffer.
-///
-/// Stateful widgets use this form so their content and scrollbar derive from
-/// the same viewport and offset without requiring a nested `Frame`.
 pub fn render_vertical_scrollbar_to_buffer(
     buffer: &mut Buffer,
     area: Rect,
@@ -372,7 +261,7 @@ pub fn render_vertical_scrollbar_to_buffer(
     scroll_y: u16,
     style: ScrollbarStyle,
 ) {
-    if !is_scrollable(content_height, viewport) || area.height == 0 {
+    if !scroll::is_scrollable(content_height, viewport) || area.height == 0 {
         return;
     }
     FixedScrollbar {
@@ -383,259 +272,6 @@ pub fn render_vertical_scrollbar_to_buffer(
         style,
     }
     .render(area, buffer);
-}
-
-/// Renders `render_selected_lines_in_area` output.
-pub fn render_selected_lines_in_area(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    lines: Vec<Line<'_>>,
-    selected: Option<usize>,
-) {
-    let viewport = usize::from(area.height);
-    let total = lines.len();
-    let offset = cursor_follow_offset(selected.unwrap_or(0), total, viewport, 0);
-    let offset_usize = usize::from(offset);
-    let items = lines
-        .into_iter()
-        .skip(offset_usize)
-        .take(viewport)
-        .map(ListItem::new)
-        .collect();
-    let selected = selected
-        .and_then(|index| index.checked_sub(offset_usize))
-        .filter(|index| *index < viewport);
-    let show_scrollbar = is_scrollable(total, viewport);
-    let list_area = if show_scrollbar {
-        Rect {
-            width: area.width.saturating_sub(1),
-            ..area
-        }
-    } else {
-        area
-    };
-    frame.render_widget(
-        ScrollableList::new(items)
-            .highlight_spacing(HighlightSpacing::Always)
-            .scrollbar(false)
-            .selected(selected),
-        list_area,
-    );
-    if show_scrollbar {
-        FixedScrollbar {
-            content_length: total,
-            viewport,
-            offset,
-            orientation: FixedScrollbarOrientation::Vertical,
-            style: ScrollbarStyle::Line,
-        }
-        .render(vertical_list_scrollbar_area(area), frame.buffer_mut());
-    }
-}
-
-/// Shared vertical list renderer for selectable rows.
-///
-/// This is the single place that constructs Ratatui's `List` + `ListState`
-/// pair for terminal lists. Pickers, selected-line lists, and sidebars
-/// should feed their pre-styled rows here instead of rebuilding list selection,
-/// full-width highlight, and scrollbar behavior locally.
-#[derive(Debug)]
-pub struct ScrollableList<'a> {
-    items: Vec<ListItem<'a>>,
-    selected: Option<usize>,
-    offset: u16,
-    style: Style,
-    highlight_style: Style,
-    highlight_symbol: Option<&'static str>,
-    highlight_spacing: HighlightSpacing,
-    scrollbar: bool,
-    scrollbar_style: ScrollbarStyle,
-}
-
-impl<'a> ScrollableList<'a> {
-    #[must_use]
-    /// Creates a new value with canonical defaults.
-    pub fn new(items: Vec<ListItem<'a>>) -> Self {
-        Self {
-            items,
-            selected: None,
-            offset: 0,
-            style: Style::default(),
-            highlight_style: Style::default()
-                .bg(crate::style::PHOSPHOR_GREEN)
-                .fg(crate::style::PHOSPHOR_DARK)
-                .add_modifier(Modifier::BOLD),
-            highlight_symbol: None,
-            highlight_spacing: HighlightSpacing::Never,
-            scrollbar: true,
-            scrollbar_style: ScrollbarStyle::Line,
-        }
-    }
-
-    #[must_use]
-    /// Performs the `selected` operation.
-    pub const fn selected(mut self, selected: Option<usize>) -> Self {
-        self.selected = selected;
-        self
-    }
-
-    #[must_use]
-    /// Performs the `offset` operation.
-    pub const fn offset(mut self, offset: u16) -> Self {
-        self.offset = offset;
-        self
-    }
-
-    #[must_use]
-    /// Performs the `style` operation.
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-
-    #[must_use]
-    /// Performs the `highlight_style` operation.
-    pub const fn highlight_style(mut self, style: Style) -> Self {
-        self.highlight_style = style;
-        self
-    }
-
-    #[must_use]
-    /// Performs the `highlight_symbol` operation.
-    pub const fn highlight_symbol(mut self, symbol: &'static str) -> Self {
-        self.highlight_symbol = Some(symbol);
-        self
-    }
-
-    #[must_use]
-    /// Performs the `highlight_spacing` operation.
-    pub const fn highlight_spacing(mut self, spacing: HighlightSpacing) -> Self {
-        self.highlight_spacing = spacing;
-        self
-    }
-
-    #[must_use]
-    /// Performs the `scrollbar` operation.
-    pub const fn scrollbar(mut self, enabled: bool) -> Self {
-        self.scrollbar = enabled;
-        self
-    }
-
-    #[must_use]
-    /// Performs the `scrollbar_style` operation.
-    pub const fn scrollbar_style(mut self, style: ScrollbarStyle) -> Self {
-        self.scrollbar_style = style;
-        self
-    }
-
-    fn render_inner(self, area: Rect, buf: &mut Buffer) {
-        let total = self.items.len();
-        let viewport = usize::from(area.height);
-        let offset = effective_offset(total, viewport, self.offset);
-        let show_scrollbar = self.scrollbar && is_scrollable(total, viewport);
-        let list_area = if show_scrollbar {
-            Rect {
-                width: area.width.saturating_sub(1),
-                ..area
-            }
-        } else {
-            area
-        };
-        let mut state = ListState::default()
-            .with_offset(usize::from(offset))
-            .with_selected(self.selected);
-        let mut list = List::new(self.items)
-            .style(self.style)
-            .highlight_style(self.highlight_style)
-            .highlight_spacing(self.highlight_spacing);
-        if let Some(symbol) = self.highlight_symbol {
-            list = list.highlight_symbol(symbol);
-        }
-        StatefulWidget::render(list, list_area, buf, &mut state);
-        if show_scrollbar {
-            FixedScrollbar {
-                content_length: total,
-                viewport,
-                offset,
-                orientation: FixedScrollbarOrientation::Vertical,
-                style: self.scrollbar_style,
-            }
-            .render(vertical_list_scrollbar_area(area), buf);
-        }
-    }
-
-    /// Renders `render_with_block` output.
-    pub fn render_with_block(self, area: Rect, buf: &mut Buffer, block: Block<'a>) {
-        let total = self.items.len();
-        let inner = block.inner(area);
-        let viewport = usize::from(inner.height);
-        let offset = effective_offset(total, viewport, self.offset);
-        let show_scrollbar = self.scrollbar && is_scrollable(total, viewport);
-        let mut state = ListState::default()
-            .with_offset(usize::from(offset))
-            .with_selected(self.selected);
-        let mut list = List::new(self.items)
-            .style(self.style)
-            .highlight_style(self.highlight_style)
-            .highlight_spacing(self.highlight_spacing);
-        if let Some(symbol) = self.highlight_symbol {
-            list = list.highlight_symbol(symbol);
-        }
-        block.render(area, buf);
-        StatefulWidget::render(list, inner, buf, &mut state);
-        if show_scrollbar {
-            FixedScrollbar {
-                content_length: total,
-                viewport,
-                offset,
-                orientation: FixedScrollbarOrientation::Vertical,
-                style: self.scrollbar_style,
-            }
-            .render(vertical_scrollbar_area(area), buf);
-        }
-    }
-}
-
-impl Widget for ScrollableList<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        self.render_inner(area, buf);
-    }
-}
-
-/// Renders `render_lines_with_offset_in_area` output.
-pub fn render_lines_with_offset_in_area(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    lines: Vec<Line<'_>>,
-    offset: u16,
-) {
-    let viewport = usize::from(area.height);
-    let total = lines.len();
-    let clamped = effective_offset(total, viewport, offset);
-    let visible: Text<'_> = lines
-        .into_iter()
-        .skip(usize::from(clamped))
-        .take(viewport)
-        .collect();
-    frame.render_widget(Paragraph::new(visible), area);
-    if is_scrollable(total, viewport) {
-        render_vertical_scrollbar_in_area(
-            frame,
-            vertical_list_scrollbar_area(area),
-            total,
-            viewport,
-            clamped,
-        );
-    }
-}
-
-const fn vertical_list_scrollbar_area(area: Rect) -> Rect {
-    Rect {
-        x: area.x + area.width.saturating_sub(1),
-        y: area.y,
-        width: 1,
-        height: area.height,
-    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -654,110 +290,44 @@ struct FixedScrollbar {
 }
 
 impl Widget for FixedScrollbar {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         let track_len = match self.orientation {
             FixedScrollbarOrientation::Horizontal => usize::from(area.width),
             FixedScrollbarOrientation::Vertical => usize::from(area.height),
         };
-        if track_len == 0 {
-            return;
-        }
-
-        let (thumb_start, thumb_len) = scrollbar_thumb_geometry(
+        let Some(thumb) = scroll::full_cell_thumb(
             self.content_length,
             self.viewport,
-            track_len,
+            u16::try_from(track_len).unwrap_or(u16::MAX),
             usize::from(self.offset),
-        );
-        let thumb_end = thumb_start.saturating_add(thumb_len);
-        // Hoist orientation constants out of the per-cell loop. The thumb glyph
-        // is the only axis-dependent value; track is the shared dim dot.
-        let (thumb_sym, base_x, base_y, dx, dy): (&str, u16, u16, u16, u16) = match self.orientation
-        {
-            FixedScrollbarOrientation::Horizontal => {
-                (SCROLLBAR_HORIZONTAL_THUMB, area.x, area.y, 1, 0)
-            }
-            FixedScrollbarOrientation::Vertical => {
-                (self.style.vertical_thumb(), area.x, area.y, 0, 1)
-            }
+        ) else {
+            return;
         };
-        let track_sym = SCROLLBAR_TRACK;
-        let thumb_style = Style::default().fg(DIALOG_SCROLL_THUMB);
-        let track_style = Style::default().fg(DIALOG_SCROLL_TRACK);
-        for idx in 0..track_len {
-            let in_thumb = (thumb_start..thumb_end).contains(&idx);
-            let i = idx as u16;
-            let x = base_x.saturating_add(i * dx);
-            let y = base_y.saturating_add(i * dy);
-            let symbol = if in_thumb { thumb_sym } else { track_sym };
-            let style = if in_thumb { thumb_style } else { track_style };
-            buf.set_string(x, y, symbol, style);
+        let thumb_range = usize::from(thumb.start)..usize::from(thumb.start + thumb.len);
+        let thumb_style = Style::new().fg(DIALOG_SCROLL_THUMB);
+        let track_style = Style::new().fg(DIALOG_SCROLL_TRACK);
+        for index in 0..track_len {
+            let (x, y, thumb_symbol) = match self.orientation {
+                FixedScrollbarOrientation::Horizontal => {
+                    (area.x + index as u16, area.y, SCROLLBAR_HORIZONTAL_THUMB)
+                }
+                FixedScrollbarOrientation::Vertical => {
+                    (area.x, area.y + index as u16, self.style.vertical_thumb())
+                }
+            };
+            let in_thumb = thumb_range.contains(&index);
+            buffer.set_string(
+                x,
+                y,
+                if in_thumb {
+                    thumb_symbol
+                } else {
+                    SCROLLBAR_TRACK
+                },
+                if in_thumb { thumb_style } else { track_style },
+            );
         }
     }
-}
-
-/// Renders `render_scrollable_block` output.
-pub fn render_scrollable_block(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    lines: Vec<Line<'_>>,
-    scroll_x: &mut u16,
-    scroll_y: &mut u16,
-    focused: bool,
-    title: Option<&str>,
-) {
-    let content_width = max_line_width(&lines);
-    let content_height = lines.len();
-    let viewport_w = viewport_width(area);
-    let viewport_h = viewport_height(area);
-    let eff_x = effective_offset(content_width, viewport_w, *scroll_x);
-    let eff_y = effective_offset(content_height, viewport_h, *scroll_y);
-    *scroll_x = eff_x;
-    *scroll_y = eff_y;
-    render_scrollable_block_at(frame, area, lines, eff_x, eff_y, focused, title);
-}
-
-/// Renders `render_scrollable_block_at` output.
-pub fn render_scrollable_block_at(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    lines: Vec<Line<'_>>,
-    scroll_x: u16,
-    scroll_y: u16,
-    focused: bool,
-    title: Option<&str>,
-) {
-    let content_width = max_line_width(&lines);
-    let content_height = lines.len();
-    let viewport_w = viewport_width(area);
-    let viewport_h = viewport_height(area);
-    // Focus remains an explicit non-color state even when the content fits.
-    let emphasis = if focused {
-        PanelEmphasis::Focused
-    } else {
-        PanelEmphasis::Normal
-    };
-    let theme = crate::Theme::default();
-    let mut panel = Panel::new(&theme).emphasis(emphasis);
-    if let Some(title) = title {
-        panel = panel.title(title);
-    }
-    let eff_x = effective_offset(content_width, viewport_w, scroll_x);
-    let eff_y = effective_offset(content_height, viewport_h, scroll_y);
-    let visible = lines
-        .into_iter()
-        .skip(usize::from(eff_y))
-        .take(viewport_h)
-        .collect();
-    frame.render_widget(
-        Paragraph::new(add_trailing_padding(visible))
-            .block(panel.block())
-            .style(crate::style::GREEN)
-            .scroll((0, eff_x)),
-        area,
-    );
-    render_horizontal_scrollbar(frame, area, content_width, eff_x);
-    render_vertical_scrollbar(frame, area, content_height, eff_y);
 }
 
 #[cfg(test)]

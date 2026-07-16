@@ -72,7 +72,7 @@ fn delta_starts_from_clamped_offset() {
 #[test]
 fn u16_offset_helpers_clamp_and_move() {
     assert_eq!(max_offset_u16(12, 5), 7);
-    assert_eq!(effective_offset_u16(12, 5, 99), 7);
+    assert_eq!(effective_offset(12, 5, 99), 7);
     let mut clamped = 99;
     assert_eq!(clamp_offset_u16(12, 5, &mut clamped), 7);
     assert_eq!(clamped, 7);

@@ -1017,58 +1017,12 @@ pub unsafe fn termrock::interaction::HoverState<Id>::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::interaction::HoverState<Id>
 pub fn termrock::interaction::HoverState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::HoverState<Id>
-pub struct termrock::interaction::HoverTracker<K: core::clone::Clone + core::cmp::PartialEq>
-impl<K: core::clone::Clone + core::cmp::PartialEq> termrock::interaction::HoverTracker<K>
-pub fn termrock::interaction::HoverTracker<K>::any_hovered(&self, u16, u16) -> bool
-pub fn termrock::interaction::HoverTracker<K>::clear(&mut self)
-pub fn termrock::interaction::HoverTracker<K>::hovered(&self, u16, u16) -> core::option::Option<&K>
-pub fn termrock::interaction::HoverTracker<K>::is_hovered(&self, u16, u16, &K) -> bool
-pub fn termrock::interaction::HoverTracker<K>::new() -> Self
-pub fn termrock::interaction::HoverTracker<K>::pick_style<S: core::clone::Clone>(&self, u16, u16, &K, S, S) -> S
-pub fn termrock::interaction::HoverTracker<K>::register(&mut self, ratatui_core::layout::rect::Rect, K)
-impl<K: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq> core::clone::Clone for termrock::interaction::HoverTracker<K>
-pub fn termrock::interaction::HoverTracker<K>::clone(&self) -> termrock::interaction::HoverTracker<K>
-impl<K: core::default::Default + core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::interaction::HoverTracker<K>
-pub fn termrock::interaction::HoverTracker<K>::default() -> termrock::interaction::HoverTracker<K>
-impl<K: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::interaction::HoverTracker<K>
-pub fn termrock::interaction::HoverTracker<K>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<K> core::marker::Freeze for termrock::interaction::HoverTracker<K>
-impl<K> core::marker::Send for termrock::interaction::HoverTracker<K> where K: core::marker::Send
-impl<K> core::marker::Sync for termrock::interaction::HoverTracker<K> where K: core::marker::Sync
-impl<K> core::marker::Unpin for termrock::interaction::HoverTracker<K> where K: core::marker::Unpin
-impl<K> core::marker::UnsafeUnpin for termrock::interaction::HoverTracker<K>
-impl<K> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::HoverTracker<K> where K: core::panic::unwind_safe::RefUnwindSafe
-impl<K> core::panic::unwind_safe::UnwindSafe for termrock::interaction::HoverTracker<K> where K: core::panic::unwind_safe::UnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::interaction::HoverTracker<K> where U: core::convert::From<T>
-pub fn termrock::interaction::HoverTracker<K>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::HoverTracker<K> where U: core::convert::Into<T>
-pub type termrock::interaction::HoverTracker<K>::Error = core::convert::Infallible
-pub fn termrock::interaction::HoverTracker<K>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::HoverTracker<K> where U: core::convert::TryFrom<T>
-pub type termrock::interaction::HoverTracker<K>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::HoverTracker<K>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::HoverTracker<K> where T: core::clone::Clone
-pub type termrock::interaction::HoverTracker<K>::Owned = T
-pub fn termrock::interaction::HoverTracker<K>::clone_into(&self, &mut T)
-pub fn termrock::interaction::HoverTracker<K>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::HoverTracker<K> where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::HoverTracker<K>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::HoverTracker<K> where T: ?core::marker::Sized
-pub fn termrock::interaction::HoverTracker<K>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::HoverTracker<K> where T: ?core::marker::Sized
-pub fn termrock::interaction::HoverTracker<K>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::HoverTracker<K> where T: core::clone::Clone
-pub unsafe fn termrock::interaction::HoverTracker<K>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::HoverTracker<K>
-pub fn termrock::interaction::HoverTracker<K>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::HoverTracker<K>
 pub struct termrock::interaction::ModalStack<M>
 impl<M> termrock::interaction::ModalStack<M>
 pub fn termrock::interaction::ModalStack<M>::clear_chain(&mut self)
 pub const fn termrock::interaction::ModalStack<M>::current(&self) -> core::option::Option<&M>
 pub fn termrock::interaction::ModalStack<M>::current_mut(&mut self) -> core::option::Option<&mut M>
 pub fn termrock::interaction::ModalStack<M>::depth(&self) -> usize
-pub fn termrock::interaction::ModalStack<M>::dismiss_current(&mut self)
 pub fn termrock::interaction::ModalStack<M>::from_current(M) -> Self
 pub fn termrock::interaction::ModalStack<M>::from_parts(core::option::Option<M>, alloc::vec::Vec<M>) -> Self
 pub fn termrock::interaction::ModalStack<M>::has_parent(&self) -> bool
@@ -1358,50 +1312,6 @@ pub static termrock::keymap::SCROLL_HINT_KEYMAP: termrock::keymap::Keymap<termro
 pub fn termrock::keymap::chord_glyph(core::option::Option<termrock::keymap::KeyChord>) -> &'static str
 pub fn termrock::keymap::raw_bytes_to_chord(&[u8]) -> core::option::Option<termrock::keymap::KeyChord>
 pub mod termrock::layout
-pub enum termrock::layout::DialogBorder
-pub termrock::layout::DialogBorder::Danger
-pub termrock::layout::DialogBorder::Default
-impl core::clone::Clone for termrock::layout::DialogBorder
-pub fn termrock::layout::DialogBorder::clone(&self) -> termrock::layout::DialogBorder
-impl core::cmp::Eq for termrock::layout::DialogBorder
-impl core::cmp::PartialEq for termrock::layout::DialogBorder
-pub fn termrock::layout::DialogBorder::eq(&self, &termrock::layout::DialogBorder) -> bool
-impl core::fmt::Debug for termrock::layout::DialogBorder
-pub fn termrock::layout::DialogBorder::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::layout::DialogBorder
-impl core::marker::StructuralPartialEq for termrock::layout::DialogBorder
-impl core::marker::Freeze for termrock::layout::DialogBorder
-impl core::marker::Send for termrock::layout::DialogBorder
-impl core::marker::Sync for termrock::layout::DialogBorder
-impl core::marker::Unpin for termrock::layout::DialogBorder
-impl core::marker::UnsafeUnpin for termrock::layout::DialogBorder
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::DialogBorder
-impl core::panic::unwind_safe::UnwindSafe for termrock::layout::DialogBorder
-impl<Q, K> equivalent::Equivalent<K> for termrock::layout::DialogBorder where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::layout::DialogBorder::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::layout::DialogBorder where U: core::convert::From<T>
-pub fn termrock::layout::DialogBorder::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::layout::DialogBorder where U: core::convert::Into<T>
-pub type termrock::layout::DialogBorder::Error = core::convert::Infallible
-pub fn termrock::layout::DialogBorder::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::layout::DialogBorder where U: core::convert::TryFrom<T>
-pub type termrock::layout::DialogBorder::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::layout::DialogBorder::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::layout::DialogBorder where T: core::clone::Clone
-pub type termrock::layout::DialogBorder::Owned = T
-pub fn termrock::layout::DialogBorder::clone_into(&self, &mut T)
-pub fn termrock::layout::DialogBorder::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::layout::DialogBorder where T: 'static + ?core::marker::Sized
-pub fn termrock::layout::DialogBorder::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::layout::DialogBorder where T: ?core::marker::Sized
-pub fn termrock::layout::DialogBorder::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::layout::DialogBorder where T: ?core::marker::Sized
-pub fn termrock::layout::DialogBorder::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::layout::DialogBorder where T: core::clone::Clone
-pub unsafe fn termrock::layout::DialogBorder::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::layout::DialogBorder
-pub fn termrock::layout::DialogBorder::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::layout::DialogBorder
 pub enum termrock::layout::Placement
 pub termrock::layout::Placement::Centered
 pub termrock::layout::Placement::Top
@@ -1446,105 +1356,6 @@ pub unsafe fn termrock::layout::Placement::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::layout::Placement
 pub fn termrock::layout::Placement::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::Placement
-pub enum termrock::layout::ScrollAxis
-pub termrock::layout::ScrollAxis::Horizontal
-pub termrock::layout::ScrollAxis::Vertical
-impl core::clone::Clone for termrock::scroll::ScrollAxis
-pub fn termrock::scroll::ScrollAxis::clone(&self) -> termrock::scroll::ScrollAxis
-impl core::cmp::Eq for termrock::scroll::ScrollAxis
-impl core::cmp::PartialEq for termrock::scroll::ScrollAxis
-pub fn termrock::scroll::ScrollAxis::eq(&self, &termrock::scroll::ScrollAxis) -> bool
-impl core::fmt::Debug for termrock::scroll::ScrollAxis
-pub fn termrock::scroll::ScrollAxis::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::scroll::ScrollAxis
-impl core::marker::StructuralPartialEq for termrock::scroll::ScrollAxis
-impl core::marker::Freeze for termrock::scroll::ScrollAxis
-impl core::marker::Send for termrock::scroll::ScrollAxis
-impl core::marker::Sync for termrock::scroll::ScrollAxis
-impl core::marker::Unpin for termrock::scroll::ScrollAxis
-impl core::marker::UnsafeUnpin for termrock::scroll::ScrollAxis
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::scroll::ScrollAxis
-impl core::panic::unwind_safe::UnwindSafe for termrock::scroll::ScrollAxis
-impl<Q, K> equivalent::Equivalent<K> for termrock::scroll::ScrollAxis where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::scroll::ScrollAxis::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::scroll::ScrollAxis where U: core::convert::From<T>
-pub fn termrock::scroll::ScrollAxis::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::scroll::ScrollAxis where U: core::convert::Into<T>
-pub type termrock::scroll::ScrollAxis::Error = core::convert::Infallible
-pub fn termrock::scroll::ScrollAxis::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::scroll::ScrollAxis where U: core::convert::TryFrom<T>
-pub type termrock::scroll::ScrollAxis::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::scroll::ScrollAxis::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::scroll::ScrollAxis where T: core::clone::Clone
-pub type termrock::scroll::ScrollAxis::Owned = T
-pub fn termrock::scroll::ScrollAxis::clone_into(&self, &mut T)
-pub fn termrock::scroll::ScrollAxis::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::scroll::ScrollAxis where T: 'static + ?core::marker::Sized
-pub fn termrock::scroll::ScrollAxis::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::scroll::ScrollAxis where T: ?core::marker::Sized
-pub fn termrock::scroll::ScrollAxis::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::scroll::ScrollAxis where T: ?core::marker::Sized
-pub fn termrock::scroll::ScrollAxis::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::scroll::ScrollAxis where T: core::clone::Clone
-pub unsafe fn termrock::scroll::ScrollAxis::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::scroll::ScrollAxis
-pub fn termrock::scroll::ScrollAxis::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::scroll::ScrollAxis
-pub struct termrock::layout::DialogBodyScroll
-pub termrock::layout::DialogBodyScroll::scroll_x: u16
-pub termrock::layout::DialogBodyScroll::scroll_y: u16
-impl termrock::layout::DialogBodyScroll
-pub fn termrock::layout::DialogBodyScroll::handle_key(&mut self, termrock::input::KeyEvent, usize, usize, usize, usize) -> bool
-pub fn termrock::layout::DialogBodyScroll::handle_key_for_axes(&mut self, termrock::input::KeyEvent, usize, usize, usize, usize, termrock::scroll::ScrollAxes) -> bool
-pub fn termrock::layout::DialogBodyScroll::handle_raw_key_for_axes(&mut self, &[u8], termrock::scroll::ScrollAxes) -> bool
-pub const fn termrock::layout::DialogBodyScroll::new() -> Self
-pub fn termrock::layout::DialogBodyScroll::on_mouse_scroll(&mut self, termrock::input::MouseEventKind, termrock::input::KeyModifiers) -> bool
-pub fn termrock::layout::DialogBodyScroll::on_mouse_scroll_for_axes(&mut self, termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes) -> bool
-pub fn termrock::layout::DialogBodyScroll::on_mouse_scroll_for_size(&mut self, termrock::input::MouseEventKind, termrock::input::KeyModifiers, usize, usize, usize, usize) -> bool
-pub fn termrock::layout::DialogBodyScroll::on_sgr_wheel_button_for_axes(&mut self, u8, termrock::scroll::ScrollAxes) -> bool
-pub fn termrock::layout::DialogBodyScroll::render_scrollbars(&self, &mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize)
-impl core::clone::Clone for termrock::layout::DialogBodyScroll
-pub fn termrock::layout::DialogBodyScroll::clone(&self) -> termrock::layout::DialogBodyScroll
-impl core::cmp::Eq for termrock::layout::DialogBodyScroll
-impl core::cmp::PartialEq for termrock::layout::DialogBodyScroll
-pub fn termrock::layout::DialogBodyScroll::eq(&self, &termrock::layout::DialogBodyScroll) -> bool
-impl core::default::Default for termrock::layout::DialogBodyScroll
-pub fn termrock::layout::DialogBodyScroll::default() -> termrock::layout::DialogBodyScroll
-impl core::fmt::Debug for termrock::layout::DialogBodyScroll
-pub fn termrock::layout::DialogBodyScroll::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::layout::DialogBodyScroll
-impl core::marker::Freeze for termrock::layout::DialogBodyScroll
-impl core::marker::Send for termrock::layout::DialogBodyScroll
-impl core::marker::Sync for termrock::layout::DialogBodyScroll
-impl core::marker::Unpin for termrock::layout::DialogBodyScroll
-impl core::marker::UnsafeUnpin for termrock::layout::DialogBodyScroll
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::DialogBodyScroll
-impl core::panic::unwind_safe::UnwindSafe for termrock::layout::DialogBodyScroll
-impl<Q, K> equivalent::Equivalent<K> for termrock::layout::DialogBodyScroll where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::layout::DialogBodyScroll::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::layout::DialogBodyScroll where U: core::convert::From<T>
-pub fn termrock::layout::DialogBodyScroll::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::layout::DialogBodyScroll where U: core::convert::Into<T>
-pub type termrock::layout::DialogBodyScroll::Error = core::convert::Infallible
-pub fn termrock::layout::DialogBodyScroll::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::layout::DialogBodyScroll where U: core::convert::TryFrom<T>
-pub type termrock::layout::DialogBodyScroll::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::layout::DialogBodyScroll::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::layout::DialogBodyScroll where T: core::clone::Clone
-pub type termrock::layout::DialogBodyScroll::Owned = T
-pub fn termrock::layout::DialogBodyScroll::clone_into(&self, &mut T)
-pub fn termrock::layout::DialogBodyScroll::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::layout::DialogBodyScroll where T: 'static + ?core::marker::Sized
-pub fn termrock::layout::DialogBodyScroll::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::layout::DialogBodyScroll where T: ?core::marker::Sized
-pub fn termrock::layout::DialogBodyScroll::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::layout::DialogBodyScroll where T: ?core::marker::Sized
-pub fn termrock::layout::DialogBodyScroll::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::layout::DialogBodyScroll where T: core::clone::Clone
-pub unsafe fn termrock::layout::DialogBodyScroll::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::layout::DialogBodyScroll
-pub fn termrock::layout::DialogBodyScroll::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::layout::DialogBodyScroll
 pub struct termrock::layout::DialogSpec
 pub termrock::layout::DialogSpec::horizontal_margin: u16
 pub termrock::layout::DialogSpec::max_height: u16
@@ -1639,55 +1450,6 @@ pub unsafe fn termrock::interaction::HitRegion<Id>::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::interaction::HitRegion<Id>
 pub fn termrock::interaction::HitRegion<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::HitRegion<Id>
-pub struct termrock::layout::ScrollAxes
-pub termrock::layout::ScrollAxes::horizontal: bool
-pub termrock::layout::ScrollAxes::vertical: bool
-impl termrock::scroll::ScrollAxes
-pub const fn termrock::scroll::ScrollAxes::any(self) -> bool
-pub const fn termrock::scroll::ScrollAxes::none() -> Self
-impl core::clone::Clone for termrock::scroll::ScrollAxes
-pub fn termrock::scroll::ScrollAxes::clone(&self) -> termrock::scroll::ScrollAxes
-impl core::cmp::Eq for termrock::scroll::ScrollAxes
-impl core::cmp::PartialEq for termrock::scroll::ScrollAxes
-pub fn termrock::scroll::ScrollAxes::eq(&self, &termrock::scroll::ScrollAxes) -> bool
-impl core::default::Default for termrock::scroll::ScrollAxes
-pub fn termrock::scroll::ScrollAxes::default() -> termrock::scroll::ScrollAxes
-impl core::fmt::Debug for termrock::scroll::ScrollAxes
-pub fn termrock::scroll::ScrollAxes::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::scroll::ScrollAxes
-impl core::marker::StructuralPartialEq for termrock::scroll::ScrollAxes
-impl core::marker::Freeze for termrock::scroll::ScrollAxes
-impl core::marker::Send for termrock::scroll::ScrollAxes
-impl core::marker::Sync for termrock::scroll::ScrollAxes
-impl core::marker::Unpin for termrock::scroll::ScrollAxes
-impl core::marker::UnsafeUnpin for termrock::scroll::ScrollAxes
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::scroll::ScrollAxes
-impl core::panic::unwind_safe::UnwindSafe for termrock::scroll::ScrollAxes
-impl<Q, K> equivalent::Equivalent<K> for termrock::scroll::ScrollAxes where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::scroll::ScrollAxes::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::scroll::ScrollAxes where U: core::convert::From<T>
-pub fn termrock::scroll::ScrollAxes::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::scroll::ScrollAxes where U: core::convert::Into<T>
-pub type termrock::scroll::ScrollAxes::Error = core::convert::Infallible
-pub fn termrock::scroll::ScrollAxes::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::scroll::ScrollAxes where U: core::convert::TryFrom<T>
-pub type termrock::scroll::ScrollAxes::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::scroll::ScrollAxes::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::scroll::ScrollAxes where T: core::clone::Clone
-pub type termrock::scroll::ScrollAxes::Owned = T
-pub fn termrock::scroll::ScrollAxes::clone_into(&self, &mut T)
-pub fn termrock::scroll::ScrollAxes::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::scroll::ScrollAxes where T: 'static + ?core::marker::Sized
-pub fn termrock::scroll::ScrollAxes::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::scroll::ScrollAxes where T: ?core::marker::Sized
-pub fn termrock::scroll::ScrollAxes::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::scroll::ScrollAxes where T: ?core::marker::Sized
-pub fn termrock::scroll::ScrollAxes::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::scroll::ScrollAxes where T: core::clone::Clone
-pub unsafe fn termrock::scroll::ScrollAxes::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::scroll::ScrollAxes
-pub fn termrock::scroll::ScrollAxes::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::scroll::ScrollAxes
 pub struct termrock::layout::Slots
 pub termrock::layout::Slots::body: ratatui_core::layout::rect::Rect
 pub termrock::layout::Slots::bottom: ratatui_core::layout::rect::Rect
@@ -1734,17 +1496,9 @@ pub unsafe fn termrock::layout::Slots::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::layout::Slots
 pub fn termrock::layout::Slots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::Slots
-pub const termrock::layout::DIALOG_HORIZONTAL_SCROLL_STEP: u16
 pub fn termrock::layout::bottom_rows<const N: usize>(ratatui_core::layout::rect::Rect, [u16; N]) -> (ratatui_core::layout::rect::Rect, [ratatui_core::layout::rect::Rect; N])
 pub fn termrock::layout::centered_rect(u16, u16, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
-pub fn termrock::layout::dialog_inner_chunks(ratatui_core::layout::rect::Rect, core::option::Option<u16>) -> [ratatui_core::layout::rect::Rect; 5]
-pub const fn termrock::layout::dialog_inner_height(u16) -> u16
-pub fn termrock::layout::dialog_scroll_axes(usize, usize, ratatui_core::layout::rect::Rect) -> termrock::scroll::ScrollAxes
-pub fn termrock::layout::mouse_scroll_delta(termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes) -> core::option::Option<termrock::scroll::ScrollDelta>
-pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::layout::DialogBorder) -> ratatui_core::layout::rect::Rect
-pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::layout::DialogBodyScroll) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect
-pub fn termrock::layout::scroll_hint_spans(termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
 pub mod termrock::osc
 pub enum termrock::osc::ClipboardSelection
 pub termrock::osc::ClipboardSelection::Clipboard
@@ -2612,46 +2366,6 @@ pub unsafe fn termrock::scroll::ScrollSpan::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::scroll::ScrollSpan
 pub fn termrock::scroll::ScrollSpan::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::scroll::ScrollSpan
-pub struct termrock::scroll::ScrollableList<'a>
-impl<'a> termrock::scroll::ScrollableList<'a>
-pub const fn termrock::scroll::ScrollableList<'a>::highlight_spacing(self, ratatui_widgets::table::highlight_spacing::HighlightSpacing) -> Self
-pub const fn termrock::scroll::ScrollableList<'a>::highlight_style(self, ratatui_core::style::Style) -> Self
-pub const fn termrock::scroll::ScrollableList<'a>::highlight_symbol(self, &'static str) -> Self
-pub fn termrock::scroll::ScrollableList<'a>::new(alloc::vec::Vec<ratatui_widgets::list::item::ListItem<'a>>) -> Self
-pub const fn termrock::scroll::ScrollableList<'a>::offset(self, u16) -> Self
-pub fn termrock::scroll::ScrollableList<'a>::render_with_block(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, ratatui_widgets::block::Block<'a>)
-pub const fn termrock::scroll::ScrollableList<'a>::scrollbar(self, bool) -> Self
-pub const fn termrock::scroll::ScrollableList<'a>::scrollbar_style(self, termrock::scroll::ScrollbarStyle) -> Self
-pub const fn termrock::scroll::ScrollableList<'a>::selected(self, core::option::Option<usize>) -> Self
-pub const fn termrock::scroll::ScrollableList<'a>::style(self, ratatui_core::style::Style) -> Self
-impl ratatui_core::widgets::widget::Widget for termrock::scroll::ScrollableList<'_>
-pub fn termrock::scroll::ScrollableList<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl<'a> core::fmt::Debug for termrock::scroll::ScrollableList<'a>
-pub fn termrock::scroll::ScrollableList<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Freeze for termrock::scroll::ScrollableList<'a>
-impl<'a> core::marker::Send for termrock::scroll::ScrollableList<'a>
-impl<'a> core::marker::Sync for termrock::scroll::ScrollableList<'a>
-impl<'a> core::marker::Unpin for termrock::scroll::ScrollableList<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::scroll::ScrollableList<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::scroll::ScrollableList<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::scroll::ScrollableList<'a>
-impl<T, U> core::convert::Into<U> for termrock::scroll::ScrollableList<'a> where U: core::convert::From<T>
-pub fn termrock::scroll::ScrollableList<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::scroll::ScrollableList<'a> where U: core::convert::Into<T>
-pub type termrock::scroll::ScrollableList<'a>::Error = core::convert::Infallible
-pub fn termrock::scroll::ScrollableList<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::scroll::ScrollableList<'a> where U: core::convert::TryFrom<T>
-pub type termrock::scroll::ScrollableList<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::scroll::ScrollableList<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> core::any::Any for termrock::scroll::ScrollableList<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::scroll::ScrollableList<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::scroll::ScrollableList<'a> where T: ?core::marker::Sized
-pub fn termrock::scroll::ScrollableList<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::scroll::ScrollableList<'a> where T: ?core::marker::Sized
-pub fn termrock::scroll::ScrollableList<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::convert::From<T> for termrock::scroll::ScrollableList<'a>
-pub fn termrock::scroll::ScrollableList<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::scroll::ScrollableList<'a>
 pub struct termrock::scroll::TailScroll
 impl termrock::scroll::TailScroll
 pub fn termrock::scroll::TailScroll::clamp(&mut self, usize) -> usize
@@ -2716,11 +2430,9 @@ pub const fn termrock::scroll::clamp_offset_u16(usize, usize, &mut u16) -> u16
 pub const fn termrock::scroll::clamp_scroll_offset(usize, usize, &mut u16) -> u16
 pub fn termrock::scroll::cursor_follow_offset(usize, usize, usize, usize) -> usize
 pub const fn termrock::scroll::effective_offset(usize, usize, u16) -> u16
-pub const fn termrock::scroll::effective_offset_u16(usize, usize, u16) -> u16
 pub fn termrock::scroll::full_cell_thumb(usize, usize, u16, usize) -> core::option::Option<termrock::scroll::FullCellThumb>
 pub const fn termrock::scroll::horizontal_scrollbar_area(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::scroll::is_scrollable(usize, usize) -> bool
-pub fn termrock::scroll::line_width(&ratatui_core::text::line::Line<'_>) -> usize
 pub fn termrock::scroll::max_line_width(&[ratatui_core::text::line::Line<'_>]) -> usize
 pub const fn termrock::scroll::max_offset(usize, usize) -> usize
 pub const fn termrock::scroll::max_offset_u16(usize, usize) -> u16
@@ -2730,18 +2442,11 @@ pub fn termrock::scroll::offset_for_track_position(usize, usize, u16, usize) -> 
 pub fn termrock::scroll::offset_for_track_position_u16(usize, usize, usize, usize) -> u16
 pub fn termrock::scroll::render_horizontal_scrollbar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, u16)
 pub fn termrock::scroll::render_line_with_fixed_prefix_scroll(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, u16, ratatui_core::text::line::Line<'static>, usize, usize)
-pub fn termrock::scroll::render_lines_with_offset_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, alloc::vec::Vec<ratatui_core::text::line::Line<'_>>, u16)
-pub fn termrock::scroll::render_scrollable_block(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, alloc::vec::Vec<ratatui_core::text::line::Line<'_>>, &mut u16, &mut u16, bool, core::option::Option<&str>)
-pub fn termrock::scroll::render_scrollable_block_at(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, alloc::vec::Vec<ratatui_core::text::line::Line<'_>>, u16, u16, bool, core::option::Option<&str>)
-pub fn termrock::scroll::render_selected_lines_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, alloc::vec::Vec<ratatui_core::text::line::Line<'_>>, core::option::Option<usize>)
 pub fn termrock::scroll::render_vertical_scrollbar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, u16)
 pub fn termrock::scroll::render_vertical_scrollbar_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize, u16)
 pub fn termrock::scroll::render_vertical_scrollbar_in_area_with_style(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize, u16, termrock::scroll::ScrollbarStyle)
 pub fn termrock::scroll::render_vertical_scrollbar_to_buffer(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, termrock::scroll::ScrollbarStyle)
 pub fn termrock::scroll::render_vertical_scrollbar_with_style(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, u16, termrock::scroll::ScrollbarStyle)
-pub fn termrock::scroll::rendered_cursor_follow_offset(usize, usize, usize, u16) -> u16
-pub fn termrock::scroll::rendered_max_line_width(&[ratatui_core::text::line::Line<'_>]) -> usize
-pub const fn termrock::scroll::rendered_max_offset(usize, usize) -> u16
 pub fn termrock::scroll::scroll_selectable_list(&mut usize, &mut u16, usize, usize, isize) -> bool
 pub fn termrock::scroll::scrollbar_offset_for_track_position(usize, usize, usize, usize) -> u16
 pub fn termrock::scroll::tail_vertical_thumb(u16, usize, usize) -> core::option::Option<termrock::scroll::FullCellThumb>

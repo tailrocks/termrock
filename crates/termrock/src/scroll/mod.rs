@@ -14,13 +14,9 @@
 mod render;
 
 pub use render::{
-    SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollableList, ScrollbarStyle,
-    apply_scroll_delta, apply_scroll_delta_unclamped, apply_term_width_scroll_delta,
-    clamp_scroll_offset, cursor_follow_offset as rendered_cursor_follow_offset, effective_offset,
-    horizontal_scrollbar_area, line_width, max_line_width as rendered_max_line_width,
-    max_offset as rendered_max_offset, render_horizontal_scrollbar,
-    render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area,
-    render_scrollable_block, render_scrollable_block_at, render_selected_lines_in_area,
+    SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarStyle, apply_scroll_delta,
+    apply_scroll_delta_unclamped, apply_term_width_scroll_delta, clamp_scroll_offset,
+    horizontal_scrollbar_area, render_horizontal_scrollbar, render_line_with_fixed_prefix_scroll,
     render_vertical_scrollbar, render_vertical_scrollbar_in_area,
     render_vertical_scrollbar_in_area_with_style, render_vertical_scrollbar_to_buffer,
     render_vertical_scrollbar_with_style, scrollbar_offset_for_track_position,
@@ -569,14 +565,14 @@ pub const fn max_offset_u16(content_len: usize, viewport_len: usize) -> u16 {
 
 #[must_use]
 /// Performs the `effective_offset_u16` operation.
-pub const fn effective_offset_u16(content_len: usize, viewport_len: usize, offset: u16) -> u16 {
+pub const fn effective_offset(content_len: usize, viewport_len: usize, offset: u16) -> u16 {
     let max = max_offset_u16(content_len, viewport_len);
     if offset > max { max } else { offset }
 }
 
 /// Performs the `clamp_offset_u16` operation.
 pub const fn clamp_offset_u16(content_len: usize, viewport_len: usize, offset: &mut u16) -> u16 {
-    let effective = effective_offset_u16(content_len, viewport_len, *offset);
+    let effective = effective_offset(content_len, viewport_len, *offset);
     *offset = effective;
     effective
 }

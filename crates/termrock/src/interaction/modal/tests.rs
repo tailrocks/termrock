@@ -92,3 +92,17 @@ fn modal_stack_open_replaces_existing_chain() {
     assert_eq!(stack.current(), Some(&"replacement"));
     assert!(stack.parents().is_empty());
 }
+
+#[test]
+fn open_sub_after_take_current_starts_a_clean_root() {
+    let mut stack = ModalStack::from_current("root");
+    stack.open_sub("child");
+    assert_eq!(stack.take_current(), Some("child"));
+
+    stack.open_sub("replacement");
+
+    assert_eq!(stack.current(), Some(&"replacement"));
+    assert!(stack.parents().is_empty());
+    stack.pop();
+    assert_eq!(stack.current(), None);
+}
