@@ -323,3 +323,182 @@ fn traversal_is_stable_across_sections_and_responsive_reflow() {
     form.render(Rect::new(0, 0, 80, 20), &mut wide, &mut state);
     assert_eq!(state.focused(), Some(&3));
 }
+
+#[test]
+fn tab_cycles_focus_across_sections_and_skips_disabled() {
+    let fields = fields();
+    let sections = [FormSection {
+        title: Line::from("General"),
+        fields: &fields,
+    }];
+    let mut state = FormState::new(Some("database"));
+
+    assert_eq!(
+        state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+        FormOutcome::FocusChanged("host")
+    );
+    assert_ne!(state.focused(), Some(&"port"));
+}
+
+#[test]
+fn enter_on_focused_field_activates() {
+    let fields = fields();
+    let sections = [FormSection {
+        title: Line::from("General"),
+        fields: &fields,
+    }];
+    let mut state = FormState::new(Some("database"));
+
+    assert_eq!(
+        state.handle_key(&sections, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+        FormOutcome::Activated("database")
+    );
+}
+
+#[test]
+fn inactive_form_ignores_keys() {
+    let fields = fields();
+    let sections = [FormSection {
+        title: Line::from("General"),
+        fields: &fields,
+    }];
+    let mut state = FormState::new(Some("host"));
+    state.set_active(false);
+
+    for code in [KeyCode::Tab, KeyCode::Down, KeyCode::Home, KeyCode::Enter] {
+        assert_eq!(
+            state.handle_key(&sections, KeyEvent::new(code, KeyModifiers::NONE)),
+            FormOutcome::Ignored
+        );
+    }
+}
+
+#[test]
+fn arrow_navigation_matches_tab_order_in_each_column_layout() {
+    let fields = fields();
+    let sections = [FormSection {
+        title: Line::from("General"),
+        fields: &fields,
+    }];
+    let theme = Theme::default();
+    let form = Form::new(&sections, &theme);
+    let mut state = FormState::new(Some("host"));
+
+    let narrow_area = Rect::new(0, 0, 40, 14);
+    let mut narrow = Buffer::empty(narrow_area);
+    form.render(narrow_area, &mut narrow, &mut state);
+    assert_eq!(state.column_count(), 1);
+    assert_eq!(
+        state.handle_key(&sections, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+        FormOutcome::FocusChanged("database")
+    );
+
+    state.focus(Some("host"));
+    let wide_area = Rect::new(0, 0, 100, 14);
+    let mut wide = Buffer::empty(wide_area);
+    form.render(wide_area, &mut wide, &mut state);
+    assert_eq!(state.column_count(), 2);
+    assert_eq!(
+        state.handle_key(&sections, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+        FormOutcome::FocusChanged("database")
+    );
+}
+
+#[test]
+fn scroll_by_clamps_at_bounds() {
+    let fields = (0..8)
+        .map(|id| FormField {
+            id,
+            label: Line::from(format!("Field {id}")),
+            value: Line::from("value"),
+            help: None,
+            error: None,
+            required: false,
+            enabled: true,
+        })
+        .collect::<Vec<_>>();
+    let sections = [FormSection {
+        title: Line::from("Long"),
+        fields: &fields,
+    }];
+    let theme = Theme::default();
+    let form = Form::new(&sections, &theme);
+    let area = Rect::new(0, 0, 30, 5);
+    let mut buffer = Buffer::empty(area);
+    let mut state = FormState::new(None);
+    form.render(area, &mut buffer, &mut state);
+
+    assert_eq!(state.scroll_by(-1), 0);
+    let maximum = state.scroll_by(i32::MAX);
+    assert!(maximum > 0);
+    assert_eq!(state.scroll_by(1), maximum);
+    assert_eq!(state.scroll_by(i32::MIN), 0);
+}
+
+#[test]
+fn click_on_field_focuses_and_reports() {
+    let fields = fields();
+    let sections = [FormSection {
+        title: Line::from("General"),
+        fields: &fields,
+    }];
+    let theme = Theme::default();
+    let form = Form::new(&sections, &theme);
+    let area = Rect::new(0, 0, 40, 14);
+    let mut buffer = Buffer::empty(area);
+    let mut state = FormState::new(Some("host"));
+    form.render(area, &mut buffer, &mut state);
+    let database = state
+        .field_regions()
+        .iter()
+        .find(|region| region.id == "database")
+        .unwrap()
+        .area;
+    let position = database.as_position();
+
+    assert_eq!(state.hover(position), Some(&"database"));
+    assert_eq!(state.click(position), FormOutcome::FocusChanged("database"));
+}
+
+#[test]
+fn partially_clipped_field_retains_union_hit_region() {
+    let fields = fields();
+    let sections = [FormSection {
+        title: Line::from("General"),
+        fields: &fields,
+    }];
+    let theme = Theme::default();
+    let form = Form::new(&sections, &theme);
+    let area = Rect::new(0, 0, 30, 5);
+    let mut buffer = Buffer::empty(area);
+    let mut state = FormState::new(None);
+    form.render(area, &mut buffer, &mut state);
+    state.scroll_by(3);
+    form.render(area, &mut buffer, &mut state);
+    let host = state
+        .field_regions()
+        .iter()
+        .find(|region| region.id == "host")
+        .unwrap();
+
+    assert!(!host.area.is_empty());
+    assert!(host.label.is_none());
+    assert!(host.value.is_some());
+}
+
+#[test]
+fn click_outside_any_region_is_ignored() {
+    let fields = fields();
+    let sections = [FormSection {
+        title: Line::from("General"),
+        fields: &fields,
+    }];
+    let theme = Theme::default();
+    let form = Form::new(&sections, &theme);
+    let area = Rect::new(4, 3, 40, 14);
+    let mut buffer = Buffer::empty(Rect::new(0, 0, 50, 20));
+    let mut state = FormState::new(Some("host"));
+    form.render(area, &mut buffer, &mut state);
+
+    assert_eq!(state.click(Position::new(0, 0)), FormOutcome::Ignored);
+}
