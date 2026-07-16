@@ -342,6 +342,20 @@ fn add_trailing_padding(mut lines: Vec<Line<'_>>) -> Vec<Line<'_>> {
     lines
 }
 
+/// Widest line including the trailing pad that scrollable blocks append.
+///
+/// Scrollable blocks mirror leading indent as trailing pad so horizontal
+/// scroll thumbs reach the true content end. Consumers that clamp scroll
+/// against those blocks must use this width, not plain [`max_line_width`].
+#[must_use]
+pub fn padded_max_line_width(lines: &[Line<'_>]) -> usize {
+    lines
+        .iter()
+        .map(|line| line.width().saturating_add(leading_space_count(line)))
+        .max()
+        .unwrap_or(0)
+}
+
 /// Render a bordered scrollable block, clamping offsets and painting scrollbars.
 ///
 /// Focus maps to [`PanelEmphasis::Focused`] so the active container uses
@@ -355,7 +369,7 @@ pub fn render_scrollable_block(
     focused: bool,
     title: Option<&str>,
 ) {
-    let content_width = scroll::max_line_width(&lines);
+    let content_width = padded_max_line_width(&lines);
     let content_height = lines.len();
     let viewport_w = viewport_width(area);
     let viewport_h = viewport_height(area);
@@ -376,7 +390,7 @@ pub fn render_scrollable_block_at(
     focused: bool,
     title: Option<&str>,
 ) {
-    let content_width = scroll::max_line_width(&lines);
+    let content_width = padded_max_line_width(&lines);
     let content_height = lines.len();
     let viewport_w = viewport_width(area);
     let viewport_h = viewport_height(area);

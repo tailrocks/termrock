@@ -16,8 +16,9 @@ mod render;
 pub use render::{
     SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarStyle, apply_scroll_delta,
     apply_scroll_delta_unclamped, apply_term_width_scroll_delta, clamp_scroll_offset,
-    horizontal_scrollbar_area, render_horizontal_scrollbar, render_line_with_fixed_prefix_scroll,
-    render_lines_with_offset_in_area, render_scrollable_block, render_scrollable_block_at,
+    horizontal_scrollbar_area, padded_max_line_width, render_horizontal_scrollbar,
+    render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area, render_scrollable_block,
+    render_scrollable_block_at,
     render_vertical_scrollbar, render_vertical_scrollbar_in_area,
     render_vertical_scrollbar_in_area_with_style, render_vertical_scrollbar_to_buffer,
     render_vertical_scrollbar_with_style, scrollbar_offset_for_track_position,

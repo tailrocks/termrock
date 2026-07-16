@@ -2498,6 +2498,7 @@ pub fn termrock::scroll::mouse_scroll_delta(termrock::input::MouseEventKind, ter
 pub fn termrock::scroll::mouse_scroll_delta_with_step(termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes, u16) -> core::option::Option<termrock::scroll::ScrollDelta>
 pub fn termrock::scroll::offset_for_track_position(usize, usize, u16, usize) -> usize
 pub fn termrock::scroll::offset_for_track_position_u16(usize, usize, usize, usize) -> u16
+pub fn termrock::scroll::padded_max_line_width(&[ratatui_core::text::line::Line<'_>]) -> usize
 pub fn termrock::scroll::render_horizontal_scrollbar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, u16)
 pub fn termrock::scroll::render_line_with_fixed_prefix_scroll(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, u16, ratatui_core::text::line::Line<'static>, usize, usize)
 pub fn termrock::scroll::render_lines_with_offset_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, alloc::vec::Vec<ratatui_core::text::line::Line<'_>>, u16)
