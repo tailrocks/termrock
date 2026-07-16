@@ -4,6 +4,7 @@
 //! Entry point: [`main`] — lookbook binary entry.
 
 mod app;
+mod focus;
 mod interactors;
 mod json;
 mod knobs;
@@ -147,13 +148,6 @@ static PREVIEW_KEYMAP: Keymap<PreviewAction> = Keymap::new(&[
         glyph: None,
     },
 ]);
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Focus {
-    Sidebar,
-    Preview,
-    Knobs,
-}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);
