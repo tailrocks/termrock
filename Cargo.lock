@@ -1336,6 +1336,7 @@ dependencies = [
  "crossterm",
  "ratatui",
  "termrock",
+ "unicode-segmentation",
 ]
 
 [[package]]
