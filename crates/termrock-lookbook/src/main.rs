@@ -6,6 +6,7 @@
 mod app;
 mod interactors;
 mod json;
+mod knobs;
 mod runner;
 mod stories;
 mod svg;
@@ -150,6 +151,7 @@ static PREVIEW_KEYMAP: Keymap<PreviewAction> = Keymap::new(&[
 enum Focus {
     Sidebar,
     Preview,
+    Knobs,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

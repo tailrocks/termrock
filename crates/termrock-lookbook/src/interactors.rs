@@ -4,15 +4,17 @@
 use ratatui::{Frame, layout::Rect};
 use termrock::{
     Theme,
-    input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::Outcome,
     widgets::{
-        ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListState, LogPane,
-        LogPaneState, SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio,
-        TextInput, TextInputOutcome, TextInputState, Tree, TreeNode, TreeOutcome, TreeState,
-        Validation,
+        Anchor, ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListState,
+        LogPane, LogPaneState, Severity, SplitDirection, SplitPane, SplitPaneOutcome,
+        SplitPaneState, SplitRatio, TextInput, TextInputOutcome, TextInputState, Toast, Tree,
+        TreeNode, TreeOutcome, TreeState, Validation,
     },
 };
+
+use crate::knobs::{Knob, KnobValue};
 
 use crate::stories::{
     choice_actions, form_fields, list_rows, render_choice_dialog, render_split_pane, tree_nodes,
@@ -22,6 +24,14 @@ pub(crate) trait StoryInteraction {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect);
     fn handle_key(&mut self, key: KeyEvent) -> bool;
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool;
+    fn set_theme(&mut self, theme: Theme);
+    fn knobs(&self) -> &[Knob] {
+        &[]
+    }
+    fn handle_knob_key(&mut self, _selected: usize, _key: KeyEvent) -> bool {
+        false
+    }
+    fn render_knob_editor(&mut self, _selected: usize, _frame: &mut Frame<'_>, _area: Rect) {}
 }
 
 pub(crate) struct StaticStory {
@@ -38,6 +48,9 @@ impl StoryInteraction for StaticStory {
     }
     fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
         false
+    }
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
     }
 }
 
@@ -76,6 +89,10 @@ impl StoryInteraction for ChoiceDialogInteractor {
             return !matches!(self.state.click(position), Outcome::Ignored);
         }
         false
+    }
+
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
     }
 }
 
@@ -129,6 +146,10 @@ impl StoryInteraction for ListInteractor {
             _ => false,
         }
     }
+
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
+    }
 }
 
 pub(crate) struct TextInputInteractor {
@@ -162,6 +183,10 @@ impl StoryInteraction for TextInputInteractor {
 
     fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
         false
+    }
+
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
     }
 }
 
@@ -205,6 +230,10 @@ impl StoryInteraction for LogPaneInteractor {
 
     fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
         false
+    }
+
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
     }
 }
 
@@ -268,6 +297,10 @@ impl StoryInteraction for TreeInteractor {
             }
             _ => false,
         }
+    }
+
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
     }
 }
 
@@ -334,6 +367,10 @@ impl StoryInteraction for FormInteractor {
             _ => false,
         }
     }
+
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
+    }
 }
 
 pub(crate) struct SplitPaneInteractor {
@@ -384,6 +421,124 @@ impl StoryInteraction for SplitPaneInteractor {
             _ => false,
         }
     }
+
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
+    }
+}
+
+pub(crate) struct ToastInteractor {
+    knobs: Vec<Knob>,
+    message: TextInputState,
+    theme: Theme,
+}
+
+impl ToastInteractor {
+    pub(crate) fn new() -> Self {
+        Self {
+            knobs: vec![
+                Knob {
+                    id: "severity",
+                    label: "Severity",
+                    value: KnobValue::Choice(1),
+                    choices: &["Info", "Success", "Warning", "Error"],
+                },
+                Knob {
+                    id: "anchor",
+                    label: "Anchor",
+                    value: KnobValue::Choice(1),
+                    choices: &["Top left", "Top right", "Bottom left", "Bottom right"],
+                },
+                Knob {
+                    id: "message",
+                    label: "Message",
+                    value: KnobValue::Text("Updated".to_owned()),
+                    choices: &[],
+                },
+            ],
+            message: TextInputState::new("Updated").with_max_graphemes(48),
+            theme: Theme::default(),
+        }
+    }
+
+    fn severity(&self) -> Severity {
+        match self.knobs[0].value {
+            KnobValue::Choice(0) => Severity::Info,
+            KnobValue::Choice(2) => Severity::Warning,
+            KnobValue::Choice(3) => Severity::Error,
+            _ => Severity::Success,
+        }
+    }
+
+    fn anchor(&self) -> Anchor {
+        match self.knobs[1].value {
+            KnobValue::Choice(0) => Anchor::TopLeft,
+            KnobValue::Choice(2) => Anchor::BottomLeft,
+            KnobValue::Choice(3) => Anchor::BottomRight,
+            _ => Anchor::TopRight,
+        }
+    }
+}
+
+impl StoryInteraction for ToastInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        frame.render_widget(
+            Toast::new(&self.theme, self.message.value(), self.severity()).anchor(self.anchor()),
+            area,
+        );
+    }
+
+    fn handle_key(&mut self, _key: KeyEvent) -> bool {
+        false
+    }
+
+    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
+        false
+    }
+
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
+    }
+
+    fn knobs(&self) -> &[Knob] {
+        &self.knobs
+    }
+
+    fn handle_knob_key(&mut self, selected: usize, key: KeyEvent) -> bool {
+        let Some(knob) = self.knobs.get_mut(selected) else {
+            return false;
+        };
+        match &mut knob.value {
+            KnobValue::Choice(index) if matches!(key.code, KeyCode::Left | KeyCode::Right) => {
+                let count = knob.choices.len();
+                if count == 0 {
+                    return false;
+                }
+                *index = if key.code == KeyCode::Right {
+                    (*index + 1) % count
+                } else {
+                    (*index + count - 1) % count
+                };
+                true
+            }
+            KnobValue::Text(value) => {
+                let changed = !matches!(self.message.handle_key(key), TextInputOutcome::Ignored);
+                *value = self.message.value().to_owned();
+                changed
+            }
+            KnobValue::Bool(_) | KnobValue::Number(_) | KnobValue::Choice(_) => false,
+        }
+    }
+
+    fn render_knob_editor(&mut self, selected: usize, frame: &mut Frame<'_>, area: Rect) {
+        if selected == 2 {
+            frame.render_stateful_widget(
+                &TextInput::new("Message", &self.theme).placeholder("Toast message"),
+                area,
+                &mut self.message,
+            );
+        }
+    }
 }
 
 #[cfg(test)]
@@ -395,7 +550,9 @@ mod tests {
     };
     use termrock::input::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 
-    use super::{FormInteractor, SplitPaneInteractor, StoryInteraction};
+    use termrock::input::{KeyCode, KeyEvent};
+
+    use super::{FormInteractor, SplitPaneInteractor, StoryInteraction, ToastInteractor};
 
     #[test]
     fn form_hover_clears_when_pointer_leaves_preview() {
@@ -462,5 +619,20 @@ mod tests {
             area,
         ));
         assert!(interactor.state.ratio() > before);
+    }
+
+    #[test]
+    fn toast_knobs_keep_golden_defaults_and_edit_live() {
+        let mut interactor = ToastInteractor::new();
+        assert_eq!(interactor.knobs()[0].display_value(), "Success");
+        assert_eq!(interactor.knobs()[1].display_value(), "Top right");
+        assert_eq!(interactor.knobs()[2].display_value(), "Updated");
+
+        assert!(interactor.handle_knob_key(0, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)));
+        assert_eq!(interactor.knobs()[0].display_value(), "Warning");
+        assert!(
+            interactor.handle_knob_key(2, KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE))
+        );
+        assert_eq!(interactor.knobs()[2].display_value(), "Updated!");
     }
 }

@@ -49,7 +49,7 @@ number is `0004`; always check `ls migrations/` before claiming.
 | 017 | Core-math test coverage (geometry/ANSI/focus/diff) + 2 small fixes | P2 | M | — | DONE |
 | 018 | SPIKE: runtime disposition + app-runner design | P3 | M-L | 011 | DONE — graduate closure runner; delete legacy runtime |
 | 019 | SPIKE: runtime-configurable keymaps | P3 | M | 006 | DONE — Cow-layered single source |
-| 020 | SPIKE: lookbook → storybook (knobs, theme switcher, installable) | P3 | M | 010, 018 | TODO |
+| 020 | SPIKE: lookbook → storybook (knobs, theme switcher, installable) | P3 | M | 010, 018 | DONE — graduate gallery-local knobs |
 | 021 | SPIKE: Picker / command-palette composition | P3 | M | 011 | TODO |
 | 022 | Lookbook SVG correctness (invisible-text fix) + JSON/CLI hardening | P1 | M | — | DONE |
 | 023 | Contract-axis stories (narrow/unicode) + interactor dedup | P2 | M | 022 | TODO |

@@ -27,7 +27,7 @@ use termrock::{
 
 use crate::interactors::{
     ChoiceDialogInteractor, FormInteractor, ListInteractor, LogPaneInteractor, SplitPaneInteractor,
-    StaticStory, StoryInteraction, TextInputInteractor, TreeInteractor,
+    StaticStory, StoryInteraction, TextInputInteractor, ToastInteractor, TreeInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
@@ -111,6 +111,10 @@ fn text_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 
 fn log_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(LogPaneInteractor::new())
+}
+
+fn toast_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ToastInteractor::new())
 }
 
 pub(crate) fn stories() -> Vec<Story> {
@@ -283,7 +287,8 @@ pub(crate) fn stories() -> Vec<Story> {
             34,
             4,
             toast,
-        ),
+        )
+        .with_interactor(toast_interactor),
         Story::new(
             "backdrop/basic",
             "Backdrop",
