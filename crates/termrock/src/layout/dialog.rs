@@ -387,7 +387,7 @@ pub fn render_dialog_shell(
     title: Option<&str>,
     border: DialogBorder,
 ) -> Rect {
-    use crate::components::panel::{Panel, PanelFocus, modal_block};
+    use crate::widgets::{Panel, PanelEmphasis};
     use ratatui_core::style::Style;
     use ratatui_core::text::Span;
     use ratatui_core::widgets::Widget;
@@ -395,12 +395,16 @@ pub fn render_dialog_shell(
 
     Clear.render(area, frame.buffer_mut());
 
+    let theme = crate::Theme::default();
     let block = match border {
         DialogBorder::Default => {
             if let Some(t) = title {
-                Panel::new().title(t).focus(PanelFocus::Focused).block()
+                Panel::new(&theme)
+                    .title(t)
+                    .emphasis(PanelEmphasis::Focused)
+                    .block()
             } else {
-                modal_block()
+                Panel::new(&theme).emphasis(PanelEmphasis::Focused).block()
             }
         }
         DialogBorder::Danger => {

@@ -10,11 +10,10 @@
 //! All rendering decisions (green border, ▸ cursor, hint scope) derive from
 //! this single value rather than from scattered bools.
 
-use crate::components::panel::PanelFocus;
+use crate::widgets::PanelEmphasis;
 
 /// Focus behavior shared by every button-row dialog: a closed ring of
 /// semantic focus states with a stable button-strip index.
-/// index.
 pub trait ButtonFocus: Copy + Eq + 'static {
     const RING: &'static [Self];
 
@@ -76,15 +75,15 @@ impl<Tab: Copy> FocusOwner<Tab> {
         }
     }
 
-    /// Return the `PanelFocus` for the content block identified by `tab`.
+    /// Return the panel emphasis for the content block identified by `tab`.
     ///
     /// Returns `Focused` when this owner is `Content(t)` where `tab == t`,
-    /// and `Unfocused` otherwise (including when the tab bar owns focus).
+    /// and `Normal` otherwise (including when the tab bar owns focus).
     #[must_use]
-    pub fn panel_focus_for<F: PartialEq<Tab>>(self, tab: &F) -> PanelFocus {
+    pub fn panel_emphasis_for<F: PartialEq<Tab>>(self, tab: &F) -> PanelEmphasis {
         match self {
-            Self::Content(owned) if tab == &owned => PanelFocus::Focused,
-            _ => PanelFocus::Unfocused,
+            Self::Content(owned) if tab == &owned => PanelEmphasis::Focused,
+            _ => PanelEmphasis::Normal,
         }
     }
 

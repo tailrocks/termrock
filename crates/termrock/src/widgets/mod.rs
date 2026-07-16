@@ -7,7 +7,6 @@ mod diff;
 mod form;
 mod hint_bar;
 mod list;
-mod modal_backdrop;
 mod panel;
 mod split_pane;
 mod status_bar;
@@ -26,7 +25,6 @@ pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
 pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans};
 pub use list::{List, ListOutcome, ListRow, ListState, RowRole};
-pub use modal_backdrop::ModalBackdrop;
 pub use panel::{Panel, PanelEmphasis};
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,

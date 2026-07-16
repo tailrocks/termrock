@@ -22,4 +22,4 @@ This closes `COLOR-LAYERS`. Ratatui colors derive from the canonical RGB tokens,
 
 ## Canonical foundation namespaces
 
-Dialog geometry lives in `termrock::layout`; focus, hover, and modal lifecycle live in `termrock::interaction`; scroll geometry and rendering live in `termrock::scroll`; and the opaque modal backdrop is `termrock::widgets::ModalBackdrop`. The donor-shaped foundation submodules under `termrock::components` are no longer public. Consumers update imports without changing terminal behavior.
+Dialog geometry lives in `termrock::layout`; focus, hover, and modal lifecycle live in `termrock::interaction`; scroll geometry and rendering live in `termrock::scroll`; and backdrop policy lives in `termrock::widgets::Backdrop`. `Backdrop::default()` provides an opaque terminal-background fill. The entire donor-shaped `termrock::components` facade is removed so consumers compose the canonical widget API directly.

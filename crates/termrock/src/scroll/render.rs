@@ -24,7 +24,7 @@ use crate::{
     theme::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK},
 };
 
-use crate::components::{Panel, PanelFocus};
+use crate::widgets::{Panel, PanelEmphasis};
 
 /// Dim track glyph shared by every scrollbar, both orientations and styles.
 pub const SCROLLBAR_TRACK: &str = "·";
@@ -645,19 +645,14 @@ pub fn render_scrollable_block_at(
     let content_height = lines.len();
     let viewport_w = viewport_width(area);
     let viewport_h = viewport_height(area);
-    // All focused blocks get PHOSPHOR_GREEN border (WCAG focus-visible rule).
-    // FocusedScrollable vs Focused is kept so callers can distinguish scroll
-    // affordance, but both render green — the difference is informational only.
-    let has_scroll =
-        is_scrollable(content_width, viewport_w) || is_scrollable(content_height, viewport_h);
-    let focus = if focused && has_scroll {
-        PanelFocus::FocusedScrollable
-    } else if focused {
-        PanelFocus::Focused
+    // Focus remains an explicit non-color state even when the content fits.
+    let emphasis = if focused {
+        PanelEmphasis::Focused
     } else {
-        PanelFocus::Unfocused
+        PanelEmphasis::Normal
     };
-    let mut panel = Panel::new().focus(focus);
+    let theme = crate::Theme::default();
+    let mut panel = Panel::new(&theme).emphasis(emphasis);
     if let Some(title) = title {
         panel = panel.title(title);
     }

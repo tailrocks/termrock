@@ -1,4 +1,10 @@
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::Widget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Style},
+    text::Line,
+    widgets::Widget,
+};
 use ratatui_widgets::{block::Block, clear::Clear, paragraph::Paragraph};
 use unicode_width::UnicodeWidthStr;
 
@@ -9,6 +15,18 @@ pub struct Backdrop {
     pub symbol: char,
     pub style: Style,
 }
+
+impl Default for Backdrop {
+    fn default() -> Self {
+        Self {
+            symbol: ' ',
+            style: Style::new()
+                .fg(Color::Reset)
+                .bg(crate::theme::DIALOG_BACKDROP),
+        }
+    }
+}
+
 impl Widget for &Backdrop {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         for y in area.top()..area.bottom() {
@@ -16,6 +34,19 @@ impl Widget for &Backdrop {
                 buffer[(x, y)].set_char(self.symbol).set_style(self.style);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod backdrop_tests {
+    use super::*;
+
+    #[test]
+    fn default_backdrop_uses_terminal_background() {
+        let backdrop = Backdrop::default();
+        assert_eq!(backdrop.symbol, ' ');
+        assert_eq!(backdrop.style.fg, Some(Color::Reset));
+        assert_eq!(backdrop.style.bg, Some(Color::Reset));
     }
 }
 

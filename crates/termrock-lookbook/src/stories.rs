@@ -260,12 +260,9 @@ pub(crate) fn stories() -> Vec<Story> {
 fn panel(frame: &mut Frame<'_>, area: Rect) {
     let theme = Theme::default();
     frame.render_widget(
-        &Panel {
-            title: Some("Summary"),
-            emphasis: PanelEmphasis::Focused,
-            style: None,
-            theme: &theme,
-        },
+        &Panel::new(&theme)
+            .title("Summary")
+            .emphasis(PanelEmphasis::Focused),
         area,
     );
     if area.width > 2 && area.height > 2 {

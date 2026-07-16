@@ -4,7 +4,6 @@
 //! Entry point: [`Theme`] — shared TUI theme tokens.
 
 pub mod ansi_text;
-pub mod components;
 pub mod geometry;
 pub mod input;
 pub mod interaction;

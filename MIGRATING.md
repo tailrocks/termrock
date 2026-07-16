@@ -21,6 +21,6 @@ Pin a reviewed full Git revision and commit the Cargo lockfile. TermRock keeps e
 | modal geometry and scrolling | `termrock::{layout,interaction,scroll}` |
 | terminal escapes | `termrock::osc` typed requests and pure encoders |
 
-The canonical foundation namespaces own their complete implementation. Import dialog geometry from `termrock::layout`, focus/hover/modal lifecycle from `termrock::interaction`, scroll geometry and rendering from `termrock::scroll`, and the opaque modal backdrop from `termrock::widgets::ModalBackdrop`. The former `termrock::components::{dialog_layout,focus_owner,hover_tracker,modal_backdrop,modal_lifecycle,scrollable_panel}` module paths are removed; consumers must not retain donor-shaped module imports.
+The canonical namespaces own their complete implementation. Import dialog geometry from `termrock::layout`, focus/hover/modal lifecycle from `termrock::interaction`, scroll geometry and rendering from `termrock::scroll`, and backdrop policy from `termrock::widgets::Backdrop`. `Backdrop::default()` provides the opaque terminal-background policy. The entire `termrock::components` facade is removed; consumers must compose the canonical widgets instead of retaining donor-shaped render helpers or imports.
 
 Wrap foreign receivers with `runtime::ClosureSubscription`; TermRock deliberately does not depend on Tokio. Brand headers, row construction, lifecycle stacks, output policy, and application-specific runtime helpers remain in the consumer.
