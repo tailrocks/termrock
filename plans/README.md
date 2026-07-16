@@ -24,7 +24,7 @@ breaking plan that lands, and so on).
 | 005 | Input correctness: KeyCode::Unknown, release guards | P1 | M | — | DONE |
 | 006 | Key vocabulary unification (LogicalKey/Mods → KeyCode/KeyModifiers) | P1 | M | 005 | DONE |
 | 007 | Characterization tests: Form + DetailTable | P1 | M | — | DONE |
-| 008 | Theme constructor + full role threading (6 bypassing widgets) | P1 | M | — | TODO |
+| 008 | Theme constructor + full role threading (6 bypassing widgets) | P1 | M | — | DONE |
 | 009 | Brand-constant purge (RAIN_*/MENU_*/jk-brand out of public API) | P1 | M | 008 | TODO |
 | 010 | Second theme preset (slate) + dual-theme canary | P2 | S | 008, 009 | TODO |
 | 011 | Event-model convergence (neutral Event/MouseEvent, state-owned handlers, outcome consolidation) | P1 | L | 005, 006, 007 | TODO |

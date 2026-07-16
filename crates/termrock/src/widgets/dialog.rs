@@ -334,6 +334,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
         (&ActionBar {
             actions: self.actions,
             gap: self.gap,
+            theme: self.dialog.theme,
         })
             .render(action_area, buffer, &mut action_state);
         state.focused = action_state.focused;

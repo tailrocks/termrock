@@ -1,8 +1,11 @@
-use crate::HintSpan;
+use crate::{
+    HintSpan,
+    style::{Role, Theme},
+};
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     text::{Line, Span},
     widgets::Widget,
 };
@@ -20,6 +23,7 @@ pub struct Hint<'a> {
 pub struct HintBar<'a> {
     pub hints: &'a [Hint<'a>],
     pub separator: &'a str,
+    pub theme: &'a Theme,
 }
 
 impl Widget for &HintBar<'_> {
@@ -27,14 +31,14 @@ impl Widget for &HintBar<'_> {
         let mut spans = Vec::new();
         for hint in self.hints.iter().filter(|hint| hint.visible) {
             if !spans.is_empty() {
-                spans.push(Span::raw(self.separator));
+                spans.push(Span::styled(
+                    self.separator,
+                    self.theme.style(Role::HintSeparator),
+                ));
             }
-            spans.push(Span::styled(
-                hint.chord,
-                ratatui_core::style::Style::new().bold(),
-            ));
-            spans.push(Span::raw(" "));
-            spans.push(Span::raw(hint.label));
+            spans.push(Span::styled(hint.chord, self.theme.style(Role::HintKey)));
+            spans.push(Span::styled(" ", self.theme.style(Role::HintText)));
+            spans.push(Span::styled(hint.label, self.theme.style(Role::HintText)));
         }
         Paragraph::new(Line::from(spans))
             .wrap(Wrap { trim: false })
@@ -47,9 +51,10 @@ pub fn render_hint_bar(
     frame: &mut ratatui_core::terminal::Frame<'_>,
     area: Rect,
     spans: &[HintSpan<'_>],
+    theme: &Theme,
 ) {
     frame.render_widget(
-        Paragraph::new(Line::from(styled_hint_spans(spans, |color| color)))
+        Paragraph::new(Line::from(styled_hint_spans(spans, theme, |color| color)))
             .alignment(ratatui_core::layout::Alignment::Center),
         area,
     );
@@ -58,14 +63,13 @@ pub fn render_hint_bar(
 /// Convert rich hint spans into their canonical styled terminal spans.
 pub fn styled_hint_spans(
     spans: &[HintSpan<'_>],
+    theme: &Theme,
     remap: impl Fn(Color) -> Color,
 ) -> Vec<Span<'static>> {
-    let key = Style::default()
-        .fg(remap(crate::style::WHITE))
-        .add_modifier(Modifier::BOLD);
-    let text = Style::default().fg(remap(crate::style::PHOSPHOR_GREEN));
-    let dim = Style::default().fg(remap(crate::style::PHOSPHOR_DIM));
-    let sep = Style::default().fg(remap(crate::style::BORDER_GRAY));
+    let key = remap_style(theme.style(Role::HintKey), &remap);
+    let text = remap_style(theme.style(Role::HintText), &remap);
+    let dim = remap_style(theme.style(Role::HintDim), &remap);
+    let sep = remap_style(theme.style(Role::HintSeparator), &remap);
     let mut out = Vec::with_capacity(spans.len());
     for span in spans {
         match span {
@@ -80,9 +84,22 @@ pub fn styled_hint_spans(
     out
 }
 
+fn remap_style(mut style: Style, remap: &impl Fn(Color) -> Color) -> Style {
+    if let Some(color) = style.fg {
+        style = style.fg(remap(color));
+    }
+    if let Some(color) = style.bg {
+        style = style.bg(remap(color));
+    }
+    if let Some(color) = style.underline_color {
+        style = style.underline_color(remap(color));
+    }
+    style
+}
+
 /// Wrap semantic hint groups without splitting a key/label pair.
 #[must_use]
-pub fn wrapped_hint_lines(spans: &[HintSpan<'_>], width: u16) -> Vec<Line<'static>> {
+pub fn wrapped_hint_lines(spans: &[HintSpan<'_>], width: u16, theme: &Theme) -> Vec<Line<'static>> {
     #[derive(Clone, Copy)]
     enum Separator {
         Group,
@@ -123,7 +140,11 @@ pub fn wrapped_hint_lines(spans: &[HintSpan<'_>], width: u16) -> Vec<Line<'stati
             }
             _ => {
                 current_width += span.display_cols();
-                current.extend(styled_hint_spans(std::slice::from_ref(span), |color| color));
+                current.extend(styled_hint_spans(
+                    std::slice::from_ref(span),
+                    theme,
+                    |color| color,
+                ));
             }
         }
     }
@@ -146,7 +167,7 @@ pub fn wrapped_hint_lines(spans: &[HintSpan<'_>], width: u16) -> Vec<Line<'stati
         if !row.is_empty() {
             match chunk.separator {
                 Separator::Dot => {
-                    row.extend(styled_hint_spans(&[HintSpan::Sep], |color| color));
+                    row.extend(styled_hint_spans(&[HintSpan::Sep], theme, |color| color));
                 }
                 Separator::Group => row.push(Span::raw("   ")),
             }
@@ -177,7 +198,7 @@ mod tests {
             HintSpan::Key("Esc"),
             HintSpan::Text("cancel"),
         ];
-        let lines = wrapped_hint_lines(&spans, 15);
+        let lines = wrapped_hint_lines(&spans, 15, &Theme::default());
         assert_eq!(lines.len(), 2);
         assert_eq!(lines[0].to_string(), "Enter select");
         assert_eq!(lines[1].to_string(), "Esc cancel");

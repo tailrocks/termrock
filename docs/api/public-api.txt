@@ -2694,13 +2694,21 @@ pub const fn termrock::scroll::viewport_width(ratatui_core::layout::rect::Rect) 
 pub mod termrock::style
 pub enum termrock::style::Role
 pub termrock::style::Role::Accent
+pub termrock::style::Role::ActionDisabled
+pub termrock::style::Role::ActionFocused
 pub termrock::style::Role::Backdrop
 pub termrock::style::Role::Border
 pub termrock::style::Role::BorderFocused
 pub termrock::style::Role::Canvas
 pub termrock::style::Role::Danger
+pub termrock::style::Role::DiffAdded
+pub termrock::style::Role::DiffRemoved
 pub termrock::style::Role::Elevated
 pub termrock::style::Role::Focus
+pub termrock::style::Role::HintDim
+pub termrock::style::Role::HintKey
+pub termrock::style::Role::HintSeparator
+pub termrock::style::Role::HintText
 pub termrock::style::Role::Info
 pub termrock::style::Role::Input
 pub termrock::style::Role::InputInvalid
@@ -2709,8 +2717,15 @@ pub termrock::style::Role::LinkHover
 pub termrock::style::Role::ScrollThumb
 pub termrock::style::Role::ScrollTrack
 pub termrock::style::Role::Selection
+pub termrock::style::Role::StatusBar
 pub termrock::style::Role::Success
 pub termrock::style::Role::Surface
+pub termrock::style::Role::TabActive
+pub termrock::style::Role::TabActiveHovered
+pub termrock::style::Role::TabInactive
+pub termrock::style::Role::TabInactiveHovered
+pub termrock::style::Role::TabUnderlineFocused
+pub termrock::style::Role::TabUnderlineUnfocused
 pub termrock::style::Role::Text
 pub termrock::style::Role::TextDisabled
 pub termrock::style::Role::TextMuted
@@ -2758,8 +2773,11 @@ pub fn termrock::style::Role::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Role
 pub struct termrock::style::Theme
 impl termrock::style::Theme
+pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
+pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 37]
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
+pub fn termrock::style::Theme::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl core::clone::Clone for termrock::style::Theme
 pub fn termrock::style::Theme::clone(&self) -> termrock::style::Theme
 impl core::cmp::Eq for termrock::style::Theme
@@ -2907,13 +2925,21 @@ pub fn termrock::text::take_display_cols(&str, usize) -> alloc::string::String
 pub mod termrock::theme
 pub enum termrock::theme::Role
 pub termrock::theme::Role::Accent
+pub termrock::theme::Role::ActionDisabled
+pub termrock::theme::Role::ActionFocused
 pub termrock::theme::Role::Backdrop
 pub termrock::theme::Role::Border
 pub termrock::theme::Role::BorderFocused
 pub termrock::theme::Role::Canvas
 pub termrock::theme::Role::Danger
+pub termrock::theme::Role::DiffAdded
+pub termrock::theme::Role::DiffRemoved
 pub termrock::theme::Role::Elevated
 pub termrock::theme::Role::Focus
+pub termrock::theme::Role::HintDim
+pub termrock::theme::Role::HintKey
+pub termrock::theme::Role::HintSeparator
+pub termrock::theme::Role::HintText
 pub termrock::theme::Role::Info
 pub termrock::theme::Role::Input
 pub termrock::theme::Role::InputInvalid
@@ -2922,8 +2948,15 @@ pub termrock::theme::Role::LinkHover
 pub termrock::theme::Role::ScrollThumb
 pub termrock::theme::Role::ScrollTrack
 pub termrock::theme::Role::Selection
+pub termrock::theme::Role::StatusBar
 pub termrock::theme::Role::Success
 pub termrock::theme::Role::Surface
+pub termrock::theme::Role::TabActive
+pub termrock::theme::Role::TabActiveHovered
+pub termrock::theme::Role::TabInactive
+pub termrock::theme::Role::TabInactiveHovered
+pub termrock::theme::Role::TabUnderlineFocused
+pub termrock::theme::Role::TabUnderlineUnfocused
 pub termrock::theme::Role::Text
 pub termrock::theme::Role::TextDisabled
 pub termrock::theme::Role::TextMuted
@@ -2971,8 +3004,11 @@ pub fn termrock::style::Role::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Role
 pub struct termrock::theme::Theme
 impl termrock::style::Theme
+pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
+pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 37]
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
+pub fn termrock::style::Theme::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl core::clone::Clone for termrock::style::Theme
 pub fn termrock::style::Theme::clone(&self) -> termrock::style::Theme
 impl core::cmp::Eq for termrock::style::Theme
@@ -3918,6 +3954,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::Action<'a, Id>
 pub struct termrock::widgets::ActionBar<'a, Id>
 pub termrock::widgets::ActionBar::actions: &'a [termrock::widgets::Action<'a, Id>]
 pub termrock::widgets::ActionBar::gap: &'a str
+pub termrock::widgets::ActionBar::theme: &'a termrock::style::Theme
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ActionBar<'a, Id>
 pub fn termrock::widgets::ActionBar<'a, Id>::clone(&self) -> termrock::widgets::ActionBar<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ActionBar<'a, Id>
@@ -4410,9 +4447,8 @@ impl<T> core::convert::From<T> for termrock::widgets::DiffState
 pub fn termrock::widgets::DiffState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffState
 pub struct termrock::widgets::DiffView<'a>
-pub termrock::widgets::DiffView::added_style: ratatui_core::style::Style
 pub termrock::widgets::DiffView::lines: &'a [termrock::widgets::DiffLine<'a>]
-pub termrock::widgets::DiffView::removed_style: ratatui_core::style::Style
+pub termrock::widgets::DiffView::theme: &'a termrock::style::Theme
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DiffView<'_>
 pub type &termrock::widgets::DiffView<'_>::State = termrock::widgets::DiffState
 pub fn &termrock::widgets::DiffView<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -4720,6 +4756,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::Hint<'a>
 pub struct termrock::widgets::HintBar<'a>
 pub termrock::widgets::HintBar::hints: &'a [termrock::widgets::Hint<'a>]
 pub termrock::widgets::HintBar::separator: &'a str
+pub termrock::widgets::HintBar::theme: &'a termrock::style::Theme
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::HintBar<'_>
 pub fn &termrock::widgets::HintBar<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::HintBar<'a>
@@ -5205,7 +5242,7 @@ pub struct termrock::widgets::StatusBar<'a, Id>
 pub termrock::widgets::StatusBar::alpha: f32
 pub termrock::widgets::StatusBar::left: &'a [termrock::widgets::StatusSlot<'a, Id>]
 pub termrock::widgets::StatusBar::right: &'a [termrock::widgets::StatusSlot<'a, Id>]
-pub termrock::widgets::StatusBar::style: ratatui_core::style::Style
+pub termrock::widgets::StatusBar::theme: &'a termrock::style::Theme
 impl<Id: core::clone::Clone> termrock::widgets::StatusBar<'_, Id>
 pub fn termrock::widgets::StatusBar<'_, Id>::regions(&self, ratatui_core::layout::rect::Rect) -> alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::StatusBar<'a, Id>
@@ -5379,6 +5416,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::Tab<'a, Id>
 pub struct termrock::widgets::Tabs<'a, Id>
 pub termrock::widgets::Tabs::gap: u16
 pub termrock::widgets::Tabs::tabs: &'a [termrock::widgets::Tab<'a, Id>]
+pub termrock::widgets::Tabs::theme: &'a termrock::style::Theme
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tabs<'a, Id>
 pub fn termrock::widgets::Tabs<'a, Id>::clone(&self) -> termrock::widgets::Tabs<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Tabs<'a, Id>
@@ -5749,13 +5787,10 @@ impl<T> core::convert::From<T> for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TreeState<Id>
 pub struct termrock::widgets::Viewport<'a>
-pub termrock::widgets::Viewport::border_style: ratatui_core::style::Style
-pub termrock::widgets::Viewport::content_style: ratatui_core::style::Style
+pub termrock::widgets::Viewport::content_style: core::option::Option<ratatui_core::style::Style>
 pub termrock::widgets::Viewport::lines: &'a [ratatui_core::text::line::Line<'a>]
-pub termrock::widgets::Viewport::scroll_thumb_style: ratatui_core::style::Style
-pub termrock::widgets::Viewport::scroll_track_style: ratatui_core::style::Style
+pub termrock::widgets::Viewport::theme: &'a termrock::style::Theme
 pub termrock::widgets::Viewport::title: core::option::Option<&'a str>
-pub termrock::widgets::Viewport::title_style: ratatui_core::style::Style
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Viewport<'_>
 pub type &termrock::widgets::Viewport<'_>::State = termrock::scroll::DialogScroll
 pub fn &termrock::widgets::Viewport<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -5794,9 +5829,9 @@ pub unsafe fn termrock::widgets::Viewport<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Viewport<'a>
-pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::geometry::HintSpan<'_>])
-pub fn termrock::widgets::styled_hint_spans(&[termrock::geometry::HintSpan<'_>], impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
-pub fn termrock::widgets::wrapped_hint_lines(&[termrock::geometry::HintSpan<'_>], u16) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
+pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::geometry::HintSpan<'_>], &termrock::style::Theme)
+pub fn termrock::widgets::styled_hint_spans(&[termrock::geometry::HintSpan<'_>], &termrock::style::Theme, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::widgets::wrapped_hint_lines(&[termrock::geometry::HintSpan<'_>], u16, &termrock::style::Theme) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub enum termrock::HintSpan<'a>
 pub termrock::HintSpan::Dyn(alloc::string::String)
 pub termrock::HintSpan::DynKey(alloc::string::String)
@@ -6118,8 +6153,11 @@ pub fn termrock::scroll::TailScroll::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::scroll::TailScroll
 pub struct termrock::Theme
 impl termrock::style::Theme
+pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
+pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 37]
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
+pub fn termrock::style::Theme::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl core::clone::Clone for termrock::style::Theme
 pub fn termrock::style::Theme::clone(&self) -> termrock::style::Theme
 impl core::cmp::Eq for termrock::style::Theme

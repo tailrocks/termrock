@@ -7,7 +7,7 @@ use ratatui_core::{
 };
 
 use super::*;
-use crate::style::Theme;
+use crate::style::{Role, Theme};
 
 fn areas() -> [Rect; 5] {
     [
@@ -37,6 +37,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     let hint_bar = HintBar {
         hints: &hints,
         separator: " · ",
+        theme: &theme,
     };
     let toast = Toast::new(&theme, "Updated", Severity::Success).anchor(Anchor::TopRight);
     let backdrop = Backdrop {
@@ -177,6 +178,7 @@ fn text_input_edits_extended_graphemes_atomically() {
 
 #[test]
 fn action_and_status_regions_match_painted_geometry() {
+    let theme = Theme::default();
     let actions = [
         Action {
             id: "save",
@@ -198,6 +200,7 @@ fn action_and_status_regions_match_painted_geometry() {
         &ActionBar {
             actions: &actions,
             gap: " ",
+            theme: &theme,
         },
         area,
         &mut buffer,
@@ -227,7 +230,7 @@ fn action_and_status_regions_match_painted_geometry() {
     let status = StatusBar {
         left: &left,
         right: &right,
-        style: Style::new(),
+        theme: &theme,
         alpha: 1.0,
     };
     let regions = status.regions(area);
@@ -243,14 +246,12 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
         Line::from("two"),
         Line::from("three"),
     ];
+    let theme = Theme::default();
     let viewport = Viewport {
         lines: &lines,
         title: Some(" Log "),
-        content_style: Style::new(),
-        border_style: Style::new(),
-        title_style: Style::new(),
-        scroll_track_style: Style::new(),
-        scroll_thumb_style: Style::new(),
+        theme: &theme,
+        content_style: None,
     };
     let area = Rect::new(0, 0, 12, 4);
     let mut buffer = Buffer::empty(area);
@@ -265,4 +266,30 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
     assert_eq!(buffer[(1, 1)].symbol(), "o");
     assert_eq!(buffer[(11, 1)].symbol(), "·");
     assert_eq!(buffer[(11, 2)].symbol(), "┃");
+}
+
+#[test]
+fn theme_override_reaches_active_tab_cells() {
+    use ratatui_core::style::Color;
+
+    let theme = Theme::default().with_role(Role::TabActive, Style::new().bg(Color::Blue));
+    let tabs = [Tab {
+        id: "active",
+        label: "Active",
+        glyph: None,
+        active: true,
+        enabled: true,
+    }];
+    let widget = Tabs {
+        tabs: &tabs,
+        gap: 1,
+        theme: &theme,
+    };
+    let area = Rect::new(0, 0, 12, 2);
+    let mut buffer = Buffer::empty(area);
+    let mut state = TabsState::default();
+
+    (&widget).render(area, &mut buffer, &mut state);
+
+    assert_eq!(buffer[(0, 0)].bg, Color::Blue);
 }

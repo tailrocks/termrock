@@ -7,7 +7,10 @@ use ratatui_core::{
 use ratatui_widgets::paragraph::Paragraph;
 use unicode_width::UnicodeWidthStr;
 
-use crate::interaction::HitRegion;
+use crate::{
+    interaction::HitRegion,
+    style::{Role, Theme},
+};
 
 #[derive(Debug, Clone)]
 pub struct Action<'a, Id> {
@@ -36,6 +39,7 @@ impl<Id> Default for ActionBarState<Id> {
 pub struct ActionBar<'a, Id> {
     pub actions: &'a [Action<'a, Id>],
     pub gap: &'a str,
+    pub theme: &'a Theme,
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
@@ -56,9 +60,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
             let focused = state.focused.as_ref() == Some(&action.id);
             let style = action.style.unwrap_or_else(|| {
                 if !action.enabled {
-                    Style::new().dim()
+                    self.theme.style(Role::ActionDisabled)
                 } else if focused {
-                    Style::new().reversed()
+                    self.theme.style(Role::ActionFocused)
                 } else {
                     Style::new()
                 }

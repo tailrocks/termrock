@@ -127,11 +127,26 @@ pub enum Role {
     InputInvalid,
     ScrollTrack,
     ScrollThumb,
+    TabActive,
+    TabInactive,
+    TabActiveHovered,
+    TabInactiveHovered,
+    TabUnderlineFocused,
+    TabUnderlineUnfocused,
+    HintKey,
+    HintText,
+    HintDim,
+    HintSeparator,
+    ActionFocused,
+    ActionDisabled,
+    StatusBar,
+    DiffAdded,
+    DiffRemoved,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Theme {
-    roles: [Style; 22],
+    roles: [Style; 37],
 }
 
 impl Theme {
@@ -161,8 +176,84 @@ impl Theme {
                 Style::new().bg(INPUT_BG_DIM).fg(DANGER_RED),
                 Style::new().fg(DIALOG_SCROLL_TRACK),
                 Style::new().fg(DIALOG_SCROLL_THUMB),
+                Style::new().fg(WHITE).bg(TAB_BG_ACTIVE),
+                Style::new().fg(WHITE).bg(TAB_BG_INACTIVE),
+                Style::new().fg(WHITE).bg(TAB_BG_ACTIVE_HOVER),
+                Style::new().fg(WHITE).bg(TAB_BG_INACTIVE_HOVER),
+                GREEN,
+                Style::new().fg(WHITE),
+                Style::new().fg(WHITE).add_modifier(Modifier::BOLD),
+                GREEN,
+                DIM,
+                Style::new().fg(BORDER_GRAY),
+                Style::new().reversed(),
+                Style::new().dim(),
+                Style::new(),
+                Style::new().fg(DIFF_ADDED_FG).bg(DIFF_ADDED_BG),
+                Style::new().fg(DIFF_REMOVED_FG).bg(DIFF_REMOVED_BG),
             ],
         }
+    }
+
+    /// Start from an existing theme and override one semantic role.
+    #[must_use]
+    pub fn with_role(mut self, role: Role, style: Style) -> Self {
+        self.roles[role as usize] = style;
+        self
+    }
+
+    /// Build a theme by answering every semantic role from a function.
+    #[must_use]
+    pub fn from_fn(f: impl Fn(Role) -> Style) -> Self {
+        let mut roles = [Style::new(); 37];
+        for role in Self::roles() {
+            roles[role as usize] = f(role);
+        }
+        Self { roles }
+    }
+
+    /// Return every semantic role in stable positional order.
+    #[must_use]
+    pub const fn roles() -> [Role; 37] {
+        [
+            Role::Canvas,
+            Role::Surface,
+            Role::Elevated,
+            Role::Backdrop,
+            Role::Text,
+            Role::TextMuted,
+            Role::TextDisabled,
+            Role::Border,
+            Role::BorderFocused,
+            Role::Selection,
+            Role::Focus,
+            Role::Accent,
+            Role::Success,
+            Role::Warning,
+            Role::Danger,
+            Role::Info,
+            Role::Link,
+            Role::LinkHover,
+            Role::Input,
+            Role::InputInvalid,
+            Role::ScrollTrack,
+            Role::ScrollThumb,
+            Role::TabActive,
+            Role::TabInactive,
+            Role::TabActiveHovered,
+            Role::TabInactiveHovered,
+            Role::TabUnderlineFocused,
+            Role::TabUnderlineUnfocused,
+            Role::HintKey,
+            Role::HintText,
+            Role::HintDim,
+            Role::HintSeparator,
+            Role::ActionFocused,
+            Role::ActionDisabled,
+            Role::StatusBar,
+            Role::DiffAdded,
+            Role::DiffRemoved,
+        ]
     }
 
     #[must_use]
@@ -174,5 +265,31 @@ impl Theme {
 impl Default for Theme {
     fn default() -> Self {
         Self::tailrocks_phosphor()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn roles_cover_the_positional_theme_array() {
+        let roles = Theme::roles();
+        assert_eq!(roles.len(), 37);
+        for (index, role) in roles.into_iter().enumerate() {
+            assert_eq!(role as usize, index);
+        }
+    }
+
+    #[test]
+    fn builders_override_and_populate_every_role() {
+        let blue = Style::new().bg(Color::Blue);
+        let theme = Theme::default().with_role(Role::TabActive, blue);
+        assert_eq!(theme.style(Role::TabActive), blue);
+
+        let generated = Theme::from_fn(|role| Style::new().fg(Color::Indexed(role as u8)));
+        for role in Theme::roles() {
+            assert_eq!(generated.style(role).fg, Some(Color::Indexed(role as u8)));
+        }
     }
 }

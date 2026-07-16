@@ -1,16 +1,10 @@
 use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::{Modifier, Style},
-    text::Span,
-    widgets::StatefulWidget,
+    buffer::Buffer, layout::Rect, style::Modifier, text::Span, widgets::StatefulWidget,
 };
 
 use crate::{
     interaction::HitRegion,
-    style::{
-        GREEN, TAB_BG_ACTIVE, TAB_BG_ACTIVE_HOVER, TAB_BG_INACTIVE, TAB_BG_INACTIVE_HOVER, WHITE,
-    },
+    style::{Role, Theme},
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -46,6 +40,7 @@ impl<Id> Default for TabsState<Id> {
 pub struct Tabs<'a, Id> {
     pub tabs: &'a [Tab<'a, Id>],
     pub gap: u16,
+    pub theme: &'a Theme,
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
@@ -69,13 +64,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
             );
             let selected = state.selected.as_ref() == Some(&tab.id) || tab.active;
             let hovered = state.hovered.as_ref() == Some(&tab.id);
-            let background = match (selected, hovered) {
-                (true, true) => TAB_BG_ACTIVE_HOVER,
-                (true, false) => TAB_BG_ACTIVE,
-                (false, true) => TAB_BG_INACTIVE_HOVER,
-                (false, false) => TAB_BG_INACTIVE,
+            let role = match (selected, hovered) {
+                (true, true) => Role::TabActiveHovered,
+                (true, false) => Role::TabActive,
+                (false, true) => Role::TabInactiveHovered,
+                (false, false) => Role::TabInactive,
             };
-            let mut style = Style::new().fg(WHITE).bg(background);
+            let mut style = self.theme.style(role);
             if selected {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -102,9 +97,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
             }
             if selected && area.height > 1 {
                 let underline_style = if state.focused {
-                    GREEN
+                    self.theme.style(Role::TabUnderlineFocused)
                 } else {
-                    Style::new().fg(WHITE)
+                    self.theme.style(Role::TabUnderlineUnfocused)
                 };
                 buffer.set_stringn(
                     label_rect.x,
@@ -137,7 +132,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
 mod tests {
     use super::*;
     use ratatui_core::layout::Position;
-    use ratatui_core::style::Color;
+    use ratatui_core::style::{Color, Style};
 
     #[test]
     fn selection_cue_and_hit_regions_share_two_row_geometry() {
@@ -165,14 +160,22 @@ mod tests {
             focused: true,
             ..TabsState::default()
         };
+        let theme = Theme::default();
         (&Tabs {
             tabs: &tabs,
             gap: 1,
+            theme: &theme,
         })
             .render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(3, 5)].symbol(), "━");
-        assert_eq!(buffer[(3, 5)].fg, crate::style::PHOSPHOR_GREEN);
+        assert_eq!(
+            buffer[(3, 5)].fg,
+            theme
+                .style(Role::TabUnderlineFocused)
+                .fg
+                .expect("focused underline role has a foreground")
+        );
         assert!(buffer[(3, 4)].modifier.contains(Modifier::UNDERLINED));
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
@@ -190,15 +193,23 @@ mod tests {
         let area = Rect::new(0, 0, 20, 2);
         let mut buffer = Buffer::empty(area);
         let mut state = TabsState::default();
+        let theme = Theme::default();
 
         (&Tabs {
             tabs: &tabs,
             gap: 1,
+            theme: &theme,
         })
             .render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(1, 0)].symbol(), "●");
         assert_eq!(buffer[(1, 0)].fg, Color::Yellow);
-        assert_eq!(buffer[(1, 0)].bg, TAB_BG_ACTIVE);
+        assert_eq!(
+            buffer[(1, 0)].bg,
+            theme
+                .style(Role::TabActive)
+                .bg
+                .expect("active tab role has a background")
+        );
     }
 }

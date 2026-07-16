@@ -1,5 +1,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 
+use crate::style::{Role, Theme};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiffKind {
     Context,
@@ -19,8 +21,7 @@ pub struct DiffState {
 #[derive(Debug, Clone, Copy)]
 pub struct DiffView<'a> {
     pub lines: &'a [DiffLine<'a>],
-    pub added_style: Style,
-    pub removed_style: Style,
+    pub theme: &'a Theme,
 }
 
 impl StatefulWidget for &DiffView<'_> {
@@ -35,8 +36,8 @@ impl StatefulWidget for &DiffView<'_> {
         {
             let style = match line.kind {
                 DiffKind::Context => Style::new(),
-                DiffKind::Added => self.added_style,
-                DiffKind::Removed => self.removed_style,
+                DiffKind::Added => self.theme.style(Role::DiffAdded),
+                DiffKind::Removed => self.theme.style(Role::DiffRemoved),
             };
             buffer.set_stringn(
                 area.x,

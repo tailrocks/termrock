@@ -7,17 +7,17 @@ use ratatui_core::{
 };
 use ratatui_widgets::{block::Block, borders::Borders, paragraph::Paragraph};
 
-use crate::scroll::{DialogScroll, full_cell_thumb, is_scrollable, max_line_width};
+use crate::{
+    scroll::{DialogScroll, full_cell_thumb, is_scrollable, max_line_width},
+    style::{Role, Theme},
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Viewport<'a> {
     pub lines: &'a [Line<'a>],
     pub title: Option<&'a str>,
-    pub content_style: Style,
-    pub border_style: Style,
-    pub title_style: Style,
-    pub scroll_track_style: Style,
-    pub scroll_thumb_style: Style,
+    pub theme: &'a Theme,
+    pub content_style: Option<Style>,
 }
 
 impl StatefulWidget for &Viewport<'_> {
@@ -35,16 +35,21 @@ impl StatefulWidget for &Viewport<'_> {
         );
         let mut block = Block::default()
             .borders(Borders::ALL)
-            .border_style(self.border_style);
+            .border_style(self.theme.style(Role::Border));
         if let Some(title) = self.title {
             block = block.title(Span::styled(
                 format!(" {} ", title.trim()),
-                self.title_style,
+                self.theme
+                    .style(Role::Text)
+                    .add_modifier(ratatui_core::style::Modifier::BOLD),
             ));
         }
         Paragraph::new(self.lines.to_vec())
             .block(block)
-            .style(self.content_style)
+            .style(
+                self.content_style
+                    .unwrap_or_else(|| self.theme.style(Role::Text)),
+            )
             .scroll((state.scroll_y, state.scroll_x))
             .render(area, buffer);
         if is_scrollable(self.lines.len(), viewport_height) {
@@ -59,8 +64,8 @@ impl StatefulWidget for &Viewport<'_> {
                 self.lines.len(),
                 viewport_height,
                 state.scroll_y,
-                self.scroll_track_style,
-                self.scroll_thumb_style,
+                self.theme.style(Role::ScrollTrack),
+                self.theme.style(Role::ScrollThumb),
             );
         }
     }

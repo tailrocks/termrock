@@ -296,6 +296,7 @@ fn panel(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn action_bar(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::default();
     let actions = [
         Action {
             id: "accept",
@@ -318,6 +319,7 @@ fn action_bar(frame: &mut Frame<'_>, area: Rect) {
         &ActionBar {
             actions: &actions,
             gap: "  ",
+            theme: &theme,
         },
         area,
         &mut state,
@@ -479,6 +481,7 @@ fn tabs(frame: &mut Frame<'_>, area: Rect) {
         &Tabs {
             tabs: &items,
             gap: 1,
+            theme: &theme,
         },
         area,
         &mut state,
@@ -486,6 +489,11 @@ fn tabs(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn hint_bar(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::default()
+        .with_role(Role::HintKey, Style::new().bold())
+        .with_role(Role::HintText, Style::new())
+        .with_role(Role::HintDim, Style::new())
+        .with_role(Role::HintSeparator, Style::new());
     let hints = [
         Hint {
             chord: "↑↓",
@@ -510,6 +518,7 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect) {
         &HintBar {
             hints: &hints,
             separator: "  ",
+            theme: &theme,
         },
         area,
     );
@@ -609,6 +618,7 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn status_bar(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::default();
     let left = [StatusSlot {
         id: "state",
         content: " Ready ",
@@ -632,7 +642,7 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect) {
         &StatusBar {
             left: &left,
             right: &right,
-            style: Style::new(),
+            theme: &theme,
             alpha: 1.0,
         },
         area,
@@ -743,6 +753,9 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn diff(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::default()
+        .with_role(Role::DiffAdded, Style::new().bold())
+        .with_role(Role::DiffRemoved, Style::new().dim());
     let lines = [
         DiffLine {
             text: " context",
@@ -760,8 +773,7 @@ fn diff(frame: &mut Frame<'_>, area: Rect) {
     frame.render_stateful_widget(
         &DiffView {
             lines: &lines,
-            added_style: Style::new().bold(),
-            removed_style: Style::new().dim(),
+            theme: &theme,
         },
         area,
         &mut DiffState::default(),
@@ -795,16 +807,15 @@ fn viewport(frame: &mut Frame<'_>, area: Rect) {
         Line::from("zeta: sixth row"),
     ];
     let theme = Theme::default();
+    let border_style = theme.style(Role::BorderFocused);
+    let theme = theme.with_role(Role::Border, border_style);
     let mut state = DialogScroll::default();
     frame.render_stateful_widget(
         &Viewport {
             lines: &lines,
             title: Some("Viewport"),
-            content_style: Style::new(),
-            border_style: theme.style(Role::BorderFocused),
-            title_style: theme.style(Role::Text),
-            scroll_track_style: theme.style(Role::ScrollTrack),
-            scroll_thumb_style: theme.style(Role::ScrollThumb),
+            theme: &theme,
+            content_style: Some(Style::new()),
         },
         area,
         &mut state,

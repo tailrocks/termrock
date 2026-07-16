@@ -7,7 +7,7 @@ use ratatui_core::{
 
 use crate::{
     interaction::{HitRegion, Outcome},
-    style::faded,
+    style::{Role, Theme, faded},
 };
 
 #[derive(Debug, Clone)]
@@ -63,7 +63,7 @@ impl<Id: Clone> StatusBarState<Id> {
 pub struct StatusBar<'a, Id> {
     pub left: &'a [StatusSlot<'a, Id>],
     pub right: &'a [StatusSlot<'a, Id>],
-    pub style: Style,
+    pub theme: &'a Theme,
     pub alpha: f32,
 }
 
@@ -203,7 +203,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             state.regions.clear();
             return;
         }
-        buffer.set_style(area, fade_style(self.style, self.alpha));
+        buffer.set_style(
+            area,
+            fade_style(self.theme.style(Role::StatusBar), self.alpha),
+        );
         state.regions.clear();
         for placement in self.placements(area) {
             let slot = match placement.side {
@@ -299,6 +302,7 @@ mod tests {
 
     #[test]
     fn priority_and_minimum_width_control_narrow_layout() {
+        let theme = Theme::default();
         let left = [slot("activity", " activity ", 10, 4)];
         let right = [
             slot("usage", " usage-long ", 1, 0),
@@ -307,7 +311,7 @@ mod tests {
         let bar = StatusBar {
             left: &left,
             right: &right,
-            style: Style::new(),
+            theme: &theme,
             alpha: 1.0,
         };
         let regions = bar.regions(Rect::new(3, 2, 10, 1));
@@ -320,10 +324,12 @@ mod tests {
     #[test]
     fn hover_and_activation_follow_only_painted_regions() {
         let left = [slot("activity", " activity ", 1, 4)];
+        let theme =
+            Theme::default().with_role(Role::StatusBar, Style::new().bg(Color::Rgb(80, 80, 80)));
         let bar = StatusBar {
             left: &left,
             right: &[],
-            style: Style::new().bg(Color::Rgb(80, 80, 80)),
+            theme: &theme,
             alpha: 0.5,
         };
         let area = Rect::new(4, 3, 6, 1);
@@ -342,10 +348,11 @@ mod tests {
     #[test]
     fn unicode_truncation_never_paints_half_a_wide_grapheme() {
         let left = [slot("wide", " 🧪🔬🧭 ", 1, 3)];
+        let theme = Theme::default();
         let bar = StatusBar {
             left: &left,
             right: &[],
-            style: Style::new(),
+            theme: &theme,
             alpha: 1.0,
         };
         let area = Rect::new(0, 0, 3, 1);
