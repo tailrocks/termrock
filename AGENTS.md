@@ -33,9 +33,9 @@ source and design APIs that can later support registry or copy-and-adapt
 distribution without making that future mechanism a constraint on today's
 crate.
 
-Integrate completed work into `main` promptly. Repository protection may require
-a pull request and checks, but branches are integration vehicles rather than
-parallel product lines.
+All TermRock work happens directly on `main`. Do not create feature branches or
+pull requests for TermRock changes. Commit each independently verified change
+to `main` and push `main` immediately.
 
 ## Repository rules
 
