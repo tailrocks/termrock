@@ -4,21 +4,37 @@ use core::ops::{BitOr, BitOrAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+/// Available `KeyCode` choices.
 pub enum KeyCode {
+    /// Selects the `Backspace` behavior.
     Backspace,
+    /// Selects the `Enter` behavior.
     Enter,
+    /// Selects the `Left` behavior.
     Left,
+    /// Selects the `Right` behavior.
     Right,
+    /// Selects the `Up` behavior.
     Up,
+    /// Selects the `Down` behavior.
     Down,
+    /// Selects the `Home` behavior.
     Home,
+    /// Selects the `End` behavior.
     End,
+    /// Selects the `PageUp` behavior.
     PageUp,
+    /// Selects the `PageDown` behavior.
     PageDown,
+    /// Selects the `Tab` behavior.
     Tab,
+    /// Selects the `BackTab` behavior.
     BackTab,
+    /// Selects the `Delete` behavior.
     Delete,
+    /// Selects the `Esc` behavior.
     Esc,
+    /// Selects the `Char` behavior.
     Char(char),
     /// A key the neutral vocabulary does not model (function keys, media
     /// keys, lock keys, and similar keys). Widgets and keymaps must treat it
@@ -27,35 +43,45 @@ pub enum KeyCode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+/// Data carried by `KeyModifiers`.
 pub struct KeyModifiers(u8);
 
 impl KeyModifiers {
+    /// The `NONE` constant.
     pub const NONE: Self = Self(0);
+    /// The `SHIFT` constant.
     pub const SHIFT: Self = Self(1);
+    /// The `CONTROL` constant.
     pub const CONTROL: Self = Self(2);
+    /// The `ALT` constant.
     pub const ALT: Self = Self(4);
 
     #[must_use]
+    /// Returns this value with `ctrl` configured.
     pub const fn with_ctrl(self) -> Self {
         Self(self.0 | Self::CONTROL.0)
     }
 
     #[must_use]
+    /// Returns this value with `alt` configured.
     pub const fn with_alt(self) -> Self {
         Self(self.0 | Self::ALT.0)
     }
 
     #[must_use]
+    /// Returns this value with `shift` configured.
     pub const fn with_shift(self) -> Self {
         Self(self.0 | Self::SHIFT.0)
     }
 
     #[must_use]
+    /// Performs the `contains` operation.
     pub const fn contains(self, other: Self) -> bool {
         self.0 & other.0 == other.0
     }
 
     #[must_use]
+    /// Returns whether `empty`.
     pub const fn is_empty(self) -> bool {
         self.0 == 0
     }
@@ -75,30 +101,42 @@ impl BitOrAssign for KeyModifiers {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+/// Available `KeyEventKind` choices.
 pub enum KeyEventKind {
     #[default]
+    /// Selects the `Press` behavior.
     Press,
+    /// Selects the `Repeat` behavior.
     Repeat,
+    /// Selects the `Release` behavior.
     Release,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+/// Runtime state for `KeyEvent`.
 pub struct KeyEventState;
 
 impl KeyEventState {
+    /// The `NONE` constant.
     pub const NONE: Self = Self;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Data carried by `KeyEvent`.
 pub struct KeyEvent {
+    /// Documentation for `item`.
     pub code: KeyCode,
+    /// Documentation for `item`.
     pub modifiers: KeyModifiers,
+    /// Documentation for `item`.
     pub kind: KeyEventKind,
+    /// Documentation for `item`.
     pub state: KeyEventState,
 }
 
 impl KeyEvent {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(code: KeyCode, modifiers: KeyModifiers) -> Self {
         Self {
             code,
@@ -111,42 +149,68 @@ impl KeyEvent {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+/// Available `MouseEventKind` choices.
 pub enum MouseEventKind {
+    /// Selects the `ScrollUp` behavior.
     ScrollUp,
+    /// Selects the `ScrollDown` behavior.
     ScrollDown,
+    /// Selects the `ScrollLeft` behavior.
     ScrollLeft,
+    /// Selects the `ScrollRight` behavior.
     ScrollRight,
+    /// Selects the `Moved` behavior.
     Moved,
+    /// Selects the `Down` behavior.
     Down(MouseButton),
+    /// Selects the `Up` behavior.
     Up(MouseButton),
+    /// Selects the `Drag` behavior.
     Drag(MouseButton),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Available `MouseButton` choices.
 pub enum MouseButton {
+    /// Selects the `Left` behavior.
     Left,
+    /// Selects the `Right` behavior.
     Right,
+    /// Selects the `Middle` behavior.
     Middle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Data carried by `MouseEvent`.
 pub struct MouseEvent {
+    /// Documentation for `item`.
     pub kind: MouseEventKind,
+    /// Documentation for `item`.
     pub position: ratatui_core::layout::Position,
+    /// Documentation for `item`.
     pub modifiers: KeyModifiers,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+/// Available `Event` choices.
 pub enum Event {
+    /// Selects the `Key` behavior.
     Key(KeyEvent),
+    /// Selects the `Mouse` behavior.
     Mouse(MouseEvent),
+    /// Selects the `Paste` behavior.
     Paste,
+    /// Selects the `Resize` behavior.
     Resize {
+        /// Documentation for `item`.
         width: u16,
+        /// Documentation for `item`.
         height: u16,
     },
+    /// Selects the `FocusGained` behavior.
     FocusGained,
+    /// Selects the `FocusLost` behavior.
     FocusLost,
     /// A backend event outside the neutral vocabulary.
     Unknown,

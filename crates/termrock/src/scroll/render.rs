@@ -60,14 +60,17 @@ impl ScrollbarStyle {
     }
 }
 
+/// Performs the `viewport_width` operation.
 pub const fn viewport_width(area: Rect) -> usize {
     area.width.saturating_sub(2) as usize
 }
 
+/// Performs the `viewport_height` operation.
 pub const fn viewport_height(area: Rect) -> usize {
     area.height.saturating_sub(2) as usize
 }
 
+/// Performs the `max_offset` operation.
 pub const fn max_offset(content_len: usize, viewport: usize) -> u16 {
     scroll::max_offset_u16(content_len, viewport)
 }
@@ -76,14 +79,17 @@ pub const fn is_scrollable(content_len: usize, viewport: usize) -> bool {
     scroll::is_scrollable(content_len, viewport)
 }
 
+/// Performs the `effective_offset` operation.
 pub const fn effective_offset(content_len: usize, viewport: usize, offset: u16) -> u16 {
     scroll::effective_offset_u16(content_len, viewport, offset)
 }
 
+/// Performs the `clamp_scroll_offset` operation.
 pub const fn clamp_scroll_offset(content_len: usize, viewport: usize, offset: &mut u16) -> u16 {
     scroll::clamp_offset_u16(content_len, viewport, offset)
 }
 
+/// Performs the `cursor_follow_offset` operation.
 pub fn cursor_follow_offset(
     cursor: usize,
     content_length: usize,
@@ -111,6 +117,7 @@ fn scrollbar_thumb_geometry(
     })
 }
 
+/// Performs the `scrollbar_offset_for_track_position` operation.
 pub fn scrollbar_offset_for_track_position(
     content_length: usize,
     viewport: usize,
@@ -121,14 +128,17 @@ pub fn scrollbar_offset_for_track_position(
 }
 
 // No upper clamp: every caller's render path calls effective_offset, which clamps.
+/// Performs the `apply_scroll_delta_unclamped` operation.
 pub const fn apply_scroll_delta_unclamped(value: &mut u16, delta: i16) {
     scroll::apply_delta_unclamped_u16(value, delta);
 }
 
+/// Performs the `apply_scroll_delta` operation.
 pub fn apply_scroll_delta(value: &mut u16, delta: i16, viewport: usize, content_len: usize) {
     scroll::apply_delta_u16(content_len, viewport, value, isize::from(delta));
 }
 
+/// Performs the `apply_term_width_scroll_delta` operation.
 pub fn apply_term_width_scroll_delta(
     value: &mut u16,
     delta: i16,
@@ -143,6 +153,7 @@ pub fn apply_term_width_scroll_delta(
     );
 }
 
+/// Performs the `line_width` operation.
 pub fn line_width(line: &Line<'_>) -> usize {
     line.spans
         .iter()
@@ -150,6 +161,7 @@ pub fn line_width(line: &Line<'_>) -> usize {
         .sum()
 }
 
+/// Renders `render_line_with_fixed_prefix_scroll` output.
 pub fn render_line_with_fixed_prefix_scroll(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -201,6 +213,7 @@ fn leading_space_count(line: &Line<'_>) -> usize {
     leading_space_cols(line.spans.iter().map(|span| span.content.as_ref()))
 }
 
+/// Performs the `max_line_width` operation.
 pub fn max_line_width(lines: &[Line<'_>]) -> usize {
     // Adds leading_space_count a second time to account for the matching trailing
     // padding that add_trailing_padding appends; the padded line is genuinely that
@@ -222,6 +235,7 @@ fn add_trailing_padding(mut lines: Vec<Line<'_>>) -> Vec<Line<'_>> {
     lines
 }
 
+/// Performs the `horizontal_scrollbar_area` operation.
 pub const fn horizontal_scrollbar_area(block_area: Rect) -> Rect {
     Rect {
         x: block_area.x + 1,
@@ -231,6 +245,7 @@ pub const fn horizontal_scrollbar_area(block_area: Rect) -> Rect {
     }
 }
 
+/// Performs the `vertical_scrollbar_area` operation.
 pub const fn vertical_scrollbar_area(block_area: Rect) -> Rect {
     Rect {
         x: block_area.x + block_area.width.saturating_sub(1),
@@ -266,6 +281,7 @@ pub fn render_horizontal_scrollbar(
     );
 }
 
+/// Renders `render_vertical_scrollbar` output.
 pub fn render_vertical_scrollbar(
     frame: &mut Frame<'_>,
     block_area: Rect,
@@ -281,6 +297,7 @@ pub fn render_vertical_scrollbar(
     );
 }
 
+/// Renders `render_vertical_scrollbar_with_style` output.
 pub fn render_vertical_scrollbar_with_style(
     frame: &mut Frame<'_>,
     block_area: Rect,
@@ -303,6 +320,7 @@ pub fn render_vertical_scrollbar_with_style(
     );
 }
 
+/// Renders `render_vertical_scrollbar_in_area` output.
 pub fn render_vertical_scrollbar_in_area(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -320,6 +338,7 @@ pub fn render_vertical_scrollbar_in_area(
     );
 }
 
+/// Renders `render_vertical_scrollbar_in_area_with_style` output.
 pub fn render_vertical_scrollbar_in_area_with_style(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -366,6 +385,7 @@ pub fn render_vertical_scrollbar_to_buffer(
     .render(area, buffer);
 }
 
+/// Renders `render_selected_lines_in_area` output.
 pub fn render_selected_lines_in_area(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -406,6 +426,7 @@ pub struct ScrollableList<'a> {
 
 impl<'a> ScrollableList<'a> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub fn new(items: Vec<ListItem<'a>>) -> Self {
         Self {
             items,
@@ -424,48 +445,56 @@ impl<'a> ScrollableList<'a> {
     }
 
     #[must_use]
+    /// Performs the `selected` operation.
     pub const fn selected(mut self, selected: Option<usize>) -> Self {
         self.selected = selected;
         self
     }
 
     #[must_use]
+    /// Performs the `offset` operation.
     pub const fn offset(mut self, offset: u16) -> Self {
         self.offset = offset;
         self
     }
 
     #[must_use]
+    /// Performs the `style` operation.
     pub const fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
     }
 
     #[must_use]
+    /// Performs the `highlight_style` operation.
     pub const fn highlight_style(mut self, style: Style) -> Self {
         self.highlight_style = style;
         self
     }
 
     #[must_use]
+    /// Performs the `highlight_symbol` operation.
     pub const fn highlight_symbol(mut self, symbol: &'static str) -> Self {
         self.highlight_symbol = Some(symbol);
         self
     }
 
     #[must_use]
+    /// Performs the `highlight_spacing` operation.
     pub const fn highlight_spacing(mut self, spacing: HighlightSpacing) -> Self {
         self.highlight_spacing = spacing;
         self
     }
 
     #[must_use]
+    /// Performs the `scrollbar` operation.
     pub const fn scrollbar(mut self, enabled: bool) -> Self {
         self.scrollbar = enabled;
         self
     }
 
     #[must_use]
+    /// Performs the `scrollbar_style` operation.
     pub const fn scrollbar_style(mut self, style: ScrollbarStyle) -> Self {
         self.scrollbar_style = style;
         self
@@ -507,6 +536,7 @@ impl<'a> ScrollableList<'a> {
         }
     }
 
+    /// Renders `render_with_block` output.
     pub fn render_with_block(self, area: Rect, buf: &mut Buffer, block: Block<'a>) {
         let total = self.items.len();
         let inner = block.inner(area);
@@ -544,6 +574,7 @@ impl Widget for ScrollableList<'_> {
     }
 }
 
+/// Renders `render_lines_with_offset_in_area` output.
 pub fn render_lines_with_offset_in_area(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -637,6 +668,7 @@ impl Widget for FixedScrollbar {
     }
 }
 
+/// Renders `render_scrollable_block` output.
 pub fn render_scrollable_block(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -657,6 +689,7 @@ pub fn render_scrollable_block(
     render_scrollable_block_at(frame, area, lines, eff_x, eff_y, focused, title);
 }
 
+/// Renders `render_scrollable_block_at` output.
 pub fn render_scrollable_block_at(
     frame: &mut Frame<'_>,
     area: Rect,

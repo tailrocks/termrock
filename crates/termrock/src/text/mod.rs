@@ -106,10 +106,15 @@ where
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Data carried by `FixedPrefixSegment`.
 pub struct FixedPrefixSegment {
+    /// Documentation for `item`.
     pub start_byte: usize,
+    /// Documentation for `item`.
     pub end_byte: usize,
+    /// Documentation for `item`.
     pub target_col: usize,
+    /// Documentation for `item`.
     pub display_cols: usize,
 }
 

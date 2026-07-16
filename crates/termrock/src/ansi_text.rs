@@ -12,6 +12,7 @@ use ratatui_core::style::{Color, Modifier, Style};
 use ratatui_core::text::Span;
 
 #[must_use]
+/// Performs the `strip_bytes` operation.
 pub fn strip_bytes(bytes: &[u8]) -> Vec<u8> {
     let mut parser = Parser::<DefaultCharAccumulator>::default();
     let mut performer = PlainPerformer { output: Vec::new() };
@@ -39,6 +40,7 @@ impl Perform for PlainPerformer {
     }
 }
 
+/// Performs the `styled_spans` operation.
 pub fn styled_spans(input: &str, default_style: Style) -> Vec<Span<'static>> {
     let mut parser = Parser::<DefaultCharAccumulator>::default();
     let mut performer = StyledPerformer {

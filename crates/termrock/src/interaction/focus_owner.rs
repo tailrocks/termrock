@@ -15,6 +15,7 @@ use crate::widgets::PanelEmphasis;
 /// Focus behavior shared by every button-row dialog: a closed ring of
 /// semantic focus states with a stable button-strip index.
 pub trait ButtonFocus: Copy + Eq + 'static {
+    /// The `RING` constant.
     const RING: &'static [Self];
 
     /// Index into the dialog's button strip items.
@@ -27,6 +28,7 @@ pub trait ButtonFocus: Copy + Eq + 'static {
     }
 
     #[must_use]
+    /// Performs the `next` operation.
     fn next(self) -> Self {
         let ring = Self::RING;
         if ring.is_empty() {
@@ -37,6 +39,7 @@ pub trait ButtonFocus: Copy + Eq + 'static {
     }
 
     #[must_use]
+    /// Performs the `prev` operation.
     fn prev(self) -> Self {
         let ring = Self::RING;
         if ring.is_empty() {
@@ -48,6 +51,7 @@ pub trait ButtonFocus: Copy + Eq + 'static {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Available `FocusOwner` choices.
 pub enum FocusOwner<Tab> {
     #[default]
     /// The tab bar owns focus (green tab underline, dark content borders, no ▸).
@@ -58,16 +62,19 @@ pub enum FocusOwner<Tab> {
 
 impl<Tab: Copy> FocusOwner<Tab> {
     #[must_use]
+    /// Returns whether `tab_bar`.
     pub const fn is_tab_bar(self) -> bool {
         matches!(self, Self::TabBar)
     }
 
     #[must_use]
+    /// Returns whether `content`.
     pub const fn is_content(self) -> bool {
         matches!(self, Self::Content(_))
     }
 
     #[must_use]
+    /// Performs the `content_tab` operation.
     pub fn content_tab(self) -> Option<Tab> {
         match self {
             Self::Content(tab) => Some(tab),

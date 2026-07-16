@@ -24,6 +24,7 @@ unicode-segmentation = "1.12.0"
 unicode-width = "0.2.2"
 
 [workspace.lints.rust]
+missing_docs = "warn"
 unsafe_code = "forbid"
 rust_2018_idioms = { level = "deny", priority = -1 }
 

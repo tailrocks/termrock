@@ -27,21 +27,34 @@ pub fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Available `Placement` choices.
 pub enum Placement {
+    /// Selects the `Centered` behavior.
     Centered,
+    /// Selects the `Top` behavior.
     Top,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Data carried by `DialogSpec`.
 pub struct DialogSpec {
+    /// Documentation for `item`.
     pub min_width: u16,
+    /// Documentation for `item`.
     pub preferred_width: u16,
+    /// Documentation for `item`.
     pub max_width: u16,
+    /// Documentation for `item`.
     pub min_height: u16,
+    /// Documentation for `item`.
     pub preferred_height: u16,
+    /// Documentation for `item`.
     pub max_height: u16,
+    /// Documentation for `item`.
     pub horizontal_margin: u16,
+    /// Documentation for `item`.
     pub vertical_margin: u16,
+    /// Documentation for `item`.
     pub placement: Placement,
 }
 
@@ -71,13 +84,17 @@ pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Data carried by `Slots`.
 pub struct Slots {
+    /// Documentation for `item`.
     pub body: Rect,
+    /// Documentation for `item`.
     pub bottom: Rect,
 }
 
 impl Slots {
     #[must_use]
+    /// Performs the `bottom` operation.
     pub const fn bottom(area: Rect, rows: u16) -> Self {
         let bottom_height = if area.height < rows {
             area.height

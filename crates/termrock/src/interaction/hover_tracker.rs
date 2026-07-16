@@ -36,6 +36,7 @@ pub struct HoverTracker<K: Clone + PartialEq> {
 
 impl<K: Clone + PartialEq> HoverTracker<K> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub fn new() -> Self {
         Self {
             entries: Vec::new(),

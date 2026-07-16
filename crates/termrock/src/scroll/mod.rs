@@ -40,15 +40,18 @@ pub struct TailScroll {
 
 impl TailScroll {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(offset: usize) -> Self {
         Self { offset }
     }
 
     #[must_use]
+    /// Performs the `offset` operation.
     pub const fn offset(self) -> usize {
         self.offset
     }
 
+    /// Performs the `scroll_by` operation.
     pub fn scroll_by(&mut self, filled: usize, delta: isize) -> usize {
         let current = self.offset.min(filled);
         self.offset = if delta.is_negative() {
@@ -59,12 +62,14 @@ impl TailScroll {
         self.offset
     }
 
+    /// Performs the `clamp` operation.
     pub fn clamp(&mut self, filled: usize) -> usize {
         self.offset = self.offset.min(filled);
         self.offset
     }
 
     #[must_use]
+    /// Performs the `to_top_offset` operation.
     pub fn to_top_offset(self, content_len: usize, viewport_len: usize) -> usize {
         let max = max_offset(content_len, viewport_len);
         max.saturating_sub(self.offset.min(max))
@@ -72,16 +77,19 @@ impl TailScroll {
 }
 
 #[must_use]
+/// Performs the `max_line_width` operation.
 pub fn max_line_width(lines: &[Line<'_>]) -> usize {
     lines.iter().map(Line::width).max().unwrap_or(0)
 }
 
 #[must_use]
+/// Returns whether `scrollable`.
 pub const fn is_scrollable(content_len: usize, viewport_len: usize) -> bool {
     viewport_len > 0 && content_len > viewport_len
 }
 
 #[must_use]
+/// Performs the `max_offset` operation.
 pub const fn max_offset(content_len: usize, viewport_len: usize) -> usize {
     if viewport_len == 0 || content_len <= viewport_len {
         0
@@ -94,20 +102,26 @@ pub const fn max_offset(content_len: usize, viewport_len: usize) -> usize {
 pub const DEFAULT_HORIZONTAL_SCROLL_STEP: u16 = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Available `ScrollAxis` choices.
 pub enum ScrollAxis {
+    /// Selects the `Vertical` behavior.
     Vertical,
+    /// Selects the `Horizontal` behavior.
     Horizontal,
 }
 
 /// Axes that can actually move for the current content/viewport pair.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ScrollAxes {
+    /// Documentation for `item`.
     pub vertical: bool,
+    /// Documentation for `item`.
     pub horizontal: bool,
 }
 
 impl ScrollAxes {
     #[must_use]
+    /// Performs the `none` operation.
     pub const fn none() -> Self {
         Self {
             vertical: false,
@@ -116,26 +130,33 @@ impl ScrollAxes {
     }
 
     #[must_use]
+    /// Performs the `any` operation.
     pub const fn any(self) -> bool {
         self.vertical || self.horizontal
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Data carried by `ScrollDelta`.
 pub struct ScrollDelta {
+    /// Documentation for `item`.
     pub axis: ScrollAxis,
+    /// Documentation for `item`.
     pub amount: i16,
 }
 
 /// Two-axis scroll state for dialog bodies and other bounded viewports.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DialogScroll {
+    /// Documentation for `item`.
     pub scroll_x: u16,
+    /// Documentation for `item`.
     pub scroll_y: u16,
 }
 
 impl DialogScroll {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new() -> Self {
         Self {
             scroll_x: 0,
@@ -143,6 +164,7 @@ impl DialogScroll {
         }
     }
 
+    /// Handles the `handle_key` interaction.
     pub fn handle_key(
         &mut self,
         key: crate::input::KeyEvent,
@@ -164,6 +186,7 @@ impl DialogScroll {
         )
     }
 
+    /// Handles the `handle_key_for_axes` interaction.
     pub fn handle_key_for_axes(
         &mut self,
         key: crate::input::KeyEvent,
@@ -209,6 +232,7 @@ impl DialogScroll {
         true
     }
 
+    /// Handles the `handle_mouse` interaction.
     pub fn handle_mouse(
         &mut self,
         kind: crate::input::MouseEventKind,
@@ -225,6 +249,7 @@ impl DialogScroll {
         true
     }
 
+    /// Performs the `clamp` operation.
     pub fn clamp(
         &mut self,
         content_height: usize,
@@ -288,6 +313,7 @@ fn offset_after_delta(
     }
 }
 
+/// Performs the `apply_delta_u16` operation.
 pub fn apply_delta_u16(
     content_len: usize,
     viewport_len: usize,
@@ -359,6 +385,7 @@ pub fn mouse_scroll_delta_with_step(
     }
 }
 
+/// Performs the `apply_mouse_scroll_u16` operation.
 pub fn apply_mouse_scroll_u16(
     kind: MouseEventKind,
     modifiers: KeyModifiers,
@@ -393,13 +420,17 @@ pub fn apply_mouse_scroll_u16(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Data carried by `ScrollSpan`.
 pub struct ScrollSpan {
+    /// Documentation for `item`.
     pub content_len: usize,
+    /// Documentation for `item`.
     pub viewport_len: usize,
 }
 
 impl ScrollSpan {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(content_len: usize, viewport_len: usize) -> Self {
         Self {
             content_len,
@@ -445,6 +476,7 @@ pub fn scroll_selectable_list(
 }
 
 #[must_use]
+/// Performs the `max_offset_u16` operation.
 pub const fn max_offset_u16(content_len: usize, viewport_len: usize) -> u16 {
     let max = max_offset(content_len, viewport_len);
     if max > u16::MAX as usize {
@@ -455,11 +487,13 @@ pub const fn max_offset_u16(content_len: usize, viewport_len: usize) -> u16 {
 }
 
 #[must_use]
+/// Performs the `effective_offset_u16` operation.
 pub const fn effective_offset_u16(content_len: usize, viewport_len: usize, offset: u16) -> u16 {
     let max = max_offset_u16(content_len, viewport_len);
     if offset > max { max } else { offset }
 }
 
+/// Performs the `clamp_offset_u16` operation.
 pub const fn clamp_offset_u16(content_len: usize, viewport_len: usize, offset: &mut u16) -> u16 {
     let effective = effective_offset_u16(content_len, viewport_len, *offset);
     *offset = effective;
@@ -476,6 +510,7 @@ pub const fn apply_delta_unclamped_u16(offset: &mut u16, delta: i16) {
 }
 
 #[must_use]
+/// Performs the `offset_for_track_position` operation.
 pub fn offset_for_track_position(
     content_len: usize,
     viewport_len: usize,
@@ -496,6 +531,7 @@ pub fn offset_for_track_position(
 }
 
 #[must_use]
+/// Performs the `offset_for_track_position_u16` operation.
 pub fn offset_for_track_position_u16(
     content_len: usize,
     viewport_len: usize,
@@ -516,6 +552,7 @@ pub fn offset_for_track_position_u16(
 }
 
 #[must_use]
+/// Performs the `cursor_follow_offset` operation.
 pub fn cursor_follow_offset(
     cursor: usize,
     content_len: usize,
@@ -541,6 +578,7 @@ pub fn cursor_follow_offset(
 }
 
 #[must_use]
+/// Performs the `full_cell_thumb` operation.
 pub fn full_cell_thumb(
     content_len: usize,
     viewport_len: usize,

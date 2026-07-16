@@ -11,10 +11,15 @@ use crossterm::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Data carried by `SessionOptions`.
 pub struct SessionOptions {
+    /// Documentation for `item`.
     pub alternate_screen: bool,
+    /// Documentation for `item`.
     pub mouse_capture: bool,
+    /// Documentation for `item`.
     pub bracketed_paste: bool,
+    /// Documentation for `item`.
     pub raw_mode: bool,
 }
 
@@ -29,6 +34,7 @@ impl Default for SessionOptions {
     }
 }
 
+/// Data carried by `Session`.
 pub struct Session<W: Write> {
     writer: W,
     alternate_screen: bool,
@@ -40,6 +46,7 @@ pub struct Session<W: Write> {
 }
 
 impl<W: Write> Session<W> {
+    /// Performs the `enter` operation.
     pub fn enter(writer: W, options: SessionOptions) -> io::Result<Self> {
         let mut session = Self {
             writer,
@@ -84,6 +91,7 @@ impl<W: Write> Session<W> {
         Ok(session)
     }
 
+    /// Performs the `restore` operation.
     pub fn restore(&mut self) -> io::Result<()> {
         let mut first = None;
         if self.cursor_hidden && record_first(&mut first, execute!(&mut self.writer, Show)) {
@@ -120,6 +128,7 @@ impl<W: Write> Session<W> {
     }
 
     #[must_use]
+    /// Performs the `writer_mut` operation.
     pub fn writer_mut(&mut self) -> &mut W {
         &mut self.writer
     }

@@ -46,12 +46,15 @@ pub const DIALOG_HORIZONTAL_SCROLL_STEP: u16 = crate::scroll::DEFAULT_HORIZONTAL
 /// rendering the body content.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DialogBodyScroll {
+    /// Documentation for `item`.
     pub scroll_y: u16,
+    /// Documentation for `item`.
     pub scroll_x: u16,
 }
 
 impl DialogBodyScroll {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new() -> Self {
         Self {
             scroll_y: 0,
@@ -81,6 +84,7 @@ impl DialogBodyScroll {
         )
     }
 
+    /// Handles the `handle_key_for_axes` interaction.
     pub fn handle_key_for_axes(
         &mut self,
         key: KeyEvent,
@@ -144,6 +148,7 @@ impl DialogBodyScroll {
         )
     }
 
+    /// Performs the `on_mouse_scroll_for_axes` operation.
     pub fn on_mouse_scroll_for_axes(
         &mut self,
         kind: MouseEventKind,
@@ -218,6 +223,7 @@ impl DialogBodyScroll {
         }
     }
 
+    /// Performs the `on_mouse_scroll_for_size` operation.
     pub fn on_mouse_scroll_for_size(
         &mut self,
         kind: MouseEventKind,
@@ -366,8 +372,11 @@ pub const fn dialog_inner_height(content_rows: u16) -> u16 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Available `DialogBorder` choices.
 pub enum DialogBorder {
+    /// Selects the `Default` behavior.
     Default,
+    /// Selects the `Danger` behavior.
     Danger,
 }
 

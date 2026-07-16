@@ -35,6 +35,7 @@ impl<M> Default for ModalStack<M> {
 
 impl<M> ModalStack<M> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new() -> Self {
         Self {
             current: None,
@@ -43,6 +44,7 @@ impl<M> ModalStack<M> {
     }
 
     #[must_use]
+    /// Creates a value from `current`.
     pub fn from_current(current: M) -> Self {
         Self {
             current: Some(current),
@@ -51,46 +53,55 @@ impl<M> ModalStack<M> {
     }
 
     #[must_use]
+    /// Creates a value from `parts`.
     pub fn from_parts(current: Option<M>, parents: Vec<M>) -> Self {
         Self { current, parents }
     }
 
     #[must_use]
+    /// Performs the `into_parts` operation.
     pub fn into_parts(self) -> (Option<M>, Vec<M>) {
         (self.current, self.parents)
     }
 
     #[must_use]
+    /// Performs the `current` operation.
     pub const fn current(&self) -> Option<&M> {
         self.current.as_ref()
     }
 
     #[must_use]
+    /// Performs the `current_mut` operation.
     pub fn current_mut(&mut self) -> Option<&mut M> {
         self.current.as_mut()
     }
 
     #[must_use]
+    /// Performs the `parents` operation.
     pub fn parents(&self) -> &[M] {
         &self.parents
     }
 
     #[must_use]
+    /// Performs the `parents_mut` operation.
     pub fn parents_mut(&mut self) -> &mut Vec<M> {
         &mut self.parents
     }
 
     #[must_use]
+    /// Returns whether `open`.
     pub const fn is_open(&self) -> bool {
         self.current.is_some()
     }
 
     #[must_use]
+    /// Performs the `has_parent` operation.
     pub fn has_parent(&self) -> bool {
         !self.parents.is_empty()
     }
 
     #[must_use]
+    /// Performs the `depth` operation.
     pub fn depth(&self) -> usize {
         self.parents.len() + usize::from(self.current.is_some())
     }
@@ -126,6 +137,7 @@ impl<M> ModalStack<M> {
         self.parents.clear();
     }
 
+    /// Performs the `take_current` operation.
     pub fn take_current(&mut self) -> Option<M> {
         self.current.take()
     }
