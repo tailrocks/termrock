@@ -57,12 +57,12 @@ for (const [component, review] of Object.entries(contracts)) {
 // all other `covered` claims require a named axis story.
 const NARROW_EXEMPT = new Set([
   'ActionBar', 'Backdrop', 'ChoiceDialog', 'DetailTable', 'DiffView', 'HintBar',
-  'LogPane', 'MessageDialog', 'Panel', 'Progress', 'SplitPane', 'TextInput',
+  'LogPane', 'MessageDialog', 'Panel', 'SplitPane', 'TextInput',
   'Tree', 'Viewport',
 ])
 const UNICODE_EXEMPT = new Set([
   'ActionBar', 'ChoiceDialog', 'Dialog', 'DiffView', 'Form', 'HintBar',
-  'LogPane', 'MessageDialog', 'Panel', 'Progress', 'StatusBar', 'Tabs', 'Toast',
+  'LogPane', 'MessageDialog', 'Panel', 'StatusBar', 'Tabs', 'Toast',
   'Tree', 'Viewport',
 ])
 function hasAxisStory(component: string, axis: 'narrow' | 'unicode') {

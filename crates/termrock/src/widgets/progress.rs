@@ -5,6 +5,9 @@ use crate::{
     text::display_cols,
 };
 
+/// Default one-cell braille animation frames for indeterminate progress.
+pub const DEFAULT_PROGRESS_FRAMES: [&str; 8] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"];
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 /// Determinate and caller-ticked indeterminate progress modes.
@@ -26,6 +29,7 @@ pub enum ProgressKind {
 pub struct Progress<'a> {
     kind: ProgressKind,
     label: Option<&'a str>,
+    frames: &'a [&'a str],
     theme: &'a Theme,
 }
 
@@ -36,6 +40,7 @@ impl<'a> Progress<'a> {
         Self {
             kind,
             label: None,
+            frames: &DEFAULT_PROGRESS_FRAMES,
             theme,
         }
     }
@@ -44,6 +49,16 @@ impl<'a> Progress<'a> {
     /// Sets the optional visible label.
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = Some(label);
+        self
+    }
+
+    /// Overrides indeterminate animation frames.
+    ///
+    /// Frames may use any terminal-width-safe Unicode string. An empty slice
+    /// intentionally paints neither a frame nor a label.
+    #[must_use]
+    pub const fn frames(mut self, frames: &'a [&'a str]) -> Self {
+        self.frames = frames;
         self
     }
 }
@@ -59,7 +74,7 @@ impl Widget for &Progress<'_> {
                 render_determinate(area, buffer, self.label, fraction, self.theme);
             }
             ProgressKind::Indeterminate { tick } => {
-                render_indeterminate(area, buffer, self.label, tick, self.theme);
+                render_indeterminate(area, buffer, self.label, tick, self.frames, self.theme);
             }
         }
     }
@@ -119,6 +134,8 @@ fn render_determinate(
         }
     }
     let track_width = percentage_x.saturating_sub(track_x).saturating_sub(1);
+    // Positive fractions round to the nearest cell with ties toward the
+    // completed side, matching percentage rounding.
     let filled = ((f64::from(track_width) * fraction).round() as u16).min(track_width);
     for column in 0..track_width {
         buffer.set_string(
@@ -139,19 +156,35 @@ fn render_indeterminate(
     buffer: &mut Buffer,
     label: Option<&str>,
     tick: u64,
+    frames: &[&str],
     theme: &Theme,
 ) {
-    const SPINNER: [&str; 8] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"];
-    let glyph = SPINNER[tick as usize % SPINNER.len()];
-    buffer.set_string(area.x, area.y, glyph, theme.style(Role::Accent));
+    if frames.is_empty() {
+        return;
+    }
+    let frame_count = u64::try_from(frames.len()).unwrap_or(u64::MAX);
+    let frame_index = usize::try_from(tick % frame_count).unwrap_or(0);
+    let glyph = frames[frame_index];
+    let glyph_width = u16::try_from(display_cols(glyph))
+        .unwrap_or(u16::MAX)
+        .min(area.width);
+    buffer.set_stringn(
+        area.x,
+        area.y,
+        glyph,
+        usize::from(glyph_width),
+        theme.style(Role::Accent),
+    );
     if let Some(label) = label
-        && area.width > 2
+        && glyph_width < area.width
     {
+        let label_x = area.x.saturating_add(glyph_width).saturating_add(1);
+        let label_width = area.right().saturating_sub(label_x);
         buffer.set_stringn(
-            area.x.saturating_add(2),
+            label_x,
             area.y,
             label,
-            usize::from(area.width.saturating_sub(2)),
+            usize::from(label_width),
             theme.style(Role::TextMuted),
         );
     }
@@ -192,5 +225,95 @@ mod tests {
         assert_eq!(first, second);
         assert_eq!(first[(0, 0)].symbol(), "⠸");
         (&progress).render(Rect::new(0, 0, 0, 0), &mut first);
+    }
+
+    fn determinate(fraction: f64, width: u16) -> Buffer {
+        let theme = Theme::default();
+        let area = Rect::new(0, 0, width, 1);
+        let mut buffer = Buffer::empty(area);
+        (&Progress::new(ProgressKind::Determinate { fraction }, &theme)).render(area, &mut buffer);
+        buffer
+    }
+
+    #[test]
+    fn zero_fraction_renders_all_empty_glyphs() {
+        let buffer = determinate(0.0, 9);
+        assert!((0..4).all(|x| buffer[(x, 0)].symbol() == "░"));
+    }
+
+    #[test]
+    fn half_fraction_splits_cells_exactly() {
+        let buffer = determinate(0.5, 9);
+        assert_eq!(buffer[(0, 0)].symbol(), "█");
+        assert_eq!(buffer[(1, 0)].symbol(), "█");
+        assert_eq!(buffer[(2, 0)].symbol(), "░");
+        assert_eq!(buffer[(3, 0)].symbol(), "░");
+    }
+
+    #[test]
+    fn full_fraction_renders_all_filled_glyphs() {
+        let buffer = determinate(1.0, 9);
+        assert!((0..4).all(|x| buffer[(x, 0)].symbol() == "█"));
+    }
+
+    #[test]
+    fn nan_and_infinite_clamp_to_zero() {
+        for fraction in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let buffer = determinate(fraction, 9);
+            assert!((0..4).all(|x| buffer[(x, 0)].symbol() == "░"));
+            assert!(rendered(&buffer).contains("0%"));
+        }
+    }
+
+    #[test]
+    fn width_zero_and_one_do_not_panic() {
+        let theme = Theme::default();
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 1));
+        let progress = Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &theme);
+        (&progress).render(Rect::new(0, 0, 0, 0), &mut buffer);
+        (&progress).render(Rect::new(0, 0, 1, 1), &mut buffer);
+    }
+
+    #[test]
+    fn filled_and_empty_zones_differ_by_glyph() {
+        let buffer = determinate(0.5, 9);
+        assert_ne!(buffer[(0, 0)].symbol(), buffer[(3, 0)].symbol());
+    }
+
+    #[test]
+    fn wide_char_label_truncates_on_grapheme_boundary() {
+        let theme = Theme::default();
+        let area = Rect::new(0, 0, 10, 1);
+        let mut buffer = Buffer::empty(area);
+        (&Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &theme).label("東京🪨"))
+            .render(area, &mut buffer);
+        assert_eq!(buffer[(0, 0)].symbol(), "東");
+        assert_eq!(buffer[(2, 0)].symbol(), "京");
+        assert!(!rendered(&buffer).contains('🪨'));
+    }
+
+    #[test]
+    fn custom_frames_cycle_and_wrap() {
+        let theme = Theme::default();
+        let frames = ["A", "B"];
+        for (tick, expected) in [(0, "A"), (1, "B"), (2, "A")] {
+            let area = Rect::new(0, 0, 3, 1);
+            let mut buffer = Buffer::empty(area);
+            (&Progress::new(ProgressKind::Indeterminate { tick }, &theme).frames(&frames))
+                .render(area, &mut buffer);
+            assert_eq!(buffer[(0, 0)].symbol(), expected);
+        }
+    }
+
+    #[test]
+    fn empty_frames_render_nothing() {
+        let theme = Theme::default();
+        let area = Rect::new(0, 0, 8, 1);
+        let mut buffer = Buffer::empty(area);
+        (&Progress::new(ProgressKind::Indeterminate { tick: 3 }, &theme)
+            .frames(&[])
+            .label("hidden"))
+            .render(area, &mut buffer);
+        assert!(rendered(&buffer).trim().is_empty());
     }
 }

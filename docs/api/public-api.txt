@@ -4964,6 +4964,7 @@ pub fn termrock::widgets::Panel<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Panel<'a>
 pub struct termrock::widgets::Progress<'a>
 impl<'a> termrock::widgets::Progress<'a>
+pub const fn termrock::widgets::Progress<'a>::frames(self, &'a [&'a str]) -> Self
 pub const fn termrock::widgets::Progress<'a>::label(self, &'a str) -> Self
 pub const fn termrock::widgets::Progress<'a>::new(termrock::widgets::ProgressKind, &'a termrock::style::Theme) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Progress<'_>

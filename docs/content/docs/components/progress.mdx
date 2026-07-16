@@ -18,6 +18,11 @@ let progress = Progress::new(ProgressKind::Determinate { fraction: 0.72 }, &them
     .label("Indexing");
 let area = Rect::new(0, 0, 40, 1);
 progress.render(area, &mut Buffer::empty(area));
+
+let frames = ["|", "/", "-", "\\"];
+let spinner = Progress::new(ProgressKind::Indeterminate { tick: 3 }, &theme)
+    .frames(&frames)
+    .label("Waiting");
 ```
 
 ## Interaction contract
@@ -34,3 +39,5 @@ progress.render(area, &mut Buffer::empty(area));
 ## Stories
 
 - `progress/determinate` — Progress
+- `progress/narrow` — Narrow progress
+- `progress/unicode` — Unicode progress labels

@@ -188,6 +188,24 @@ pub(crate) fn stories() -> Vec<Story> {
             progress,
         ),
         Story::new(
+            "progress/narrow",
+            "Narrow progress",
+            "Progress",
+            "Percentage elision and custom ASCII frames in fourteen columns.",
+            14,
+            2,
+            progress_narrow,
+        ),
+        Story::new(
+            "progress/unicode",
+            "Unicode progress labels",
+            "Progress",
+            "Wide CJK and emoji labels clipped on grapheme boundaries.",
+            34,
+            2,
+            progress_unicode,
+        ),
+        Story::new(
             "log-pane/follow",
             "Following log pane",
             "LogPane",
@@ -430,6 +448,35 @@ fn progress(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
         );
     }
+}
+
+fn progress_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    const ASCII_FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
+    let [bar, spinner] =
+        Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(area);
+    frame.render_widget(
+        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, theme).label("Build"),
+        bar,
+    );
+    frame.render_widget(
+        Progress::new(ProgressKind::Indeterminate { tick: 3 }, theme)
+            .frames(&ASCII_FRAMES)
+            .label("Waiting"),
+        spinner,
+    );
+}
+
+fn progress_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let [bar, spinner] =
+        Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(area);
+    frame.render_widget(
+        Progress::new(ProgressKind::Determinate { fraction: 0.5 }, theme).label("東京を処理中 🪨"),
+        bar,
+    );
+    frame.render_widget(
+        Progress::new(ProgressKind::Indeterminate { tick: 6 }, theme).label("検証中 ✓"),
+        spinner,
+    );
 }
 
 fn log_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {

@@ -172,7 +172,12 @@ let theme = Theme::default();
 let progress = Progress::new(ProgressKind::Determinate { fraction: 0.72 }, &theme)
     .label("Indexing");
 let area = Rect::new(0, 0, 40, 1);
-progress.render(area, &mut Buffer::empty(area));`,
+progress.render(area, &mut Buffer::empty(area));
+
+let frames = ["|", "/", "-", "\\\\"];
+let spinner = Progress::new(ProgressKind::Indeterminate { tick: 3 }, &theme)
+    .frames(&frames)
+    .label("Waiting");`,
   },
   SplitPane: {
     description: 'A resizable two-pane layout with bounded ratios and collapse support.',
