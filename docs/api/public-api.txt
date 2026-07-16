@@ -3830,6 +3830,96 @@ pub unsafe fn termrock::widgets::SplitSide::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SplitSide
 pub fn termrock::widgets::SplitSide::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SplitSide
+pub enum termrock::widgets::TextInputOutcome
+pub termrock::widgets::TextInputOutcome::Cancelled
+pub termrock::widgets::TextInputOutcome::Changed
+pub termrock::widgets::TextInputOutcome::Ignored
+pub termrock::widgets::TextInputOutcome::Submitted(alloc::string::String)
+impl core::clone::Clone for termrock::widgets::TextInputOutcome
+pub fn termrock::widgets::TextInputOutcome::clone(&self) -> termrock::widgets::TextInputOutcome
+impl core::cmp::Eq for termrock::widgets::TextInputOutcome
+impl core::cmp::PartialEq for termrock::widgets::TextInputOutcome
+pub fn termrock::widgets::TextInputOutcome::eq(&self, &termrock::widgets::TextInputOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::TextInputOutcome
+pub fn termrock::widgets::TextInputOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::TextInputOutcome
+impl core::marker::Freeze for termrock::widgets::TextInputOutcome
+impl core::marker::Send for termrock::widgets::TextInputOutcome
+impl core::marker::Sync for termrock::widgets::TextInputOutcome
+impl core::marker::Unpin for termrock::widgets::TextInputOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::TextInputOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TextInputOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TextInputOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TextInputOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TextInputOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TextInputOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::TextInputOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TextInputOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::TextInputOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::TextInputOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TextInputOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TextInputOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TextInputOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TextInputOutcome where T: core::clone::Clone
+pub type termrock::widgets::TextInputOutcome::Owned = T
+pub fn termrock::widgets::TextInputOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::TextInputOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TextInputOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TextInputOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TextInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TextInputOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TextInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TextInputOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TextInputOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TextInputOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TextInputOutcome
+pub fn termrock::widgets::TextInputOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TextInputOutcome
+pub enum termrock::widgets::TextInputValidity
+pub termrock::widgets::TextInputValidity::Empty
+pub termrock::widgets::TextInputValidity::Forbidden
+pub termrock::widgets::TextInputValidity::Valid
+impl core::clone::Clone for termrock::widgets::TextInputValidity
+pub fn termrock::widgets::TextInputValidity::clone(&self) -> termrock::widgets::TextInputValidity
+impl core::cmp::Eq for termrock::widgets::TextInputValidity
+impl core::cmp::PartialEq for termrock::widgets::TextInputValidity
+pub fn termrock::widgets::TextInputValidity::eq(&self, &termrock::widgets::TextInputValidity) -> bool
+impl core::fmt::Debug for termrock::widgets::TextInputValidity
+pub fn termrock::widgets::TextInputValidity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::TextInputValidity
+impl core::marker::StructuralPartialEq for termrock::widgets::TextInputValidity
+impl core::marker::Freeze for termrock::widgets::TextInputValidity
+impl core::marker::Send for termrock::widgets::TextInputValidity
+impl core::marker::Sync for termrock::widgets::TextInputValidity
+impl core::marker::Unpin for termrock::widgets::TextInputValidity
+impl core::marker::UnsafeUnpin for termrock::widgets::TextInputValidity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TextInputValidity
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TextInputValidity
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TextInputValidity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TextInputValidity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TextInputValidity where U: core::convert::From<T>
+pub fn termrock::widgets::TextInputValidity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TextInputValidity where U: core::convert::Into<T>
+pub type termrock::widgets::TextInputValidity::Error = core::convert::Infallible
+pub fn termrock::widgets::TextInputValidity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TextInputValidity where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TextInputValidity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TextInputValidity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TextInputValidity where T: core::clone::Clone
+pub type termrock::widgets::TextInputValidity::Owned = T
+pub fn termrock::widgets::TextInputValidity::clone_into(&self, &mut T)
+pub fn termrock::widgets::TextInputValidity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TextInputValidity where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TextInputValidity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TextInputValidity where T: ?core::marker::Sized
+pub fn termrock::widgets::TextInputValidity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TextInputValidity where T: ?core::marker::Sized
+pub fn termrock::widgets::TextInputValidity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TextInputValidity where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TextInputValidity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TextInputValidity
+pub fn termrock::widgets::TextInputValidity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TextInputValidity
 pub enum termrock::widgets::TreeNodeStatus
 pub termrock::widgets::TreeNodeStatus::Error
 pub termrock::widgets::TreeNodeStatus::Loading
@@ -5546,7 +5636,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TabsState<Id>
 pub struct termrock::widgets::TextInput<'a>
 pub termrock::widgets::TextInput::label: &'a str
 pub termrock::widgets::TextInput::placeholder: &'a str
-pub termrock::widgets::TextInput::style: ratatui_core::style::Style
+pub termrock::widgets::TextInput::theme: &'a termrock::style::Theme
 pub termrock::widgets::TextInput::validation: termrock::widgets::Validation<'a>
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::TextInput<'_>
 pub type &termrock::widgets::TextInput<'_>::State = termrock::widgets::TextInputState
@@ -5588,10 +5678,17 @@ pub fn termrock::widgets::TextInput<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TextInput<'a>
 pub struct termrock::widgets::TextInputState
 impl termrock::widgets::TextInputState
-pub fn termrock::widgets::TextInputState::apply(&mut self, termrock::widgets::EditAction)
+pub fn termrock::widgets::TextInputState::apply(&mut self, termrock::widgets::EditAction) -> bool
 pub const fn termrock::widgets::TextInputState::cursor_byte(&self) -> usize
+pub fn termrock::widgets::TextInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::TextInputOutcome
+pub fn termrock::widgets::TextInputState::is_valid(&self) -> bool
 pub fn termrock::widgets::TextInputState::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::TextInputState::trimmed_value(&self) -> &str
+pub fn termrock::widgets::TextInputState::validity(&self) -> termrock::widgets::TextInputValidity
 pub fn termrock::widgets::TextInputState::value(&self) -> &str
+pub const fn termrock::widgets::TextInputState::with_allow_empty(self, bool) -> Self
+pub fn termrock::widgets::TextInputState::with_forbidden(self, impl core::iter::traits::collect::IntoIterator<Item = alloc::string::String>) -> Self
+pub fn termrock::widgets::TextInputState::with_max_graphemes(self, usize) -> Self
 impl core::clone::Clone for termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::clone(&self) -> termrock::widgets::TextInputState
 impl core::cmp::Eq for termrock::widgets::TextInputState

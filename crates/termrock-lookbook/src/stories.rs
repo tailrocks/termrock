@@ -21,7 +21,7 @@ use termrock::{
 
 use crate::interactors::{
     ChoiceDialogInteractor, FormInteractor, ListInteractor, SplitPaneInteractor, StaticStory,
-    StoryInteraction, TreeInteractor,
+    StoryInteraction, TextInputInteractor, TreeInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect);
@@ -94,6 +94,10 @@ fn choice_dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 
 fn list_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(ListInteractor::new())
+}
+
+fn text_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TextInputInteractor::new())
 }
 
 pub(crate) fn stories() -> Vec<Story> {
@@ -182,7 +186,8 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             1,
             text_input,
-        ),
+        )
+        .with_interactor(text_input_interactor),
         Story::new(
             "detail-table/basic",
             "Detail table",
@@ -548,12 +553,13 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
 
 fn text_input(frame: &mut Frame<'_>, area: Rect) {
     let mut state = TextInputState::new("search");
+    let theme = Theme::default();
     frame.render_stateful_widget(
         &TextInput {
             label: "Filter",
             placeholder: "Type to filter",
             validation: Validation::Valid,
-            style: Style::new(),
+            theme: &theme,
         },
         area,
         &mut state,

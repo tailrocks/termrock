@@ -32,7 +32,9 @@ pub use split_pane::{
 };
 pub use status_bar::{StatusBar, StatusBarState, StatusSlot};
 pub use tabs::{Tab, Tabs, TabsState};
-pub use text_input::{EditAction, TextInput, TextInputState, Validation};
+pub use text_input::{
+    EditAction, TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation,
+};
 pub use toast::{Anchor, Severity, Toast};
 pub use tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState};
 pub use viewport::Viewport;

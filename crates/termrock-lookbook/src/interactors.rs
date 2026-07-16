@@ -8,8 +8,8 @@ use termrock::{
     interaction::Outcome,
     widgets::{
         ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListOutcome, ListState,
-        SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, Tree, TreeNode,
-        TreeOutcome, TreeState,
+        SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, TextInput,
+        TextInputOutcome, TextInputState, Tree, TreeNode, TreeOutcome, TreeState, Validation,
     },
 };
 
@@ -136,6 +136,43 @@ impl StoryInteraction for ListInteractor {
             }
             _ => false,
         }
+    }
+}
+
+pub(crate) struct TextInputInteractor {
+    state: TextInputState,
+    theme: Theme,
+}
+
+impl TextInputInteractor {
+    pub(crate) fn new() -> Self {
+        Self {
+            state: TextInputState::new("search").with_max_graphemes(32),
+            theme: Theme::default(),
+        }
+    }
+}
+
+impl StoryInteraction for TextInputInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        frame.render_stateful_widget(
+            &TextInput {
+                label: "Filter",
+                placeholder: "Type to filter",
+                validation: Validation::Valid,
+                theme: &self.theme,
+            },
+            area,
+            &mut self.state,
+        );
+    }
+
+    fn handle_key(&mut self, key: KeyEvent) -> bool {
+        !matches!(self.state.handle_key(key.into()), TextInputOutcome::Ignored)
+    }
+
+    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
+        false
     }
 }
 
