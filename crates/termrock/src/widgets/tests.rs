@@ -60,7 +60,39 @@ fn focused_panel_preserves_plain_border_glyphs() {
     let mut buffer = Buffer::empty(area);
     let panel = Panel::new(&theme).emphasis(PanelEmphasis::Focused);
     (&panel).render(area, &mut buffer);
-    assert_eq!(buffer[(0, 0)].symbol(), "┌");
+    assert_panel_border(&buffer, area, theme.style(Role::BorderFocused));
+}
+
+#[test]
+fn inactive_panel_preserves_plain_gray_border() {
+    let theme = Theme::default();
+    let area = Rect::new(0, 0, 10, 3);
+    let mut buffer = Buffer::empty(area);
+    Panel::new(&theme).render(area, &mut buffer);
+    assert_panel_border(&buffer, area, theme.style(Role::Border));
+}
+
+fn assert_panel_border(buffer: &Buffer, area: Rect, expected: Style) {
+    assert_eq!(buffer[(area.left(), area.top())].symbol(), "┌");
+    assert_eq!(buffer[(area.right() - 1, area.top())].symbol(), "┐");
+    assert_eq!(buffer[(area.left(), area.bottom() - 1)].symbol(), "└");
+    assert_eq!(buffer[(area.right() - 1, area.bottom() - 1)].symbol(), "┘");
+    for x in area.left() + 1..area.right() - 1 {
+        assert_eq!(buffer[(x, area.top())].symbol(), "─");
+        assert_eq!(buffer[(x, area.bottom() - 1)].symbol(), "─");
+    }
+    for y in area.top() + 1..area.bottom() - 1 {
+        assert_eq!(buffer[(area.left(), y)].symbol(), "│");
+        assert_eq!(buffer[(area.right() - 1, y)].symbol(), "│");
+    }
+    for x in area.left()..area.right() {
+        assert_eq!(buffer[(x, area.top())].fg, expected.fg.unwrap());
+        assert_eq!(buffer[(x, area.bottom() - 1)].fg, expected.fg.unwrap());
+    }
+    for y in area.top() + 1..area.bottom() - 1 {
+        assert_eq!(buffer[(area.left(), y)].fg, expected.fg.unwrap());
+        assert_eq!(buffer[(area.right() - 1, y)].fg, expected.fg.unwrap());
+    }
 }
 
 #[test]

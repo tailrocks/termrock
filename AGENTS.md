@@ -45,6 +45,19 @@ default theme and the design language Tailrocks projects ship with. That
 default must never prevent the library from being product-neutral, fully
 re-themable, and adoptable by projects with entirely different brands.
 
+## Focus-visible panel hierarchy
+
+Every panel and dialog uses the same single-line border geometry. Border weight
+never communicates focus: the semantic theme does. The one container that owns
+keyboard or scroll interaction uses `Role::BorderFocused`; visible inactive and
+background containers use `Role::Border`. In the default phosphor theme those
+roles are bright `PHOSPHOR_GREEN` and neutral `BORDER_GRAY`, respectively.
+
+Do not use double-line, heavy, or mixed border glyphs for focus, and do not let
+scrollbar glyphs redefine a panel's border. Consumers pass semantic emphasis;
+`Panel` owns the glyph set and role selection. Components that present active
+chrome without using `Panel` must preserve the same semantic distinction.
+
 ## Forward-only design
 
 Always optimize for the best current API, domain model, module boundary, and

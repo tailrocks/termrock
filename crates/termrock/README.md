@@ -45,6 +45,11 @@ use termrock::{Theme, style::Role};
 let theme = Theme::slate().with_role(Role::Accent, Style::new().underlined());
 ```
 
+Panel geometry remains plain and single-line in every theme. Focus is semantic:
+`Role::BorderFocused` marks the active interaction owner and `Role::Border`
+marks inactive/background containers. The default theme renders those roles in
+phosphor green and neutral gray.
+
 Run the interactive showcase with
 `cargo run -p termrock --example showcase --features crossterm`.
 
