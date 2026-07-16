@@ -98,6 +98,23 @@ impl TextInputState {
         self.cursor
     }
 
+    /// Moves the cursor to an externally owned byte offset when it is a
+    /// grapheme boundary in the current value.
+    ///
+    /// Returns `false` without changing the state when the offset is out of
+    /// bounds or would split a user-perceived character.
+    pub fn set_cursor_byte(&mut self, cursor: usize) -> bool {
+        let valid = cursor == self.value.len()
+            || self
+                .value
+                .grapheme_indices(true)
+                .any(|(index, _)| index == cursor);
+        if valid {
+            self.cursor = cursor;
+        }
+        valid
+    }
+
     #[must_use]
     pub fn validity(&self) -> TextInputValidity {
         let value = self.trimmed_value();
@@ -314,5 +331,18 @@ mod tests {
             .render(area, &mut buffer, &mut state);
         assert!(state.viewport > 0);
         assert!(state.cursor_byte() >= state.viewport);
+    }
+
+    #[test]
+    fn external_cursor_accepts_grapheme_boundaries_and_rejects_splits() {
+        let mut state = TextInputState::new("a👩‍💻界");
+
+        assert!(state.set_cursor_byte(1));
+        assert_eq!(state.cursor_byte(), 1);
+        assert!(!state.set_cursor_byte(2));
+        assert_eq!(state.cursor_byte(), 1);
+        assert!(state.set_cursor_byte("a👩‍💻".len()));
+        assert_eq!(state.cursor_byte(), "a👩‍💻".len());
+        assert!(state.set_cursor_byte(state.value().len()));
     }
 }

@@ -5683,6 +5683,7 @@ pub const fn termrock::widgets::TextInputState::cursor_byte(&self) -> usize
 pub fn termrock::widgets::TextInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::TextInputOutcome
 pub fn termrock::widgets::TextInputState::is_valid(&self) -> bool
 pub fn termrock::widgets::TextInputState::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::TextInputState::set_cursor_byte(&mut self, usize) -> bool
 pub fn termrock::widgets::TextInputState::trimmed_value(&self) -> &str
 pub fn termrock::widgets::TextInputState::validity(&self) -> termrock::widgets::TextInputValidity
 pub fn termrock::widgets::TextInputState::value(&self) -> &str
