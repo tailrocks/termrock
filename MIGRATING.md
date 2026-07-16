@@ -13,7 +13,7 @@ Pin a reviewed full Git revision and commit the Cargo lockfile. TermRock keeps e
 | tab strip | `termrock::widgets::Tabs` |
 | text field/filter | `termrock::widgets::TextInput` composition |
 | panel and hint row | `termrock::widgets::{Panel,HintBar}` |
-| status footer | `termrock::widgets::StatusBar` |
+| status footer | `termrock::widgets::{StatusBar,StatusBarState}` with caller-owned slot meaning |
 | detail table | `termrock::widgets::DetailTable` with caller-owned stable row IDs and payloads |
 | confirm/save-discard | `termrock::widgets::{ChoiceDialog,ChoiceDialogState}` with caller actions and outcomes |
 | error/status popup | `termrock::widgets::{MessageDialog,DetailTableState,Toast}` |

@@ -30,7 +30,7 @@ pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,
     SplitSide,
 };
-pub use status_bar::{StatusBar, StatusSlot};
+pub use status_bar::{StatusBar, StatusBarState, StatusSlot};
 pub use tabs::{Tab, Tabs, TabsState};
 pub use text_input::{EditAction, TextInput, TextInputState, Validation};
 pub use toast::{Anchor, Severity, Toast};

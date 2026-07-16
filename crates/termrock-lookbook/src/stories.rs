@@ -13,9 +13,9 @@ use termrock::{
         DetailCapability, DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine,
         DiffState, DiffView, Form, FormField, FormSection, FormState, Hint, HintBar, List, ListRow,
         ListState, MessageDialog, Panel, PanelEmphasis, RowRole, Severity, SplitDirection,
-        SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusSlot, Tab, Tabs, TabsState,
-        TextInput, TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
-        Viewport,
+        SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Tab, Tabs,
+        TabsState, TextInput, TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState,
+        Validation, Viewport,
     },
 };
 
@@ -583,6 +583,7 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect) {
         min_width: 0,
         enabled: true,
         style: Style::new().reversed(),
+        hover_style: Some(Style::new().bold().reversed()),
     }];
     let right = [StatusSlot {
         id: "position",
@@ -591,13 +592,18 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect) {
         min_width: 0,
         enabled: true,
         style: Style::new().dim(),
+        hover_style: Some(Style::new().bold()),
     }];
-    frame.render_widget(
+    let mut state = StatusBarState::default();
+    frame.render_stateful_widget(
         &StatusBar {
             left: &left,
             right: &right,
+            style: Style::new(),
+            alpha: 1.0,
         },
         area,
+        &mut state,
     );
 }
 

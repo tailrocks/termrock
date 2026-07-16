@@ -192,6 +192,7 @@ fn action_and_status_regions_match_painted_geometry() {
         min_width: 0,
         enabled: true,
         style: Style::new(),
+        hover_style: None,
     }];
     let right = [StatusSlot {
         id: "right",
@@ -200,14 +201,17 @@ fn action_and_status_regions_match_painted_geometry() {
         min_width: 0,
         enabled: true,
         style: Style::new(),
+        hover_style: None,
     }];
     let status = StatusBar {
         left: &left,
         right: &right,
+        style: Style::new(),
+        alpha: 1.0,
     };
     let regions = status.regions(area);
     assert_eq!(regions[1].area.right(), area.right());
-    (&status).render(area, &mut buffer);
+    (&status).render(area, &mut buffer, &mut StatusBarState::default());
 }
 
 #[test]
