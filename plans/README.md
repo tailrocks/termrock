@@ -17,7 +17,7 @@ breaking plan that lands, and so on).
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | Verification gate baseline (mise tasks, nextest/powerset/MSRV/REUSE in CI) | P1 | M | — | TODO |
+| 001 | Verification gate baseline (mise tasks, nextest/powerset/MSRV/REUSE in CI) | P1 | M | — | DONE |
 | 002 | CI hardening: full cargo-deny on push, gitleaks, actionlint, rust-cache | P1 | S | 001 | TODO |
 | 003 | Generated-artifact freshness (public-api.txt gate; delete dead fixtures/dep-tree) | P2 | S | — | TODO |
 | 004 | OSC escape hardening (hyperlink/clipboard encoders) | P1 | S | — | TODO |

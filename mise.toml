@@ -9,4 +9,32 @@ rust = "1.97.0"
 "cargo:cargo-shear" = "1.13.0"
 "cargo:cargo-public-api" = "0.52.0"
 "cargo:cargo-semver-checks" = "0.46.0"
+"pipx:reuse" = { version = "6.2.0", extras = "charset-normalizer" }
 "ubi:gitleaks/gitleaks" = "8.28.0"
+
+[tasks.check]
+description = "Fast pre-commit check: fmt, clippy, all-feature nextest"
+run = """
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo nextest run --workspace --all-features --locked
+cargo test --doc --workspace --locked
+"""
+
+[tasks.gate]
+description = "Full pre-push gate mirroring rust-required + policy checks"
+run = """
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo nextest run --workspace --all-features --locked
+cargo test --doc --workspace --locked
+cargo check -p termrock --no-default-features --locked
+cargo check --workspace --examples --locked
+cargo check --workspace --examples --features crossterm --locked
+RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
+cargo hack check --workspace --feature-powerset --all-targets --locked
+cargo deny check advisories bans licenses sources
+cargo shear
+cargo package -p termrock --locked --allow-dirty
+cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+"""
