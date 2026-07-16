@@ -135,8 +135,21 @@ impl LogPaneState {
 
 #[derive(Debug, Clone, Copy)]
 pub struct LogPane<'a> {
-    pub title: Option<&'a str>,
-    pub theme: &'a Theme,
+    title: Option<&'a str>,
+    theme: &'a Theme,
+}
+
+impl<'a> LogPane<'a> {
+    #[must_use]
+    pub const fn new(theme: &'a Theme) -> Self {
+        Self { title: None, theme }
+    }
+
+    #[must_use]
+    pub const fn title(mut self, title: &'a str) -> Self {
+        self.title = Some(title);
+        self
+    }
 }
 
 impl StatefulWidget for &LogPane<'_> {
@@ -152,13 +165,13 @@ impl StatefulWidget for &LogPane<'_> {
             scroll_x: 0,
             scroll_y: u16::try_from(top).unwrap_or(u16::MAX),
         };
-        (&Viewport {
-            lines: &state.lines,
-            title: self.title,
-            theme: self.theme,
-            content_style: None,
-        })
-            .render(area, buffer, &mut scroll);
+        let viewport = Viewport::new(&state.lines, self.theme);
+        let viewport = if let Some(title) = self.title {
+            viewport.title(title)
+        } else {
+            viewport
+        };
+        (&viewport).render(area, buffer, &mut scroll);
 
         if state.follow && area.height > 0 {
             let indicator = " ⇣ following ";
@@ -179,6 +192,14 @@ impl StatefulWidget for &LogPane<'_> {
                 );
             }
         }
+    }
+}
+
+impl StatefulWidget for LogPane<'_> {
+    type State = LogPaneState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
     }
 }
 
@@ -227,10 +248,7 @@ mod tests {
     #[test]
     fn rendering_is_deterministic_and_shows_follow_state() {
         let theme = Theme::default();
-        let pane = LogPane {
-            title: Some("Build"),
-            theme: &theme,
-        };
+        let pane = LogPane::new(&theme).title("Build");
         let area = Rect::new(0, 0, 24, 4);
         let mut state = LogPaneState::new();
         state.append("compile ✓");
@@ -250,22 +268,18 @@ mod tests {
         let mut state = LogPaneState::new();
         let exact_area = Rect::new(0, 0, 14, 3);
         let mut exact = Buffer::empty(exact_area);
-        (&LogPane {
-            title: None,
-            theme: &theme,
-        })
-            .render(exact_area, &mut exact, &mut state);
+        (&LogPane::new(&theme)).render(exact_area, &mut exact, &mut state);
         assert_eq!(exact[(0, 0)].symbol(), "┌");
         assert_eq!(exact[(13, 0)].symbol(), "┐");
         assert!(!rendered(&exact).contains("following"));
 
         let titled_area = Rect::new(0, 0, 28, 3);
         let mut titled = Buffer::empty(titled_area);
-        (&LogPane {
-            title: Some("A deliberately long title"),
-            theme: &theme,
-        })
-            .render(titled_area, &mut titled, &mut state);
+        (&LogPane::new(&theme).title("A deliberately long title")).render(
+            titled_area,
+            &mut titled,
+            &mut state,
+        );
         assert!(!rendered(&titled).contains("following"));
         assert_eq!(titled[(27, 0)].symbol(), "┐");
     }

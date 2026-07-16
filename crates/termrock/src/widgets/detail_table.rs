@@ -50,6 +50,7 @@ pub struct DetailRow<'a, Id> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DetailTableOutcome<Id> {
     Ignored,
     Selected(Id),
@@ -222,12 +223,36 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
 
 #[derive(Debug, Clone, Copy)]
 pub struct DetailTable<'a, Id> {
-    pub rows: &'a [DetailRow<'a, Id>],
+    rows: &'a [DetailRow<'a, Id>],
     /// Zero derives the label width from the borrowed rows.
-    pub label_width: u16,
+    label_width: u16,
     /// Wrap values into aligned continuation rows instead of scrolling horizontally.
-    pub wrap: bool,
-    pub theme: &'a Theme,
+    wrap: bool,
+    theme: &'a Theme,
+}
+
+impl<'a, Id> DetailTable<'a, Id> {
+    #[must_use]
+    pub const fn new(rows: &'a [DetailRow<'a, Id>], theme: &'a Theme) -> Self {
+        Self {
+            rows,
+            label_width: 0,
+            wrap: false,
+            theme,
+        }
+    }
+
+    #[must_use]
+    pub const fn label_width(mut self, label_width: u16) -> Self {
+        self.label_width = label_width;
+        self
+    }
+
+    #[must_use]
+    pub const fn wrap(mut self, wrap: bool) -> Self {
+        self.wrap = wrap;
+        self
+    }
 }
 
 impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
@@ -251,7 +276,7 @@ impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
             .collect()
     }
 
-    fn label_width(&self) -> usize {
+    fn resolved_label_width(&self) -> usize {
         if self.label_width == 0 {
             self.rows
                 .iter()
@@ -295,7 +320,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         state.regions.clear();
         state.viewport = area;
-        let label_width = self.label_width();
+        let label_width = self.resolved_label_width();
         let value_width = self.value_width(area, label_width);
         state.content_width = self
             .rows
@@ -359,6 +384,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
                 visual_row = visual_row.saturating_add(1);
             }
         }
+    }
+}
+
+impl<Id: Clone + PartialEq> StatefulWidget for DetailTable<'_, Id> {
+    type State = DetailTableState<Id>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
     }
 }
 
@@ -575,12 +608,7 @@ mod tests {
     fn stable_selection_and_typed_activation_follow_painted_regions() {
         let rows = rows();
         let theme = Theme::default();
-        let table = DetailTable {
-            rows: &rows,
-            label_width: 0,
-            wrap: false,
-            theme: &theme,
-        };
+        let table = DetailTable::new(&rows, &theme);
         let mut state = DetailTableState::default();
         assert_eq!(
             state.select_next(&rows),
@@ -623,36 +651,18 @@ mod tests {
         state.scroll.scroll_x = u16::MAX;
         state.scroll.scroll_y = u16::MAX;
         let mut buffer = Buffer::empty(Rect::new(0, 0, 18, 2));
-        (&DetailTable {
-            rows: &rows,
-            label_width: 0,
-            wrap: false,
-            theme: &theme,
-        })
-            .render(buffer.area, &mut buffer, &mut state);
+        (&DetailTable::new(&rows, &theme)).render(buffer.area, &mut buffer, &mut state);
         assert!(usize::from(state.scroll.scroll_x) <= state.content_width);
         assert!(usize::from(state.scroll.scroll_y) <= state.content_height);
 
         state.scroll.scroll_x = 9;
-        (&DetailTable {
-            rows: &rows,
-            label_width: 0,
-            wrap: true,
-            theme: &theme,
-        })
-            .render(buffer.area, &mut buffer, &mut state);
+        (&DetailTable::new(&rows, &theme).wrap(true)).render(buffer.area, &mut buffer, &mut state);
         assert_eq!(state.scroll.scroll_x, 0);
         assert!(state.content_height > rows.len());
 
         state.selected = Some("role");
         state.scroll.scroll_y = 0;
-        (&DetailTable {
-            rows: &rows,
-            label_width: 0,
-            wrap: true,
-            theme: &theme,
-        })
-            .render(buffer.area, &mut buffer, &mut state);
+        (&DetailTable::new(&rows, &theme).wrap(true)).render(buffer.area, &mut buffer, &mut state);
         assert!(state.scroll.scroll_y > 0);
     }
 
@@ -660,12 +670,7 @@ mod tests {
     fn hyperlink_regions_use_caller_urls_and_visible_value_geometry() {
         let rows = rows();
         let theme = Theme::default();
-        let table = DetailTable {
-            rows: &rows,
-            label_width: 0,
-            wrap: false,
-            theme: &theme,
-        };
+        let table = DetailTable::new(&rows, &theme);
         let area = Rect::new(0, 0, 40, 3);
         let mut state = DetailTableState::default();
         let mut buffer = Buffer::empty(area);

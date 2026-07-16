@@ -84,10 +84,7 @@ fn neutral_mouse_event_drives_list_activation() {
         enabled: true,
     }];
     let theme = Theme::default();
-    let list = List {
-        rows: &rows,
-        theme: &theme,
-    };
+    let list = List::new(&rows, &theme);
     let area = Rect::new(0, 0, 12, 1);
     let mut buffer = Buffer::empty(area);
     let mut state = ListState::new(Some("entry"));

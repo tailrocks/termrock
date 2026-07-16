@@ -1,6 +1,7 @@
 use ratatui_core::layout::Rect;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PointerShape {
     Default,
     Pointer,
@@ -56,6 +57,7 @@ pub struct ClipboardWrite<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Request<'a> {
     Pointer(PointerShape),
     Clipboard(ClipboardWrite<'a>),

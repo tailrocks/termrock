@@ -61,10 +61,32 @@ impl<Id: Clone> StatusBarState<Id> {
 
 #[derive(Debug, Clone, Copy)]
 pub struct StatusBar<'a, Id> {
-    pub left: &'a [StatusSlot<'a, Id>],
-    pub right: &'a [StatusSlot<'a, Id>],
-    pub theme: &'a Theme,
-    pub alpha: f32,
+    left: &'a [StatusSlot<'a, Id>],
+    right: &'a [StatusSlot<'a, Id>],
+    theme: &'a Theme,
+    alpha: f32,
+}
+
+impl<'a, Id> StatusBar<'a, Id> {
+    #[must_use]
+    pub const fn new(
+        left: &'a [StatusSlot<'a, Id>],
+        right: &'a [StatusSlot<'a, Id>],
+        theme: &'a Theme,
+    ) -> Self {
+        Self {
+            left,
+            right,
+            theme,
+            alpha: 1.0,
+        }
+    }
+
+    #[must_use]
+    pub const fn alpha(mut self, alpha: f32) -> Self {
+        self.alpha = alpha;
+        self
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -236,6 +258,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
     }
 }
 
+impl<Id: Clone + PartialEq> StatefulWidget for StatusBar<'_, Id> {
+    type State = StatusBarState<Id>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
+    }
+}
+
 fn allocation<Id: Clone>(
     slot: &StatusSlot<'_, Id>,
     side: Side,
@@ -308,12 +338,7 @@ mod tests {
             slot("usage", " usage-long ", 1, 0),
             slot("run", " run ", 20, 0),
         ];
-        let bar = StatusBar {
-            left: &left,
-            right: &right,
-            theme: &theme,
-            alpha: 1.0,
-        };
+        let bar = StatusBar::new(&left, &right, &theme);
         let regions = bar.regions(Rect::new(3, 2, 10, 1));
         assert!(regions.iter().any(|region| region.id == "run"));
         assert!(regions.iter().any(|region| region.id == "activity"));
@@ -326,12 +351,7 @@ mod tests {
         let left = [slot("activity", " activity ", 1, 4)];
         let theme =
             Theme::default().with_role(Role::StatusBar, Style::new().bg(Color::Rgb(80, 80, 80)));
-        let bar = StatusBar {
-            left: &left,
-            right: &[],
-            theme: &theme,
-            alpha: 0.5,
-        };
+        let bar = StatusBar::new(&left, &[], &theme).alpha(0.5);
         let area = Rect::new(4, 3, 6, 1);
         let mut state = StatusBarState::default();
         let mut buffer = Buffer::empty(area);
@@ -349,12 +369,7 @@ mod tests {
     fn unicode_truncation_never_paints_half_a_wide_grapheme() {
         let left = [slot("wide", " 🧪🔬🧭 ", 1, 3)];
         let theme = Theme::default();
-        let bar = StatusBar {
-            left: &left,
-            right: &[],
-            theme: &theme,
-            alpha: 1.0,
-        };
+        let bar = StatusBar::new(&left, &[], &theme);
         let area = Rect::new(0, 0, 3, 1);
         let mut state = StatusBarState::default();
         let mut buffer = Buffer::empty(area);

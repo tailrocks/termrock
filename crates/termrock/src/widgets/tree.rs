@@ -16,6 +16,7 @@ use crate::{
 use super::Selection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TreeNodeStatus {
     Ready,
     Loading,
@@ -35,6 +36,7 @@ pub struct TreeNode<'a, Id> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TreeOutcome<Id> {
     Ignored,
     SelectionChanged(Id),
@@ -382,8 +384,15 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Tree<'a, Id> {
-    pub nodes: &'a [TreeNode<'a, Id>],
-    pub theme: &'a Theme,
+    nodes: &'a [TreeNode<'a, Id>],
+    theme: &'a Theme,
+}
+
+impl<'a, Id> Tree<'a, Id> {
+    #[must_use]
+    pub const fn new(nodes: &'a [TreeNode<'a, Id>], theme: &'a Theme) -> Self {
+        Self { nodes, theme }
+    }
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
@@ -579,5 +588,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 }
             }
         }
+    }
+}
+
+impl<Id: Clone + PartialEq> StatefulWidget for Tree<'_, Id> {
+    type State = TreeState<Id>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
     }
 }

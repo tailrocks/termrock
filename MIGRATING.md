@@ -21,6 +21,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0009 | `v0.9.0` | [Neutral event contract](migrations/0009-v0.9.0-neutral-event-contract.md) |
 | 0010 | `v0.9.0` | [Canonical module homes](migrations/0010-v0.9.0-canonical-module-homes.md) |
 | 0011 | `v0.10.0` | [Trailing metadata cells](migrations/0011-v0.10.0-trailing-metadata-cells.md) |
+| 0012 | `v0.10.0` | [Widget construction and growth](migrations/0012-v0.10.0-widget-construction-and-growth.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

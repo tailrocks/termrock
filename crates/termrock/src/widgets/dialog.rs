@@ -20,8 +20,8 @@ use super::{
 
 #[derive(Debug, Clone, Copy)]
 pub struct Backdrop {
-    pub symbol: char,
-    pub style: Style,
+    symbol: char,
+    style: Style,
 }
 
 impl Default for Backdrop {
@@ -35,6 +35,25 @@ impl Default for Backdrop {
     }
 }
 
+impl Backdrop {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[must_use]
+    pub const fn symbol(mut self, symbol: char) -> Self {
+        self.symbol = symbol;
+        self
+    }
+
+    #[must_use]
+    pub const fn style(mut self, style: Style) -> Self {
+        self.style = style;
+        self
+    }
+}
+
 impl Widget for &Backdrop {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         for y in area.top()..area.bottom() {
@@ -42,6 +61,16 @@ impl Widget for &Backdrop {
                 buffer[(x, y)].set_char(self.symbol).set_style(self.style);
             }
         }
+    }
+}
+
+impl Widget for Backdrop {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -106,17 +135,11 @@ mod backdrop_tests {
             enabled: true,
             style: None,
         }];
-        let dialog = ChoiceDialog {
-            dialog: Dialog {
-                title: "Choose",
-                body: Text::from("Continue?"),
-                style: Style::new(),
-                theme: &Theme::default(),
-                emphasis: PanelEmphasis::Focused,
-            },
-            actions: &actions,
-            gap: " ",
-        };
+        let theme = Theme::default();
+        let dialog = ChoiceDialog::new(
+            Dialog::new("Choose", Text::from("Continue?"), &theme).emphasis(PanelEmphasis::Focused),
+            &actions,
+        );
         let area = Rect::new(3, 2, 30, 6);
         let mut buffer = Buffer::empty(area);
         let mut state = ChoiceDialogState::default();
@@ -141,19 +164,13 @@ mod backdrop_tests {
             style: None,
         }];
         let theme = Theme::default();
-        let dialog = MessageDialog {
-            dialog: Dialog {
-                title: "Failure",
-                body: Text::from("a message that wraps"),
-                style: Style::new(),
-                theme: &theme,
-                emphasis: PanelEmphasis::Focused,
-            },
-            details: &details,
-            label_width: 0,
-            wrap: true,
-            theme: &theme,
-        };
+        let dialog = MessageDialog::new(
+            Dialog::new("Failure", Text::from("a message that wraps"), &theme)
+                .emphasis(PanelEmphasis::Focused),
+            &details,
+            &theme,
+        )
+        .wrap(true);
         let area = Rect::new(0, 0, 12, 8);
         let mut buffer = Buffer::empty(area);
         let mut state = DetailTableState::default();
@@ -164,13 +181,8 @@ mod backdrop_tests {
     #[test]
     fn dialog_uses_semantic_focused_panel_chrome() {
         let theme = Theme::default();
-        let dialog = Dialog {
-            title: " Notice ",
-            body: Text::from("Done"),
-            style: Style::new(),
-            theme: &theme,
-            emphasis: PanelEmphasis::Focused,
-        };
+        let dialog =
+            Dialog::new(" Notice ", Text::from("Done"), &theme).emphasis(PanelEmphasis::Focused);
         let area = Rect::new(0, 0, 18, 4);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);
@@ -192,11 +204,36 @@ mod backdrop_tests {
 
 #[derive(Debug, Clone)]
 pub struct Dialog<'a> {
-    pub title: &'a str,
-    pub body: Text<'a>,
-    pub style: Style,
-    pub theme: &'a Theme,
-    pub emphasis: PanelEmphasis,
+    title: &'a str,
+    body: Text<'a>,
+    style: Style,
+    theme: &'a Theme,
+    emphasis: PanelEmphasis,
+}
+
+impl<'a> Dialog<'a> {
+    #[must_use]
+    pub const fn new(title: &'a str, body: Text<'a>, theme: &'a Theme) -> Self {
+        Self {
+            title,
+            body,
+            style: Style::new(),
+            theme,
+            emphasis: PanelEmphasis::Normal,
+        }
+    }
+
+    #[must_use]
+    pub const fn style(mut self, style: Style) -> Self {
+        self.style = style;
+        self
+    }
+
+    #[must_use]
+    pub const fn emphasis(mut self, emphasis: PanelEmphasis) -> Self {
+        self.emphasis = emphasis;
+        self
+    }
 }
 impl Widget for &Dialog<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
@@ -208,6 +245,12 @@ impl Widget for &Dialog<'_> {
             .block(panel.block())
             .style(self.style)
             .render(area, buffer);
+    }
+}
+
+impl Widget for Dialog<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        Widget::render(&self, area, buffer);
     }
 }
 
@@ -307,9 +350,26 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
 
 #[derive(Debug, Clone)]
 pub struct ChoiceDialog<'a, Id> {
-    pub dialog: Dialog<'a>,
-    pub actions: &'a [Action<'a, Id>],
-    pub gap: &'a str,
+    dialog: Dialog<'a>,
+    actions: &'a [Action<'a, Id>],
+    gap: &'a str,
+}
+
+impl<'a, Id> ChoiceDialog<'a, Id> {
+    #[must_use]
+    pub const fn new(dialog: Dialog<'a>, actions: &'a [Action<'a, Id>]) -> Self {
+        Self {
+            dialog,
+            actions,
+            gap: " ",
+        }
+    }
+
+    #[must_use]
+    pub const fn gap(mut self, gap: &'a str) -> Self {
+        self.gap = gap;
+        self
+    }
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
@@ -331,24 +391,60 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
             focused: state.focused.clone(),
             regions: Vec::new(),
         };
-        (&ActionBar {
-            actions: self.actions,
-            gap: self.gap,
-            theme: self.dialog.theme,
-        })
-            .render(action_area, buffer, &mut action_state);
+        (&ActionBar::new(self.actions, self.dialog.theme).gap(self.gap)).render(
+            action_area,
+            buffer,
+            &mut action_state,
+        );
         state.focused = action_state.focused;
         state.regions = action_state.regions;
     }
 }
 
+impl<Id: Clone + PartialEq> StatefulWidget for ChoiceDialog<'_, Id> {
+    type State = ChoiceDialogState<Id>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct MessageDialog<'a, Id> {
-    pub dialog: Dialog<'a>,
-    pub details: &'a [DetailRow<'a, Id>],
-    pub label_width: u16,
-    pub wrap: bool,
-    pub theme: &'a Theme,
+    dialog: Dialog<'a>,
+    details: &'a [DetailRow<'a, Id>],
+    label_width: u16,
+    wrap: bool,
+    theme: &'a Theme,
+}
+
+impl<'a, Id> MessageDialog<'a, Id> {
+    #[must_use]
+    pub const fn new(
+        dialog: Dialog<'a>,
+        details: &'a [DetailRow<'a, Id>],
+        theme: &'a Theme,
+    ) -> Self {
+        Self {
+            dialog,
+            details,
+            label_width: 0,
+            wrap: false,
+            theme,
+        }
+    }
+
+    #[must_use]
+    pub const fn label_width(mut self, label_width: u16) -> Self {
+        self.label_width = label_width;
+        self
+    }
+
+    #[must_use]
+    pub const fn wrap(mut self, wrap: bool) -> Self {
+        self.wrap = wrap;
+        self
+    }
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &MessageDialog<'_, Id> {
@@ -376,12 +472,17 @@ impl<Id: Clone + PartialEq> StatefulWidget for &MessageDialog<'_, Id> {
             area.width - 2,
             area.height.saturating_sub(body_height).saturating_sub(2),
         );
-        (&DetailTable {
-            rows: self.details,
-            label_width: self.label_width,
-            wrap: self.wrap,
-            theme: self.theme,
-        })
+        (&DetailTable::new(self.details, self.theme)
+            .label_width(self.label_width)
+            .wrap(self.wrap))
             .render(inner, buffer, state);
+    }
+}
+
+impl<Id: Clone + PartialEq> StatefulWidget for MessageDialog<'_, Id> {
+    type State = DetailTableState<Id>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
     }
 }

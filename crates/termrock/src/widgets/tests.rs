@@ -9,6 +9,16 @@ use ratatui_core::{
 use super::*;
 use crate::style::{Role, Theme};
 
+#[cfg(feature = "serde")]
+#[test]
+fn persistable_states_implement_serde_contracts() {
+    fn assert_serde<T: serde::Serialize + serde::de::DeserializeOwned>() {}
+
+    assert_serde::<DiffState>();
+    assert_serde::<SplitRatio>();
+    assert_serde::<TextInputState>();
+}
+
 fn areas() -> [Rect; 5] {
     [
         Rect::new(0, 0, 0, 0),
@@ -22,28 +32,18 @@ fn areas() -> [Rect; 5] {
 #[test]
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     let theme = Theme::default();
-    let panel = Panel {
-        title: Some("Title"),
-        emphasis: PanelEmphasis::Focused,
-        style: None,
-        theme: &theme,
-    };
+    let panel = Panel::new(&theme)
+        .title("Title")
+        .emphasis(PanelEmphasis::Focused);
     let hints = [Hint {
         chord: "Enter",
         label: "choose",
         priority: 1,
         visible: true,
     }];
-    let hint_bar = HintBar {
-        hints: &hints,
-        separator: " · ",
-        theme: &theme,
-    };
+    let hint_bar = HintBar::new(&hints, &theme).separator(" · ");
     let toast = Toast::new(&theme, "Updated", Severity::Success).anchor(Anchor::TopRight);
-    let backdrop = Backdrop {
-        symbol: ' ',
-        style: Style::new().dim(),
-    };
+    let backdrop = Backdrop::new().symbol(' ').style(Style::new().dim());
     for area in areas() {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 30));
         (&panel).render(area, &mut buffer);
@@ -58,12 +58,7 @@ fn focused_panel_preserves_plain_border_glyphs() {
     let theme = Theme::default();
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
-    let panel = Panel {
-        title: None,
-        emphasis: PanelEmphasis::Focused,
-        style: None,
-        theme: &theme,
-    };
+    let panel = Panel::new(&theme).emphasis(PanelEmphasis::Focused);
     (&panel).render(area, &mut buffer);
     assert_eq!(buffer[(0, 0)].symbol(), "┌");
 }
@@ -94,24 +89,8 @@ fn stable_ids_survive_reordering() {
     let area = Rect::new(0, 0, 20, 2);
     let mut buffer = Buffer::empty(area);
     let theme = Theme::default();
-    StatefulWidget::render(
-        &List {
-            rows: &first,
-            theme: &theme,
-        },
-        area,
-        &mut buffer,
-        &mut state,
-    );
-    StatefulWidget::render(
-        &List {
-            rows: &second,
-            theme: &theme,
-        },
-        area,
-        &mut buffer,
-        &mut state,
-    );
+    StatefulWidget::render(&List::new(&first, &theme), area, &mut buffer, &mut state);
+    StatefulWidget::render(&List::new(&second, &theme), area, &mut buffer, &mut state);
     assert_eq!(state.selected, Some("b"));
     assert_eq!(
         state
@@ -154,15 +133,7 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
     let area = Rect::new(4, 3, 20, 3);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 10));
     let theme = Theme::default();
-    StatefulWidget::render(
-        &List {
-            rows: &rows,
-            theme: &theme,
-        },
-        area,
-        &mut buffer,
-        &mut state,
-    );
+    StatefulWidget::render(&List::new(&rows, &theme), area, &mut buffer, &mut state);
     assert_eq!(state.regions.len(), 1);
     assert_eq!(state.regions[0].id, 3);
     assert_eq!(state.regions[0].area, Rect::new(4, 5, 20, 1));
@@ -202,11 +173,7 @@ fn action_and_status_regions_match_painted_geometry() {
     let area = Rect::new(5, 2, 30, 1);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 40, 5));
     StatefulWidget::render(
-        &ActionBar {
-            actions: &actions,
-            gap: " ",
-            theme: &theme,
-        },
+        &ActionBar::new(&actions, &theme).gap(" "),
         area,
         &mut buffer,
         &mut action_state,
@@ -232,12 +199,7 @@ fn action_and_status_regions_match_painted_geometry() {
         style: Style::new(),
         hover_style: None,
     }];
-    let status = StatusBar {
-        left: &left,
-        right: &right,
-        theme: &theme,
-        alpha: 1.0,
-    };
+    let status = StatusBar::new(&left, &right, &theme).alpha(1.0);
     let regions = status.regions(area);
     assert_eq!(regions[1].area.right(), area.right());
     (&status).render(area, &mut buffer, &mut StatusBarState::default());
@@ -252,12 +214,7 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
         Line::from("three"),
     ];
     let theme = Theme::default();
-    let viewport = Viewport {
-        lines: &lines,
-        title: Some(" Log "),
-        theme: &theme,
-        content_style: None,
-    };
+    let viewport = Viewport::new(&lines, &theme).title(" Log ");
     let area = Rect::new(0, 0, 12, 4);
     let mut buffer = Buffer::empty(area);
     let mut state = crate::scroll::DialogScroll {
@@ -285,11 +242,7 @@ fn theme_override_reaches_active_tab_cells() {
         active: true,
         enabled: true,
     }];
-    let widget = Tabs {
-        tabs: &tabs,
-        gap: 1,
-        theme: &theme,
-    };
+    let widget = Tabs::new(&tabs, &theme).gap(1);
     let area = Rect::new(0, 0, 12, 2);
     let mut buffer = Buffer::empty(area);
     let mut state = TabsState::default();
@@ -297,4 +250,18 @@ fn theme_override_reaches_active_tab_cells() {
     (&widget).render(area, &mut buffer, &mut state);
 
     assert_eq!(buffer[(0, 0)].bg, Color::Blue);
+}
+
+#[test]
+fn owned_panel_render_matches_borrowed_render() {
+    let theme = Theme::default();
+    let area = Rect::new(0, 0, 12, 3);
+    let mut owned = Buffer::empty(area);
+    let mut borrowed = Buffer::empty(area);
+
+    Widget::render(Panel::new(&theme).title("Panel"), area, &mut owned);
+    let panel = Panel::new(&theme).title("Panel");
+    Widget::render(&panel, area, &mut borrowed);
+
+    assert_eq!(owned, borrowed);
 }

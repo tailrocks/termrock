@@ -307,7 +307,7 @@ pub(crate) fn stories() -> Vec<Story> {
 
 fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(
-        &Panel::new(theme)
+        Panel::new(theme)
             .title("Summary")
             .emphasis(PanelEmphasis::Focused),
         area,
@@ -323,20 +323,12 @@ fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 fn progress(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let determinate = Rect::new(area.x, area.y, area.width, area.height.min(1));
     frame.render_widget(
-        &Progress {
-            kind: ProgressKind::Determinate { fraction: 0.62 },
-            label: Some("Processing"),
-            theme,
-        },
+        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, theme).label("Processing"),
         determinate,
     );
     if area.height > 1 {
         frame.render_widget(
-            &Progress {
-                kind: ProgressKind::Indeterminate { tick: 3 },
-                label: Some("Waiting"),
-                theme,
-            },
+            Progress::new(ProgressKind::Indeterminate { tick: 3 }, theme).label("Waiting"),
             Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
         );
     }
@@ -352,14 +344,7 @@ fn log_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ] {
         state.append(line);
     }
-    frame.render_stateful_widget(
-        &LogPane {
-            title: Some("Build log"),
-            theme,
-        },
-        area,
-        &mut state,
-    );
+    frame.render_stateful_widget(&LogPane::new(theme).title("Build log"), area, &mut state);
 }
 
 fn action_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -381,15 +366,7 @@ fn action_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         focused: Some("accept"),
         ..ActionBarState::default()
     };
-    frame.render_stateful_widget(
-        &ActionBar {
-            actions: &actions,
-            gap: "  ",
-            theme,
-        },
-        area,
-        &mut state,
-    );
+    frame.render_stateful_widget(&ActionBar::new(&actions, theme).gap("  "), area, &mut state);
 }
 
 pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
@@ -439,33 +416,18 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
 
 pub(crate) fn form_fields() -> Vec<FormField<'static, &'static str>> {
     vec![
-        FormField {
-            id: "name",
-            label: Line::from("Name"),
-            value: Line::from("Example profile"),
-            help: Some(Line::from("A recognizable display name")),
-            error: None,
-            required: true,
-            enabled: true,
-        },
-        FormField {
-            id: "endpoint",
-            label: Line::from("Endpoint"),
-            value: Line::from("localhost"),
-            help: None,
-            error: Some(Line::from("Enter a reachable address")),
-            required: true,
-            enabled: true,
-        },
-        FormField {
-            id: "mode",
-            label: Line::from("Managed mode"),
-            value: Line::from("Unavailable"),
-            help: None,
-            error: None,
-            required: false,
-            enabled: false,
-        },
+        FormField::new("name", Line::from("Name"), Line::from("Example profile"))
+            .help(Line::from("A recognizable display name"))
+            .required(true),
+        FormField::new("endpoint", Line::from("Endpoint"), Line::from("localhost"))
+            .error(Line::from("Enter a reachable address"))
+            .required(true),
+        FormField::new(
+            "mode",
+            Line::from("Managed mode"),
+            Line::from("Unavailable"),
+        )
+        .enabled(false),
     ]
 }
 
@@ -513,14 +475,7 @@ fn tree(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = TreeState::new(Some("workspace"));
     state.enable_multi_select();
     state.selection_mut().unwrap().toggle(&"notes");
-    frame.render_stateful_widget(
-        &Tree {
-            nodes: &nodes,
-            theme,
-        },
-        area,
-        &mut state,
-    );
+    frame.render_stateful_widget(&Tree::new(&nodes, theme), area, &mut state);
 }
 
 fn tabs(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -545,15 +500,7 @@ fn tabs(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         focused: true,
         ..TabsState::default()
     };
-    frame.render_stateful_widget(
-        &Tabs {
-            tabs: &items,
-            gap: 1,
-            theme,
-        },
-        area,
-        &mut state,
-    );
+    frame.render_stateful_widget(&Tabs::new(&items, theme).gap(1), area, &mut state);
 }
 
 fn hint_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -587,14 +534,7 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             visible: true,
         },
     ];
-    frame.render_widget(
-        &HintBar {
-            hints: &hints,
-            separator: "  ",
-            theme: &theme,
-        },
-        area,
-    );
+    frame.render_widget(HintBar::new(&hints, &theme).separator("  "), area);
 }
 
 fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -602,7 +542,7 @@ fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = ListState::new(Some("beta"));
     state.enable_multi_select();
     state.selection_mut().unwrap().toggle(&"alpha");
-    frame.render_stateful_widget(&List { rows: &rows, theme }, area, &mut state);
+    frame.render_stateful_widget(&List::new(&rows, theme), area, &mut state);
 }
 
 pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
@@ -641,12 +581,9 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
 fn text_input(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = TextInputState::new("search");
     frame.render_stateful_widget(
-        &TextInput {
-            label: "Filter",
-            placeholder: "Type to filter",
-            validation: Validation::Valid,
-            theme,
-        },
+        &TextInput::new("Filter", theme)
+            .placeholder("Type to filter")
+            .validation(Validation::Valid),
         area,
         &mut state,
     );
@@ -675,12 +612,7 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ];
     let mut state = DetailTableState::default();
     frame.render_stateful_widget(
-        &DetailTable {
-            rows: &rows,
-            label_width: 14,
-            wrap: true,
-            theme,
-        },
+        &DetailTable::new(&rows, theme).label_width(14).wrap(true),
         area,
         &mut state,
     );
@@ -707,12 +639,7 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     }];
     let mut state = StatusBarState::default();
     frame.render_stateful_widget(
-        &StatusBar {
-            left: &left,
-            right: &right,
-            theme,
-            alpha: 1.0,
-        },
+        &StatusBar::new(&left, &right, theme).alpha(1.0),
         area,
         &mut state,
     );
@@ -720,13 +647,13 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 
 fn dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(
-        &Dialog {
-            title: "Notice",
-            body: Line::from("The operation completed.").into(),
-            style: Style::new(),
+        Dialog::new(
+            "Notice",
+            Line::from("The operation completed.").into(),
             theme,
-            emphasis: termrock::widgets::PanelEmphasis::Focused,
-        },
+        )
+        .style(Style::new())
+        .emphasis(termrock::widgets::PanelEmphasis::Focused),
         area,
     );
 }
@@ -761,17 +688,17 @@ pub(crate) fn render_choice_dialog(
 ) {
     let actions = choice_actions();
     frame.render_stateful_widget(
-        &ChoiceDialog {
-            dialog: Dialog {
-                title: "Choose",
-                body: Line::from("Continue with this operation?").into(),
-                style: Style::new(),
+        &ChoiceDialog::new(
+            Dialog::new(
+                "Choose",
+                Line::from("Continue with this operation?").into(),
                 theme,
-                emphasis: termrock::widgets::PanelEmphasis::Focused,
-            },
-            actions: &actions,
-            gap: " ",
-        },
+            )
+            .style(Style::new())
+            .emphasis(termrock::widgets::PanelEmphasis::Focused),
+            &actions,
+        )
+        .gap(" "),
         area,
         state,
     );
@@ -800,19 +727,19 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ];
     let mut state = DetailTableState::default();
     frame.render_stateful_widget(
-        &MessageDialog {
-            dialog: Dialog {
-                title: "Result",
-                body: Line::from("The operation completed.").into(),
-                style: Style::new(),
+        &MessageDialog::new(
+            Dialog::new(
+                "Result",
+                Line::from("The operation completed.").into(),
                 theme,
-                emphasis: termrock::widgets::PanelEmphasis::Focused,
-            },
-            details: &details,
-            label_width: 14,
-            wrap: true,
+            )
+            .style(Style::new())
+            .emphasis(termrock::widgets::PanelEmphasis::Focused),
+            &details,
             theme,
-        },
+        )
+        .label_width(14)
+        .wrap(true),
         area,
         &mut state,
     );
@@ -842,10 +769,7 @@ fn diff(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         },
     ];
     frame.render_stateful_widget(
-        &DiffView {
-            lines: &lines,
-            theme: &theme,
-        },
+        &DiffView::new(&lines, &theme),
         area,
         &mut DiffState::default(),
     );
@@ -853,7 +777,7 @@ fn diff(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 
 fn toast(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(
-        &Toast::new(theme, "Updated", Severity::Success).anchor(Anchor::TopRight),
+        Toast::new(theme, "Updated", Severity::Success).anchor(Anchor::TopRight),
         area,
     );
 }
@@ -863,12 +787,7 @@ fn backdrop(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     } else {
         theme.style(Role::Backdrop)
     };
-    frame.render_widget(
-        &Backdrop {
-            symbol: '░', style
-        },
-        area,
-    );
+    frame.render_widget(Backdrop::new().symbol('░').style(style), area);
 }
 
 fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -884,12 +803,9 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let theme = theme.clone().with_role(Role::Border, border_style);
     let mut state = DialogScroll::default();
     frame.render_stateful_widget(
-        &Viewport {
-            lines: &lines,
-            title: Some("Viewport"),
-            theme: &theme,
-            content_style: Some(Style::new()),
-        },
+        &Viewport::new(&lines, &theme)
+            .title("Viewport")
+            .content_style(Style::new()),
         area,
         &mut state,
     );

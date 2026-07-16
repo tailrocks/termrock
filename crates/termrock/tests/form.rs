@@ -14,33 +14,13 @@ use termrock::{
 
 fn fields() -> Vec<FormField<'static, &'static str>> {
     vec![
-        FormField {
-            id: "host",
-            label: Line::from("Host"),
-            value: Line::from("localhost"),
-            help: Some(Line::from("Server name or address")),
-            error: None,
-            required: true,
-            enabled: true,
-        },
-        FormField {
-            id: "database",
-            label: Line::from("Database"),
-            value: Line::from("app"),
-            help: None,
-            error: None,
-            required: false,
-            enabled: true,
-        },
-        FormField {
-            id: "port",
-            label: Line::from("Port"),
-            value: Line::from("5432"),
-            help: None,
-            error: Some(Line::from("Port must be numeric")),
-            required: false,
-            enabled: false,
-        },
+        FormField::new("host", Line::from("Host"), Line::from("localhost"))
+            .help(Line::from("Server name or address"))
+            .required(true),
+        FormField::new("database", Line::from("Database"), Line::from("app")),
+        FormField::new("port", Line::from("Port"), Line::from("5432"))
+            .error(Line::from("Port must be numeric"))
+            .enabled(false),
     ]
 }
 
@@ -171,14 +151,12 @@ fn wide_forms_use_two_columns_and_clicks_follow_painted_geometry() {
 #[test]
 fn focused_field_is_revealed_and_manual_scroll_is_bounded() {
     let fields = (0..8)
-        .map(|id| FormField {
-            id,
-            label: Line::from(format!("Field {id}")),
-            value: Line::from(format!("value {id}")),
-            help: None,
-            error: None,
-            required: false,
-            enabled: true,
+        .map(|id| {
+            FormField::new(
+                id,
+                Line::from(format!("Field {id}")),
+                Line::from(format!("value {id}")),
+            )
         })
         .collect::<Vec<_>>();
     let sections = [FormSection {
@@ -228,15 +206,7 @@ fn empty_and_tiny_forms_are_safe() {
     form.render(empty_area, &mut empty, &mut state);
     assert!(empty.content().iter().all(|cell| cell.symbol() == " "));
 
-    let fields = [FormField {
-        id: 1,
-        label: Line::from("🧪A"),
-        value: Line::from("Value 🧪"),
-        help: None,
-        error: None,
-        required: true,
-        enabled: true,
-    }];
+    let fields = [FormField::new(1, Line::from("🧪A"), Line::from("Value 🧪")).required(true)];
     let sections = [FormSection {
         title: Line::from("Settings"),
         fields: &fields,
@@ -252,34 +222,10 @@ fn empty_and_tiny_forms_are_safe() {
 #[test]
 fn traversal_is_stable_across_sections_and_responsive_reflow() {
     let first = [
-        FormField {
-            id: 1,
-            label: Line::from("One"),
-            value: Line::from("1"),
-            help: None,
-            error: None,
-            required: false,
-            enabled: true,
-        },
-        FormField {
-            id: 2,
-            label: Line::from("Two"),
-            value: Line::from("2"),
-            help: None,
-            error: None,
-            required: false,
-            enabled: false,
-        },
+        FormField::new(1, Line::from("One"), Line::from("1")),
+        FormField::new(2, Line::from("Two"), Line::from("2")).enabled(false),
     ];
-    let second = [FormField {
-        id: 3,
-        label: Line::from("Three"),
-        value: Line::from("3"),
-        help: None,
-        error: None,
-        required: false,
-        enabled: true,
-    }];
+    let second = [FormField::new(3, Line::from("Three"), Line::from("3"))];
     let sections = [
         FormSection {
             title: Line::from("First"),
@@ -409,15 +355,7 @@ fn arrow_navigation_matches_tab_order_in_each_column_layout() {
 #[test]
 fn scroll_by_clamps_at_bounds() {
     let fields = (0..8)
-        .map(|id| FormField {
-            id,
-            label: Line::from(format!("Field {id}")),
-            value: Line::from("value"),
-            help: None,
-            error: None,
-            required: false,
-            enabled: true,
-        })
+        .map(|id| FormField::new(id, Line::from(format!("Field {id}")), Line::from("value")))
         .collect::<Vec<_>>();
     let sections = [FormSection {
         title: Line::from("Long"),

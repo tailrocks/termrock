@@ -70,10 +70,7 @@ fn keyboard_navigation_skips_disabled_rows_and_requests_disclosure() {
 fn render_exposes_status_and_only_painted_enabled_rows_are_clickable() {
     let rows = nodes();
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::new(Some("root"));
     let area = Rect::new(0, 0, 16, 3);
     let mut buffer = Buffer::empty(area);
@@ -105,10 +102,7 @@ fn render_exposes_status_and_only_painted_enabled_rows_are_clickable() {
 #[test]
 fn empty_and_zero_sized_trees_are_safe() {
     let theme = Theme::default();
-    let tree: Tree<'_, u8> = Tree {
-        nodes: &[],
-        theme: &theme,
-    };
+    let tree: Tree<'_, u8> = Tree::new(&[], &theme);
     let mut state = TreeState::default();
     let mut buffer = Buffer::empty(Rect::new(0, 0, 0, 0));
 
@@ -127,10 +121,7 @@ fn empty_and_zero_sized_trees_are_safe() {
 fn painted_disclosure_and_selected_row_have_distinct_mouse_outcomes() {
     let rows = nodes();
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::new(Some("leaf"));
     let area = Rect::new(3, 4, 20, 3);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 24, 8));
@@ -182,10 +173,7 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
         },
     ];
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::new(Some(2));
     let area = Rect::new(0, 0, 10, 1);
     let mut buffer = Buffer::empty(area);
@@ -217,10 +205,7 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
         })
         .collect::<Vec<_>>();
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::new(Some(0));
     let area = Rect::new(0, 0, 12, 3);
     let mut buffer = Buffer::empty(area);
@@ -247,10 +232,7 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
 fn focus_gates_input_and_preserves_non_color_selection_cues() {
     let rows = nodes();
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::new(Some("root"));
     state.set_focused(false);
     assert_eq!(
@@ -320,10 +302,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         },
     ];
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::default();
     let area = Rect::new(0, 0, 20, 3);
     let mut buffer = Buffer::empty(area);
@@ -363,10 +342,7 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
         status: TreeNodeStatus::Ready,
     }];
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::new(Some(0));
     let mut one_cell = Buffer::empty(Rect::new(0, 0, 1, 1));
     tree.render(Rect::new(0, 0, 1, 1), &mut one_cell, &mut state);
@@ -381,10 +357,7 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
         depth: u16::MAX,
         ..rows[0].clone()
     }];
-    let deep_tree = Tree {
-        nodes: &deeply_nested,
-        theme: &theme,
-    };
+    let deep_tree = Tree::new(&deeply_nested, &theme);
     deep_tree.render(Rect::new(0, 0, 1, 1), &mut one_cell, &mut state);
 }
 
@@ -401,10 +374,7 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
         status: TreeNodeStatus::Loading,
     }];
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::default();
     let area = Rect::new(0, 0, 11, 1);
     let mut buffer = Buffer::empty(area);
@@ -445,10 +415,7 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
         },
     ];
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::default();
     let area = Rect::new(0, 0, 12, 2);
     let mut buffer = Buffer::empty(area);
@@ -479,11 +446,7 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
     let mut state = TreeState::default();
     let narrow_area = Rect::new(0, 0, 2, 1);
     let mut narrow = Buffer::empty(narrow_area);
-    Tree {
-        nodes: &narrow_rows,
-        theme: &theme,
-    }
-    .render(narrow_area, &mut narrow, &mut state);
+    Tree::new(&narrow_rows, &theme).render(narrow_area, &mut narrow, &mut state);
     assert_eq!(narrow[(0, 0)].symbol(), "🧪");
     assert_eq!(narrow[(1, 0)].symbol(), " ");
     assert!(!narrow.content().iter().any(|cell| cell.symbol() == "Z"));
@@ -500,11 +463,7 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
     }];
     let combined_area = Rect::new(0, 0, 20, 1);
     let mut combined = Buffer::empty(combined_area);
-    Tree {
-        nodes: &combined_rows,
-        theme: &theme,
-    }
-    .render(combined_area, &mut combined, &mut state);
+    Tree::new(&combined_rows, &theme).render(combined_area, &mut combined, &mut state);
     let rendered: String = combined
         .content()
         .iter()
@@ -517,10 +476,7 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
 fn multi_select_toggles_by_space_and_painted_checkbox() {
     let rows = nodes();
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &rows,
-        theme: &theme,
-    };
+    let tree = Tree::new(&rows, &theme);
     let mut state = TreeState::new(Some("root"));
     state.enable_multi_select();
 

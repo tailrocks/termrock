@@ -15,6 +15,7 @@ use crate::{
 use super::Selection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RowRole {
     Item,
     Separator,
@@ -327,8 +328,15 @@ impl ListState<usize> {
 
 #[derive(Debug, Clone, Copy)]
 pub struct List<'a, Id> {
-    pub rows: &'a [ListRow<'a, Id>],
-    pub theme: &'a Theme,
+    rows: &'a [ListRow<'a, Id>],
+    theme: &'a Theme,
+}
+
+impl<'a, Id> List<'a, Id> {
+    #[must_use]
+    pub const fn new(rows: &'a [ListRow<'a, Id>], theme: &'a Theme) -> Self {
+        Self { rows, theme }
+    }
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
@@ -473,6 +481,14 @@ fn label_width(label_x: u16, trailing_x: u16, trailing_width: u16) -> u16 {
         .saturating_sub(u16::from(trailing_width > 0))
 }
 
+impl<Id: Clone + PartialEq> StatefulWidget for List<'_, Id> {
+    type State = ListState<Id>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
+    }
+}
+
 fn selectable_indices<Id>(rows: &[ListRow<'_, Id>]) -> Vec<usize> {
     rows.iter()
         .enumerate()
@@ -549,11 +565,7 @@ mod tests {
         let mut state = ListState::new(Some("second"));
         let area = Rect::new(4, 3, 12, 1);
         let mut buffer = Buffer::empty(area);
-        (&List {
-            rows: &rows,
-            theme: &theme,
-        })
-            .render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
         assert_eq!(state.offset, 3);
         assert_eq!(state.regions.len(), 1);
         let position = Position::new(area.x, area.y);
@@ -585,11 +597,7 @@ mod tests {
         let area = Rect::new(0, 0, 11, 2);
         let mut buffer = Buffer::empty(area);
 
-        (&List {
-            rows: &rows,
-            theme: &theme,
-        })
-            .render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(6, 0)].symbol(), "9");
         assert_eq!(buffer[(8, 1)].symbol(), "1");
@@ -613,11 +621,7 @@ mod tests {
         let area = Rect::new(0, 0, 2, 1);
         let mut buffer = Buffer::empty(area);
 
-        (&List {
-            rows: &rows,
-            theme: &theme,
-        })
-            .render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(0, 0)].symbol(), "🧪");
         assert_eq!(buffer[(1, 0)].symbol(), " ");
@@ -639,11 +643,7 @@ mod tests {
 
         let area = Rect::new(0, 0, 20, 4);
         let mut buffer = Buffer::empty(area);
-        (&List {
-            rows: &rows,
-            theme: &theme,
-        })
-            .render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(2, 2)].symbol(), "[");
         assert_eq!(buffer[(3, 2)].symbol(), "x");
         assert_eq!(state.click(Position::new(2, 3)), Outcome::Changed);

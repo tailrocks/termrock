@@ -7,6 +7,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Severity {
     Info,
     Success,
@@ -14,6 +15,7 @@ pub enum Severity {
     Error,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Anchor {
     TopLeft,
     TopRight,
@@ -116,6 +118,16 @@ impl Widget for &Toast<'_> {
             .style(self.style.unwrap_or(self.theme.style(Role::Text)))
             .block(Block::bordered().border_style(self.theme.style(border_role)))
             .render(area, buffer);
+    }
+}
+
+impl Widget for Toast<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

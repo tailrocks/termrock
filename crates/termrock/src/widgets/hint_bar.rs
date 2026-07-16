@@ -50,9 +50,26 @@ pub struct Hint<'a> {
 
 #[derive(Debug, Clone, Copy)]
 pub struct HintBar<'a> {
-    pub hints: &'a [Hint<'a>],
-    pub separator: &'a str,
-    pub theme: &'a Theme,
+    hints: &'a [Hint<'a>],
+    separator: &'a str,
+    theme: &'a Theme,
+}
+
+impl<'a> HintBar<'a> {
+    #[must_use]
+    pub const fn new(hints: &'a [Hint<'a>], theme: &'a Theme) -> Self {
+        Self {
+            hints,
+            separator: " · ",
+            theme,
+        }
+    }
+
+    #[must_use]
+    pub const fn separator(mut self, separator: &'a str) -> Self {
+        self.separator = separator;
+        self
+    }
 }
 
 impl Widget for &HintBar<'_> {
@@ -72,6 +89,16 @@ impl Widget for &HintBar<'_> {
         Paragraph::new(Line::from(spans))
             .wrap(Wrap { trim: false })
             .render(area, buffer);
+    }
+}
+
+impl Widget for HintBar<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

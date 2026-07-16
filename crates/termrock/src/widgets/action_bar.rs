@@ -37,9 +37,26 @@ impl<Id> Default for ActionBarState<Id> {
 
 #[derive(Debug, Clone, Copy)]
 pub struct ActionBar<'a, Id> {
-    pub actions: &'a [Action<'a, Id>],
-    pub gap: &'a str,
-    pub theme: &'a Theme,
+    actions: &'a [Action<'a, Id>],
+    gap: &'a str,
+    theme: &'a Theme,
+}
+
+impl<'a, Id> ActionBar<'a, Id> {
+    #[must_use]
+    pub const fn new(actions: &'a [Action<'a, Id>], theme: &'a Theme) -> Self {
+        Self {
+            actions,
+            gap: " ",
+            theme,
+        }
+    }
+
+    #[must_use]
+    pub const fn gap(mut self, gap: &'a str) -> Self {
+        self.gap = gap;
+        self
+    }
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
@@ -83,5 +100,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
                 break;
             }
         }
+    }
+}
+
+impl<Id: Clone + PartialEq> StatefulWidget for ActionBar<'_, Id> {
+    type State = ActionBarState<Id>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
     }
 }

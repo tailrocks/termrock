@@ -26,6 +26,7 @@ pub enum SplitSide {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SplitRatio(u16);
 
 impl SplitRatio {
@@ -67,6 +68,7 @@ pub struct SplitPaneLayout {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SplitPaneOutcome {
     Ignored,
     Focused,
@@ -277,10 +279,10 @@ impl SplitPaneState {
 
 #[derive(Debug, Clone, Copy)]
 pub struct SplitPane<'a> {
-    pub direction: SplitDirection,
-    pub first_min: u16,
-    pub second_min: u16,
-    pub theme: &'a Theme,
+    direction: SplitDirection,
+    first_min: u16,
+    second_min: u16,
+    theme: &'a Theme,
 }
 
 impl<'a> SplitPane<'a> {
@@ -361,6 +363,14 @@ impl StatefulWidget for &SplitPane<'_> {
             direction: self.direction,
             layout,
         });
+    }
+}
+
+impl StatefulWidget for SplitPane<'_> {
+    type State = SplitPaneState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
     }
 }
 

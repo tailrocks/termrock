@@ -3,6 +3,7 @@
 use core::ops::{BitOr, BitOrAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum KeyCode {
     Backspace,
     Enter,
@@ -109,6 +110,7 @@ impl KeyEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MouseEventKind {
     ScrollUp,
     ScrollDown,
@@ -135,6 +137,7 @@ pub struct MouseEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Event {
     Key(KeyEvent),
     Mouse(MouseEvent),

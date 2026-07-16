@@ -77,9 +77,26 @@ impl<Id> Default for TabsState<Id> {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Tabs<'a, Id> {
-    pub tabs: &'a [Tab<'a, Id>],
-    pub gap: u16,
-    pub theme: &'a Theme,
+    tabs: &'a [Tab<'a, Id>],
+    gap: u16,
+    theme: &'a Theme,
+}
+
+impl<'a, Id> Tabs<'a, Id> {
+    #[must_use]
+    pub const fn new(tabs: &'a [Tab<'a, Id>], theme: &'a Theme) -> Self {
+        Self {
+            tabs,
+            gap: TAB_GAP,
+            theme,
+        }
+    }
+
+    #[must_use]
+    pub const fn gap(mut self, gap: u16) -> Self {
+        self.gap = gap;
+        self
+    }
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
@@ -167,6 +184,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
     }
 }
 
+impl<Id: Clone + PartialEq> StatefulWidget for Tabs<'_, Id> {
+    type State = TabsState<Id>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -200,12 +225,7 @@ mod tests {
             ..TabsState::default()
         };
         let theme = Theme::default();
-        (&Tabs {
-            tabs: &tabs,
-            gap: 1,
-            theme: &theme,
-        })
-            .render(area, &mut buffer, &mut state);
+        (&Tabs::new(&tabs, &theme).gap(1)).render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(3, 5)].symbol(), "━");
         assert_eq!(
@@ -234,12 +254,7 @@ mod tests {
         let mut state = TabsState::default();
         let theme = Theme::default();
 
-        (&Tabs {
-            tabs: &tabs,
-            gap: 1,
-            theme: &theme,
-        })
-            .render(area, &mut buffer, &mut state);
+        (&Tabs::new(&tabs, &theme).gap(1)).render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(1, 0)].symbol(), "●");
         assert_eq!(buffer[(1, 0)].fg, Color::Yellow);

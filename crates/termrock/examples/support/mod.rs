@@ -26,14 +26,6 @@ pub fn render() {
     let area = Rect::new(0, 0, 24, 4);
     let mut buffer = Buffer::empty(area);
     let theme = Theme::default();
-    StatefulWidget::render(
-        &List {
-            rows: &rows,
-            theme: &theme,
-        },
-        area,
-        &mut buffer,
-        &mut state,
-    );
+    StatefulWidget::render(&List::new(&rows, &theme), area, &mut buffer, &mut state);
     assert_eq!(state.selected, Some("first"));
 }

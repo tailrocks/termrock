@@ -14,10 +14,34 @@ use crate::{
 
 #[derive(Debug, Clone, Copy)]
 pub struct Viewport<'a> {
-    pub lines: &'a [Line<'a>],
-    pub title: Option<&'a str>,
-    pub theme: &'a Theme,
-    pub content_style: Option<Style>,
+    lines: &'a [Line<'a>],
+    title: Option<&'a str>,
+    theme: &'a Theme,
+    content_style: Option<Style>,
+}
+
+impl<'a> Viewport<'a> {
+    #[must_use]
+    pub const fn new(lines: &'a [Line<'a>], theme: &'a Theme) -> Self {
+        Self {
+            lines,
+            title: None,
+            theme,
+            content_style: None,
+        }
+    }
+
+    #[must_use]
+    pub const fn title(mut self, title: &'a str) -> Self {
+        self.title = Some(title);
+        self
+    }
+
+    #[must_use]
+    pub const fn content_style(mut self, content_style: Style) -> Self {
+        self.content_style = Some(content_style);
+        self
+    }
 }
 
 impl StatefulWidget for &Viewport<'_> {
@@ -68,6 +92,14 @@ impl StatefulWidget for &Viewport<'_> {
                 self.theme.style(Role::ScrollThumb),
             );
         }
+    }
+}
+
+impl StatefulWidget for Viewport<'_> {
+    type State = DialogScroll;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
     }
 }
 

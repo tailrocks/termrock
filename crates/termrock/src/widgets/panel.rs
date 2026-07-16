@@ -4,6 +4,7 @@ use ratatui_widgets::block::Block;
 use crate::style::{Role, Theme};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PanelEmphasis {
     Normal,
     Focused,
@@ -11,10 +12,10 @@ pub enum PanelEmphasis {
 
 #[derive(Debug, Clone)]
 pub struct Panel<'a> {
-    pub title: Option<&'a str>,
-    pub emphasis: PanelEmphasis,
-    pub style: Option<Style>,
-    pub theme: &'a Theme,
+    title: Option<&'a str>,
+    emphasis: PanelEmphasis,
+    style: Option<Style>,
+    theme: &'a Theme,
 }
 
 impl<'a> Panel<'a> {
@@ -73,5 +74,11 @@ impl<'a> Panel<'a> {
 impl Widget for &Panel<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         self.block().render(area, buffer);
+    }
+}
+
+impl Widget for Panel<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        Widget::render(&self, area, buffer);
     }
 }

@@ -59,6 +59,7 @@ impl<Id: Clone> HoverState<Id> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Shared result vocabulary for widget interaction handlers.
+#[non_exhaustive]
 pub enum Outcome<T> {
     /// The event was not actionable.
     Ignored,

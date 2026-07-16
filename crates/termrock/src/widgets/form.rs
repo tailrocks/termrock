@@ -19,6 +19,7 @@ const COLUMN_GAP: u16 = 2;
 const MIN_COLUMN_WIDTH: u16 = 30;
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct FormField<'a, Id> {
     pub id: Id,
     pub label: Line<'a>,
@@ -29,6 +30,45 @@ pub struct FormField<'a, Id> {
     pub enabled: bool,
 }
 
+impl<'a, Id> FormField<'a, Id> {
+    #[must_use]
+    pub const fn new(id: Id, label: Line<'a>, value: Line<'a>) -> Self {
+        Self {
+            id,
+            label,
+            value,
+            help: None,
+            error: None,
+            required: false,
+            enabled: true,
+        }
+    }
+
+    #[must_use]
+    pub fn help(mut self, help: Line<'a>) -> Self {
+        self.help = Some(help);
+        self
+    }
+
+    #[must_use]
+    pub fn error(mut self, error: Line<'a>) -> Self {
+        self.error = Some(error);
+        self
+    }
+
+    #[must_use]
+    pub const fn required(mut self, required: bool) -> Self {
+        self.required = required;
+        self
+    }
+
+    #[must_use]
+    pub const fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct FormSection<'a, Id> {
     pub title: Line<'a>,
@@ -36,6 +76,7 @@ pub struct FormSection<'a, Id> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum FormOutcome<Id> {
     Ignored,
     FocusChanged(Id),
@@ -457,6 +498,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 }
             }
         }
+    }
+}
+
+impl<Id: Clone + PartialEq> StatefulWidget for Form<'_, Id> {
+    type State = FormState<Id>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
     }
 }
 

@@ -33,10 +33,7 @@ fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
         })
         .collect::<Vec<_>>();
     let theme = Theme::default();
-    let tree = Tree {
-        nodes: &nodes,
-        theme: &theme,
-    };
+    let tree = Tree::new(&nodes, &theme);
     let area = Rect::new(0, 0, 120, VIEWPORT_HEIGHT);
     let mut buffer = Buffer::empty(area);
     let mut state = TreeState::new(Some(NODE_COUNT - 1));

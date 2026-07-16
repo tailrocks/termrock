@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum ProgressKind {
     Determinate { fraction: f64 },
     Indeterminate { tick: u64 },
@@ -13,9 +14,26 @@ pub enum ProgressKind {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Progress<'a> {
-    pub kind: ProgressKind,
-    pub label: Option<&'a str>,
-    pub theme: &'a Theme,
+    kind: ProgressKind,
+    label: Option<&'a str>,
+    theme: &'a Theme,
+}
+
+impl<'a> Progress<'a> {
+    #[must_use]
+    pub const fn new(kind: ProgressKind, theme: &'a Theme) -> Self {
+        Self {
+            kind,
+            label: None,
+            theme,
+        }
+    }
+
+    #[must_use]
+    pub const fn label(mut self, label: &'a str) -> Self {
+        self.label = Some(label);
+        self
+    }
 }
 
 impl Widget for &Progress<'_> {
@@ -32,6 +50,16 @@ impl Widget for &Progress<'_> {
                 render_indeterminate(area, buffer, self.label, tick, self.theme);
             }
         }
+    }
+}
+
+impl Widget for Progress<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -130,11 +158,7 @@ mod tests {
         let theme = Theme::default();
         let area = Rect::new(2, 1, 18, 1);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 22, 3));
-        (&Progress {
-            kind: ProgressKind::Determinate { fraction: 1.5 },
-            label: Some("Index"),
-            theme: &theme,
-        })
+        (&Progress::new(ProgressKind::Determinate { fraction: 1.5 }, &theme).label("Index"))
             .render(area, &mut buffer);
 
         let row = rendered(&buffer);
@@ -149,11 +173,7 @@ mod tests {
         let area = Rect::new(0, 0, 8, 1);
         let mut first = Buffer::empty(area);
         let mut second = Buffer::empty(area);
-        let progress = Progress {
-            kind: ProgressKind::Indeterminate { tick: 3 },
-            label: Some("Load"),
-            theme: &theme,
-        };
+        let progress = Progress::new(ProgressKind::Indeterminate { tick: 3 }, &theme).label("Load");
         (&progress).render(area, &mut first);
         (&progress).render(area, &mut second);
 

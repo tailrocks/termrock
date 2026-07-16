@@ -84,7 +84,7 @@ impl<T> core::convert::From<T> for termrock::crossterm::SessionOptions
 pub fn termrock::crossterm::SessionOptions::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::crossterm::SessionOptions
 pub mod termrock::input
-pub enum termrock::input::Event
+#[non_exhaustive] pub enum termrock::input::Event
 pub termrock::input::Event::FocusGained
 pub termrock::input::Event::FocusLost
 pub termrock::input::Event::Key(termrock::input::KeyEvent)
@@ -139,7 +139,7 @@ pub unsafe fn termrock::input::Event::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::input::Event
 pub fn termrock::input::Event::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::input::Event
-pub enum termrock::input::KeyCode
+#[non_exhaustive] pub enum termrock::input::KeyCode
 pub termrock::input::KeyCode::BackTab
 pub termrock::input::KeyCode::Backspace
 pub termrock::input::KeyCode::Char(char)
@@ -301,7 +301,7 @@ pub unsafe fn termrock::input::MouseButton::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::input::MouseButton
 pub fn termrock::input::MouseButton::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::input::MouseButton
-pub enum termrock::input::MouseEventKind
+#[non_exhaustive] pub enum termrock::input::MouseEventKind
 pub termrock::input::MouseEventKind::Down(termrock::input::MouseButton)
 pub termrock::input::MouseEventKind::Drag(termrock::input::MouseButton)
 pub termrock::input::MouseEventKind::Moved
@@ -836,7 +836,7 @@ pub unsafe fn termrock::interaction::ModalClickResult::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::interaction::ModalClickResult
 pub fn termrock::interaction::ModalClickResult::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::ModalClickResult
-pub enum termrock::interaction::Outcome<T>
+#[non_exhaustive] pub enum termrock::interaction::Outcome<T>
 pub termrock::interaction::Outcome::Activated(T)
 pub termrock::interaction::Outcome::Cancelled
 pub termrock::interaction::Outcome::Changed
@@ -1790,7 +1790,7 @@ pub unsafe fn termrock::osc::ClipboardSelection::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::osc::ClipboardSelection
 pub fn termrock::osc::ClipboardSelection::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::osc::ClipboardSelection
-pub enum termrock::osc::PointerShape
+#[non_exhaustive] pub enum termrock::osc::PointerShape
 pub termrock::osc::PointerShape::Crosshair
 pub termrock::osc::PointerShape::Default
 pub termrock::osc::PointerShape::EwResize
@@ -1839,7 +1839,7 @@ pub unsafe fn termrock::osc::PointerShape::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::osc::PointerShape
 pub fn termrock::osc::PointerShape::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::osc::PointerShape
-pub enum termrock::osc::Request<'a>
+#[non_exhaustive] pub enum termrock::osc::Request<'a>
 pub termrock::osc::Request::Clipboard(termrock::osc::ClipboardWrite<'a>)
 pub termrock::osc::Request::HyperlinkClose
 pub termrock::osc::Request::HyperlinkOpen
@@ -2699,7 +2699,7 @@ pub const fn termrock::scroll::vertical_scrollbar_area(ratatui_core::layout::rec
 pub const fn termrock::scroll::viewport_height(ratatui_core::layout::rect::Rect) -> usize
 pub const fn termrock::scroll::viewport_width(ratatui_core::layout::rect::Rect) -> usize
 pub mod termrock::style
-pub enum termrock::style::Role
+#[non_exhaustive] pub enum termrock::style::Role
 pub termrock::style::Role::Accent
 pub termrock::style::Role::ActionDisabled
 pub termrock::style::Role::ActionFocused
@@ -2938,7 +2938,7 @@ pub fn termrock::text::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::text::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub fn termrock::text::take_display_cols(&str, usize) -> alloc::string::String
 pub mod termrock::widgets
-pub enum termrock::widgets::Anchor
+#[non_exhaustive] pub enum termrock::widgets::Anchor
 pub termrock::widgets::Anchor::BottomLeft
 pub termrock::widgets::Anchor::BottomRight
 pub termrock::widgets::Anchor::TopLeft
@@ -3033,7 +3033,7 @@ pub unsafe fn termrock::widgets::DetailCapability::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::DetailCapability
 pub fn termrock::widgets::DetailCapability::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailCapability
-pub enum termrock::widgets::DetailTableOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::DetailTableOutcome<Id>
 pub termrock::widgets::DetailTableOutcome::ActivateLink(Id)
 pub termrock::widgets::DetailTableOutcome::Copy(Id)
 pub termrock::widgets::DetailTableOutcome::Ignored
@@ -3078,7 +3078,7 @@ pub unsafe fn termrock::widgets::DetailTableOutcome<Id>::clone_to_uninit(&self, 
 impl<T> core::convert::From<T> for termrock::widgets::DetailTableOutcome<Id>
 pub fn termrock::widgets::DetailTableOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailTableOutcome<Id>
-pub enum termrock::widgets::DiffKind
+#[non_exhaustive] pub enum termrock::widgets::DiffKind
 pub termrock::widgets::DiffKind::Added
 pub termrock::widgets::DiffKind::Context
 pub termrock::widgets::DiffKind::Removed
@@ -3171,7 +3171,7 @@ pub unsafe fn termrock::widgets::EditAction::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::EditAction
 pub fn termrock::widgets::EditAction::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::EditAction
-pub enum termrock::widgets::FormOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::FormOutcome<Id>
 pub termrock::widgets::FormOutcome::Activated(Id)
 pub termrock::widgets::FormOutcome::FocusChanged(Id)
 pub termrock::widgets::FormOutcome::Ignored
@@ -3264,7 +3264,7 @@ pub unsafe fn termrock::widgets::HintSpan<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HintSpan<'a>
 pub fn termrock::widgets::HintSpan<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HintSpan<'a>
-pub enum termrock::widgets::Outcome<T>
+#[non_exhaustive] pub enum termrock::widgets::Outcome<T>
 pub termrock::widgets::Outcome::Activated(T)
 pub termrock::widgets::Outcome::Cancelled
 pub termrock::widgets::Outcome::Changed
@@ -3309,7 +3309,7 @@ pub unsafe fn termrock::interaction::Outcome<T>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::Outcome<T>
 pub fn termrock::interaction::Outcome<T>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::Outcome<T>
-pub enum termrock::widgets::PanelEmphasis
+#[non_exhaustive] pub enum termrock::widgets::PanelEmphasis
 pub termrock::widgets::PanelEmphasis::Focused
 pub termrock::widgets::PanelEmphasis::Normal
 impl core::clone::Clone for termrock::widgets::PanelEmphasis
@@ -3353,7 +3353,7 @@ pub unsafe fn termrock::widgets::PanelEmphasis::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PanelEmphasis
 pub fn termrock::widgets::PanelEmphasis::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PanelEmphasis
-pub enum termrock::widgets::ProgressKind
+#[non_exhaustive] pub enum termrock::widgets::ProgressKind
 pub termrock::widgets::ProgressKind::Determinate
 pub termrock::widgets::ProgressKind::Determinate::fraction: f64
 pub termrock::widgets::ProgressKind::Indeterminate
@@ -3396,7 +3396,7 @@ pub unsafe fn termrock::widgets::ProgressKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ProgressKind
 pub fn termrock::widgets::ProgressKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ProgressKind
-pub enum termrock::widgets::RowRole
+#[non_exhaustive] pub enum termrock::widgets::RowRole
 pub termrock::widgets::RowRole::Item
 pub termrock::widgets::RowRole::Separator
 impl core::clone::Clone for termrock::widgets::RowRole
@@ -3440,7 +3440,7 @@ pub unsafe fn termrock::widgets::RowRole::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::RowRole
 pub fn termrock::widgets::RowRole::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RowRole
-pub enum termrock::widgets::Severity
+#[non_exhaustive] pub enum termrock::widgets::Severity
 pub termrock::widgets::Severity::Error
 pub termrock::widgets::Severity::Info
 pub termrock::widgets::Severity::Success
@@ -3530,7 +3530,7 @@ pub unsafe fn termrock::widgets::SplitDirection::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SplitDirection
 pub fn termrock::widgets::SplitDirection::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SplitDirection
-pub enum termrock::widgets::SplitPaneOutcome
+#[non_exhaustive] pub enum termrock::widgets::SplitPaneOutcome
 pub termrock::widgets::SplitPaneOutcome::Collapsed(termrock::widgets::SplitSide)
 pub termrock::widgets::SplitPaneOutcome::Expanded
 pub termrock::widgets::SplitPaneOutcome::Focused
@@ -3621,7 +3621,7 @@ pub unsafe fn termrock::widgets::SplitSide::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SplitSide
 pub fn termrock::widgets::SplitSide::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SplitSide
-pub enum termrock::widgets::TextInputOutcome
+#[non_exhaustive] pub enum termrock::widgets::TextInputOutcome
 pub termrock::widgets::TextInputOutcome::Cancelled
 pub termrock::widgets::TextInputOutcome::Changed
 pub termrock::widgets::TextInputOutcome::Ignored
@@ -3711,7 +3711,7 @@ pub unsafe fn termrock::widgets::TextInputValidity::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::TextInputValidity
 pub fn termrock::widgets::TextInputValidity::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TextInputValidity
-pub enum termrock::widgets::TreeNodeStatus
+#[non_exhaustive] pub enum termrock::widgets::TreeNodeStatus
 pub termrock::widgets::TreeNodeStatus::Error
 pub termrock::widgets::TreeNodeStatus::Loading
 pub termrock::widgets::TreeNodeStatus::Ready
@@ -3756,7 +3756,7 @@ pub unsafe fn termrock::widgets::TreeNodeStatus::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::TreeNodeStatus
 pub fn termrock::widgets::TreeNodeStatus::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TreeNodeStatus
-pub enum termrock::widgets::TreeOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::TreeOutcome<Id>
 pub termrock::widgets::TreeOutcome::Activated(Id)
 pub termrock::widgets::TreeOutcome::CheckToggled(Id)
 pub termrock::widgets::TreeOutcome::Ignored
@@ -3886,9 +3886,9 @@ impl<T> core::convert::From<T> for termrock::widgets::Action<'a, Id>
 pub fn termrock::widgets::Action<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Action<'a, Id>
 pub struct termrock::widgets::ActionBar<'a, Id>
-pub termrock::widgets::ActionBar::actions: &'a [termrock::widgets::Action<'a, Id>]
-pub termrock::widgets::ActionBar::gap: &'a str
-pub termrock::widgets::ActionBar::theme: &'a termrock::style::Theme
+impl<'a, Id> termrock::widgets::ActionBar<'a, Id>
+pub const fn termrock::widgets::ActionBar<'a, Id>::gap(self, &'a str) -> Self
+pub const fn termrock::widgets::ActionBar<'a, Id>::new(&'a [termrock::widgets::Action<'a, Id>], &'a termrock::style::Theme) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ActionBar<'a, Id>
 pub fn termrock::widgets::ActionBar<'a, Id>::clone(&self) -> termrock::widgets::ActionBar<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ActionBar<'a, Id>
@@ -3897,6 +3897,9 @@ impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Actio
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::ActionBar<'_, Id>
 pub type &termrock::widgets::ActionBar<'_, Id>::State = termrock::widgets::ActionBarState<Id>
 pub fn &termrock::widgets::ActionBar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::ActionBar<'_, Id>
+pub type termrock::widgets::ActionBar<'_, Id>::State = termrock::widgets::ActionBarState<Id>
+pub fn termrock::widgets::ActionBar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::ActionBar<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::ActionBar<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::ActionBar<'a, Id> where Id: core::marker::Sync
@@ -3973,8 +3976,10 @@ impl<T> core::convert::From<T> for termrock::widgets::ActionBarState<Id>
 pub fn termrock::widgets::ActionBarState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActionBarState<Id>
 pub struct termrock::widgets::Backdrop
-pub termrock::widgets::Backdrop::style: ratatui_core::style::Style
-pub termrock::widgets::Backdrop::symbol: char
+impl termrock::widgets::Backdrop
+pub fn termrock::widgets::Backdrop::new() -> Self
+pub const fn termrock::widgets::Backdrop::style(self, ratatui_core::style::Style) -> Self
+pub const fn termrock::widgets::Backdrop::symbol(self, char) -> Self
 impl core::clone::Clone for termrock::widgets::Backdrop
 pub fn termrock::widgets::Backdrop::clone(&self) -> termrock::widgets::Backdrop
 impl core::default::Default for termrock::widgets::Backdrop
@@ -3984,6 +3989,8 @@ pub fn termrock::widgets::Backdrop::fmt(&self, &mut core::fmt::Formatter<'_>) ->
 impl core::marker::Copy for termrock::widgets::Backdrop
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Backdrop
 pub fn &termrock::widgets::Backdrop::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Backdrop
+pub fn termrock::widgets::Backdrop::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl core::marker::Freeze for termrock::widgets::Backdrop
 impl core::marker::Send for termrock::widgets::Backdrop
 impl core::marker::Sync for termrock::widgets::Backdrop
@@ -4015,9 +4022,9 @@ impl<T> core::convert::From<T> for termrock::widgets::Backdrop
 pub fn termrock::widgets::Backdrop::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Backdrop
 pub struct termrock::widgets::ChoiceDialog<'a, Id>
-pub termrock::widgets::ChoiceDialog::actions: &'a [termrock::widgets::Action<'a, Id>]
-pub termrock::widgets::ChoiceDialog::dialog: termrock::widgets::Dialog<'a>
-pub termrock::widgets::ChoiceDialog::gap: &'a str
+impl<'a, Id> termrock::widgets::ChoiceDialog<'a, Id>
+pub const fn termrock::widgets::ChoiceDialog<'a, Id>::gap(self, &'a str) -> Self
+pub const fn termrock::widgets::ChoiceDialog<'a, Id>::new(termrock::widgets::Dialog<'a>, &'a [termrock::widgets::Action<'a, Id>]) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ChoiceDialog<'a, Id>
 pub fn termrock::widgets::ChoiceDialog<'a, Id>::clone(&self) -> termrock::widgets::ChoiceDialog<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ChoiceDialog<'a, Id>
@@ -4025,6 +4032,9 @@ pub fn termrock::widgets::ChoiceDialog<'a, Id>::fmt(&self, &mut core::fmt::Forma
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::ChoiceDialog<'_, Id>
 pub type &termrock::widgets::ChoiceDialog<'_, Id>::State = termrock::widgets::ChoiceDialogState<Id>
 pub fn &termrock::widgets::ChoiceDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::ChoiceDialog<'_, Id>
+pub type termrock::widgets::ChoiceDialog<'_, Id>::State = termrock::widgets::ChoiceDialogState<Id>
+pub fn termrock::widgets::ChoiceDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::ChoiceDialog<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::ChoiceDialog<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::ChoiceDialog<'a, Id> where Id: core::marker::Sync
@@ -4150,10 +4160,10 @@ impl<T> core::convert::From<T> for termrock::widgets::DetailRow<'a, Id>
 pub fn termrock::widgets::DetailRow<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailRow<'a, Id>
 pub struct termrock::widgets::DetailTable<'a, Id>
-pub termrock::widgets::DetailTable::label_width: u16
-pub termrock::widgets::DetailTable::rows: &'a [termrock::widgets::DetailRow<'a, Id>]
-pub termrock::widgets::DetailTable::theme: &'a termrock::style::Theme
-pub termrock::widgets::DetailTable::wrap: bool
+impl<'a, Id> termrock::widgets::DetailTable<'a, Id>
+pub const fn termrock::widgets::DetailTable<'a, Id>::label_width(self, u16) -> Self
+pub const fn termrock::widgets::DetailTable<'a, Id>::new(&'a [termrock::widgets::DetailRow<'a, Id>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::DetailTable<'a, Id>::wrap(self, bool) -> Self
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DetailTable<'_, Id>
 pub fn termrock::widgets::DetailTable<'_, Id>::hyperlink_regions<'a>(&'a self, &'a termrock::widgets::DetailTableState<Id>) -> alloc::vec::Vec<termrock::osc::HyperlinkRegion<'a, Id>>
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DetailTable<'a, Id>
@@ -4164,6 +4174,9 @@ impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Detai
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DetailTable<'_, Id>
 pub type &termrock::widgets::DetailTable<'_, Id>::State = termrock::widgets::DetailTableState<Id>
 pub fn &termrock::widgets::DetailTable<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::DetailTable<'_, Id>
+pub type termrock::widgets::DetailTable<'_, Id>::State = termrock::widgets::DetailTableState<Id>
+pub fn termrock::widgets::DetailTable<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::DetailTable<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::DetailTable<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::DetailTable<'a, Id> where Id: core::marker::Sync
@@ -4256,13 +4269,14 @@ impl<T> core::convert::From<T> for termrock::widgets::DetailTableState<Id>
 pub fn termrock::widgets::DetailTableState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailTableState<Id>
 pub struct termrock::widgets::Dialog<'a>
-pub termrock::widgets::Dialog::body: ratatui_core::text::text::Text<'a>
-pub termrock::widgets::Dialog::emphasis: termrock::widgets::PanelEmphasis
-pub termrock::widgets::Dialog::style: ratatui_core::style::Style
-pub termrock::widgets::Dialog::theme: &'a termrock::style::Theme
-pub termrock::widgets::Dialog::title: &'a str
+impl<'a> termrock::widgets::Dialog<'a>
+pub const fn termrock::widgets::Dialog<'a>::emphasis(self, termrock::widgets::PanelEmphasis) -> Self
+pub const fn termrock::widgets::Dialog<'a>::new(&'a str, ratatui_core::text::text::Text<'a>, &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::Dialog<'a>::style(self, ratatui_core::style::Style) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Dialog<'_>
 pub fn &termrock::widgets::Dialog<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Dialog<'_>
+pub fn termrock::widgets::Dialog<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Dialog<'a>
 pub fn termrock::widgets::Dialog<'a>::clone(&self) -> termrock::widgets::Dialog<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Dialog<'a>
@@ -4348,6 +4362,10 @@ pub fn termrock::widgets::DiffState::default() -> termrock::widgets::DiffState
 impl core::fmt::Debug for termrock::widgets::DiffState
 pub fn termrock::widgets::DiffState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::DiffState
+impl serde_core::ser::Serialize for termrock::widgets::DiffState
+pub fn termrock::widgets::DiffState::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::widgets::DiffState
+pub fn termrock::widgets::DiffState::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for termrock::widgets::DiffState
 impl core::marker::Send for termrock::widgets::DiffState
 impl core::marker::Sync for termrock::widgets::DiffState
@@ -4380,12 +4398,16 @@ pub unsafe fn termrock::widgets::DiffState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DiffState
 pub fn termrock::widgets::DiffState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffState
+impl<T> serde_core::de::DeserializeOwned for termrock::widgets::DiffState where T: for<'de> serde_core::de::Deserialize<'de>
 pub struct termrock::widgets::DiffView<'a>
-pub termrock::widgets::DiffView::lines: &'a [termrock::widgets::DiffLine<'a>]
-pub termrock::widgets::DiffView::theme: &'a termrock::style::Theme
+impl<'a> termrock::widgets::DiffView<'a>
+pub const fn termrock::widgets::DiffView<'a>::new(&'a [termrock::widgets::DiffLine<'a>], &'a termrock::style::Theme) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DiffView<'_>
 pub type &termrock::widgets::DiffView<'_>::State = termrock::widgets::DiffState
 pub fn &termrock::widgets::DiffView<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::DiffView<'_>
+pub type termrock::widgets::DiffView<'_>::State = termrock::widgets::DiffState
+pub fn termrock::widgets::DiffView<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a> core::clone::Clone for termrock::widgets::DiffView<'a>
 pub fn termrock::widgets::DiffView<'a>::clone(&self) -> termrock::widgets::DiffView<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::DiffView<'a>
@@ -4432,6 +4454,9 @@ impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Form<
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Form<'_, Id>
 pub type &termrock::widgets::Form<'_, Id>::State = termrock::widgets::FormState<Id>
 pub fn &termrock::widgets::Form<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Form<'_, Id>
+pub type termrock::widgets::Form<'_, Id>::State = termrock::widgets::FormState<Id>
+pub fn termrock::widgets::Form<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Form<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::Form<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::Form<'a, Id> where Id: core::marker::Sync
@@ -4462,7 +4487,7 @@ pub unsafe fn termrock::widgets::Form<'a, Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Form<'a, Id>
 pub fn termrock::widgets::Form<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Form<'a, Id>
-pub struct termrock::widgets::FormField<'a, Id>
+#[non_exhaustive] pub struct termrock::widgets::FormField<'a, Id>
 pub termrock::widgets::FormField::enabled: bool
 pub termrock::widgets::FormField::error: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::FormField::help: core::option::Option<ratatui_core::text::line::Line<'a>>
@@ -4470,6 +4495,12 @@ pub termrock::widgets::FormField::id: Id
 pub termrock::widgets::FormField::label: ratatui_core::text::line::Line<'a>
 pub termrock::widgets::FormField::required: bool
 pub termrock::widgets::FormField::value: ratatui_core::text::line::Line<'a>
+impl<'a, Id> termrock::widgets::FormField<'a, Id>
+pub const fn termrock::widgets::FormField<'a, Id>::enabled(self, bool) -> Self
+pub fn termrock::widgets::FormField<'a, Id>::error(self, ratatui_core::text::line::Line<'a>) -> Self
+pub fn termrock::widgets::FormField<'a, Id>::help(self, ratatui_core::text::line::Line<'a>) -> Self
+pub const fn termrock::widgets::FormField<'a, Id>::new(Id, ratatui_core::text::line::Line<'a>, ratatui_core::text::line::Line<'a>) -> Self
+pub const fn termrock::widgets::FormField<'a, Id>::required(self, bool) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormField<'a, Id>
 pub fn termrock::widgets::FormField<'a, Id>::clone(&self) -> termrock::widgets::FormField<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FormField<'a, Id>
@@ -4689,11 +4720,13 @@ impl<T> core::convert::From<T> for termrock::widgets::Hint<'a>
 pub fn termrock::widgets::Hint<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Hint<'a>
 pub struct termrock::widgets::HintBar<'a>
-pub termrock::widgets::HintBar::hints: &'a [termrock::widgets::Hint<'a>]
-pub termrock::widgets::HintBar::separator: &'a str
-pub termrock::widgets::HintBar::theme: &'a termrock::style::Theme
+impl<'a> termrock::widgets::HintBar<'a>
+pub const fn termrock::widgets::HintBar<'a>::new(&'a [termrock::widgets::Hint<'a>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::HintBar<'a>::separator(self, &'a str) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::HintBar<'_>
 pub fn &termrock::widgets::HintBar<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::HintBar<'_>
+pub fn termrock::widgets::HintBar<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::HintBar<'a>
 pub fn termrock::widgets::HintBar<'a>::clone(&self) -> termrock::widgets::HintBar<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::HintBar<'a>
@@ -4730,8 +4763,8 @@ impl<T> core::convert::From<T> for termrock::widgets::HintBar<'a>
 pub fn termrock::widgets::HintBar<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HintBar<'a>
 pub struct termrock::widgets::List<'a, Id>
-pub termrock::widgets::List::rows: &'a [termrock::widgets::ListRow<'a, Id>]
-pub termrock::widgets::List::theme: &'a termrock::style::Theme
+impl<'a, Id> termrock::widgets::List<'a, Id>
+pub const fn termrock::widgets::List<'a, Id>::new(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::Theme) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::List<'a, Id>
 pub fn termrock::widgets::List<'a, Id>::clone(&self) -> termrock::widgets::List<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::List<'a, Id>
@@ -4740,6 +4773,9 @@ impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::List<
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::List<'_, Id>
 pub type &termrock::widgets::List<'_, Id>::State = termrock::widgets::ListState<Id>
 pub fn &termrock::widgets::List<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::List<'_, Id>
+pub type termrock::widgets::List<'_, Id>::State = termrock::widgets::ListState<Id>
+pub fn termrock::widgets::List<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::List<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::List<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::List<'a, Id> where Id: core::marker::Sync
@@ -4883,11 +4919,15 @@ impl<T> core::convert::From<T> for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ListState<Id>
 pub struct termrock::widgets::LogPane<'a>
-pub termrock::widgets::LogPane::theme: &'a termrock::style::Theme
-pub termrock::widgets::LogPane::title: core::option::Option<&'a str>
+impl<'a> termrock::widgets::LogPane<'a>
+pub const fn termrock::widgets::LogPane<'a>::new(&'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::LogPane<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::LogPane<'_>
 pub type &termrock::widgets::LogPane<'_>::State = termrock::widgets::LogPaneState
 pub fn &termrock::widgets::LogPane<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::LogPane<'_>
+pub type termrock::widgets::LogPane<'_>::State = termrock::widgets::LogPaneState
+pub fn termrock::widgets::LogPane<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a> core::clone::Clone for termrock::widgets::LogPane<'a>
 pub fn termrock::widgets::LogPane<'a>::clone(&self) -> termrock::widgets::LogPane<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::LogPane<'a>
@@ -4977,11 +5017,10 @@ impl<T> core::convert::From<T> for termrock::widgets::LogPaneState
 pub fn termrock::widgets::LogPaneState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LogPaneState
 pub struct termrock::widgets::MessageDialog<'a, Id>
-pub termrock::widgets::MessageDialog::details: &'a [termrock::widgets::DetailRow<'a, Id>]
-pub termrock::widgets::MessageDialog::dialog: termrock::widgets::Dialog<'a>
-pub termrock::widgets::MessageDialog::label_width: u16
-pub termrock::widgets::MessageDialog::theme: &'a termrock::style::Theme
-pub termrock::widgets::MessageDialog::wrap: bool
+impl<'a, Id> termrock::widgets::MessageDialog<'a, Id>
+pub const fn termrock::widgets::MessageDialog<'a, Id>::label_width(self, u16) -> Self
+pub const fn termrock::widgets::MessageDialog<'a, Id>::new(termrock::widgets::Dialog<'a>, &'a [termrock::widgets::DetailRow<'a, Id>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::MessageDialog<'a, Id>::wrap(self, bool) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MessageDialog<'a, Id>
 pub fn termrock::widgets::MessageDialog<'a, Id>::clone(&self) -> termrock::widgets::MessageDialog<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::MessageDialog<'a, Id>
@@ -4989,6 +5028,9 @@ pub fn termrock::widgets::MessageDialog<'a, Id>::fmt(&self, &mut core::fmt::Form
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::MessageDialog<'_, Id>
 pub type &termrock::widgets::MessageDialog<'_, Id>::State = termrock::widgets::DetailTableState<Id>
 pub fn &termrock::widgets::MessageDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::MessageDialog<'_, Id>
+pub type termrock::widgets::MessageDialog<'_, Id>::State = termrock::widgets::DetailTableState<Id>
+pub fn termrock::widgets::MessageDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::MessageDialog<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::MessageDialog<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::MessageDialog<'a, Id> where Id: core::marker::Sync
@@ -5020,10 +5062,6 @@ impl<T> core::convert::From<T> for termrock::widgets::MessageDialog<'a, Id>
 pub fn termrock::widgets::MessageDialog<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MessageDialog<'a, Id>
 pub struct termrock::widgets::Panel<'a>
-pub termrock::widgets::Panel::emphasis: termrock::widgets::PanelEmphasis
-pub termrock::widgets::Panel::style: core::option::Option<ratatui_core::style::Style>
-pub termrock::widgets::Panel::theme: &'a termrock::style::Theme
-pub termrock::widgets::Panel::title: core::option::Option<&'a str>
 impl<'a> termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::block(&self) -> ratatui_widgets::block::Block<'a>
 pub const fn termrock::widgets::Panel<'a>::emphasis(self, termrock::widgets::PanelEmphasis) -> Self
@@ -5033,6 +5071,8 @@ pub const fn termrock::widgets::Panel<'a>::style(self, ratatui_core::style::Styl
 pub const fn termrock::widgets::Panel<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Panel<'_>
 pub fn &termrock::widgets::Panel<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Panel<'_>
+pub fn termrock::widgets::Panel<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::clone(&self) -> termrock::widgets::Panel<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Panel<'a>
@@ -5068,11 +5108,13 @@ impl<T> core::convert::From<T> for termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Panel<'a>
 pub struct termrock::widgets::Progress<'a>
-pub termrock::widgets::Progress::kind: termrock::widgets::ProgressKind
-pub termrock::widgets::Progress::label: core::option::Option<&'a str>
-pub termrock::widgets::Progress::theme: &'a termrock::style::Theme
+impl<'a> termrock::widgets::Progress<'a>
+pub const fn termrock::widgets::Progress<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::Progress<'a>::new(termrock::widgets::ProgressKind, &'a termrock::style::Theme) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Progress<'_>
 pub fn &termrock::widgets::Progress<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Progress<'_>
+pub fn termrock::widgets::Progress<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Progress<'a>
 pub fn termrock::widgets::Progress<'a>::clone(&self) -> termrock::widgets::Progress<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Progress<'a>
@@ -5159,16 +5201,15 @@ impl<T> core::convert::From<T> for termrock::widgets::Selection<Id>
 pub fn termrock::widgets::Selection<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Selection<Id>
 pub struct termrock::widgets::SplitPane<'a>
-pub termrock::widgets::SplitPane::direction: termrock::widgets::SplitDirection
-pub termrock::widgets::SplitPane::first_min: u16
-pub termrock::widgets::SplitPane::second_min: u16
-pub termrock::widgets::SplitPane::theme: &'a termrock::style::Theme
 impl<'a> termrock::widgets::SplitPane<'a>
 pub fn termrock::widgets::SplitPane<'a>::layout(&self, ratatui_core::layout::rect::Rect, &mut termrock::widgets::SplitPaneState) -> termrock::widgets::SplitPaneLayout
 pub const fn termrock::widgets::SplitPane<'a>::new(termrock::widgets::SplitDirection, u16, u16, &'a termrock::style::Theme) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::SplitPane<'_>
 pub type &termrock::widgets::SplitPane<'_>::State = termrock::widgets::SplitPaneState
 pub fn &termrock::widgets::SplitPane<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::SplitPane<'_>
+pub type termrock::widgets::SplitPane<'_>::State = termrock::widgets::SplitPaneState
+pub fn termrock::widgets::SplitPane<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a> core::clone::Clone for termrock::widgets::SplitPane<'a>
 pub fn termrock::widgets::SplitPane<'a>::clone(&self) -> termrock::widgets::SplitPane<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::SplitPane<'a>
@@ -5331,6 +5372,10 @@ impl core::fmt::Debug for termrock::widgets::SplitRatio
 pub fn termrock::widgets::SplitRatio::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for termrock::widgets::SplitRatio
 impl core::marker::StructuralPartialEq for termrock::widgets::SplitRatio
+impl serde_core::ser::Serialize for termrock::widgets::SplitRatio
+pub fn termrock::widgets::SplitRatio::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::widgets::SplitRatio
+pub fn termrock::widgets::SplitRatio::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for termrock::widgets::SplitRatio
 impl core::marker::Send for termrock::widgets::SplitRatio
 impl core::marker::Sync for termrock::widgets::SplitRatio
@@ -5365,11 +5410,11 @@ pub unsafe fn termrock::widgets::SplitRatio::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SplitRatio
 pub fn termrock::widgets::SplitRatio::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SplitRatio
+impl<T> serde_core::de::DeserializeOwned for termrock::widgets::SplitRatio where T: for<'de> serde_core::de::Deserialize<'de>
 pub struct termrock::widgets::StatusBar<'a, Id>
-pub termrock::widgets::StatusBar::alpha: f32
-pub termrock::widgets::StatusBar::left: &'a [termrock::widgets::StatusSlot<'a, Id>]
-pub termrock::widgets::StatusBar::right: &'a [termrock::widgets::StatusSlot<'a, Id>]
-pub termrock::widgets::StatusBar::theme: &'a termrock::style::Theme
+impl<'a, Id> termrock::widgets::StatusBar<'a, Id>
+pub const fn termrock::widgets::StatusBar<'a, Id>::alpha(self, f32) -> Self
+pub const fn termrock::widgets::StatusBar<'a, Id>::new(&'a [termrock::widgets::StatusSlot<'a, Id>], &'a [termrock::widgets::StatusSlot<'a, Id>], &'a termrock::style::Theme) -> Self
 impl<Id: core::clone::Clone> termrock::widgets::StatusBar<'_, Id>
 pub fn termrock::widgets::StatusBar<'_, Id>::regions(&self, ratatui_core::layout::rect::Rect) -> alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::StatusBar<'a, Id>
@@ -5380,6 +5425,9 @@ impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Statu
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::StatusBar<'_, Id>
 pub type &termrock::widgets::StatusBar<'_, Id>::State = termrock::widgets::StatusBarState<Id>
 pub fn &termrock::widgets::StatusBar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::StatusBar<'_, Id>
+pub type termrock::widgets::StatusBar<'_, Id>::State = termrock::widgets::StatusBarState<Id>
+pub fn termrock::widgets::StatusBar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::StatusBar<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::StatusBar<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::StatusBar<'a, Id> where Id: core::marker::Sync
@@ -5580,9 +5628,9 @@ impl<T> core::convert::From<T> for termrock::widgets::TabCell<'a>
 pub fn termrock::widgets::TabCell<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TabCell<'a>
 pub struct termrock::widgets::Tabs<'a, Id>
-pub termrock::widgets::Tabs::gap: u16
-pub termrock::widgets::Tabs::tabs: &'a [termrock::widgets::Tab<'a, Id>]
-pub termrock::widgets::Tabs::theme: &'a termrock::style::Theme
+impl<'a, Id> termrock::widgets::Tabs<'a, Id>
+pub const fn termrock::widgets::Tabs<'a, Id>::gap(self, u16) -> Self
+pub const fn termrock::widgets::Tabs<'a, Id>::new(&'a [termrock::widgets::Tab<'a, Id>], &'a termrock::style::Theme) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tabs<'a, Id>
 pub fn termrock::widgets::Tabs<'a, Id>::clone(&self) -> termrock::widgets::Tabs<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Tabs<'a, Id>
@@ -5591,6 +5639,9 @@ impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Tabs<
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Tabs<'_, Id>
 pub type &termrock::widgets::Tabs<'_, Id>::State = termrock::widgets::TabsState<Id>
 pub fn &termrock::widgets::Tabs<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Tabs<'_, Id>
+pub type termrock::widgets::Tabs<'_, Id>::State = termrock::widgets::TabsState<Id>
+pub fn termrock::widgets::Tabs<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Tabs<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::Tabs<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::Tabs<'a, Id> where Id: core::marker::Sync
@@ -5669,13 +5720,17 @@ impl<T> core::convert::From<T> for termrock::widgets::TabsState<Id>
 pub fn termrock::widgets::TabsState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TabsState<Id>
 pub struct termrock::widgets::TextInput<'a>
-pub termrock::widgets::TextInput::label: &'a str
-pub termrock::widgets::TextInput::placeholder: &'a str
-pub termrock::widgets::TextInput::theme: &'a termrock::style::Theme
-pub termrock::widgets::TextInput::validation: termrock::widgets::Validation<'a>
+impl<'a> termrock::widgets::TextInput<'a>
+pub const fn termrock::widgets::TextInput<'a>::label(&self) -> &'a str
+pub const fn termrock::widgets::TextInput<'a>::new(&'a str, &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::TextInput<'a>::placeholder(self, &'a str) -> Self
+pub const fn termrock::widgets::TextInput<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::TextInput<'_>
 pub type &termrock::widgets::TextInput<'_>::State = termrock::widgets::TextInputState
 pub fn &termrock::widgets::TextInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::TextInput<'_>
+pub type termrock::widgets::TextInput<'_>::State = termrock::widgets::TextInputState
+pub fn termrock::widgets::TextInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a> core::clone::Clone for termrock::widgets::TextInput<'a>
 pub fn termrock::widgets::TextInput<'a>::clone(&self) -> termrock::widgets::TextInput<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::TextInput<'a>
@@ -5735,6 +5790,10 @@ pub fn termrock::widgets::TextInputState::default() -> termrock::widgets::TextIn
 impl core::fmt::Debug for termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::TextInputState
+impl serde_core::ser::Serialize for termrock::widgets::TextInputState
+pub fn termrock::widgets::TextInputState::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::widgets::TextInputState
+pub fn termrock::widgets::TextInputState::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for termrock::widgets::TextInputState
 impl core::marker::Send for termrock::widgets::TextInputState
 impl core::marker::Sync for termrock::widgets::TextInputState
@@ -5767,6 +5826,7 @@ pub unsafe fn termrock::widgets::TextInputState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TextInputState
+impl<T> serde_core::de::DeserializeOwned for termrock::widgets::TextInputState where T: for<'de> serde_core::de::Deserialize<'de>
 pub struct termrock::widgets::Toast<'a>
 impl<'a> termrock::widgets::Toast<'a>
 pub const fn termrock::widgets::Toast<'a>::anchor(self, termrock::widgets::Anchor) -> Self
@@ -5776,6 +5836,8 @@ pub fn termrock::widgets::Toast<'a>::rect(&self, ratatui_core::layout::rect::Rec
 pub const fn termrock::widgets::Toast<'a>::style(self, ratatui_core::style::Style) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Toast<'_>
 pub fn &termrock::widgets::Toast<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Toast<'_>
+pub fn termrock::widgets::Toast<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Toast<'a>
 pub fn termrock::widgets::Toast<'a>::clone(&self) -> termrock::widgets::Toast<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Toast<'a>
@@ -5812,8 +5874,8 @@ impl<T> core::convert::From<T> for termrock::widgets::Toast<'a>
 pub fn termrock::widgets::Toast<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Toast<'a>
 pub struct termrock::widgets::Tree<'a, Id>
-pub termrock::widgets::Tree::nodes: &'a [termrock::widgets::TreeNode<'a, Id>]
-pub termrock::widgets::Tree::theme: &'a termrock::style::Theme
+impl<'a, Id> termrock::widgets::Tree<'a, Id>
+pub const fn termrock::widgets::Tree<'a, Id>::new(&'a [termrock::widgets::TreeNode<'a, Id>], &'a termrock::style::Theme) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tree<'a, Id>
 pub fn termrock::widgets::Tree<'a, Id>::clone(&self) -> termrock::widgets::Tree<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Tree<'a, Id>
@@ -5822,6 +5884,9 @@ impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Tree<
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Tree<'_, Id>
 pub type &termrock::widgets::Tree<'_, Id>::State = termrock::widgets::TreeState<Id>
 pub fn &termrock::widgets::Tree<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Tree<'_, Id>
+pub type termrock::widgets::Tree<'_, Id>::State = termrock::widgets::TreeState<Id>
+pub fn termrock::widgets::Tree<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Tree<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::Tree<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::Tree<'a, Id> where Id: core::marker::Sync
@@ -5958,13 +6023,16 @@ impl<T> core::convert::From<T> for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TreeState<Id>
 pub struct termrock::widgets::Viewport<'a>
-pub termrock::widgets::Viewport::content_style: core::option::Option<ratatui_core::style::Style>
-pub termrock::widgets::Viewport::lines: &'a [ratatui_core::text::line::Line<'a>]
-pub termrock::widgets::Viewport::theme: &'a termrock::style::Theme
-pub termrock::widgets::Viewport::title: core::option::Option<&'a str>
+impl<'a> termrock::widgets::Viewport<'a>
+pub const fn termrock::widgets::Viewport<'a>::content_style(self, ratatui_core::style::Style) -> Self
+pub const fn termrock::widgets::Viewport<'a>::new(&'a [ratatui_core::text::line::Line<'a>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::Viewport<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Viewport<'_>
 pub type &termrock::widgets::Viewport<'_>::State = termrock::scroll::DialogScroll
 pub fn &termrock::widgets::Viewport<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Viewport<'_>
+pub type termrock::widgets::Viewport<'_>::State = termrock::scroll::DialogScroll
+pub fn termrock::widgets::Viewport<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a> core::clone::Clone for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::clone(&self) -> termrock::widgets::Viewport<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Viewport<'a>

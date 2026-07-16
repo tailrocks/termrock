@@ -33,6 +33,7 @@ pub enum TextInputValidity {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TextInputOutcome {
     Ignored,
     Changed,
@@ -41,6 +42,7 @@ pub enum TextInputOutcome {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TextInputState {
     value: String,
     cursor: usize,
@@ -238,10 +240,39 @@ impl TextInputState {
 
 #[derive(Debug, Clone, Copy)]
 pub struct TextInput<'a> {
-    pub label: &'a str,
-    pub placeholder: &'a str,
-    pub validation: Validation<'a>,
-    pub theme: &'a Theme,
+    label: &'a str,
+    placeholder: &'a str,
+    validation: Validation<'a>,
+    theme: &'a Theme,
+}
+
+impl<'a> TextInput<'a> {
+    #[must_use]
+    pub const fn new(label: &'a str, theme: &'a Theme) -> Self {
+        Self {
+            label,
+            placeholder: "",
+            validation: Validation::Valid,
+            theme,
+        }
+    }
+
+    #[must_use]
+    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
+        self.placeholder = placeholder;
+        self
+    }
+
+    #[must_use]
+    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
+        self.validation = validation;
+        self
+    }
+
+    #[must_use]
+    pub const fn label(&self) -> &'a str {
+        self.label
+    }
 }
 
 impl StatefulWidget for &TextInput<'_> {
@@ -290,6 +321,14 @@ impl StatefulWidget for &TextInput<'_> {
     }
 }
 
+impl StatefulWidget for TextInput<'_> {
+    type State = TextInputState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        StatefulWidget::render(&self, area, buffer, state);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -325,13 +364,7 @@ mod tests {
         let mut state = TextInputState::new("alpha🧪");
         let area = Rect::new(3, 2, 4, 1);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 10, 5));
-        (&TextInput {
-            label: "Name",
-            placeholder: "",
-            validation: Validation::Valid,
-            theme: &theme,
-        })
-            .render(area, &mut buffer, &mut state);
+        (&TextInput::new("Name", &theme)).render(area, &mut buffer, &mut state);
         assert!(state.viewport > 0);
         assert!(state.cursor_byte() >= state.viewport);
     }

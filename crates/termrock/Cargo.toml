@@ -17,6 +17,7 @@ name = "termrock"
 [features]
 default = []
 crossterm = ["dep:crossterm", "dep:ratatui-crossterm"]
+serde = ["dep:serde"]
 
 [dependencies]
 anstyle-parse.workspace = true
@@ -25,6 +26,7 @@ crossterm = { workspace = true, optional = true }
 ratatui-core.workspace = true
 ratatui-crossterm = { workspace = true, optional = true }
 ratatui-widgets.workspace = true
+serde = { workspace = true, optional = true }
 tui-scrollbar.workspace = true
 unicode-segmentation.workspace = true
 unicode-width.workspace = true

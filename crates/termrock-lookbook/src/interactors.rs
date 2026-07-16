@@ -100,14 +100,7 @@ impl ListInteractor {
 impl StoryInteraction for ListInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let rows = list_rows();
-        frame.render_stateful_widget(
-            &List {
-                rows: &rows,
-                theme: &self.theme,
-            },
-            area,
-            &mut self.state,
-        );
+        frame.render_stateful_widget(&List::new(&rows, &self.theme), area, &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -163,12 +156,9 @@ impl TextInputInteractor {
 impl StoryInteraction for TextInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &TextInput {
-                label: "Filter",
-                placeholder: "Type to filter",
-                validation: Validation::Valid,
-                theme: &self.theme,
-            },
+            &TextInput::new("Filter", &self.theme)
+                .placeholder("Type to filter")
+                .validation(Validation::Valid),
             area,
             &mut self.state,
         );
@@ -211,10 +201,7 @@ impl LogPaneInteractor {
 impl StoryInteraction for LogPaneInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &LogPane {
-                title: Some("Build log"),
-                theme: &self.theme,
-            },
+            &LogPane::new(&self.theme).title("Build log"),
             area,
             &mut self.state,
         );
@@ -250,14 +237,7 @@ impl TreeInteractor {
 
 impl StoryInteraction for TreeInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        frame.render_stateful_widget(
-            &Tree {
-                nodes: &self.nodes,
-                theme: &self.theme,
-            },
-            area,
-            &mut self.state,
-        );
+        frame.render_stateful_widget(&Tree::new(&self.nodes, &self.theme), area, &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {

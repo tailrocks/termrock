@@ -1322,6 +1322,7 @@ dependencies = [
  "ratatui-core",
  "ratatui-crossterm",
  "ratatui-widgets",
+ "serde",
  "stats_alloc",
  "tui-scrollbar",
  "unicode-segmentation",

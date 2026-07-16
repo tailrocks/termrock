@@ -84,6 +84,7 @@ pub fn faded(color: Color, alpha: f32) -> Color {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Role {
     Canvas,
     Surface,

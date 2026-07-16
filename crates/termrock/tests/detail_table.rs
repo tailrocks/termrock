@@ -64,12 +64,7 @@ fn render<'a, Id: Clone + PartialEq>(
     area: Rect,
     wrap: bool,
 ) -> Buffer {
-    let table = DetailTable {
-        rows,
-        label_width: 0,
-        wrap,
-        theme,
-    };
+    let table = DetailTable::new(rows, theme).label_width(0).wrap(wrap);
     let mut buffer = Buffer::empty(area);
     (&table).render(area, &mut buffer, state);
     buffer
