@@ -33,7 +33,13 @@ result = "pass; deterministic canonical previews"
 repository = "jackin-project/jackin"
 platform = "macos"
 command = "cargo check --workspace --all-targets --locked at 27c450e9af7a299171034f98267e0fa26bd3057f"
-result = "pass against Jackin's pinned compatible TermRock 41482e9f baseline; Form is additive and changes no existing consumer contract"
+result = "pass against Jackin's pinned compatible TermRock 41482e9f baseline"
+
+[[verification]]
+repository = "jackin-project/jackin"
+platform = "macos"
+command = "temporarily pin TermRock 179745902bd0dbe266cbf54481afeaf0212b1d06, cargo update -p termrock --precise 179745902bd0dbe266cbf54481afeaf0212b1d06, then cargo check --workspace --all-targets --locked at 27c450e9af7a299171034f98267e0fa26bd3057f"
+result = "pass; temporary Cargo.toml and Cargo.lock changes restored afterward; Jackin working tree clean"
 
 [[verification]]
 repository = "jackin-project/jackin"
