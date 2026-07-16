@@ -540,20 +540,29 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect) {
             id: "state",
             label: "State",
             value: "Ready",
-            capability: DetailCapability::None,
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: true,
+            style: None,
         },
         DetailRow {
             id: "link",
             label: "Reference",
             value: "https://example.invalid",
-            capability: DetailCapability::Link,
+            href: Some("https://example.invalid"),
+            capability: DetailCapability::CopyAndLink,
+            emphasis: false,
+            style: None,
         },
     ];
     let mut state = DetailTableState::default();
+    let theme = Theme::default();
     frame.render_stateful_widget(
         &DetailTable {
             rows: &rows,
             label_width: 14,
+            wrap: true,
+            theme: &theme,
         },
         area,
         &mut state,
@@ -637,13 +646,19 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect) {
             id: "state",
             label: "State",
             value: "Ready",
+            href: None,
             capability: DetailCapability::None,
+            emphasis: false,
+            style: None,
         },
         DetailRow {
             id: "reference",
             label: "Reference",
             value: "example-42",
+            href: None,
             capability: DetailCapability::Copy,
+            emphasis: false,
+            style: None,
         },
     ];
     frame.render_widget(

@@ -3287,8 +3287,12 @@ pub fn termrock::widgets::Anchor::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Anchor
 pub enum termrock::widgets::DetailCapability
 pub termrock::widgets::DetailCapability::Copy
+pub termrock::widgets::DetailCapability::CopyAndLink
 pub termrock::widgets::DetailCapability::Link
 pub termrock::widgets::DetailCapability::None
+impl termrock::widgets::DetailCapability
+pub const fn termrock::widgets::DetailCapability::copyable(self) -> bool
+pub const fn termrock::widgets::DetailCapability::linkable(self) -> bool
 impl core::clone::Clone for termrock::widgets::DetailCapability
 pub fn termrock::widgets::DetailCapability::clone(&self) -> termrock::widgets::DetailCapability
 impl core::cmp::Eq for termrock::widgets::DetailCapability
@@ -4167,8 +4171,11 @@ pub fn termrock::widgets::ChoiceDialog<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChoiceDialog<'a, Id>
 pub struct termrock::widgets::DetailRow<'a, Id>
 pub termrock::widgets::DetailRow::capability: termrock::widgets::DetailCapability
+pub termrock::widgets::DetailRow::emphasis: bool
+pub termrock::widgets::DetailRow::href: core::option::Option<&'a str>
 pub termrock::widgets::DetailRow::id: Id
 pub termrock::widgets::DetailRow::label: &'a str
+pub termrock::widgets::DetailRow::style: core::option::Option<ratatui_core::style::Style>
 pub termrock::widgets::DetailRow::value: &'a str
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DetailRow<'a, Id>
 pub fn termrock::widgets::DetailRow<'a, Id>::clone(&self) -> termrock::widgets::DetailRow<'a, Id>
@@ -4207,8 +4214,12 @@ impl<T> either::into_either::IntoEither for termrock::widgets::DetailRow<'a, Id>
 pub struct termrock::widgets::DetailTable<'a, Id>
 pub termrock::widgets::DetailTable::label_width: u16
 pub termrock::widgets::DetailTable::rows: &'a [termrock::widgets::DetailRow<'a, Id>]
+pub termrock::widgets::DetailTable::theme: &'a termrock::style::Theme
+pub termrock::widgets::DetailTable::wrap: bool
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DetailTable<'_, Id>
+pub fn termrock::widgets::DetailTable<'_, Id>::activate_selected(&self, &termrock::widgets::DetailTableState<Id>) -> termrock::widgets::DetailTableOutcome<Id>
 pub fn termrock::widgets::DetailTable<'_, Id>::hyperlink_regions<'a>(&'a self, &'a termrock::widgets::DetailTableState<Id>) -> alloc::vec::Vec<termrock::osc::HyperlinkRegion<'a, Id>>
+pub fn termrock::widgets::DetailTable<'_, Id>::outcome_at(&self, &mut termrock::widgets::DetailTableState<Id>, ratatui_core::layout::position::Position) -> termrock::widgets::DetailTableOutcome<Id>
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DetailTable<'a, Id>
 pub fn termrock::widgets::DetailTable<'a, Id>::clone(&self) -> termrock::widgets::DetailTable<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DetailTable<'a, Id>
@@ -4248,9 +4259,22 @@ impl<T> core::convert::From<T> for termrock::widgets::DetailTable<'a, Id>
 pub fn termrock::widgets::DetailTable<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailTable<'a, Id>
 pub struct termrock::widgets::DetailTableState<Id>
-pub termrock::widgets::DetailTableState::offset: usize
-pub termrock::widgets::DetailTableState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
+pub termrock::widgets::DetailTableState::content_height: usize
+pub termrock::widgets::DetailTableState::content_width: usize
+pub termrock::widgets::DetailTableState::copied: core::option::Option<Id>
+pub termrock::widgets::DetailTableState::hovered: core::option::Option<Id>
+pub termrock::widgets::DetailTableState::regions: alloc::vec::Vec<termrock::widgets::detail_table::DetailRegion<Id>>
+pub termrock::widgets::DetailTableState::scroll: termrock::scroll::DialogScroll
 pub termrock::widgets::DetailTableState::selected: core::option::Option<Id>
+pub termrock::widgets::DetailTableState::viewport: ratatui_core::layout::rect::Rect
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DetailTableState<Id>
+pub fn termrock::widgets::DetailTableState<Id>::activate_at(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::DetailTableOutcome<Id>
+pub fn termrock::widgets::DetailTableState<Id>::activate_link_at(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::DetailTableOutcome<Id>
+pub fn termrock::widgets::DetailTableState<Id>::clamp_scroll(&mut self)
+pub fn termrock::widgets::DetailTableState<Id>::hover_at(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
+pub fn termrock::widgets::DetailTableState<Id>::mark_copied(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::DetailTableState<Id>::select_next(&mut self, &[termrock::widgets::DetailRow<'_, Id>]) -> termrock::widgets::DetailTableOutcome<Id>
+pub fn termrock::widgets::DetailTableState<Id>::select_previous(&mut self, &[termrock::widgets::DetailRow<'_, Id>]) -> termrock::widgets::DetailTableOutcome<Id>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DetailTableState<Id>
 pub fn termrock::widgets::DetailTableState<Id>::clone(&self) -> termrock::widgets::DetailTableState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::DetailTableState<Id>

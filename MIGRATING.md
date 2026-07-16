@@ -14,7 +14,7 @@ Pin a reviewed full Git revision and commit the Cargo lockfile. TermRock keeps e
 | text field/filter | `termrock::widgets::TextInput` composition |
 | panel and hint row | `termrock::widgets::{Panel,HintBar}` |
 | status footer | `termrock::widgets::StatusBar` |
-| detail table | `termrock::widgets::DetailTable` |
+| detail table | `termrock::widgets::DetailTable` with caller-owned stable row IDs and payloads |
 | confirm/save-discard | `termrock::widgets::ChoiceDialog` with caller actions |
 | error/status popup | `termrock::widgets::{MessageDialog,Toast}` |
 | diff view | `termrock::widgets::DiffView` |
