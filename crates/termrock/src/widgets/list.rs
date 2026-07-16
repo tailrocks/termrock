@@ -34,7 +34,7 @@ pub enum ListOutcome<Id> {
     Cancelled,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ListState<Id> {
     pub selected: Option<Id>,
     pub hovered: Option<Id>,
@@ -42,6 +42,19 @@ pub struct ListState<Id> {
     pub offset: usize,
     pub viewport_height: usize,
     pub regions: Vec<HitRegion<Id>>,
+}
+
+impl<Id> Default for ListState<Id> {
+    fn default() -> Self {
+        Self {
+            selected: None,
+            hovered: None,
+            focused: false,
+            offset: 0,
+            viewport_height: 0,
+            regions: Vec::new(),
+        }
+    }
 }
 
 impl<Id: Clone + PartialEq> ListState<Id> {

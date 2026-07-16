@@ -65,7 +65,7 @@ pub struct DetailRegion<Id> {
     pub capability: DetailCapability,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DetailTableState<Id> {
     pub selected: Option<Id>,
     pub hovered: Option<Id>,
@@ -75,6 +75,21 @@ pub struct DetailTableState<Id> {
     pub content_width: usize,
     pub content_height: usize,
     pub viewport: Rect,
+}
+
+impl<Id> Default for DetailTableState<Id> {
+    fn default() -> Self {
+        Self {
+            selected: None,
+            hovered: None,
+            copied: None,
+            scroll: DialogScroll::default(),
+            regions: Vec::new(),
+            content_width: 0,
+            content_height: 0,
+            viewport: Rect::default(),
+        }
+    }
 }
 
 impl<Id: Clone + PartialEq> DetailTableState<Id> {

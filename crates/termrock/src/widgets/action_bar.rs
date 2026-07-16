@@ -17,10 +17,19 @@ pub struct Action<'a, Id> {
     pub style: Option<Style>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionBarState<Id> {
     pub focused: Option<Id>,
     pub regions: Vec<HitRegion<Id>>,
+}
+
+impl<Id> Default for ActionBarState<Id> {
+    fn default() -> Self {
+        Self {
+            focused: None,
+            regions: Vec::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
