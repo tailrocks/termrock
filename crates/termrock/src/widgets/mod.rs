@@ -23,7 +23,7 @@ pub use detail_table::{
 pub use dialog::{Backdrop, ChoiceDialog, ChoiceDialogState, Dialog, MessageDialog};
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
-pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans};
+pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans, wrapped_hint_lines};
 pub use list::{List, ListOutcome, ListRow, ListState, RowRole};
 pub use panel::{Panel, PanelEmphasis};
 pub use split_pane::{

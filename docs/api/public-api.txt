@@ -5962,6 +5962,7 @@ pub fn termrock::widgets::Viewport<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::geometry::HintSpan<'_>])
 pub fn termrock::widgets::styled_hint_spans(&[termrock::geometry::HintSpan<'_>], impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::widgets::wrapped_hint_lines(&[termrock::geometry::HintSpan<'_>], u16) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub enum termrock::HintSpan<'a>
 pub termrock::HintSpan::Dyn(alloc::string::String)
 pub termrock::HintSpan::DynKey(alloc::string::String)
