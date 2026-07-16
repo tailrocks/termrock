@@ -232,31 +232,7 @@ impl StoryInteraction for PickerInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        if !preview_area.contains(mouse.position) {
-            return false;
-        }
-        match mouse.kind {
-            MouseEventKind::Moved => {
-                let before = self.state.list().hovered().cloned();
-                self.state.hover(mouse.position);
-                self.state.list().hovered() != before.as_ref()
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                if let PickerOutcome::Activated(id) = self.state.click(mouse.position) {
-                    self.activated = Some(id);
-                    true
-                } else {
-                    false
-                }
-            }
-            MouseEventKind::ScrollUp => self
-                .state
-                .scroll_by(-1, picker_rows(self.state.query_text()).len()),
-            MouseEventKind::ScrollDown => self
-                .state
-                .scroll_by(1, picker_rows(self.state.query_text()).len()),
-            _ => false,
-        }
+        route_pointer(self, mouse, preview_area)
     }
 
     fn set_theme(&mut self, theme: Theme) {
@@ -269,6 +245,28 @@ impl StoryInteraction for PickerInteractor {
 
     fn captures_text_input(&self) -> bool {
         true
+    }
+}
+
+impl PointerTarget for PickerInteractor {
+    fn hover_at(&mut self, position: Position) -> bool {
+        let before = self.state.list().hovered().cloned();
+        self.state.hover(position);
+        self.state.list().hovered() != before.as_ref()
+    }
+
+    fn click_at(&mut self, position: Position) -> bool {
+        if let PickerOutcome::Activated(id) = self.state.click(position) {
+            self.activated = Some(id);
+            true
+        } else {
+            false
+        }
+    }
+
+    fn wheel(&mut self, delta: isize) -> bool {
+        self.state
+            .scroll_by(delta, picker_rows(self.state.query_text()).len())
     }
 }
 
