@@ -1314,6 +1314,50 @@ pub static termrock::keymap::SCROLL_HINT_KEYMAP: termrock::keymap::Keymap<termro
 pub fn termrock::keymap::chord_glyph(core::option::Option<termrock::keymap::KeyChord>) -> &'static str
 pub fn termrock::keymap::raw_bytes_to_chord(&[u8]) -> core::option::Option<termrock::keymap::KeyChord>
 pub mod termrock::layout
+#[non_exhaustive] pub enum termrock::layout::DialogBorder
+pub termrock::layout::DialogBorder::Danger
+pub termrock::layout::DialogBorder::Default
+impl core::clone::Clone for termrock::layout::DialogBorder
+pub fn termrock::layout::DialogBorder::clone(&self) -> termrock::layout::DialogBorder
+impl core::cmp::Eq for termrock::layout::DialogBorder
+impl core::cmp::PartialEq for termrock::layout::DialogBorder
+pub fn termrock::layout::DialogBorder::eq(&self, &termrock::layout::DialogBorder) -> bool
+impl core::fmt::Debug for termrock::layout::DialogBorder
+pub fn termrock::layout::DialogBorder::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::layout::DialogBorder
+impl core::marker::StructuralPartialEq for termrock::layout::DialogBorder
+impl core::marker::Freeze for termrock::layout::DialogBorder
+impl core::marker::Send for termrock::layout::DialogBorder
+impl core::marker::Sync for termrock::layout::DialogBorder
+impl core::marker::Unpin for termrock::layout::DialogBorder
+impl core::marker::UnsafeUnpin for termrock::layout::DialogBorder
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::DialogBorder
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::DialogBorder
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::DialogBorder where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::DialogBorder::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::DialogBorder where U: core::convert::From<T>
+pub fn termrock::layout::DialogBorder::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::DialogBorder where U: core::convert::Into<T>
+pub type termrock::layout::DialogBorder::Error = core::convert::Infallible
+pub fn termrock::layout::DialogBorder::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::DialogBorder where U: core::convert::TryFrom<T>
+pub type termrock::layout::DialogBorder::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::DialogBorder::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::DialogBorder where T: core::clone::Clone
+pub type termrock::layout::DialogBorder::Owned = T
+pub fn termrock::layout::DialogBorder::clone_into(&self, &mut T)
+pub fn termrock::layout::DialogBorder::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::DialogBorder where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::DialogBorder::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::DialogBorder where T: ?core::marker::Sized
+pub fn termrock::layout::DialogBorder::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::DialogBorder where T: ?core::marker::Sized
+pub fn termrock::layout::DialogBorder::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::DialogBorder where T: core::clone::Clone
+pub unsafe fn termrock::layout::DialogBorder::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::DialogBorder
+pub fn termrock::layout::DialogBorder::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::DialogBorder
 pub enum termrock::layout::Placement
 pub termrock::layout::Placement::Centered
 pub termrock::layout::Placement::Top
@@ -1500,6 +1544,10 @@ pub fn termrock::layout::Slots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::Slots
 pub fn termrock::layout::bottom_rows<const N: usize>(ratatui_core::layout::rect::Rect, [u16; N]) -> (ratatui_core::layout::rect::Rect, [ratatui_core::layout::rect::Rect; N])
 pub fn termrock::layout::centered_rect(u16, u16, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
+pub fn termrock::layout::dialog_inner_chunks(ratatui_core::layout::rect::Rect, core::option::Option<u16>) -> [ratatui_core::layout::rect::Rect; 5]
+pub const fn termrock::layout::dialog_inner_height(u16) -> u16
+pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::layout::DialogBorder) -> ratatui_core::layout::rect::Rect
+pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::scroll::DialogScroll) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect
 pub mod termrock::osc
 pub enum termrock::osc::ClipboardSelection
@@ -2093,7 +2141,13 @@ pub fn termrock::scroll::DialogScroll::clamp(&mut self, usize, usize, usize, usi
 pub fn termrock::scroll::DialogScroll::handle_key(&mut self, termrock::input::KeyEvent, usize, usize, usize, usize) -> bool
 pub fn termrock::scroll::DialogScroll::handle_key_for_axes(&mut self, termrock::input::KeyEvent, usize, usize, usize, usize, termrock::scroll::ScrollAxes) -> bool
 pub fn termrock::scroll::DialogScroll::handle_mouse(&mut self, termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes) -> bool
+pub fn termrock::scroll::DialogScroll::handle_raw_key_for_axes(&mut self, &[u8], termrock::scroll::ScrollAxes) -> bool
 pub const fn termrock::scroll::DialogScroll::new() -> Self
+pub fn termrock::scroll::DialogScroll::on_mouse_scroll(&mut self, termrock::input::MouseEventKind, termrock::input::KeyModifiers) -> bool
+pub fn termrock::scroll::DialogScroll::on_mouse_scroll_for_axes(&mut self, termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes) -> bool
+pub fn termrock::scroll::DialogScroll::on_mouse_scroll_for_size(&mut self, termrock::input::MouseEventKind, termrock::input::KeyModifiers, usize, usize, usize, usize) -> bool
+pub fn termrock::scroll::DialogScroll::on_sgr_wheel_button_for_axes(&mut self, u8, termrock::scroll::ScrollAxes) -> bool
+pub fn termrock::scroll::DialogScroll::render_scrollbars(&self, &mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize)
 impl core::clone::Clone for termrock::scroll::DialogScroll
 pub fn termrock::scroll::DialogScroll::clone(&self) -> termrock::scroll::DialogScroll
 impl core::cmp::Eq for termrock::scroll::DialogScroll
@@ -2436,6 +2490,7 @@ pub const fn termrock::scroll::effective_offset(usize, usize, u16) -> u16
 pub fn termrock::scroll::full_cell_thumb(usize, usize, u16, usize) -> core::option::Option<termrock::scroll::FullCellThumb>
 pub const fn termrock::scroll::horizontal_scrollbar_area(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::scroll::is_scrollable(usize, usize) -> bool
+pub fn termrock::scroll::line_width(&ratatui_core::text::line::Line<'_>) -> usize
 pub fn termrock::scroll::max_line_width(&[ratatui_core::text::line::Line<'_>]) -> usize
 pub const fn termrock::scroll::max_offset(usize, usize) -> usize
 pub const fn termrock::scroll::max_offset_u16(usize, usize) -> u16
