@@ -10,6 +10,7 @@ mod form;
 mod hint_bar;
 mod list;
 mod panel;
+mod selection;
 mod split_pane;
 mod status_bar;
 mod tabs;
@@ -30,6 +31,7 @@ pub use hint_bar::{
 };
 pub use list::{List, ListRow, ListState, RowRole};
 pub use panel::{Panel, PanelEmphasis};
+pub use selection::Selection;
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,
     SplitSide,
