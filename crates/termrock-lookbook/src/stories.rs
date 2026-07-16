@@ -762,13 +762,9 @@ fn diff(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn toast(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::default();
     frame.render_widget(
-        &Toast {
-            message: "Updated",
-            severity: Severity::Success,
-            anchor: Anchor::TopRight,
-            style: Style::new(),
-        },
+        &Toast::new(&theme, "Updated", Severity::Success).anchor(Anchor::TopRight),
         area,
     );
 }

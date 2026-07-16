@@ -38,12 +38,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
         hints: &hints,
         separator: " · ",
     };
-    let toast = Toast {
-        message: "Updated",
-        severity: Severity::Success,
-        anchor: Anchor::TopRight,
-        style: Style::new(),
-    };
+    let toast = Toast::new(&theme, "Updated", Severity::Success).anchor(Anchor::TopRight);
     let backdrop = Backdrop {
         symbol: ' ',
         style: Style::new().dim(),
