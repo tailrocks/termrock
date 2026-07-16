@@ -1,7 +1,7 @@
 {
   "ActionBar": { "keyboard": "caller-owned", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "Backdrop": { "keyboard": "not-applicable", "mouse": "not-applicable", "focus": "not-applicable", "nonColor": "covered", "unicode": "not-applicable", "narrowTerminal": "covered" },
-  "ChoiceDialog": { "keyboard": "caller-owned", "mouse": "caller-owned", "focus": "caller-owned", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
+  "ChoiceDialog": { "keyboard": "covered", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "DetailTable": { "keyboard": "caller-owned", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "Dialog": { "keyboard": "caller-owned", "mouse": "caller-owned", "focus": "caller-owned", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "DiffView": { "keyboard": "caller-owned", "mouse": "caller-owned", "focus": "caller-owned", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },

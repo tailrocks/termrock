@@ -9,8 +9,8 @@ use termrock::{
     scroll::DialogScroll,
     style::Role,
     widgets::{
-        Action, ActionBar, ActionBarState, Anchor, Backdrop, ChoiceDialog, DetailCapability,
-        DetailRow, DetailTable, DetailTableState, Dialog, DialogAction, DiffKind, DiffLine,
+        Action, ActionBar, ActionBarState, Anchor, Backdrop, ChoiceDialog, ChoiceDialogState,
+        DetailCapability, DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine,
         DiffState, DiffView, Form, FormField, FormSection, FormState, Hint, HintBar, List, ListRow,
         ListState, MessageDialog, Panel, PanelEmphasis, RowRole, Severity, SplitDirection,
         SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusSlot, Tab, Tabs, TabsState,
@@ -20,7 +20,8 @@ use termrock::{
 };
 
 use crate::interactors::{
-    FormInteractor, SplitPaneInteractor, StaticStory, StoryInteraction, TreeInteractor,
+    ChoiceDialogInteractor, FormInteractor, SplitPaneInteractor, StaticStory, StoryInteraction,
+    TreeInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect);
@@ -85,6 +86,10 @@ fn form_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 
 fn split_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(SplitPaneInteractor::new())
+}
+
+fn choice_dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ChoiceDialogInteractor::new())
 }
 
 pub(crate) fn stories() -> Vec<Story> {
@@ -208,7 +213,8 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             7,
             choice_dialog,
-        ),
+        )
+        .with_interactor(choice_dialog_interactor),
         Story::new(
             "message-dialog/details",
             "Detailed message dialog",
@@ -599,7 +605,7 @@ fn dialog(frame: &mut Frame<'_>, area: Rect) {
     frame.render_widget(
         &Dialog {
             title: "Notice",
-            body: Line::from("The operation completed."),
+            body: Line::from("The operation completed.").into(),
             style: Style::new(),
         },
         area,
@@ -607,36 +613,45 @@ fn dialog(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn choice_dialog(frame: &mut Frame<'_>, area: Rect) {
-    let actions = [
-        DialogAction {
-            action: Action {
-                id: "continue",
-                label: "Continue",
-                enabled: true,
-                style: None,
-            },
-            destructive: false,
+    let mut state = ChoiceDialogState::new(Some("continue"));
+    render_choice_dialog(frame, area, &mut state);
+}
+
+pub(crate) fn choice_actions() -> [Action<'static, &'static str>; 2] {
+    [
+        Action {
+            id: "continue",
+            label: "Continue",
+            enabled: true,
+            style: None,
         },
-        DialogAction {
-            action: Action {
-                id: "cancel",
-                label: "Cancel",
-                enabled: true,
-                style: None,
-            },
-            destructive: true,
+        Action {
+            id: "cancel",
+            label: "Cancel",
+            enabled: true,
+            style: Some(Style::new().bold()),
         },
-    ];
-    frame.render_widget(
+    ]
+}
+
+pub(crate) fn render_choice_dialog(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    state: &mut ChoiceDialogState<&'static str>,
+) {
+    let actions = choice_actions();
+    frame.render_stateful_widget(
         &ChoiceDialog {
             dialog: Dialog {
                 title: "Choose",
-                body: Line::from("Continue with this operation?"),
+                body: Line::from("Continue with this operation?").into(),
                 style: Style::new(),
             },
             actions: &actions,
+            gap: " ",
         },
         area,
+        state,
     );
 }
 
@@ -661,16 +676,22 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect) {
             style: None,
         },
     ];
-    frame.render_widget(
+    let theme = Theme::default();
+    let mut state = DetailTableState::default();
+    frame.render_stateful_widget(
         &MessageDialog {
             dialog: Dialog {
                 title: "Result",
-                body: Line::from("The operation completed."),
+                body: Line::from("The operation completed.").into(),
                 style: Style::new(),
             },
             details: &details,
+            label_width: 14,
+            wrap: true,
+            theme: &theme,
         },
         area,
+        &mut state,
     );
 }
 

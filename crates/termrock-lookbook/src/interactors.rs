@@ -5,13 +5,16 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{Frame, layout::Rect};
 use termrock::{
     Theme,
+    interaction::Outcome,
     widgets::{
-        Form, FormOutcome, FormSection, FormState, SplitDirection, SplitPane, SplitPaneOutcome,
-        SplitPaneState, SplitRatio, Tree, TreeNode, TreeOutcome, TreeState,
+        ChoiceDialogState, Form, FormOutcome, FormSection, FormState, SplitDirection, SplitPane,
+        SplitPaneOutcome, SplitPaneState, SplitRatio, Tree, TreeNode, TreeOutcome, TreeState,
     },
 };
 
-use crate::stories::{form_fields, render_split_pane, tree_nodes};
+use crate::stories::{
+    choice_actions, form_fields, render_choice_dialog, render_split_pane, tree_nodes,
+};
 
 pub(crate) trait StoryInteraction {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect);
@@ -31,6 +34,43 @@ impl StoryInteraction for StaticStory {
         false
     }
     fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
+        false
+    }
+}
+
+pub(crate) struct ChoiceDialogInteractor {
+    state: ChoiceDialogState<&'static str>,
+}
+
+impl ChoiceDialogInteractor {
+    pub(crate) fn new() -> Self {
+        Self {
+            state: ChoiceDialogState::new(Some("continue")),
+        }
+    }
+}
+
+impl StoryInteraction for ChoiceDialogInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        render_choice_dialog(frame, area, &mut self.state);
+    }
+
+    fn handle_key(&mut self, key: KeyEvent) -> bool {
+        !matches!(
+            self.state.handle_key(key.into(), &choice_actions()),
+            Outcome::Ignored
+        )
+    }
+
+    fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
+        let position = ratatui::layout::Position::new(mouse.column, mouse.row);
+        if !preview_area.contains(position) {
+            return false;
+        }
+        if mouse.kind == crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left)
+        {
+            return !matches!(self.state.activate_at(position), Outcome::Ignored);
+        }
         false
     }
 }

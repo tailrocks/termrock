@@ -8,8 +8,8 @@ Every component accepts consumer-owned labels and borrowed data. Keyboard routin
 - `Backdrop`: backdrop without lifecycle ownership. Story `backdrop/basic`.
 - `DetailTable`: borrowed stable-ID label/value rows with selection, hover, emphasis, wrapping or bounded two-axis scrolling, exact copy/link hit regions, typed outcomes, and typed hyperlink regions. Story `detail-table/basic`.
 - `Dialog`: neutral shell and caller-owned content. Story `dialog/message`.
-- `ChoiceDialog`: neutral shell with caller-owned stable actions. Story `choice-dialog/basic`.
-- `MessageDialog`: neutral message shell with caller-owned detail rows. Story `message-dialog/details`.
+- `ChoiceDialog`: neutral shell with caller-owned stable actions plus canonical focus traversal and painted keyboard/mouse activation outcomes. Story `choice-dialog/basic`.
+- `MessageDialog`: neutral message shell composed with the canonical `DetailTable` state and renderer. Story `message-dialog/details`.
 - `DiffView`: borrowed projected lines. Story `diff/basic`.
 - `Form`: borrowed sections/fields, stable-ID focus traversal, validation/help/required/disabled states with neutral non-color markers, responsive columns, scrolling, and clipped label/value/support hit regions. Story `form/responsive`.
 - `HintBar`: prioritized chord descriptors. Story `hint-bar/wrapped`.

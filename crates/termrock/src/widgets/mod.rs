@@ -20,7 +20,7 @@ pub use action_bar::{Action, ActionBar, ActionBarState};
 pub use detail_table::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState,
 };
-pub use dialog::{Backdrop, ChoiceDialog, Dialog, DialogAction, MessageDialog};
+pub use dialog::{Backdrop, ChoiceDialog, ChoiceDialogState, Dialog, MessageDialog};
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
 pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans};

@@ -4131,14 +4131,16 @@ impl<T> core::convert::From<T> for termrock::widgets::Backdrop
 pub fn termrock::widgets::Backdrop::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Backdrop
 pub struct termrock::widgets::ChoiceDialog<'a, Id>
-pub termrock::widgets::ChoiceDialog::actions: &'a [termrock::widgets::DialogAction<'a, Id>]
+pub termrock::widgets::ChoiceDialog::actions: &'a [termrock::widgets::Action<'a, Id>]
 pub termrock::widgets::ChoiceDialog::dialog: termrock::widgets::Dialog<'a>
+pub termrock::widgets::ChoiceDialog::gap: &'a str
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ChoiceDialog<'a, Id>
 pub fn termrock::widgets::ChoiceDialog<'a, Id>::clone(&self) -> termrock::widgets::ChoiceDialog<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ChoiceDialog<'a, Id>
 pub fn termrock::widgets::ChoiceDialog<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> ratatui_core::widgets::widget::Widget for &termrock::widgets::ChoiceDialog<'_, Id>
-pub fn &termrock::widgets::ChoiceDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::ChoiceDialog<'_, Id>
+pub type &termrock::widgets::ChoiceDialog<'_, Id>::State = termrock::widgets::ChoiceDialogState<Id>
+pub fn &termrock::widgets::ChoiceDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::ChoiceDialog<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::ChoiceDialog<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::ChoiceDialog<'a, Id> where Id: core::marker::Sync
@@ -4169,6 +4171,58 @@ pub unsafe fn termrock::widgets::ChoiceDialog<'a, Id>::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::ChoiceDialog<'a, Id>
 pub fn termrock::widgets::ChoiceDialog<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChoiceDialog<'a, Id>
+pub struct termrock::widgets::ChoiceDialogState<Id>
+pub termrock::widgets::ChoiceDialogState::focused: core::option::Option<Id>
+pub termrock::widgets::ChoiceDialogState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ChoiceDialogState<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::activate_at(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::activate_selected(&self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
+pub const fn termrock::widgets::ChoiceDialogState<Id>::new(core::option::Option<Id>) -> Self
+pub fn termrock::widgets::ChoiceDialogState<Id>::select_next(&mut self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::select_previous(&mut self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ChoiceDialogState<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::clone(&self) -> termrock::widgets::ChoiceDialogState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ChoiceDialogState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ChoiceDialogState<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::eq(&self, &termrock::widgets::ChoiceDialogState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ChoiceDialogState<Id>
+impl<Id: core::default::Default> core::default::Default for termrock::widgets::ChoiceDialogState<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::default() -> termrock::widgets::ChoiceDialogState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ChoiceDialogState<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ChoiceDialogState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ChoiceDialogState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ChoiceDialogState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ChoiceDialogState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ChoiceDialogState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ChoiceDialogState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ChoiceDialogState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ChoiceDialogState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ChoiceDialogState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ChoiceDialogState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ChoiceDialogState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ChoiceDialogState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ChoiceDialogState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ChoiceDialogState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ChoiceDialogState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ChoiceDialogState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ChoiceDialogState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ChoiceDialogState<Id> where T: core::clone::Clone
+pub type termrock::widgets::ChoiceDialogState<Id>::Owned = T
+pub fn termrock::widgets::ChoiceDialogState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ChoiceDialogState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ChoiceDialogState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ChoiceDialogState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ChoiceDialogState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ChoiceDialogState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ChoiceDialogState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ChoiceDialogState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ChoiceDialogState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ChoiceDialogState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ChoiceDialogState<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ChoiceDialogState<Id>
 pub struct termrock::widgets::DetailRow<'a, Id>
 pub termrock::widgets::DetailRow::capability: termrock::widgets::DetailCapability
 pub termrock::widgets::DetailRow::emphasis: bool
@@ -4318,7 +4372,7 @@ impl<T> core::convert::From<T> for termrock::widgets::DetailTableState<Id>
 pub fn termrock::widgets::DetailTableState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailTableState<Id>
 pub struct termrock::widgets::Dialog<'a>
-pub termrock::widgets::Dialog::body: ratatui_core::text::line::Line<'a>
+pub termrock::widgets::Dialog::body: ratatui_core::text::text::Text<'a>
 pub termrock::widgets::Dialog::style: ratatui_core::style::Style
 pub termrock::widgets::Dialog::title: &'a str
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Dialog<'_>
@@ -4357,43 +4411,6 @@ pub unsafe fn termrock::widgets::Dialog<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Dialog<'a>
 pub fn termrock::widgets::Dialog<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Dialog<'a>
-pub struct termrock::widgets::DialogAction<'a, Id>
-pub termrock::widgets::DialogAction::action: termrock::widgets::Action<'a, Id>
-pub termrock::widgets::DialogAction::destructive: bool
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DialogAction<'a, Id>
-pub fn termrock::widgets::DialogAction<'a, Id>::clone(&self) -> termrock::widgets::DialogAction<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DialogAction<'a, Id>
-pub fn termrock::widgets::DialogAction<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id> core::marker::Freeze for termrock::widgets::DialogAction<'a, Id> where Id: core::marker::Freeze
-impl<'a, Id> core::marker::Send for termrock::widgets::DialogAction<'a, Id> where Id: core::marker::Send
-impl<'a, Id> core::marker::Sync for termrock::widgets::DialogAction<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::DialogAction<'a, Id> where Id: core::marker::Unpin
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::DialogAction<'a, Id> where Id: core::marker::UnsafeUnpin
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DialogAction<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DialogAction<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::widgets::DialogAction<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::DialogAction<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DialogAction<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::DialogAction<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::DialogAction<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::DialogAction<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::DialogAction<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::DialogAction<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::DialogAction<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::DialogAction<'a, Id>::Owned = T
-pub fn termrock::widgets::DialogAction<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::DialogAction<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::DialogAction<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::DialogAction<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::DialogAction<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::DialogAction<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DialogAction<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::DialogAction<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::DialogAction<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::DialogAction<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::DialogAction<'a, Id>
-pub fn termrock::widgets::DialogAction<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::DialogAction<'a, Id>
 pub struct termrock::widgets::DiffLine<'a>
 pub termrock::widgets::DiffLine::kind: termrock::widgets::DiffKind
 pub termrock::widgets::DiffLine::text: &'a str
@@ -4954,12 +4971,16 @@ impl<T> either::into_either::IntoEither for termrock::widgets::ListState<Id>
 pub struct termrock::widgets::MessageDialog<'a, Id>
 pub termrock::widgets::MessageDialog::details: &'a [termrock::widgets::DetailRow<'a, Id>]
 pub termrock::widgets::MessageDialog::dialog: termrock::widgets::Dialog<'a>
+pub termrock::widgets::MessageDialog::label_width: u16
+pub termrock::widgets::MessageDialog::theme: &'a termrock::style::Theme
+pub termrock::widgets::MessageDialog::wrap: bool
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MessageDialog<'a, Id>
 pub fn termrock::widgets::MessageDialog<'a, Id>::clone(&self) -> termrock::widgets::MessageDialog<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::MessageDialog<'a, Id>
 pub fn termrock::widgets::MessageDialog<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> ratatui_core::widgets::widget::Widget for &termrock::widgets::MessageDialog<'_, Id>
-pub fn &termrock::widgets::MessageDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::MessageDialog<'_, Id>
+pub type &termrock::widgets::MessageDialog<'_, Id>::State = termrock::widgets::DetailTableState<Id>
+pub fn &termrock::widgets::MessageDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::MessageDialog<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::MessageDialog<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::MessageDialog<'a, Id> where Id: core::marker::Sync

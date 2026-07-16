@@ -15,8 +15,8 @@ Pin a reviewed full Git revision and commit the Cargo lockfile. TermRock keeps e
 | panel and hint row | `termrock::widgets::{Panel,HintBar}` |
 | status footer | `termrock::widgets::StatusBar` |
 | detail table | `termrock::widgets::DetailTable` with caller-owned stable row IDs and payloads |
-| confirm/save-discard | `termrock::widgets::ChoiceDialog` with caller actions |
-| error/status popup | `termrock::widgets::{MessageDialog,Toast}` |
+| confirm/save-discard | `termrock::widgets::{ChoiceDialog,ChoiceDialogState}` with caller actions and outcomes |
+| error/status popup | `termrock::widgets::{MessageDialog,DetailTableState,Toast}` |
 | diff view | `termrock::widgets::DiffView` |
 | modal geometry and scrolling | `termrock::{layout,interaction,scroll}` |
 | terminal escapes | `termrock::osc` typed requests and pure encoders |
