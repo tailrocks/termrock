@@ -1,7 +1,7 @@
 schema = 1
 recorded_at = "2026-07-16"
 release = "v0.6.0"
-termrock_implementation_revision = "176c00f5c76d15ddebbd3ed821fa452b0eb62673"
+termrock_implementation_revision = "b6cd8c4124a95267a9ba5c25e41be917192f4654"
 jackin_implementation_revision = "27c450e9af7a299171034f98267e0fa26bd3057f"
 rust_version_floor = "1.95"
 tested_toolchain = "1.97.0"
@@ -33,7 +33,13 @@ result = "pass; deterministic canonical previews"
 repository = "jackin-project/jackin"
 platform = "macos"
 command = "cargo check --workspace --all-targets --locked at 27c450e9af7a299171034f98267e0fa26bd3057f"
-result = "pass against Jackin's pinned compatible TermRock 41482e9f baseline; Form is additive and changes no existing consumer contract"
+result = "pass against Jackin's pinned compatible TermRock 41482e9f baseline"
+
+[[verification]]
+repository = "jackin-project/jackin"
+platform = "macos"
+command = "temporarily pin TermRock 179745902bd0dbe266cbf54481afeaf0212b1d06, cargo update -p termrock --precise 179745902bd0dbe266cbf54481afeaf0212b1d06, then cargo check --workspace --all-targets --locked at 27c450e9af7a299171034f98267e0fa26bd3057f"
+result = "pass; temporary Cargo.toml and Cargo.lock changes restored afterward; Jackin working tree clean"
 
 [[verification]]
 repository = "jackin-project/jackin"
@@ -58,3 +64,9 @@ repository = "tailrocks/termrock"
 platform = "macos"
 command = "cargo fmt --all -- --check && cargo clippy --workspace --all-targets --all-features --locked -- -D warnings && cargo test --workspace --all-features --locked && cargo check -p termrock --no-default-features --locked && cargo check --workspace --examples --locked && cargo check --workspace --examples --features crossterm --locked && cargo doc --workspace --all-features --no-deps --locked && cargo package -p termrock --locked --allow-dirty && cargo semver-checks check-release -p termrock --baseline-rev v0.6.0 && cargo deny check advisories bans licenses sources && cargo shear --deny-warnings && gitleaks detect --no-banner --redact --source . && cargo run -p termrock-lookbook -- check --dir docs/public/component-previews && bun run types:check && bun run build"
 result = "pass at 176c00f5c76d15ddebbd3ed821fa452b0eb62673; 207 workspace tests including 6/6 Form tests and 15 lookbook tests; deterministic 14-story preview catalog; 196/196 semver checks"
+
+[[verification]]
+repository = "tailrocks/termrock"
+platform = "macos"
+command = "cargo fmt --all -- --check && cargo clippy --workspace --all-targets --all-features --locked -- -D warnings && cargo test --workspace --all-features --locked && cargo check -p termrock --no-default-features --locked && cargo check --workspace --examples --locked && cargo check --workspace --examples --features crossterm --locked && cargo doc --workspace --all-features --no-deps --locked && cargo package -p termrock --locked --allow-dirty && cargo semver-checks check-release -p termrock --baseline-rev v0.6.0 && cargo deny check advisories bans licenses sources && cargo shear --deny-warnings && gitleaks detect --no-banner --redact --source . && cargo run -p termrock-lookbook -- check --dir docs/public/component-previews && bun run types:check && bun run build"
+result = "pass at b6cd8c4124a95267a9ba5c25e41be917192f4654; 217 workspace tests including 9/9 SplitPane tests and 16 lookbook tests; deterministic 15-story preview catalog; 196/196 semver checks"

@@ -6866,6 +6866,141 @@ pub unsafe fn termrock::widgets::Severity::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Severity
 pub fn termrock::widgets::Severity::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Severity
+pub enum termrock::widgets::SplitDirection
+pub termrock::widgets::SplitDirection::Horizontal
+pub termrock::widgets::SplitDirection::Vertical
+impl core::clone::Clone for termrock::widgets::SplitDirection
+pub fn termrock::widgets::SplitDirection::clone(&self) -> termrock::widgets::SplitDirection
+impl core::cmp::Eq for termrock::widgets::SplitDirection
+impl core::cmp::PartialEq for termrock::widgets::SplitDirection
+pub fn termrock::widgets::SplitDirection::eq(&self, &termrock::widgets::SplitDirection) -> bool
+impl core::fmt::Debug for termrock::widgets::SplitDirection
+pub fn termrock::widgets::SplitDirection::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::SplitDirection
+impl core::marker::StructuralPartialEq for termrock::widgets::SplitDirection
+impl core::marker::Freeze for termrock::widgets::SplitDirection
+impl core::marker::Send for termrock::widgets::SplitDirection
+impl core::marker::Sync for termrock::widgets::SplitDirection
+impl core::marker::Unpin for termrock::widgets::SplitDirection
+impl core::marker::UnsafeUnpin for termrock::widgets::SplitDirection
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SplitDirection
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SplitDirection
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SplitDirection where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SplitDirection::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SplitDirection where U: core::convert::From<T>
+pub fn termrock::widgets::SplitDirection::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SplitDirection where U: core::convert::Into<T>
+pub type termrock::widgets::SplitDirection::Error = core::convert::Infallible
+pub fn termrock::widgets::SplitDirection::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SplitDirection where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SplitDirection::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SplitDirection::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SplitDirection where T: core::clone::Clone
+pub type termrock::widgets::SplitDirection::Owned = T
+pub fn termrock::widgets::SplitDirection::clone_into(&self, &mut T)
+pub fn termrock::widgets::SplitDirection::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SplitDirection where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SplitDirection::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SplitDirection where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitDirection::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SplitDirection where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitDirection::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SplitDirection where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SplitDirection::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SplitDirection
+pub fn termrock::widgets::SplitDirection::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SplitDirection
+pub enum termrock::widgets::SplitPaneOutcome
+pub termrock::widgets::SplitPaneOutcome::Collapsed(termrock::widgets::SplitSide)
+pub termrock::widgets::SplitPaneOutcome::Expanded
+pub termrock::widgets::SplitPaneOutcome::Focused
+pub termrock::widgets::SplitPaneOutcome::Ignored
+pub termrock::widgets::SplitPaneOutcome::RatioChanged(termrock::widgets::SplitRatio)
+impl core::clone::Clone for termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPaneOutcome::clone(&self) -> termrock::widgets::SplitPaneOutcome
+impl core::cmp::Eq for termrock::widgets::SplitPaneOutcome
+impl core::cmp::PartialEq for termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPaneOutcome::eq(&self, &termrock::widgets::SplitPaneOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPaneOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::SplitPaneOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::SplitPaneOutcome
+impl core::marker::Freeze for termrock::widgets::SplitPaneOutcome
+impl core::marker::Send for termrock::widgets::SplitPaneOutcome
+impl core::marker::Sync for termrock::widgets::SplitPaneOutcome
+impl core::marker::Unpin for termrock::widgets::SplitPaneOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::SplitPaneOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SplitPaneOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SplitPaneOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SplitPaneOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SplitPaneOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::SplitPaneOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SplitPaneOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::SplitPaneOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::SplitPaneOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SplitPaneOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SplitPaneOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SplitPaneOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SplitPaneOutcome where T: core::clone::Clone
+pub type termrock::widgets::SplitPaneOutcome::Owned = T
+pub fn termrock::widgets::SplitPaneOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::SplitPaneOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SplitPaneOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SplitPaneOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SplitPaneOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SplitPaneOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SplitPaneOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPaneOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SplitPaneOutcome
+pub enum termrock::widgets::SplitSide
+pub termrock::widgets::SplitSide::First
+pub termrock::widgets::SplitSide::Second
+impl core::clone::Clone for termrock::widgets::SplitSide
+pub fn termrock::widgets::SplitSide::clone(&self) -> termrock::widgets::SplitSide
+impl core::cmp::Eq for termrock::widgets::SplitSide
+impl core::cmp::PartialEq for termrock::widgets::SplitSide
+pub fn termrock::widgets::SplitSide::eq(&self, &termrock::widgets::SplitSide) -> bool
+impl core::fmt::Debug for termrock::widgets::SplitSide
+pub fn termrock::widgets::SplitSide::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::SplitSide
+impl core::marker::StructuralPartialEq for termrock::widgets::SplitSide
+impl core::marker::Freeze for termrock::widgets::SplitSide
+impl core::marker::Send for termrock::widgets::SplitSide
+impl core::marker::Sync for termrock::widgets::SplitSide
+impl core::marker::Unpin for termrock::widgets::SplitSide
+impl core::marker::UnsafeUnpin for termrock::widgets::SplitSide
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SplitSide
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SplitSide
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SplitSide where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SplitSide::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SplitSide where U: core::convert::From<T>
+pub fn termrock::widgets::SplitSide::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SplitSide where U: core::convert::Into<T>
+pub type termrock::widgets::SplitSide::Error = core::convert::Infallible
+pub fn termrock::widgets::SplitSide::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SplitSide where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SplitSide::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SplitSide::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SplitSide where T: core::clone::Clone
+pub type termrock::widgets::SplitSide::Owned = T
+pub fn termrock::widgets::SplitSide::clone_into(&self, &mut T)
+pub fn termrock::widgets::SplitSide::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SplitSide where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SplitSide::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SplitSide where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitSide::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SplitSide where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitSide::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SplitSide where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SplitSide::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SplitSide
+pub fn termrock::widgets::SplitSide::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SplitSide
 pub enum termrock::widgets::TreeNodeStatus
 pub termrock::widgets::TreeNodeStatus::Error
 pub termrock::widgets::TreeNodeStatus::Loading
@@ -8075,6 +8210,213 @@ pub unsafe fn termrock::widgets::Panel<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Panel<'a>
+pub struct termrock::widgets::SplitPane<'a>
+pub termrock::widgets::SplitPane::direction: termrock::widgets::SplitDirection
+pub termrock::widgets::SplitPane::first_min: u16
+pub termrock::widgets::SplitPane::second_min: u16
+pub termrock::widgets::SplitPane::theme: &'a termrock::style::Theme
+impl<'a> termrock::widgets::SplitPane<'a>
+pub fn termrock::widgets::SplitPane<'a>::collapse(&self, &mut termrock::widgets::SplitPaneState, termrock::widgets::SplitSide) -> termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPane<'a>::expand(&self, &mut termrock::widgets::SplitPaneState) -> termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPane<'a>::handle_key(&self, &mut termrock::widgets::SplitPaneState, termrock::input::KeyEvent) -> termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPane<'a>::layout(&self, ratatui_core::layout::rect::Rect, &mut termrock::widgets::SplitPaneState) -> termrock::widgets::SplitPaneLayout
+pub const fn termrock::widgets::SplitPane<'a>::new(termrock::widgets::SplitDirection, u16, u16, &'a termrock::style::Theme) -> Self
+pub fn termrock::widgets::SplitPane<'a>::pointer_down(&self, &mut termrock::widgets::SplitPaneState, ratatui_core::layout::position::Position) -> termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPane<'a>::pointer_drag(&self, &mut termrock::widgets::SplitPaneState, ratatui_core::layout::position::Position) -> termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPane<'a>::pointer_move(&self, &mut termrock::widgets::SplitPaneState, ratatui_core::layout::position::Position) -> bool
+pub const fn termrock::widgets::SplitPane<'a>::pointer_up(&self, &mut termrock::widgets::SplitPaneState)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::SplitPane<'_>
+pub type &termrock::widgets::SplitPane<'_>::State = termrock::widgets::SplitPaneState
+pub fn &termrock::widgets::SplitPane<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::SplitPane<'a>
+pub fn termrock::widgets::SplitPane<'a>::clone(&self) -> termrock::widgets::SplitPane<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::SplitPane<'a>
+pub fn termrock::widgets::SplitPane<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::SplitPane<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::SplitPane<'a>
+impl<'a> core::marker::Send for termrock::widgets::SplitPane<'a>
+impl<'a> core::marker::Sync for termrock::widgets::SplitPane<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::SplitPane<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::SplitPane<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SplitPane<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SplitPane<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::SplitPane<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::SplitPane<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SplitPane<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::SplitPane<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::SplitPane<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SplitPane<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SplitPane<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SplitPane<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SplitPane<'a> where T: core::clone::Clone
+pub type termrock::widgets::SplitPane<'a>::Owned = T
+pub fn termrock::widgets::SplitPane<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SplitPane<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SplitPane<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SplitPane<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SplitPane<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitPane<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SplitPane<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitPane<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SplitPane<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SplitPane<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SplitPane<'a>
+pub fn termrock::widgets::SplitPane<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SplitPane<'a>
+pub struct termrock::widgets::SplitPaneLayout
+pub termrock::widgets::SplitPaneLayout::divider: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SplitPaneLayout::first: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SplitPaneLayout::second: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::SplitPaneLayout
+pub fn termrock::widgets::SplitPaneLayout::clone(&self) -> termrock::widgets::SplitPaneLayout
+impl core::cmp::Eq for termrock::widgets::SplitPaneLayout
+impl core::cmp::PartialEq for termrock::widgets::SplitPaneLayout
+pub fn termrock::widgets::SplitPaneLayout::eq(&self, &termrock::widgets::SplitPaneLayout) -> bool
+impl core::default::Default for termrock::widgets::SplitPaneLayout
+pub fn termrock::widgets::SplitPaneLayout::default() -> termrock::widgets::SplitPaneLayout
+impl core::fmt::Debug for termrock::widgets::SplitPaneLayout
+pub fn termrock::widgets::SplitPaneLayout::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::SplitPaneLayout
+impl core::marker::StructuralPartialEq for termrock::widgets::SplitPaneLayout
+impl core::marker::Freeze for termrock::widgets::SplitPaneLayout
+impl core::marker::Send for termrock::widgets::SplitPaneLayout
+impl core::marker::Sync for termrock::widgets::SplitPaneLayout
+impl core::marker::Unpin for termrock::widgets::SplitPaneLayout
+impl core::marker::UnsafeUnpin for termrock::widgets::SplitPaneLayout
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SplitPaneLayout
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SplitPaneLayout
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SplitPaneLayout where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneLayout::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SplitPaneLayout where U: core::convert::From<T>
+pub fn termrock::widgets::SplitPaneLayout::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SplitPaneLayout where U: core::convert::Into<T>
+pub type termrock::widgets::SplitPaneLayout::Error = core::convert::Infallible
+pub fn termrock::widgets::SplitPaneLayout::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SplitPaneLayout where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SplitPaneLayout::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SplitPaneLayout::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SplitPaneLayout where T: core::clone::Clone
+pub type termrock::widgets::SplitPaneLayout::Owned = T
+pub fn termrock::widgets::SplitPaneLayout::clone_into(&self, &mut T)
+pub fn termrock::widgets::SplitPaneLayout::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SplitPaneLayout where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneLayout::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SplitPaneLayout where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneLayout::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SplitPaneLayout where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneLayout::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SplitPaneLayout where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SplitPaneLayout::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SplitPaneLayout
+pub fn termrock::widgets::SplitPaneLayout::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SplitPaneLayout
+pub struct termrock::widgets::SplitPaneState
+impl termrock::widgets::SplitPaneState
+pub const fn termrock::widgets::SplitPaneState::collapsed(&self) -> core::option::Option<termrock::widgets::SplitSide>
+pub const fn termrock::widgets::SplitPaneState::is_dragging(&self) -> bool
+pub const fn termrock::widgets::SplitPaneState::is_focused(&self) -> bool
+pub const fn termrock::widgets::SplitPaneState::is_hovered(&self) -> bool
+pub const fn termrock::widgets::SplitPaneState::layout(&self) -> termrock::widgets::SplitPaneLayout
+pub const fn termrock::widgets::SplitPaneState::new(termrock::widgets::SplitRatio) -> Self
+pub const fn termrock::widgets::SplitPaneState::ratio(&self) -> termrock::widgets::SplitRatio
+pub const fn termrock::widgets::SplitPaneState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::SplitPaneState::set_ratio(&mut self, termrock::widgets::SplitRatio)
+impl core::clone::Clone for termrock::widgets::SplitPaneState
+pub fn termrock::widgets::SplitPaneState::clone(&self) -> termrock::widgets::SplitPaneState
+impl core::cmp::Eq for termrock::widgets::SplitPaneState
+impl core::cmp::PartialEq for termrock::widgets::SplitPaneState
+pub fn termrock::widgets::SplitPaneState::eq(&self, &termrock::widgets::SplitPaneState) -> bool
+impl core::default::Default for termrock::widgets::SplitPaneState
+pub fn termrock::widgets::SplitPaneState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::SplitPaneState
+pub fn termrock::widgets::SplitPaneState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SplitPaneState
+impl core::marker::Freeze for termrock::widgets::SplitPaneState
+impl core::marker::Send for termrock::widgets::SplitPaneState
+impl core::marker::Sync for termrock::widgets::SplitPaneState
+impl core::marker::Unpin for termrock::widgets::SplitPaneState
+impl core::marker::UnsafeUnpin for termrock::widgets::SplitPaneState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SplitPaneState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SplitPaneState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SplitPaneState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SplitPaneState where U: core::convert::From<T>
+pub fn termrock::widgets::SplitPaneState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SplitPaneState where U: core::convert::Into<T>
+pub type termrock::widgets::SplitPaneState::Error = core::convert::Infallible
+pub fn termrock::widgets::SplitPaneState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SplitPaneState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SplitPaneState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SplitPaneState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SplitPaneState where T: core::clone::Clone
+pub type termrock::widgets::SplitPaneState::Owned = T
+pub fn termrock::widgets::SplitPaneState::clone_into(&self, &mut T)
+pub fn termrock::widgets::SplitPaneState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SplitPaneState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SplitPaneState where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SplitPaneState where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitPaneState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SplitPaneState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SplitPaneState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SplitPaneState
+pub fn termrock::widgets::SplitPaneState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SplitPaneState
+pub struct termrock::widgets::SplitRatio(_)
+impl termrock::widgets::SplitRatio
+pub const fn termrock::widgets::SplitRatio::basis_points(self) -> u16
+pub const fn termrock::widgets::SplitRatio::from_basis_points(u16) -> Self
+pub const fn termrock::widgets::SplitRatio::from_percent(u8) -> Self
+impl core::clone::Clone for termrock::widgets::SplitRatio
+pub fn termrock::widgets::SplitRatio::clone(&self) -> termrock::widgets::SplitRatio
+impl core::cmp::Eq for termrock::widgets::SplitRatio
+impl core::cmp::Ord for termrock::widgets::SplitRatio
+pub fn termrock::widgets::SplitRatio::cmp(&self, &termrock::widgets::SplitRatio) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::SplitRatio
+pub fn termrock::widgets::SplitRatio::eq(&self, &termrock::widgets::SplitRatio) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::SplitRatio
+pub fn termrock::widgets::SplitRatio::partial_cmp(&self, &termrock::widgets::SplitRatio) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::SplitRatio
+pub fn termrock::widgets::SplitRatio::default() -> Self
+impl core::fmt::Debug for termrock::widgets::SplitRatio
+pub fn termrock::widgets::SplitRatio::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::SplitRatio
+impl core::marker::StructuralPartialEq for termrock::widgets::SplitRatio
+impl core::marker::Freeze for termrock::widgets::SplitRatio
+impl core::marker::Send for termrock::widgets::SplitRatio
+impl core::marker::Sync for termrock::widgets::SplitRatio
+impl core::marker::Unpin for termrock::widgets::SplitRatio
+impl core::marker::UnsafeUnpin for termrock::widgets::SplitRatio
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SplitRatio
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SplitRatio
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::SplitRatio where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SplitRatio::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SplitRatio where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SplitRatio::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SplitRatio where U: core::convert::From<T>
+pub fn termrock::widgets::SplitRatio::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SplitRatio where U: core::convert::Into<T>
+pub type termrock::widgets::SplitRatio::Error = core::convert::Infallible
+pub fn termrock::widgets::SplitRatio::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SplitRatio where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SplitRatio::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SplitRatio::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SplitRatio where T: core::clone::Clone
+pub type termrock::widgets::SplitRatio::Owned = T
+pub fn termrock::widgets::SplitRatio::clone_into(&self, &mut T)
+pub fn termrock::widgets::SplitRatio::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SplitRatio where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SplitRatio::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SplitRatio where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitRatio::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SplitRatio where T: ?core::marker::Sized
+pub fn termrock::widgets::SplitRatio::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SplitRatio where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SplitRatio::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SplitRatio
+pub fn termrock::widgets::SplitRatio::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SplitRatio
 pub struct termrock::widgets::StatusBar<'a, Id>
 pub termrock::widgets::StatusBar::left: &'a [termrock::widgets::StatusSlot<'a, Id>]
 pub termrock::widgets::StatusBar::right: &'a [termrock::widgets::StatusSlot<'a, Id>]

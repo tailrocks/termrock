@@ -44,6 +44,11 @@ pub const STORIES: &[StoryMetadata] = &[
         component: "Form",
     },
     StoryMetadata {
+        id: "split-pane/horizontal",
+        title: "Horizontal split pane",
+        component: "SplitPane",
+    },
+    StoryMetadata {
         id: "text-input/filter",
         title: "Filter composition",
         component: "TextInput",

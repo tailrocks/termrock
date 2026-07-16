@@ -10,12 +10,15 @@ use termrock::{
         Action, ActionBar, ActionBarState, Anchor, Backdrop, DetailCapability, DetailRow,
         DetailTable, DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Form,
         FormField, FormSection, FormState, Hint, HintBar, List, ListRow, ListState, Panel,
-        PanelEmphasis, RowRole, Severity, StatusBar, StatusSlot, Tab, Tabs, TabsState, TextInput,
-        TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
+        PanelEmphasis, RowRole, Severity, SplitDirection, SplitPane, SplitPaneState, SplitRatio,
+        StatusBar, StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState, Toast, Tree,
+        TreeNode, TreeNodeStatus, TreeState, Validation,
     },
 };
 
-use crate::interactors::{FormInteractor, StaticStory, StoryInteraction, TreeInteractor};
+use crate::interactors::{
+    FormInteractor, SplitPaneInteractor, StaticStory, StoryInteraction, TreeInteractor,
+};
 
 type RenderFn = fn(&mut Frame<'_>, Rect);
 type InteractorFactory = fn(RenderFn) -> Box<dyn StoryInteraction>;
@@ -75,6 +78,10 @@ fn tree_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 
 fn form_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(FormInteractor::new())
+}
+
+fn split_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(SplitPaneInteractor::new())
 }
 
 pub(crate) fn stories() -> Vec<Story> {
@@ -144,6 +151,16 @@ pub(crate) fn stories() -> Vec<Story> {
             form,
         )
         .with_interactor(form_interactor),
+        Story::new(
+            "split-pane/horizontal",
+            "Horizontal split pane",
+            "SplitPane",
+            "Bounded resizable panes with focus, drag, and collapse.",
+            68,
+            10,
+            split_pane,
+        )
+        .with_interactor(split_pane_interactor),
         Story::new(
             "text-input/filter",
             "Filter composition",
@@ -340,6 +357,36 @@ fn form(frame: &mut Frame<'_>, area: Rect) {
     let theme = Theme::default();
     let mut state = FormState::new(Some("name"));
     frame.render_stateful_widget(&Form::new(&sections, &theme), area, &mut state);
+}
+
+pub(crate) fn render_split_pane(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    state: &mut SplitPaneState,
+    theme: &Theme,
+) {
+    let split = SplitPane::new(SplitDirection::Horizontal, 12, 16, theme);
+    let layout = split.layout(area, state);
+    if !layout.first.is_empty() {
+        frame.render_widget(
+            Paragraph::new("First pane\nCaller-owned content"),
+            layout.first,
+        );
+    }
+    if !layout.second.is_empty() {
+        frame.render_widget(
+            Paragraph::new("Second pane\nDrag the divider"),
+            layout.second,
+        );
+    }
+    frame.render_stateful_widget(&split, area, state);
+}
+
+fn split_pane(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::default();
+    let mut state = SplitPaneState::new(SplitRatio::from_percent(38));
+    state.set_focused(true);
+    render_split_pane(frame, area, &mut state, &theme);
 }
 
 fn tree(frame: &mut Frame<'_>, area: Rect) {

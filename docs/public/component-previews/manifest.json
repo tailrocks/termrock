@@ -6,6 +6,7 @@
   {"id":"list/selection","file":"list-selection.svg"},
   {"id":"tree/navigation","file":"tree-navigation.svg"},
   {"id":"form/responsive","file":"form-responsive.svg"},
+  {"id":"split-pane/horizontal","file":"split-pane-horizontal.svg"},
   {"id":"text-input/filter","file":"text-input-filter.svg"},
   {"id":"detail-table/basic","file":"detail-table-basic.svg"},
   {"id":"status-bar/basic","file":"status-bar-basic.svg"},
