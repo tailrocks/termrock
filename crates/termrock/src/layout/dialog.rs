@@ -301,8 +301,14 @@ pub fn render_scrollable_dialog_body(
     scroll.scroll_x = eff_x;
     scroll.scroll_y = eff_y;
 
-    Paragraph::new(lines.to_vec())
-        .scroll((eff_y, eff_x))
+    let start = usize::from(eff_y).min(content_height);
+    let visible = lines[start..]
+        .iter()
+        .take(vp_h)
+        .cloned()
+        .collect::<Vec<_>>();
+    Paragraph::new(visible)
+        .scroll((0, eff_x))
         .render(content_area, frame.buffer_mut());
     scroll.render_scrollbars(frame, block_area, content_height, content_width);
     (content_width, content_height)

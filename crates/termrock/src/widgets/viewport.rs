@@ -72,13 +72,21 @@ impl StatefulWidget for &Viewport<'_> {
                     .add_modifier(ratatui_core::style::Modifier::BOLD),
             ));
         }
-        Paragraph::new(self.lines.to_vec())
+        // Vertical slicing keeps frame cost proportional to the painted
+        // window. Paragraph owns horizontal scrolling only after the slice.
+        let start = usize::from(state.scroll_y).min(self.lines.len());
+        let visible = self.lines[start..]
+            .iter()
+            .take(viewport_height)
+            .cloned()
+            .collect::<Vec<_>>();
+        Paragraph::new(visible)
             .block(block)
             .style(
                 self.content_style
                     .unwrap_or_else(|| self.theme.style(Role::Text)),
             )
-            .scroll((state.scroll_y, state.scroll_x))
+            .scroll((0, state.scroll_x))
             .render(area, buffer);
         if is_scrollable(self.lines.len(), viewport_height) {
             render_vertical_scrollbar(

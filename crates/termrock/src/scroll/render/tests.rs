@@ -493,6 +493,27 @@ fn render_selected_lines_in_area_highlight_stops_before_scrollbar_gutter() {
 }
 
 #[test]
+fn render_selected_lines_in_area_rebases_selection_into_visible_slice() {
+    let backend = TestBackend::new(10, 3);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let lines: Vec<Line<'static>> = (0..5).map(|i| Line::from(format!("line {i}"))).collect();
+
+    terminal
+        .draw(|frame| {
+            render_selected_lines_in_area(frame, Rect::new(0, 0, 10, 3), lines, Some(4));
+        })
+        .unwrap();
+
+    let buffer = terminal.backend().buffer();
+    assert_eq!(buffer[(0, 0)].symbol(), "l");
+    assert_eq!(buffer[(5, 0)].symbol(), "2");
+    assert_eq!(buffer[(5, 2)].symbol(), "4");
+    for x in 0..9 {
+        assert_eq!(buffer[(x, 2)].bg, PHOSPHOR_GREEN, "x={x}");
+    }
+}
+
+#[test]
 fn render_selected_lines_in_area_no_scrollbar_when_content_fits() {
     let backend = TestBackend::new(10, 5);
     let mut terminal = Terminal::new(backend).unwrap();

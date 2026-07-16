@@ -395,14 +395,42 @@ pub fn render_selected_lines_in_area(
     let viewport = usize::from(area.height);
     let total = lines.len();
     let offset = cursor_follow_offset(selected.unwrap_or(0), total, viewport, 0);
-    let items = lines.into_iter().map(ListItem::new).collect();
+    let offset_usize = usize::from(offset);
+    let items = lines
+        .into_iter()
+        .skip(offset_usize)
+        .take(viewport)
+        .map(ListItem::new)
+        .collect();
+    let selected = selected
+        .and_then(|index| index.checked_sub(offset_usize))
+        .filter(|index| *index < viewport);
+    let show_scrollbar = is_scrollable(total, viewport);
+    let list_area = if show_scrollbar {
+        Rect {
+            width: area.width.saturating_sub(1),
+            ..area
+        }
+    } else {
+        area
+    };
     frame.render_widget(
         ScrollableList::new(items)
             .highlight_spacing(HighlightSpacing::Always)
-            .offset(offset)
+            .scrollbar(false)
             .selected(selected),
-        area,
+        list_area,
     );
+    if show_scrollbar {
+        FixedScrollbar {
+            content_length: total,
+            viewport,
+            offset,
+            orientation: FixedScrollbarOrientation::Vertical,
+            style: ScrollbarStyle::Line,
+        }
+        .render(vertical_list_scrollbar_area(area), frame.buffer_mut());
+    }
 }
 
 /// Shared vertical list renderer for selectable rows.
@@ -716,11 +744,16 @@ pub fn render_scrollable_block_at(
     }
     let eff_x = effective_offset(content_width, viewport_w, scroll_x);
     let eff_y = effective_offset(content_height, viewport_h, scroll_y);
+    let visible = lines
+        .into_iter()
+        .skip(usize::from(eff_y))
+        .take(viewport_h)
+        .collect();
     frame.render_widget(
-        Paragraph::new(add_trailing_padding(lines))
+        Paragraph::new(add_trailing_padding(visible))
             .block(panel.block())
             .style(crate::style::GREEN)
-            .scroll((eff_y, eff_x)),
+            .scroll((0, eff_x)),
         area,
     );
     render_horizontal_scrollbar(frame, area, content_width, eff_x);
