@@ -25,11 +25,14 @@ compatibility facades, or copied neutral rendering bodies. When a capability is
 missing, extend or refactor TermRock rather than implementing a local visual
 substitute. Breaking API changes are welcome during the pre-release period when
 they improve the shared design; do not add migration shims. Every breaking or
-dramatic public change must update `MIGRATING.md` in the same commit with the
-removed surface, its canonical replacement, exact consumer edits, a minimal
-before/after example, and validation commands. Documentation must let another
-agent migrate a pinned consumer without reconstructing intent from the diff.
-Compatibility never blocks a better API, domain model, module boundary, or
+dramatic public change must add the next sequential file under `migrations/`
+and link it from `MIGRATING.md` in the same commit. The file records the removed
+surface, canonical replacement, exact consumer edits, before/after examples,
+removed concepts, and validation commands. Documentation must let another agent
+migrate a pinned consumer without reconstructing intent from the diff.
+Existing migration files are historical boundaries; add a new file instead of
+rewriting an older migration for a later API. Compatibility never blocks a
+better API, domain model, module boundary, or
 architecture. Migration documentation coordinates forward adoption; it never
 authorizes deprecated aliases, duplicate implementations, compatibility
 facades, or retention of an inferior path.

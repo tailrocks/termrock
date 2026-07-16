@@ -11,9 +11,10 @@ gates, push every green commit immediately, and verify local `HEAD` equals
 `origin/main`. Never rewrite published history.
 
 Changes to public APIs must update the API report and component documentation in
-the same commit. Breaking or dramatic changes must also update `MIGRATING.md`
-with an old-to-new surface map, required consumer edits, before/after examples,
-removed concepts, and validation commands. After `v0.6.0`, `semver-candidate`,
+the same commit. Breaking or dramatic changes must add the next sequential file
+under `migrations/` and link it from `MIGRATING.md`, with an old-to-new surface
+map, required consumer edits, before/after examples, removed concepts, and
+validation commands. Do not rewrite older migration boundaries. After `v0.6.0`, `semver-candidate`,
 `rust-required`, and `docs-required` are release gates; incompatible changes
 require an intentional version decision. Prefer the best forward design over
 backward compatibility; migration documentation replaces compatibility shims,
