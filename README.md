@@ -1,7 +1,21 @@
 # TermRock
 
-Product-neutral Ratatui components, interaction foundations, a lookbook, and
-generated component documentation for terminal applications.
+Product-neutral Ratatui components, interaction foundations, styles, a
+lookbook, and generated component documentation for building terminal
+applications quickly.
+
+TermRock takes conceptual inspiration from
+[shadcn/ui](https://ui.shadcn.com/docs) and its
+[open component repository](https://github.com/shadcn-ui/ui): open and
+inspectable implementation, composable primitives, strong defaults, and a
+coherent source of reusable UI capability. It adapts those ideas to Rust,
+Ratatui, and terminal interaction rather than reproducing a React API.
+
+Reusable visual and interaction behavior belongs here. Applications keep only
+their domain state and wording, effects, process policy, secrets, executor
+choices, and projections into TermRock components. During this pre-release
+period, shared design quality takes priority over API compatibility; consumers
+pin exact revisions and adapt to deliberate breaking changes.
 
 The repository is in its bootstrap extraction period. Consumers pin exact Git
 revisions; crates.io publication is not part of the initial migration.

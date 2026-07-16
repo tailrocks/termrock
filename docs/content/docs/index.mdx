@@ -3,7 +3,23 @@ title: TermRock component catalog
 description: Product-neutral Ratatui foundations and widgets.
 ---
 
-TermRock exposes stable-ID widgets, backend-neutral input and interaction contracts, semantic themes, typed terminal requests, and optional Crossterm adapters.
+TermRock is a shared source of reusable UI capability for building terminal
+applications quickly. It exposes stable-ID widgets, backend-neutral input and
+interaction contracts, semantic themes, typed terminal requests, and optional
+Crossterm adapters.
+
+Its direction is conceptually inspired by
+[shadcn/ui](https://ui.shadcn.com/docs) and the
+[shadcn/ui repository](https://github.com/shadcn-ui/ui): components are open,
+composable, adaptable, and presented with strong defaults. TermRock applies
+those principles to terminal constraints and Rust APIs; it does not mirror the
+React implementation.
+
+Rendering, layout, styles, focus, navigation, hit geometry, Unicode safety, and
+other product-neutral interaction behavior belong in TermRock. Consumers retain
+domain state and wording, effects, process policy, secrets, and executor choice.
+If a reusable capability is absent, extend TermRock instead of copying a local
+rendering body.
 
 The optional Crossterm `Session` owns raw mode, alternate screen, mouse and
 paste modes, line wrapping, cursor visibility, rollback, and idempotent
