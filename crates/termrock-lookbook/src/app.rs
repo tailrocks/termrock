@@ -14,7 +14,7 @@ use ratatui::{
 };
 use termrock::{
     Theme,
-    input::{Event, KeyCode, KeyEvent, KeyEventKind, MouseEvent, MouseEventKind},
+    input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind},
     keymap::KeyChord,
     scroll::{self, ScrollSpan},
     style::Role,
@@ -281,7 +281,7 @@ impl Lookbook {
     fn render_hints(&self, frame: &mut Frame<'_>, area: Rect) {
         if self.focus == Focus::Knobs {
             frame.render_widget(
-                Paragraph::new("↑↓ knob   ←→ change   type edit   Esc back   t theme"),
+                Paragraph::new("↑↓ knob   ←→ change   type edit   Esc back   t/^t theme"),
                 area,
             );
             return;
@@ -303,7 +303,7 @@ impl Lookbook {
             })
             .collect::<Vec<_>>()
             .join(" ")
-            + "   t theme";
+            + "   t/^t theme";
         frame.render_widget(Paragraph::new(text), area);
     }
 
@@ -389,7 +389,14 @@ impl Lookbook {
 
     fn handle_key(&mut self, key: KeyEvent) -> ControlFlow<()> {
         let chord = KeyChord::from(key);
-        if chord == KeyChord::plain(KeyCode::Char('t')) {
+        let captures_text = match self.focus {
+            Focus::Preview => self.interactor.captures_text_input(),
+            Focus::Knobs => self.interactor.knob_captures_text_input(self.knob_selected),
+            Focus::Sidebar => false,
+        };
+        let theme_toggle = key.code == KeyCode::Char('t')
+            && (key.modifiers.contains(KeyModifiers::CONTROL) || !captures_text);
+        if theme_toggle {
             self.theme = if self.theme == Theme::tailrocks_phosphor() {
                 Theme::slate()
             } else {
@@ -407,6 +414,9 @@ impl Lookbook {
     }
 
     fn handle_preview_key(&mut self, key: KeyEvent, chord: KeyChord) {
+        if chord.key == KeyCode::Esc && self.interactor.handle_preview_escape(key) {
+            return;
+        }
         let content = usize::from(stories()[self.selected].height);
         match PREVIEW_KEYMAP
             .dispatch(chord)
@@ -532,6 +542,22 @@ mod tests {
 
         let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE));
 
+        assert_eq!(app.theme, Theme::slate());
+    }
+
+    #[test]
+    fn text_story_keeps_plain_t_and_uses_control_t_for_theme() {
+        let mut app = Lookbook::new();
+        let picker = stories()
+            .iter()
+            .position(|story| story.id == "text-input/filter")
+            .unwrap();
+        app.select(picker);
+        app.focus = Focus::Preview;
+
+        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE));
+        assert_eq!(app.theme, Theme::default());
+        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::CONTROL));
         assert_eq!(app.theme, Theme::slate());
     }
 }

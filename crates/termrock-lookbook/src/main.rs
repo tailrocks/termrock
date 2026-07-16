@@ -7,6 +7,7 @@ mod app;
 mod interactors;
 mod json;
 mod knobs;
+mod picker;
 mod runner;
 mod stories;
 mod svg;

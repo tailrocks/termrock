@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-use ratatui::{Frame, layout::Rect};
+use ratatui::{
+    Frame,
+    layout::{Constraint, Layout, Rect},
+    widgets::Paragraph,
+};
 use termrock::{
     Theme,
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
@@ -15,9 +19,11 @@ use termrock::{
 };
 
 use crate::knobs::{Knob, KnobValue};
+use crate::picker::{PickerOutcome, PickerState};
 
 use crate::stories::{
-    choice_actions, form_fields, list_rows, render_choice_dialog, render_split_pane, tree_nodes,
+    choice_actions, form_fields, list_rows, picker_rows, render_choice_dialog, render_split_pane,
+    tree_nodes,
 };
 
 pub(crate) trait StoryInteraction {
@@ -32,6 +38,15 @@ pub(crate) trait StoryInteraction {
         false
     }
     fn render_knob_editor(&mut self, _selected: usize, _frame: &mut Frame<'_>, _area: Rect) {}
+    fn handle_preview_escape(&mut self, _key: KeyEvent) -> bool {
+        false
+    }
+    fn captures_text_input(&self) -> bool {
+        false
+    }
+    fn knob_captures_text_input(&self, _selected: usize) -> bool {
+        false
+    }
 }
 
 pub(crate) struct StaticStory {
@@ -153,32 +168,60 @@ impl StoryInteraction for ListInteractor {
 }
 
 pub(crate) struct TextInputInteractor {
-    state: TextInputState,
+    state: PickerState<&'static str>,
     theme: Theme,
+    activated: Option<&'static str>,
 }
 
 impl TextInputInteractor {
     pub(crate) fn new() -> Self {
         Self {
-            state: TextInputState::new("search").with_max_graphemes(32),
+            state: PickerState::new(Some("alpha")),
             theme: Theme::default(),
+            activated: None,
         }
     }
 }
 
 impl StoryInteraction for TextInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        let rows = picker_rows(self.state.query_text());
+        self.state.reconcile(&rows);
+        let [query_area, list_area] =
+            Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(area);
         frame.render_stateful_widget(
             &TextInput::new("Filter", &self.theme)
                 .placeholder("Type to filter")
                 .validation(Validation::Valid),
-            area,
-            &mut self.state,
+            query_area,
+            &mut self.state.query,
         );
+        if rows.is_empty() {
+            frame.render_widget(Paragraph::new("No matches"), list_area);
+        } else {
+            frame.render_stateful_widget(
+                &List::new(&rows, &self.theme),
+                list_area,
+                &mut self.state.list,
+            );
+        }
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        !matches!(self.state.handle_key(key), TextInputOutcome::Ignored)
+        let rows = picker_rows(self.state.query_text());
+        match self.state.handle_key(&rows, key) {
+            PickerOutcome::QueryChanged => {
+                let rows = picker_rows(self.state.query_text());
+                self.state.reconcile(&rows);
+                true
+            }
+            PickerOutcome::Activated(id) => {
+                self.activated = Some(id);
+                true
+            }
+            PickerOutcome::SelectionChanged => true,
+            PickerOutcome::Ignored | PickerOutcome::Cancelled => false,
+        }
     }
 
     fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
@@ -187,6 +230,14 @@ impl StoryInteraction for TextInputInteractor {
 
     fn set_theme(&mut self, theme: Theme) {
         self.theme = theme;
+    }
+
+    fn handle_preview_escape(&mut self, key: KeyEvent) -> bool {
+        self.handle_key(key)
+    }
+
+    fn captures_text_input(&self) -> bool {
+        true
     }
 }
 
@@ -538,6 +589,10 @@ impl StoryInteraction for ToastInteractor {
                 &mut self.message,
             );
         }
+    }
+
+    fn knob_captures_text_input(&self, selected: usize) -> bool {
+        selected == 2
     }
 }
 

@@ -5,7 +5,7 @@
 
 use ratatui::{
     Frame,
-    layout::Rect,
+    layout::{Constraint, Layout, Rect},
     style::Style,
     text::{Line, Span},
     widgets::Paragraph,
@@ -220,7 +220,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "TextInput",
             "Text input composed as a caller-owned filter.",
             42,
-            1,
+            7,
             text_input,
         )
         .with_interactor(text_input_interactor),
@@ -584,14 +584,39 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
 }
 
 fn text_input(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let mut state = TextInputState::new("search");
+    let [query_area, list_area] =
+        Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(area);
+    let mut state = TextInputState::new("");
     frame.render_stateful_widget(
         &TextInput::new("Filter", theme)
             .placeholder("Type to filter")
             .validation(Validation::Valid),
-        area,
+        query_area,
         &mut state,
     );
+    let rows = picker_rows("");
+    let mut list_state = ListState::new(Some("alpha"));
+    frame.render_stateful_widget(&List::new(&rows, theme), list_area, &mut list_state);
+}
+
+pub(crate) fn picker_rows(query: &str) -> Vec<ListRow<'static, &'static str>> {
+    let query = query.to_ascii_lowercase();
+    [
+        ("alpha", "Alpha project", "workspace"),
+        ("beta", "Beta release", "command"),
+        ("gamma", "Gamma logs", "view"),
+        ("delta", "Delta settings", "command"),
+    ]
+    .into_iter()
+    .filter(|(_, label, _)| label.to_ascii_lowercase().contains(&query))
+    .map(|(id, label, kind)| ListRow {
+        id,
+        label: Line::from(label),
+        trailing: Some(Line::from(kind)),
+        role: RowRole::Item,
+        enabled: true,
+    })
+    .collect()
 }
 
 fn detail_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {

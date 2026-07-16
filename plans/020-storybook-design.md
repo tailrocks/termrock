@@ -124,5 +124,5 @@ and `t` interactively. No publication action is needed.
   navigation surprising.
 - A future theme file needs a versioned schema and complete role validation,
   not partial silent fallback.
-- Decide whether Text editing should reserve `t` while focused; the spike keeps
-  `t` globally authoritative as specified.
+- Text editing reserves plain `t`; `Ctrl+t` remains the global theme binding in
+  that context. Elsewhere plain `t` toggles the theme.
