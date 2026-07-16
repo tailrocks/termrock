@@ -3,6 +3,9 @@ on: [push, pull_request]
 permissions: { contents: read }
 jobs:
   docs-required:
+    permissions:
+      contents: read
+      pages: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,3 +30,26 @@ jobs:
       - run: cargo run -p termrock-lookbook -- render --out target/render-b >/dev/null
       - run: diff -r target/render-a target/render-b
       - run: cargo run -p termrock-lookbook -- render --theme slate --out target/render-slate >/dev/null
+      - name: Configure GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/configure-pages@v5
+      - name: Upload GitHub Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/dist/client
+
+  deploy-pages:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: docs-required
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
