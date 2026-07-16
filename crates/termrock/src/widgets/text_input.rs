@@ -9,40 +9,61 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Available `EditAction` choices.
 pub enum EditAction {
+    /// Selects the `Insert` behavior.
     Insert(char),
+    /// Selects the `Backspace` behavior.
     Backspace,
+    /// Selects the `Delete` behavior.
     Delete,
+    /// Selects the `MoveLeft` behavior.
     MoveLeft,
+    /// Selects the `MoveRight` behavior.
     MoveRight,
+    /// Selects the `Home` behavior.
     Home,
+    /// Selects the `End` behavior.
     End,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Available `Validation` choices.
 pub enum Validation<'a> {
+    /// Selects the `Valid` behavior.
     Valid,
+    /// Selects the `Invalid` behavior.
     Invalid(&'a str),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Available `TextInputValidity` choices.
 pub enum TextInputValidity {
+    /// Selects the `Valid` behavior.
     Valid,
+    /// Selects the `Empty` behavior.
     Empty,
+    /// Selects the `Forbidden` behavior.
     Forbidden,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `TextInputOutcome` choices.
 pub enum TextInputOutcome {
+    /// Selects the `Ignored` behavior.
     Ignored,
+    /// Selects the `Changed` behavior.
     Changed,
+    /// Selects the `Submitted` behavior.
     Submitted(String),
+    /// Selects the `Cancelled` behavior.
     Cancelled,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+/// Runtime state for `TextInput`.
 pub struct TextInputState {
     value: String,
     cursor: usize,
@@ -54,6 +75,7 @@ pub struct TextInputState {
 
 impl TextInputState {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub fn new(value: impl Into<String>) -> Self {
         let value = value.into();
         let cursor = value.len();
@@ -68,34 +90,40 @@ impl TextInputState {
     }
 
     #[must_use]
+    /// Returns this value with `max_graphemes` configured.
     pub fn with_max_graphemes(mut self, max_graphemes: usize) -> Self {
         self.max_graphemes = Some(max_graphemes);
         self
     }
 
     #[must_use]
+    /// Returns this value with `forbidden` configured.
     pub fn with_forbidden(mut self, forbidden: impl IntoIterator<Item = String>) -> Self {
         self.forbidden = forbidden.into_iter().collect();
         self
     }
 
     #[must_use]
+    /// Returns this value with `allow_empty` configured.
     pub const fn with_allow_empty(mut self, allow_empty: bool) -> Self {
         self.allow_empty = allow_empty;
         self
     }
 
     #[must_use]
+    /// Performs the `value` operation.
     pub fn value(&self) -> &str {
         &self.value
     }
 
     #[must_use]
+    /// Performs the `trimmed_value` operation.
     pub fn trimmed_value(&self) -> &str {
         self.value.trim()
     }
 
     #[must_use]
+    /// Performs the `cursor_byte` operation.
     pub const fn cursor_byte(&self) -> usize {
         self.cursor
     }
@@ -118,6 +146,7 @@ impl TextInputState {
     }
 
     #[must_use]
+    /// Performs the `validity` operation.
     pub fn validity(&self) -> TextInputValidity {
         let value = self.trimmed_value();
         if value.is_empty() && !self.allow_empty {
@@ -130,10 +159,12 @@ impl TextInputState {
     }
 
     #[must_use]
+    /// Returns whether `valid`.
     pub fn is_valid(&self) -> bool {
         self.validity() == TextInputValidity::Valid
     }
 
+    /// Handles the `handle_key` interaction.
     pub fn handle_key(&mut self, key: KeyEvent) -> TextInputOutcome {
         if key.kind == KeyEventKind::Release {
             return TextInputOutcome::Ignored;
@@ -161,6 +192,7 @@ impl TextInputState {
         }
     }
 
+    /// Performs the `apply` operation.
     pub fn apply(&mut self, action: EditAction) -> bool {
         let before_cursor = self.cursor;
         let before_len = self.value.len();
@@ -239,6 +271,7 @@ impl TextInputState {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `TextInput`.
 pub struct TextInput<'a> {
     label: &'a str,
     placeholder: &'a str,
@@ -248,6 +281,7 @@ pub struct TextInput<'a> {
 
 impl<'a> TextInput<'a> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(label: &'a str, theme: &'a Theme) -> Self {
         Self {
             label,
@@ -258,18 +292,21 @@ impl<'a> TextInput<'a> {
     }
 
     #[must_use]
+    /// Performs the `placeholder` operation.
     pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
         self.placeholder = placeholder;
         self
     }
 
     #[must_use]
+    /// Performs the `validation` operation.
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
         self.validation = validation;
         self
     }
 
     #[must_use]
+    /// Performs the `label` operation.
     pub const fn label(&self) -> &'a str {
         self.label
     }

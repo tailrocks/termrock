@@ -8,22 +8,48 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `Severity` choices.
 pub enum Severity {
+    /// Selects the `Info` behavior.
     Info,
+    /// Selects the `Success` behavior.
     Success,
+    /// Selects the `Warning` behavior.
     Warning,
+    /// Selects the `Error` behavior.
     Error,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `Anchor` choices.
 pub enum Anchor {
+    /// Selects the `TopLeft` behavior.
     TopLeft,
+    /// Selects the `TopRight` behavior.
     TopRight,
+    /// Selects the `BottomLeft` behavior.
     BottomLeft,
+    /// Selects the `BottomRight` behavior.
     BottomRight,
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Transient notification overlay with caller-owned lifetime and placement.
+///
+/// See the `toast/severity` lookbook story for semantic variants.
+///
+/// # Examples
+///
+/// ```
+/// use ratatui_core::layout::Rect;
+/// use termrock::{Theme, widgets::{Anchor, Severity, Toast}};
+///
+/// let theme = Theme::default();
+/// let toast = Toast::new(&theme, "Saved", Severity::Success)
+///     .anchor(Anchor::BottomRight)
+///     .margins(1, 1);
+/// assert!(toast.rect(Rect::new(0, 0, 40, 8)).is_some());
+/// ```
 pub struct Toast<'a> {
     message: &'a str,
     severity: Severity,
@@ -36,6 +62,7 @@ pub struct Toast<'a> {
 
 impl<'a> Toast<'a> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(theme: &'a Theme, message: &'a str, severity: Severity) -> Self {
         Self {
             message,
@@ -49,12 +76,14 @@ impl<'a> Toast<'a> {
     }
 
     #[must_use]
+    /// Performs the `anchor` operation.
     pub const fn anchor(mut self, anchor: Anchor) -> Self {
         self.anchor = anchor;
         self
     }
 
     #[must_use]
+    /// Performs the `margins` operation.
     pub const fn margins(mut self, horizontal: u16, vertical: u16) -> Self {
         self.horizontal_margin = horizontal;
         self.vertical_margin = vertical;
@@ -62,12 +91,14 @@ impl<'a> Toast<'a> {
     }
 
     #[must_use]
+    /// Performs the `style` operation.
     pub const fn style(mut self, style: Style) -> Self {
         self.style = Some(style);
         self
     }
 
     #[must_use]
+    /// Performs the `rect` operation.
     pub fn rect(&self, area: Rect) -> Option<Rect> {
         if area.is_empty() || self.message.is_empty() {
             return None;

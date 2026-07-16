@@ -14,23 +14,31 @@ const RATIO_SCALE: u16 = 10_000;
 const KEYBOARD_STEP: u16 = 250;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Available `SplitDirection` choices.
 pub enum SplitDirection {
+    /// Selects the `Horizontal` behavior.
     Horizontal,
+    /// Selects the `Vertical` behavior.
     Vertical,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Available `SplitSide` choices.
 pub enum SplitSide {
+    /// Selects the `First` behavior.
     First,
+    /// Selects the `Second` behavior.
     Second,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+/// Data carried by `SplitRatio`.
 pub struct SplitRatio(u16);
 
 impl SplitRatio {
     #[must_use]
+    /// Creates a value from `basis_points`.
     pub const fn from_basis_points(basis_points: u16) -> Self {
         Self(if basis_points > RATIO_SCALE {
             RATIO_SCALE
@@ -40,6 +48,7 @@ impl SplitRatio {
     }
 
     #[must_use]
+    /// Creates a value from `percent`.
     pub const fn from_percent(percent: u8) -> Self {
         Self::from_basis_points(if percent > 100 {
             RATIO_SCALE
@@ -49,6 +58,7 @@ impl SplitRatio {
     }
 
     #[must_use]
+    /// Performs the `basis_points` operation.
     pub const fn basis_points(self) -> u16 {
         self.0
     }
@@ -61,23 +71,34 @@ impl Default for SplitRatio {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Data carried by `SplitPaneLayout`.
 pub struct SplitPaneLayout {
+    /// Documentation for `item`.
     pub first: Rect,
+    /// Documentation for `item`.
     pub divider: Rect,
+    /// Documentation for `item`.
     pub second: Rect,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `SplitPaneOutcome` choices.
 pub enum SplitPaneOutcome {
+    /// Selects the `Ignored` behavior.
     Ignored,
+    /// Selects the `Focused` behavior.
     Focused,
+    /// Selects the `RatioChanged` behavior.
     RatioChanged(SplitRatio),
+    /// Selects the `Collapsed` behavior.
     Collapsed(SplitSide),
+    /// Selects the `Expanded` behavior.
     Expanded,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `SplitPane`.
 pub struct SplitPaneState {
     ratio: SplitRatio,
     focused: bool,
@@ -102,6 +123,7 @@ impl Default for SplitPaneState {
 
 impl SplitPaneState {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(ratio: SplitRatio) -> Self {
         Self {
             ratio,
@@ -119,20 +141,24 @@ impl SplitPaneState {
     }
 
     #[must_use]
+    /// Performs the `ratio` operation.
     pub const fn ratio(&self) -> SplitRatio {
         self.ratio
     }
 
+    /// Sets `ratio`.
     pub const fn set_ratio(&mut self, ratio: SplitRatio) {
         self.ratio = ratio;
         self.collapsed = None;
     }
 
     #[must_use]
+    /// Returns whether `focused`.
     pub const fn is_focused(&self) -> bool {
         self.focused
     }
 
+    /// Sets `focused`.
     pub const fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
         if !focused {
@@ -141,25 +167,30 @@ impl SplitPaneState {
     }
 
     #[must_use]
+    /// Returns whether `hovered`.
     pub const fn is_hovered(&self) -> bool {
         self.hovered
     }
 
     #[must_use]
+    /// Returns whether `dragging`.
     pub const fn is_dragging(&self) -> bool {
         self.dragging
     }
 
     #[must_use]
+    /// Performs the `collapsed` operation.
     pub const fn collapsed(&self) -> Option<SplitSide> {
         self.collapsed
     }
 
     #[must_use]
+    /// Performs the `layout` operation.
     pub const fn layout(&self) -> SplitPaneLayout {
         self.layout
     }
 
+    /// Handles the `handle_key` interaction.
     pub fn handle_key(&mut self, spec: &SplitPane<'_>, key: KeyEvent) -> SplitPaneOutcome {
         if !self.focused || key.kind == KeyEventKind::Release {
             return SplitPaneOutcome::Ignored;
@@ -183,6 +214,7 @@ impl SplitPaneState {
         SplitPaneOutcome::Ignored
     }
 
+    /// Performs the `collapse` operation.
     pub fn collapse(&mut self, side: SplitSide) -> SplitPaneOutcome {
         if self.collapsed == Some(side) {
             SplitPaneOutcome::Ignored
@@ -193,6 +225,7 @@ impl SplitPaneState {
         }
     }
 
+    /// Performs the `expand` operation.
     pub fn expand(&mut self) -> SplitPaneOutcome {
         if self.collapsed.take().is_some() {
             SplitPaneOutcome::Expanded
@@ -201,6 +234,7 @@ impl SplitPaneState {
         }
     }
 
+    /// Performs the `drag_start` operation.
     pub fn drag_start(&mut self, spec: &SplitPane<'_>, position: Position) -> SplitPaneOutcome {
         let Some(painted) = self
             .painted
@@ -217,6 +251,7 @@ impl SplitPaneState {
         SplitPaneOutcome::Focused
     }
 
+    /// Performs the `hover` operation.
     pub fn hover(&mut self, spec: &SplitPane<'_>, position: Position) -> bool {
         let hovered = self
             .painted
@@ -229,6 +264,7 @@ impl SplitPaneState {
         changed
     }
 
+    /// Performs the `drag_move` operation.
     pub fn drag_move(&mut self, spec: &SplitPane<'_>, position: Position) -> SplitPaneOutcome {
         if !self.dragging {
             return SplitPaneOutcome::Ignored;
@@ -272,12 +308,14 @@ impl SplitPaneState {
         SplitPaneOutcome::RatioChanged(self.ratio)
     }
 
+    /// Performs the `drag_end` operation.
     pub const fn drag_end(&mut self) {
         self.dragging = false;
     }
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `SplitPane`.
 pub struct SplitPane<'a> {
     direction: SplitDirection,
     first_min: u16,
@@ -287,6 +325,7 @@ pub struct SplitPane<'a> {
 
 impl<'a> SplitPane<'a> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(
         direction: SplitDirection,
         first_min: u16,
@@ -301,6 +340,7 @@ impl<'a> SplitPane<'a> {
         }
     }
 
+    /// Performs the `layout` operation.
     pub fn layout(&self, area: Rect, state: &mut SplitPaneState) -> SplitPaneLayout {
         let total = match self.direction {
             SplitDirection::Horizontal => area.width,

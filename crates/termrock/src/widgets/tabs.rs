@@ -11,9 +11,13 @@ use unicode_width::UnicodeWidthStr;
 /// Per-tab descriptor shared by terminal tab renderers.
 #[derive(Debug, Clone)]
 pub struct TabCell<'a> {
+    /// Documentation for `item`.
     pub label: &'a str,
+    /// Documentation for `item`.
     pub active: bool,
+    /// Documentation for `item`.
     pub start_col: u16,
+    /// Documentation for `item`.
     pub cell_cols: u16,
 }
 
@@ -48,19 +52,30 @@ pub fn tab_at_column(cells: &[TabCell<'_>], col: u16) -> Option<usize> {
 }
 
 #[derive(Debug, Clone)]
+/// Data carried by `Tab`.
 pub struct Tab<'a, Id> {
+    /// Documentation for `item`.
     pub id: Id,
+    /// Documentation for `item`.
     pub label: &'a str,
+    /// Documentation for `item`.
     pub glyph: Option<Span<'a>>,
+    /// Documentation for `item`.
     pub active: bool,
+    /// Documentation for `item`.
     pub enabled: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `Tabs`.
 pub struct TabsState<Id> {
+    /// Documentation for `item`.
     pub selected: Option<Id>,
+    /// Documentation for `item`.
     pub hovered: Option<Id>,
+    /// Documentation for `item`.
     pub focused: bool,
+    /// Documentation for `item`.
     pub regions: Vec<HitRegion<Id>>,
 }
 
@@ -76,6 +91,7 @@ impl<Id> Default for TabsState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `Tabs`.
 pub struct Tabs<'a, Id> {
     tabs: &'a [Tab<'a, Id>],
     gap: u16,
@@ -84,6 +100,7 @@ pub struct Tabs<'a, Id> {
 
 impl<'a, Id> Tabs<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(tabs: &'a [Tab<'a, Id>], theme: &'a Theme) -> Self {
         Self {
             tabs,
@@ -93,6 +110,7 @@ impl<'a, Id> Tabs<'a, Id> {
     }
 
     #[must_use]
+    /// Performs the `gap` operation.
     pub const fn gap(mut self, gap: u16) -> Self {
         self.gap = gap;
         self

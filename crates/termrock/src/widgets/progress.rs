@@ -7,12 +7,24 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
+/// Available `ProgressKind` choices.
 pub enum ProgressKind {
-    Determinate { fraction: f64 },
-    Indeterminate { tick: u64 },
+    /// Selects the `Determinate` behavior.
+    /// The `Determinate { fraction` value.
+    Determinate {
+        /// Completed fraction; rendering clamps finite values to `0.0..=1.0`.
+        fraction: f64,
+    },
+    /// Selects the `Indeterminate` behavior.
+    /// The `Indeterminate { tick` value.
+    Indeterminate {
+        /// Caller-owned deterministic animation tick.
+        tick: u64,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `Progress`.
 pub struct Progress<'a> {
     kind: ProgressKind,
     label: Option<&'a str>,
@@ -21,6 +33,7 @@ pub struct Progress<'a> {
 
 impl<'a> Progress<'a> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(kind: ProgressKind, theme: &'a Theme) -> Self {
         Self {
             kind,
@@ -30,6 +43,7 @@ impl<'a> Progress<'a> {
     }
 
     #[must_use]
+    /// Performs the `label` operation.
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = Some(label);
         self

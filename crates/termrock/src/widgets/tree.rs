@@ -17,35 +17,55 @@ use super::Selection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `TreeNodeStatus` choices.
 pub enum TreeNodeStatus {
+    /// Selects the `Ready` behavior.
     Ready,
+    /// Selects the `Loading` behavior.
     Loading,
+    /// Selects the `Error` behavior.
     Error,
 }
 
 #[derive(Debug, Clone)]
+/// Data carried by `TreeNode`.
 pub struct TreeNode<'a, Id> {
+    /// Documentation for `item`.
     pub id: Id,
+    /// Documentation for `item`.
     pub label: Line<'a>,
+    /// Documentation for `item`.
     pub trailing: Option<Line<'a>>,
+    /// Documentation for `item`.
     pub depth: u16,
+    /// Documentation for `item`.
     pub branch: bool,
+    /// Documentation for `item`.
     pub expanded: bool,
+    /// Documentation for `item`.
     pub enabled: bool,
+    /// Documentation for `item`.
     pub status: TreeNodeStatus,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `TreeOutcome` choices.
 pub enum TreeOutcome<Id> {
+    /// Selects the `Ignored` behavior.
     Ignored,
+    /// Selects the `SelectionChanged` behavior.
     SelectionChanged(Id),
+    /// Selects the `Toggle` behavior.
     Toggle(Id),
+    /// Selects the `CheckToggled` behavior.
     CheckToggled(Id),
+    /// Selects the `Activated` behavior.
     Activated(Id),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `Tree`.
 pub struct TreeState<Id> {
     selected: Option<Id>,
     hovered: Option<Id>,
@@ -80,6 +100,7 @@ impl<Id> Default for TreeState<Id> {
 
 impl<Id> TreeState<Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(selected: Option<Id>) -> Self {
         Self {
             selected,
@@ -97,51 +118,62 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
+    /// Performs the `selected` operation.
     pub const fn selected(&self) -> Option<&Id> {
         self.selected.as_ref()
     }
 
     #[must_use]
+    /// Performs the `hovered` operation.
     pub const fn hovered(&self) -> Option<&Id> {
         self.hovered.as_ref()
     }
 
     #[must_use]
+    /// Returns whether `focused`.
     pub const fn is_focused(&self) -> bool {
         self.focused
     }
 
+    /// Sets `focused`.
     pub const fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
     }
 
     #[must_use]
+    /// Performs the `offset` operation.
     pub const fn offset(&self) -> usize {
         self.offset
     }
 
+    /// Performs the `select` operation.
     pub fn select(&mut self, selected: Option<Id>) {
         self.selected = selected;
         self.follow_selection = true;
     }
 
+    /// Performs the `enable_multi_select` operation.
     pub fn enable_multi_select(&mut self) {
         self.selection.get_or_insert_with(Selection::new);
     }
 
+    /// Performs the `disable_multi_select` operation.
     pub fn disable_multi_select(&mut self) {
         self.selection = None;
     }
 
     #[must_use]
+    /// Performs the `selection` operation.
     pub const fn selection(&self) -> Option<&Selection<Id>> {
         self.selection.as_ref()
     }
 
+    /// Performs the `selection_mut` operation.
     pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
         self.selection.as_mut()
     }
 
+    /// Performs the `scroll_by` operation.
     pub fn scroll_by(&mut self, delta: isize, node_count: usize) -> bool {
         let before = self.offset;
         let maximum = max_offset(node_count, self.viewport_height);
@@ -156,6 +188,7 @@ impl<Id> TreeState<Id> {
         before != self.offset
     }
 
+    /// Performs the `scroll_to_position` operation.
     pub fn scroll_to_position(&mut self, position: Position, node_count: usize) -> bool {
         let Some(area) = self.scrollbar_region else {
             return false;
@@ -174,12 +207,14 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
+    /// Performs the `regions` operation.
     pub fn regions(&self) -> &[HitRegion<Id>] {
         &self.regions
     }
 }
 
 impl<Id: Clone + PartialEq> TreeState<Id> {
+    /// Handles the `handle_key` interaction.
     pub fn handle_key(&mut self, nodes: &[TreeNode<'_, Id>], key: KeyEvent) -> TreeOutcome<Id> {
         if !self.focused || key.kind == KeyEventKind::Release {
             return TreeOutcome::Ignored;
@@ -218,6 +253,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         TreeOutcome::CheckToggled(node.id.clone())
     }
 
+    /// Performs the `hover` operation.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
@@ -227,6 +263,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         self.hovered.as_ref()
     }
 
+    /// Performs the `click` operation.
     pub fn click(&mut self, position: Position) -> TreeOutcome<Id> {
         if let Some(region) = self
             .disclosure_regions
@@ -383,6 +420,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `Tree`.
 pub struct Tree<'a, Id> {
     nodes: &'a [TreeNode<'a, Id>],
     theme: &'a Theme,
@@ -390,6 +428,7 @@ pub struct Tree<'a, Id> {
 
 impl<'a, Id> Tree<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(nodes: &'a [TreeNode<'a, Id>], theme: &'a Theme) -> Self {
         Self { nodes, theme }
     }

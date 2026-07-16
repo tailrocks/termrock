@@ -11,21 +11,30 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
+/// Data carried by `StatusSlot`.
 pub struct StatusSlot<'a, Id> {
+    /// Documentation for `item`.
     pub id: Id,
+    /// Documentation for `item`.
     pub content: &'a str,
     /// Higher-priority slots receive width before lower-priority slots.
     pub priority: u8,
     /// Minimum display columns required to keep the slot. Zero means all-or-nothing.
     pub min_width: u16,
+    /// Documentation for `item`.
     pub enabled: bool,
+    /// Documentation for `item`.
     pub style: Style,
+    /// Documentation for `item`.
     pub hover_style: Option<Style>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `StatusBar`.
 pub struct StatusBarState<Id> {
+    /// Documentation for `item`.
     pub hovered: Option<Id>,
+    /// Documentation for `item`.
     pub regions: Vec<HitRegion<Id>>,
 }
 
@@ -39,6 +48,7 @@ impl<Id> Default for StatusBarState<Id> {
 }
 
 impl<Id: Clone> StatusBarState<Id> {
+    /// Performs the `hover` operation.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
@@ -49,6 +59,7 @@ impl<Id: Clone> StatusBarState<Id> {
     }
 
     #[must_use]
+    /// Performs the `click` operation.
     pub fn click(&mut self, position: Position) -> Outcome<Id> {
         self.regions
             .iter()
@@ -60,6 +71,7 @@ impl<Id: Clone> StatusBarState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `StatusBar`.
 pub struct StatusBar<'a, Id> {
     left: &'a [StatusSlot<'a, Id>],
     right: &'a [StatusSlot<'a, Id>],
@@ -69,6 +81,7 @@ pub struct StatusBar<'a, Id> {
 
 impl<'a, Id> StatusBar<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(
         left: &'a [StatusSlot<'a, Id>],
         right: &'a [StatusSlot<'a, Id>],
@@ -83,6 +96,7 @@ impl<'a, Id> StatusBar<'a, Id> {
     }
 
     #[must_use]
+    /// Performs the `alpha` operation.
     pub const fn alpha(mut self, alpha: f32) -> Self {
         self.alpha = alpha;
         self
@@ -115,6 +129,7 @@ struct Placement<Id> {
 
 impl<Id: Clone> StatusBar<'_, Id> {
     #[must_use]
+    /// Performs the `regions` operation.
     pub fn regions(&self, area: Rect) -> Vec<HitRegion<Id>> {
         self.placements(area)
             .into_iter()

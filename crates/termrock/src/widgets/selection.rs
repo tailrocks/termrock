@@ -1,4 +1,5 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Data carried by `Selection`.
 pub struct Selection<Id> {
     checked: Vec<Id>,
 }
@@ -13,6 +14,7 @@ impl<Id> Default for Selection<Id> {
 
 impl<Id> Selection<Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new() -> Self {
         Self {
             checked: Vec::new(),
@@ -20,10 +22,12 @@ impl<Id> Selection<Id> {
     }
 
     #[must_use]
+    /// Performs the `checked` operation.
     pub fn checked(&self) -> &[Id] {
         &self.checked
     }
 
+    /// Performs the `clear` operation.
     pub fn clear(&mut self) {
         self.checked.clear();
     }
@@ -44,6 +48,7 @@ impl<Id: Clone + PartialEq> Selection<Id> {
     }
 
     #[must_use]
+    /// Returns whether `checked`.
     pub fn is_checked(&self, id: &Id) -> bool {
         self.checked.iter().any(|checked| checked == id)
     }
