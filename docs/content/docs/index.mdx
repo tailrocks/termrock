@@ -5,4 +5,9 @@ description: Product-neutral Ratatui foundations and widgets.
 
 TermRock exposes stable-ID widgets, backend-neutral input and interaction contracts, semantic themes, typed terminal requests, and optional Crossterm adapters.
 
+The optional Crossterm `Session` owns raw mode, alternate screen, mouse and
+paste modes, line wrapping, cursor visibility, rollback, and idempotent
+restoration. Applications keep one session owner; widgets never manipulate
+terminal lifecycle directly.
+
 Use `termrock-lookbook list --format json` to inspect stories, `render --out <dir>` to reproduce previews, and `check --dir <dir>` to verify committed previews.

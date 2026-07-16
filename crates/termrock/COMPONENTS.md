@@ -2,6 +2,14 @@
 
 The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `MessageDialog`, `Panel`, `SplitPane`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
 
+With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
+owner. Its forward default acquires raw mode, alternate screen, mouse capture,
+bracketed paste, disabled line wrapping, and hidden cursor state. Failed entry
+rolls back every acquired mode; explicit restore and `Drop` restore in reverse
+order and remain idempotent. Disabling alternate-screen ownership also omits
+its full-screen line-wrap and cursor changes for inline/non-interactive
+integrations. Screens and widgets never emit lifecycle commands.
+
 `SplitPane` maps an integer remembered ratio, horizontal/vertical direction,
 and caller minimums into bounded first/divider/second rectangles. Tiny areas
 degrade proportionally without escaping the input rectangle. `SplitPaneState`
