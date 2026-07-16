@@ -57,6 +57,11 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         }
     }
 
+    /// Replace the stable selected identity.
+    pub fn select(&mut self, selected: Option<Id>) {
+        self.selected = selected;
+    }
+
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> ListOutcome<Id> {
         match key.code {
             KeyCode::Up | KeyCode::Char('k' | 'K') => self.select_relative(rows, -1),
@@ -201,6 +206,63 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             return self.scroll_by(1, rows_len);
         }
         false
+    }
+}
+
+impl ListState<usize> {
+    /// Create index-addressed list state with the first item selected.
+    #[must_use]
+    pub const fn for_count(count: usize) -> Self {
+        Self::new(if count == 0 { None } else { Some(0) })
+    }
+
+    /// Reconcile an index selection after the backing collection changes.
+    pub fn reconcile_count(&mut self, count: usize) {
+        self.selected = match (self.selected, count) {
+            (_, 0) => None,
+            (Some(index), _) => Some(if index < count { index } else { count - 1 }),
+            (None, _) => Some(0),
+        };
+    }
+
+    /// Move an index selection by one item, wrapping at either edge.
+    pub fn cycle_index(&mut self, count: usize, direction: isize) -> bool {
+        if count == 0 {
+            self.selected = None;
+            return false;
+        }
+        let current = self.selected.unwrap_or(0).min(count - 1);
+        let next = if direction.is_negative() {
+            if current == 0 { count - 1 } else { current - 1 }
+        } else if current + 1 >= count {
+            0
+        } else {
+            current + 1
+        };
+        self.selected = Some(next);
+        next != current
+    }
+
+    /// Move an index selection by a gesture delta without wrapping.
+    pub fn move_index(&mut self, count: usize, delta: isize) -> bool {
+        if count == 0 {
+            self.selected = None;
+            return false;
+        }
+        let current = self.selected.unwrap_or(0).min(count - 1);
+        let next = if delta.is_negative() {
+            current.saturating_sub(delta.unsigned_abs())
+        } else {
+            current.saturating_add(delta.unsigned_abs()).min(count - 1)
+        };
+        self.selected = Some(next);
+        next != current
+    }
+
+    /// Borrow the selected item from an index-addressed collection.
+    #[must_use]
+    pub fn selected_item<'a, T>(&self, items: &'a [T]) -> Option<&'a T> {
+        self.selected.and_then(|index| items.get(index))
     }
 }
 
@@ -373,5 +435,24 @@ mod tests {
         assert_eq!(state.hover(position), Some(&"second"));
         assert_eq!(state.click(position), ListOutcome::Activated("second"));
         assert_eq!(buffer[(area.x, area.y)].symbol(), "▸");
+    }
+
+    #[test]
+    fn indexed_picker_navigation_wraps_keys_and_bounds_gestures() {
+        let mut state = ListState::for_count(3);
+        assert_eq!(state.selected, Some(0));
+        assert!(state.cycle_index(3, -1));
+        assert_eq!(state.selected, Some(2));
+        assert!(state.cycle_index(3, 1));
+        assert_eq!(state.selected, Some(0));
+        assert!(state.move_index(3, 9));
+        assert_eq!(state.selected, Some(2));
+        assert!(!state.move_index(3, 9));
+        assert_eq!(state.selected_item(&["a", "b", "c"]), Some(&"c"));
+
+        state.reconcile_count(1);
+        assert_eq!(state.selected, Some(0));
+        state.reconcile_count(0);
+        assert_eq!(state.selected, None);
     }
 }
