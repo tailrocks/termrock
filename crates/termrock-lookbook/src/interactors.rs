@@ -86,8 +86,11 @@ pub(crate) struct ListInteractor {
 
 impl ListInteractor {
     pub(crate) fn new() -> Self {
+        let mut state = ListState::new(Some("beta"));
+        state.enable_multi_select();
+        state.selection_mut().unwrap().toggle(&"alpha");
         Self {
-            state: ListState::new(Some("beta")),
+            state,
             theme: Theme::default(),
         }
     }
@@ -187,9 +190,12 @@ pub(crate) struct TreeInteractor {
 
 impl TreeInteractor {
     pub(crate) fn new() -> Self {
+        let mut state = TreeState::new(Some("workspace"));
+        state.enable_multi_select();
+        state.selection_mut().unwrap().toggle(&"notes");
         Self {
             nodes: tree_nodes(),
-            state: TreeState::new(Some("workspace")),
+            state,
             theme: Theme::default(),
         }
     }

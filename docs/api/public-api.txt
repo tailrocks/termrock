@@ -3715,6 +3715,7 @@ pub fn termrock::widgets::TreeNodeStatus::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TreeNodeStatus
 pub enum termrock::widgets::TreeOutcome<Id>
 pub termrock::widgets::TreeOutcome::Activated(Id)
+pub termrock::widgets::TreeOutcome::CheckToggled(Id)
 pub termrock::widgets::TreeOutcome::Ignored
 pub termrock::widgets::TreeOutcome::SelectionChanged(Id)
 pub termrock::widgets::TreeOutcome::Toggle(Id)
@@ -4731,6 +4732,7 @@ pub termrock::widgets::ListRow::enabled: bool
 pub termrock::widgets::ListRow::id: Id
 pub termrock::widgets::ListRow::label: ratatui_core::text::line::Line<'a>
 pub termrock::widgets::ListRow::role: termrock::widgets::RowRole
+pub termrock::widgets::ListRow::trailing: core::option::Option<ratatui_core::text::line::Line<'a>>
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListRow<'a, Id>
 pub fn termrock::widgets::ListRow<'a, Id>::clone(&self) -> termrock::widgets::ListRow<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ListRow<'a, Id>
@@ -4766,11 +4768,13 @@ impl<T> core::convert::From<T> for termrock::widgets::ListRow<'a, Id>
 pub fn termrock::widgets::ListRow<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ListRow<'a, Id>
 pub struct termrock::widgets::ListState<Id>
+pub termrock::widgets::ListState::check_regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 pub termrock::widgets::ListState::focused: bool
 pub termrock::widgets::ListState::hovered: core::option::Option<Id>
 pub termrock::widgets::ListState::offset: usize
 pub termrock::widgets::ListState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 pub termrock::widgets::ListState::selected: core::option::Option<Id>
+pub termrock::widgets::ListState::selection: core::option::Option<termrock::widgets::Selection<Id>>
 pub termrock::widgets::ListState::viewport_height: usize
 impl termrock::widgets::ListState<usize>
 pub fn termrock::widgets::ListState<usize>::cycle_index(&mut self, usize, isize) -> bool
@@ -4781,6 +4785,8 @@ pub fn termrock::widgets::ListState<usize>::selected_item<'a, T>(&self, &'a [T])
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::activate(&self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ListState<Id>::disable_multi_select(&mut self)
+pub fn termrock::widgets::ListState<Id>::enable_multi_select(&mut self)
 pub fn termrock::widgets::ListState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 pub const fn termrock::widgets::ListState<Id>::new(core::option::Option<Id>) -> Self
@@ -4789,6 +4795,8 @@ pub fn termrock::widgets::ListState<Id>::scroll_to_position(&mut self, ratatui_c
 pub fn termrock::widgets::ListState<Id>::select(&mut self, core::option::Option<Id>)
 pub fn termrock::widgets::ListState<Id>::select_next(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::select_previous(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
+pub const fn termrock::widgets::ListState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
+pub fn termrock::widgets::ListState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::clone(&self) -> termrock::widgets::ListState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ListState<Id>
@@ -4922,6 +4930,56 @@ pub unsafe fn termrock::widgets::Panel<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Panel<'a>
+pub struct termrock::widgets::Selection<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::is_checked(&self, &Id) -> bool
+pub fn termrock::widgets::Selection<Id>::toggle(&mut self, &Id) -> bool
+impl<Id> termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::checked(&self) -> &[Id]
+pub fn termrock::widgets::Selection<Id>::clear(&mut self)
+pub const fn termrock::widgets::Selection<Id>::new() -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::clone(&self) -> termrock::widgets::Selection<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::Selection<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::eq(&self, &termrock::widgets::Selection<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::Selection<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::Selection<Id>
+impl<Id> core::marker::Send for termrock::widgets::Selection<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::Selection<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::Selection<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::Selection<Id>
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Selection<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Selection<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::Selection<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::Selection<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::Selection<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::Selection<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Selection<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::Selection<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::Selection<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Selection<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Selection<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Selection<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Selection<Id> where T: core::clone::Clone
+pub type termrock::widgets::Selection<Id>::Owned = T
+pub fn termrock::widgets::Selection<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Selection<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Selection<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Selection<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Selection<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Selection<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Selection<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Selection<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Selection<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Selection<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Selection<Id>
 pub struct termrock::widgets::SplitPane<'a>
 pub termrock::widgets::SplitPane::direction: termrock::widgets::SplitDirection
 pub termrock::widgets::SplitPane::first_min: u16
@@ -5624,6 +5682,7 @@ pub termrock::widgets::TreeNode::expanded: bool
 pub termrock::widgets::TreeNode::id: Id
 pub termrock::widgets::TreeNode::label: ratatui_core::text::line::Line<'a>
 pub termrock::widgets::TreeNode::status: termrock::widgets::TreeNodeStatus
+pub termrock::widgets::TreeNode::trailing: core::option::Option<ratatui_core::text::line::Line<'a>>
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeNode<'a, Id>
 pub fn termrock::widgets::TreeNode<'a, Id>::clone(&self) -> termrock::widgets::TreeNode<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeNode<'a, Id>
@@ -5664,6 +5723,8 @@ pub fn termrock::widgets::TreeState<Id>::click(&mut self, ratatui_core::layout::
 pub fn termrock::widgets::TreeState<Id>::handle_key(&mut self, &[termrock::widgets::TreeNode<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::TreeOutcome<Id>
 pub fn termrock::widgets::TreeState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id> termrock::widgets::TreeState<Id>
+pub fn termrock::widgets::TreeState<Id>::disable_multi_select(&mut self)
+pub fn termrock::widgets::TreeState<Id>::enable_multi_select(&mut self)
 pub const fn termrock::widgets::TreeState<Id>::hovered(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::TreeState<Id>::is_focused(&self) -> bool
 pub const fn termrock::widgets::TreeState<Id>::new(core::option::Option<Id>) -> Self
@@ -5673,6 +5734,8 @@ pub fn termrock::widgets::TreeState<Id>::scroll_by(&mut self, isize, usize) -> b
 pub fn termrock::widgets::TreeState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
 pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<Id>)
 pub const fn termrock::widgets::TreeState<Id>::selected(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::TreeState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
+pub fn termrock::widgets::TreeState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
 pub const fn termrock::widgets::TreeState<Id>::set_focused(&mut self, bool)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::clone(&self) -> termrock::widgets::TreeState<Id>

@@ -7,12 +7,14 @@ pub fn render() {
         ListRow {
             id: "first",
             label: Line::from("First"),
+            trailing: None,
             role: RowRole::Item,
             enabled: true,
         },
         ListRow {
             id: "second",
             label: Line::from("Second"),
+            trailing: None,
             role: RowRole::Item,
             enabled: true,
         },

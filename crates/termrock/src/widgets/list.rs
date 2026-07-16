@@ -12,6 +12,8 @@ use crate::{
     style::{Role, Theme},
 };
 
+use super::Selection;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RowRole {
     Item,
@@ -22,6 +24,7 @@ pub enum RowRole {
 pub struct ListRow<'a, Id> {
     pub id: Id,
     pub label: Line<'a>,
+    pub trailing: Option<Line<'a>>,
     pub role: RowRole,
     pub enabled: bool,
 }
@@ -34,6 +37,8 @@ pub struct ListState<Id> {
     pub offset: usize,
     pub viewport_height: usize,
     pub regions: Vec<HitRegion<Id>>,
+    pub selection: Option<Selection<Id>>,
+    pub check_regions: Vec<HitRegion<Id>>,
 }
 
 impl<Id> Default for ListState<Id> {
@@ -45,6 +50,8 @@ impl<Id> Default for ListState<Id> {
             offset: 0,
             viewport_height: 0,
             regions: Vec::new(),
+            selection: None,
+            check_regions: Vec::new(),
         }
     }
 }
@@ -59,12 +66,31 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             offset: 0,
             viewport_height: 0,
             regions: Vec::new(),
+            selection: None,
+            check_regions: Vec::new(),
         }
     }
 
     /// Replace the stable selected identity.
     pub fn select(&mut self, selected: Option<Id>) {
         self.selected = selected;
+    }
+
+    pub fn enable_multi_select(&mut self) {
+        self.selection.get_or_insert_with(Selection::new);
+    }
+
+    pub fn disable_multi_select(&mut self) {
+        self.selection = None;
+    }
+
+    #[must_use]
+    pub const fn selection(&self) -> Option<&Selection<Id>> {
+        self.selection.as_ref()
+    }
+
+    pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
+        self.selection.as_mut()
     }
 
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
@@ -79,9 +105,24 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             KeyCode::PageUp => self.select_page(rows, -1),
             KeyCode::PageDown => self.select_page(rows, 1),
             KeyCode::Enter => self.activate(rows),
+            KeyCode::Char(' ') => self.toggle_selected(rows),
             KeyCode::Esc => Outcome::Cancelled,
             _ => Outcome::Ignored,
         }
+    }
+
+    fn toggle_selected(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
+        let Some(selection) = self.selection.as_mut() else {
+            return Outcome::Ignored;
+        };
+        let Some(row) = self.selected.as_ref().and_then(|selected| {
+            rows.iter()
+                .find(|row| row.enabled && row.role == RowRole::Item && &row.id == selected)
+        }) else {
+            return Outcome::Ignored;
+        };
+        selection.toggle(&row.id);
+        Outcome::Changed
     }
 
     pub fn select_next(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
@@ -175,6 +216,18 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     #[must_use]
     pub fn click(&mut self, position: Position) -> Outcome<Id> {
+        if let Some(id) = self
+            .check_regions
+            .iter()
+            .find(|region| region.area.contains(position))
+            .map(|region| region.id.clone())
+        {
+            self.selected = Some(id.clone());
+            if let Some(selection) = self.selection.as_mut() {
+                selection.toggle(&id);
+                return Outcome::Changed;
+            }
+        }
         let Some(region) = self
             .regions
             .iter()
@@ -283,9 +336,19 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         state.regions.clear();
+        state.check_regions.clear();
         state.viewport_height = usize::from(area.height);
         let scrollable = crate::scroll::is_scrollable(self.rows.len(), state.viewport_height);
         let content_width = area.width.saturating_sub(u16::from(scrollable));
+        let trailing_width = self
+            .rows
+            .iter()
+            .filter_map(|row| row.trailing.as_ref())
+            .map(Line::width)
+            .max()
+            .and_then(|width| u16::try_from(width).ok())
+            .unwrap_or(0)
+            .min(content_width);
         state.offset = state
             .offset
             .min(max_offset(self.rows.len(), state.viewport_height));
@@ -316,27 +379,73 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             );
             let selected = state.selected.as_ref() == Some(&row.id);
             let hovered = state.hovered.as_ref() == Some(&row.id);
+            let checked = state
+                .selection
+                .as_ref()
+                .is_some_and(|selection| selection.is_checked(&row.id));
             let style = if !row.enabled {
                 self.theme.style(Role::TextDisabled)
             } else if selected && state.focused {
                 self.theme.style(Role::Selection)
             } else if hovered {
                 self.theme.style(Role::LinkHover)
+            } else if checked {
+                self.theme.style(Role::Accent)
             } else {
                 self.theme.style(Role::Text)
             };
             buffer.set_style(rect, style);
+            let trailing_x = rect.right().saturating_sub(trailing_width);
             if row.role == RowRole::Separator {
                 buffer.set_stringn(rect.x, rect.y, "─", usize::from(rect.width), style);
                 if rect.width > 2 {
-                    buffer.set_line(rect.x.saturating_add(2), rect.y, &row.label, rect.width - 2);
+                    let label_x = rect
+                        .x
+                        .saturating_add(2)
+                        .saturating_add(u16::from(state.selection.is_some()) * 4);
+                    buffer.set_line(
+                        label_x,
+                        rect.y,
+                        &row.label,
+                        label_width(label_x, trailing_x, trailing_width),
+                    );
                 }
             } else {
                 let marker = if selected { "▸ " } else { "  " };
                 buffer.set_stringn(rect.x, rect.y, marker, usize::from(rect.width), style);
-                if rect.width > 2 {
-                    buffer.set_line(rect.x.saturating_add(2), rect.y, &row.label, rect.width - 2);
+                let check_x = rect.x.saturating_add(2);
+                if state.selection.is_some() && check_x < rect.right() {
+                    buffer.set_stringn(
+                        check_x,
+                        rect.y,
+                        if checked { "[x] " } else { "[ ] " },
+                        usize::from(rect.right().saturating_sub(check_x).min(4)),
+                        style,
+                    );
+                    if row.enabled && rect.right().saturating_sub(check_x) >= 3 {
+                        state.check_regions.push(HitRegion {
+                            id: row.id.clone(),
+                            area: Rect::new(check_x, rect.y, 3, 1),
+                        });
+                    }
                 }
+                if rect.width > 2 {
+                    let label_x = check_x.saturating_add(u16::from(state.selection.is_some()) * 4);
+                    buffer.set_line(
+                        label_x,
+                        rect.y,
+                        &row.label,
+                        label_width(label_x, trailing_x, trailing_width),
+                    );
+                }
+            }
+            if let Some(trailing) = row.trailing.as_ref()
+                && trailing_width > 0
+            {
+                let width = u16::try_from(trailing.width())
+                    .unwrap_or(u16::MAX)
+                    .min(trailing_width);
+                buffer.set_line(rect.right().saturating_sub(width), rect.y, trailing, width);
             }
             if row.enabled && row.role == RowRole::Item && !rect.is_empty() {
                 state.regions.push(HitRegion {
@@ -358,6 +467,12 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
     }
 }
 
+fn label_width(label_x: u16, trailing_x: u16, trailing_width: u16) -> u16 {
+    trailing_x
+        .saturating_sub(label_x)
+        .saturating_sub(u16::from(trailing_width > 0))
+}
+
 fn selectable_indices<Id>(rows: &[ListRow<'_, Id>]) -> Vec<usize> {
     rows.iter()
         .enumerate()
@@ -375,24 +490,28 @@ mod tests {
             ListRow {
                 id: "section",
                 label: Line::from("Section"),
+                trailing: None,
                 role: RowRole::Separator,
                 enabled: true,
             },
             ListRow {
                 id: "disabled",
                 label: Line::from("Disabled"),
+                trailing: None,
                 role: RowRole::Item,
                 enabled: false,
             },
             ListRow {
                 id: "first",
                 label: Line::from("First"),
+                trailing: None,
                 role: RowRole::Item,
                 enabled: true,
             },
             ListRow {
                 id: "second",
                 label: Line::from("Second"),
+                trailing: None,
                 role: RowRole::Item,
                 enabled: true,
             },
@@ -441,6 +560,102 @@ mod tests {
         assert_eq!(state.hover(position), Some(&"second"));
         assert_eq!(state.click(position), Outcome::Activated("second"));
         assert_eq!(buffer[(area.x, area.y)].symbol(), "▸");
+    }
+
+    #[test]
+    fn trailing_cells_align_right_and_wide_labels_truncate_first() {
+        let rows = [
+            ListRow {
+                id: "wide",
+                label: Line::from("🧪🧪label"),
+                trailing: Some(Line::from("9 KiB")),
+                role: RowRole::Item,
+                enabled: true,
+            },
+            ListRow {
+                id: "short",
+                label: Line::from("short"),
+                trailing: Some(Line::from("1 B")),
+                role: RowRole::Item,
+                enabled: true,
+            },
+        ];
+        let theme = Theme::default();
+        let mut state = ListState::new(None);
+        let area = Rect::new(0, 0, 11, 2);
+        let mut buffer = Buffer::empty(area);
+
+        (&List {
+            rows: &rows,
+            theme: &theme,
+        })
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(buffer[(6, 0)].symbol(), "9");
+        assert_eq!(buffer[(8, 1)].symbol(), "1");
+        assert_eq!(buffer[(10, 0)].symbol(), "B");
+        assert_eq!(buffer[(10, 1)].symbol(), "B");
+        assert_eq!(buffer[(2, 0)].symbol(), "🧪");
+        assert_ne!(buffer[(4, 0)].symbol(), "🧪");
+    }
+
+    #[test]
+    fn narrow_trailing_cell_clips_only_at_grapheme_boundaries() {
+        let rows = [ListRow {
+            id: "wide-trailing",
+            label: Line::from("hidden"),
+            trailing: Some(Line::from("🧪Z")),
+            role: RowRole::Item,
+            enabled: true,
+        }];
+        let theme = Theme::default();
+        let mut state = ListState::new(None);
+        let area = Rect::new(0, 0, 2, 1);
+        let mut buffer = Buffer::empty(area);
+
+        (&List {
+            rows: &rows,
+            theme: &theme,
+        })
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(buffer[(0, 0)].symbol(), "🧪");
+        assert_eq!(buffer[(1, 0)].symbol(), " ");
+        assert!(!buffer.content().iter().any(|cell| cell.symbol() == "Z"));
+    }
+
+    #[test]
+    fn multi_select_toggles_by_space_and_painted_checkbox() {
+        let rows = rows();
+        let theme = Theme::default();
+        let mut state = ListState::new(Some("first"));
+        state.enable_multi_select();
+
+        assert_eq!(
+            state.handle_key(&rows, KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
+            Outcome::Changed
+        );
+        assert!(state.selection().unwrap().is_checked(&"first"));
+
+        let area = Rect::new(0, 0, 20, 4);
+        let mut buffer = Buffer::empty(area);
+        (&List {
+            rows: &rows,
+            theme: &theme,
+        })
+            .render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(2, 2)].symbol(), "[");
+        assert_eq!(buffer[(3, 2)].symbol(), "x");
+        assert_eq!(state.click(Position::new(2, 3)), Outcome::Changed);
+        assert_eq!(state.selection().unwrap().checked(), ["first", "second"]);
+
+        state.selection_mut().unwrap().clear();
+        assert!(state.selection().unwrap().checked().is_empty());
+        state.disable_multi_select();
+        assert_eq!(
+            state.handle_key(&rows, KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
+            Outcome::Ignored
+        );
     }
 
     #[test]

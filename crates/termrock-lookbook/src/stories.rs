@@ -151,7 +151,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "list/selection",
             "List",
             "List",
-            "Borrowed rows selected by stable ID.",
+            "Stable-ID rows with checks and aligned metadata.",
             42,
             6,
             list,
@@ -161,7 +161,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "tree/navigation",
             "Tree navigation",
             "Tree",
-            "Stable-ID hierarchy with disclosure and status states.",
+            "Stable-ID hierarchy with checks, metadata, disclosure, and status.",
             42,
             7,
             tree,
@@ -332,6 +332,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "workspace",
             label: Line::from("Workspace"),
+            trailing: Some(Line::from("4 items")),
             depth: 0,
             branch: true,
             expanded: true,
@@ -341,6 +342,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "documents",
             label: Line::from("Documents"),
+            trailing: Some(Line::from("2 items")),
             depth: 1,
             branch: true,
             expanded: false,
@@ -350,6 +352,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "loading",
             label: Line::from("Remote items"),
+            trailing: None,
             depth: 1,
             branch: true,
             expanded: false,
@@ -359,6 +362,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "notes",
             label: Line::from("Wide 🧪 notes"),
+            trailing: Some(Line::from("12 KiB")),
             depth: 1,
             branch: false,
             expanded: false,
@@ -442,6 +446,8 @@ fn split_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 fn tree(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let nodes = tree_nodes();
     let mut state = TreeState::new(Some("workspace"));
+    state.enable_multi_select();
+    state.selection_mut().unwrap().toggle(&"notes");
     frame.render_stateful_widget(
         &Tree {
             nodes: &nodes,
@@ -529,6 +535,8 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
+    state.enable_multi_select();
+    state.selection_mut().unwrap().toggle(&"alpha");
     frame.render_stateful_widget(&List { rows: &rows, theme }, area, &mut state);
 }
 
@@ -537,24 +545,28 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
         ListRow {
             id: "section",
             label: Line::from("Workspace"),
+            trailing: Some(Line::from("3 entries")),
             role: RowRole::Separator,
             enabled: true,
         },
         ListRow {
             id: "alpha",
             label: Line::from("Alpha"),
+            trailing: Some(Line::from("12 ms")),
             role: RowRole::Item,
             enabled: true,
         },
         ListRow {
             id: "beta",
             label: Line::from("Beta"),
+            trailing: Some(Line::from("28 ms")),
             role: RowRole::Item,
             enabled: true,
         },
         ListRow {
             id: "gamma",
             label: Line::from("Gamma"),
+            trailing: None,
             role: RowRole::Item,
             enabled: false,
         },

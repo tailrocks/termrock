@@ -16,7 +16,7 @@ name = "termrock-lookbook"
 path = "src/main.rs"
 
 [dependencies]
-termrock = { version = "0.9.0", path = "../termrock", features = ["crossterm"] }
+termrock = { version = "0.10.0", path = "../termrock", features = ["crossterm"] }
 ratatui.workspace = true
 crossterm.workspace = true
 

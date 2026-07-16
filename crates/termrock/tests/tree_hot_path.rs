@@ -24,6 +24,7 @@ fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
         .map(|id| TreeNode {
             id,
             label: Line::from("resident node"),
+            trailing: None,
             depth: u16::try_from(id % 4).unwrap(),
             branch: id % 7 == 0,
             expanded: id % 14 == 0,

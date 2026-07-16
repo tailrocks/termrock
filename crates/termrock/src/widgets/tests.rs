@@ -74,12 +74,14 @@ fn stable_ids_survive_reordering() {
         ListRow {
             id: "a",
             label: Line::from("Alpha"),
+            trailing: None,
             role: RowRole::Item,
             enabled: true,
         },
         ListRow {
             id: "b",
             label: Line::from("Beta"),
+            trailing: None,
             role: RowRole::Item,
             enabled: true,
         },
@@ -129,18 +131,21 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
         ListRow {
             id: 1,
             label: Line::from("Disabled"),
+            trailing: None,
             role: RowRole::Item,
             enabled: false,
         },
         ListRow {
             id: 2,
             label: Line::from("Section"),
+            trailing: None,
             role: RowRole::Separator,
             enabled: true,
         },
         ListRow {
             id: 3,
             label: Line::from("Enabled"),
+            trailing: None,
             role: RowRole::Item,
             enabled: true,
         },

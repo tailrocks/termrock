@@ -79,6 +79,7 @@ fn neutral_mouse_event_drives_list_activation() {
     let rows = [ListRow {
         id: "entry",
         label: Line::from("Entry"),
+        trailing: None,
         role: RowRole::Item,
         enabled: true,
     }];
@@ -118,6 +119,7 @@ fn unknown_is_inert_in_widgets() {
     let rows = [ListRow {
         id: 1,
         label: Line::from("one"),
+        trailing: None,
         role: RowRole::Item,
         enabled: true,
     }];
@@ -145,6 +147,7 @@ fn release_events_are_ignored() {
     let rows = [ListRow {
         id: 1,
         label: Line::from("one"),
+        trailing: None,
         role: RowRole::Item,
         enabled: true,
     }];

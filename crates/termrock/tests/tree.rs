@@ -16,6 +16,7 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "root",
             label: Line::from("Workspace"),
+            trailing: None,
             depth: 0,
             branch: true,
             expanded: true,
@@ -25,6 +26,7 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "loading",
             label: Line::from("Loading child"),
+            trailing: None,
             depth: 1,
             branch: true,
             expanded: false,
@@ -34,6 +36,7 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "leaf",
             label: Line::from("Wide 🧪"),
+            trailing: None,
             depth: 1,
             branch: false,
             expanded: false,
@@ -150,6 +153,7 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
         TreeNode {
             id: 0,
             label: Line::from("zero"),
+            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -159,6 +163,7 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
         TreeNode {
             id: 1,
             label: Line::from("one"),
+            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -168,6 +173,7 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
         TreeNode {
             id: 2,
             label: Line::from("two"),
+            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -202,6 +208,7 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
         .map(|id| TreeNode {
             id,
             label: Line::from(format!("node {id}")),
+            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -284,6 +291,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         TreeNode {
             id: 0,
             label: Line::from("disabled"),
+            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -293,6 +301,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         TreeNode {
             id: 1,
             label: Line::from("pending"),
+            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -302,6 +311,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         TreeNode {
             id: 2,
             label: Line::from("failed"),
+            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -345,6 +355,7 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
     let rows = vec![TreeNode {
         id: 0,
         label: Line::from("🧪e\u{301}Z"),
+        trailing: None,
         depth: 0,
         branch: false,
         expanded: false,
@@ -382,6 +393,7 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
     let rows = vec![TreeNode {
         id: 0,
         label: Line::from("🧪🧪"),
+        trailing: None,
         depth: 0,
         branch: false,
         expanded: false,
@@ -406,4 +418,132 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
         .map(|cell| cell.symbol())
         .collect::<String>();
     assert!(rendered.ends_with(" loading"));
+}
+
+#[test]
+fn trailing_cells_align_right_and_preserve_wide_metadata() {
+    let rows = vec![
+        TreeNode {
+            id: 0,
+            label: Line::from("🧪🧪label"),
+            trailing: Some(Line::from("12 KiB")),
+            depth: 0,
+            branch: false,
+            expanded: false,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+        TreeNode {
+            id: 1,
+            label: Line::from("short"),
+            trailing: Some(Line::from("1 B")),
+            depth: 0,
+            branch: false,
+            expanded: false,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+    ];
+    let theme = Theme::default();
+    let tree = Tree {
+        nodes: &rows,
+        theme: &theme,
+    };
+    let mut state = TreeState::default();
+    let area = Rect::new(0, 0, 12, 2);
+    let mut buffer = Buffer::empty(area);
+
+    tree.render(area, &mut buffer, &mut state);
+
+    assert_eq!(buffer[(6, 0)].symbol(), "1");
+    assert_eq!(buffer[(9, 1)].symbol(), "1");
+    assert_eq!(buffer[(11, 0)].symbol(), "B");
+    assert_eq!(buffer[(11, 1)].symbol(), "B");
+    assert_eq!(buffer[(2, 0)].symbol(), "🧪");
+    assert_ne!(buffer[(4, 0)].symbol(), "🧪");
+}
+
+#[test]
+fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
+    let narrow_rows = [TreeNode {
+        id: 0,
+        label: Line::from("hidden"),
+        trailing: Some(Line::from("🧪Z")),
+        depth: 0,
+        branch: false,
+        expanded: false,
+        enabled: true,
+        status: TreeNodeStatus::Ready,
+    }];
+    let theme = Theme::default();
+    let mut state = TreeState::default();
+    let narrow_area = Rect::new(0, 0, 2, 1);
+    let mut narrow = Buffer::empty(narrow_area);
+    Tree {
+        nodes: &narrow_rows,
+        theme: &theme,
+    }
+    .render(narrow_area, &mut narrow, &mut state);
+    assert_eq!(narrow[(0, 0)].symbol(), "🧪");
+    assert_eq!(narrow[(1, 0)].symbol(), " ");
+    assert!(!narrow.content().iter().any(|cell| cell.symbol() == "Z"));
+
+    let combined_rows = [TreeNode {
+        id: 1,
+        label: Line::from("job"),
+        trailing: Some(Line::from("7 B")),
+        depth: 0,
+        branch: false,
+        expanded: false,
+        enabled: true,
+        status: TreeNodeStatus::Loading,
+    }];
+    let combined_area = Rect::new(0, 0, 20, 1);
+    let mut combined = Buffer::empty(combined_area);
+    Tree {
+        nodes: &combined_rows,
+        theme: &theme,
+    }
+    .render(combined_area, &mut combined, &mut state);
+    let rendered: String = combined
+        .content()
+        .iter()
+        .map(|cell| cell.symbol())
+        .collect();
+    assert!(rendered.contains(" loading 7 B"));
+}
+
+#[test]
+fn multi_select_toggles_by_space_and_painted_checkbox() {
+    let rows = nodes();
+    let theme = Theme::default();
+    let tree = Tree {
+        nodes: &rows,
+        theme: &theme,
+    };
+    let mut state = TreeState::new(Some("root"));
+    state.enable_multi_select();
+
+    assert_eq!(
+        state.handle_key(&rows, KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
+        TreeOutcome::CheckToggled("root")
+    );
+    let area = Rect::new(0, 0, 24, 3);
+    let mut buffer = Buffer::empty(area);
+    tree.render(area, &mut buffer, &mut state);
+    assert_eq!(buffer[(2, 0)].symbol(), "[");
+    assert_eq!(buffer[(3, 0)].symbol(), "x");
+    assert_eq!(
+        state.click(Position::new(4, 2)),
+        TreeOutcome::CheckToggled("leaf")
+    );
+    assert_eq!(state.selection().unwrap().checked(), ["root", "leaf"]);
+
+    state.selection_mut().unwrap().clear();
+    assert!(state.selection().unwrap().checked().is_empty());
+    state.disable_multi_select();
+    assert_eq!(
+        state.handle_key(&rows, KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
+        TreeOutcome::Ignored
+    );
 }

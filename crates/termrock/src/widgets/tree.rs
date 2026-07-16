@@ -13,6 +13,8 @@ use crate::{
     style::{Role, Theme},
 };
 
+use super::Selection;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TreeNodeStatus {
     Ready,
@@ -24,6 +26,7 @@ pub enum TreeNodeStatus {
 pub struct TreeNode<'a, Id> {
     pub id: Id,
     pub label: Line<'a>,
+    pub trailing: Option<Line<'a>>,
     pub depth: u16,
     pub branch: bool,
     pub expanded: bool,
@@ -36,6 +39,7 @@ pub enum TreeOutcome<Id> {
     Ignored,
     SelectionChanged(Id),
     Toggle(Id),
+    CheckToggled(Id),
     Activated(Id),
 }
 
@@ -49,6 +53,8 @@ pub struct TreeState<Id> {
     follow_selection: bool,
     regions: Vec<HitRegion<Id>>,
     disclosure_regions: Vec<HitRegion<Id>>,
+    selection: Option<Selection<Id>>,
+    check_regions: Vec<HitRegion<Id>>,
     scrollbar_region: Option<Rect>,
 }
 
@@ -63,6 +69,8 @@ impl<Id> Default for TreeState<Id> {
             follow_selection: false,
             regions: Vec::new(),
             disclosure_regions: Vec::new(),
+            selection: None,
+            check_regions: Vec::new(),
             scrollbar_region: None,
         }
     }
@@ -80,6 +88,8 @@ impl<Id> TreeState<Id> {
             follow_selection: true,
             regions: Vec::new(),
             disclosure_regions: Vec::new(),
+            selection: None,
+            check_regions: Vec::new(),
             scrollbar_region: None,
         }
     }
@@ -111,6 +121,23 @@ impl<Id> TreeState<Id> {
     pub fn select(&mut self, selected: Option<Id>) {
         self.selected = selected;
         self.follow_selection = true;
+    }
+
+    pub fn enable_multi_select(&mut self) {
+        self.selection.get_or_insert_with(Selection::new);
+    }
+
+    pub fn disable_multi_select(&mut self) {
+        self.selection = None;
+    }
+
+    #[must_use]
+    pub const fn selection(&self) -> Option<&Selection<Id>> {
+        self.selection.as_ref()
+    }
+
+    pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
+        self.selection.as_mut()
     }
 
     pub fn scroll_by(&mut self, delta: isize, node_count: usize) -> bool {
@@ -169,8 +196,24 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 .map_or(TreeOutcome::Ignored, |node| {
                     TreeOutcome::Activated(node.id.clone())
                 }),
+            KeyCode::Char(' ') => self.toggle_selected(nodes),
             _ => TreeOutcome::Ignored,
         }
+    }
+
+    fn toggle_selected(&mut self, nodes: &[TreeNode<'_, Id>]) -> TreeOutcome<Id> {
+        let Some(selection) = self.selection.as_mut() else {
+            return TreeOutcome::Ignored;
+        };
+        let Some(node) = self.selected.as_ref().and_then(|selected| {
+            nodes
+                .iter()
+                .find(|node| node.enabled && &node.id == selected)
+        }) else {
+            return TreeOutcome::Ignored;
+        };
+        selection.toggle(&node.id);
+        TreeOutcome::CheckToggled(node.id.clone())
     }
 
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
@@ -189,6 +232,19 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             .find(|region| region.area.contains(position))
         {
             return TreeOutcome::Toggle(region.id.clone());
+        }
+        if let Some(id) = self
+            .check_regions
+            .iter()
+            .find(|region| region.area.contains(position))
+            .map(|region| region.id.clone())
+        {
+            self.selected = Some(id.clone());
+            self.follow_selection = true;
+            if let Some(selection) = self.selection.as_mut() {
+                selection.toggle(&id);
+                return TreeOutcome::CheckToggled(id);
+            }
         }
         let Some(id) = self
             .regions
@@ -336,6 +392,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         state.regions.clear();
         state.disclosure_regions.clear();
+        state.check_regions.clear();
         state.scrollbar_region = None;
         state.viewport_height = usize::from(area.height);
         if area.is_empty() || self.nodes.is_empty() {
@@ -363,6 +420,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             width: area.width.saturating_sub(u16::from(show_scrollbar)),
             ..area
         };
+        let trailing_width = self
+            .nodes
+            .iter()
+            .filter_map(|node| node.trailing.as_ref())
+            .map(Line::width)
+            .max()
+            .and_then(|width| u16::try_from(width).ok())
+            .unwrap_or(0)
+            .min(content_area.width);
+        let trailing_x = content_area.right().saturating_sub(trailing_width);
 
         for (visible, node) in self
             .nodes
@@ -377,6 +444,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             let row = Rect::new(content_area.x, y, content_area.width, 1);
             let selected = state.selected.as_ref() == Some(&node.id);
             let hovered = state.hovered.as_ref() == Some(&node.id);
+            let checked = state
+                .selection
+                .as_ref()
+                .is_some_and(|selection| selection.is_checked(&node.id));
             let mut style = match node.status {
                 TreeNodeStatus::Ready if node.enabled => self.theme.style(Role::Text),
                 TreeNodeStatus::Ready => self.theme.style(Role::TextDisabled),
@@ -398,6 +469,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 style = style
                     .patch(self.theme.style(Role::Focus))
                     .add_modifier(Modifier::UNDERLINED);
+            } else if checked && node.enabled {
+                style = style.patch(self.theme.style(Role::Accent));
             }
 
             let indent = node.depth.saturating_mul(2).min(content_area.width);
@@ -410,38 +483,62 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             if indent < content_area.width {
                 buffer.set_stringn(disclosure_x, y, glyph, 1, style);
             }
+            let check_x = disclosure_x.saturating_add(2);
+            if state.selection.is_some() && check_x < content_area.right() {
+                buffer.set_stringn(
+                    check_x,
+                    y,
+                    if checked { "[x] " } else { "[ ] " },
+                    usize::from(content_area.right().saturating_sub(check_x).min(4)),
+                    style,
+                );
+                if node.enabled && content_area.right().saturating_sub(check_x) >= 3 {
+                    state.check_regions.push(HitRegion {
+                        id: node.id.clone(),
+                        area: Rect::new(check_x, y, 3, 1),
+                    });
+                }
+            }
+            let label_x = check_x.saturating_add(u16::from(state.selection.is_some()) * 4);
             let status = match node.status {
                 TreeNodeStatus::Ready => None,
                 TreeNodeStatus::Loading => Some(" loading"),
                 TreeNodeStatus::Error => Some(" error"),
             };
+            let metadata_gap = u16::from(trailing_width > 0);
+            let status_end = trailing_x.saturating_sub(metadata_gap);
             let status_width = status
                 .map(crate::text::display_cols)
                 .and_then(|width| u16::try_from(width).ok())
-                .filter(|width| *width <= content_area.width)
+                .filter(|width| status_end.saturating_sub(*width) >= label_x)
                 .unwrap_or(0);
-            let label_x = disclosure_x.saturating_add(2);
             let used = label_x.saturating_sub(content_area.x);
             if used < content_area.width {
-                buffer.set_line(
-                    label_x,
-                    y,
-                    &node.label,
-                    content_area
-                        .width
-                        .saturating_sub(used)
-                        .saturating_sub(status_width),
-                );
+                let label_end = status_end.saturating_sub(status_width);
+                buffer.set_line(label_x, y, &node.label, label_end.saturating_sub(label_x));
             }
             if let Some(status) = status
                 && status_width > 0
             {
                 buffer.set_stringn(
-                    content_area.right().saturating_sub(status_width),
+                    status_end.saturating_sub(status_width),
                     y,
                     status,
                     usize::from(status_width),
                     style,
+                );
+            }
+            if let Some(trailing) = node.trailing.as_ref()
+                && trailing_width > 0
+            {
+                let width = u16::try_from(trailing.width())
+                    .unwrap_or(u16::MAX)
+                    .min(trailing_width);
+                buffer.set_line(
+                    content_area.right().saturating_sub(width),
+                    y,
+                    trailing,
+                    width,
                 );
             }
             buffer.set_style(row, style);
