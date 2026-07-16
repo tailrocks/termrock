@@ -481,21 +481,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 let marker = if selected { "▸ " } else { "  " };
                 buffer.set_stringn(rect.x, rect.y, marker, usize::from(rect.width), style);
                 let check_x = rect.x.saturating_add(2);
-                if state.selection.is_some() && check_x < rect.right() {
-                    buffer.set_stringn(
-                        check_x,
-                        rect.y,
-                        if checked { "[x] " } else { "[ ] " },
-                        usize::from(rect.right().saturating_sub(check_x).min(4)),
-                        style,
-                    );
-                    if row.enabled && rect.right().saturating_sub(check_x) >= 3 {
-                        state.check_regions.push(HitRegion {
-                            id: row.id.clone(),
-                            area: Rect::new(check_x, rect.y, 3, 1),
-                        });
-                    }
-                }
+                render_check_cell(buffer, state, row, rect, check_x, checked, style);
                 if rect.width > 2 {
                     let label_x = check_x.saturating_add(u16::from(state.selection.is_some()) * 4);
                     buffer.set_line(
@@ -531,6 +517,36 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 crate::scroll::ScrollbarStyle::Line,
             );
         }
+    }
+}
+
+fn render_check_cell<Id: Clone>(
+    buffer: &mut Buffer,
+    state: &mut ListState<Id>,
+    row: &ListRow<'_, Id>,
+    rect: Rect,
+    check_x: u16,
+    checked: bool,
+    style: ratatui_core::style::Style,
+) {
+    if state.selection.is_none() || check_x >= rect.right() {
+        return;
+    }
+
+    let marker = if checked { "[x] " } else { "[ ] " };
+    let available = rect.right().saturating_sub(check_x);
+    buffer.set_stringn(
+        check_x,
+        rect.y,
+        marker,
+        usize::from(available.min(4)),
+        style,
+    );
+    if row.enabled && available >= 3 {
+        state.check_regions.push(HitRegion {
+            id: row.id.clone(),
+            area: Rect::new(check_x, rect.y, 3, 1),
+        });
     }
 }
 
