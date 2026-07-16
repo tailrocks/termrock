@@ -67,6 +67,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
             if selected {
                 style = style.add_modifier(Modifier::BOLD);
             }
+            if hovered {
+                style = style.add_modifier(Modifier::UNDERLINED);
+            }
             buffer.set_stringn(
                 label_rect.x,
                 label_rect.y,
@@ -134,6 +137,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         let mut state = TabsState {
             selected: Some("overview"),
+            hovered: Some("overview"),
             focused: true,
             ..TabsState::default()
         };
@@ -145,6 +149,7 @@ mod tests {
 
         assert_eq!(buffer[(3, 5)].symbol(), "━");
         assert_eq!(buffer[(3, 5)].fg, crate::style::PHOSPHOR_GREEN);
+        assert!(buffer[(3, 4)].modifier.contains(Modifier::UNDERLINED));
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
     }
