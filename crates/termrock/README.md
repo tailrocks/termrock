@@ -2,11 +2,35 @@
 
 Product-neutral terminal UI primitives and components for Ratatui applications.
 
-Applications keep domain state and policy while composing stable-ID widgets, semantic styles, backend-neutral input, scroll/layout helpers, and typed terminal requests.
+Applications keep domain state and policy while composing stable-ID widgets,
+semantic styles, backend-neutral input, scroll/layout helpers, and typed terminal
+requests.
 
-The `runtime` module owns the shared update-loop contracts (`Subscription`, `UpdateResult`, `Component`, `View`) and the shared frame driver `runtime::drive_frame`, which runs a `View<Model>` render plus a frame-scoped overlay closure inside one `Terminal::draw` call. Downstream surfaces dispatch their per-tick rendering through that single driver.
+TermRock is pre-stable. Pin an exact Git revision:
 
-The catalog and migration guide live in the repository documentation.
+```toml
+[dependencies]
+termrock = { git = "https://github.com/tailrocks/termrock", rev = "<commit>" }
+```
+
+## Quick start
+
+```rust
+use ratatui_core::text::Line;
+use termrock::{Theme, widgets::{List, ListRow, ListState, RowRole}};
+
+let theme = Theme::default();
+let rows = [ListRow {
+    id: "inbox",
+    label: Line::from("Inbox"),
+    trailing: Some(Line::from("3")),
+    role: RowRole::Item,
+    enabled: true,
+}];
+let list = List::new(&rows, &theme);
+let mut state = ListState::new(Some("inbox"));
+# let _ = (list, &mut state);
+```
 
 ## Theming
 
@@ -20,3 +44,11 @@ use termrock::{Theme, style::Role};
 
 let theme = Theme::slate().with_role(Role::Accent, Style::new().underlined());
 ```
+
+Run the interactive showcase with
+`cargo run -p termrock --example showcase --features crossterm`.
+
+See the [migration guide](../../MIGRATING.md) for exact consumer edits after
+breaking releases. The public API is always allowed to change. TermRock is
+deliberately not stable yet and provides no backward-compatibility guarantees
+of any kind.

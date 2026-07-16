@@ -2,4 +2,14 @@
 title: Application patterns
 ---
 
-Seven examples render the same neutral screen while varying ownership: `direct`, `tea`, `component`, `flux`, `buffer_only`, `crossterm_manual`, and `crossterm_managed`. TermRock does not require any architecture.
+The `showcase` example is the executable on-ramp. It composes tabs, a panel,
+list navigation, keymap-driven hints, status, toast feedback, mouse interaction,
+theme switching, and managed Crossterm cleanup without product-specific state:
+
+```sh
+cargo run -p termrock --example showcase --features crossterm
+```
+
+TermRock does not require an application architecture. Consumers may use a
+direct loop, Elm-style update flow, components, or another state model while
+keeping rendering and interaction primitives shared.

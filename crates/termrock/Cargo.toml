@@ -38,9 +38,5 @@ stats_alloc.workspace = true
 workspace = true
 
 [[example]]
-name = "crossterm_manual"
-required-features = ["crossterm"]
-
-[[example]]
-name = "crossterm_managed"
+name = "showcase"
 required-features = ["crossterm"]
