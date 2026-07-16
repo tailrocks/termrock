@@ -38,6 +38,7 @@ jobs:
       - uses: jdx/mise-action@v2
         with: { install: false }
       - run: mise install rust
+      - run: mise install cargo-binstall
       - run: mise install cargo:cargo-semver-checks
       - name: Compare with the first API baseline
         run: |
