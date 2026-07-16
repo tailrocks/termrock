@@ -59,10 +59,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: mise install cargo-binstall
       - run: mise install cargo:cargo-semver-checks
-      - name: Compare with the first API baseline
+      # Breaking changes fail while the crate version still matches the latest
+      # release. A deliberate version bump authorizes the declared boundary.
+      - name: Compare with the previous release tag
         run: |
-          if git rev-parse --verify refs/tags/v0.6.0 >/dev/null 2>&1; then
-            cargo semver-checks check-release -p termrock --baseline-rev v0.6.0
+          baseline=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -n "$baseline" ]; then
+            cargo semver-checks check-release -p termrock --baseline-rev "$baseline"
           else
-            echo 'v0.6.0 baseline is created after the final bootstrap checkpoint'
+            echo 'no baseline tag yet'
           fi
