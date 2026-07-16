@@ -46,6 +46,22 @@ fn sidebar_down_up_dispatch_navigate() {
 }
 
 #[test]
+fn runtime_remap_demo_updates_sidebar_dispatch_and_hint_from_one_table() {
+    let mut keymap = SIDEBAR_KEYMAP.clone();
+    assert!(keymap.remap(
+        SidebarAction::Quit,
+        vec![KeyChord::ctrl(KeyCode::Char('c'))]
+    ));
+
+    assert_eq!(keymap.dispatch(KeyChord::plain(KeyCode::Char('q'))), None);
+    assert_eq!(
+        keymap.dispatch(KeyChord::ctrl(KeyCode::Char('c'))),
+        Some(SidebarAction::Quit)
+    );
+    assert_eq!(keymap.glyph_for(SidebarAction::Quit), "Ctrl-C");
+}
+
+#[test]
 fn sidebar_vim_aliases_dispatch_navigate() {
     assert_eq!(
         SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::Char('j'))),

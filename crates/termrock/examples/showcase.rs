@@ -37,47 +37,47 @@ enum Action {
 }
 
 static BINDINGS: &[KeyBinding<Action>] = &[
-    KeyBinding {
-        chords: &[
+    KeyBinding::borrowed(
+        &[
             KeyChord::plain(KeyCode::Up),
             KeyChord::plain(KeyCode::Char('k')),
         ],
-        action: Action::Up,
-        hint: Some("navigate"),
-        visibility: Visibility::Shown,
-        glyph: Some("↑↓"),
-    },
-    KeyBinding {
-        chords: &[
+        Action::Up,
+        Some("navigate"),
+        Visibility::Shown,
+        Some("↑↓"),
+    ),
+    KeyBinding::borrowed(
+        &[
             KeyChord::plain(KeyCode::Down),
             KeyChord::plain(KeyCode::Char('j')),
         ],
-        action: Action::Down,
-        hint: None,
-        visibility: Visibility::HiddenAlias,
-        glyph: None,
-    },
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::Enter)],
-        action: Action::Activate,
-        hint: Some("activate"),
-        visibility: Visibility::Shown,
-        glyph: None,
-    },
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::Char('t'))],
-        action: Action::ToggleTheme,
-        hint: Some("theme"),
-        visibility: Visibility::Shown,
-        glyph: None,
-    },
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::Char('q'))],
-        action: Action::Quit,
-        hint: Some("quit"),
-        visibility: Visibility::Shown,
-        glyph: None,
-    },
+        Action::Down,
+        None,
+        Visibility::HiddenAlias,
+        None,
+    ),
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Enter)],
+        Action::Activate,
+        Some("activate"),
+        Visibility::Shown,
+        None,
+    ),
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Char('t'))],
+        Action::ToggleTheme,
+        Some("theme"),
+        Visibility::Shown,
+        None,
+    ),
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Char('q'))],
+        Action::Quit,
+        Some("quit"),
+        Visibility::Shown,
+        None,
+    ),
 ];
 
 fn main() -> io::Result<()> {
@@ -88,7 +88,7 @@ fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let rows = showcase_rows();
-    let keymap = Keymap::new(BINDINGS);
+    let keymap = Keymap::from_static(BINDINGS);
     let mut list_state = ListState::new(Some("list"));
     let mut tabs_state = TabsState::default();
     let mut status_state = StatusBarState::default();

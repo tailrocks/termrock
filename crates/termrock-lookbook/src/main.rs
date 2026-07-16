@@ -50,106 +50,108 @@ enum PreviewAction {
     Forward,
 }
 
-static SIDEBAR_KEYMAP: Keymap<SidebarAction> = Keymap::new(&[
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::Down), KeyChord::plain(KeyCode::Up)],
-        action: SidebarAction::Navigate,
-        hint: Some("navigate"),
-        visibility: Visibility::Shown,
-        glyph: Some("↑↓"),
-    },
-    KeyBinding {
-        chords: &[
+static SIDEBAR_BINDINGS: &[KeyBinding<SidebarAction>] = &[
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Down), KeyChord::plain(KeyCode::Up)],
+        SidebarAction::Navigate,
+        Some("navigate"),
+        Visibility::Shown,
+        Some("↑↓"),
+    ),
+    KeyBinding::borrowed(
+        &[
             KeyChord::plain(KeyCode::Char('j')),
             KeyChord::plain(KeyCode::Char('k')),
         ],
-        action: SidebarAction::Navigate,
-        hint: None,
-        visibility: Visibility::HiddenAlias,
-        glyph: None,
-    },
-    KeyBinding {
-        chords: &[
+        SidebarAction::Navigate,
+        None,
+        Visibility::HiddenAlias,
+        None,
+    ),
+    KeyBinding::borrowed(
+        &[
             KeyChord::plain(KeyCode::Home),
             KeyChord::plain(KeyCode::End),
         ],
-        action: SidebarAction::GoToEdge,
-        hint: Some("first/last"),
-        visibility: Visibility::Shown,
-        glyph: Some("Home/End"),
-    },
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::Tab)],
-        action: SidebarAction::FocusPreview,
-        hint: Some("focus preview"),
-        visibility: Visibility::Shown,
-        glyph: Some("⇥"),
-    },
-    KeyBinding {
-        chords: &[
+        SidebarAction::GoToEdge,
+        Some("first/last"),
+        Visibility::Shown,
+        Some("Home/End"),
+    ),
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Tab)],
+        SidebarAction::FocusPreview,
+        Some("focus preview"),
+        Visibility::Shown,
+        Some("⇥"),
+    ),
+    KeyBinding::borrowed(
+        &[
             KeyChord::plain(KeyCode::Char('q')),
             KeyChord::plain(KeyCode::Esc),
         ],
-        action: SidebarAction::Quit,
-        hint: Some("quit"),
-        visibility: Visibility::Shown,
-        glyph: Some("q/Esc"),
-    },
-]);
+        SidebarAction::Quit,
+        Some("quit"),
+        Visibility::Shown,
+        Some("q/Esc"),
+    ),
+];
+static SIDEBAR_KEYMAP: Keymap<SidebarAction> = Keymap::from_static(SIDEBAR_BINDINGS);
 
-static PREVIEW_KEYMAP: Keymap<PreviewAction> = Keymap::new(&[
-    KeyBinding {
-        chords: &[
+static PREVIEW_BINDINGS: &[KeyBinding<PreviewAction>] = &[
+    KeyBinding::borrowed(
+        &[
             KeyChord::plain(KeyCode::Esc),
             KeyChord::plain(KeyCode::Tab),
             KeyChord::plain(KeyCode::BackTab),
         ],
-        action: PreviewAction::BackToList,
-        hint: Some("back to list"),
-        visibility: Visibility::Shown,
-        glyph: Some("Esc/⇥"),
-    },
-    KeyBinding {
-        chords: &[
+        PreviewAction::BackToList,
+        Some("back to list"),
+        Visibility::Shown,
+        Some("Esc/⇥"),
+    ),
+    KeyBinding::borrowed(
+        &[
             KeyChord::plain(KeyCode::Up),
             KeyChord::plain(KeyCode::Down),
             KeyChord::plain(KeyCode::Left),
             KeyChord::plain(KeyCode::Right),
         ],
-        action: PreviewAction::Forward,
-        hint: Some("interact"),
-        visibility: Visibility::Shown,
-        glyph: Some(glyph::ALL_ARROWS),
-    },
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::PageDown)],
-        action: PreviewAction::PageDown,
-        hint: Some("page"),
-        visibility: Visibility::Shown,
-        glyph: Some(glyph::PGUP_PGDN),
-    },
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::PageUp)],
-        action: PreviewAction::PageUp,
-        hint: None,
-        visibility: Visibility::HiddenAlias,
-        glyph: None,
-    },
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::Char('J'))],
-        action: PreviewAction::MovePreviewDown,
-        hint: Some("move preview"),
-        visibility: Visibility::Shown,
-        glyph: Some("J/K"),
-    },
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::Char('K'))],
-        action: PreviewAction::MovePreviewUp,
-        hint: None,
-        visibility: Visibility::HiddenAlias,
-        glyph: None,
-    },
-]);
+        PreviewAction::Forward,
+        Some("interact"),
+        Visibility::Shown,
+        Some(glyph::ALL_ARROWS),
+    ),
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::PageDown)],
+        PreviewAction::PageDown,
+        Some("page"),
+        Visibility::Shown,
+        Some(glyph::PGUP_PGDN),
+    ),
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::PageUp)],
+        PreviewAction::PageUp,
+        None,
+        Visibility::HiddenAlias,
+        None,
+    ),
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Char('J'))],
+        PreviewAction::MovePreviewDown,
+        Some("move preview"),
+        Visibility::Shown,
+        Some("J/K"),
+    ),
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Char('K'))],
+        PreviewAction::MovePreviewUp,
+        None,
+        Visibility::HiddenAlias,
+        None,
+    ),
+];
+static PREVIEW_KEYMAP: Keymap<PreviewAction> = Keymap::from_static(PREVIEW_BINDINGS);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);

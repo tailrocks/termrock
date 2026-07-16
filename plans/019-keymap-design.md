@@ -1,5 +1,9 @@
 # Runtime-configurable keymaps: one Cow-backed source
 
+> **Graduated:** The follow-up build is complete. The public Cow-backed model,
+> serde-owned loading, runtime edits, conflicts, migrated static tables,
+> lookbook proof, tests, documentation, and migration 0025 now ship together.
+
 ## Decision
 
 Use one Cow-layered `Keymap`. Static defaults remain allocation-free and const
@@ -7,11 +11,11 @@ constructible; the first runtime edit clones the binding table, after which
 only edited fields become owned. Dispatch, hints, glyph lookup, and conflict
 inspection continue reading the same resolved binding slice.
 
-The prototype lives under `#[cfg(test)]` in `keymap.rs`. It remaps Quit from
-`q` to `Ctrl+C`, proves the old chord misses and the new chord dispatches,
-derives the new hint, reports a conflict, and compile-checks an owned serde
-wire shape. The const Cow construction test also passes on the declared Rust
-1.95 MSRV, not only the active 1.97 toolchain.
+The original prototype was removed after graduation. Production tests now
+remap Quit from `q` to `Ctrl+C`, prove the old chord misses and the new chord
+dispatches, derive the new hint, report conflicts, and deserialize an owned
+serde wire shape. A const construction test keeps the Cow feasibility fact
+compiler-checked; the original spike separately proved it on Rust 1.95.
 
 ## Candidate evaluation
 
@@ -169,15 +173,15 @@ KeyBinding::borrowed(QUIT, Quit, Some("quit"), Visibility::Shown, None)
 dispatch/hint calls stay conceptually identical. Runtime consumers call
 `remap` on the same map before entering the event loop.
 
-## Follow-up build-plan stub
+## Completed follow-up build
 
-1. Replace the static-only structs with the Cow model in one breaking change.
-2. Add serde derives and owned deserialization tests.
-3. Add conflict, remap, disable, axis-filter, glyph, and first-binding-wins
+1. Replaced the static-only structs with the Cow model in one breaking change.
+2. Added serde derives and owned deserialization tests.
+3. Added conflict, remap, disable, axis-filter, glyph, and first-binding-wins
    tests against both borrowed and owned maps.
-4. Migrate every TermRock and lookbook static table through `borrowed` and use
+4. Migrated every TermRock and lookbook static table through `borrowed` and used
    the lookbook for one runtime-remap demonstration.
-5. Add migration documentation and regenerate the public API inventory.
+5. Added migration documentation and regenerated the public API inventory.
 
 ## Open questions
 

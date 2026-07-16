@@ -173,6 +173,10 @@ impl core::hash::Hash for termrock::input::KeyCode
 pub fn termrock::input::KeyCode::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for termrock::input::KeyCode
 impl core::marker::StructuralPartialEq for termrock::input::KeyCode
+impl serde_core::ser::Serialize for termrock::input::KeyCode
+pub fn termrock::input::KeyCode::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::input::KeyCode
+pub fn termrock::input::KeyCode::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for termrock::input::KeyCode
 impl core::marker::Send for termrock::input::KeyCode
 impl core::marker::Sync for termrock::input::KeyCode
@@ -205,6 +209,7 @@ pub unsafe fn termrock::input::KeyCode::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::input::KeyCode
 pub fn termrock::input::KeyCode::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::input::KeyCode
+impl<T> serde_core::de::DeserializeOwned for termrock::input::KeyCode where T: for<'de> serde_core::de::Deserialize<'de>
 pub enum termrock::input::KeyEventKind
 pub termrock::input::KeyEventKind::Press
 pub termrock::input::KeyEventKind::Release
@@ -370,6 +375,10 @@ impl core::fmt::Debug for termrock::keymap::Visibility
 pub fn termrock::keymap::Visibility::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for termrock::keymap::Visibility
 impl core::marker::StructuralPartialEq for termrock::keymap::Visibility
+impl serde_core::ser::Serialize for termrock::keymap::Visibility
+pub fn termrock::keymap::Visibility::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::keymap::Visibility
+pub fn termrock::keymap::Visibility::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for termrock::keymap::Visibility
 impl core::marker::Send for termrock::keymap::Visibility
 impl core::marker::Sync for termrock::keymap::Visibility
@@ -402,14 +411,28 @@ pub unsafe fn termrock::keymap::Visibility::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::keymap::Visibility
 pub fn termrock::keymap::Visibility::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::Visibility
-pub struct termrock::input::KeyBinding<A>
-pub termrock::input::KeyBinding::action: A
-pub termrock::input::KeyBinding::chords: &'static [termrock::keymap::KeyChord]
-pub termrock::input::KeyBinding::glyph: core::option::Option<&'static str>
-pub termrock::input::KeyBinding::hint: core::option::Option<&'static str>
-pub termrock::input::KeyBinding::visibility: termrock::keymap::Visibility
-impl<A: core::fmt::Debug> core::fmt::Debug for termrock::keymap::KeyBinding<A>
+impl<T> serde_core::de::DeserializeOwned for termrock::keymap::Visibility where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::input::KeyBinding<A: core::clone::Clone + 'static>
+impl<A: core::clone::Clone + 'static> termrock::keymap::KeyBinding<A>
+pub const fn termrock::keymap::KeyBinding<A>::action(&self) -> &A
+pub const fn termrock::keymap::KeyBinding<A>::borrowed(&'static [termrock::keymap::KeyChord], A, core::option::Option<&'static str>, termrock::keymap::Visibility, core::option::Option<&'static str>) -> Self
+pub fn termrock::keymap::KeyBinding<A>::chords(&self) -> &[termrock::keymap::KeyChord]
+pub fn termrock::keymap::KeyBinding<A>::glyph(&self) -> core::option::Option<&str>
+pub fn termrock::keymap::KeyBinding<A>::hint(&self) -> core::option::Option<&str>
+pub fn termrock::keymap::KeyBinding<A>::owned(alloc::vec::Vec<termrock::keymap::KeyChord>, A, core::option::Option<alloc::string::String>, termrock::keymap::Visibility, core::option::Option<alloc::string::String>) -> Self
+pub const fn termrock::keymap::KeyBinding<A>::visibility(&self) -> termrock::keymap::Visibility
+impl<'de, A> serde_core::de::Deserialize<'de> for termrock::keymap::KeyBinding<A> where A: core::clone::Clone + serde_core::de::Deserialize<'de> + 'static
+pub fn termrock::keymap::KeyBinding<A>::deserialize<D>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error> where D: serde_core::de::Deserializer<'de>
+impl<A: core::clone::Clone + core::clone::Clone + 'static> core::clone::Clone for termrock::keymap::KeyBinding<A>
+pub fn termrock::keymap::KeyBinding<A>::clone(&self) -> termrock::keymap::KeyBinding<A>
+impl<A: core::cmp::Eq + core::clone::Clone + 'static> core::cmp::Eq for termrock::keymap::KeyBinding<A>
+impl<A: core::cmp::PartialEq + core::clone::Clone + 'static> core::cmp::PartialEq for termrock::keymap::KeyBinding<A>
+pub fn termrock::keymap::KeyBinding<A>::eq(&self, &termrock::keymap::KeyBinding<A>) -> bool
+impl<A: core::cmp::PartialEq + core::clone::Clone + 'static> core::marker::StructuralPartialEq for termrock::keymap::KeyBinding<A>
+impl<A: core::fmt::Debug + core::clone::Clone + 'static> core::fmt::Debug for termrock::keymap::KeyBinding<A>
 pub fn termrock::keymap::KeyBinding<A>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<A> serde_core::ser::Serialize for termrock::keymap::KeyBinding<A> where A: serde_core::ser::Serialize + core::clone::Clone + 'static
+pub fn termrock::keymap::KeyBinding<A>::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<A> core::marker::Freeze for termrock::keymap::KeyBinding<A> where A: core::marker::Freeze
 impl<A> core::marker::Send for termrock::keymap::KeyBinding<A> where A: core::marker::Send
 impl<A> core::marker::Sync for termrock::keymap::KeyBinding<A> where A: core::marker::Sync
@@ -417,6 +440,8 @@ impl<A> core::marker::Unpin for termrock::keymap::KeyBinding<A> where A: core::m
 impl<A> core::marker::UnsafeUnpin for termrock::keymap::KeyBinding<A> where A: core::marker::UnsafeUnpin
 impl<A> core::panic::unwind_safe::RefUnwindSafe for termrock::keymap::KeyBinding<A> where A: core::panic::unwind_safe::RefUnwindSafe
 impl<A> core::panic::unwind_safe::UnwindSafe for termrock::keymap::KeyBinding<A> where A: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::keymap::KeyBinding<A> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::keymap::KeyBinding<A>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::keymap::KeyBinding<A> where U: core::convert::From<T>
 pub fn termrock::keymap::KeyBinding<A>::into(self) -> U
 impl<T, U> core::convert::TryFrom<U> for termrock::keymap::KeyBinding<A> where U: core::convert::Into<T>
@@ -425,15 +450,22 @@ pub fn termrock::keymap::KeyBinding<A>::try_from(U) -> core::result::Result<T, <
 impl<T, U> core::convert::TryInto<U> for termrock::keymap::KeyBinding<A> where U: core::convert::TryFrom<T>
 pub type termrock::keymap::KeyBinding<A>::Error = <U as core::convert::TryFrom<T>>::Error
 pub fn termrock::keymap::KeyBinding<A>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::keymap::KeyBinding<A> where T: core::clone::Clone
+pub type termrock::keymap::KeyBinding<A>::Owned = T
+pub fn termrock::keymap::KeyBinding<A>::clone_into(&self, &mut T)
+pub fn termrock::keymap::KeyBinding<A>::to_owned(&self) -> T
 impl<T> core::any::Any for termrock::keymap::KeyBinding<A> where T: 'static + ?core::marker::Sized
 pub fn termrock::keymap::KeyBinding<A>::type_id(&self) -> core::any::TypeId
 impl<T> core::borrow::Borrow<T> for termrock::keymap::KeyBinding<A> where T: ?core::marker::Sized
 pub fn termrock::keymap::KeyBinding<A>::borrow(&self) -> &T
 impl<T> core::borrow::BorrowMut<T> for termrock::keymap::KeyBinding<A> where T: ?core::marker::Sized
 pub fn termrock::keymap::KeyBinding<A>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::keymap::KeyBinding<A> where T: core::clone::Clone
+pub unsafe fn termrock::keymap::KeyBinding<A>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::keymap::KeyBinding<A>
 pub fn termrock::keymap::KeyBinding<A>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::KeyBinding<A>
+impl<T> serde_core::de::DeserializeOwned for termrock::keymap::KeyBinding<A> where T: for<'de> serde_core::de::Deserialize<'de>
 pub struct termrock::input::KeyChord
 pub termrock::input::KeyChord::key: termrock::input::KeyCode
 pub termrock::input::KeyChord::mods: termrock::input::KeyModifiers
@@ -458,6 +490,10 @@ impl core::hash::Hash for termrock::keymap::KeyChord
 pub fn termrock::keymap::KeyChord::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for termrock::keymap::KeyChord
 impl core::marker::StructuralPartialEq for termrock::keymap::KeyChord
+impl serde_core::ser::Serialize for termrock::keymap::KeyChord
+pub fn termrock::keymap::KeyChord::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::keymap::KeyChord
+pub fn termrock::keymap::KeyChord::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for termrock::keymap::KeyChord
 impl core::marker::Send for termrock::keymap::KeyChord
 impl core::marker::Sync for termrock::keymap::KeyChord
@@ -490,6 +526,7 @@ pub unsafe fn termrock::keymap::KeyChord::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::keymap::KeyChord
 pub fn termrock::keymap::KeyChord::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::KeyChord
+impl<T> serde_core::de::DeserializeOwned for termrock::keymap::KeyChord where T: for<'de> serde_core::de::Deserialize<'de>
 pub struct termrock::input::KeyEvent
 pub termrock::input::KeyEvent::code: termrock::input::KeyCode
 pub termrock::input::KeyEvent::kind: termrock::input::KeyEventKind
@@ -623,6 +660,10 @@ pub type termrock::input::KeyModifiers::Output = termrock::input::KeyModifiers
 pub fn termrock::input::KeyModifiers::bitor(self, Self) -> Self::Output
 impl core::ops::bit::BitOrAssign for termrock::input::KeyModifiers
 pub fn termrock::input::KeyModifiers::bitor_assign(&mut self, Self)
+impl serde_core::ser::Serialize for termrock::input::KeyModifiers
+pub fn termrock::input::KeyModifiers::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::input::KeyModifiers
+pub fn termrock::input::KeyModifiers::deserialize<D>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error> where D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for termrock::input::KeyModifiers
 impl core::marker::Send for termrock::input::KeyModifiers
 impl core::marker::Sync for termrock::input::KeyModifiers
@@ -655,26 +696,44 @@ pub unsafe fn termrock::input::KeyModifiers::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::input::KeyModifiers
 pub fn termrock::input::KeyModifiers::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::input::KeyModifiers
-pub struct termrock::input::Keymap<A: 'static>
-impl<A: core::marker::Copy + 'static> termrock::keymap::Keymap<A>
+impl<T> serde_core::de::DeserializeOwned for termrock::input::KeyModifiers where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::input::Keymap<A: core::clone::Clone + 'static>
+impl<A: core::clone::Clone + core::marker::Copy + 'static> termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::bindings(&self) -> &[termrock::keymap::KeyBinding<A>]
 pub fn termrock::keymap::Keymap<A>::dispatch(&self, termrock::keymap::KeyChord) -> core::option::Option<A>
+pub fn termrock::keymap::Keymap<A>::from_owned(alloc::vec::Vec<termrock::keymap::KeyBinding<A>>) -> Self
+pub const fn termrock::keymap::Keymap<A>::from_static(&'static [termrock::keymap::KeyBinding<A>]) -> Self
 pub fn termrock::keymap::Keymap<A>::hint_spans(&self) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
 pub fn termrock::keymap::Keymap<A>::hint_spans_for_axes(&self, termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
-pub const fn termrock::keymap::Keymap<A>::new(&'static [termrock::keymap::KeyBinding<A>]) -> Self
-impl<A: core::marker::Copy + core::cmp::PartialEq + 'static> termrock::keymap::Keymap<A>
+impl<A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static> termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::binding_for(&self, A) -> core::option::Option<&termrock::keymap::KeyBinding<A>>
-pub fn termrock::keymap::Keymap<A>::glyph_for(&self, A) -> &'static str
+pub fn termrock::keymap::Keymap<A>::conflicts(&self) -> alloc::vec::Vec<termrock::keymap::Conflict<'_, A>>
+pub fn termrock::keymap::Keymap<A>::disable(&mut self, A) -> bool
+pub fn termrock::keymap::Keymap<A>::glyph_for(&self, A) -> alloc::borrow::Cow<'_, str>
 pub fn termrock::keymap::Keymap<A>::push_spans_for(&self, A, &mut alloc::vec::Vec<termrock::widgets::HintSpan<'static>>)
-impl<A: core::fmt::Debug + 'static> core::fmt::Debug for termrock::keymap::Keymap<A>
+pub fn termrock::keymap::Keymap<A>::remap(&mut self, A, alloc::vec::Vec<termrock::keymap::KeyChord>) -> bool
+pub fn termrock::keymap::Keymap<A>::replace(&mut self, A, termrock::keymap::KeyBinding<A>) -> bool
+impl<'de, A> serde_core::de::Deserialize<'de> for termrock::keymap::Keymap<A> where A: core::clone::Clone + core::marker::Copy + serde_core::de::Deserialize<'de> + 'static
+pub fn termrock::keymap::Keymap<A>::deserialize<D>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error> where D: serde_core::de::Deserializer<'de>
+impl<A: core::clone::Clone + core::clone::Clone + 'static> core::clone::Clone for termrock::keymap::Keymap<A>
+pub fn termrock::keymap::Keymap<A>::clone(&self) -> termrock::keymap::Keymap<A>
+impl<A: core::cmp::Eq + core::clone::Clone + 'static> core::cmp::Eq for termrock::keymap::Keymap<A>
+impl<A: core::cmp::PartialEq + core::clone::Clone + 'static> core::cmp::PartialEq for termrock::keymap::Keymap<A>
+pub fn termrock::keymap::Keymap<A>::eq(&self, &termrock::keymap::Keymap<A>) -> bool
+impl<A: core::cmp::PartialEq + core::clone::Clone + 'static> core::marker::StructuralPartialEq for termrock::keymap::Keymap<A>
+impl<A: core::fmt::Debug + core::clone::Clone + 'static> core::fmt::Debug for termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<A> serde_core::ser::Serialize for termrock::keymap::Keymap<A> where A: core::clone::Clone + serde_core::ser::Serialize + 'static
+pub fn termrock::keymap::Keymap<A>::serialize<S>(&self, S) -> core::result::Result<<S as serde_core::ser::Serializer>::Ok, <S as serde_core::ser::Serializer>::Error> where S: serde_core::ser::Serializer
 impl<A> core::marker::Freeze for termrock::keymap::Keymap<A>
-impl<A> core::marker::Send for termrock::keymap::Keymap<A> where A: core::marker::Sync
+impl<A> core::marker::Send for termrock::keymap::Keymap<A> where A: core::marker::Sync + core::marker::Send
 impl<A> core::marker::Sync for termrock::keymap::Keymap<A> where A: core::marker::Sync
-impl<A> core::marker::Unpin for termrock::keymap::Keymap<A>
+impl<A> core::marker::Unpin for termrock::keymap::Keymap<A> where A: core::marker::Unpin
 impl<A> core::marker::UnsafeUnpin for termrock::keymap::Keymap<A>
 impl<A> core::panic::unwind_safe::RefUnwindSafe for termrock::keymap::Keymap<A> where A: core::panic::unwind_safe::RefUnwindSafe
-impl<A> core::panic::unwind_safe::UnwindSafe for termrock::keymap::Keymap<A> where A: core::panic::unwind_safe::RefUnwindSafe
+impl<A> core::panic::unwind_safe::UnwindSafe for termrock::keymap::Keymap<A> where A: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::keymap::Keymap<A> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::keymap::Keymap<A>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::keymap::Keymap<A> where U: core::convert::From<T>
 pub fn termrock::keymap::Keymap<A>::into(self) -> U
 impl<T, U> core::convert::TryFrom<U> for termrock::keymap::Keymap<A> where U: core::convert::Into<T>
@@ -683,15 +742,22 @@ pub fn termrock::keymap::Keymap<A>::try_from(U) -> core::result::Result<T, <T as
 impl<T, U> core::convert::TryInto<U> for termrock::keymap::Keymap<A> where U: core::convert::TryFrom<T>
 pub type termrock::keymap::Keymap<A>::Error = <U as core::convert::TryFrom<T>>::Error
 pub fn termrock::keymap::Keymap<A>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::keymap::Keymap<A> where T: core::clone::Clone
+pub type termrock::keymap::Keymap<A>::Owned = T
+pub fn termrock::keymap::Keymap<A>::clone_into(&self, &mut T)
+pub fn termrock::keymap::Keymap<A>::to_owned(&self) -> T
 impl<T> core::any::Any for termrock::keymap::Keymap<A> where T: 'static + ?core::marker::Sized
 pub fn termrock::keymap::Keymap<A>::type_id(&self) -> core::any::TypeId
 impl<T> core::borrow::Borrow<T> for termrock::keymap::Keymap<A> where T: ?core::marker::Sized
 pub fn termrock::keymap::Keymap<A>::borrow(&self) -> &T
 impl<T> core::borrow::BorrowMut<T> for termrock::keymap::Keymap<A> where T: ?core::marker::Sized
 pub fn termrock::keymap::Keymap<A>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::keymap::Keymap<A> where T: core::clone::Clone
+pub unsafe fn termrock::keymap::Keymap<A>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::Keymap<A>
+impl<T> serde_core::de::DeserializeOwned for termrock::keymap::Keymap<A> where T: for<'de> serde_core::de::Deserialize<'de>
 pub struct termrock::input::MouseEvent
 pub termrock::input::MouseEvent::kind: termrock::input::MouseEventKind
 pub termrock::input::MouseEvent::modifiers: termrock::input::KeyModifiers
@@ -1154,6 +1220,10 @@ impl core::fmt::Debug for termrock::keymap::Visibility
 pub fn termrock::keymap::Visibility::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for termrock::keymap::Visibility
 impl core::marker::StructuralPartialEq for termrock::keymap::Visibility
+impl serde_core::ser::Serialize for termrock::keymap::Visibility
+pub fn termrock::keymap::Visibility::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::keymap::Visibility
+pub fn termrock::keymap::Visibility::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for termrock::keymap::Visibility
 impl core::marker::Send for termrock::keymap::Visibility
 impl core::marker::Sync for termrock::keymap::Visibility
@@ -1186,14 +1256,73 @@ pub unsafe fn termrock::keymap::Visibility::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::keymap::Visibility
 pub fn termrock::keymap::Visibility::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::Visibility
-pub struct termrock::keymap::KeyBinding<A>
-pub termrock::keymap::KeyBinding::action: A
-pub termrock::keymap::KeyBinding::chords: &'static [termrock::keymap::KeyChord]
-pub termrock::keymap::KeyBinding::glyph: core::option::Option<&'static str>
-pub termrock::keymap::KeyBinding::hint: core::option::Option<&'static str>
-pub termrock::keymap::KeyBinding::visibility: termrock::keymap::Visibility
-impl<A: core::fmt::Debug> core::fmt::Debug for termrock::keymap::KeyBinding<A>
+impl<T> serde_core::de::DeserializeOwned for termrock::keymap::Visibility where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::keymap::Conflict<'a, A>
+pub termrock::keymap::Conflict::chord: termrock::keymap::KeyChord
+pub termrock::keymap::Conflict::first: &'a A
+pub termrock::keymap::Conflict::second: &'a A
+impl<'a, A: core::clone::Clone> core::clone::Clone for termrock::keymap::Conflict<'a, A>
+pub fn termrock::keymap::Conflict<'a, A>::clone(&self) -> termrock::keymap::Conflict<'a, A>
+impl<'a, A: core::cmp::Eq> core::cmp::Eq for termrock::keymap::Conflict<'a, A>
+impl<'a, A: core::cmp::PartialEq> core::cmp::PartialEq for termrock::keymap::Conflict<'a, A>
+pub fn termrock::keymap::Conflict<'a, A>::eq(&self, &termrock::keymap::Conflict<'a, A>) -> bool
+impl<'a, A: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::keymap::Conflict<'a, A>
+impl<'a, A: core::fmt::Debug> core::fmt::Debug for termrock::keymap::Conflict<'a, A>
+pub fn termrock::keymap::Conflict<'a, A>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, A: core::marker::Copy> core::marker::Copy for termrock::keymap::Conflict<'a, A>
+impl<'a, A> core::marker::Freeze for termrock::keymap::Conflict<'a, A>
+impl<'a, A> core::marker::Send for termrock::keymap::Conflict<'a, A> where A: core::marker::Sync
+impl<'a, A> core::marker::Sync for termrock::keymap::Conflict<'a, A> where A: core::marker::Sync
+impl<'a, A> core::marker::Unpin for termrock::keymap::Conflict<'a, A>
+impl<'a, A> core::marker::UnsafeUnpin for termrock::keymap::Conflict<'a, A>
+impl<'a, A> core::panic::unwind_safe::RefUnwindSafe for termrock::keymap::Conflict<'a, A> where A: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, A> core::panic::unwind_safe::UnwindSafe for termrock::keymap::Conflict<'a, A> where A: core::panic::unwind_safe::RefUnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::keymap::Conflict<'a, A> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::keymap::Conflict<'a, A>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::keymap::Conflict<'a, A> where U: core::convert::From<T>
+pub fn termrock::keymap::Conflict<'a, A>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::keymap::Conflict<'a, A> where U: core::convert::Into<T>
+pub type termrock::keymap::Conflict<'a, A>::Error = core::convert::Infallible
+pub fn termrock::keymap::Conflict<'a, A>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::keymap::Conflict<'a, A> where U: core::convert::TryFrom<T>
+pub type termrock::keymap::Conflict<'a, A>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::keymap::Conflict<'a, A>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::keymap::Conflict<'a, A> where T: core::clone::Clone
+pub type termrock::keymap::Conflict<'a, A>::Owned = T
+pub fn termrock::keymap::Conflict<'a, A>::clone_into(&self, &mut T)
+pub fn termrock::keymap::Conflict<'a, A>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::keymap::Conflict<'a, A> where T: 'static + ?core::marker::Sized
+pub fn termrock::keymap::Conflict<'a, A>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::keymap::Conflict<'a, A> where T: ?core::marker::Sized
+pub fn termrock::keymap::Conflict<'a, A>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::keymap::Conflict<'a, A> where T: ?core::marker::Sized
+pub fn termrock::keymap::Conflict<'a, A>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::keymap::Conflict<'a, A> where T: core::clone::Clone
+pub unsafe fn termrock::keymap::Conflict<'a, A>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::keymap::Conflict<'a, A>
+pub fn termrock::keymap::Conflict<'a, A>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::keymap::Conflict<'a, A>
+pub struct termrock::keymap::KeyBinding<A: core::clone::Clone + 'static>
+impl<A: core::clone::Clone + 'static> termrock::keymap::KeyBinding<A>
+pub const fn termrock::keymap::KeyBinding<A>::action(&self) -> &A
+pub const fn termrock::keymap::KeyBinding<A>::borrowed(&'static [termrock::keymap::KeyChord], A, core::option::Option<&'static str>, termrock::keymap::Visibility, core::option::Option<&'static str>) -> Self
+pub fn termrock::keymap::KeyBinding<A>::chords(&self) -> &[termrock::keymap::KeyChord]
+pub fn termrock::keymap::KeyBinding<A>::glyph(&self) -> core::option::Option<&str>
+pub fn termrock::keymap::KeyBinding<A>::hint(&self) -> core::option::Option<&str>
+pub fn termrock::keymap::KeyBinding<A>::owned(alloc::vec::Vec<termrock::keymap::KeyChord>, A, core::option::Option<alloc::string::String>, termrock::keymap::Visibility, core::option::Option<alloc::string::String>) -> Self
+pub const fn termrock::keymap::KeyBinding<A>::visibility(&self) -> termrock::keymap::Visibility
+impl<'de, A> serde_core::de::Deserialize<'de> for termrock::keymap::KeyBinding<A> where A: core::clone::Clone + serde_core::de::Deserialize<'de> + 'static
+pub fn termrock::keymap::KeyBinding<A>::deserialize<D>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error> where D: serde_core::de::Deserializer<'de>
+impl<A: core::clone::Clone + core::clone::Clone + 'static> core::clone::Clone for termrock::keymap::KeyBinding<A>
+pub fn termrock::keymap::KeyBinding<A>::clone(&self) -> termrock::keymap::KeyBinding<A>
+impl<A: core::cmp::Eq + core::clone::Clone + 'static> core::cmp::Eq for termrock::keymap::KeyBinding<A>
+impl<A: core::cmp::PartialEq + core::clone::Clone + 'static> core::cmp::PartialEq for termrock::keymap::KeyBinding<A>
+pub fn termrock::keymap::KeyBinding<A>::eq(&self, &termrock::keymap::KeyBinding<A>) -> bool
+impl<A: core::cmp::PartialEq + core::clone::Clone + 'static> core::marker::StructuralPartialEq for termrock::keymap::KeyBinding<A>
+impl<A: core::fmt::Debug + core::clone::Clone + 'static> core::fmt::Debug for termrock::keymap::KeyBinding<A>
 pub fn termrock::keymap::KeyBinding<A>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<A> serde_core::ser::Serialize for termrock::keymap::KeyBinding<A> where A: serde_core::ser::Serialize + core::clone::Clone + 'static
+pub fn termrock::keymap::KeyBinding<A>::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<A> core::marker::Freeze for termrock::keymap::KeyBinding<A> where A: core::marker::Freeze
 impl<A> core::marker::Send for termrock::keymap::KeyBinding<A> where A: core::marker::Send
 impl<A> core::marker::Sync for termrock::keymap::KeyBinding<A> where A: core::marker::Sync
@@ -1201,6 +1330,8 @@ impl<A> core::marker::Unpin for termrock::keymap::KeyBinding<A> where A: core::m
 impl<A> core::marker::UnsafeUnpin for termrock::keymap::KeyBinding<A> where A: core::marker::UnsafeUnpin
 impl<A> core::panic::unwind_safe::RefUnwindSafe for termrock::keymap::KeyBinding<A> where A: core::panic::unwind_safe::RefUnwindSafe
 impl<A> core::panic::unwind_safe::UnwindSafe for termrock::keymap::KeyBinding<A> where A: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::keymap::KeyBinding<A> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::keymap::KeyBinding<A>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::keymap::KeyBinding<A> where U: core::convert::From<T>
 pub fn termrock::keymap::KeyBinding<A>::into(self) -> U
 impl<T, U> core::convert::TryFrom<U> for termrock::keymap::KeyBinding<A> where U: core::convert::Into<T>
@@ -1209,15 +1340,22 @@ pub fn termrock::keymap::KeyBinding<A>::try_from(U) -> core::result::Result<T, <
 impl<T, U> core::convert::TryInto<U> for termrock::keymap::KeyBinding<A> where U: core::convert::TryFrom<T>
 pub type termrock::keymap::KeyBinding<A>::Error = <U as core::convert::TryFrom<T>>::Error
 pub fn termrock::keymap::KeyBinding<A>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::keymap::KeyBinding<A> where T: core::clone::Clone
+pub type termrock::keymap::KeyBinding<A>::Owned = T
+pub fn termrock::keymap::KeyBinding<A>::clone_into(&self, &mut T)
+pub fn termrock::keymap::KeyBinding<A>::to_owned(&self) -> T
 impl<T> core::any::Any for termrock::keymap::KeyBinding<A> where T: 'static + ?core::marker::Sized
 pub fn termrock::keymap::KeyBinding<A>::type_id(&self) -> core::any::TypeId
 impl<T> core::borrow::Borrow<T> for termrock::keymap::KeyBinding<A> where T: ?core::marker::Sized
 pub fn termrock::keymap::KeyBinding<A>::borrow(&self) -> &T
 impl<T> core::borrow::BorrowMut<T> for termrock::keymap::KeyBinding<A> where T: ?core::marker::Sized
 pub fn termrock::keymap::KeyBinding<A>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::keymap::KeyBinding<A> where T: core::clone::Clone
+pub unsafe fn termrock::keymap::KeyBinding<A>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::keymap::KeyBinding<A>
 pub fn termrock::keymap::KeyBinding<A>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::KeyBinding<A>
+impl<T> serde_core::de::DeserializeOwned for termrock::keymap::KeyBinding<A> where T: for<'de> serde_core::de::Deserialize<'de>
 pub struct termrock::keymap::KeyChord
 pub termrock::keymap::KeyChord::key: termrock::input::KeyCode
 pub termrock::keymap::KeyChord::mods: termrock::input::KeyModifiers
@@ -1242,6 +1380,10 @@ impl core::hash::Hash for termrock::keymap::KeyChord
 pub fn termrock::keymap::KeyChord::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for termrock::keymap::KeyChord
 impl core::marker::StructuralPartialEq for termrock::keymap::KeyChord
+impl serde_core::ser::Serialize for termrock::keymap::KeyChord
+pub fn termrock::keymap::KeyChord::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::keymap::KeyChord
+pub fn termrock::keymap::KeyChord::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for termrock::keymap::KeyChord
 impl core::marker::Send for termrock::keymap::KeyChord
 impl core::marker::Sync for termrock::keymap::KeyChord
@@ -1274,26 +1416,44 @@ pub unsafe fn termrock::keymap::KeyChord::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::keymap::KeyChord
 pub fn termrock::keymap::KeyChord::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::KeyChord
-pub struct termrock::keymap::Keymap<A: 'static>
-impl<A: core::marker::Copy + 'static> termrock::keymap::Keymap<A>
+impl<T> serde_core::de::DeserializeOwned for termrock::keymap::KeyChord where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::keymap::Keymap<A: core::clone::Clone + 'static>
+impl<A: core::clone::Clone + core::marker::Copy + 'static> termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::bindings(&self) -> &[termrock::keymap::KeyBinding<A>]
 pub fn termrock::keymap::Keymap<A>::dispatch(&self, termrock::keymap::KeyChord) -> core::option::Option<A>
+pub fn termrock::keymap::Keymap<A>::from_owned(alloc::vec::Vec<termrock::keymap::KeyBinding<A>>) -> Self
+pub const fn termrock::keymap::Keymap<A>::from_static(&'static [termrock::keymap::KeyBinding<A>]) -> Self
 pub fn termrock::keymap::Keymap<A>::hint_spans(&self) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
 pub fn termrock::keymap::Keymap<A>::hint_spans_for_axes(&self, termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
-pub const fn termrock::keymap::Keymap<A>::new(&'static [termrock::keymap::KeyBinding<A>]) -> Self
-impl<A: core::marker::Copy + core::cmp::PartialEq + 'static> termrock::keymap::Keymap<A>
+impl<A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static> termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::binding_for(&self, A) -> core::option::Option<&termrock::keymap::KeyBinding<A>>
-pub fn termrock::keymap::Keymap<A>::glyph_for(&self, A) -> &'static str
+pub fn termrock::keymap::Keymap<A>::conflicts(&self) -> alloc::vec::Vec<termrock::keymap::Conflict<'_, A>>
+pub fn termrock::keymap::Keymap<A>::disable(&mut self, A) -> bool
+pub fn termrock::keymap::Keymap<A>::glyph_for(&self, A) -> alloc::borrow::Cow<'_, str>
 pub fn termrock::keymap::Keymap<A>::push_spans_for(&self, A, &mut alloc::vec::Vec<termrock::widgets::HintSpan<'static>>)
-impl<A: core::fmt::Debug + 'static> core::fmt::Debug for termrock::keymap::Keymap<A>
+pub fn termrock::keymap::Keymap<A>::remap(&mut self, A, alloc::vec::Vec<termrock::keymap::KeyChord>) -> bool
+pub fn termrock::keymap::Keymap<A>::replace(&mut self, A, termrock::keymap::KeyBinding<A>) -> bool
+impl<'de, A> serde_core::de::Deserialize<'de> for termrock::keymap::Keymap<A> where A: core::clone::Clone + core::marker::Copy + serde_core::de::Deserialize<'de> + 'static
+pub fn termrock::keymap::Keymap<A>::deserialize<D>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error> where D: serde_core::de::Deserializer<'de>
+impl<A: core::clone::Clone + core::clone::Clone + 'static> core::clone::Clone for termrock::keymap::Keymap<A>
+pub fn termrock::keymap::Keymap<A>::clone(&self) -> termrock::keymap::Keymap<A>
+impl<A: core::cmp::Eq + core::clone::Clone + 'static> core::cmp::Eq for termrock::keymap::Keymap<A>
+impl<A: core::cmp::PartialEq + core::clone::Clone + 'static> core::cmp::PartialEq for termrock::keymap::Keymap<A>
+pub fn termrock::keymap::Keymap<A>::eq(&self, &termrock::keymap::Keymap<A>) -> bool
+impl<A: core::cmp::PartialEq + core::clone::Clone + 'static> core::marker::StructuralPartialEq for termrock::keymap::Keymap<A>
+impl<A: core::fmt::Debug + core::clone::Clone + 'static> core::fmt::Debug for termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<A> serde_core::ser::Serialize for termrock::keymap::Keymap<A> where A: core::clone::Clone + serde_core::ser::Serialize + 'static
+pub fn termrock::keymap::Keymap<A>::serialize<S>(&self, S) -> core::result::Result<<S as serde_core::ser::Serializer>::Ok, <S as serde_core::ser::Serializer>::Error> where S: serde_core::ser::Serializer
 impl<A> core::marker::Freeze for termrock::keymap::Keymap<A>
-impl<A> core::marker::Send for termrock::keymap::Keymap<A> where A: core::marker::Sync
+impl<A> core::marker::Send for termrock::keymap::Keymap<A> where A: core::marker::Sync + core::marker::Send
 impl<A> core::marker::Sync for termrock::keymap::Keymap<A> where A: core::marker::Sync
-impl<A> core::marker::Unpin for termrock::keymap::Keymap<A>
+impl<A> core::marker::Unpin for termrock::keymap::Keymap<A> where A: core::marker::Unpin
 impl<A> core::marker::UnsafeUnpin for termrock::keymap::Keymap<A>
 impl<A> core::panic::unwind_safe::RefUnwindSafe for termrock::keymap::Keymap<A> where A: core::panic::unwind_safe::RefUnwindSafe
-impl<A> core::panic::unwind_safe::UnwindSafe for termrock::keymap::Keymap<A> where A: core::panic::unwind_safe::RefUnwindSafe
+impl<A> core::panic::unwind_safe::UnwindSafe for termrock::keymap::Keymap<A> where A: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::keymap::Keymap<A> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::keymap::Keymap<A>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::keymap::Keymap<A> where U: core::convert::From<T>
 pub fn termrock::keymap::Keymap<A>::into(self) -> U
 impl<T, U> core::convert::TryFrom<U> for termrock::keymap::Keymap<A> where U: core::convert::Into<T>
@@ -1302,15 +1462,22 @@ pub fn termrock::keymap::Keymap<A>::try_from(U) -> core::result::Result<T, <T as
 impl<T, U> core::convert::TryInto<U> for termrock::keymap::Keymap<A> where U: core::convert::TryFrom<T>
 pub type termrock::keymap::Keymap<A>::Error = <U as core::convert::TryFrom<T>>::Error
 pub fn termrock::keymap::Keymap<A>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::keymap::Keymap<A> where T: core::clone::Clone
+pub type termrock::keymap::Keymap<A>::Owned = T
+pub fn termrock::keymap::Keymap<A>::clone_into(&self, &mut T)
+pub fn termrock::keymap::Keymap<A>::to_owned(&self) -> T
 impl<T> core::any::Any for termrock::keymap::Keymap<A> where T: 'static + ?core::marker::Sized
 pub fn termrock::keymap::Keymap<A>::type_id(&self) -> core::any::TypeId
 impl<T> core::borrow::Borrow<T> for termrock::keymap::Keymap<A> where T: ?core::marker::Sized
 pub fn termrock::keymap::Keymap<A>::borrow(&self) -> &T
 impl<T> core::borrow::BorrowMut<T> for termrock::keymap::Keymap<A> where T: ?core::marker::Sized
 pub fn termrock::keymap::Keymap<A>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::keymap::Keymap<A> where T: core::clone::Clone
+pub unsafe fn termrock::keymap::Keymap<A>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::Keymap<A>
+impl<T> serde_core::de::DeserializeOwned for termrock::keymap::Keymap<A> where T: for<'de> serde_core::de::Deserialize<'de>
 pub static termrock::keymap::SCROLL_HINT_KEYMAP: termrock::keymap::Keymap<termrock::keymap::ScrollHintAxis>
 pub fn termrock::keymap::chord_glyph(core::option::Option<termrock::keymap::KeyChord>) -> &'static str
 pub fn termrock::keymap::raw_bytes_to_chord(&[u8]) -> core::option::Option<termrock::keymap::KeyChord>

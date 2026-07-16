@@ -3,6 +3,7 @@
 use core::ops::{BitOr, BitOrAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[non_exhaustive]
 /// Backend-neutral keyboard keys understood by TermRock widgets.
 pub enum KeyCode {
@@ -43,6 +44,7 @@ pub enum KeyCode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 /// A compact set of keyboard modifier flags.
 pub struct KeyModifiers(u8);
 
@@ -84,6 +86,24 @@ impl KeyModifiers {
     /// Returns whether no modifier keys are held.
     pub const fn is_empty(self) -> bool {
         self.0 == 0
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for KeyModifiers {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let bits = <u8 as serde::Deserialize>::deserialize(deserializer)?;
+        let allowed = Self::SHIFT.0 | Self::CONTROL.0 | Self::ALT.0;
+        if bits & !allowed != 0 {
+            return Err(serde::de::Error::custom(format_args!(
+                "unknown key modifier bits: {:#04x}",
+                bits & !allowed
+            )));
+        }
+        Ok(Self(bits))
     }
 }
 

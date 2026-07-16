@@ -14,6 +14,43 @@ TermRock does not require an application architecture. Consumers may use a
 direct loop, Elm-style update flow, components, or another state model while
 keeping rendering and interaction primitives shared.
 
+## Runtime keymaps
+
+`Keymap` is one resolved source for dispatch, hints, glyph lookup, and conflict
+diagnostics. Static defaults use `KeyBinding::borrowed` and
+`Keymap::from_static` without startup allocation. Clone that map and apply
+runtime configuration before entering the event loop; its first successful
+edit copies the table, while unchanged chord and label data stays borrowed.
+
+```rust
+use termrock::{
+    input::KeyCode,
+    keymap::{KeyBinding, KeyChord, Keymap, Visibility},
+};
+
+#[derive(Clone, Copy, PartialEq)]
+enum Action { Quit }
+
+static BINDINGS: &[KeyBinding<Action>] = &[KeyBinding::borrowed(
+    &[KeyChord::plain(KeyCode::Char('q'))],
+    Action::Quit,
+    Some("quit"),
+    Visibility::Shown,
+    None,
+)];
+
+let mut keymap = Keymap::from_static(BINDINGS);
+keymap.remap(Action::Quit, vec![KeyChord::ctrl(KeyCode::Char('c'))]);
+assert_eq!(keymap.dispatch(KeyChord::ctrl(KeyCode::Char('c'))), Some(Action::Quit));
+assert_eq!(keymap.glyph_for(Action::Quit), "Ctrl-C");
+```
+
+`remap` clears an explicit glyph so the canonical glyph follows the new first
+chord. Use `replace` when configuration intentionally supplies a custom grouped
+glyph. `conflicts` reports declaration-ordered collisions; dispatch remains
+deterministic and first-binding-wins. With the `serde` feature, serializing a
+borrowed map and deserializing it produces an owned map ready for mutation.
+
 ## Crossterm runner
 
 With the `crossterm` feature, `runtime::run` centralizes terminal mode setup,

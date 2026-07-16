@@ -6,69 +6,285 @@ use crate::scroll::ScrollAxes;
 use crate::widgets::HintSpan;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 enum TestAction {
     Confirm,
     Cancel,
     Navigate,
     HiddenVim,
+    Missing,
+}
+
+const CONST_BORROWED_MAP: Keymap<TestAction> = Keymap::from_static(TEST_BINDINGS);
+
+#[test]
+fn static_construction_is_const_and_stays_borrowed_until_a_successful_edit() {
+    let mut keymap = CONST_BORROWED_MAP.clone();
+    assert!(matches!(keymap.bindings, std::borrow::Cow::Borrowed(_)));
+
+    assert!(!keymap.remap(TestAction::Missing, Vec::new()));
+    assert!(!keymap.disable(TestAction::Missing));
+    assert!(!keymap.replace(
+        TestAction::Missing,
+        KeyBinding::owned(
+            Vec::new(),
+            TestAction::Missing,
+            None,
+            Visibility::Internal,
+            None,
+        ),
+    ));
+    assert!(matches!(keymap.bindings, std::borrow::Cow::Borrowed(_)));
+
+    assert!(keymap.disable(TestAction::Cancel));
+    assert!(matches!(keymap.bindings, std::borrow::Cow::Owned(_)));
+}
+
+#[test]
+fn runtime_remap_updates_dispatch_hints_and_glyphs_from_one_binding() {
+    let mut keymap = TEST_MAP.clone();
+    assert!(keymap.remap(
+        TestAction::Confirm,
+        vec![KeyChord::ctrl(KeyCode::Char('c'))]
+    ));
+
+    assert_eq!(keymap.dispatch(KeyChord::plain(KeyCode::Enter)), None);
+    assert_eq!(
+        keymap.dispatch(KeyChord::ctrl(KeyCode::Char('c'))),
+        Some(TestAction::Confirm)
+    );
+    assert_eq!(keymap.glyph_for(TestAction::Confirm), "Ctrl-C");
+    assert!(matches!(
+        keymap.hint_spans().first(),
+        Some(HintSpan::Key("Ctrl-C"))
+    ));
+}
+
+#[test]
+fn disable_and_replace_mutate_the_same_resolved_table() {
+    let mut keymap = TEST_MAP.clone();
+    assert!(keymap.disable(TestAction::Cancel));
+    assert_eq!(keymap.binding_for(TestAction::Cancel), None);
+    assert_eq!(keymap.dispatch(KeyChord::plain(KeyCode::Esc)), None);
+
+    assert!(keymap.replace(
+        TestAction::Confirm,
+        KeyBinding::owned(
+            vec![KeyChord::plain(KeyCode::Char('y'))],
+            TestAction::Confirm,
+            Some("yes".to_owned()),
+            Visibility::Shown,
+            Some("Y".to_owned()),
+        )
+    ));
+    assert_eq!(keymap.glyph_for(TestAction::Confirm), "Y");
+}
+
+#[test]
+fn conflicts_report_order_while_dispatch_remains_first_binding_wins() {
+    let chord = KeyChord::plain(KeyCode::Enter);
+    let keymap = Keymap::from_owned(vec![
+        KeyBinding::owned(
+            vec![chord],
+            TestAction::Confirm,
+            None,
+            Visibility::Internal,
+            None,
+        ),
+        KeyBinding::owned(
+            vec![chord],
+            TestAction::Cancel,
+            None,
+            Visibility::Internal,
+            None,
+        ),
+    ]);
+
+    assert_eq!(keymap.dispatch(chord), Some(TestAction::Confirm));
+    assert_eq!(
+        keymap.conflicts(),
+        [Conflict {
+            first: &TestAction::Confirm,
+            second: &TestAction::Cancel,
+            chord,
+        }]
+    );
+}
+
+#[test]
+fn repeated_chords_emit_one_conflict_per_binding_pair_and_chord() {
+    let chord = KeyChord::plain(KeyCode::Enter);
+    let keymap = Keymap::from_owned(vec![
+        KeyBinding::owned(
+            vec![chord, chord],
+            TestAction::Confirm,
+            None,
+            Visibility::Internal,
+            None,
+        ),
+        KeyBinding::owned(
+            vec![chord],
+            TestAction::Cancel,
+            None,
+            Visibility::Internal,
+            None,
+        ),
+    ]);
+
+    assert_eq!(keymap.conflicts().len(), 1);
+}
+
+fn owned_test_map() -> Keymap<TestAction> {
+    Keymap::from_owned(
+        TEST_BINDINGS
+            .iter()
+            .map(|binding| {
+                KeyBinding::owned(
+                    binding.chords().to_vec(),
+                    *binding.action(),
+                    binding.hint().map(str::to_owned),
+                    binding.visibility(),
+                    binding.glyph().map(str::to_owned),
+                )
+            })
+            .collect(),
+    )
+}
+
+fn assert_complete_runtime_contract(mut keymap: Keymap<TestAction>) {
+    assert!(keymap.hint_spans_for_axes(ScrollAxes::none()).len() < keymap.hint_spans().len());
+
+    let remapped = KeyChord::ctrl(KeyCode::Char('c'));
+    assert!(keymap.remap(TestAction::Confirm, vec![remapped]));
+    assert_eq!(keymap.dispatch(KeyChord::plain(KeyCode::Enter)), None);
+    assert_eq!(keymap.dispatch(remapped), Some(TestAction::Confirm));
+    assert_eq!(keymap.glyph_for(TestAction::Confirm), "Ctrl-C");
+
+    assert!(keymap.replace(
+        TestAction::Cancel,
+        KeyBinding::owned(
+            vec![remapped],
+            TestAction::Cancel,
+            Some("cancel".to_owned()),
+            Visibility::Shown,
+            None,
+        ),
+    ));
+    assert_eq!(keymap.dispatch(remapped), Some(TestAction::Confirm));
+    assert_eq!(keymap.conflicts().len(), 1);
+
+    assert!(keymap.disable(TestAction::Cancel));
+    assert!(keymap.conflicts().is_empty());
+}
+
+#[test]
+fn borrowed_and_owned_maps_share_the_complete_runtime_contract() {
+    assert_complete_runtime_contract(TEST_MAP.clone());
+    assert_complete_runtime_contract(owned_test_map());
+}
+
+#[test]
+fn owned_axis_bindings_use_the_same_filtering_contract() {
+    let keymap = Keymap::from_owned(vec![KeyBinding::owned(
+        vec![KeyChord::plain(KeyCode::Up), KeyChord::plain(KeyCode::Down)],
+        TestAction::Navigate,
+        Some("navigate".to_owned()),
+        Visibility::Shown,
+        Some("↑↓".to_owned()),
+    )]);
+
+    assert!(keymap.hint_spans_for_axes(ScrollAxes::none()).is_empty());
+    assert!(
+        !keymap
+            .hint_spans_for_axes(ScrollAxes {
+                vertical: true,
+                horizontal: false,
+            })
+            .is_empty()
+    );
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_deserialization_produces_an_owned_runtime_map() {
+    let json = serde_json::to_string(&TEST_MAP).expect("serialize borrowed keymap");
+    let mut decoded: Keymap<TestAction> =
+        serde_json::from_str(&json).expect("deserialize owned keymap");
+
+    assert!(matches!(decoded.bindings, std::borrow::Cow::Owned(_)));
+    assert!(decoded.remap(
+        TestAction::Confirm,
+        vec![KeyChord::ctrl(KeyCode::Char('c'))]
+    ));
+    assert_eq!(
+        decoded.dispatch(KeyChord::ctrl(KeyCode::Char('c'))),
+        Some(TestAction::Confirm)
+    );
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_rejects_unknown_modifier_bits() {
+    let error = serde_json::from_str::<KeyModifiers>("8").expect_err("bit 3 is not a modifier");
+    assert!(error.to_string().contains("unknown key modifier bits"));
 }
 
 const TEST_BINDINGS: &[KeyBinding<TestAction>] = &[
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::Enter)],
-        action: TestAction::Confirm,
-        hint: Some("confirm"),
-        visibility: Visibility::Shown,
-        glyph: None,
-    },
-    KeyBinding {
-        chords: &[
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Enter)],
+        TestAction::Confirm,
+        Some("confirm"),
+        Visibility::Shown,
+        None,
+    ),
+    KeyBinding::borrowed(
+        &[
             KeyChord::plain(KeyCode::Esc),
             KeyChord::plain(KeyCode::Char('n')),
             KeyChord::plain(KeyCode::Char('N')),
         ],
-        action: TestAction::Cancel,
-        hint: Some("cancel"),
-        visibility: Visibility::Shown,
-        glyph: Some("N/Esc"),
-    },
-    KeyBinding {
-        chords: &[KeyChord::plain(KeyCode::Up), KeyChord::plain(KeyCode::Down)],
-        action: TestAction::Navigate,
-        hint: Some("navigate"),
-        visibility: Visibility::Shown,
-        glyph: Some("\u{2191}\u{2193}"),
-    },
-    KeyBinding {
-        chords: &[
+        TestAction::Cancel,
+        Some("cancel"),
+        Visibility::Shown,
+        Some("N/Esc"),
+    ),
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Up), KeyChord::plain(KeyCode::Down)],
+        TestAction::Navigate,
+        Some("navigate"),
+        Visibility::Shown,
+        Some("\u{2191}\u{2193}"),
+    ),
+    KeyBinding::borrowed(
+        &[
             KeyChord::plain(KeyCode::Char('k')),
             KeyChord::plain(KeyCode::Char('j')),
         ],
-        action: TestAction::HiddenVim,
-        hint: None,
-        visibility: Visibility::HiddenAlias,
-        glyph: None,
-    },
+        TestAction::HiddenVim,
+        None,
+        Visibility::HiddenAlias,
+        None,
+    ),
 ];
 
-static TEST_MAP: Keymap<TestAction> = Keymap::new(TEST_BINDINGS);
+static TEST_MAP: Keymap<TestAction> = Keymap::from_static(TEST_BINDINGS);
 
-const CTRL_BINDINGS: &[KeyBinding<TestAction>] = &[KeyBinding {
-    chords: &[KeyChord::ctrl(KeyCode::Char('x'))],
-    action: TestAction::Confirm,
-    hint: None,
-    visibility: Visibility::Internal,
-    glyph: None,
-}];
+const CTRL_BINDINGS: &[KeyBinding<TestAction>] = &[KeyBinding::borrowed(
+    &[KeyChord::ctrl(KeyCode::Char('x'))],
+    TestAction::Confirm,
+    None,
+    Visibility::Internal,
+    None,
+)];
 
-static CTRL_MAP: Keymap<TestAction> = Keymap::new(CTRL_BINDINGS);
+static CTRL_MAP: Keymap<TestAction> = Keymap::from_static(CTRL_BINDINGS);
 
 #[test]
 fn binding_tables_do_not_use_unknown_keys() {
     assert!(
         TEST_BINDINGS
             .iter()
-            .flat_map(|binding| binding.chords)
+            .flat_map(KeyBinding::chords)
             .all(|chord| chord.key != KeyCode::Unknown)
     );
 }
