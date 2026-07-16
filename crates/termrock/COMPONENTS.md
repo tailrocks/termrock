@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `SplitPane`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
+The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `SplitPane`, `StatusBar`, `Table`, `Tabs`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
 
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,
@@ -43,6 +43,15 @@ reserved proportional-scrollbar gutter. Stable-ID rows use the general
 navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
+
+`Table` consumes caller-owned borrowed columns, styled cells, and stable-ID
+rows. Fixed/minimum/fill policies resolve deterministic visible widths;
+rightmost columns collapse first at impossible widths without phantom gaps.
+`TableState` owns selection, hover, vertical offset, resolved geometry, and
+painted header/row regions. Keyboard and pointer methods emit typed row
+selection/activation or column sort requests. Callers own sorting execution,
+row ordering, data loading, wording, and effects. Rendering scans only the
+visible body window and reuses state-owned layout scratch buffers.
 
 `Picker` composes query editing, a caller-filtered stable-ID `List`,
 ID-sticky/index-fallback reconciliation, empty state, and semantic outcomes.

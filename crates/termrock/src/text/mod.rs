@@ -1,6 +1,7 @@
 //! Product-neutral terminal text measurement, sanitization, and windows.
 
 pub use crate::ansi_text::{strip_bytes, styled_spans};
+use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 /// True for any C0 / C1 control byte or DEL (`0x7f`).
@@ -46,7 +47,7 @@ pub fn take_display_cols(s: &str, max_cols: usize) -> String {
 }
 
 /// Substring of `s` covering display columns `[skip, skip + width)`,
-/// skipping terminal control bytes and preserving only complete characters.
+/// skipping terminal control bytes and preserving only complete grapheme clusters.
 #[must_use]
 pub fn display_cols_slice(s: &str, skip: usize, width: usize) -> String {
     let mut out = String::new();
@@ -59,16 +60,19 @@ pub fn display_cols_slice(s: &str, skip: usize, width: usize) -> String {
 /// `out` is cleared first. Control bytes and partial wide characters are
 /// omitted using the same rules as [`display_cols_slice`].
 pub fn display_cols_slice_into(s: &str, skip: usize, width: usize, out: &mut String) {
-    use unicode_width::UnicodeWidthChar;
     let mut col = 0usize;
     out.clear();
-    for ch in s.chars() {
-        if is_terminal_control_char(ch) {
-            continue;
-        }
-        let w = ch.width().unwrap_or(0);
+    for grapheme in s.graphemes(true) {
+        let sanitized = grapheme.chars().any(is_terminal_control_char).then(|| {
+            grapheme
+                .chars()
+                .filter(|ch| !is_terminal_control_char(*ch))
+                .collect::<String>()
+        });
+        let grapheme = sanitized.as_deref().unwrap_or(grapheme);
+        let w = UnicodeWidthStr::width(grapheme);
         if col >= skip && col + w <= skip + width {
-            out.push(ch);
+            out.push_str(grapheme);
         }
         col += w;
         if col >= skip + width {
@@ -254,6 +258,8 @@ mod tests {
             ("abcdef", 2, 3, "cde"),
             ("日本", 1, 1, ""),
             ("日本", 0, 2, "日"),
+            ("e\u{301}x", 0, 1, "e\u{301}"),
+            ("\u{7}\u{80}\u{7f}ab", 0, 2, "ab"),
             ("🧪x", 0, 0, ""),
             ("abc", 0, 20, "abc"),
             ("", 0, 4, ""),

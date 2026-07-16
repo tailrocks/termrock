@@ -1,8 +1,8 @@
 # Table design spike
 
-## Recommendation
+## Graduated recommendation
 
-Build `Table` as a new borrowed, stable-ID, stateful widget. Keep `DetailTable`
+`Table` now ships as a borrowed, stable-ID, stateful widget. Keep `DetailTable`
 as the ergonomic label/value surface with copy and hyperlink affordances.
 `Table` owns column layout, header and row rendering, selection, viewport state,
 painted hit geometry, and sort-request outcomes. The caller owns data, row
@@ -300,22 +300,22 @@ compatibility facade or duplicated rendering body.
 5. Cell capabilities: typed domain-neutral link/action projections with painted
    cell regions, designed from concrete requirements.
 
-## Build-plan stub
+## Graduation checklist
 
-- [ ] Add `widgets/table.rs` with the model, solver, canonical private builder,
+- [x] Add `widgets/table.rs` with the model, solver, canonical private builder,
   owned and borrowed `StatefulWidget` implementations.
-- [ ] Add stable-ID state reconciliation, full keyboard outcomes, hover/click,
+- [x] Add stable-ID state reconciliation, full keyboard outcomes, hover/click,
   body scrolling, header and row regions.
-- [ ] Add exact solver tests plus visible-column gap tests at zero/tiny widths.
-- [ ] Add Unicode alignment/truncation tests for `Line` spans and combining,
+- [x] Add exact solver tests plus visible-column gap tests at zero/tiny widths.
+- [x] Add Unicode alignment/truncation tests for `Line` spans and combining,
   CJK, emoji, control, and narrow-boundary cases.
-- [ ] Add basic, narrow, Unicode, disabled, empty, and sorted stories with
+- [x] Add basic, narrow, Unicode, disabled, empty, and sorted stories with
   deterministic previews.
-- [ ] Add API inventory, exact component contract row, docs page, catalog story
+- [x] Add API inventory, exact component contract row, docs page, catalog story
   coverage, and component inventory prose.
-- [ ] Add the 10,000-row warmed hot-path proof, scratch-buffer reuse checks,
+- [x] Add the 10,000-row warmed hot-path proof, scratch-buffer reuse checks,
   and allocation-free warm-render assertion.
-- [ ] Add the next numbered migration if implementation changes any existing
+- [x] No migration required: the implementation is additive and changes no
   public shared primitive; Table itself is additive.
-- [ ] Validate with `mise run gate`, direct gallery walkthrough, preview check,
+- [x] Validate with `mise run gate`, direct gallery walkthrough, preview check,
   package verification, and feature powerset.

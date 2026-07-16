@@ -16,6 +16,7 @@ mod progress;
 mod selection;
 mod split_pane;
 mod status_bar;
+mod table;
 mod tabs;
 mod text_input;
 mod toast;
@@ -43,6 +44,10 @@ pub use split_pane::{
     SplitSide,
 };
 pub use status_bar::{StatusBar, StatusBarState, StatusSlot};
+pub use table::{
+    CellAlignment, Column, ColumnWidth, SortDirection, Table, TableHeaderRegion, TableOutcome,
+    TableRow, TableRowRegion, TableState, resolve_widths,
+};
 pub use tabs::{TAB_GAP, Tab, TabCell, Tabs, TabsState, lay_out_tabs, tab_at_column};
 pub use text_input::{
     EditAction, TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation,

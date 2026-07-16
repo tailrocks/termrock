@@ -15,6 +15,7 @@
   "Progress": { "keyboard": "not-applicable", "mouse": "not-applicable", "focus": "not-applicable", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "SplitPane": { "keyboard": "covered", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "not-applicable", "narrowTerminal": "covered" },
   "StatusBar": { "keyboard": "not-applicable", "mouse": "covered", "focus": "not-applicable", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
+  "Table": { "keyboard": "covered", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "Tabs": { "keyboard": "caller-owned", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "TextInput": { "keyboard": "covered", "mouse": "caller-owned", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "Toast": { "keyboard": "not-applicable", "mouse": "not-applicable", "focus": "not-applicable", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },

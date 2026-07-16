@@ -51,6 +51,22 @@ let table = DetailTable::new(&rows, &theme).wrap(true);
 let mut state = DetailTableState::<&str>::default();
 let outcome = state.select_next(&rows);`,
   },
+  Table: {
+    description: 'A stable-ID columnar data view with deterministic widths, sorting requests, and visible-window rendering.',
+    primaryStory: 'table/basic',
+    usage: `use std::num::NonZeroU16;
+use ratatui_core::text::Line;
+use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState}};
+
+let theme = Theme::default();
+let columns = [Column { id: "name", title: Line::from("Name"), width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()), alignment: CellAlignment::Left, sortable: true, sort: None }];
+let cells = [Line::from("termrock")];
+let rows = [TableRow { id: "termrock", cells: &cells, enabled: true, emphasis: false, style: None }];
+let table = Table::new(&columns, &rows, &theme);
+let mut state = TableState::<&str, &str>::new(Some("termrock"));
+state.set_focused(true);
+let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
+  },
   Dialog: {
     description: 'A framed modal surface with semantic chrome and caller-owned content.',
     primaryStory: 'dialog/message',

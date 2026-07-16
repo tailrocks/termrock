@@ -12,7 +12,6 @@ mod json;
 mod knobs;
 mod stories;
 mod svg;
-mod table;
 
 use std::{ffi::OsStr, io, path::PathBuf};
 

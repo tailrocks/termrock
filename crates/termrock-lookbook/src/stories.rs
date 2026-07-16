@@ -3,6 +3,8 @@
 
 //! Product-neutral stories rendered through TermRock's public widget API.
 
+use std::num::NonZeroU16;
+
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
@@ -15,12 +17,13 @@ use termrock::{
     scroll::DialogScroll,
     style::Role,
     widgets::{
-        Action, ActionBar, ActionBarState, Anchor, Backdrop, ChoiceDialog, ChoiceDialogState,
-        DetailCapability, DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine,
-        DiffState, DiffView, Form, FormField, FormSection, FormState, Hint, HintBar, List, ListRow,
-        ListState, LogPane, LogPaneState, MessageDialog, Panel, PanelEmphasis, Picker, PickerState,
-        Progress, ProgressKind, RowRole, Severity, SplitDirection, SplitPane, SplitPaneState,
-        SplitRatio, StatusBar, StatusBarState, StatusSlot, Tab, Tabs, TabsState, TextInput,
+        Action, ActionBar, ActionBarState, Anchor, Backdrop, CellAlignment, ChoiceDialog,
+        ChoiceDialogState, Column, ColumnWidth, DetailCapability, DetailRow, DetailTable,
+        DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Form, FormField,
+        FormSection, FormState, Hint, HintBar, List, ListRow, ListState, LogPane, LogPaneState,
+        MessageDialog, Panel, PanelEmphasis, Picker, PickerState, Progress, ProgressKind, RowRole,
+        Severity, SortDirection, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
+        StatusBarState, StatusSlot, Tab, Table, TableRow, TableState, Tabs, TabsState, TextInput,
         TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
     },
 };
@@ -282,6 +285,60 @@ pub(crate) fn stories() -> Vec<Story> {
             detail_table,
         ),
         Story::new(
+            "table/basic",
+            "Data table",
+            "Table",
+            "Stable-ID columnar data with selection and headers.",
+            68,
+            8,
+            table_basic,
+        ),
+        Story::new(
+            "table/sorted",
+            "Sorted table",
+            "Table",
+            "Caller-owned descending sort projection.",
+            68,
+            8,
+            table_sorted,
+        ),
+        Story::new(
+            "table/narrow",
+            "Narrow table",
+            "Table",
+            "Deterministic rightmost-column collapse.",
+            20,
+            6,
+            table_narrow,
+        ),
+        Story::new(
+            "table/unicode",
+            "Unicode table",
+            "Table",
+            "Styled CJK and emoji cells clip at display boundaries.",
+            42,
+            6,
+            table_unicode,
+        ),
+        Story::new(
+            "table/disabled",
+            "Disabled table row",
+            "Table",
+            "Disabled rows remain visible but non-interactive.",
+            52,
+            6,
+            table_disabled,
+        ),
+        Story::new(
+            "table/empty",
+            "Empty table",
+            "Table",
+            "Header-only rendering with no domain empty-state wording.",
+            42,
+            3,
+            table_empty,
+        ),
+        Story::new(
             "status-bar/basic",
             "Status bar",
             "StatusBar",
@@ -442,9 +499,7 @@ pub(crate) fn stories() -> Vec<Story> {
 /// Interactive-gallery entries, including compile-proven design prototypes.
 /// Catalog generation deliberately uses [`stories`] instead.
 pub(crate) fn gallery_stories() -> Vec<Story> {
-    let mut entries = stories();
-    entries.push(crate::table::story());
-    entries
+    stories()
 }
 
 fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -919,6 +974,157 @@ fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         area,
         &mut state,
     );
+}
+
+#[derive(Clone, Copy)]
+enum TableVariant {
+    Basic,
+    Sorted,
+    Narrow,
+    Unicode,
+    Disabled,
+    Empty,
+}
+
+fn table_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Basic);
+}
+fn table_sorted(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Sorted);
+}
+fn table_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Narrow);
+}
+fn table_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Unicode);
+}
+fn table_disabled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Disabled);
+}
+fn table_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_table(frame, area, theme, TableVariant::Empty);
+}
+
+fn render_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme, variant: TableVariant) {
+    let sorted = matches!(variant, TableVariant::Sorted);
+    let columns = [
+        Column {
+            id: "pid",
+            title: Line::from("PID"),
+            width: ColumnWidth::Fixed(7),
+            alignment: CellAlignment::Right,
+            sortable: true,
+            sort: None,
+        },
+        Column {
+            id: "process",
+            title: Line::from("Process"),
+            width: ColumnWidth::Fill(NonZeroU16::new(2).unwrap()),
+            alignment: CellAlignment::Left,
+            sortable: true,
+            sort: None,
+        },
+        Column {
+            id: "region",
+            title: Line::from("Region"),
+            width: ColumnWidth::Min(10),
+            alignment: CellAlignment::Center,
+            sortable: false,
+            sort: None,
+        },
+        Column {
+            id: "cpu",
+            title: Line::from("CPU"),
+            width: ColumnWidth::Fixed(8),
+            alignment: CellAlignment::Right,
+            sortable: true,
+            sort: sorted.then_some(SortDirection::Descending),
+        },
+        Column {
+            id: "state",
+            title: Line::from("State"),
+            width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()),
+            alignment: CellAlignment::Center,
+            sortable: false,
+            sort: None,
+        },
+    ];
+    let cells = [
+        [
+            Line::from("101"),
+            Line::from(Span::styled("termrock", theme.style(Role::Accent))),
+            Line::from("東京🧪alpha"),
+            Line::from("82.4%"),
+            Line::from("run"),
+        ],
+        [
+            Line::from("208"),
+            Line::from("cargo-nextest"),
+            Line::from("eu-west"),
+            Line::from("31.0%"),
+            Line::from("run"),
+        ],
+        [
+            Line::from("317"),
+            Line::from("rust-analyzer"),
+            Line::from("local"),
+            Line::from("17.8%"),
+            Line::from("idle"),
+        ],
+        [
+            Line::from("422"),
+            Line::from("bun-docs"),
+            Line::from("us-east"),
+            Line::from("9.2%"),
+            Line::from("wait"),
+        ],
+        [
+            Line::from("509"),
+            Line::from("shell"),
+            Line::from("東京"),
+            Line::from("4.4%"),
+            Line::from("done"),
+        ],
+        [
+            Line::from("612"),
+            Line::from("indexer"),
+            Line::from("ap-south"),
+            Line::from("2.7%"),
+            Line::from("idle"),
+        ],
+        [
+            Line::from("734"),
+            Line::from("preview-worker"),
+            Line::from("eu-north"),
+            Line::from("1.8%"),
+            Line::from("run"),
+        ],
+    ];
+    let rows = cells
+        .iter()
+        .enumerate()
+        .map(|(index, cells)| TableRow {
+            id: index,
+            cells,
+            enabled: !(matches!(variant, TableVariant::Disabled) && index == 2),
+            emphasis: index == 0 && matches!(variant, TableVariant::Unicode),
+            style: None,
+        })
+        .collect::<Vec<_>>();
+    let visible = if matches!(variant, TableVariant::Empty) {
+        &rows[..0]
+    } else {
+        &rows
+    };
+    let mut state = TableState::new((!visible.is_empty()).then_some(
+        if matches!(variant, TableVariant::Disabled) {
+            1
+        } else {
+            3
+        },
+    ));
+    state.set_focused(true);
+    frame.render_stateful_widget(&Table::new(&columns, visible, theme), area, &mut state);
 }
 
 fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
