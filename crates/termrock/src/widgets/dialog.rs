@@ -19,6 +19,7 @@ use super::{
 };
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `Backdrop`.
 pub struct Backdrop {
     symbol: char,
     style: Style,
@@ -37,17 +38,20 @@ impl Default for Backdrop {
 
 impl Backdrop {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub fn new() -> Self {
         Self::default()
     }
 
     #[must_use]
+    /// Performs the `symbol` operation.
     pub const fn symbol(mut self, symbol: char) -> Self {
         self.symbol = symbol;
         self
     }
 
     #[must_use]
+    /// Performs the `style` operation.
     pub const fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
@@ -203,6 +207,7 @@ mod backdrop_tests {
 }
 
 #[derive(Debug, Clone)]
+/// Data carried by `Dialog`.
 pub struct Dialog<'a> {
     title: &'a str,
     body: Text<'a>,
@@ -213,6 +218,7 @@ pub struct Dialog<'a> {
 
 impl<'a> Dialog<'a> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(title: &'a str, body: Text<'a>, theme: &'a Theme) -> Self {
         Self {
             title,
@@ -224,12 +230,14 @@ impl<'a> Dialog<'a> {
     }
 
     #[must_use]
+    /// Performs the `style` operation.
     pub const fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
     }
 
     #[must_use]
+    /// Performs the `emphasis` operation.
     pub const fn emphasis(mut self, emphasis: PanelEmphasis) -> Self {
         self.emphasis = emphasis;
         self
@@ -255,8 +263,11 @@ impl Widget for Dialog<'_> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `ChoiceDialog`.
 pub struct ChoiceDialogState<Id> {
+    /// Documentation for `item`.
     pub focused: Option<Id>,
+    /// Documentation for `item`.
     pub regions: Vec<HitRegion<Id>>,
 }
 
@@ -271,6 +282,7 @@ impl<Id> Default for ChoiceDialogState<Id> {
 
 impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(focused: Option<Id>) -> Self {
         Self {
             focused,
@@ -278,6 +290,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         }
     }
 
+    /// Handles the `handle_key` interaction.
     pub fn handle_key(&mut self, actions: &[Action<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
@@ -291,10 +304,12 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         }
     }
 
+    /// Performs the `select_next` operation.
     pub fn select_next(&mut self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
         self.select_relative(actions, 1)
     }
 
+    /// Performs the `select_previous` operation.
     pub fn select_previous(&mut self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
         self.select_relative(actions, -1)
     }
@@ -321,6 +336,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     }
 
     #[must_use]
+    /// Performs the `activate_selected` operation.
     pub fn activate_selected(&self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
         self.focused
             .as_ref()
@@ -335,6 +351,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     }
 
     #[must_use]
+    /// Performs the `click` operation.
     pub fn click(&mut self, position: ratatui_core::layout::Position) -> Outcome<Id> {
         let Some(region) = self
             .regions
@@ -349,6 +366,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
 }
 
 #[derive(Debug, Clone)]
+/// Data carried by `ChoiceDialog`.
 pub struct ChoiceDialog<'a, Id> {
     dialog: Dialog<'a>,
     actions: &'a [Action<'a, Id>],
@@ -357,6 +375,7 @@ pub struct ChoiceDialog<'a, Id> {
 
 impl<'a, Id> ChoiceDialog<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(dialog: Dialog<'a>, actions: &'a [Action<'a, Id>]) -> Self {
         Self {
             dialog,
@@ -366,6 +385,7 @@ impl<'a, Id> ChoiceDialog<'a, Id> {
     }
 
     #[must_use]
+    /// Performs the `gap` operation.
     pub const fn gap(mut self, gap: &'a str) -> Self {
         self.gap = gap;
         self
@@ -410,6 +430,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for ChoiceDialog<'_, Id> {
 }
 
 #[derive(Debug, Clone)]
+/// Data carried by `MessageDialog`.
 pub struct MessageDialog<'a, Id> {
     dialog: Dialog<'a>,
     details: &'a [DetailRow<'a, Id>],
@@ -420,6 +441,7 @@ pub struct MessageDialog<'a, Id> {
 
 impl<'a, Id> MessageDialog<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(
         dialog: Dialog<'a>,
         details: &'a [DetailRow<'a, Id>],
@@ -435,12 +457,14 @@ impl<'a, Id> MessageDialog<'a, Id> {
     }
 
     #[must_use]
+    /// Performs the `label_width` operation.
     pub const fn label_width(mut self, label_width: u16) -> Self {
         self.label_width = label_width;
         self
     }
 
     #[must_use]
+    /// Performs the `wrap` operation.
     pub const fn wrap(mut self, wrap: bool) -> Self {
         self.wrap = wrap;
         self

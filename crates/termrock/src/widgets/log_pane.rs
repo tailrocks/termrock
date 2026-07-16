@@ -11,6 +11,7 @@ use crate::{
 use super::Viewport;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `LogPane`.
 pub struct LogPaneState {
     lines: Vec<Line<'static>>,
     tail: TailScroll,
@@ -27,6 +28,7 @@ impl Default for LogPaneState {
 
 impl LogPaneState {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new() -> Self {
         Self {
             lines: Vec::new(),
@@ -38,11 +40,13 @@ impl LogPaneState {
     }
 
     #[must_use]
+    /// Returns this value with `max_lines` configured.
     pub const fn with_max_lines(mut self, max_lines: usize) -> Self {
         self.max_lines = Some(max_lines);
         self
     }
 
+    /// Performs the `append` operation.
     pub fn append(&mut self, line: impl Into<Line<'static>>) {
         self.lines.push(line.into());
         if !self.follow {
@@ -57,6 +61,7 @@ impl LogPaneState {
         self.clamp_tail();
     }
 
+    /// Performs the `clear` operation.
     pub fn clear(&mut self) {
         self.lines.clear();
         self.tail = TailScroll::new(0);
@@ -64,25 +69,30 @@ impl LogPaneState {
     }
 
     #[must_use]
+    /// Performs the `lines` operation.
     pub fn lines(&self) -> &[Line<'static>] {
         &self.lines
     }
 
     #[must_use]
+    /// Performs the `len` operation.
     pub fn len(&self) -> usize {
         self.lines.len()
     }
 
     #[must_use]
+    /// Returns whether `empty`.
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
 
     #[must_use]
+    /// Returns whether `following`.
     pub const fn is_following(&self) -> bool {
         self.follow
     }
 
+    /// Handles the `handle_key` interaction.
     pub fn handle_key(&mut self, key: KeyEvent) -> Outcome<()> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
@@ -134,6 +144,7 @@ impl LogPaneState {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `LogPane`.
 pub struct LogPane<'a> {
     title: Option<&'a str>,
     theme: &'a Theme,
@@ -141,11 +152,13 @@ pub struct LogPane<'a> {
 
 impl<'a> LogPane<'a> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(theme: &'a Theme) -> Self {
         Self { title: None, theme }
     }
 
     #[must_use]
+    /// Performs the `title` operation.
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = Some(title);
         self

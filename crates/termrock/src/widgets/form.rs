@@ -20,18 +20,27 @@ const MIN_COLUMN_WIDTH: u16 = 30;
 
 #[derive(Debug, Clone)]
 #[non_exhaustive]
+/// Data carried by `FormField`.
 pub struct FormField<'a, Id> {
+    /// Documentation for `item`.
     pub id: Id,
+    /// Documentation for `item`.
     pub label: Line<'a>,
+    /// Documentation for `item`.
     pub value: Line<'a>,
+    /// Documentation for `item`.
     pub help: Option<Line<'a>>,
+    /// Documentation for `item`.
     pub error: Option<Line<'a>>,
+    /// Documentation for `item`.
     pub required: bool,
+    /// Documentation for `item`.
     pub enabled: bool,
 }
 
 impl<'a, Id> FormField<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(id: Id, label: Line<'a>, value: Line<'a>) -> Self {
         Self {
             id,
@@ -45,24 +54,28 @@ impl<'a, Id> FormField<'a, Id> {
     }
 
     #[must_use]
+    /// Performs the `help` operation.
     pub fn help(mut self, help: Line<'a>) -> Self {
         self.help = Some(help);
         self
     }
 
     #[must_use]
+    /// Performs the `error` operation.
     pub fn error(mut self, error: Line<'a>) -> Self {
         self.error = Some(error);
         self
     }
 
     #[must_use]
+    /// Performs the `required` operation.
     pub const fn required(mut self, required: bool) -> Self {
         self.required = required;
         self
     }
 
     #[must_use]
+    /// Performs the `enabled` operation.
     pub const fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
@@ -70,29 +83,43 @@ impl<'a, Id> FormField<'a, Id> {
 }
 
 #[derive(Debug, Clone)]
+/// Data carried by `FormSection`.
 pub struct FormSection<'a, Id> {
+    /// Documentation for `item`.
     pub title: Line<'a>,
+    /// Documentation for `item`.
     pub fields: &'a [FormField<'a, Id>],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `FormOutcome` choices.
 pub enum FormOutcome<Id> {
+    /// Selects the `Ignored` behavior.
     Ignored,
+    /// Selects the `FocusChanged` behavior.
     FocusChanged(Id),
+    /// Selects the `Activated` behavior.
     Activated(Id),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Data carried by `FormFieldRegion`.
 pub struct FormFieldRegion<Id> {
+    /// Documentation for `item`.
     pub id: Id,
+    /// Documentation for `item`.
     pub area: Rect,
+    /// Documentation for `item`.
     pub label: Option<Rect>,
+    /// Documentation for `item`.
     pub value: Option<Rect>,
+    /// Documentation for `item`.
     pub supporting: Option<Rect>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `Form`.
 pub struct FormState<Id> {
     focused: Option<Id>,
     hovered: Option<Id>,
@@ -127,6 +154,7 @@ impl<Id> Default for FormState<Id> {
 
 impl<Id> FormState<Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(focused: Option<Id>) -> Self {
         Self {
             focused,
@@ -144,54 +172,65 @@ impl<Id> FormState<Id> {
     }
 
     #[must_use]
+    /// Performs the `focused` operation.
     pub const fn focused(&self) -> Option<&Id> {
         self.focused.as_ref()
     }
 
     #[must_use]
+    /// Performs the `hovered` operation.
     pub const fn hovered(&self) -> Option<&Id> {
         self.hovered.as_ref()
     }
 
     #[must_use]
+    /// Returns whether `active`.
     pub const fn is_active(&self) -> bool {
         self.active
     }
 
+    /// Sets `active`.
     pub const fn set_active(&mut self, active: bool) {
         self.active = active;
     }
 
+    /// Performs the `focus` operation.
     pub fn focus(&mut self, focused: Option<Id>) {
         self.focused = focused;
         self.follow_focus = true;
     }
 
     #[must_use]
+    /// Performs the `offset` operation.
     pub const fn offset(&self) -> usize {
         self.offset
     }
 
     #[must_use]
+    /// Performs the `column_count` operation.
     pub const fn column_count(&self) -> u8 {
         self.column_count
     }
 
     #[must_use]
+    /// Performs the `content_height` operation.
     pub const fn content_height(&self) -> usize {
         self.content_height
     }
 
     #[must_use]
+    /// Performs the `regions` operation.
     pub fn regions(&self) -> &[HitRegion<Id>] {
         &self.regions
     }
 
     #[must_use]
+    /// Performs the `field_regions` operation.
     pub fn field_regions(&self) -> &[FormFieldRegion<Id>] {
         &self.field_regions
     }
 
+    /// Performs the `scroll_by` operation.
     pub fn scroll_by(&mut self, delta: isize, content_len: usize) -> bool {
         let before = self.offset;
         let maximum = max_offset(content_len, self.viewport_height);
@@ -206,6 +245,7 @@ impl<Id> FormState<Id> {
         before != self.offset
     }
 
+    /// Performs the `scroll_to_position` operation.
     pub fn scroll_to_position(&mut self, position: Position) -> bool {
         let Some(area) = self.scrollbar_region else {
             return false;
@@ -225,6 +265,7 @@ impl<Id> FormState<Id> {
 }
 
 impl<Id: Clone + PartialEq> FormState<Id> {
+    /// Handles the `handle_key` interaction.
     pub fn handle_key(
         &mut self,
         sections: &[FormSection<'_, Id>],
@@ -249,6 +290,7 @@ impl<Id: Clone + PartialEq> FormState<Id> {
         }
     }
 
+    /// Performs the `hover` operation.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
@@ -258,6 +300,7 @@ impl<Id: Clone + PartialEq> FormState<Id> {
         self.hovered.as_ref()
     }
 
+    /// Performs the `click` operation.
     pub fn click(&mut self, position: Position) -> FormOutcome<Id> {
         let Some(id) = self
             .regions
@@ -337,6 +380,7 @@ impl<Id: Clone + PartialEq> FormState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `Form`.
 pub struct Form<'a, Id> {
     sections: &'a [FormSection<'a, Id>],
     theme: &'a Theme,
@@ -344,6 +388,7 @@ pub struct Form<'a, Id> {
 
 impl<'a, Id> Form<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(sections: &'a [FormSection<'a, Id>], theme: &'a Theme) -> Self {
         Self { sections, theme }
     }

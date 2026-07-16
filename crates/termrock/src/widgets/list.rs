@@ -16,29 +16,47 @@ use super::Selection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `RowRole` choices.
 pub enum RowRole {
+    /// Selects the `Item` behavior.
     Item,
+    /// Selects the `Separator` behavior.
     Separator,
 }
 
 #[derive(Debug, Clone)]
+/// Data carried by `ListRow`.
 pub struct ListRow<'a, Id> {
+    /// Documentation for `item`.
     pub id: Id,
+    /// Documentation for `item`.
     pub label: Line<'a>,
+    /// Documentation for `item`.
     pub trailing: Option<Line<'a>>,
+    /// Documentation for `item`.
     pub role: RowRole,
+    /// Documentation for `item`.
     pub enabled: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `List`.
 pub struct ListState<Id> {
+    /// Documentation for `item`.
     pub selected: Option<Id>,
+    /// Documentation for `item`.
     pub hovered: Option<Id>,
+    /// Documentation for `item`.
     pub focused: bool,
+    /// Documentation for `item`.
     pub offset: usize,
+    /// Documentation for `item`.
     pub viewport_height: usize,
+    /// Documentation for `item`.
     pub regions: Vec<HitRegion<Id>>,
+    /// Documentation for `item`.
     pub selection: Option<Selection<Id>>,
+    /// Documentation for `item`.
     pub check_regions: Vec<HitRegion<Id>>,
 }
 
@@ -59,6 +77,7 @@ impl<Id> Default for ListState<Id> {
 
 impl<Id: Clone + PartialEq> ListState<Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(selected: Option<Id>) -> Self {
         Self {
             selected,
@@ -77,23 +96,28 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         self.selected = selected;
     }
 
+    /// Performs the `enable_multi_select` operation.
     pub fn enable_multi_select(&mut self) {
         self.selection.get_or_insert_with(Selection::new);
     }
 
+    /// Performs the `disable_multi_select` operation.
     pub fn disable_multi_select(&mut self) {
         self.selection = None;
     }
 
     #[must_use]
+    /// Performs the `selection` operation.
     pub const fn selection(&self) -> Option<&Selection<Id>> {
         self.selection.as_ref()
     }
 
+    /// Performs the `selection_mut` operation.
     pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
         self.selection.as_mut()
     }
 
+    /// Handles the `handle_key` interaction.
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
@@ -126,10 +150,12 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         Outcome::Changed
     }
 
+    /// Performs the `select_next` operation.
     pub fn select_next(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.select_relative(rows, 1)
     }
 
+    /// Performs the `select_previous` operation.
     pub fn select_previous(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.select_relative(rows, -1)
     }
@@ -196,6 +222,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     }
 
     #[must_use]
+    /// Performs the `activate` operation.
     pub fn activate(&self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.selected
             .as_ref()
@@ -206,6 +233,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             .map_or(Outcome::Ignored, |row| Outcome::Activated(row.id.clone()))
     }
 
+    /// Performs the `hover` operation.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
@@ -216,6 +244,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     }
 
     #[must_use]
+    /// Performs the `click` operation.
     pub fn click(&mut self, position: Position) -> Outcome<Id> {
         if let Some(id) = self
             .check_regions
@@ -240,6 +269,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         Outcome::Activated(region.id.clone())
     }
 
+    /// Performs the `scroll_by` operation.
     pub fn scroll_by(&mut self, delta: isize, rows_len: usize) -> bool {
         let before = self.offset;
         let max = max_offset(rows_len, self.viewport_height);
@@ -251,6 +281,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         before != self.offset
     }
 
+    /// Performs the `scroll_to_position` operation.
     pub fn scroll_to_position(&mut self, position: Position, rows_len: usize) -> bool {
         if self.viewport_height == 0 || self.regions.is_empty() {
             return false;
@@ -327,6 +358,33 @@ impl ListState<usize> {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Stable-ID list widget rendered with [`ListState`].
+///
+/// See the `list/selection` lookbook story for selection, metadata, and narrow
+/// terminal behavior.
+///
+/// # Examples
+///
+/// ```
+/// use ratatui_core::text::Line;
+/// use termrock::{
+///     Theme,
+///     input::{KeyCode, KeyEvent, KeyModifiers},
+///     interaction::Outcome,
+///     widgets::{List, ListRow, ListState, RowRole},
+/// };
+///
+/// let rows = [
+///     ListRow { id: "a", label: Line::from("Alpha"), trailing: None, role: RowRole::Item, enabled: true },
+///     ListRow { id: "b", label: Line::from("Beta"), trailing: None, role: RowRole::Item, enabled: true },
+/// ];
+/// let theme = Theme::default();
+/// let _widget = List::new(&rows, &theme);
+/// let mut state = ListState::new(Some("a"));
+/// let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+/// assert!(matches!(outcome, Outcome::Changed));
+/// assert_eq!(state.selected, Some("b"));
+/// ```
 pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
     theme: &'a Theme,
@@ -334,6 +392,7 @@ pub struct List<'a, Id> {
 
 impl<'a, Id> List<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(rows: &'a [ListRow<'a, Id>], theme: &'a Theme) -> Self {
         Self { rows, theme }
     }

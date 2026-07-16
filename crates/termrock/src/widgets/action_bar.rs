@@ -13,16 +13,24 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
+/// Data carried by `Action`.
 pub struct Action<'a, Id> {
+    /// Documentation for `item`.
     pub id: Id,
+    /// Documentation for `item`.
     pub label: &'a str,
+    /// Documentation for `item`.
     pub enabled: bool,
+    /// Documentation for `item`.
     pub style: Option<Style>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `ActionBar`.
 pub struct ActionBarState<Id> {
+    /// Documentation for `item`.
     pub focused: Option<Id>,
+    /// Documentation for `item`.
     pub regions: Vec<HitRegion<Id>>,
 }
 
@@ -36,6 +44,7 @@ impl<Id> Default for ActionBarState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `ActionBar`.
 pub struct ActionBar<'a, Id> {
     actions: &'a [Action<'a, Id>],
     gap: &'a str,
@@ -44,6 +53,7 @@ pub struct ActionBar<'a, Id> {
 
 impl<'a, Id> ActionBar<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(actions: &'a [Action<'a, Id>], theme: &'a Theme) -> Self {
         Self {
             actions,
@@ -53,6 +63,7 @@ impl<'a, Id> ActionBar<'a, Id> {
     }
 
     #[must_use]
+    /// Performs the `gap` operation.
     pub const fn gap(mut self, gap: &'a str) -> Self {
         self.gap = gap;
         self

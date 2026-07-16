@@ -19,42 +19,62 @@ const COPY_AFFORDANCE: &str = "  ⧉";
 const COPIED_AFFORDANCE: &str = "  ✓";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Available `DetailCapability` choices.
 pub enum DetailCapability {
+    /// Selects the `None` behavior.
     None,
+    /// Selects the `Copy` behavior.
     Copy,
+    /// Selects the `Link` behavior.
     Link,
+    /// Selects the `CopyAndLink` behavior.
     CopyAndLink,
 }
 
 impl DetailCapability {
     #[must_use]
+    /// Performs the `copyable` operation.
     pub const fn copyable(self) -> bool {
         matches!(self, Self::Copy | Self::CopyAndLink)
     }
 
     #[must_use]
+    /// Performs the `linkable` operation.
     pub const fn linkable(self) -> bool {
         matches!(self, Self::Link | Self::CopyAndLink)
     }
 }
 
 #[derive(Debug, Clone)]
+/// Data carried by `DetailRow`.
 pub struct DetailRow<'a, Id> {
+    /// Documentation for `item`.
     pub id: Id,
+    /// Documentation for `item`.
     pub label: &'a str,
+    /// Documentation for `item`.
     pub value: &'a str,
+    /// Documentation for `item`.
     pub href: Option<&'a str>,
+    /// Documentation for `item`.
     pub capability: DetailCapability,
+    /// Documentation for `item`.
     pub emphasis: bool,
+    /// Documentation for `item`.
     pub style: Option<Style>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `DetailTableOutcome` choices.
 pub enum DetailTableOutcome<Id> {
+    /// Selects the `Ignored` behavior.
     Ignored,
+    /// Selects the `Selected` behavior.
     Selected(Id),
+    /// Selects the `Copy` behavior.
     Copy(Id),
+    /// Selects the `ActivateLink` behavior.
     ActivateLink(Id),
 }
 
@@ -68,14 +88,23 @@ pub struct DetailRegion<Id> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Runtime state for `DetailTable`.
 pub struct DetailTableState<Id> {
+    /// Documentation for `item`.
     pub selected: Option<Id>,
+    /// Documentation for `item`.
     pub hovered: Option<Id>,
+    /// Documentation for `item`.
     pub copied: Option<Id>,
+    /// Documentation for `item`.
     pub scroll: DialogScroll,
+    /// Documentation for `item`.
     pub regions: Vec<DetailRegion<Id>>,
+    /// Documentation for `item`.
     pub content_width: usize,
+    /// Documentation for `item`.
     pub content_height: usize,
+    /// Documentation for `item`.
     pub viewport: Rect,
 }
 
@@ -95,6 +124,7 @@ impl<Id> Default for DetailTableState<Id> {
 }
 
 impl<Id: Clone + PartialEq> DetailTableState<Id> {
+    /// Handles the `handle_key` interaction.
     pub fn handle_key(
         &mut self,
         rows: &[DetailRow<'_, Id>],
@@ -111,10 +141,12 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
         }
     }
 
+    /// Performs the `select_next` operation.
     pub fn select_next(&mut self, rows: &[DetailRow<'_, Id>]) -> DetailTableOutcome<Id> {
         self.select_relative(rows, 1)
     }
 
+    /// Performs the `select_previous` operation.
     pub fn select_previous(&mut self, rows: &[DetailRow<'_, Id>]) -> DetailTableOutcome<Id> {
         self.select_relative(rows, -1)
     }
@@ -143,6 +175,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
         DetailTableOutcome::Selected(id)
     }
 
+    /// Performs the `hover` operation.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
@@ -153,6 +186,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
     }
 
     #[must_use]
+    /// Performs the `click` operation.
     pub fn click(&mut self, position: Position) -> DetailTableOutcome<Id> {
         let Some(region) = self
             .regions
@@ -173,6 +207,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
     }
 
     #[must_use]
+    /// Performs the `click_link` operation.
     pub fn click_link(&mut self, position: Position) -> DetailTableOutcome<Id> {
         let Some(region) = self
             .regions
@@ -186,10 +221,12 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
         DetailTableOutcome::ActivateLink(id)
     }
 
+    /// Performs the `mark_copied` operation.
     pub fn mark_copied(&mut self, id: Option<Id>) {
         self.copied = id;
     }
 
+    /// Performs the `clamp_scroll` operation.
     pub fn clamp_scroll(&mut self) {
         self.scroll.scroll_x = effective_offset(
             self.content_width,
@@ -204,6 +241,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
     }
 
     #[must_use]
+    /// Performs the `activate_selected` operation.
     pub fn activate_selected(&self, rows: &[DetailRow<'_, Id>]) -> DetailTableOutcome<Id> {
         let Some(selected) = self.selected.as_ref() else {
             return DetailTableOutcome::Ignored;
@@ -222,6 +260,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `DetailTable`.
 pub struct DetailTable<'a, Id> {
     rows: &'a [DetailRow<'a, Id>],
     /// Zero derives the label width from the borrowed rows.
@@ -233,6 +272,7 @@ pub struct DetailTable<'a, Id> {
 
 impl<'a, Id> DetailTable<'a, Id> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(rows: &'a [DetailRow<'a, Id>], theme: &'a Theme) -> Self {
         Self {
             rows,
@@ -243,12 +283,14 @@ impl<'a, Id> DetailTable<'a, Id> {
     }
 
     #[must_use]
+    /// Performs the `label_width` operation.
     pub const fn label_width(mut self, label_width: u16) -> Self {
         self.label_width = label_width;
         self
     }
 
     #[must_use]
+    /// Performs the `wrap` operation.
     pub const fn wrap(mut self, wrap: bool) -> Self {
         self.wrap = wrap;
         self
@@ -257,6 +299,7 @@ impl<'a, Id> DetailTable<'a, Id> {
 
 impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
     #[must_use]
+    /// Performs the `hyperlink_regions` operation.
     pub fn hyperlink_regions<'a>(
         &'a self,
         state: &'a DetailTableState<Id>,

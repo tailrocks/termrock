@@ -12,11 +12,17 @@ use unicode_width::UnicodeWidthStr;
 /// One footer-hint span shared by terminal surfaces.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HintSpan<'a> {
+    /// Selects the `Key` behavior.
     Key(&'a str),
+    /// Selects the `DynKey` behavior.
     DynKey(String),
+    /// Selects the `Text` behavior.
     Text(&'a str),
+    /// Selects the `Dyn` behavior.
     Dyn(String),
+    /// Selects the `Sep` behavior.
     Sep,
+    /// Selects the `GroupSep` behavior.
     GroupSep,
 }
 
@@ -41,14 +47,20 @@ pub fn hint_row_cols(spans: &[HintSpan<'_>]) -> usize {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `Hint`.
 pub struct Hint<'a> {
+    /// Documentation for `item`.
     pub chord: &'a str,
+    /// Documentation for `item`.
     pub label: &'a str,
+    /// Documentation for `item`.
     pub priority: u8,
+    /// Documentation for `item`.
     pub visible: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Data carried by `HintBar`.
 pub struct HintBar<'a> {
     hints: &'a [Hint<'a>],
     separator: &'a str,
@@ -57,6 +69,7 @@ pub struct HintBar<'a> {
 
 impl<'a> HintBar<'a> {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(hints: &'a [Hint<'a>], theme: &'a Theme) -> Self {
         Self {
             hints,
@@ -66,6 +79,7 @@ impl<'a> HintBar<'a> {
     }
 
     #[must_use]
+    /// Performs the `separator` operation.
     pub const fn separator(mut self, separator: &'a str) -> Self {
         self.separator = separator;
         self
