@@ -395,6 +395,23 @@ mod tests {
     }
 
     #[test]
+    fn bounded_history_compacts_in_batches_instead_of_every_append() {
+        let mut state = LogPaneState::new();
+        for _ in 0..=DEFAULT_LOG_HISTORY_LINES {
+            state.append("line");
+        }
+        assert_eq!(state.history_start, 1);
+        assert_eq!(state.lines.len(), DEFAULT_LOG_HISTORY_LINES + 1);
+
+        for _ in 1..1_024 {
+            state.append("line");
+        }
+        assert_eq!(state.history_start, 0);
+        assert_eq!(state.lines.len(), DEFAULT_LOG_HISTORY_LINES);
+        assert_eq!(state.len(), DEFAULT_LOG_HISTORY_LINES);
+    }
+
+    #[test]
     fn wheel_home_and_follow_cover_the_full_scrollback() {
         let mut state = LogPaneState::new();
         state.viewport_height = 2;

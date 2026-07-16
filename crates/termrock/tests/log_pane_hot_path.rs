@@ -1,11 +1,6 @@
 //! Integration coverage for the log-pane rendering hot path.
 
-use std::{
-    alloc::System,
-    hint::black_box,
-    sync::Mutex,
-    time::{Duration, Instant},
-};
+use std::{alloc::System, hint::black_box, sync::Mutex};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
@@ -68,11 +63,9 @@ fn sustained_bounded_ingestion_is_amortized() {
     }
 
     let allocations = Region::new(GLOBAL);
-    let started = Instant::now();
     for _ in 0..APPENDS {
         state.append(black_box("streamed log line"));
     }
-    let elapsed = started.elapsed();
     let change = allocations.change();
 
     assert_eq!(state.len(), INITIAL_LINES);
@@ -80,11 +73,7 @@ fn sustained_bounded_ingestion_is_amortized() {
         change.allocations < APPENDS * 3,
         "bounded ingestion allocated excessively: {change:?}"
     );
-    assert!(
-        elapsed < Duration::from_secs(1),
-        "bounded ingestion must not shift the full history per append: {elapsed:?}"
-    );
     eprintln!(
-        "log-pane ingest hot path: {APPENDS} appends into {INITIAL_LINES}-line history, {elapsed:?}, {change:?}"
+        "log-pane ingest hot path: {APPENDS} appends into {INITIAL_LINES}-line history, {change:?}"
     );
 }

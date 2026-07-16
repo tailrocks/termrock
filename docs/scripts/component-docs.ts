@@ -115,7 +115,8 @@ let outcome = state.select_next(&rows);`,
   LogPane: {
     description: 'A bounded, scrollable log buffer with freeze-on-scroll and tail following.',
     primaryStory: 'log-pane/follow',
-    usage: `use termrock::{
+    usage: `use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use termrock::{
   Theme,
   ansi_text::line_from_ansi,
   style::Role,
@@ -126,7 +127,14 @@ let theme = Theme::default();
 let pane = LogPane::new(&theme).title("Build");
 let mut state = LogPaneState::new().with_max_lines(1_000);
 state.append(line_from_ansi("\\u{1b}[32mready\\u{1b}[0m", theme.style(Role::Text)));
-state.scroll_by(-1);
+let area = Rect::new(0, 0, 80, 24);
+let mut buffer = Buffer::empty(area);
+(&pane).render(area, &mut buffer, &mut state);
+
+// Wheel navigation uses geometry recorded by render. Oldest navigation can
+// also be requested before first render and resolves when geometry is known.
+let changed = state.scroll_by(-1);
+state.scroll_to_oldest();
 state.follow();
 
 // Unbounded retention is an explicit opt-in when the caller owns the policy.
