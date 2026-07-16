@@ -3744,6 +3744,51 @@ pub unsafe fn termrock::widgets::TableOutcome<RowId, ColumnId>::clone_to_uninit(
 impl<T> core::convert::From<T> for termrock::widgets::TableOutcome<RowId, ColumnId>
 pub fn termrock::widgets::TableOutcome<RowId, ColumnId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TableOutcome<RowId, ColumnId>
+#[non_exhaustive] pub enum termrock::widgets::TextAreaOutcome
+pub termrock::widgets::TextAreaOutcome::Cancelled
+pub termrock::widgets::TextAreaOutcome::Changed
+pub termrock::widgets::TextAreaOutcome::Ignored
+impl core::clone::Clone for termrock::widgets::TextAreaOutcome
+pub fn termrock::widgets::TextAreaOutcome::clone(&self) -> termrock::widgets::TextAreaOutcome
+impl core::cmp::Eq for termrock::widgets::TextAreaOutcome
+impl core::cmp::PartialEq for termrock::widgets::TextAreaOutcome
+pub fn termrock::widgets::TextAreaOutcome::eq(&self, &termrock::widgets::TextAreaOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::TextAreaOutcome
+pub fn termrock::widgets::TextAreaOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::TextAreaOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::TextAreaOutcome
+impl core::marker::Freeze for termrock::widgets::TextAreaOutcome
+impl core::marker::Send for termrock::widgets::TextAreaOutcome
+impl core::marker::Sync for termrock::widgets::TextAreaOutcome
+impl core::marker::Unpin for termrock::widgets::TextAreaOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::TextAreaOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TextAreaOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TextAreaOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TextAreaOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TextAreaOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TextAreaOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::TextAreaOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TextAreaOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::TextAreaOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::TextAreaOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TextAreaOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TextAreaOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TextAreaOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TextAreaOutcome where T: core::clone::Clone
+pub type termrock::widgets::TextAreaOutcome::Owned = T
+pub fn termrock::widgets::TextAreaOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::TextAreaOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TextAreaOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TextAreaOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TextAreaOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TextAreaOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TextAreaOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TextAreaOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TextAreaOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TextAreaOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TextAreaOutcome
+pub fn termrock::widgets::TextAreaOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TextAreaOutcome
 #[non_exhaustive] pub enum termrock::widgets::TextInputOutcome
 pub termrock::widgets::TextInputOutcome::Cancelled
 pub termrock::widgets::TextInputOutcome::Changed
@@ -6290,6 +6335,156 @@ pub unsafe fn termrock::widgets::TabsState<Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::TabsState<Id>
 pub fn termrock::widgets::TabsState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TabsState<Id>
+pub struct termrock::widgets::TextArea<'a>
+impl<'a> termrock::widgets::TextArea<'a>
+pub const fn termrock::widgets::TextArea<'a>::new(&'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::TextArea<'a>::placeholder(self, &'a str) -> Self
+pub const fn termrock::widgets::TextArea<'a>::title(self, &'a str) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::TextArea<'_>
+pub type &termrock::widgets::TextArea<'_>::State = termrock::widgets::TextAreaState
+pub fn &termrock::widgets::TextArea<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::TextArea<'_>
+pub type termrock::widgets::TextArea<'_>::State = termrock::widgets::TextAreaState
+pub fn termrock::widgets::TextArea<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::TextArea<'a>
+pub fn termrock::widgets::TextArea<'a>::clone(&self) -> termrock::widgets::TextArea<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::TextArea<'a>
+pub fn termrock::widgets::TextArea<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::TextArea<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::TextArea<'a>
+impl<'a> core::marker::Send for termrock::widgets::TextArea<'a>
+impl<'a> core::marker::Sync for termrock::widgets::TextArea<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TextArea<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TextArea<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TextArea<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TextArea<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::TextArea<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TextArea<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TextArea<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TextArea<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TextArea<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TextArea<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TextArea<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TextArea<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TextArea<'a> where T: core::clone::Clone
+pub type termrock::widgets::TextArea<'a>::Owned = T
+pub fn termrock::widgets::TextArea<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TextArea<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TextArea<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TextArea<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TextArea<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TextArea<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TextArea<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TextArea<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TextArea<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TextArea<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TextArea<'a>
+pub fn termrock::widgets::TextArea<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TextArea<'a>
+pub struct termrock::widgets::TextAreaState
+impl termrock::widgets::TextAreaState
+pub const fn termrock::widgets::TextAreaState::cursor(&self) -> termrock::widgets::TextCursor
+pub fn termrock::widgets::TextAreaState::handle_event(&mut self, termrock::input::Event) -> termrock::widgets::TextAreaOutcome
+pub fn termrock::widgets::TextAreaState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::TextAreaOutcome
+pub fn termrock::widgets::TextAreaState::insert_text(&mut self, &str) -> termrock::widgets::TextAreaOutcome
+pub const fn termrock::widgets::TextAreaState::is_focused(&self) -> bool
+pub fn termrock::widgets::TextAreaState::lines(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &str>
+pub fn termrock::widgets::TextAreaState::new(impl core::convert::AsRef<str>) -> Self
+pub const fn termrock::widgets::TextAreaState::scroll(&self) -> &termrock::scroll::DialogScroll
+pub fn termrock::widgets::TextAreaState::scroll_by(&mut self, isize, isize) -> bool
+pub fn termrock::widgets::TextAreaState::scroll_to(&mut self, ratatui_core::layout::position::Position) -> bool
+pub fn termrock::widgets::TextAreaState::set_cursor(&mut self, termrock::widgets::TextCursor) -> bool
+pub const fn termrock::widgets::TextAreaState::set_focused(&mut self, bool)
+pub fn termrock::widgets::TextAreaState::set_text(&mut self, &str)
+pub fn termrock::widgets::TextAreaState::text(&self) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::TextAreaState
+pub fn termrock::widgets::TextAreaState::clone(&self) -> termrock::widgets::TextAreaState
+impl core::cmp::Eq for termrock::widgets::TextAreaState
+impl core::cmp::PartialEq for termrock::widgets::TextAreaState
+pub fn termrock::widgets::TextAreaState::eq(&self, &termrock::widgets::TextAreaState) -> bool
+impl core::default::Default for termrock::widgets::TextAreaState
+pub fn termrock::widgets::TextAreaState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::TextAreaState
+pub fn termrock::widgets::TextAreaState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::TextAreaState
+impl core::marker::Freeze for termrock::widgets::TextAreaState
+impl core::marker::Send for termrock::widgets::TextAreaState
+impl core::marker::Sync for termrock::widgets::TextAreaState
+impl core::marker::Unpin for termrock::widgets::TextAreaState
+impl core::marker::UnsafeUnpin for termrock::widgets::TextAreaState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TextAreaState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TextAreaState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TextAreaState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TextAreaState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TextAreaState where U: core::convert::From<T>
+pub fn termrock::widgets::TextAreaState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TextAreaState where U: core::convert::Into<T>
+pub type termrock::widgets::TextAreaState::Error = core::convert::Infallible
+pub fn termrock::widgets::TextAreaState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TextAreaState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TextAreaState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TextAreaState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TextAreaState where T: core::clone::Clone
+pub type termrock::widgets::TextAreaState::Owned = T
+pub fn termrock::widgets::TextAreaState::clone_into(&self, &mut T)
+pub fn termrock::widgets::TextAreaState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TextAreaState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TextAreaState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TextAreaState where T: ?core::marker::Sized
+pub fn termrock::widgets::TextAreaState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TextAreaState where T: ?core::marker::Sized
+pub fn termrock::widgets::TextAreaState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TextAreaState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TextAreaState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TextAreaState
+pub fn termrock::widgets::TextAreaState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TextAreaState
+pub struct termrock::widgets::TextCursor
+pub termrock::widgets::TextCursor::byte: usize
+pub termrock::widgets::TextCursor::line: usize
+impl core::clone::Clone for termrock::widgets::TextCursor
+pub fn termrock::widgets::TextCursor::clone(&self) -> termrock::widgets::TextCursor
+impl core::cmp::Eq for termrock::widgets::TextCursor
+impl core::cmp::PartialEq for termrock::widgets::TextCursor
+pub fn termrock::widgets::TextCursor::eq(&self, &termrock::widgets::TextCursor) -> bool
+impl core::default::Default for termrock::widgets::TextCursor
+pub fn termrock::widgets::TextCursor::default() -> termrock::widgets::TextCursor
+impl core::fmt::Debug for termrock::widgets::TextCursor
+pub fn termrock::widgets::TextCursor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::TextCursor
+impl core::marker::StructuralPartialEq for termrock::widgets::TextCursor
+impl core::marker::Freeze for termrock::widgets::TextCursor
+impl core::marker::Send for termrock::widgets::TextCursor
+impl core::marker::Sync for termrock::widgets::TextCursor
+impl core::marker::Unpin for termrock::widgets::TextCursor
+impl core::marker::UnsafeUnpin for termrock::widgets::TextCursor
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TextCursor
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TextCursor
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TextCursor where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TextCursor::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TextCursor where U: core::convert::From<T>
+pub fn termrock::widgets::TextCursor::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TextCursor where U: core::convert::Into<T>
+pub type termrock::widgets::TextCursor::Error = core::convert::Infallible
+pub fn termrock::widgets::TextCursor::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TextCursor where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TextCursor::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TextCursor::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TextCursor where T: core::clone::Clone
+pub type termrock::widgets::TextCursor::Owned = T
+pub fn termrock::widgets::TextCursor::clone_into(&self, &mut T)
+pub fn termrock::widgets::TextCursor::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TextCursor where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TextCursor::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TextCursor where T: ?core::marker::Sized
+pub fn termrock::widgets::TextCursor::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TextCursor where T: ?core::marker::Sized
+pub fn termrock::widgets::TextCursor::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TextCursor where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TextCursor::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TextCursor
+pub fn termrock::widgets::TextCursor::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TextCursor
 pub struct termrock::widgets::TextInput<'a>
 impl<'a> termrock::widgets::TextInput<'a>
 pub const fn termrock::widgets::TextInput<'a>::label(&self) -> &'a str

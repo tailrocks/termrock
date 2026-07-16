@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `SplitPane`, `StatusBar`, `Table`, `Tabs`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
+The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `SplitPane`, `StatusBar`, `Table`, `Tabs`, `TextArea`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
 
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,
@@ -52,6 +52,13 @@ painted header/row regions. Keyboard and pointer methods emit typed row
 selection/activation or column sort requests. Callers own sorting execution,
 row ordering, data loading, wording, and effects. Rendering scans only the
 visible body window and reuses state-owned layout scratch buffers.
+
+`TextArea` owns a normalized nonempty line buffer, grapheme-boundary cursor,
+remembered vertical goal column, and two-axis `DialogScroll`. Enter inserts a
+newline; consumer keymaps retain submission policy. Paste normalizes CRLF, LF,
+and CR, while rendering slices only visible logical lines and uses semantic
+panel focus plus a non-color cursor cell. Callers retain validation, effects,
+syntax policy, persistence, and submission.
 
 `Picker` composes query editing, a caller-filtered stable-ID `List`,
 ID-sticky/index-fallback reconciliation, empty state, and semantic outcomes.

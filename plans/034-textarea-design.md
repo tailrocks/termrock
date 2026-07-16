@@ -1,18 +1,19 @@
-# TextArea design spike
+# TextArea graduated design
 
 ## Recommendation
 
-Build `TextArea` on an owned `Vec<String>` line buffer. Extract private,
+`TextArea` now uses an owned `Vec<String>` line buffer. Private,
 allocation-free single-line grapheme operations into `widgets/edit_core.rs` and
 make both `TextInputState` and `TextAreaState` use them. Keep line joining,
 vertical goal-column motion, and two-axis viewport ownership in TextArea only.
 This creates one implementation home without forcing a multi-line state model
 onto TextInput.
 
-The lookbook-local, test-only prototype proves 34 cursor/edit cases. It owns a
+The former lookbook-local prototype graduated into the public widget and was
+deleted. The production table proves 34 cursor/edit cases. State owns a
 nonempty line vector, a `(line, byte)` cursor, and a remembered display-column
-goal. Every mutation case asserts buffer and cursor together. No TermRock public
-surface changed.
+goal. Every mutation case asserts buffer and cursor together. Public API,
+catalog, documentation, migration, and hot-path evidence ship together.
 
 ## Drift
 
@@ -249,26 +250,26 @@ rope positions, or UI commands into the buffer core.
 
 ## Build-plan stub
 
-- [ ] Extract private `edit_core` and keep every existing TextInput test
+- [x] Extract private `edit_core` and keep every existing TextInput test
   unrelated to boundary repair byte-for-byte unchanged and green; add the
   combining/ZWJ regression, fix it, document the breaking correction, and
   migrate consumers.
-- [ ] Add TextArea model/state/outcomes, normalized line parsing, shared-core
+- [x] Add TextArea model/state/outcomes, normalized line parsing, shared-core
   edits, line split/join, goal-column motion, page motion, and cursor setters.
-- [ ] Add state-only focus, keyboard handling, two-axis reveal/clamp, painted
+- [x] Add state-only focus, keyboard handling, two-axis reveal/clamp, painted
   viewport/scrollbar geometry, state-owned wheel/drag commands, and
   owned/borrowed `StatefulWidget` implementations.
-- [ ] Route Plan-035 `Event::Paste(String)` through normalized multi-line
+- [x] Route Plan-035 `Event::Paste(String)` through normalized multi-line
   `insert_text`; cover CRLF/LF/CR and grapheme-boundary repair.
-- [ ] Add at least the prototype cursor table plus parsing, control-input,
+- [x] Add at least the prototype cursor table plus parsing, control-input,
   tiny-area, viewport, and invalid external-cursor tests.
-- [ ] Add basic, narrow, Unicode/combining/wide, empty, and scrolled stories
+- [x] Add basic, narrow, Unicode/combining/wide, empty, and scrolled stories
   with deterministic previews and interaction support.
-- [ ] Add API inventory, exact contract matrix row, component page, inventory
+- [x] Add API inventory, exact contract matrix row, component page, inventory
   prose, and catalog coverage.
-- [ ] Add inverse-ready delta tests, visible-window hot-path proof, cached-width
+- [x] Add inverse-ready delta tests, visible-window hot-path proof, cached-width
   invalidation tests, and allocation-free warm render with no document clone.
-- [ ] Add the next migration for any TextInput public behavior/API change; an
+- [x] Add the next migration for any TextInput public behavior/API change; an
   additive TextArea alone needs none.
-- [ ] Run `mise run gate`, TextInput regression tests, direct gallery
+- [x] Run `mise run gate`, TextInput regression tests, direct gallery
   walkthrough, preview check, feature powerset, and package verification.

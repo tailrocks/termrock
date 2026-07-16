@@ -7,13 +7,14 @@ use ratatui::{
 };
 use termrock::{
     Theme,
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::Outcome,
     widgets::{
         Anchor, ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListState,
         LogPane, LogPaneState, Picker, PickerOutcome, PickerState, Severity, SplitDirection,
-        SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, TextInput, TextInputOutcome,
-        TextInputState, Toast, Tree, TreeNode, TreeOutcome, TreeState,
+        SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, TextArea, TextAreaOutcome,
+        TextAreaState, TextInput, TextInputOutcome, TextInputState, Toast, Tree, TreeNode,
+        TreeOutcome, TreeState,
     },
 };
 
@@ -93,6 +94,48 @@ impl StoryInteraction for StaticStory {
     }
     fn set_theme(&mut self, theme: Theme) {
         self.theme = theme;
+    }
+}
+
+pub(crate) struct TextAreaInteractor {
+    state: TextAreaState,
+    theme: Theme,
+}
+
+impl TextAreaInteractor {
+    pub(crate) fn new() -> Self {
+        let mut state = TextAreaState::new("First line\nSecond line");
+        state.set_focused(true);
+        Self {
+            state,
+            theme: Theme::default(),
+        }
+    }
+}
+
+impl StoryInteraction for TextAreaInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        frame.render_stateful_widget(
+            &TextArea::new(&self.theme).title("Compose"),
+            area,
+            &mut self.state,
+        );
+    }
+    fn handle_key(&mut self, key: KeyEvent) -> bool {
+        !matches!(self.state.handle_key(key), TextAreaOutcome::Ignored)
+    }
+    fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
+        preview_area.contains(mouse.position)
+            && !matches!(
+                self.state.handle_event(Event::Mouse(mouse)),
+                TextAreaOutcome::Ignored
+            )
+    }
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
+    }
+    fn captures_text_input(&self) -> bool {
+        true
     }
 }
 

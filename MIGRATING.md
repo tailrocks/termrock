@@ -40,6 +40,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0024 | `v0.11.0` | [Closure runner and immutable frame time](migrations/0024-v0.11.0-closure-runner-and-frame-time.md) |
 | 0025 | `v0.11.0` | [Runtime-configurable keymaps](migrations/0025-v0.11.0-runtime-configurable-keymaps.md) |
 | 0026 | `v0.11.0` | [Scoped per-frame focus ring](migrations/0026-v0.11.0-scoped-focus-ring.md) |
+| 0027 | `v0.11.0` | [TextInput insertion boundary repair](migrations/0027-v0.11.0-text-input-boundary-repair.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

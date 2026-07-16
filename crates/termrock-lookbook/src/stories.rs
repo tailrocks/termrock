@@ -23,14 +23,16 @@ use termrock::{
         FormSection, FormState, Hint, HintBar, List, ListRow, ListState, LogPane, LogPaneState,
         MessageDialog, Panel, PanelEmphasis, Picker, PickerState, Progress, ProgressKind, RowRole,
         Severity, SortDirection, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
-        StatusBarState, StatusSlot, Tab, Table, TableRow, TableState, Tabs, TabsState, TextInput,
-        TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
+        StatusBarState, StatusSlot, Tab, Table, TableRow, TableState, Tabs, TabsState, TextArea,
+        TextAreaState, TextCursor, TextInput, TextInputState, Toast, Tree, TreeNode,
+        TreeNodeStatus, TreeState, Validation, Viewport,
     },
 };
 
 use crate::interactors::{
     ChoiceDialogInteractor, FormInteractor, ListInteractor, LogPaneInteractor, PickerInteractor,
-    SplitPaneInteractor, StaticStory, StoryInteraction, ToastInteractor, TreeInteractor,
+    SplitPaneInteractor, StaticStory, StoryInteraction, TextAreaInteractor, ToastInteractor,
+    TreeInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
@@ -121,6 +123,10 @@ fn log_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 
 fn toast_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(ToastInteractor::new())
+}
+
+fn text_area_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TextAreaInteractor::new())
 }
 
 pub(crate) fn stories() -> Vec<Story> {
@@ -337,6 +343,52 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             3,
             table_empty,
+        ),
+        Story::new(
+            "text-area/basic",
+            "Text area",
+            "TextArea",
+            "Multi-line editing with caller-owned submission policy.",
+            52,
+            9,
+            text_area_basic,
+        )
+        .with_interactor(text_area_interactor),
+        Story::new(
+            "text-area/narrow",
+            "Narrow text area",
+            "TextArea",
+            "Horizontal viewport clips only complete graphemes.",
+            18,
+            7,
+            text_area_narrow,
+        ),
+        Story::new(
+            "text-area/unicode",
+            "Unicode text area",
+            "TextArea",
+            "Combining, CJK, emoji, and remembered goal-column content.",
+            38,
+            8,
+            text_area_unicode,
+        ),
+        Story::new(
+            "text-area/empty",
+            "Empty text area",
+            "TextArea",
+            "Product-neutral placeholder in an empty document.",
+            38,
+            6,
+            text_area_empty,
+        ),
+        Story::new(
+            "text-area/scrolled",
+            "Scrolled text area",
+            "TextArea",
+            "Two-axis cursor-follow viewport over logical lines.",
+            34,
+            7,
+            text_area_scrolled,
         ),
         Story::new(
             "status-bar/basic",
@@ -1125,6 +1177,66 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme, variant: Table
     ));
     state.set_focused(true);
     frame.render_stateful_widget(&Table::new(&columns, visible, theme), area, &mut state);
+}
+
+fn text_area_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_text_area(
+        frame,
+        area,
+        theme,
+        "Compose",
+        "First line\nSecond line\nThird line",
+        None,
+    );
+}
+fn text_area_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_text_area(
+        frame,
+        area,
+        theme,
+        "Narrow",
+        "prefix 東京🧪 trailing content",
+        None,
+    );
+}
+fn text_area_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_text_area(
+        frame,
+        area,
+        theme,
+        "Unicode",
+        "e\u{301} cafe\n東京 region\n👩\u{200d}💻 builds",
+        None,
+    );
+}
+fn text_area_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_text_area(frame, area, theme, "Notes", "", Some("Write a note…"));
+}
+fn text_area_scrolled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let text = "zero\none\ntwo\nthree\nfour\nfive: deliberately wide content beyond the viewport";
+    let mut state = TextAreaState::new(text);
+    state.set_focused(true);
+    state.set_cursor(TextCursor {
+        line: 5,
+        byte: text.lines().last().unwrap().len(),
+    });
+    frame.render_stateful_widget(&TextArea::new(theme).title("Scrolled"), area, &mut state);
+}
+fn render_text_area(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    theme: &Theme,
+    title: &str,
+    text: &str,
+    placeholder: Option<&str>,
+) {
+    let mut state = TextAreaState::new(text);
+    state.set_focused(true);
+    let mut widget = TextArea::new(theme).title(title);
+    if let Some(placeholder) = placeholder {
+        widget = widget.placeholder(placeholder);
+    }
+    frame.render_stateful_widget(&widget, area, &mut state);
 }
 
 fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {

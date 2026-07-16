@@ -8,6 +8,8 @@ use crate::{
     text::take_display_cols,
 };
 
+use super::edit_core;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Grapheme-safe edit operations accepted by text-input state.
 pub enum EditAction {
@@ -146,11 +148,7 @@ impl TextInputState {
     /// Returns `false` without changing the state when the offset is out of
     /// bounds or would split a user-perceived character.
     pub fn set_cursor_byte(&mut self, cursor: usize) -> bool {
-        let valid = cursor == self.value.len()
-            || self
-                .value
-                .grapheme_indices(true)
-                .any(|(index, _)| index == cursor);
+        let valid = edit_core::is_boundary(&self.value, cursor);
         if valid {
             self.cursor = cursor;
         }
@@ -232,7 +230,7 @@ impl TextInputState {
             changed = true;
         }
         if changed {
-            self.cursor = boundary_at_or_after(&self.value, insertion);
+            self.cursor = edit_core::boundary_at_or_after(&self.value, insertion);
             TextInputOutcome::Changed
         } else {
             TextInputOutcome::Ignored
@@ -256,33 +254,26 @@ impl TextInputState {
                 {
                     return false;
                 }
-                let logical_end = self.cursor + character.len_utf8();
                 self.value = candidate;
-                self.cursor = boundary_at_or_after(&self.value, logical_end);
+                self.cursor = edit_core::boundary_at_or_after(
+                    &self.value,
+                    self.cursor + character.len_utf8(),
+                );
             }
             EditAction::Backspace => {
-                if let Some((index, _)) =
-                    self.value[..self.cursor].grapheme_indices(true).next_back()
-                {
-                    self.value.drain(index..self.cursor);
-                    self.cursor = index;
-                }
+                edit_core::backspace(&mut self.value, &mut self.cursor);
             }
             EditAction::Delete => {
-                if let Some(grapheme) = self.value[self.cursor..].graphemes(true).next() {
-                    self.value.drain(self.cursor..self.cursor + grapheme.len());
-                }
+                edit_core::delete(&mut self.value, self.cursor);
             }
             EditAction::MoveLeft => {
-                if let Some((index, _)) =
-                    self.value[..self.cursor].grapheme_indices(true).next_back()
-                {
+                if let Some(index) = edit_core::previous_boundary(&self.value, self.cursor) {
                     self.cursor = index;
                 }
             }
             EditAction::MoveRight => {
-                if let Some(grapheme) = self.value[self.cursor..].graphemes(true).next() {
-                    self.cursor += grapheme.len();
+                if let Some(index) = edit_core::next_boundary(&self.value, self.cursor) {
+                    self.cursor = index;
                 }
             }
             EditAction::Home => self.cursor = 0,
@@ -316,15 +307,6 @@ impl TextInputState {
             self.viewport += grapheme.len();
         }
     }
-}
-
-fn boundary_at_or_after(value: &str, byte: usize) -> usize {
-    value
-        .grapheme_indices(true)
-        .map(|(index, _)| index)
-        .chain(core::iter::once(value.len()))
-        .find(|boundary| *boundary >= byte)
-        .unwrap_or(value.len())
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -474,6 +456,16 @@ mod tests {
         assert!(state.set_cursor_byte("a👩‍💻".len()));
         assert_eq!(state.cursor_byte(), "a👩‍💻".len());
         assert!(state.set_cursor_byte(state.value().len()));
+    }
+
+    #[test]
+    fn insertion_repairs_cursor_after_merging_with_leading_combining_mark() {
+        let mut state = TextInputState::new("\u{301}x");
+        assert!(state.set_cursor_byte(0));
+        assert!(state.apply(EditAction::Insert('e')));
+        assert_eq!(state.value(), "e\u{301}x");
+        assert_eq!(state.cursor_byte(), "e\u{301}".len());
+        assert!(state.set_cursor_byte(state.cursor_byte()));
     }
 
     #[test]

@@ -250,6 +250,17 @@ let strip = Tabs::new(&tabs, &theme);
 let mut state = TabsState::default();
 state.selected = Some("logs");`,
   },
+  TextArea: {
+    description: 'A multi-line grapheme-safe editor with normalized paste and a two-axis viewport.',
+    primaryStory: 'text-area/basic',
+    usage: `use termrock::{Theme, widgets::{TextArea, TextAreaState, TextCursor}};
+
+let theme = Theme::default();
+let area = TextArea::new(&theme).title("Notes").placeholder("Write…");
+let mut state = TextAreaState::new("first line\nsecond line");
+state.set_focused(true);
+let valid = state.set_cursor(TextCursor { line: 1, byte: 0 });`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

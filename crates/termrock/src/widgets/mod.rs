@@ -6,6 +6,7 @@ mod action_bar;
 mod detail_table;
 mod dialog;
 mod diff;
+mod edit_core;
 mod form;
 mod hint_bar;
 mod list;
@@ -18,6 +19,7 @@ mod split_pane;
 mod status_bar;
 mod table;
 mod tabs;
+mod text_area;
 mod text_input;
 mod toast;
 mod tree;
@@ -49,6 +51,7 @@ pub use table::{
     TableRow, TableRowRegion, TableState, resolve_widths,
 };
 pub use tabs::{TAB_GAP, Tab, TabCell, Tabs, TabsState, lay_out_tabs, tab_at_column};
+pub use text_area::{TextArea, TextAreaOutcome, TextAreaState, TextCursor};
 pub use text_input::{
     EditAction, TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation,
 };

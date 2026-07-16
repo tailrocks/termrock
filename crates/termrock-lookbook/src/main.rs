@@ -4,8 +4,6 @@
 //! Entry point: [`main`] — lookbook binary entry.
 
 mod app;
-#[cfg(test)]
-mod editor;
 mod focus;
 mod interactors;
 mod json;
