@@ -6,9 +6,10 @@ With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,
 bracketed paste, disabled line wrapping, and hidden cursor state. Failed entry
 rolls back every acquired mode; explicit restore and `Drop` restore in reverse
-order and remain idempotent. Disabling alternate-screen ownership also omits
-its full-screen line-wrap and cursor changes for inline/non-interactive
-integrations. Screens and widgets never emit lifecycle commands.
+order and remain idempotent. Cursor hiding and line-wrap disabling are
+independent options that default on; inline integrations may enable either
+without owning the alternate screen, while alternate-screen integrations may
+disable either. Screens and widgets never emit lifecycle commands.
 
 `SplitPane` maps an integer remembered ratio, horizontal/vertical direction,
 and caller minimums into bounded first/divider/second rectangles. Tiny areas

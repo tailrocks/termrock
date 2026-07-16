@@ -13,14 +13,18 @@ use crossterm::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Data carried by `SessionOptions`.
 pub struct SessionOptions {
-    /// Documentation for `item`.
+    /// Enter the terminal's alternate screen buffer.
     pub alternate_screen: bool,
-    /// Documentation for `item`.
+    /// Enable mouse event capture.
     pub mouse_capture: bool,
-    /// Documentation for `item`.
+    /// Enable bracketed paste reporting.
     pub bracketed_paste: bool,
-    /// Documentation for `item`.
+    /// Enable terminal raw mode.
     pub raw_mode: bool,
+    /// Hide the terminal cursor for the session.
+    pub hide_cursor: bool,
+    /// Disable terminal line wrapping for the session.
+    pub disable_line_wrap: bool,
 }
 
 impl Default for SessionOptions {
@@ -30,6 +34,8 @@ impl Default for SessionOptions {
             mouse_capture: true,
             bracketed_paste: true,
             raw_mode: true,
+            hide_cursor: true,
+            disable_line_wrap: true,
         }
     }
 }
@@ -74,11 +80,11 @@ impl<W: Write> Session<W> {
                 session.bracketed_paste = true;
                 execute!(&mut session.writer, EnableBracketedPaste)?;
             }
-            if options.alternate_screen {
+            if options.disable_line_wrap {
                 session.line_wrap_disabled = true;
                 execute!(&mut session.writer, DisableLineWrap)?;
             }
-            if options.alternate_screen {
+            if options.hide_cursor {
                 session.cursor_hidden = true;
                 execute!(&mut session.writer, Hide)?;
             }
@@ -192,6 +198,53 @@ mod tests {
     }
 
     #[test]
+    fn inline_session_can_hide_cursor() {
+        let options = SessionOptions {
+            alternate_screen: false,
+            mouse_capture: false,
+            bracketed_paste: false,
+            raw_mode: false,
+            hide_cursor: true,
+            disable_line_wrap: false,
+        };
+        let mut session = Session::enter(Vec::new(), options).expect("in-memory session");
+        assert_eq!(session.writer_mut().as_slice(), b"\x1b[?25l");
+
+        session.restore().expect("restore session");
+        assert_eq!(session.writer_mut().as_slice(), b"\x1b[?25l\x1b[?25h");
+    }
+
+    #[test]
+    fn alternate_screen_can_keep_cursor_visible() {
+        let options = SessionOptions {
+            alternate_screen: true,
+            mouse_capture: false,
+            bracketed_paste: false,
+            raw_mode: false,
+            hide_cursor: false,
+            disable_line_wrap: false,
+        };
+        let mut session = Session::enter(Vec::new(), options).expect("in-memory session");
+        assert_eq!(session.writer_mut().as_slice(), b"\x1b[?1049h");
+
+        session.restore().expect("restore session");
+        assert_eq!(session.writer_mut().as_slice(), b"\x1b[?1049h\x1b[?1049l");
+    }
+
+    #[test]
+    fn default_writer_backed_modes_are_unchanged() {
+        let options = SessionOptions {
+            raw_mode: false,
+            ..SessionOptions::default()
+        };
+        let mut session = Session::enter(Vec::new(), options).expect("in-memory session");
+        assert_eq!(
+            session.writer_mut().as_slice(),
+            b"\x1b[?1049h\x1b[?1000h\x1b[?1002h\x1b[?1003h\x1b[?1015h\x1b[?1006h\x1b[?2004h\x1b[?7l\x1b[?25l"
+        );
+    }
+
+    #[test]
     fn restore_is_idempotent_for_all_writer_backed_modes() {
         let options = SessionOptions {
             raw_mode: false,
@@ -290,6 +343,8 @@ mod tests {
             mouse_capture: false,
             bracketed_paste: false,
             raw_mode: false,
+            hide_cursor: false,
+            disable_line_wrap: false,
         };
 
         assert!(Session::enter(writer, options).is_err());

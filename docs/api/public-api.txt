@@ -38,6 +38,8 @@ impl<T> either::into_either::IntoEither for termrock::crossterm::Session<W>
 pub struct termrock::crossterm::SessionOptions
 pub termrock::crossterm::SessionOptions::alternate_screen: bool
 pub termrock::crossterm::SessionOptions::bracketed_paste: bool
+pub termrock::crossterm::SessionOptions::disable_line_wrap: bool
+pub termrock::crossterm::SessionOptions::hide_cursor: bool
 pub termrock::crossterm::SessionOptions::mouse_capture: bool
 pub termrock::crossterm::SessionOptions::raw_mode: bool
 impl core::clone::Clone for termrock::crossterm::SessionOptions
