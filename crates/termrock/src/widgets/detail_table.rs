@@ -8,7 +8,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
     osc::HyperlinkRegion,
-    scroll::{DialogScroll, effective_offset},
+    scroll::{DialogScroll, Measured, UNCACHED_REVISION, effective_offset},
     style::{Role, Theme},
 };
 
@@ -106,6 +106,22 @@ pub struct DetailTableState<Id> {
     pub content_height: usize,
     /// Documentation for `item`.
     pub viewport: Rect,
+    /// Revision-keyed cached content dimensions.
+    pub(crate) measurement: Measured,
+    /// Visual-row start offset for each projected row.
+    pub(crate) row_offsets: Vec<usize>,
+    /// Cached visual range occupied by the selected row.
+    pub(crate) selected_range: Option<(usize, usize)>,
+    /// Selection identity used to validate `selected_range`.
+    pub(crate) measured_selected: Option<Id>,
+    /// Label width used by the cached row geometry.
+    pub(crate) measured_label_width: usize,
+    /// Viewport width used by the cached wrapping geometry.
+    pub(crate) measured_area_width: u16,
+    /// Explicit label-width setting used by the cached geometry.
+    pub(crate) measured_label_setting: u16,
+    /// Wrap setting used by the cached geometry.
+    pub(crate) measured_wrap: bool,
 }
 
 impl<Id> Default for DetailTableState<Id> {
@@ -119,6 +135,14 @@ impl<Id> Default for DetailTableState<Id> {
             content_width: 0,
             content_height: 0,
             viewport: Rect::default(),
+            measurement: Measured::default(),
+            row_offsets: Vec::new(),
+            selected_range: None,
+            measured_selected: None,
+            measured_label_width: 0,
+            measured_area_width: 0,
+            measured_label_setting: 0,
+            measured_wrap: false,
         }
     }
 }
@@ -268,6 +292,7 @@ pub struct DetailTable<'a, Id> {
     /// Wrap values into aligned continuation rows instead of scrolling horizontally.
     wrap: bool,
     theme: &'a Theme,
+    content_revision: u64,
 }
 
 impl<'a, Id> DetailTable<'a, Id> {
@@ -279,6 +304,7 @@ impl<'a, Id> DetailTable<'a, Id> {
             label_width: 0,
             wrap: false,
             theme,
+            content_revision: UNCACHED_REVISION,
         }
     }
 
@@ -293,6 +319,16 @@ impl<'a, Id> DetailTable<'a, Id> {
     /// Performs the `wrap` operation.
     pub const fn wrap(mut self, wrap: bool) -> Self {
         self.wrap = wrap;
+        self
+    }
+
+    /// Enables measurement reuse for unchanged rows.
+    ///
+    /// Bump `revision` whenever row contents change. Length changes invalidate
+    /// the cache automatically. Omitting this builder measures every frame.
+    #[must_use]
+    pub const fn content_revision(mut self, revision: u64) -> Self {
+        self.content_revision = revision;
         self
     }
 }
@@ -363,29 +399,61 @@ impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         state.regions.clear();
         state.viewport = area;
-        let label_width = self.resolved_label_width();
-        let value_width = self.value_width(area, label_width);
-        state.content_width = self
-            .rows
-            .iter()
-            .map(|row| self.row_width(row, label_width))
-            .max()
-            .unwrap_or(0);
-        let mut selected_range = None;
-        let mut measured_height = 0usize;
-        for row in self.rows {
-            let row_height = self.row_height(row, value_width);
-            if state.selected.as_ref() == Some(&row.id) {
-                selected_range =
-                    Some((measured_height, measured_height.saturating_add(row_height)));
-            }
-            measured_height = measured_height.saturating_add(row_height);
+        let revision = self.content_revision;
+        if state.measured_area_width != area.width
+            || state.measured_label_setting != self.label_width
+            || state.measured_wrap != self.wrap
+        {
+            state.measurement.invalidate();
+            state.measured_area_width = area.width;
+            state.measured_label_setting = self.label_width;
+            state.measured_wrap = self.wrap;
         }
-        state.content_height = measured_height;
+        if !state.measurement.is_current(self.rows.len(), revision) {
+            state.measured_label_width = self.resolved_label_width();
+            let value_width = self.value_width(area, state.measured_label_width);
+            state.row_offsets.clear();
+            state.row_offsets.reserve(self.rows.len());
+            state.selected_range = None;
+            let mut content_width = 0usize;
+            let mut content_height = 0usize;
+            for row in self.rows {
+                state.row_offsets.push(content_height);
+                content_width = content_width.max(self.row_width(row, state.measured_label_width));
+                let row_height = self.row_height(row, value_width);
+                if state.selected.as_ref() == Some(&row.id) {
+                    state.selected_range =
+                        Some((content_height, content_height.saturating_add(row_height)));
+                }
+                content_height = content_height.saturating_add(row_height);
+            }
+            state.measured_selected = state.selected.clone();
+            state
+                .measurement
+                .get_or_measure(self.rows.len(), revision, || {
+                    (content_width, content_height)
+                });
+        } else if state.measured_selected != state.selected {
+            state.selected_range = state.selected.as_ref().and_then(|selected| {
+                let index = self.rows.iter().position(|row| &row.id == selected)?;
+                let start = state.row_offsets[index];
+                let end = state
+                    .row_offsets
+                    .get(index + 1)
+                    .copied()
+                    .unwrap_or(state.measurement.height);
+                Some((start, end))
+            });
+            state.measured_selected = state.selected.clone();
+        }
+        let label_width = state.measured_label_width;
+        let value_width = self.value_width(area, label_width);
+        state.content_width = state.measurement.width;
+        state.content_height = state.measurement.height;
         if self.wrap {
             state.scroll.scroll_x = 0;
         }
-        if let Some((start, end)) = selected_range {
+        if let Some((start, end)) = state.selected_range {
             let viewport_height = usize::from(area.height);
             let current = usize::from(state.scroll.scroll_y);
             if start < current {
@@ -402,32 +470,53 @@ impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
 
         let scroll_x = usize::from(state.scroll.scroll_x);
         let scroll_y = usize::from(state.scroll.scroll_y);
-        let mut visual_row = 0usize;
-        for row in self.rows {
-            let row_height = self.row_height(row, value_width);
-            for continuation in 0..row_height {
-                if visual_row >= scroll_y
-                    && visual_row < scroll_y.saturating_add(usize::from(area.height))
-                {
-                    let y = area.y.saturating_add(
-                        u16::try_from(visual_row.saturating_sub(scroll_y)).unwrap_or(u16::MAX),
-                    );
-                    render_row(
-                        self,
-                        row,
-                        continuation,
-                        label_width,
-                        value_width,
-                        scroll_x,
-                        Rect::new(area.x, y, area.width, 1),
-                        buffer,
-                        state,
-                    );
+        let window_end = scroll_y.saturating_add(usize::from(area.height));
+        let first_row = state
+            .row_offsets
+            .partition_point(|start| *start <= scroll_y)
+            .saturating_sub(1);
+        let mut scratch = PaintScratch::default();
+        for (index, row) in self.rows.iter().enumerate().skip(first_row) {
+            let row_start = state.row_offsets[index];
+            if row_start >= window_end {
+                break;
+            }
+            let row_end = state
+                .row_offsets
+                .get(index + 1)
+                .copied()
+                .unwrap_or(state.content_height);
+            let first_continuation = scroll_y.saturating_sub(row_start);
+            for continuation in first_continuation..row_end.saturating_sub(row_start) {
+                let visual_row = row_start.saturating_add(continuation);
+                if visual_row >= window_end {
+                    break;
                 }
-                visual_row = visual_row.saturating_add(1);
+                let y = area.y.saturating_add(
+                    u16::try_from(visual_row.saturating_sub(scroll_y)).unwrap_or(u16::MAX),
+                );
+                render_row(
+                    self,
+                    row,
+                    continuation,
+                    label_width,
+                    value_width,
+                    scroll_x,
+                    Rect::new(area.x, y, area.width, 1),
+                    buffer,
+                    state,
+                    &mut scratch,
+                );
             }
         }
     }
+}
+
+#[derive(Default)]
+struct PaintScratch {
+    combined: String,
+    chunk: String,
+    segment: String,
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for DetailTable<'_, Id> {
@@ -452,6 +541,7 @@ fn render_row<Id: Clone + PartialEq>(
     area: Rect,
     buffer: &mut Buffer,
     state: &mut DetailTableState<Id>,
+    scratch: &mut PaintScratch,
 ) {
     let selected = state.selected.as_ref() == Some(&row.id);
     let hovered = state.hovered.as_ref() == Some(&row.id);
@@ -489,6 +579,7 @@ fn render_row<Id: Clone + PartialEq>(
             0,
             scroll_x,
             table.theme.style(Role::Focus),
+            &mut scratch.segment,
         );
         paint_segment(
             buffer,
@@ -497,6 +588,7 @@ fn render_row<Id: Clone + PartialEq>(
             marker_width,
             scroll_x,
             table.theme.style(Role::TextMuted),
+            &mut scratch.segment,
         );
         paint_segment(
             buffer,
@@ -505,6 +597,7 @@ fn render_row<Id: Clone + PartialEq>(
             marker_width + label_width,
             scroll_x,
             table.theme.style(Role::Border),
+            &mut scratch.segment,
         );
     }
 
@@ -514,8 +607,15 @@ fn render_row<Id: Clone + PartialEq>(
         crate::text::display_cols(row.value).saturating_add(affordance_width(row, copied))
     };
     let chunk_start = continuation.saturating_mul(chunk_width);
-    let value_and_affordance = format!("{}{}", row.value, affordance(row, copied));
-    let chunk = crate::text::display_cols_slice(&value_and_affordance, chunk_start, chunk_width);
+    scratch.combined.clear();
+    scratch.combined.push_str(row.value);
+    scratch.combined.push_str(affordance(row, copied));
+    crate::text::display_cols_slice_into(
+        &scratch.combined,
+        chunk_start,
+        chunk_width,
+        &mut scratch.chunk,
+    );
     let global_value_col = if table.wrap && continuation > 0 {
         value_col
     } else {
@@ -524,15 +624,16 @@ fn render_row<Id: Clone + PartialEq>(
     paint_segment(
         buffer,
         area,
-        &chunk,
+        &scratch.chunk,
         global_value_col,
         scroll_x,
         value_style,
+        &mut scratch.segment,
     );
 
     let painted_start = global_value_col.max(scroll_x);
     let painted_end = global_value_col
-        .saturating_add(crate::text::display_cols(&chunk))
+        .saturating_add(crate::text::display_cols(&scratch.chunk))
         .min(scroll_x.saturating_add(usize::from(area.width)));
     let value_end = global_value_col
         .saturating_add(crate::text::display_cols(row.value).saturating_sub(chunk_start))
@@ -572,6 +673,7 @@ fn paint_segment(
     start: usize,
     scroll_x: usize,
     style: Style,
+    scratch: &mut String,
 ) {
     let end = start.saturating_add(crate::text::display_cols(text));
     let viewport_end = scroll_x.saturating_add(usize::from(area.width));
@@ -580,17 +682,18 @@ fn paint_segment(
     if visible_start >= visible_end {
         return;
     }
-    let visible = crate::text::display_cols_slice(
+    crate::text::display_cols_slice_into(
         text,
         visible_start.saturating_sub(start),
         visible_end.saturating_sub(visible_start),
+        scratch,
     );
     buffer.set_stringn(
         area.x.saturating_add(
             u16::try_from(visible_start.saturating_sub(scroll_x)).unwrap_or(u16::MAX),
         ),
         area.y,
-        visible,
+        scratch,
         visible_end.saturating_sub(visible_start),
         style,
     );

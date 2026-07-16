@@ -32,6 +32,84 @@ use tui_scrollbar::{SUBCELL, ScrollLengths, ScrollMetrics};
 
 use crate::input::{KeyModifiers, MouseEventKind};
 
+/// Revision value that disables measurement reuse.
+///
+/// Widgets use this default until a consumer opts into caching with a stable
+/// content revision.
+pub const UNCACHED_REVISION: u64 = u64::MAX;
+
+/// Cached content dimensions keyed by content length and caller revision.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Measured {
+    len: usize,
+    revision: u64,
+    /// Widest measured content row in terminal columns.
+    pub width: usize,
+    /// Measured content height in terminal rows.
+    pub height: usize,
+    valid: bool,
+}
+
+impl Default for Measured {
+    fn default() -> Self {
+        Self {
+            len: 0,
+            revision: UNCACHED_REVISION,
+            width: 0,
+            height: 0,
+            valid: false,
+        }
+    }
+}
+
+impl Measured {
+    /// Creates an empty measurement cache.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            len: 0,
+            revision: UNCACHED_REVISION,
+            width: 0,
+            height: 0,
+            valid: false,
+        }
+    }
+
+    pub(crate) const fn is_current(&self, len: usize, revision: u64) -> bool {
+        revision != UNCACHED_REVISION && self.valid && self.len == len && self.revision == revision
+    }
+
+    pub(crate) fn invalidate(&mut self) {
+        self.valid = false;
+    }
+
+    /// Returns cached dimensions or computes and stores a cache miss.
+    ///
+    /// [`UNCACHED_REVISION`] always invokes `measure`. Other revisions reuse
+    /// dimensions only while both the revision and content length match.
+    pub fn get_or_measure(
+        &mut self,
+        len: usize,
+        revision: u64,
+        measure: impl FnOnce() -> (usize, usize),
+    ) -> (usize, usize) {
+        if revision != UNCACHED_REVISION
+            && self.valid
+            && self.len == len
+            && self.revision == revision
+        {
+            return (self.width, self.height);
+        }
+        let (width, height) = measure();
+        self.width = width;
+        self.height = height;
+        self.len = len;
+        self.revision = revision;
+        self.valid = revision != UNCACHED_REVISION;
+        (width, height)
+    }
+}
+
 /// Tail-relative scroll offset helper.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct TailScroll {
@@ -152,6 +230,8 @@ pub struct DialogScroll {
     pub scroll_x: u16,
     /// Documentation for `item`.
     pub scroll_y: u16,
+    /// Cached dimensions used by revision-aware viewport widgets.
+    pub(crate) measurement: Measured,
 }
 
 impl DialogScroll {
@@ -161,6 +241,7 @@ impl DialogScroll {
         Self {
             scroll_x: 0,
             scroll_y: 0,
+            measurement: Measured::new(),
         }
     }
 

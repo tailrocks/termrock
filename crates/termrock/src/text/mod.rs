@@ -49,9 +49,19 @@ pub fn take_display_cols(s: &str, max_cols: usize) -> String {
 /// skipping terminal control bytes and preserving only complete characters.
 #[must_use]
 pub fn display_cols_slice(s: &str, skip: usize, width: usize) -> String {
+    let mut out = String::new();
+    display_cols_slice_into(s, skip, width, &mut out);
+    out
+}
+
+/// Writes the display-column window of `s` into a reusable buffer.
+///
+/// `out` is cleared first. Control bytes and partial wide characters are
+/// omitted using the same rules as [`display_cols_slice`].
+pub fn display_cols_slice_into(s: &str, skip: usize, width: usize, out: &mut String) {
     use unicode_width::UnicodeWidthChar;
     let mut col = 0usize;
-    let mut out = String::new();
+    out.clear();
     for ch in s.chars() {
         if is_terminal_control_char(ch) {
             continue;
@@ -65,7 +75,6 @@ pub fn display_cols_slice(s: &str, skip: usize, width: usize) -> String {
             break;
         }
     }
-    out
 }
 
 /// Leading ASCII-space count for text rows that need symmetric trailing
@@ -194,4 +203,18 @@ pub fn sanitize_terminal_title(title: &str) -> String {
         out.pop();
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reusable_display_slice_matches_allocating_variant() {
+        let text = "a\u{1b}界bc";
+        let mut out = String::from("stale capacity");
+        display_cols_slice_into(text, 1, 3, &mut out);
+        assert_eq!(out, display_cols_slice(text, 1, 3));
+        assert_eq!(out, "界b");
+    }
 }

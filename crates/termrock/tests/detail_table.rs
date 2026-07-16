@@ -94,10 +94,8 @@ fn select_next_previous_traverse_and_wrap() {
 #[test]
 fn selection_includes_rows_without_capability() {
     let rows = rows();
-    let mut state = DetailTableState {
-        selected: Some("link"),
-        ..DetailTableState::default()
-    };
+    let mut state = DetailTableState::default();
+    state.selected = Some("link");
 
     assert_eq!(
         state.select_next(&rows),

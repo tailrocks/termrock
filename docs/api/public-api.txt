@@ -2424,6 +2424,55 @@ pub unsafe fn termrock::scroll::FullCellThumb::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::scroll::FullCellThumb
 pub fn termrock::scroll::FullCellThumb::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::scroll::FullCellThumb
+pub struct termrock::scroll::Measured
+pub termrock::scroll::Measured::height: usize
+pub termrock::scroll::Measured::width: usize
+impl termrock::scroll::Measured
+pub fn termrock::scroll::Measured::get_or_measure(&mut self, usize, u64, impl core::ops::function::FnOnce() -> (usize, usize)) -> (usize, usize)
+pub const fn termrock::scroll::Measured::new() -> Self
+impl core::clone::Clone for termrock::scroll::Measured
+pub fn termrock::scroll::Measured::clone(&self) -> termrock::scroll::Measured
+impl core::cmp::Eq for termrock::scroll::Measured
+impl core::cmp::PartialEq for termrock::scroll::Measured
+pub fn termrock::scroll::Measured::eq(&self, &termrock::scroll::Measured) -> bool
+impl core::default::Default for termrock::scroll::Measured
+pub fn termrock::scroll::Measured::default() -> Self
+impl core::fmt::Debug for termrock::scroll::Measured
+pub fn termrock::scroll::Measured::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::scroll::Measured
+impl core::marker::StructuralPartialEq for termrock::scroll::Measured
+impl core::marker::Freeze for termrock::scroll::Measured
+impl core::marker::Send for termrock::scroll::Measured
+impl core::marker::Sync for termrock::scroll::Measured
+impl core::marker::Unpin for termrock::scroll::Measured
+impl core::marker::UnsafeUnpin for termrock::scroll::Measured
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::scroll::Measured
+impl core::panic::unwind_safe::UnwindSafe for termrock::scroll::Measured
+impl<Q, K> equivalent::Equivalent<K> for termrock::scroll::Measured where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::scroll::Measured::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::scroll::Measured where U: core::convert::From<T>
+pub fn termrock::scroll::Measured::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::scroll::Measured where U: core::convert::Into<T>
+pub type termrock::scroll::Measured::Error = core::convert::Infallible
+pub fn termrock::scroll::Measured::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::scroll::Measured where U: core::convert::TryFrom<T>
+pub type termrock::scroll::Measured::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::scroll::Measured::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::scroll::Measured where T: core::clone::Clone
+pub type termrock::scroll::Measured::Owned = T
+pub fn termrock::scroll::Measured::clone_into(&self, &mut T)
+pub fn termrock::scroll::Measured::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::scroll::Measured where T: 'static + ?core::marker::Sized
+pub fn termrock::scroll::Measured::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::scroll::Measured where T: ?core::marker::Sized
+pub fn termrock::scroll::Measured::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::scroll::Measured where T: ?core::marker::Sized
+pub fn termrock::scroll::Measured::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::scroll::Measured where T: core::clone::Clone
+pub unsafe fn termrock::scroll::Measured::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::scroll::Measured
+pub fn termrock::scroll::Measured::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::scroll::Measured
 pub struct termrock::scroll::ScrollAxes
 pub termrock::scroll::ScrollAxes::horizontal: bool
 pub termrock::scroll::ScrollAxes::vertical: bool
@@ -2656,6 +2705,7 @@ impl<T> either::into_either::IntoEither for termrock::scroll::TailScroll
 pub const termrock::scroll::DEFAULT_HORIZONTAL_SCROLL_STEP: u16
 pub const termrock::scroll::SCROLLBAR_HORIZONTAL_THUMB: &str
 pub const termrock::scroll::SCROLLBAR_TRACK: &str
+pub const termrock::scroll::UNCACHED_REVISION: u64
 pub fn termrock::scroll::apply_delta_u16(usize, usize, &mut u16, isize) -> u16
 pub const fn termrock::scroll::apply_delta_unclamped_u16(&mut u16, i16)
 pub fn termrock::scroll::apply_mouse_scroll_u16(termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes, termrock::scroll::ScrollSpan, termrock::scroll::ScrollSpan, &mut u16, &mut u16) -> bool
@@ -2929,6 +2979,7 @@ pub fn termrock::text::FixedPrefixSegment::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::text::FixedPrefixSegment
 pub fn termrock::text::display_cols(&str) -> usize
 pub fn termrock::text::display_cols_slice(&str, usize, usize) -> alloc::string::String
+pub fn termrock::text::display_cols_slice_into(&str, usize, usize, &mut alloc::string::String)
 pub fn termrock::text::fixed_prefix_scroll_segments(&str, usize, usize, usize, usize) -> alloc::vec::Vec<termrock::text::FixedPrefixSegment>
 pub fn termrock::text::is_terminal_control_char(char) -> bool
 pub fn termrock::text::leading_space_cols<S>(impl core::iter::traits::collect::IntoIterator<Item = S>) -> usize where S: core::convert::AsRef<str>
@@ -4161,6 +4212,7 @@ pub fn termrock::widgets::DetailRow<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailRow<'a, Id>
 pub struct termrock::widgets::DetailTable<'a, Id>
 impl<'a, Id> termrock::widgets::DetailTable<'a, Id>
+pub const fn termrock::widgets::DetailTable<'a, Id>::content_revision(self, u64) -> Self
 pub const fn termrock::widgets::DetailTable<'a, Id>::label_width(self, u16) -> Self
 pub const fn termrock::widgets::DetailTable<'a, Id>::new(&'a [termrock::widgets::DetailRow<'a, Id>], &'a termrock::style::Theme) -> Self
 pub const fn termrock::widgets::DetailTable<'a, Id>::wrap(self, bool) -> Self
@@ -6024,6 +6076,7 @@ pub fn termrock::widgets::TreeState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TreeState<Id>
 pub struct termrock::widgets::Viewport<'a>
 impl<'a> termrock::widgets::Viewport<'a>
+pub const fn termrock::widgets::Viewport<'a>::content_revision(self, u64) -> Self
 pub const fn termrock::widgets::Viewport<'a>::content_style(self, ratatui_core::style::Style) -> Self
 pub const fn termrock::widgets::Viewport<'a>::new(&'a [ratatui_core::text::line::Line<'a>], &'a termrock::style::Theme) -> Self
 pub const fn termrock::widgets::Viewport<'a>::title(self, &'a str) -> Self

@@ -36,7 +36,7 @@ number is `0004`; always check `ls migrations/` before claiming.
 | 013 | Construction idiom, non_exhaustive, owned Widget impls, serde feature | P2 | M | 008, 011 | DONE |
 | 014 | missing_docs enforcement, doctests, real showcase example | P2 | M | 011, 013 | DONE |
 | 015 | Viewport/dialog slice-before-clone (per-frame O(viewport)) | P2 | M | — | DONE |
-| 016 | Measurement caching + visible-window paint loops | P2 | M | 015 | TODO |
+| 016 | Measurement caching + visible-window paint loops | P2 | M | 015 | DONE |
 | 017 | Core-math test coverage (geometry/ANSI/focus/diff) + 2 small fixes | P2 | M | — | TODO |
 | 018 | SPIKE: runtime disposition + app-runner design | P3 | M-L | 011 | TODO |
 | 019 | SPIKE: runtime-configurable keymaps | P3 | M | 006 | TODO |

@@ -21,13 +21,11 @@ fn large_viewport_allocations_scale_with_visible_rows() {
         .map(|_| Line::from("resident line"))
         .collect::<Vec<_>>();
     let theme = Theme::default();
-    let viewport = Viewport::new(&lines, &theme);
+    let viewport = Viewport::new(&lines, &theme).content_revision(1);
     let area = Rect::new(0, 0, 120, VIEWPORT_HEIGHT);
     let mut buffer = Buffer::empty(area);
-    let mut state = DialogScroll {
-        scroll_y: 5_000,
-        ..DialogScroll::default()
-    };
+    let mut state = DialogScroll::default();
+    state.scroll_y = 5_000;
 
     viewport.render(area, &mut buffer, &mut state);
 

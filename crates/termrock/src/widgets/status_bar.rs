@@ -245,6 +245,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             fade_style(self.theme.style(Role::StatusBar), self.alpha),
         );
         state.regions.clear();
+        let mut content = String::new();
         for placement in self.placements(area) {
             let slot = match placement.side {
                 Side::Left => &self.left[placement.index],
@@ -256,12 +257,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             } else {
                 slot.style
             };
-            let content =
-                crate::text::display_cols_slice(slot.content, 0, usize::from(placement.area.width));
+            crate::text::display_cols_slice_into(
+                slot.content,
+                0,
+                usize::from(placement.area.width),
+                &mut content,
+            );
             buffer.set_stringn(
                 placement.area.x,
                 placement.area.y,
-                content,
+                &content,
                 usize::from(placement.area.width),
                 fade_style(style, self.alpha),
             );

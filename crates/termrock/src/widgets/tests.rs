@@ -252,6 +252,7 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
     let mut state = crate::scroll::DialogScroll {
         scroll_x: 0,
         scroll_y: 1,
+        ..crate::scroll::DialogScroll::default()
     };
 
     StatefulWidget::render(&viewport, area, &mut buffer, &mut state);

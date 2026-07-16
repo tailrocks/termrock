@@ -177,6 +177,7 @@ impl StatefulWidget for &LogPane<'_> {
         let mut scroll = DialogScroll {
             scroll_x: 0,
             scroll_y: u16::try_from(top).unwrap_or(u16::MAX),
+            ..DialogScroll::default()
         };
         let viewport = Viewport::new(&state.lines, self.theme);
         let viewport = if let Some(title) = self.title {

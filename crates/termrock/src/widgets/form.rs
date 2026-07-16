@@ -457,6 +457,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 let column = index % usize::from(columns);
                 let row = index / usize::from(columns);
                 let field_y = content_y.saturating_add(row.saturating_mul(FIELD_HEIGHT));
+                let visible_start = state.offset;
+                let visible_end = visible_start.saturating_add(state.viewport_height);
+                if field_y >= visible_end
+                    || field_y.saturating_add(FIELD_HEIGHT.saturating_sub(1)) <= visible_start
+                {
+                    continue;
+                }
                 let x = content_area.x.saturating_add(
                     u16::try_from(column)
                         .unwrap_or(u16::MAX)

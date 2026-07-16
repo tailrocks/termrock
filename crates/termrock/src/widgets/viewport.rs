@@ -8,7 +8,7 @@ use ratatui_core::{
 use ratatui_widgets::{block::Block, borders::Borders, paragraph::Paragraph};
 
 use crate::{
-    scroll::{DialogScroll, full_cell_thumb, is_scrollable, max_line_width},
+    scroll::{DialogScroll, UNCACHED_REVISION, full_cell_thumb, is_scrollable, max_line_width},
     style::{Role, Theme},
 };
 
@@ -19,6 +19,7 @@ pub struct Viewport<'a> {
     title: Option<&'a str>,
     theme: &'a Theme,
     content_style: Option<Style>,
+    content_revision: u64,
 }
 
 impl<'a> Viewport<'a> {
@@ -30,6 +31,7 @@ impl<'a> Viewport<'a> {
             title: None,
             theme,
             content_style: None,
+            content_revision: UNCACHED_REVISION,
         }
     }
 
@@ -46,6 +48,16 @@ impl<'a> Viewport<'a> {
         self.content_style = Some(content_style);
         self
     }
+
+    /// Enables measurement reuse for unchanged content.
+    ///
+    /// Bump `revision` whenever line contents change. Length changes invalidate
+    /// the cache automatically. Omitting this builder measures every frame.
+    #[must_use]
+    pub const fn content_revision(mut self, revision: u64) -> Self {
+        self.content_revision = revision;
+        self
+    }
 }
 
 impl StatefulWidget for &Viewport<'_> {
@@ -54,7 +66,12 @@ impl StatefulWidget for &Viewport<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         let viewport_width = usize::from(area.width.saturating_sub(2));
         let viewport_height = usize::from(area.height.saturating_sub(2));
-        let content_width = max_line_width(self.lines);
+        let (content_width, _) =
+            state
+                .measurement
+                .get_or_measure(self.lines.len(), self.content_revision, || {
+                    (max_line_width(self.lines), self.lines.len())
+                });
         state.clamp(
             self.lines.len(),
             viewport_height,

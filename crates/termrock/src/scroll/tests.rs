@@ -5,6 +5,48 @@
 use super::*;
 
 #[test]
+fn measured_reuses_matching_length_and_revision() {
+    let mut measured = Measured::default();
+    let mut calls = 0;
+    assert_eq!(
+        measured.get_or_measure(3, 7, || {
+            calls += 1;
+            (10, 3)
+        }),
+        (10, 3)
+    );
+    assert_eq!(
+        measured.get_or_measure(3, 7, || panic!("cache miss")),
+        (10, 3)
+    );
+    assert_eq!(calls, 1);
+}
+
+#[test]
+fn measured_invalidates_on_length_or_revision_change() {
+    let mut measured = Measured::default();
+    assert_eq!(measured.get_or_measure(3, 7, || (10, 3)), (10, 3));
+    assert_eq!(measured.get_or_measure(4, 7, || (11, 4)), (11, 4));
+    assert_eq!(measured.get_or_measure(4, 8, || (12, 4)), (12, 4));
+}
+
+#[test]
+fn measured_uncached_revision_always_measures() {
+    let mut measured = Measured::default();
+    let mut calls = 0;
+    for width in [10, 11] {
+        assert_eq!(
+            measured.get_or_measure(3, UNCACHED_REVISION, || {
+                calls += 1;
+                (width, 3)
+            }),
+            (width, 3)
+        );
+    }
+    assert_eq!(calls, 2);
+}
+
+#[test]
 fn zero_viewport_is_not_scrollable() {
     assert!(!is_scrollable(10, 0));
     assert_eq!(max_offset(10, 0), 0);
