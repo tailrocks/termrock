@@ -16,7 +16,9 @@ use crate::widgets::HintSpan;
 /// A key chord: a logical key plus zero or more modifier bits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct KeyChord {
+    /// Documentation for `item`.
     pub key: KeyCode,
+    /// Documentation for `item`.
     pub mods: KeyModifiers,
 }
 
@@ -138,6 +140,28 @@ pub struct KeyBinding<A> {
 }
 
 /// A static keymap binding all chords to actions for a single widget context.
+///
+/// # Examples
+///
+/// ```
+/// use termrock::{
+///     input::KeyCode,
+///     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
+/// };
+///
+/// #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// enum Action { Quit }
+/// static BINDINGS: &[KeyBinding<Action>] = &[KeyBinding {
+///     chords: &[KeyChord::plain(KeyCode::Char('q'))],
+///     action: Action::Quit,
+///     hint: Some("quit"),
+///     visibility: Visibility::Shown,
+///     glyph: None,
+/// }];
+///
+/// let keymap = Keymap::new(BINDINGS);
+/// assert_eq!(keymap.dispatch(KeyChord::plain(KeyCode::Char('q'))), Some(Action::Quit));
+/// ```
 #[derive(Debug)]
 pub struct Keymap<A: 'static> {
     bindings: &'static [KeyBinding<A>],
@@ -328,13 +352,21 @@ pub fn raw_bytes_to_chord(bytes: &[u8]) -> Option<KeyChord> {
 /// Every `KeyBinding.glyph` override and `HintSpan::Key` literal for these keys
 /// must use these constants: one spelling per key, everywhere.
 pub mod glyph {
+    /// The `TAB` constant.
     pub const TAB: &str = "\u{21e5}";
+    /// The `UP_DOWN` constant.
     pub const UP_DOWN: &str = "\u{2191}\u{2193}";
+    /// The `LEFT_RIGHT` constant.
     pub const LEFT_RIGHT: &str = "\u{2190}\u{2192}";
+    /// The `ALL_ARROWS` constant.
     pub const ALL_ARROWS: &str = "\u{2191}\u{2193}\u{2190}\u{2192}";
+    /// The `ALT_SHIFT_ALL_ARROWS` constant.
     pub const ALT_SHIFT_ALL_ARROWS: &str = "Alt-Shift-\u{2191}\u{2193}\u{2190}\u{2192}";
+    /// The `PGUP_PGDN` constant.
     pub const PGUP_PGDN: &str = "PgUp/PgDn";
+    /// The `ESC` constant.
     pub const ESC: &str = "Esc";
+    /// The `ENTER` constant.
     pub const ENTER: &str = "\u{21b5}";
 }
 
@@ -427,7 +459,9 @@ pub fn chord_glyph(chord: Option<KeyChord>) -> &'static str {
 /// that previously lived in `scroll_hint_spans`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScrollHintAxis {
+    /// Selects the `Vertical` behavior.
     Vertical,
+    /// Selects the `Horizontal` behavior.
     Horizontal,
 }
 

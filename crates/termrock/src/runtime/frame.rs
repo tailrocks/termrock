@@ -5,6 +5,7 @@ use ratatui_core::{
     terminal::{CompletedFrame, Frame, Terminal},
 };
 
+/// Performs the `drive_frame` operation.
 pub fn drive_frame<'a, B, Model, V, F>(
     terminal: &'a mut Terminal<B>,
     view: &V,
@@ -23,6 +24,7 @@ where
     })
 }
 
+/// Performs the `drive_render` operation.
 pub fn drive_render<'a, B, F>(
     terminal: &'a mut Terminal<B>,
     render: F,

@@ -6,6 +6,18 @@ use std::fmt::Write as _;
 const MAX_CLIPBOARD_BYTES: usize = 100_000;
 
 #[must_use]
+/// Encodes a typed terminal OSC request into bytes ready for the output stream.
+///
+/// # Examples
+///
+/// ```
+/// use termrock::osc::{PointerShape, Request, encode};
+///
+/// assert_eq!(
+///     encode(Request::Pointer(PointerShape::Pointer)),
+///     b"\x1b]22;pointer\x1b\\",
+/// );
+/// ```
 pub fn encode(request: Request<'_>) -> Vec<u8> {
     match request {
         Request::Pointer(shape) => encode_pointer(shape),
@@ -16,6 +28,7 @@ pub fn encode(request: Request<'_>) -> Vec<u8> {
 }
 
 #[must_use]
+/// Performs the `encode_pointer` operation.
 pub fn encode_pointer(shape: PointerShape) -> Vec<u8> {
     format!("\x1b]22;{}\x1b\\", shape.name()).into_bytes()
 }
@@ -71,6 +84,7 @@ fn percent_encode_terminal_controls(value: &str) -> String {
 }
 
 #[must_use]
+/// Performs the `encode_hyperlink_close` operation.
 pub fn encode_hyperlink_close() -> Vec<u8> {
     b"\x1b]8;;\x1b\\".to_vec()
 }

@@ -4,13 +4,17 @@
 /// Three-byte RGB value used to construct terminal colors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rgb {
+    /// Documentation for `item`.
     pub r: u8,
+    /// Documentation for `item`.
     pub g: u8,
+    /// Documentation for `item`.
     pub b: u8,
 }
 
 impl Rgb {
     #[must_use]
+    /// Creates a new value with canonical defaults.
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }

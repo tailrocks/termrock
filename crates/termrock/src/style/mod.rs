@@ -24,12 +24,15 @@ use palette::{
 };
 
 #[must_use]
+/// Performs the `color` operation.
 pub const fn color(rgb: Rgb) -> Color {
     Color::Rgb(rgb.r, rgb.g, rgb.b)
 }
 
+/// The `PHOSPHOR_GREEN` constant.
 pub const PHOSPHOR_GREEN: Color = color(PHOSPHOR_GREEN_RGB);
 pub(crate) const PHOSPHOR_DIM: Color = color(PHOSPHOR_DIM_RGB);
+/// The `PHOSPHOR_DARK` constant.
 pub const PHOSPHOR_DARK: Color = color(PHOSPHOR_DARK_RGB);
 pub(crate) const INPUT_BG_DIM: Color = color(INPUT_BG_DIM_RGB);
 // Dialog backdrops paint the terminal's DEFAULT background, not a
@@ -55,6 +58,7 @@ pub(crate) const BORDER_GRAY: Color = color(BORDER_GRAY_RGB);
 pub(crate) const DANGER_RED: Color = color(DANGER_RED_RGB);
 pub(crate) const CYAN: Color = color(CYAN_RGB);
 pub(crate) const WARNING_YELLOW: Color = color(WARNING_YELLOW_RGB);
+/// The `PREVIEW_CARD` constant.
 pub const PREVIEW_CARD: Color = color(PREVIEW_CARD_RGB);
 pub(crate) const DIFF_REMOVED_BG: Color = Color::Rgb(60, 20, 20);
 pub(crate) const DIFF_ADDED_BG: Color = Color::Rgb(20, 50, 20);
@@ -69,6 +73,7 @@ pub(crate) const BORDER: Style = Style::new().fg(BORDER_GRAY);
 pub(crate) const DANGER: Style = Style::new().fg(DANGER_RED).add_modifier(Modifier::BOLD);
 
 #[must_use]
+/// Performs the `faded` operation.
 pub fn faded(color: Color, alpha: f32) -> Color {
     match color {
         Color::Rgb(r, g, b) => {
@@ -85,53 +90,103 @@ pub fn faded(color: Color, alpha: f32) -> Color {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
+/// Available `Role` choices.
 pub enum Role {
+    /// Selects the `Canvas` behavior.
     Canvas,
+    /// Selects the `Surface` behavior.
     Surface,
+    /// Selects the `Elevated` behavior.
     Elevated,
+    /// Selects the `Backdrop` behavior.
     Backdrop,
+    /// Selects the `Text` behavior.
     Text,
+    /// Selects the `TextMuted` behavior.
     TextMuted,
+    /// Selects the `TextDisabled` behavior.
     TextDisabled,
+    /// Selects the `Border` behavior.
     Border,
+    /// Selects the `BorderFocused` behavior.
     BorderFocused,
+    /// Selects the `Selection` behavior.
     Selection,
+    /// Selects the `Focus` behavior.
     Focus,
+    /// Selects the `Accent` behavior.
     Accent,
+    /// Selects the `Success` behavior.
     Success,
+    /// Selects the `Warning` behavior.
     Warning,
+    /// Selects the `Danger` behavior.
     Danger,
+    /// Selects the `Info` behavior.
     Info,
+    /// Selects the `Link` behavior.
     Link,
+    /// Selects the `LinkHover` behavior.
     LinkHover,
+    /// Selects the `Input` behavior.
     Input,
+    /// Selects the `InputInvalid` behavior.
     InputInvalid,
+    /// Selects the `ScrollTrack` behavior.
     ScrollTrack,
+    /// Selects the `ScrollThumb` behavior.
     ScrollThumb,
+    /// Selects the `TabActive` behavior.
     TabActive,
+    /// Selects the `TabInactive` behavior.
     TabInactive,
+    /// Selects the `TabActiveHovered` behavior.
     TabActiveHovered,
+    /// Selects the `TabInactiveHovered` behavior.
     TabInactiveHovered,
+    /// Selects the `TabUnderlineFocused` behavior.
     TabUnderlineFocused,
+    /// Selects the `TabUnderlineUnfocused` behavior.
     TabUnderlineUnfocused,
+    /// Selects the `HintKey` behavior.
     HintKey,
+    /// Selects the `HintText` behavior.
     HintText,
+    /// Selects the `HintDim` behavior.
     HintDim,
+    /// Selects the `HintSeparator` behavior.
     HintSeparator,
+    /// Selects the `ActionFocused` behavior.
     ActionFocused,
+    /// Selects the `ActionDisabled` behavior.
     ActionDisabled,
+    /// Selects the `StatusBar` behavior.
     StatusBar,
+    /// Selects the `DiffAdded` behavior.
     DiffAdded,
+    /// Selects the `DiffRemoved` behavior.
     DiffRemoved,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Semantic style roles used by every TermRock widget.
+///
+/// # Examples
+///
+/// ```
+/// use ratatui_core::style::{Color, Style};
+/// use termrock::{Theme, style::Role};
+///
+/// let theme = Theme::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
+/// assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
+/// ```
 pub struct Theme {
     roles: [Style; 37],
 }
 
 impl Theme {
     #[must_use]
+    /// Performs the `tailrocks_phosphor` operation.
     pub fn tailrocks_phosphor() -> Self {
         Self {
             roles: [
@@ -305,6 +360,7 @@ impl Theme {
     }
 
     #[must_use]
+    /// Performs the `style` operation.
     pub const fn style(&self, role: Role) -> Style {
         self.roles[role as usize]
     }
