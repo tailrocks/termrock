@@ -12,7 +12,7 @@ use ratatui_widgets::paragraph::{Paragraph, Wrap};
 
 use crate::theme::WHITE;
 
-use super::dialog_layout::{DialogBorder, dialog_inner_chunks, render_dialog_shell};
+use crate::layout::{DialogBorder, dialog_inner_chunks, render_dialog_shell};
 
 #[derive(Debug, Clone)]
 pub struct StatusPopupState {

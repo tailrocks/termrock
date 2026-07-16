@@ -24,7 +24,7 @@ use crate::{
     theme::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK},
 };
 
-use super::{Panel, PanelFocus};
+use crate::components::{Panel, PanelFocus};
 
 /// Dim track glyph shared by every scrollbar, both orientations and styles.
 pub const SCROLLBAR_TRACK: &str = "·";

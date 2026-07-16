@@ -2,6 +2,10 @@
 
 Pin a reviewed full Git revision and commit the Cargo lockfile. TermRock keeps executor, output, validation, wording, and application models consumer-owned.
 
+## `v0.7.0` canonical namespace migration
+
+`v0.7.0` is the intentional pre-1.0 breaking release that removes the donor-shaped `components` facade. Consumers must move to the canonical namespaces described below before updating their exact revision pin.
+
 | Donor concept | TermRock path |
 |---|---|
 | button strip | `termrock::widgets::ActionBar` |
@@ -16,5 +20,7 @@ Pin a reviewed full Git revision and commit the Cargo lockfile. TermRock keeps e
 | diff view | `termrock::widgets::DiffView` |
 | modal geometry and scrolling | `termrock::{layout,interaction,scroll}` |
 | terminal escapes | `termrock::osc` typed requests and pure encoders |
+
+The canonical foundation namespaces own their complete implementation. Import dialog geometry from `termrock::layout`, focus/hover/modal lifecycle from `termrock::interaction`, scroll geometry and rendering from `termrock::scroll`, and the opaque modal backdrop from `termrock::widgets::ModalBackdrop`. The former `termrock::components::{dialog_layout,focus_owner,hover_tracker,modal_backdrop,modal_lifecycle,scrollable_panel}` module paths are removed; consumers must not retain donor-shaped module imports.
 
 Wrap foreign receivers with `runtime::ClosureSubscription`; TermRock deliberately does not depend on Tokio. Brand headers, row construction, lifecycle stacks, output policy, and application-specific runtime helpers remain in the consumer.

@@ -245,19 +245,13 @@ impl DialogBodyScroll {
         content_height: usize,
         content_width: usize,
     ) {
-        use crate::components::scrollable_panel::{
+        use crate::scroll::{
             is_scrollable, render_horizontal_scrollbar, render_vertical_scrollbar,
         };
-        if is_scrollable(
-            content_height,
-            crate::components::scrollable_panel::viewport_height(block_area),
-        ) {
+        if is_scrollable(content_height, crate::scroll::viewport_height(block_area)) {
             render_vertical_scrollbar(frame, block_area, content_height, self.scroll_y);
         }
-        if is_scrollable(
-            content_width,
-            crate::components::scrollable_panel::viewport_width(block_area),
-        ) {
+        if is_scrollable(content_width, crate::scroll::viewport_width(block_area)) {
             render_horizontal_scrollbar(frame, block_area, content_width, self.scroll_x);
         }
     }
@@ -285,7 +279,7 @@ pub fn render_scrollable_dialog_body(
     lines: &[Line<'_>],
     scroll: &mut DialogBodyScroll,
 ) -> (usize, usize) {
-    use crate::components::scrollable_panel::{effective_offset, line_width};
+    use crate::scroll::{effective_offset, line_width};
 
     // Real rendered width — NOT max_line_width, which mirrors a row's leading
     // indent as trailing scroll-pad (that is for the mounts *panel*, which
@@ -317,7 +311,7 @@ pub fn dialog_scroll_axes(
     content_height: usize,
     block_area: Rect,
 ) -> ScrollAxes {
-    use crate::components::scrollable_panel::{is_scrollable, viewport_height, viewport_width};
+    use crate::scroll::{is_scrollable, viewport_height, viewport_width};
     ScrollAxes {
         vertical: is_scrollable(content_height, viewport_height(block_area)),
         horizontal: is_scrollable(content_width, viewport_width(block_area)),

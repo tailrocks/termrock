@@ -10,11 +10,11 @@ use ratatui_core::text::{Line, Span};
 use ratatui_core::widgets::Widget;
 
 use super::button_strip::{ButtonStrip, ButtonStripItem};
-use super::dialog_layout::{
+use crate::keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Visibility};
+use crate::layout::{
     DialogBodyScroll, DialogBorder, dialog_inner_chunks, render_dialog_shell,
     render_scrollable_dialog_body,
 };
-use crate::keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Visibility};
 use crate::theme::{LINK_FG, PHOSPHOR_DARK, PHOSPHOR_GREEN, WHITE};
 use crate::{HintSpan, ModalOutcome, centered_rect};
 

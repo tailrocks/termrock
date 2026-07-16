@@ -13,7 +13,7 @@
 use crate::components::panel::PanelFocus;
 
 /// Focus behavior shared by every button-row dialog: a closed ring of
-/// semantic focus states with a stable [`ButtonStrip`](super::button_strip::ButtonStrip)
+/// semantic focus states with a stable button-strip index.
 /// index.
 pub trait ButtonFocus: Copy + Eq + 'static {
     const RING: &'static [Self];

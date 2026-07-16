@@ -14,7 +14,7 @@
 use ratatui_core::layout::Rect;
 use ratatui_core::terminal::Frame;
 
-use crate::components::ModalBackdrop;
+use crate::widgets::ModalBackdrop;
 
 /// Stack of modal dialogs with "Esc walks back one step" semantics.
 ///

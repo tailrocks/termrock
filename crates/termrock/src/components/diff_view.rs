@@ -13,8 +13,8 @@ use ratatui_core::terminal::Frame;
 use ratatui_core::text::Line;
 use similar::{ChangeTag, TextDiff};
 
-use crate::components::scrollable_panel::{effective_offset, render_scrollable_block_at};
 use crate::scroll::ScrollAxes;
+use crate::scroll::{effective_offset, render_scrollable_block_at};
 use crate::theme::{
     DIFF_ADDED_BG, DIFF_ADDED_FG, DIFF_REMOVED_BG, DIFF_REMOVED_FG, PHOSPHOR_DARK, PHOSPHOR_GREEN,
 };

@@ -15,7 +15,7 @@ use crate::keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Visibility};
 use crate::{HintSpan, ModalOutcome, components::ButtonFocus};
 
 use super::button_strip::{ButtonStrip, ButtonStripItem};
-use super::dialog_layout::{DialogBorder, dialog_inner_chunks, render_dialog_shell};
+use crate::layout::{DialogBorder, dialog_inner_chunks, render_dialog_shell};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SaveDiscardChoice {

@@ -24,7 +24,7 @@ use crate::{
 };
 
 use super::button_strip::{ButtonStrip, ButtonStripItem};
-use super::dialog_layout::{DialogBorder, dialog_inner_chunks, render_dialog_shell};
+use crate::layout::{DialogBorder, dialog_inner_chunks, render_dialog_shell};
 
 /// Actions the confirmation dialog can take.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

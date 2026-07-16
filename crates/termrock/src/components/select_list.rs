@@ -15,8 +15,8 @@ use ratatui_widgets::{
 
 use crate::components::FilterInput;
 use crate::components::panel::{Panel, PanelFocus};
-use crate::components::scrollable_panel::ScrollableList;
 use crate::keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Visibility};
+use crate::scroll::ScrollableList;
 use crate::scroll::{cursor_follow_offset, full_cell_thumb, is_scrollable};
 use crate::theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN};
 use crate::{HintSpan, ModalOutcome};
@@ -305,11 +305,7 @@ fn render_select_list_in(
     }
     let viewport_cols = usize::from(list_area.width);
     let content_width = usize::from(state.max_label_width());
-    let scroll_x = crate::components::scrollable_panel::effective_offset(
-        content_width,
-        viewport_cols,
-        state.scroll_x,
-    );
+    let scroll_x = crate::scroll::effective_offset(content_width, viewport_cols, state.scroll_x);
     let has_horizontal_scroll = is_scrollable(content_width, viewport_cols);
     let list_body_area = if has_horizontal_scroll {
         Rect {
@@ -488,7 +484,7 @@ pub fn render_picker_list(
         // Drawn after the dividers so the thumb column always wins. Same glyphs
         // as the shared FixedScrollbar (Line style): `┃` thumb over the dim `·`
         // track, so picker scrollbars match every other bar in the TUI.
-        use crate::components::scrollable_panel::{SCROLLBAR_TRACK, ScrollbarStyle};
+        use crate::scroll::{SCROLLBAR_TRACK, ScrollbarStyle};
         let thumb_sym = ScrollbarStyle::Line.vertical_thumb();
         let x = area.x + area.width.saturating_sub(1);
         for row in 0..area.height {
@@ -539,7 +535,7 @@ fn render_picker_horizontal_scrollbar(
     ) else {
         return;
     };
-    use crate::components::scrollable_panel::{SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK};
+    use crate::scroll::{SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK};
     let y = list_area.y + list_area.height.saturating_sub(1);
     for col in 0..list_area.width {
         let in_thumb = col >= thumb.start && col < thumb.start.saturating_add(thumb.len);
