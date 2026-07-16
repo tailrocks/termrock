@@ -1,18 +1,19 @@
-import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
-
-const root = join(import.meta.dirname, '..', '..')
-const process = Bun.spawnSync(['cargo', 'run', '-q', '-p', 'termrock-lookbook', '--', 'list', '--format', 'json'], { cwd: root })
-if (process.exitCode !== 0) throw new Error(process.stderr.toString())
-const stories = JSON.parse(process.stdout.toString()) as Array<{ id: string; component: string }>
+const root = `${import.meta.dir}/../..`
+const result = Bun.spawnSync(
+  ['cargo', 'run', '-q', '-p', 'termrock-lookbook', '--', 'list', '--format', 'json'],
+  { cwd: root },
+)
+if (result.exitCode !== 0) throw new Error(result.stderr.toString())
+const stories = JSON.parse(result.stdout.toString()) as Array<{ id: string; component: string }>
 const ids = new Set(stories.map((story) => story.id))
 if (ids.size !== stories.length) throw new Error('duplicate story ID')
 
-const api = readFileSync(join(root, 'docs', 'api', 'public-api.txt'), 'utf8')
+const api = await Bun.file(`${root}/docs/api/public-api.txt`).text()
 const publicComponents = new Set<string>()
 for (const line of api.split('\n')) {
   const match = line.match(/^impl.*ratatui_core::widgets::(?:widget::Widget|stateful_widget::StatefulWidget) for &?termrock::widgets::([A-Z][A-Za-z0-9_]*)/)
-  if (match) publicComponents.add(match[1])
+  const component = match?.[1]
+  if (component) publicComponents.add(component)
 }
 if (publicComponents.size === 0) throw new Error('public API report contains no canonical widgets')
 
@@ -22,18 +23,31 @@ if (missingStories.length) throw new Error(`public components without stories: $
 const unknownStories = [...storyComponents].filter((component) => !publicComponents.has(component))
 if (unknownStories.length) throw new Error(`stories without public components: ${unknownStories.join(', ')}`)
 
-const contractPath = join(root, 'docs', 'api', 'component-contracts.json')
-const contracts = JSON.parse(readFileSync(contractPath, 'utf8')) as Record<string, Record<string, string>>
+const contractPath = `${root}/docs/api/component-contracts.json`
+const contracts = JSON.parse(await Bun.file(contractPath).text()) as Record<
+  string,
+  Record<string, string>
+>
 const contractComponents = new Set(Object.keys(contracts))
 const missingContracts = [...publicComponents].filter((component) => !contractComponents.has(component))
 const staleContracts = [...contractComponents].filter((component) => !publicComponents.has(component))
 if (missingContracts.length) throw new Error(`public components without contract review: ${missingContracts.join(', ')}`)
 if (staleContracts.length) throw new Error(`contract review contains non-public components: ${staleContracts.join(', ')}`)
-const contractNames = ['keyboard', 'mouse', 'focus', 'nonColor', 'unicode', 'narrowTerminal']
+const contractNames = [
+  'keyboard',
+  'mouse',
+  'focus',
+  'nonColor',
+  'unicode',
+  'narrowTerminal',
+] as const
 const contractValues = new Set(['covered', 'caller-owned', 'not-applicable'])
 for (const [component, review] of Object.entries(contracts)) {
   for (const contract of contractNames) {
-    if (!contractValues.has(review[contract])) throw new Error(`${component} has no valid ${contract} contract`)
+    const value = review[contract]
+    if (!value || !contractValues.has(value)) {
+      throw new Error(`${component} has no valid ${contract} contract`)
+    }
   }
 }
 
@@ -53,19 +67,30 @@ function hasAxisStory(component: string, axis: 'narrow' | 'unicode') {
   return stories.some((story) => story.component === component && story.id.split('/').includes(axis))
 }
 for (const [component, review] of Object.entries(contracts)) {
-  if (review.narrowTerminal === 'covered' && !NARROW_EXEMPT.has(component) && !hasAxisStory(component, 'narrow')) {
+  if (
+    review['narrowTerminal'] === 'covered' &&
+    !NARROW_EXEMPT.has(component) &&
+    !hasAxisStory(component, 'narrow')
+  ) {
     throw new Error(`${component} claims narrowTerminal covered without a /narrow story`)
   }
-  if (review.unicode === 'covered' && !UNICODE_EXEMPT.has(component) && !hasAxisStory(component, 'unicode')) {
+  if (
+    review['unicode'] === 'covered' &&
+    !UNICODE_EXEMPT.has(component) &&
+    !hasAxisStory(component, 'unicode')
+  ) {
     throw new Error(`${component} claims unicode covered without a /unicode story`)
   }
 }
 
-const docsDir = join(root, 'docs', 'content', 'docs')
-const docs = readdirSync(docsDir).filter((name) => name.endsWith('.mdx')).map((name) => readFileSync(join(docsDir, name), 'utf8')).join('\n')
+const docsDir = `${root}/docs/content/docs`
+let docs = ''
+for await (const name of new Bun.Glob('*.mdx').scan({ cwd: docsDir })) {
+  docs += `${await Bun.file(`${docsDir}/${name}`).text()}\n`
+}
 for (const story of stories) {
   if (!docs.includes(`\`${story.id}\``)) throw new Error(`missing docs for story ${story.id}`)
-  const preview = join(root, 'docs', 'public', 'component-previews', `${story.id.replaceAll('/', '-')}.svg`)
+  const preview = `${root}/docs/public/component-previews/${story.id.replaceAll('/', '-')}.svg`
   if (!Bun.file(preview).size) throw new Error(`missing preview ${preview}`)
 }
 console.log(`catalog covers ${publicComponents.size} public components with ${stories.length} stories`)
