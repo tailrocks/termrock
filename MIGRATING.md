@@ -29,6 +29,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0013 | `v0.10.0` | [Content measurement revisions](migrations/0013-v0.10.0-content-measurement-revisions.md) |
 | 0014 | `v0.10.0` | [Scroll and hover unification](migrations/0014-v0.10.0-scroll-and-hover-unification.md) |
 | 0015 | `v0.10.0` | [Independent terminal session options](migrations/0015-v0.10.0-independent-session-options.md) |
+| 0016 | `v0.11.0` | [Ordinary vs strong text and Viewport emphasis](migrations/0016-v0.11.0-text-strong-and-viewport-emphasis.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

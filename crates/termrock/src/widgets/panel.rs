@@ -68,7 +68,7 @@ impl<'a> Panel<'a> {
         if let Some(title) = self.title {
             block = block.title(Span::styled(
                 format!(" {} ", title.trim()),
-                self.theme.style(Role::Text),
+                self.theme.style(Role::TextStrong),
             ));
         }
         block

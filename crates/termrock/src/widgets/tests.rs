@@ -261,6 +261,31 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
     assert_eq!(buffer[(1, 1)].symbol(), "o");
     assert_eq!(buffer[(11, 1)].symbol(), "·");
     assert_eq!(buffer[(11, 2)].symbol(), "┃");
+    assert_eq!(buffer[(0, 0)].fg, theme.style(Role::Border).fg.unwrap());
+}
+
+#[test]
+fn viewport_emphasis_focused_uses_border_focused_role() {
+    let lines = [Line::from("row")];
+    let theme = Theme::default();
+    let viewport = Viewport::new(&lines, &theme)
+        .title("Active")
+        .emphasis(PanelEmphasis::Focused);
+    let area = Rect::new(0, 0, 16, 4);
+    let mut buffer = Buffer::empty(area);
+    let mut state = crate::scroll::DialogScroll::default();
+
+    StatefulWidget::render(&viewport, area, &mut buffer, &mut state);
+
+    assert_eq!(
+        buffer[(0, 0)].fg,
+        theme.style(Role::BorderFocused).fg.unwrap()
+    );
+    assert!(
+        buffer[(2, 0)]
+            .modifier
+            .contains(ratatui_core::style::Modifier::BOLD)
+    );
 }
 
 #[test]

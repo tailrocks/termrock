@@ -12,11 +12,14 @@ use crate::{
     style::{Role, Theme},
 };
 
+use super::PanelEmphasis;
+
 #[derive(Debug, Clone, Copy)]
 /// A scrollable view over borrowed terminal lines.
 pub struct Viewport<'a> {
     lines: &'a [Line<'a>],
     title: Option<&'a str>,
+    emphasis: PanelEmphasis,
     theme: &'a Theme,
     content_style: Option<Style>,
     content_revision: u64,
@@ -29,6 +32,7 @@ impl<'a> Viewport<'a> {
         Self {
             lines,
             title: None,
+            emphasis: PanelEmphasis::Normal,
             theme,
             content_style: None,
             content_revision: UNCACHED_REVISION,
@@ -39,6 +43,13 @@ impl<'a> Viewport<'a> {
     /// Sets the optional visible title.
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = Some(title);
+        self
+    }
+
+    #[must_use]
+    /// Selects the border emphasis for the active interaction owner.
+    pub const fn emphasis(mut self, emphasis: PanelEmphasis) -> Self {
+        self.emphasis = emphasis;
         self
     }
 
@@ -78,15 +89,18 @@ impl StatefulWidget for &Viewport<'_> {
             content_width,
             viewport_width,
         );
+        let border_role = if self.emphasis == PanelEmphasis::Focused {
+            Role::BorderFocused
+        } else {
+            Role::Border
+        };
         let mut block = Block::default()
             .borders(Borders::ALL)
-            .border_style(self.theme.style(Role::Border));
+            .border_style(self.theme.style(border_role));
         if let Some(title) = self.title {
             block = block.title(Span::styled(
                 format!(" {} ", title.trim()),
-                self.theme
-                    .style(Role::Text)
-                    .add_modifier(ratatui_core::style::Modifier::BOLD),
+                self.theme.style(Role::TextStrong),
             ));
         }
         // Vertical slicing keeps frame cost proportional to the painted

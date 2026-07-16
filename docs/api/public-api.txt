@@ -2493,6 +2493,7 @@ pub termrock::style::Role::TabUnderlineUnfocused
 pub termrock::style::Role::Text
 pub termrock::style::Role::TextDisabled
 pub termrock::style::Role::TextMuted
+pub termrock::style::Role::TextStrong
 pub termrock::style::Role::Warning
 impl core::clone::Clone for termrock::style::Role
 pub fn termrock::style::Role::clone(&self) -> termrock::style::Role
@@ -2585,7 +2586,7 @@ impl<T> either::into_either::IntoEither for termrock::style::Rgb
 pub struct termrock::style::Theme
 impl termrock::style::Theme
 pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
-pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 37]
+pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 38]
 pub fn termrock::style::Theme::slate() -> Self
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
@@ -5785,6 +5786,7 @@ pub struct termrock::widgets::Viewport<'a>
 impl<'a> termrock::widgets::Viewport<'a>
 pub const fn termrock::widgets::Viewport<'a>::content_revision(self, u64) -> Self
 pub const fn termrock::widgets::Viewport<'a>::content_style(self, ratatui_core::style::Style) -> Self
+pub const fn termrock::widgets::Viewport<'a>::emphasis(self, termrock::widgets::PanelEmphasis) -> Self
 pub const fn termrock::widgets::Viewport<'a>::new(&'a [ratatui_core::text::line::Line<'a>], &'a termrock::style::Theme) -> Self
 pub const fn termrock::widgets::Viewport<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Viewport<'_>
@@ -5838,7 +5840,7 @@ pub fn termrock::widgets::wrapped_hint_lines(&[termrock::widgets::HintSpan<'_>],
 pub struct termrock::Theme
 impl termrock::style::Theme
 pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
-pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 37]
+pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 38]
 pub fn termrock::style::Theme::slate() -> Self
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self

@@ -567,14 +567,12 @@ mod runtime_cow_prototype {
             let mut conflicts = Vec::new();
             for (left_index, left) in self.bindings.iter().enumerate() {
                 for right in &self.bindings[left_index + 1..] {
-                    for chord in left
+                    let shared = left
                         .chords
                         .iter()
                         .copied()
-                        .filter(|chord| right.chords.contains(chord))
-                    {
-                        conflicts.push((&left.action, &right.action, chord));
-                    }
+                        .filter(|chord| right.chords.contains(chord));
+                    conflicts.extend(shared.map(|chord| (&left.action, &right.action, chord)));
                 }
             }
             conflicts

@@ -100,8 +100,10 @@ pub enum Role {
     Elevated,
     /// Styles backdrop content.
     Backdrop,
-    /// Styles text content.
+    /// Ordinary body text (default weight).
     Text,
+    /// Strong or heading text (bold).
+    TextStrong,
     /// Styles text muted content.
     TextMuted,
     /// Styles text disabled content.
@@ -181,7 +183,7 @@ pub enum Role {
 /// assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
 /// ```
 pub struct Theme {
-    roles: [Style; 37],
+    roles: [Style; 38],
 }
 
 impl Theme {
@@ -194,6 +196,7 @@ impl Theme {
                 Style::new(),
                 Style::new(),
                 Style::new(),
+                Style::new().fg(WHITE),
                 BOLD_WHITE,
                 DIM,
                 Style::new().fg(BORDER_GRAY),
@@ -257,6 +260,7 @@ impl Theme {
                 Style::new().bg(surface),
                 Style::new().bg(elevated),
                 Style::new().bg(Color::Rgb(2, 6, 23)),
+                Style::new().fg(text),
                 Style::new().fg(text).bold(),
                 Style::new().fg(muted),
                 Style::new().fg(disabled).dim(),
@@ -308,7 +312,7 @@ impl Theme {
     /// Build a theme by answering every semantic role from a function.
     #[must_use]
     pub fn from_fn(f: impl Fn(Role) -> Style) -> Self {
-        let mut roles = [Style::new(); 37];
+        let mut roles = [Style::new(); 38];
         for role in Self::roles() {
             roles[role as usize] = f(role);
         }
@@ -317,13 +321,14 @@ impl Theme {
 
     /// Return every semantic role in stable positional order.
     #[must_use]
-    pub const fn roles() -> [Role; 37] {
+    pub const fn roles() -> [Role; 38] {
         [
             Role::Canvas,
             Role::Surface,
             Role::Elevated,
             Role::Backdrop,
             Role::Text,
+            Role::TextStrong,
             Role::TextMuted,
             Role::TextDisabled,
             Role::Border,
@@ -379,7 +384,7 @@ mod tests {
     #[test]
     fn roles_cover_the_positional_theme_array() {
         let roles = Theme::roles();
-        assert_eq!(roles.len(), 37);
+        assert_eq!(roles.len(), 38);
         for (index, role) in roles.into_iter().enumerate() {
             assert_eq!(role as usize, index);
         }
@@ -400,6 +405,32 @@ mod tests {
     #[test]
     fn default_is_the_phosphor_preset() {
         assert_eq!(Theme::default(), Theme::tailrocks_phosphor());
+    }
+
+    #[test]
+    fn default_separates_ordinary_and_strong_text() {
+        let theme = Theme::default();
+        assert_eq!(theme.style(Role::Text).fg, Some(WHITE));
+        assert!(
+            !theme
+                .style(Role::Text)
+                .add_modifier
+                .contains(Modifier::BOLD)
+        );
+        assert_eq!(theme.style(Role::TextStrong), BOLD_WHITE);
+        assert!(
+            theme
+                .style(Role::TextStrong)
+                .add_modifier
+                .contains(Modifier::BOLD)
+        );
+    }
+
+    #[test]
+    fn default_borders_use_gray_inactive_and_green_focused() {
+        let theme = Theme::default();
+        assert_eq!(theme.style(Role::Border).fg, Some(BORDER_GRAY));
+        assert_eq!(theme.style(Role::BorderFocused).fg, Some(PHOSPHOR_GREEN));
     }
 
     #[test]

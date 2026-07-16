@@ -450,7 +450,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 state.offset,
                 content_y,
                 &section.title,
-                self.theme.style(Role::Text).add_modifier(Modifier::BOLD),
+                self.theme.style(Role::TextStrong),
             );
             content_y = content_y.saturating_add(SECTION_HEADER_HEIGHT);
             for (index, field) in section.fields.iter().enumerate() {

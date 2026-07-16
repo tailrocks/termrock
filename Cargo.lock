@@ -1314,7 +1314,7 @@ dependencies = [
 
 [[package]]
 name = "termrock"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anstyle-parse",
  "base64",
@@ -1331,7 +1331,7 @@ dependencies = [
 
 [[package]]
 name = "termrock-lookbook"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "crossterm",
  "ratatui",
