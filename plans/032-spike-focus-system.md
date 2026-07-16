@@ -8,6 +8,15 @@
 > Requires POST-011 event contract and POST-024 interaction cleanup (ModalStack
 > state fix, single hover primitive). Verify both rows DONE.
 
+> **Reconcile note (2026-07-16, round 3, HEAD `5c4758b`)**: commit `5c4758b`
+> added an AGENTS.md section "Focus-visible panel hierarchy" — a binding design
+> constraint for this spike: border weight NEVER communicates focus; the single
+> interactive container uses `Role::BorderFocused`, others `Role::Border`;
+> `Panel` owns glyphs and role selection. The focus registry's projection
+> helper (Step 1/2) must express focus exclusively through those roles. Read
+> that AGENTS.md section before Step 1. Widget excerpts otherwise drifted
+> (2400+ lines churn) — re-read live code.
+
 ## Status
 
 - **Priority**: P3

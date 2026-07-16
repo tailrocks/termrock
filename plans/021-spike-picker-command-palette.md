@@ -8,6 +8,13 @@
 > Plans 011/013 reshaped these APIs — design against the CURRENT signatures;
 > read them as you go.
 
+> **Reconcile note (2026-07-16, round 3, HEAD `5c4758b`)**: `list.rs` was
+> heavily reshaped after planning (multi-select/Selection, checkbox-flatten
+> `d0397d0`, private fields via 013). The composition target is unchanged, but
+> every ListState excerpt is stale — design against live signatures; also
+> account for `Selection<Id>` (ordered multi-check) when specifying picker
+> multi-select semantics, and see plan 037's outcome-shape alignment.
+
 ## Status
 
 - **Priority**: P3

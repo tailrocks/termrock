@@ -1,129 +1,102 @@
-# Plan 029: Build `LogView` — the follow-tail, ANSI-colored scrollback widget the primitives already imply
+# Plan 029 (rewritten 2026-07-16, round 3): Complete `LogPane` — the shipped widget's residual gaps vs the original LogView spec
 
-> **Executor instructions**: Follow this plan step by step. Run every
-> verification command and confirm the expected result before moving to the
-> next step. If anything in the "STOP conditions" section occurs, stop and
-> report — do not improvise. When done, update the status row for this plan
-> in `plans/README.md`.
+> **SUPERSESSION NOTE**: The original Plan 029 specified a `LogView` widget.
+> Commit `ccf0646` shipped `widgets/log_pane.rs` (`LogPane`/`LogPaneState`)
+> implementing the core concept (tail-follow scrollback, follow indicator,
+> themed viewport, story/preview/contract row). This rewrite covers ONLY the
+> residual gaps. The original build-from-scratch plan is superseded.
 >
-> **Drift check (run first)**: `git diff --stat c51e11c..HEAD -- crates/termrock/src/scroll/ crates/termrock/src/ansi_text.rs crates/termrock/src/widgets/`
-> Written against the POST-011/013 API (state-owned handlers, new-idiom
-> construction). Verify those rows; design against LIVE signatures.
+> **Executor instructions**: Follow this plan step by step. Run every
+> verification command and confirm the expected result before moving on. STOP
+> conditions are binding. Update the plans/README.md row when done.
+>
+> **Drift check (run first)**: `git diff --stat 5c4758b..HEAD -- crates/termrock/src/widgets/log_pane.rs crates/termrock/src/widgets/viewport.rs crates/termrock/src/ansi_text.rs`
+> Concurrent executors active — re-locate by symbol.
 
 ## Status
 
-- **Priority**: P3
+- **Priority**: P2
 - **Effort**: M
-- **Risk**: LOW-MED (additive widget; ownership-boundary design is the risk)
-- **Depends on**: plans/011-event-model-convergence.md, plans/013-construction-idiom-and-widget-traits.md (build once, on the final contract); coordinate with 024 (keep `TailScroll`/`tail_vertical_thumb` — 024 keeps them, they're live-listed)
-- **Category**: direction
-- **Planned at**: commit `c51e11c`, 2026-07-16
+- **Risk**: LOW-MED (one item — Step 1 — is a maintainer decision, not code)
+- **Depends on**: none
+- **Category**: tech-debt
+- **Planned at**: commit `5c4758b`, 2026-07-16
 
 ## Why this matters
 
-Every building block for a streaming log/console pane already ships, individually public, wired together by nobody: `TailScroll` ("tail-relative scroll offset… 0 means live tail"), `tail_vertical_thumb` (a thumb function explicitly documented "for tail-relative scrollback surfaces"), `ansi_text::styled_spans` (SGR bytes → styled spans), and `Viewport`'s bordered scroll rendering. Comments in `scroll/mod.rs` reference "the host console panels" — a consumer already hand-composed this. Streaming process output is a near-universal TUI need and central to this ecosystem's heritage. `LogView` absorbs the composition; the consumer keeps the data.
+`LogPane` shipped the right concept but skipped named parts of the spec, and one skip was an explicit STOP-condition violation: the widget **owns** its line buffer (`LogPaneState { lines: Vec<Line<'static>>, .. }` with `append`/`clear`/ring-buffer), where the ownership doctrine and the original plan mandated borrowed `&[Line]` with a STOP-and-report if owned storage seemed necessary. That decision was made silently and must be ratified or reverted — it also broke the family signature (`handle_key(&mut self, key)` with no data parameter, unlike every other stateful widget). Beyond that: no wheel/scroll API (`scroll_by`), no `Home` (jump to oldest), no public `follow()`, contract row says mouse "caller-owned" but offers no method to own it against; no scrolled-back ("▲ +N") non-color indicator (only the following-state cue exists); no ANSI ingest helper (the widget renders logs but offers no path from SGR-colored bytes to `Line`s); the buffer defaults to unbounded (`max_lines: None`); width is still re-measured O(content) per frame via `Viewport`'s `max_line_width` (Plan 016 owns the Viewport-internal fix — this plan only must not add more O(content) work); and there is no hot-path allocation test.
 
 ## Current state
 
-- `crates/termrock/src/scroll/mod.rs:36-72` — `TailScroll { offset: usize }` with `scroll_by(filled, delta)`, `clamp(filled)`, `to_top_offset(content_len, viewport_len)` (tail-relative → top-relative conversion). Tested in the scroll suite.
-- `scroll/mod.rs` ~583 — `tail_vertical_thumb` ("Full-cell vertical thumb for tail-relative scrollback surfaces").
-- `crates/termrock/src/ansi_text.rs` — `styled_spans(input: &str, default_style: Style) -> Vec<Span>` (SGR fg/bg/modifiers incl. 256/truecolor) and `strip_bytes`. Hardened test coverage arrives via Plan 017.
-- `widgets/viewport.rs` — the bordered scrollable `&[Line]` renderer (post-015 renders the visible slice; post-008 themed).
-- Ownership doctrine (root AGENTS.md / COMPONENTS.md): consumers own the data ("labels, validation, filtering, lifecycle, output"); widgets consume borrowed projections with state types owning only interaction/viewport facts.
-- Post-011 contract: state-owned `handle_key(data, key) -> Outcome`, `hover`/`click`/`scroll_by` naming, neutral `MouseEvent`. Post-013: `X::new(required)` + const builders, `#[non_exhaustive]`, owned+ref render impls. New-widget catalog rule (AGENTS.md): inventory + contract row + story + deterministic preview + docs in the same change (Plan 028 adds the page gate).
+- `crates/termrock/src/widgets/log_pane.rs` (~line 14): `LogPaneState { lines: Vec<Line<'static>>, /* tail/follow state */, max_lines: Option<usize> }`; `LogPaneState::new()` → `max_lines: None`; `with_max_lines(usize)` builder; `append(impl Into<Line<'static>>)` with drain-on-overflow; `handle_key(&mut self, key)` (~:86, has the Release guard) covering Up/Down/j/k/PageUp/PageDown/End — **no Home**; render (~:145) delegates to `Viewport` passing `&state.lines`; follow indicator `" ⇣ following"` (~:163).
+- Family exemplars for the missing APIs: `TreeState::scroll_by(delta: isize, len) -> bool` shape (post-011 canonical), `tests/tree_hot_path.rs` (stats_alloc pattern), `tests/viewport_hot_path.rs` (landed with plan 015).
+- `ansi_text::styled_spans(input: &str, default_style: Style) -> Vec<Span>` exists; no `Line`-producing ingest helper.
+- Lookbook: one story (`log-pane-follow`), interactor with dead mouse path (`handle_mouse` returns false).
+- Contract row (`docs/api/component-contracts.json` LogPane): mouse `caller-owned`; unicode claimed `covered` without a wide-char story line (see plans 023/030-pattern).
+- Conventions: breaking changes → migration file; `missing_docs = deny` (real docs, not stubs); `public-api.txt` regen; previews re-render when stories change.
 
 ## Commands you will need
 
 | Purpose | Command | Expected on success |
 |---|---|---|
-| Tests | `cargo test --workspace --all-features --locked` | all pass |
+| Widget tests | `cargo test -p termrock log_pane` | all pass |
+| Hot path | `cargo test -p termrock --test log_pane_hot_path` | passes (new) |
 | Previews | `cargo run -p termrock-lookbook -- render --out docs/public/component-previews && cargo run -p termrock-lookbook -- check --dir docs/public/component-previews` | exit 0 |
-| Catalog gate | `cd docs && bun run build` | exit 0 |
 | Full gate | `mise run gate` | exit 0 |
 
 ## Scope
 
-**In scope**:
-- `crates/termrock/src/widgets/log_view.rs` (new) + `widgets/mod.rs` export
-- Lookbook: story (`log-view/tail` + a scrolled-back variant) + interactor; preview SVGs
-- `docs/api/component-contracts.json` row; `public-api.txt` regen; component page entry (post-028 generator map)
-- Hot-path test file (Step 4)
+**In scope**: `log_pane.rs`, `ansi_text.rs` (one helper), lookbook story/interactor additions, contract row, hot-path test file, migration file if Step 1 changes the API, `public-api.txt` regen.
 
-**Out of scope**:
-- Owning the line buffer / ring buffer: the CALLER owns lines (borrowed `&[Line]` projection). A managed ring buffer is a possible follow-up utility, not this widget.
-- ANSI parsing inside the widget: `LogView` consumes `&[Line]` — the consumer (or a helper constructor, see Step 1) converts bytes via `styled_spans` at ingest time, ONCE per line, not per frame.
-- Search/filter inside the log (composes with Picker-style filtering later).
-- Timestamps/severity chrome (consumer projection).
+**Out of scope**: `Viewport` internals (Plan 016 owns the O(content) width measure); Plan 034/TextArea; search/filter in logs.
 
 ## Git workflow
 
-- Directly on `main`; `git commit -s -m "feat(widgets): log view with tail-follow scrollback"` (+ migration file ONLY if any existing surface changes — expected: none, purely additive; the catalog artifacts land in the same commit per AGENTS.md).
+- Directly on `main`; `git commit -s -m "feat(log-pane): complete the scrollback contract"` (+`!` and migration if Step 1 reverts ownership).
 
 ## Steps
 
-### Step 1: API design (write it as rustdoc before code)
+### Step 1: Ratify or revert the owned buffer — REPORT FIRST
 
-```rust
-pub struct LogView<'a> { /* private: lines: &'a [Line<'a>], theme: &'a Theme, title: Option<&'a str>, wrap: bool(?) */ }
-impl<'a> LogView<'a> {
-    pub const fn new(lines: &'a [Line<'a>], theme: &'a Theme) -> Self;
-    pub const fn title(self, t: &'a str) -> Self;
-}
-pub struct LogViewState {
-    tail: TailScroll,           // 0 = following
-    // + painted geometry for hit-testing the scrollbar, per DetailTableState precedent
-}
-impl LogViewState {
-    pub fn handle_key(&mut self, lines_len: usize, key: KeyEvent) -> Outcome<()>;  // Up/Down/PageUp/PageDown/Home(oldest)/End(tail)
-    pub fn scroll_by(&mut self, delta: isize, lines_len: usize) -> bool;
-    pub fn follow(&mut self);                 // jump to tail / resume following
-    pub fn is_following(&self) -> bool;       // tail.offset() == 0
-}
-```
+This is the escalated STOP condition from the original plan. Present both options to the maintainer via your report BEFORE implementing either (if running unattended: implement (a) ratify — it's shipped, non-breaking, and the ring-buffer is genuinely useful — and record the decision):
+(a) **Ratify**: add a decision paragraph to `AGENTS.md`'s ownership section or the widget's module doc: "LogPane is the deliberate exception: an append-oriented scrollback owns its ring buffer because callers stream lines in rather than projecting state per frame." Keep `handle_key(&mut self, key)` (no data param — the data is internal; document why the family shape differs).
+(b) **Revert**: borrowed `&[Line]` per the original spec — breaking, migration file, `append`/ring-buffer moves to a standalone `LogBuffer` utility.
 
-Decisions to pin in rustdoc: (a) tail semantics — appending lines while `is_following()` keeps the view glued to the newest line; while scrolled back, appends do NOT move the view (TailScroll's tail-relative offset gives this for free — that's why it exists); (b) horizontal: start without horizontal scroll (long lines clipped; `wrap` deferred — record as a named non-goal); (c) non-color cue: a "▼ following" / "▲ scrolled (+N)" indicator cell in the border/title area so follow-state is visible without color.
+**Verify**: decision recorded (doc text committed) or report filed.
 
-**Verify**: design compiles as stub with `todo!()` bodies; `cargo check -p termrock` green.
+### Step 2: Complete the interaction surface
 
-### Step 2: Implement render + interaction
+Add: `scroll_by(&mut self, delta: isize) -> bool` (wheel; len is internal under ratified ownership), public `follow(&mut self)` + `is_following(&self) -> bool` (if not already public — check), `Home` key arm (jump to oldest). Change the default construction to bounded: `new()` keeps unbounded? NO — flip the default to a documented sane bound (e.g. 10_000 lines) with `unbounded()` as the explicit opt-out builder; unbounded-by-default plus O(content) measure is a memory/CPU footgun. (Breaking default-behavior change: include in the migration/notes.) Add the scrolled-back non-color cue: when not following, indicator shows `" ⇡ +N"` (N = lines below the view) alongside the existing following cue. Wire the lookbook interactor's mouse path (wheel → `scroll_by`).
 
-Render: visible window = `tail.to_top_offset(lines.len(), viewport_h)` slice (O(viewport) — the Plan-015 rule), `Panel`-style border via theme roles, `tail_vertical_thumb` scrollbar, follow indicator. Interaction per the Step-1 signatures; wheel = `scroll_by(±1)`; any upward scroll leaves follow mode; `End`/`follow()` re-enters it.
+**Verify**: widget tests extended (Home, scroll_by clamps, follow/unfollow transitions, bounded-default eviction, scrolled-back indicator cell content) → `cargo test -p termrock log_pane` all pass.
 
-**Verify**: unit tests in the widget file (buffer-assertion style from `widgets/tests.rs`): tail-follow glues to newest after append; scrolled-back view is stable across appends; `End` resumes follow; 0-height/0-width no panic; thumb position at three offsets. ≥6 tests green.
+### Step 3: ANSI ingest helper
 
-### Step 3: Ingest helper + story
+In `ansi_text.rs`: `pub fn line_from_ansi(input: &str, default_style: Style) -> Line<'static>` wrapping `styled_spans` (documented as the parse-once-at-append path). Test: SGR-colored input → styled spans in the Line; plain input passthrough.
 
-Add a free helper (in `ansi_text` or on the widget, pick `ansi_text`): `pub fn line_from_ansi(bytes: &[u8], default_style: Style) -> Line<'static>` wrapping `styled_spans` — the documented ingest path ("parse once at append time"). Lookbook: story rendering a fixed 30-line colored log at tail + a `log-view/scrolled` variant; interactor wiring wheel/keys. Contract row: keyboard covered, mouse covered, focus caller-owned, nonColor covered (the follow indicator), unicode covered (wide-char log lines in the story), narrowTerminal covered (narrow variant per Plan 023's gate).
+**Verify**: `cargo test -p termrock ansi` → new tests pass.
 
-**Verify**: previews render (content visible), catalog gate green, determinism green.
+### Step 4: Hot-path proof + story coverage
 
-### Step 4: Hot path proof
+`crates/termrock/tests/log_pane_hot_path.rs` modeled on `tree_hot_path.rs`/`viewport_hot_path.rs`: 10k appended lines, 40-row viewport, warmed 100 renders at tail → bounded allocations. NOTE: until Plan 016 lands, `Viewport`'s `max_line_width` full scan makes a strict zero-alloc bound unreachable — set the budget to what the slice-fix (015) allows and add a `// TIGHTEN after plan 016` comment with the target. Add a `log-pane/scrolled` story variant (scrolled-back indicator + a CJK/emoji line, covering the claimed unicode axis); re-render previews.
 
-`crates/termrock/tests/log_view_hot_path.rs` modeled on `tree_hot_path.rs` (stats_alloc): 10k borrowed lines, 40-row viewport, 100 warmed renders at tail — assert bounded allocations (O(viewport) clones only) and the batch time budget in the same spirit.
-
-**Verify**: hot-path test green; full `mise run gate` green.
-
-## Test plan
-
-Steps 2 + 4 (~8 tests incl. the allocation proof); lookbook story determinism; catalog/contract gates.
+**Verify**: hot-path test green (and demonstrably fails with an artificially unbounded budget — state observed numbers); previews deterministic; `cd docs && bun run build` green; `mise run gate` green.
 
 ## Done criteria
 
-- [ ] `LogView`/`LogViewState` exported; post-011 signature shapes; post-013 construction
-- [ ] Tail-follow semantics tested (glue, stable scrollback, resume)
-- [ ] Story + preview + contract row + API report all land in the same change (catalog gate green)
-- [ ] Hot-path allocation test green
-- [ ] `mise run gate` → exit 0
-- [ ] `plans/README.md` status row updated
+- [ ] Ownership decision recorded (doc or report)
+- [ ] `scroll_by`/`follow`/`Home`/bounded-default/scrolled-back cue shipped + tested; interactor wheel works
+- [ ] `line_from_ansi` exists + tested
+- [ ] `log_pane_hot_path` test green with stated budget; `log-pane/scrolled` story + preview committed
+- [ ] Contract row accurate (mouse still caller-owned is now defensible — scroll_by exists; unicode demonstrated)
+- [ ] `mise run gate` → exit 0; `plans/README.md` row updated
 
 ## STOP conditions
 
-- Plans 011/013 not landed — building on the old contract creates immediate migration debt; stop.
-- `TailScroll`'s semantics don't actually give stable-scrollback-under-append (test reveals drift) — that's a scroll-module finding; report before working around it.
-- The widget seems to need an owned line buffer to be usable (borrowed projection too awkward in the story) — STOP and report; that's an ownership-doctrine decision for the maintainer, not an implementation detail.
+- Maintainer rejects both ownership options (wants a third shape) — stop, capture requirements.
+- The bounded-default flip breaks a shipped consumer pattern visible in-repo — report before changing the default.
 
 ## Maintenance notes
 
-- The ingest helper is the seam a future managed ring-buffer utility would slot behind — keep parse-at-ingest as the documented contract.
-- Horizontal scroll / wrap is the recorded non-goal; first consumer demand decides which (wrap likely, given `Viewport` precedent).
-- Plan 034's TextArea and this widget both slice-by-viewport — if a shared "line window" helper emerges, extract then, not preemptively.
+- Plan 016 tightens the hot-path budget (the TIGHTEN comment is the tracker).
+- If Plan 031's frame clock lands, no LogPane change needed (no time-based behavior here).

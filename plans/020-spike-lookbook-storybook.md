@@ -8,6 +8,13 @@
 > Plans 010 (slate preset) and 018 (runner prototype rewrote run_terminal)
 > should be DONE first — check their rows; this spike builds on both.
 
+> **Reconcile note (2026-07-16, round 3, HEAD `5c4758b`)**: lookbook internals
+> evolved heavily since planning (stories/interactors/svg/main reshaped by the
+> 001-015 wave; 20 widgets now incl. Progress/LogPane). The approach stands;
+> treat all "Current state" excerpts as leads and re-read the live files. Plan
+> 022 (SVG fix) should land first so knob-driven re-renders inherit visible
+> colors.
+
 ## Status
 
 - **Priority**: P3

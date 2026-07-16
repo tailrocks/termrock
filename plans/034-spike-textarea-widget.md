@@ -8,6 +8,14 @@
 > **Drift check (run first)**: `git diff --stat c51e11c..HEAD -- crates/termrock/src/widgets/text_input.rs crates/termrock/src/text/ crates/termrock/src/geometry.rs`
 > Design against POST-011/013 (and post-012 module homes). Verify rows DONE.
 
+> **Reconcile note (2026-07-16, round 3, HEAD `5c4758b`)**: `geometry.rs` was
+> dissolved by plan 012 — the width/grapheme primitives now live in `text/`
+> (`display_cols`, `display_cols_slice`, `take_display_cols`, …); drift-check
+> paths updated accordingly. `text_input.rs` gained construction-idiom changes
+> (013); plan 035 adds `insert_str` paste handling whose newline-truncation
+> rule this spike's editor supersedes for multi-line consumers. Re-read live
+> signatures.
+
 ## Status
 
 - **Priority**: P3

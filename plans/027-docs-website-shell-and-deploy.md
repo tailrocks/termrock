@@ -10,6 +10,12 @@
 > Plans 003/022/023 touch docs.yml/previews — expected. Structural surprises
 > in docs/ config = STOP.
 
+> **Reconcile note (2026-07-16, round 3, HEAD `5c4758b`)**: `docs.yml` gained
+> the public-api freshness gate (plan 003) and `public-api.txt` was fully
+> regenerated (~1878 lines); `components.mdx` now lists 20 widgets. The shell
+> gap itself is unchanged (still zero routes/entries). Re-read docs.yml before
+> editing; the Step 3 deploy block appends after the existing gates.
+
 ## Status
 
 - **Priority**: P2

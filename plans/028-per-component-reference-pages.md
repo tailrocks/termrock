@@ -11,6 +11,12 @@
 > widget APIs converged. Verify those rows are DONE; write snippets against
 > LIVE code, not this plan's assumptions.
 
+> **Reconcile note (2026-07-16, round 3, HEAD `5c4758b`)**: widget set is now
+> 20 (Progress, LogPane added); 011/013 landed so usage snippets can be written
+> against the final API; plan 014's doctests exist as snippet sources — BUT
+> plan 036 (rustdoc placeholder sweep) should land first, since generated pages
+> quote doc content and ~330 public items currently carry placeholder stubs.
+
 ## Status
 
 - **Priority**: P2

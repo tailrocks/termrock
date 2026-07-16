@@ -8,6 +8,15 @@ order below unless the dependency column says otherwise. Each executor: read
 the plan fully before starting, honor its STOP conditions, and update your
 row when done.
 
+**Round 3 reconciliation (2026-07-16, HEAD `5c4758b`)**: plans 001–017
+verified genuinely DONE against their machine-checkable criteria (233+ tests
+green). Plans 029/030 were REWRITTEN in place as residual-gap plans — the
+shipped `LogPane`/`Progress` widgets superseded their build-from-scratch
+cores. Plans 035–037 added from the round-3 delta audit. Stale spikes
+(020/021/027/028/032/034) carry dated reconcile notes; their drift checks
+remain authoritative at execution time. AGENTS.md gained a binding
+"Focus-visible panel hierarchy" design section (input to plan 032).
+
 Repo ground rules that apply to EVERY plan (from AGENTS.md): work directly on
 `main` (no branches/PRs), Conventional Commits with DCO sign-off
 (`git commit -s`), every breaking public change adds the next sequential
@@ -49,12 +58,15 @@ number is `0004`; always check `ls migrations/` before claiming.
 | 026 | Release & versioning process (semver gate, tag backfill, git-cliff, RELEASING.md) | P2 | M | 001 | TODO |
 | 027 | Docs website shell + CI build + deploy | P2 | L | — | TODO |
 | 028 | Per-component reference pages (preview + usage + contract table) | P2 | L | 027; prefer 011, 013 | TODO |
-| 029 | LogView widget (tail-follow ANSI scrollback) | P3 | M | 011, 013 | TODO |
-| 030 | Gauge + Spinner progress widgets | P3 | M | 008, 013 | TODO |
+| 029 | LogPane completion (REWRITTEN round 3 — residual gaps of shipped `log_pane.rs`; core superseded by commit `ccf0646`) | P2 | M | — | TODO |
+| 030 | Progress completion (REWRITTEN round 3 — residual gaps of shipped `progress.rs`; core superseded by commit `b5928dc`) | P2 | S-M | — | TODO |
 | 031 | SPIKE: frame-clock/tick primitive (Toast TTL, spinner frames) | P3 | M | 018, 030 | TODO |
 | 032 | SPIKE: cross-widget focus system + modal focus trap | P3 | L | 011, 024 | TODO |
 | 033 | SPIKE: columnar data Table widget | P3 | L | 011, 013 | TODO |
 | 034 | SPIKE: TextArea multi-line editor | P3 | L | 011, 013, 017 | TODO |
+| 035 | Input-contract completion: Paste(String), unknown-event degradation, preset value pinning | P1 | S-M | — | TODO |
+| 036 | Rustdoc placeholder sweep (~330 stubs) + CI stub-phrase tripwire + README runtime note | P1 | M | — | TODO |
+| 037 | List/Tree multi-select contract alignment (outcome shape + state visibility) | P2 | S-M | — | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).
@@ -76,12 +88,16 @@ REJECTED (with one-line rationale).
 - **026 Step 2 pushes tags** — permanent, outward-facing; its per-commit verification is mandatory before push.
 - **027 before 028**; 028 also prefers 011/013 done (usage snippets written once against the final API).
 - **031 after 018** (clock threads through the runner) and after 030 (Spinner is client #1); **032 after 024** (ModalStack cleanup is its precondition).
+- Round 3: **036 before 028** (generated component pages quote rustdoc; sweep the placeholders first). **022 before 020** (knob re-renders inherit the SVG color fix). **035 riding note**: the lookbook-loop adoption of `input::Event` belongs to 018's prototype, not 035. 029-rewrite Step 1 is a maintainer decision point (LogPane buffer ownership). 036+030 touch `progress.rs` doc lines vs code — sequence or rebase carefully.
 
 ## Additional findings recorded during planning
 
 - **F-A**: `crates/termrock/src/scroll/render.rs` `render_scrollable_block_at` hardcodes `let theme = crate::Theme::default();` and `crate::theme::GREEN` inside a render helper (same pattern at `layout/dialog.rs:398`) — RESOLVED BY Plan 024, which deletes those orphaned functions. If 024 is rejected, revert to the original disposition (theme parameter via 012/016).
 - **F-B** (round 2): `scroll::ScrollableList::new` hardcodes a `PHOSPHOR_GREEN` highlight — additional evidence for its deletion in Plan 024.
 - Executors of Plans 007/017 may add `// CHARACTERIZATION: BUG` pins — list them here as they appear.
+- **F-C** (round 3): neutral `input::Event` has zero runtime consumers — the lookbook loop still matches raw crossterm events. Dogfooding lands via Plan 018's runner prototype; recorded so nobody mistakes the shipped contract for a driven one.
+- **F-D** (round 3, open naming question): three meanings of "select*" coexist in `list.rs` — `ListState.selected` (cursor), `Selection` (ordered multi-check), selection-following scroll. Resolve before Plan 033's Table adds a fourth consumer of the vocabulary.
+- **F-E** (round 3): commit `38d7080` published `Selection` one commit before regenerating `public-api.txt` — per-commit artifact freshness lapse; the docs.yml gate catches it on push but not per intermediate commit. Process note only.
 
 ## Findings considered and rejected (do not re-audit)
 
