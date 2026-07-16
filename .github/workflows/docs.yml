@@ -7,6 +7,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
+        with: { install: false }
+      - run: mise install rust
+      - run: mise install bun
       - working-directory: docs
         run: bun install --frozen-lockfile
       - working-directory: docs
