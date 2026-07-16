@@ -497,4 +497,181 @@ pub static SCROLL_HINT_KEYMAP: Keymap<ScrollHintAxis> = Keymap::new(&[
 ]);
 
 #[cfg(test)]
+mod runtime_cow_prototype {
+    use std::borrow::Cow;
+
+    use super::*;
+
+    #[derive(Debug, Clone)]
+    struct Binding<A: Clone + 'static> {
+        chords: Cow<'static, [KeyChord]>,
+        action: A,
+        hint: Option<Cow<'static, str>>,
+        visibility: Visibility,
+        glyph: Option<Cow<'static, str>>,
+    }
+
+    #[derive(Debug, Clone)]
+    struct RuntimeKeymap<A: Clone + 'static> {
+        bindings: Cow<'static, [Binding<A>]>,
+    }
+
+    impl<A: Clone + Copy + PartialEq + 'static> RuntimeKeymap<A> {
+        const fn from_static(bindings: &'static [Binding<A>]) -> Self {
+            Self {
+                bindings: Cow::Borrowed(bindings),
+            }
+        }
+
+        fn remap(&mut self, action: A, chords: Vec<KeyChord>) {
+            if let Some(binding) = self
+                .bindings
+                .to_mut()
+                .iter_mut()
+                .find(|binding| binding.action == action)
+            {
+                binding.chords = Cow::Owned(chords);
+            }
+        }
+
+        fn dispatch(&self, chord: KeyChord) -> Option<A> {
+            self.bindings
+                .iter()
+                .find(|binding| binding.chords.contains(&chord))
+                .map(|binding| binding.action)
+        }
+
+        fn hint_spans(&self) -> Vec<HintSpan<'static>> {
+            let mut spans = Vec::new();
+            for binding in self
+                .bindings
+                .iter()
+                .filter(|binding| binding.visibility == Visibility::Shown)
+            {
+                if !spans.is_empty() {
+                    spans.push(HintSpan::GroupSep);
+                }
+                let glyph = binding
+                    .glyph
+                    .as_deref()
+                    .unwrap_or_else(|| chord_glyph(binding.chords.first().copied()));
+                spans.push(HintSpan::DynKey(glyph.to_owned()));
+                if let Some(hint) = &binding.hint {
+                    spans.push(HintSpan::Dyn(hint.to_string()));
+                }
+            }
+            spans
+        }
+
+        fn conflicts(&self) -> Vec<(&A, &A, KeyChord)> {
+            let mut conflicts = Vec::new();
+            for (left_index, left) in self.bindings.iter().enumerate() {
+                for right in &self.bindings[left_index + 1..] {
+                    for chord in left
+                        .chords
+                        .iter()
+                        .copied()
+                        .filter(|chord| right.chords.contains(chord))
+                    {
+                        conflicts.push((&left.action, &right.action, chord));
+                    }
+                }
+            }
+            conflicts
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum Action {
+        Quit,
+        Cancel,
+    }
+
+    static BINDINGS: &[Binding<Action>] = &[
+        Binding {
+            chords: Cow::Borrowed(&[KeyChord::plain(KeyCode::Char('q'))]),
+            action: Action::Quit,
+            hint: Some(Cow::Borrowed("quit")),
+            visibility: Visibility::Shown,
+            glyph: None,
+        },
+        Binding {
+            chords: Cow::Borrowed(&[KeyChord::plain(KeyCode::Esc)]),
+            action: Action::Cancel,
+            hint: Some(Cow::Borrowed("cancel")),
+            visibility: Visibility::Shown,
+            glyph: None,
+        },
+    ];
+
+    #[test]
+    fn cow_borrowed_keymap_is_const_constructible() {
+        static KEYMAP: RuntimeKeymap<Action> = RuntimeKeymap::from_static(BINDINGS);
+        assert!(matches!(KEYMAP.bindings, Cow::Borrowed(_)));
+    }
+
+    #[test]
+    fn remap_disables_old_chord_and_dispatches_new_chord() {
+        let mut keymap = RuntimeKeymap::from_static(BINDINGS);
+        keymap.remap(Action::Quit, vec![KeyChord::ctrl(KeyCode::Char('c'))]);
+        assert_eq!(keymap.dispatch(KeyChord::plain(KeyCode::Char('q'))), None);
+        assert_eq!(
+            keymap.dispatch(KeyChord::ctrl(KeyCode::Char('c'))),
+            Some(Action::Quit)
+        );
+    }
+
+    #[test]
+    fn hints_derive_from_the_runtime_remap() {
+        let mut keymap = RuntimeKeymap::from_static(BINDINGS);
+        keymap.remap(Action::Quit, vec![KeyChord::ctrl(KeyCode::Char('c'))]);
+        assert_eq!(
+            keymap.hint_spans()[..2],
+            [
+                HintSpan::DynKey("Ctrl-C".to_owned()),
+                HintSpan::Dyn("quit".to_owned())
+            ]
+        );
+    }
+
+    #[test]
+    fn conflicts_report_both_actions_and_shared_chord() {
+        let mut keymap = RuntimeKeymap::from_static(BINDINGS);
+        keymap.remap(Action::Quit, vec![KeyChord::plain(KeyCode::Esc)]);
+        assert_eq!(
+            keymap.conflicts(),
+            vec![(
+                &Action::Quit,
+                &Action::Cancel,
+                KeyChord::plain(KeyCode::Esc)
+            )]
+        );
+    }
+
+    #[cfg(feature = "serde")]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct WireBinding {
+        action: String,
+        chords: Vec<WireChord>,
+        hint: Option<String>,
+        visibility: String,
+        glyph: Option<String>,
+    }
+
+    #[cfg(feature = "serde")]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct WireChord {
+        key: String,
+        modifiers: Vec<String>,
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn owned_wire_shape_is_serde_loadable() {
+        fn assert_serde<T: serde::Serialize + for<'de> serde::Deserialize<'de>>() {}
+        assert_serde::<WireBinding>();
+    }
+}
+
+#[cfg(test)]
 mod tests;
