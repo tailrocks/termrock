@@ -2771,6 +2771,53 @@ pub unsafe fn termrock::style::Role::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Role
 pub fn termrock::style::Role::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Role
+pub struct termrock::style::Rgb
+pub termrock::style::Rgb::b: u8
+pub termrock::style::Rgb::g: u8
+pub termrock::style::Rgb::r: u8
+impl termrock::style::Rgb
+pub const fn termrock::style::Rgb::new(u8, u8, u8) -> Self
+impl core::clone::Clone for termrock::style::Rgb
+pub fn termrock::style::Rgb::clone(&self) -> termrock::style::Rgb
+impl core::cmp::Eq for termrock::style::Rgb
+impl core::cmp::PartialEq for termrock::style::Rgb
+pub fn termrock::style::Rgb::eq(&self, &termrock::style::Rgb) -> bool
+impl core::fmt::Debug for termrock::style::Rgb
+pub fn termrock::style::Rgb::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::style::Rgb
+impl core::marker::StructuralPartialEq for termrock::style::Rgb
+impl core::marker::Freeze for termrock::style::Rgb
+impl core::marker::Send for termrock::style::Rgb
+impl core::marker::Sync for termrock::style::Rgb
+impl core::marker::Unpin for termrock::style::Rgb
+impl core::marker::UnsafeUnpin for termrock::style::Rgb
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::Rgb
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::Rgb
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::Rgb where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::Rgb::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::Rgb where U: core::convert::From<T>
+pub fn termrock::style::Rgb::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::Rgb where U: core::convert::Into<T>
+pub type termrock::style::Rgb::Error = core::convert::Infallible
+pub fn termrock::style::Rgb::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::Rgb where U: core::convert::TryFrom<T>
+pub type termrock::style::Rgb::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::Rgb::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::Rgb where T: core::clone::Clone
+pub type termrock::style::Rgb::Owned = T
+pub fn termrock::style::Rgb::clone_into(&self, &mut T)
+pub fn termrock::style::Rgb::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::Rgb where T: 'static + ?core::marker::Sized
+pub fn termrock::style::Rgb::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::Rgb where T: ?core::marker::Sized
+pub fn termrock::style::Rgb::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::Rgb where T: ?core::marker::Sized
+pub fn termrock::style::Rgb::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::Rgb where T: core::clone::Clone
+pub unsafe fn termrock::style::Rgb::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::Rgb
+pub fn termrock::style::Rgb::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::Rgb
 pub struct termrock::style::Theme
 impl termrock::style::Theme
 pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
@@ -2820,50 +2867,10 @@ pub unsafe fn termrock::style::Theme::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Theme
 pub fn termrock::style::Theme::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Theme
-pub const termrock::style::ACTION_ACCENT: ratatui_core::style::color::Color
-pub const termrock::style::BOLD_GREEN: ratatui_core::style::Style
-pub const termrock::style::BOLD_WHITE: ratatui_core::style::Style
-pub const termrock::style::BORDER: ratatui_core::style::Style
-pub const termrock::style::BORDER_GRAY: ratatui_core::style::color::Color
-pub const termrock::style::BORDER_GRAY_LIGHT: ratatui_core::style::color::Color
-pub const termrock::style::BRAND_BLOCK: ratatui_core::style::color::Color
-pub const termrock::style::CYAN: ratatui_core::style::color::Color
-pub const termrock::style::CYAN_DIM: ratatui_core::style::color::Color
-pub const termrock::style::DANGER: ratatui_core::style::Style
-pub const termrock::style::DANGER_RED: ratatui_core::style::color::Color
-pub const termrock::style::DEBUG_AMBER: ratatui_core::style::color::Color
-pub const termrock::style::DIALOG_BACKDROP: ratatui_core::style::color::Color
-pub const termrock::style::DIALOG_SCROLL_THUMB: ratatui_core::style::color::Color
-pub const termrock::style::DIALOG_SCROLL_TRACK: ratatui_core::style::color::Color
-pub const termrock::style::DIALOG_SURFACE: ratatui_core::style::color::Color
-pub const termrock::style::DIFF_ADDED_BG: ratatui_core::style::color::Color
-pub const termrock::style::DIFF_ADDED_FG: ratatui_core::style::color::Color
-pub const termrock::style::DIFF_REMOVED_BG: ratatui_core::style::color::Color
-pub const termrock::style::DIFF_REMOVED_FG: ratatui_core::style::color::Color
-pub const termrock::style::DIM: ratatui_core::style::Style
-pub const termrock::style::DISCLOSURE_ACCENT: ratatui_core::style::color::Color
-pub const termrock::style::GREEN: ratatui_core::style::Style
-pub const termrock::style::INK: ratatui_core::style::color::Color
-pub const termrock::style::INPUT_BG_DIM: ratatui_core::style::color::Color
-pub const termrock::style::LINK_BLUE: ratatui_core::style::color::Color
-pub const termrock::style::LINK_FG: ratatui_core::style::color::Color
-pub const termrock::style::LINK_FG_HOVER: ratatui_core::style::color::Color
-pub const termrock::style::MENU_AWAITING_BG: ratatui_core::style::color::Color
-pub const termrock::style::MENU_AWAITING_HOVER_BG: ratatui_core::style::color::Color
-pub const termrock::style::MENU_IDLE_BG: ratatui_core::style::color::Color
-pub const termrock::style::MENU_IDLE_HOVER_BG: ratatui_core::style::color::Color
 pub const termrock::style::PHOSPHOR_DARK: ratatui_core::style::color::Color
-pub const termrock::style::PHOSPHOR_DIM: ratatui_core::style::color::Color
 pub const termrock::style::PHOSPHOR_GREEN: ratatui_core::style::color::Color
 pub const termrock::style::PREVIEW_CARD: ratatui_core::style::color::Color
-pub const termrock::style::STATUS_BLOCKED_RED: ratatui_core::style::color::Color
-pub const termrock::style::TAB_BG_ACTIVE: ratatui_core::style::color::Color
-pub const termrock::style::TAB_BG_ACTIVE_HOVER: ratatui_core::style::color::Color
-pub const termrock::style::TAB_BG_INACTIVE: ratatui_core::style::color::Color
-pub const termrock::style::TAB_BG_INACTIVE_HOVER: ratatui_core::style::color::Color
-pub const termrock::style::WARNING_YELLOW: ratatui_core::style::color::Color
-pub const termrock::style::WHITE: ratatui_core::style::color::Color
-pub const fn termrock::style::color(termrock::Rgb) -> ratatui_core::style::color::Color
+pub const fn termrock::style::color(termrock::style::Rgb) -> ratatui_core::style::color::Color
 pub fn termrock::style::faded(ratatui_core::style::color::Color, f32) -> ratatui_core::style::color::Color
 pub mod termrock::text
 pub struct termrock::text::FixedPrefixSegment
@@ -3002,6 +3009,53 @@ pub unsafe fn termrock::style::Role::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Role
 pub fn termrock::style::Role::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Role
+pub struct termrock::theme::Rgb
+pub termrock::theme::Rgb::b: u8
+pub termrock::theme::Rgb::g: u8
+pub termrock::theme::Rgb::r: u8
+impl termrock::style::Rgb
+pub const fn termrock::style::Rgb::new(u8, u8, u8) -> Self
+impl core::clone::Clone for termrock::style::Rgb
+pub fn termrock::style::Rgb::clone(&self) -> termrock::style::Rgb
+impl core::cmp::Eq for termrock::style::Rgb
+impl core::cmp::PartialEq for termrock::style::Rgb
+pub fn termrock::style::Rgb::eq(&self, &termrock::style::Rgb) -> bool
+impl core::fmt::Debug for termrock::style::Rgb
+pub fn termrock::style::Rgb::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::style::Rgb
+impl core::marker::StructuralPartialEq for termrock::style::Rgb
+impl core::marker::Freeze for termrock::style::Rgb
+impl core::marker::Send for termrock::style::Rgb
+impl core::marker::Sync for termrock::style::Rgb
+impl core::marker::Unpin for termrock::style::Rgb
+impl core::marker::UnsafeUnpin for termrock::style::Rgb
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::Rgb
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::Rgb
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::Rgb where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::Rgb::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::Rgb where U: core::convert::From<T>
+pub fn termrock::style::Rgb::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::Rgb where U: core::convert::Into<T>
+pub type termrock::style::Rgb::Error = core::convert::Infallible
+pub fn termrock::style::Rgb::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::Rgb where U: core::convert::TryFrom<T>
+pub type termrock::style::Rgb::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::Rgb::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::Rgb where T: core::clone::Clone
+pub type termrock::style::Rgb::Owned = T
+pub fn termrock::style::Rgb::clone_into(&self, &mut T)
+pub fn termrock::style::Rgb::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::Rgb where T: 'static + ?core::marker::Sized
+pub fn termrock::style::Rgb::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::Rgb where T: ?core::marker::Sized
+pub fn termrock::style::Rgb::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::Rgb where T: ?core::marker::Sized
+pub fn termrock::style::Rgb::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::Rgb where T: core::clone::Clone
+pub unsafe fn termrock::style::Rgb::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::Rgb
+pub fn termrock::style::Rgb::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::Rgb
 pub struct termrock::theme::Theme
 impl termrock::style::Theme
 pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
@@ -3051,50 +3105,10 @@ pub unsafe fn termrock::style::Theme::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Theme
 pub fn termrock::style::Theme::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Theme
-pub const termrock::theme::ACTION_ACCENT: ratatui_core::style::color::Color
-pub const termrock::theme::BOLD_GREEN: ratatui_core::style::Style
-pub const termrock::theme::BOLD_WHITE: ratatui_core::style::Style
-pub const termrock::theme::BORDER: ratatui_core::style::Style
-pub const termrock::theme::BORDER_GRAY: ratatui_core::style::color::Color
-pub const termrock::theme::BORDER_GRAY_LIGHT: ratatui_core::style::color::Color
-pub const termrock::theme::BRAND_BLOCK: ratatui_core::style::color::Color
-pub const termrock::theme::CYAN: ratatui_core::style::color::Color
-pub const termrock::theme::CYAN_DIM: ratatui_core::style::color::Color
-pub const termrock::theme::DANGER: ratatui_core::style::Style
-pub const termrock::theme::DANGER_RED: ratatui_core::style::color::Color
-pub const termrock::theme::DEBUG_AMBER: ratatui_core::style::color::Color
-pub const termrock::theme::DIALOG_BACKDROP: ratatui_core::style::color::Color
-pub const termrock::theme::DIALOG_SCROLL_THUMB: ratatui_core::style::color::Color
-pub const termrock::theme::DIALOG_SCROLL_TRACK: ratatui_core::style::color::Color
-pub const termrock::theme::DIALOG_SURFACE: ratatui_core::style::color::Color
-pub const termrock::theme::DIFF_ADDED_BG: ratatui_core::style::color::Color
-pub const termrock::theme::DIFF_ADDED_FG: ratatui_core::style::color::Color
-pub const termrock::theme::DIFF_REMOVED_BG: ratatui_core::style::color::Color
-pub const termrock::theme::DIFF_REMOVED_FG: ratatui_core::style::color::Color
-pub const termrock::theme::DIM: ratatui_core::style::Style
-pub const termrock::theme::DISCLOSURE_ACCENT: ratatui_core::style::color::Color
-pub const termrock::theme::GREEN: ratatui_core::style::Style
-pub const termrock::theme::INK: ratatui_core::style::color::Color
-pub const termrock::theme::INPUT_BG_DIM: ratatui_core::style::color::Color
-pub const termrock::theme::LINK_BLUE: ratatui_core::style::color::Color
-pub const termrock::theme::LINK_FG: ratatui_core::style::color::Color
-pub const termrock::theme::LINK_FG_HOVER: ratatui_core::style::color::Color
-pub const termrock::theme::MENU_AWAITING_BG: ratatui_core::style::color::Color
-pub const termrock::theme::MENU_AWAITING_HOVER_BG: ratatui_core::style::color::Color
-pub const termrock::theme::MENU_IDLE_BG: ratatui_core::style::color::Color
-pub const termrock::theme::MENU_IDLE_HOVER_BG: ratatui_core::style::color::Color
 pub const termrock::theme::PHOSPHOR_DARK: ratatui_core::style::color::Color
-pub const termrock::theme::PHOSPHOR_DIM: ratatui_core::style::color::Color
 pub const termrock::theme::PHOSPHOR_GREEN: ratatui_core::style::color::Color
 pub const termrock::theme::PREVIEW_CARD: ratatui_core::style::color::Color
-pub const termrock::theme::STATUS_BLOCKED_RED: ratatui_core::style::color::Color
-pub const termrock::theme::TAB_BG_ACTIVE: ratatui_core::style::color::Color
-pub const termrock::theme::TAB_BG_ACTIVE_HOVER: ratatui_core::style::color::Color
-pub const termrock::theme::TAB_BG_INACTIVE: ratatui_core::style::color::Color
-pub const termrock::theme::TAB_BG_INACTIVE_HOVER: ratatui_core::style::color::Color
-pub const termrock::theme::WARNING_YELLOW: ratatui_core::style::color::Color
-pub const termrock::theme::WHITE: ratatui_core::style::color::Color
-pub const fn termrock::theme::color(termrock::Rgb) -> ratatui_core::style::color::Color
+pub const fn termrock::theme::color(termrock::style::Rgb) -> ratatui_core::style::color::Color
 pub fn termrock::theme::faded(ratatui_core::style::color::Color, f32) -> ratatui_core::style::color::Color
 pub mod termrock::widgets
 pub enum termrock::widgets::Anchor
@@ -6015,53 +6029,6 @@ pub unsafe fn termrock::geometry::FixedPrefixSegment::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::geometry::FixedPrefixSegment
 pub fn termrock::geometry::FixedPrefixSegment::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::geometry::FixedPrefixSegment
-pub struct termrock::Rgb
-pub termrock::Rgb::b: u8
-pub termrock::Rgb::g: u8
-pub termrock::Rgb::r: u8
-impl termrock::Rgb
-pub const fn termrock::Rgb::new(u8, u8, u8) -> Self
-impl core::clone::Clone for termrock::Rgb
-pub fn termrock::Rgb::clone(&self) -> termrock::Rgb
-impl core::cmp::Eq for termrock::Rgb
-impl core::cmp::PartialEq for termrock::Rgb
-pub fn termrock::Rgb::eq(&self, &termrock::Rgb) -> bool
-impl core::fmt::Debug for termrock::Rgb
-pub fn termrock::Rgb::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::Rgb
-impl core::marker::StructuralPartialEq for termrock::Rgb
-impl core::marker::Freeze for termrock::Rgb
-impl core::marker::Send for termrock::Rgb
-impl core::marker::Sync for termrock::Rgb
-impl core::marker::Unpin for termrock::Rgb
-impl core::marker::UnsafeUnpin for termrock::Rgb
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::Rgb
-impl core::panic::unwind_safe::UnwindSafe for termrock::Rgb
-impl<Q, K> equivalent::Equivalent<K> for termrock::Rgb where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::Rgb::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::Rgb where U: core::convert::From<T>
-pub fn termrock::Rgb::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::Rgb where U: core::convert::Into<T>
-pub type termrock::Rgb::Error = core::convert::Infallible
-pub fn termrock::Rgb::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::Rgb where U: core::convert::TryFrom<T>
-pub type termrock::Rgb::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::Rgb::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::Rgb where T: core::clone::Clone
-pub type termrock::Rgb::Owned = T
-pub fn termrock::Rgb::clone_into(&self, &mut T)
-pub fn termrock::Rgb::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::Rgb where T: 'static + ?core::marker::Sized
-pub fn termrock::Rgb::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::Rgb where T: ?core::marker::Sized
-pub fn termrock::Rgb::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::Rgb where T: ?core::marker::Sized
-pub fn termrock::Rgb::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::Rgb where T: core::clone::Clone
-pub unsafe fn termrock::Rgb::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::Rgb
-pub fn termrock::Rgb::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::Rgb
 pub struct termrock::TabCell<'a>
 pub termrock::TabCell::active: bool
 pub termrock::TabCell::cell_cols: u16
@@ -6200,45 +6167,7 @@ pub unsafe fn termrock::style::Theme::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Theme
 pub fn termrock::style::Theme::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Theme
-pub const termrock::ACTION_ACCENT: termrock::Rgb
-pub const termrock::AMBER: termrock::Rgb
-pub const termrock::BLACK: termrock::Rgb
-pub const termrock::BORDER_GRAY: termrock::Rgb
-pub const termrock::BORDER_GRAY_LIGHT: termrock::Rgb
-pub const termrock::BRAND_BLOCK: termrock::Rgb
-pub const termrock::CYAN: termrock::Rgb
-pub const termrock::CYAN_DIM: termrock::Rgb
-pub const termrock::DANGER_RED: termrock::Rgb
-pub const termrock::DEBUG_AMBER: termrock::Rgb
-pub const termrock::DIALOG_SCROLL_THUMB: termrock::Rgb
-pub const termrock::DIALOG_SCROLL_TRACK: termrock::Rgb
-pub const termrock::DISCLOSURE_ACCENT: termrock::Rgb
-pub const termrock::INPUT_BG_DIM: termrock::Rgb
-pub const termrock::LINK_BLUE: termrock::Rgb
-pub const termrock::LINK_FG: termrock::Rgb
-pub const termrock::LINK_FG_HOVER: termrock::Rgb
-pub const termrock::MENU_AWAITING_BG: termrock::Rgb
-pub const termrock::MENU_AWAITING_HOVER_BG: termrock::Rgb
-pub const termrock::MENU_IDLE_BG: termrock::Rgb
-pub const termrock::MENU_IDLE_HOVER_BG: termrock::Rgb
-pub const termrock::PHOSPHOR_DARK: termrock::Rgb
-pub const termrock::PHOSPHOR_DIM: termrock::Rgb
-pub const termrock::PHOSPHOR_GREEN: termrock::Rgb
-pub const termrock::PREVIEW_CARD: termrock::Rgb
-pub const termrock::RAIN_BODY: termrock::Rgb
-pub const termrock::RAIN_DARK: termrock::Rgb
-pub const termrock::RAIN_DIM: termrock::Rgb
-pub const termrock::RAIN_FRESH: termrock::Rgb
-pub const termrock::RAIN_HEAD: termrock::Rgb
-pub const termrock::RAIN_MID: termrock::Rgb
-pub const termrock::STATUS_BLOCKED_RED: termrock::Rgb
-pub const termrock::TAB_BG_ACTIVE: termrock::Rgb
-pub const termrock::TAB_BG_ACTIVE_HOVER: termrock::Rgb
-pub const termrock::TAB_BG_INACTIVE: termrock::Rgb
-pub const termrock::TAB_BG_INACTIVE_HOVER: termrock::Rgb
 pub const termrock::TAB_GAP: u16
-pub const termrock::WARNING_YELLOW: termrock::Rgb
-pub const termrock::WHITE: termrock::Rgb
 pub fn termrock::centered_rect(u16, u16, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::clickable_pointer_shape(bool) -> termrock::PointerShape
 pub fn termrock::display_cols(&str) -> usize

@@ -31,10 +31,11 @@ use ratatui::{
 use stories::stories;
 use svg::{check_svgs, write_story_svgs};
 use termrock::{
+    Theme,
     input::KeyCode,
     keymap::{KeyBinding, KeyChord, Keymap, Visibility, glyph},
     scroll::{self, ScrollSpan},
-    theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN, PREVIEW_CARD},
+    theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN, PREVIEW_CARD, Role},
 };
 
 const USAGE: &str = "usage: termrock-lookbook <terminal|list|render|check>";
@@ -267,6 +268,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
     // Sidebar inner rect (inside the Panel border). Used to map click row
     // → story index (each story occupies 2 rows: component name + id).
     let mut last_sidebar_inner_area = Rect::default();
+    let theme = Theme::default();
 
     loop {
         let story = stories[selected];
@@ -287,7 +289,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
 
             // Full-width brand header on black background.
             frame.render_widget(
-                Paragraph::new("TermRock  lookbook").style(termrock::theme::BOLD_WHITE),
+                Paragraph::new("TermRock  lookbook").style(theme.style(Role::Text)),
                 brand_area,
             );
 
@@ -306,7 +308,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
             let sidebar_style = if focus == Focus::Sidebar {
                 Style::new().fg(PHOSPHOR_GREEN)
             } else {
-                termrock::theme::BORDER
+                theme.style(Role::Border)
             };
             let sidebar_block = Block::default()
                 .borders(Borders::ALL)
@@ -332,8 +334,8 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
                 .iter()
                 .map(|s| {
                     ListItem::new(vec![
-                        Line::from(Span::styled(s.component, termrock::theme::BOLD_WHITE)),
-                        Line::from(Span::styled(s.id, termrock::theme::DIM)),
+                        Line::from(Span::styled(s.component, theme.style(Role::Text))),
+                        Line::from(Span::styled(s.id, theme.style(Role::TextMuted))),
                     ])
                 })
                 .collect();
@@ -364,7 +366,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
             let desc_block = Block::default()
                 .borders(Borders::ALL)
                 .title(" About ")
-                .border_style(termrock::theme::BORDER);
+                .border_style(theme.style(Role::Border));
             let desc_inner = desc_block.inner(desc_area);
             frame.render_widget(desc_block, desc_area);
 
@@ -378,7 +380,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
 
             frame.render_widget(
                 Paragraph::new(Line::from(vec![
-                    Span::styled(story.title, termrock::theme::BOLD_WHITE),
+                    Span::styled(story.title, theme.style(Role::Text)),
                     Span::styled("  ", Style::default()),
                     Span::styled(
                         story.component,
@@ -387,13 +389,13 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
                             .add_modifier(Modifier::DIM),
                     ),
                     Span::styled("  ", Style::default()),
-                    Span::styled(story.id, termrock::theme::DIM),
+                    Span::styled(story.id, theme.style(Role::TextMuted)),
                 ])),
                 title_row,
             );
             frame.render_widget(
                 Paragraph::new(story.description)
-                    .style(termrock::theme::BORDER)
+                    .style(theme.style(Role::Border))
                     .wrap(Wrap { trim: false }),
                 desc_row,
             );
@@ -402,7 +404,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
             let preview_style = if focus == Focus::Preview {
                 Style::new().fg(PHOSPHOR_GREEN)
             } else {
-                termrock::theme::BORDER
+                theme.style(Role::Border)
             };
             let preview_block = Block::default()
                 .borders(Borders::ALL)
