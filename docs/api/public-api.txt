@@ -4882,6 +4882,100 @@ pub unsafe fn termrock::widgets::ListState<Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ListState<Id>
+pub struct termrock::widgets::LogPane<'a>
+pub termrock::widgets::LogPane::theme: &'a termrock::style::Theme
+pub termrock::widgets::LogPane::title: core::option::Option<&'a str>
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::LogPane<'_>
+pub type &termrock::widgets::LogPane<'_>::State = termrock::widgets::LogPaneState
+pub fn &termrock::widgets::LogPane<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::LogPane<'a>
+pub fn termrock::widgets::LogPane<'a>::clone(&self) -> termrock::widgets::LogPane<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::LogPane<'a>
+pub fn termrock::widgets::LogPane<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::LogPane<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::LogPane<'a>
+impl<'a> core::marker::Send for termrock::widgets::LogPane<'a>
+impl<'a> core::marker::Sync for termrock::widgets::LogPane<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::LogPane<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::LogPane<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::LogPane<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::LogPane<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::LogPane<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::LogPane<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::LogPane<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::LogPane<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::LogPane<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::LogPane<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::LogPane<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::LogPane<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::LogPane<'a> where T: core::clone::Clone
+pub type termrock::widgets::LogPane<'a>::Owned = T
+pub fn termrock::widgets::LogPane<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::LogPane<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::LogPane<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::LogPane<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::LogPane<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::LogPane<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::LogPane<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::LogPane<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::LogPane<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::LogPane<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::LogPane<'a>
+pub fn termrock::widgets::LogPane<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::LogPane<'a>
+pub struct termrock::widgets::LogPaneState
+impl termrock::widgets::LogPaneState
+pub fn termrock::widgets::LogPaneState::append(&mut self, impl core::convert::Into<ratatui_core::text::line::Line<'static>>)
+pub fn termrock::widgets::LogPaneState::clear(&mut self)
+pub fn termrock::widgets::LogPaneState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::interaction::Outcome<()>
+pub fn termrock::widgets::LogPaneState::is_empty(&self) -> bool
+pub const fn termrock::widgets::LogPaneState::is_following(&self) -> bool
+pub fn termrock::widgets::LogPaneState::len(&self) -> usize
+pub fn termrock::widgets::LogPaneState::lines(&self) -> &[ratatui_core::text::line::Line<'static>]
+pub const fn termrock::widgets::LogPaneState::new() -> Self
+pub const fn termrock::widgets::LogPaneState::with_max_lines(self, usize) -> Self
+impl core::clone::Clone for termrock::widgets::LogPaneState
+pub fn termrock::widgets::LogPaneState::clone(&self) -> termrock::widgets::LogPaneState
+impl core::cmp::Eq for termrock::widgets::LogPaneState
+impl core::cmp::PartialEq for termrock::widgets::LogPaneState
+pub fn termrock::widgets::LogPaneState::eq(&self, &termrock::widgets::LogPaneState) -> bool
+impl core::default::Default for termrock::widgets::LogPaneState
+pub fn termrock::widgets::LogPaneState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::LogPaneState
+pub fn termrock::widgets::LogPaneState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::LogPaneState
+impl core::marker::Freeze for termrock::widgets::LogPaneState
+impl core::marker::Send for termrock::widgets::LogPaneState
+impl core::marker::Sync for termrock::widgets::LogPaneState
+impl core::marker::Unpin for termrock::widgets::LogPaneState
+impl core::marker::UnsafeUnpin for termrock::widgets::LogPaneState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::LogPaneState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::LogPaneState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::LogPaneState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::LogPaneState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::LogPaneState where U: core::convert::From<T>
+pub fn termrock::widgets::LogPaneState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::LogPaneState where U: core::convert::Into<T>
+pub type termrock::widgets::LogPaneState::Error = core::convert::Infallible
+pub fn termrock::widgets::LogPaneState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::LogPaneState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::LogPaneState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::LogPaneState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::LogPaneState where T: core::clone::Clone
+pub type termrock::widgets::LogPaneState::Owned = T
+pub fn termrock::widgets::LogPaneState::clone_into(&self, &mut T)
+pub fn termrock::widgets::LogPaneState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::LogPaneState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::LogPaneState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::LogPaneState where T: ?core::marker::Sized
+pub fn termrock::widgets::LogPaneState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::LogPaneState where T: ?core::marker::Sized
+pub fn termrock::widgets::LogPaneState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::LogPaneState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::LogPaneState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::LogPaneState
+pub fn termrock::widgets::LogPaneState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::LogPaneState
 pub struct termrock::widgets::MessageDialog<'a, Id>
 pub termrock::widgets::MessageDialog::details: &'a [termrock::widgets::DetailRow<'a, Id>]
 pub termrock::widgets::MessageDialog::dialog: termrock::widgets::Dialog<'a>

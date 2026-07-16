@@ -7,9 +7,10 @@ use termrock::{
     Theme,
     interaction::Outcome,
     widgets::{
-        ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListState,
-        SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, TextInput,
-        TextInputOutcome, TextInputState, Tree, TreeNode, TreeOutcome, TreeState, Validation,
+        ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListState, LogPane,
+        LogPaneState, SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio,
+        TextInput, TextInputOutcome, TextInputState, Tree, TreeNode, TreeOutcome, TreeState,
+        Validation,
     },
 };
 
@@ -175,6 +176,52 @@ impl StoryInteraction for TextInputInteractor {
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         !matches!(self.state.handle_key(key.into()), TextInputOutcome::Ignored)
+    }
+
+    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
+        false
+    }
+}
+
+pub(crate) struct LogPaneInteractor {
+    state: LogPaneState,
+    theme: Theme,
+}
+
+impl LogPaneInteractor {
+    pub(crate) fn new() -> Self {
+        let mut state = LogPaneState::new().with_max_lines(200);
+        for line in [
+            "[12:04:01] resolving workspace",
+            "[12:04:02] compiling termrock",
+            "[12:04:03] running 205 tests",
+            "[12:04:04] result: ok ✓",
+            "[12:04:05] preview ready",
+            "[12:04:06] waiting for changes",
+        ] {
+            state.append(line);
+        }
+        Self {
+            state,
+            theme: Theme::default(),
+        }
+    }
+}
+
+impl StoryInteraction for LogPaneInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        frame.render_stateful_widget(
+            &LogPane {
+                title: Some("Build log"),
+                theme: &self.theme,
+            },
+            area,
+            &mut self.state,
+        );
+    }
+
+    fn handle_key(&mut self, key: KeyEvent) -> bool {
+        !matches!(self.state.handle_key(key.into()), Outcome::Ignored)
     }
 
     fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {

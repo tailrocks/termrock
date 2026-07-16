@@ -9,6 +9,7 @@ mod diff;
 mod form;
 mod hint_bar;
 mod list;
+mod log_pane;
 mod panel;
 mod progress;
 mod selection;
@@ -31,6 +32,7 @@ pub use hint_bar::{
     Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
 };
 pub use list::{List, ListRow, ListState, RowRole};
+pub use log_pane::{LogPane, LogPaneState};
 pub use panel::{Panel, PanelEmphasis};
 pub use progress::{Progress, ProgressKind};
 pub use selection::Selection;

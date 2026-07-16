@@ -18,16 +18,16 @@ use termrock::{
         Action, ActionBar, ActionBarState, Anchor, Backdrop, ChoiceDialog, ChoiceDialogState,
         DetailCapability, DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine,
         DiffState, DiffView, Form, FormField, FormSection, FormState, Hint, HintBar, List, ListRow,
-        ListState, MessageDialog, Panel, PanelEmphasis, Progress, ProgressKind, RowRole, Severity,
-        SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState,
-        StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState, Toast, Tree, TreeNode,
-        TreeNodeStatus, TreeState, Validation, Viewport,
+        ListState, LogPane, LogPaneState, MessageDialog, Panel, PanelEmphasis, Progress,
+        ProgressKind, RowRole, Severity, SplitDirection, SplitPane, SplitPaneState, SplitRatio,
+        StatusBar, StatusBarState, StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState,
+        Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
     },
 };
 
 use crate::interactors::{
-    ChoiceDialogInteractor, FormInteractor, ListInteractor, SplitPaneInteractor, StaticStory,
-    StoryInteraction, TextInputInteractor, TreeInteractor,
+    ChoiceDialogInteractor, FormInteractor, ListInteractor, LogPaneInteractor, SplitPaneInteractor,
+    StaticStory, StoryInteraction, TextInputInteractor, TreeInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
@@ -109,6 +109,10 @@ fn text_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(TextInputInteractor::new())
 }
 
+fn log_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(LogPaneInteractor::new())
+}
+
 pub(crate) fn stories() -> Vec<Story> {
     vec![
         Story::new(
@@ -176,6 +180,16 @@ pub(crate) fn stories() -> Vec<Story> {
             2,
             progress,
         ),
+        Story::new(
+            "log-pane/follow",
+            "Following log pane",
+            "LogPane",
+            "Tail-following output; scroll up to freeze and End to resume.",
+            52,
+            8,
+            log_pane,
+        )
+        .with_interactor(log_pane_interactor),
         Story::new(
             "form/responsive",
             "Responsive form",
@@ -326,6 +340,26 @@ fn progress(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
         );
     }
+}
+
+fn log_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = LogPaneState::new().with_max_lines(200);
+    for line in [
+        "[12:04:01] resolving workspace",
+        "[12:04:02] compiling termrock",
+        "[12:04:03] running 205 tests",
+        "[12:04:04] result: ok ✓",
+    ] {
+        state.append(line);
+    }
+    frame.render_stateful_widget(
+        &LogPane {
+            title: Some("Build log"),
+            theme,
+        },
+        area,
+        &mut state,
+    );
 }
 
 fn action_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
