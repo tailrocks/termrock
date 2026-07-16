@@ -69,6 +69,16 @@ pub const STORIES: &[StoryMetadata] = &[
         component: "Dialog",
     },
     StoryMetadata {
+        id: "choice-dialog/basic",
+        title: "Choice dialog",
+        component: "ChoiceDialog",
+    },
+    StoryMetadata {
+        id: "message-dialog/details",
+        title: "Detailed message dialog",
+        component: "MessageDialog",
+    },
+    StoryMetadata {
         id: "diff/basic",
         title: "Diff view",
         component: "DiffView",
@@ -82,6 +92,11 @@ pub const STORIES: &[StoryMetadata] = &[
         id: "backdrop/basic",
         title: "Backdrop",
         component: "Backdrop",
+    },
+    StoryMetadata {
+        id: "viewport/both-axes",
+        title: "Scrollable viewport",
+        component: "Viewport",
     },
 ];
 

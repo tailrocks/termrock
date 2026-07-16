@@ -7,7 +7,9 @@ Every component accepts consumer-owned labels and borrowed data. Keyboard routin
 - `ActionBar`: caller-defined actions and activation regions. Story `action-bar/basic`.
 - `Backdrop`: backdrop without lifecycle ownership. Story `backdrop/basic`.
 - `DetailTable`: label/value rows with copy/link capabilities. Story `detail-table/basic`.
-- `Dialog`, `ChoiceDialog`, `MessageDialog`: shells and caller choices. Story `dialog/message`.
+- `Dialog`: neutral shell and caller-owned content. Story `dialog/message`.
+- `ChoiceDialog`: neutral shell with caller-owned stable actions. Story `choice-dialog/basic`.
+- `MessageDialog`: neutral message shell with caller-owned detail rows. Story `message-dialog/details`.
 - `DiffView`: borrowed projected lines. Story `diff/basic`.
 - `Form`: borrowed sections/fields, stable-ID focus traversal, validation/help/required/disabled states with neutral non-color markers, responsive columns, scrolling, and clipped label/value/support hit regions. Story `form/responsive`.
 - `HintBar`: prioritized chord descriptors. Story `hint-bar/wrapped`.
@@ -19,5 +21,6 @@ Every component accepts consumer-owned labels and borrowed data. Keyboard routin
 - `TextInput`: grapheme-safe editing and external validation. Story `text-input/filter`.
 - `Toast`: severity and anchor metadata. Story `toast/success`.
 - `Tree`: caller-flattened hierarchy, stable disclosure/selection IDs, explicit focus/loading/error rows, Page/wheel/scrollbar navigation, and painted hit regions. Story `tree/navigation`.
+- `Viewport`: borrowed lines with bounded two-axis scroll state. Story `viewport/both-axes`.
 
-All widgets tolerate empty and narrow rectangles. Disabled items are not hit targets. Mouse regions derive from painted geometry. Consumers own navigation policy and dialog stacking.
+All widgets tolerate empty and narrow rectangles. Disabled items are not hit targets. Mouse regions derive from painted geometry. Consumers own navigation policy and dialog stacking. The reviewed contract matrix in `docs/api/component-contracts.json` classifies keyboard, mouse, focus, non-color, Unicode, and narrow-terminal responsibility for every widget derived from the public API report; the catalog gate rejects missing or stale classifications.

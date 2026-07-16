@@ -6,13 +6,16 @@
 use ratatui::{Frame, layout::Rect, style::Style, text::Line, widgets::Paragraph};
 use termrock::{
     Theme,
+    scroll::DialogScroll,
+    style::Role,
     widgets::{
-        Action, ActionBar, ActionBarState, Anchor, Backdrop, DetailCapability, DetailRow,
-        DetailTable, DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Form,
-        FormField, FormSection, FormState, Hint, HintBar, List, ListRow, ListState, Panel,
-        PanelEmphasis, RowRole, Severity, SplitDirection, SplitPane, SplitPaneState, SplitRatio,
-        StatusBar, StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState, Toast, Tree,
-        TreeNode, TreeNodeStatus, TreeState, Validation,
+        Action, ActionBar, ActionBarState, Anchor, Backdrop, ChoiceDialog, DetailCapability,
+        DetailRow, DetailTable, DetailTableState, Dialog, DialogAction, DiffKind, DiffLine,
+        DiffState, DiffView, Form, FormField, FormSection, FormState, Hint, HintBar, List, ListRow,
+        ListState, MessageDialog, Panel, PanelEmphasis, RowRole, Severity, SplitDirection,
+        SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusSlot, Tab, Tabs, TabsState,
+        TextInput, TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
+        Viewport,
     },
 };
 
@@ -198,6 +201,24 @@ pub(crate) fn stories() -> Vec<Story> {
             dialog,
         ),
         Story::new(
+            "choice-dialog/basic",
+            "Choice dialog",
+            "ChoiceDialog",
+            "Caller-owned stable actions in a neutral dialog shell.",
+            48,
+            7,
+            choice_dialog,
+        ),
+        Story::new(
+            "message-dialog/details",
+            "Detailed message dialog",
+            "MessageDialog",
+            "Caller-owned detail rows composed into a neutral message shell.",
+            52,
+            8,
+            message_dialog,
+        ),
+        Story::new(
             "diff/basic",
             "Diff view",
             "DiffView",
@@ -223,6 +244,15 @@ pub(crate) fn stories() -> Vec<Story> {
             34,
             4,
             backdrop,
+        ),
+        Story::new(
+            "viewport/both-axes",
+            "Scrollable viewport",
+            "Viewport",
+            "Borrowed lines with bounded horizontal and vertical scroll state.",
+            44,
+            7,
+            viewport,
         ),
     ]
 }
@@ -570,6 +600,68 @@ fn dialog(frame: &mut Frame<'_>, area: Rect) {
     );
 }
 
+fn choice_dialog(frame: &mut Frame<'_>, area: Rect) {
+    let actions = [
+        DialogAction {
+            action: Action {
+                id: "continue",
+                label: "Continue",
+                enabled: true,
+                style: None,
+            },
+            destructive: false,
+        },
+        DialogAction {
+            action: Action {
+                id: "cancel",
+                label: "Cancel",
+                enabled: true,
+                style: None,
+            },
+            destructive: true,
+        },
+    ];
+    frame.render_widget(
+        &ChoiceDialog {
+            dialog: Dialog {
+                title: "Choose",
+                body: Line::from("Continue with this operation?"),
+                style: Style::new(),
+            },
+            actions: &actions,
+        },
+        area,
+    );
+}
+
+fn message_dialog(frame: &mut Frame<'_>, area: Rect) {
+    let details = [
+        DetailRow {
+            id: "state",
+            label: "State",
+            value: "Ready",
+            capability: DetailCapability::None,
+        },
+        DetailRow {
+            id: "reference",
+            label: "Reference",
+            value: "example-42",
+            capability: DetailCapability::Copy,
+        },
+    ];
+    frame.render_widget(
+        &MessageDialog {
+            dialog: Dialog {
+                title: "Result",
+                body: Line::from("The operation completed."),
+                style: Style::new(),
+            },
+            details: &details,
+        },
+        area,
+    );
+}
+
 fn diff(frame: &mut Frame<'_>, area: Rect) {
     let lines = [
         DiffLine {
@@ -614,5 +706,31 @@ fn backdrop(frame: &mut Frame<'_>, area: Rect) {
             style: Style::new().dim(),
         },
         area,
+    );
+}
+
+fn viewport(frame: &mut Frame<'_>, area: Rect) {
+    let lines = [
+        Line::from("alpha: short"),
+        Line::from("beta: a deliberately wide borrowed row for horizontal scrolling"),
+        Line::from("gamma: 🧪 Unicode"),
+        Line::from("delta: fourth row"),
+        Line::from("epsilon: fifth row"),
+        Line::from("zeta: sixth row"),
+    ];
+    let theme = Theme::default();
+    let mut state = DialogScroll::default();
+    frame.render_stateful_widget(
+        &Viewport {
+            lines: &lines,
+            title: Some("Viewport"),
+            content_style: Style::new(),
+            border_style: theme.style(Role::BorderFocused),
+            title_style: theme.style(Role::Text),
+            scroll_track_style: theme.style(Role::ScrollTrack),
+            scroll_thumb_style: theme.style(Role::ScrollThumb),
+        },
+        area,
+        &mut state,
     );
 }
