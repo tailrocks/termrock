@@ -57,7 +57,7 @@ number is `0004`; always check `ls migrations/` before claiming.
 | 025 | Session option decoupling (cursor/line-wrap independent of alt-screen) | P2 | S | — | DONE |
 | 026 | Release & versioning process (semver gate, tag backfill, git-cliff, RELEASING.md) | P2 | M | 001 | DONE |
 | 027 | Docs website shell + CI build + deploy | P2 | L | — | DONE |
-| 028 | Per-component reference pages (preview + usage + contract table) | P2 | L | 027; prefer 011, 013 | TODO |
+| 028 | Per-component reference pages (preview + usage + contract table) | P2 | L | 027; prefer 011, 013 | DONE |
 | 029 | LogPane completion (REWRITTEN round 3 — residual gaps of shipped `log_pane.rs`; core superseded by commit `ccf0646`) | P2 | M | — | TODO |
 | 030 | Progress completion (REWRITTEN round 3 — residual gaps of shipped `progress.rs`; core superseded by commit `b5928dc`) | P2 | S-M | — | TODO |
 | 031 | SPIKE: frame-clock/tick primitive (Toast TTL, spinner frames) | P3 | M | 018, 030 | TODO |

@@ -7,10 +7,13 @@
     "dev": "bunx --bun vite dev",
     "preview": "bunx --bun vite preview",
     "types:check": "bunx --bun fumadocs-mdx && bunx --bun tsc --noEmit",
+    "gen:components": "bun run scripts/gen-component-pages.ts",
+    "check:components": "bun run scripts/gen-component-pages.ts --check",
+    "check:snippets": "bun run scripts/check-component-snippets.ts",
     "check:catalog": "bun run scripts/check-catalog.ts",
     "finalize:site": "bun run scripts/finalize-static-site.ts",
     "check:site": "bun run scripts/check-static-site.ts",
-    "build": "bunx --bun fumadocs-mdx && bun run check:catalog && bunx --bun vite build && bun run finalize:site && bun run check:site"
+    "build": "bun run check:components && bun run check:snippets && bunx --bun fumadocs-mdx && bun run check:catalog && bunx --bun vite build && bun run finalize:site && bun run check:site"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.170.18",

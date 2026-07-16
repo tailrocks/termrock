@@ -1,46 +1,35 @@
 ---
 title: Components
+description: Product-neutral terminal building blocks with explicit interaction contracts.
 ---
 
-Every component accepts consumer-owned labels and borrowed data. Keyboard routing is expressed as logical actions; focus and hover state remain explicit and stable IDs survive filtering and reordering.
+TermRock components accept consumer-owned wording and domain state while owning reusable terminal rendering, focus behavior, hit geometry, Unicode safety, narrow-terminal behavior, and non-color cues.
 
-![List selection preview](/component-previews/list-selection.svg)
+| Component | Purpose |
+|---|---|
+| [ActionBar](./action-bar) | A horizontal group of stable, caller-owned actions with painted hit regions. |
+| [Backdrop](./backdrop) | A configurable themed fill painted behind modal content. |
+| [ChoiceDialog](./choice-dialog) | A modal choice prompt with stable action identities and canonical traversal. |
+| [DetailTable](./detail-table) | A selectable key/value table with stable rows and typed activation capabilities. |
+| [Dialog](./dialog) | A framed modal surface with semantic chrome and caller-owned content. |
+| [DiffView](./diff-view) | A vertically scrollable, syntax-neutral presentation of projected diff lines. |
+| [Form](./form) | A responsive form layout with stable focus, validation, and hit geometry. |
+| [HintBar](./hint-bar) | A wrapping row of prioritized keyboard hints with semantic styling. |
+| [List](./list) | A selectable, scrollable list over borrowed rows and stable identities. |
+| [LogPane](./log-pane) | A bounded, scrollable log buffer with freeze-on-scroll and tail following. |
+| [MessageDialog](./message-dialog) | A message dialog composed with optional scrollable detail rows. |
+| [Panel](./panel) | A themed bordered container with semantic focus emphasis. |
+| [Progress](./progress) | A deterministic determinate bar or caller-ticked indeterminate indicator. |
+| [SplitPane](./split-pane) | A resizable two-pane layout with bounded ratios and collapse support. |
+| [StatusBar](./status-bar) | A one-row collection of prioritized, interactive status slots. |
+| [Tabs](./tabs) | A keyboard- and pointer-navigable tab strip with stable identities. |
+| [TextInput](./text-input) | A single-line, grapheme-safe input with validation and semantic outcomes. |
+| [Toast](./toast) | A transient severity notification with caller-owned lifetime and placement. |
+| [Tree](./tree) | A navigable flattened hierarchy with disclosure and multi-select support. |
+| [Viewport](./viewport) | A two-axis scrollable view over borrowed terminal lines. |
 
-## Panel focus hierarchy
+## Shared guarantees
 
-Panel and dialog borders always use one plain, single-line glyph set. Focus is
-communicated by semantic color, never by heavier geometry: the current
-interaction owner uses `Role::BorderFocused`, while every visible inactive or
-background container uses `Role::Border`. The default phosphor theme maps these
-roles to bright phosphor green and neutral gray. This makes focus immediately
-legible in multi-panel layouts without turning inactive content into visual
-noise. Scrollbars may occupy edge cells, but they do not change the surrounding
-panel's border contract.
+All widgets tolerate empty and narrow rectangles. Disabled items are not hit targets. Mouse regions derive from painted geometry. Stable identities survive filtering and reordering. Consumers own effects, navigation policy, and dialog stacking.
 
-- `ActionBar`: caller-defined actions and activation regions. Story `action-bar/basic`.
-- `Backdrop`: backdrop without lifecycle ownership. Story `backdrop/basic`.
-- `DetailTable`: borrowed stable-ID label/value rows with selection, hover, emphasis, wrapping or bounded two-axis scrolling, exact copy/link hit regions, typed outcomes, and typed hyperlink regions. Story `detail-table/basic`.
-- `Dialog`: semantic themed panel chrome, padded title, caller-owned content, and focused or normal emphasis. Story `dialog/message`.
-- `ChoiceDialog`: neutral shell with caller-owned stable actions plus canonical focus traversal and painted keyboard/mouse activation outcomes. Story `choice-dialog/basic`.
-- `MessageDialog`: wrapped neutral message shell composed with the canonical `DetailTable` state and non-overlapping responsive body allocation. Story `message-dialog/details`.
-- `DiffView`: borrowed projected lines. Story `diff/basic`.
-- `Form`: borrowed sections/fields, stable-ID focus traversal, validation/help/required/disabled states with neutral non-color markers, responsive columns, scrolling, and clipped label/value/support hit regions. Story `form/responsive`.
-- `HintBar`: prioritized chord descriptors and semantic group wrapping that never splits a key/label pair. Story `hint-bar/wrapped`.
-- `List`: borrowed stable-ID rows with owned keyboard navigation, optional ordered multi-selection (`Space` and painted `[ ]`/`[x]` regions), selection-following scroll state, a proportional scrollbar gutter, right-aligned trailing metadata that survives label truncation, activation, hover, and painted click regions. Index-addressed pickers use `ListState::for_count`, `cycle_index`, `move_index`, `reconcile_count`, and `selected_item` instead of a parallel selection model. Story `list/selection`.
-- `Panel`: single-line semantic framing with focused and inactive border roles. Story `panel/focused`.
-- `Progress`: deterministic caller-ticked determinate bars and indeterminate spinners with percentage or glyph non-color cues. Story `progress/determinate`.
-- `LogPane`: bounded tail-following output with freeze-on-scroll and explicit `End` resume. Story `log-pane/follow`.
-- `SplitPane`: horizontal/vertical bounded pane geometry, integer remembered ratio, proportional minimum degradation in tiny areas, render-authorized divider focus/hover/drag, and caller-mapped collapse/expand. Story `split-pane/horizontal`.
-- `StatusBar`: caller-owned left/right slots with priority and minimum-width allocation, Unicode-safe truncation, painted hit regions, hover styles, and bar-wide fade. Story `status-bar/basic`.
-- `Tabs`: stable IDs, caller-styled glyph spans, explicit state, active/hover fills, a non-color active underline, and shared two-row pointer geometry. Story `tabs/status`.
-- `TextInput`: grapheme-safe editing, validated external cursor placement, cursor viewport, submission/cancellation outcomes, maximum-length and duplicate validation, and external validation styling. Story `text-input/filter`.
-- `Toast`: semantic severity styling, anchored placement, configurable margins, and narrow-area clamping. Story `toast/success`.
-- `Tree`: caller-flattened hierarchy, stable disclosure/selection IDs, optional ordered multi-selection (`Space` and painted `[ ]`/`[x]` regions), right-aligned trailing metadata that survives label truncation, explicit focus/loading/error rows, Page/wheel/scrollbar navigation, and distinct checkbox/disclosure/row hit regions. Story `tree/navigation`.
-- `Viewport`: borrowed lines with bounded two-axis scroll state. Story `viewport/both-axes`.
-
-All widgets tolerate empty and narrow rectangles. Disabled items are not hit targets. Mouse regions derive from painted geometry. Consumers own navigation policy and dialog stacking. The reviewed contract matrix in `docs/api/component-contracts.json` classifies keyboard, mouse, focus, non-color, Unicode, and narrow-terminal responsibility for every widget derived from the public API report; the catalog gate rejects missing or stale classifications.
-
-Contract-axis previews make those classifications executable. Narrow stories:
-`list/narrow`, `tabs/narrow`, `form/narrow`, `status-bar/narrow`,
-`dialog/narrow`, and `toast/narrow`. Unicode stories: `list/unicode`,
-`text-input/unicode`, and `detail-table/unicode`.
+Panel and dialog borders use one plain, single-line glyph set. Focus is communicated through the semantic `Role::BorderFocused` theme role; inactive containers use `Role::Border`.

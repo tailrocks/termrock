@@ -1,3 +1,5 @@
+import { componentSlug } from './component-doc-utils'
+
 const root = `${import.meta.dir}/../..`
 const result = Bun.spawnSync(
   ['cargo', 'run', '-q', '-p', 'termrock-lookbook', '--', 'list', '--format', 'json'],
@@ -85,8 +87,12 @@ for (const [component, review] of Object.entries(contracts)) {
 
 const docsDir = `${root}/docs/content/docs`
 let docs = ''
-for await (const name of new Bun.Glob('*.mdx').scan({ cwd: docsDir })) {
+for await (const name of new Bun.Glob('**/*.mdx').scan({ cwd: docsDir })) {
   docs += `${await Bun.file(`${docsDir}/${name}`).text()}\n`
+}
+for (const component of publicComponents) {
+  const page = `${docsDir}/components/${componentSlug(component)}.mdx`
+  if (!(await Bun.file(page).exists())) throw new Error(`missing component reference page ${page}`)
 }
 for (const story of stories) {
   if (!docs.includes(`\`${story.id}\``)) throw new Error(`missing docs for story ${story.id}`)

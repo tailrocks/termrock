@@ -3,7 +3,7 @@ const content = `${import.meta.dir}/../content/docs`
 const required = ['index.html', '404.html']
 const pages: Array<{ output: string; title: string }> = []
 
-for await (const file of new Bun.Glob('*.mdx').scan({ cwd: content })) {
+for await (const file of new Bun.Glob('**/*.mdx').scan({ cwd: content })) {
   const slug = file.replace(/\.mdx$/, '')
   const pageOutput =
     slug === 'index' ? 'docs/index.html' : `docs/${slug}/index.html`
@@ -38,9 +38,21 @@ for (const page of pages) {
   }
 }
 
+const componentChecks = [
+  ['action-bar', 'action-bar-basic'],
+  ['list', 'list-selection'],
+  ['viewport', 'viewport-both-axes'],
+] as const
+for (const [component, preview] of componentChecks) {
+  const html = await Bun.file(`${output}/docs/components/${component}/index.html`).text()
+  if (!html.includes(preview) || !html.includes('Interaction contract') || !html.includes('class="line"')) {
+    throw new Error(`${component} reference page is missing its preview, contract, or Rust usage`)
+  }
+}
 const components = await Bun.file(`${output}/docs/components/index.html`).text()
-if (!components.includes('List selection preview')) {
-  throw new Error('components page did not prerender the preview image')
+const siteBase = Bun.env['GITHUB_ACTIONS'] === 'true' ? '/termrock' : ''
+if (!components.includes(`href="${siteBase}/docs/components/action-bar"`)) {
+  throw new Error('components overview link does not include the configured site base')
 }
 if (components.includes('/termrock/termrock/')) {
   throw new Error('Pages base path was applied twice')

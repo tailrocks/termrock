@@ -16,7 +16,7 @@ export default defineConfig({
         enabled: true,
         prerender: { enabled: true, crawlLinks: true },
       },
-      pages: [{ path: '/' }, { path: '/docs' }],
+      pages: [{ path: '/' }, { path: '/docs' }, { path: '/docs/components' }],
     }),
     react(),
   ],
