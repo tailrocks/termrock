@@ -207,4 +207,16 @@ mod tests {
         assert_eq!(rows[1], Rect::new(4, 2, 20, 1));
         assert_eq!(rows[2], Rect::new(4, 3, 20, 1));
     }
+
+    #[test]
+    fn centered_rect_stays_inside_tiny_and_large_inputs() {
+        let outer = Rect::new(7, 11, 20, 10);
+        assert_eq!(centered_rect(8, 4, outer), Rect::new(13, 14, 8, 4));
+        for (width, height) in [(0, 0), (1, 1), (2, 2), (u16::MAX, u16::MAX)] {
+            let rect = centered_rect(width, height, outer);
+            assert!(rect.x >= outer.x && rect.y >= outer.y);
+            assert!(rect.right() <= outer.right());
+            assert!(rect.bottom() <= outer.bottom());
+        }
+    }
 }

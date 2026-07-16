@@ -100,3 +100,45 @@ impl<Tab: Copy> FocusOwner<Tab> {
         matches!(self, Self::Content(ref owned) if tab == owned)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum Button {
+        First,
+        Second,
+        Third,
+    }
+
+    impl ButtonFocus for Button {
+        const RING: &'static [Self] = &[Self::First, Self::Second, Self::Third];
+    }
+
+    #[test]
+    fn button_focus_cycles_and_wraps_in_both_directions() {
+        assert_eq!(Button::First.next().next().next(), Button::First);
+        assert_eq!(Button::First.prev(), Button::Third);
+        assert_eq!(Button::Third.next(), Button::First);
+    }
+
+    #[test]
+    fn panel_emphasis_and_cursor_follow_the_owned_tab() {
+        let owner = FocusOwner::Content(Button::Second);
+        assert_eq!(
+            owner.panel_emphasis_for(&Button::Second),
+            PanelEmphasis::Focused
+        );
+        assert_eq!(
+            owner.panel_emphasis_for(&Button::First),
+            PanelEmphasis::Normal
+        );
+        assert!(owner.show_cursor_for(&Button::Second));
+        assert!(!owner.show_cursor_for(&Button::First));
+        assert_eq!(
+            FocusOwner::TabBar.panel_emphasis_for(&Button::Second),
+            PanelEmphasis::Normal
+        );
+    }
+}

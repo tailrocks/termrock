@@ -284,4 +284,16 @@ mod tests {
                 .expect("active tab role has a background")
         );
     }
+
+    #[test]
+    fn tab_geometry_uses_display_columns_and_excludes_gaps() {
+        let cells = lay_out_tabs(&[("界", true), ("b", false)], 5);
+        assert_eq!(cells[0].cell_cols, 4);
+        assert_eq!(cells[1].start_col, 10);
+        assert_eq!(tab_at_column(&cells, 5), Some(0));
+        assert_eq!(tab_at_column(&cells, 8), Some(0));
+        assert_eq!(tab_at_column(&cells, 9), None);
+        assert_eq!(tab_at_column(&cells, 10), Some(1));
+        assert_eq!(tab_at_column(&cells, 13), None);
+    }
 }

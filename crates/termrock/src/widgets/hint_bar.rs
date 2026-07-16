@@ -273,4 +273,13 @@ mod tests {
         assert_eq!(lines[0].to_string(), "Enter select");
         assert_eq!(lines[1].to_string(), "Esc cancel");
     }
+
+    #[test]
+    fn hint_row_width_covers_empty_and_mixed_spans() {
+        assert_eq!(hint_row_cols(&[]), 0);
+        assert_eq!(
+            hint_row_cols(&[HintSpan::Key("↵"), HintSpan::Text("go"), HintSpan::Sep]),
+            7
+        );
+    }
 }

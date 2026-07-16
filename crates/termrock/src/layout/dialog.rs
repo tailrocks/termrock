@@ -100,20 +100,19 @@ impl DialogBodyScroll {
                 true
             }
             KeyCode::Down | KeyCode::Char('j' | 'J') if axes.vertical => {
-                let max = content_height.saturating_sub(viewport_height) as u16;
+                let max = crate::scroll::max_offset_u16(content_height, viewport_height);
                 self.scroll_y = self.scroll_y.saturating_add(1).min(max);
                 true
             }
             KeyCode::PageUp if axes.vertical => {
-                self.scroll_y = self.scroll_y.saturating_sub(viewport_height as u16);
+                let step = u16::try_from(viewport_height).unwrap_or(u16::MAX);
+                self.scroll_y = self.scroll_y.saturating_sub(step);
                 true
             }
             KeyCode::PageDown if axes.vertical => {
-                let max = content_height.saturating_sub(viewport_height) as u16;
-                self.scroll_y = self
-                    .scroll_y
-                    .saturating_add(viewport_height as u16)
-                    .min(max);
+                let max = crate::scroll::max_offset_u16(content_height, viewport_height);
+                let step = u16::try_from(viewport_height).unwrap_or(u16::MAX);
+                self.scroll_y = self.scroll_y.saturating_add(step).min(max);
                 true
             }
             KeyCode::Left | KeyCode::Char('h' | 'H') if axes.horizontal => {
@@ -121,7 +120,7 @@ impl DialogBodyScroll {
                 true
             }
             KeyCode::Right | KeyCode::Char('l' | 'L') if axes.horizontal => {
-                let max = content_width.saturating_sub(viewport_width) as u16;
+                let max = crate::scroll::max_offset_u16(content_width, viewport_width);
                 self.scroll_x = self.scroll_x.saturating_add(1).min(max);
                 true
             }

@@ -2,6 +2,48 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
+
+#[test]
+fn large_dialog_offsets_saturate_instead_of_wrapping() {
+    let axes = ScrollAxes {
+        vertical: true,
+        horizontal: true,
+    };
+    let mut scroll = DialogBodyScroll {
+        scroll_y: u16::MAX - 1,
+        scroll_x: u16::MAX - 1,
+    };
+    assert!(scroll.handle_key_for_axes(
+        KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+        70_000,
+        10,
+        70_000,
+        10,
+        axes,
+    ));
+    assert_eq!(scroll.scroll_y, crate::scroll::max_offset_u16(70_000, 10));
+
+    scroll.scroll_y = u16::MAX - 5;
+    assert!(scroll.handle_key_for_axes(
+        KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE),
+        70_000,
+        10,
+        70_000,
+        10,
+        axes,
+    ));
+    assert_eq!(scroll.scroll_y, crate::scroll::max_offset_u16(70_000, 10));
+
+    assert!(scroll.handle_key_for_axes(
+        KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+        70_000,
+        10,
+        70_000,
+        10,
+        axes,
+    ));
+    assert_eq!(scroll.scroll_x, crate::scroll::max_offset_u16(70_000, 10));
+}
 use ratatui_core::layout::Rect;
 
 #[test]

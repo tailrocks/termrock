@@ -217,4 +217,105 @@ mod tests {
         assert_eq!(out, display_cols_slice(text, 1, 3));
         assert_eq!(out, "界b");
     }
+
+    #[test]
+    fn display_width_handles_wide_combining_control_and_empty_text() {
+        for (text, width) in [
+            ("ascii", 5),
+            ("日本語", 6),
+            ("🧪", 2),
+            ("e\u{301}", 1),
+            ("a\u{1b}b", 2),
+            ("", 0),
+        ] {
+            assert_eq!(display_cols(text), width, "{text:?}");
+        }
+    }
+
+    #[test]
+    fn display_prefix_never_splits_wide_characters() {
+        for (text, width, expected) in [
+            ("abc", 2, "ab"),
+            ("日本", 3, "日"),
+            ("🧪x", 2, "🧪"),
+            ("e\u{301}x", 1, "e\u{301}"),
+            ("a\u{7f}b", 2, "ab"),
+            ("", 4, ""),
+        ] {
+            let taken = take_display_cols(text, width);
+            assert_eq!(taken, expected, "{text:?} at {width}");
+            assert!(display_cols(&taken) <= width);
+        }
+    }
+
+    #[test]
+    fn display_slices_drop_partial_wide_characters() {
+        for (text, skip, width, expected) in [
+            ("abcdef", 2, 3, "cde"),
+            ("日本", 1, 1, ""),
+            ("日本", 0, 2, "日"),
+            ("🧪x", 0, 0, ""),
+            ("abc", 0, 20, "abc"),
+            ("", 0, 4, ""),
+        ] {
+            let slice = display_cols_slice(text, skip, width);
+            assert_eq!(slice, expected, "{text:?} [{skip}..{}]", skip + width);
+            assert!(display_cols(&slice) <= width);
+        }
+    }
+
+    #[test]
+    fn control_boundaries_match_terminal_ranges() {
+        for (ch, expected) in [
+            ('\u{1f}', true),
+            ('\u{20}', false),
+            ('\u{7e}', false),
+            ('\u{7f}', true),
+            ('\u{80}', true),
+            ('\u{9f}', true),
+            ('\u{a0}', false),
+        ] {
+            assert_eq!(
+                is_terminal_control_char(ch),
+                expected,
+                "U+{:04X}",
+                ch as u32
+            );
+        }
+    }
+
+    #[test]
+    fn terminal_titles_collapse_controls_and_whitespace() {
+        assert_eq!(
+            sanitize_terminal_title(" \u{1b}build\u{7}\n\tready\u{9b} "),
+            "build ready"
+        );
+        assert_eq!(sanitize_terminal_title("\u{1b}\u{7}\n"), "");
+    }
+
+    #[test]
+    fn indentation_measurement_matches_trailing_padding_contract() {
+        assert_eq!(leading_space_cols(["  one", "two"]), 2);
+        assert_eq!(leading_space_cols(["", "   "]), 3);
+        assert_eq!(padded_line_display_cols(["  one"]), 7);
+    }
+
+    #[test]
+    fn fixed_prefix_segments_cover_scroll_and_combining_boundaries() {
+        let fit = fixed_prefix_scroll_segments("ab", 0, 1, 0, 2);
+        assert_eq!(fit.len(), 2);
+        assert_eq!((fit[0].target_col, fit[1].target_col), (0, 1));
+
+        let past_end = fixed_prefix_scroll_segments("ab", 0, 1, 10, 2);
+        assert_eq!(past_end.len(), 1);
+        assert_eq!(past_end[0].start_byte, 0);
+
+        let combining = fixed_prefix_scroll_segments("e\u{301}x", 0, 1, 0, 2);
+        assert_eq!(combining[0].end_byte, "e\u{301}".len());
+        assert_eq!(combining[1].target_col, 1);
+
+        let no_prefix = fixed_prefix_scroll_segments("ab", 0, 0, 1, 1);
+        assert_eq!(no_prefix.len(), 1);
+        assert_eq!(no_prefix[0].target_col, 0);
+    }
 }
