@@ -1,13 +1,13 @@
 use std::sync::mpsc::{Receiver, TryRecvError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Available `SubscriptionPoll` choices.
+/// The result of polling a runtime subscription once.
 pub enum SubscriptionPoll<Event> {
-    /// Selects the `Ready` behavior.
+    /// The subscription is ready.
     Ready(Event),
-    /// Selects the `Pending` behavior.
+    /// The subscription is pending.
     Pending,
-    /// Selects the `Closed` behavior.
+    /// The subscription is closed.
     Closed,
 }
 impl<Event> SubscriptionPoll<Event> {
@@ -18,15 +18,15 @@ impl<Event> SubscriptionPoll<Event> {
     }
 }
 
-/// Documentation for `item`.
+/// Non-blocking source of runtime values.
 pub trait Subscription {
     /// The `Output;` value produced by this contract.
     type Output;
-    /// Performs the `poll_next` operation.
+    /// Polls the subscription once without blocking.
     fn poll_next(&mut self) -> SubscriptionPoll<Self::Output>;
 }
 
-/// Data carried by `ClosureSubscription`.
+/// A subscription backed by a caller-provided polling closure.
 pub struct ClosureSubscription<F>(pub F);
 impl<Event, F> Subscription for ClosureSubscription<F>
 where
@@ -38,7 +38,7 @@ where
     }
 }
 
-/// Data carried by `StdSubscription`.
+/// A boxed, thread-safe runtime subscription.
 pub struct StdSubscription<Event>(pub Receiver<Event>);
 impl<Event> Subscription for StdSubscription<Event> {
     type Output = Event;

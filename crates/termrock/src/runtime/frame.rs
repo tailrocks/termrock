@@ -5,7 +5,7 @@ use ratatui_core::{
     terminal::{CompletedFrame, Frame, Terminal},
 };
 
-/// Performs the `drive_frame` operation.
+/// Applies one message and renders only when the update requests redraw.
 pub fn drive_frame<'a, B, Model, V, F>(
     terminal: &'a mut Terminal<B>,
     view: &V,
@@ -24,7 +24,7 @@ where
     })
 }
 
-/// Performs the `drive_render` operation.
+/// Renders the current view through the supplied callback.
 pub fn drive_render<'a, B, F>(
     terminal: &'a mut Terminal<B>,
     render: F,

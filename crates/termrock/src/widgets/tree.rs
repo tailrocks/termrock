@@ -17,50 +17,50 @@ use super::Selection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `TreeNodeStatus` choices.
+/// Loading and error states associated with a tree node.
 pub enum TreeNodeStatus {
-    /// Selects the `Ready` behavior.
+    /// The ready state.
     Ready,
-    /// Selects the `Loading` behavior.
+    /// The loading state.
     Loading,
-    /// Selects the `Error` behavior.
+    /// The error state.
     Error,
 }
 
 #[derive(Debug, Clone)]
-/// Data carried by `TreeNode`.
+/// A stable flattened tree row with hierarchy metadata.
 pub struct TreeNode<'a, Id> {
-    /// Documentation for `item`.
+    /// Stable identity used for selection and activation.
     pub id: Id,
-    /// Documentation for `item`.
+    /// Caller-visible label.
     pub label: Line<'a>,
-    /// Documentation for `item`.
+    /// Optional metadata aligned at the trailing edge.
     pub trailing: Option<Line<'a>>,
-    /// Documentation for `item`.
+    /// Zero-based hierarchy depth.
     pub depth: u16,
-    /// Documentation for `item`.
+    /// Whether the node can request disclosure changes.
     pub branch: bool,
-    /// Documentation for `item`.
+    /// Whether this item is expanded.
     pub expanded: bool,
-    /// Documentation for `item`.
+    /// Whether this item is enabled.
     pub enabled: bool,
-    /// Documentation for `item`.
+    /// Optional loading or error state.
     pub status: TreeNodeStatus,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `TreeOutcome` choices.
+/// Semantic results produced by tree interaction.
 pub enum TreeOutcome<Id> {
-    /// Selects the `Ignored` behavior.
+    /// Reports ignored.
     Ignored,
-    /// Selects the `SelectionChanged` behavior.
+    /// Reports selection changed.
     SelectionChanged(Id),
-    /// Selects the `Toggle` behavior.
+    /// Reports toggle.
     Toggle(Id),
-    /// Selects the `CheckToggled` behavior.
+    /// Reports check toggled.
     CheckToggled(Id),
-    /// Selects the `Activated` behavior.
+    /// Reports activated.
     Activated(Id),
 }
 
@@ -100,7 +100,7 @@ impl<Id> Default for TreeState<Id> {
 
 impl<Id> TreeState<Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates tree state with no selection, hover, expansion, or scroll.
     pub const fn new(selected: Option<Id>) -> Self {
         Self {
             selected,
@@ -118,13 +118,13 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
-    /// Performs the `selected` operation.
+    /// Returns the currently selected stable identity.
     pub const fn selected(&self) -> Option<&Id> {
         self.selected.as_ref()
     }
 
     #[must_use]
-    /// Performs the `hovered` operation.
+    /// Returns the stable identity currently under the pointer.
     pub const fn hovered(&self) -> Option<&Id> {
         self.hovered.as_ref()
     }
@@ -141,39 +141,39 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
-    /// Performs the `offset` operation.
+    /// Returns the signed distance from the live tail in rows.
     pub const fn offset(&self) -> usize {
         self.offset
     }
 
-    /// Performs the `select` operation.
+    /// Selects the item with the supplied stable identity.
     pub fn select(&mut self, selected: Option<Id>) {
         self.selected = selected;
         self.follow_selection = true;
     }
 
-    /// Performs the `enable_multi_select` operation.
+    /// Enables ordered multi-selection with an empty selection.
     pub fn enable_multi_select(&mut self) {
         self.selection.get_or_insert_with(Selection::new);
     }
 
-    /// Performs the `disable_multi_select` operation.
+    /// Disables multi-selection and discards checked identities.
     pub fn disable_multi_select(&mut self) {
         self.selection = None;
     }
 
     #[must_use]
-    /// Performs the `selection` operation.
+    /// Returns the ordered multi-selection state, if enabled.
     pub const fn selection(&self) -> Option<&Selection<Id>> {
         self.selection.as_ref()
     }
 
-    /// Performs the `selection_mut` operation.
+    /// Returns mutable access to ordered multi-selection state, if enabled.
     pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
         self.selection.as_mut()
     }
 
-    /// Performs the `scroll_by` operation.
+    /// Moves the scroll position by a signed delta and clamps it to valid content.
     pub fn scroll_by(&mut self, delta: isize, node_count: usize) -> bool {
         let before = self.offset;
         let maximum = max_offset(node_count, self.viewport_height);
@@ -188,7 +188,7 @@ impl<Id> TreeState<Id> {
         before != self.offset
     }
 
-    /// Performs the `scroll_to_position` operation.
+    /// Scrolls toward a pointer position within the painted viewport.
     pub fn scroll_to_position(&mut self, position: Position, node_count: usize) -> bool {
         let Some(area) = self.scrollbar_region else {
             return false;
@@ -207,7 +207,7 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
-    /// Performs the `regions` operation.
+    /// Returns the hit regions produced by the most recent render.
     pub fn regions(&self) -> &[HitRegion<Id>] {
         &self.regions
     }
@@ -253,7 +253,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         TreeOutcome::CheckToggled(node.id.clone())
     }
 
-    /// Performs the `hover` operation.
+    /// Updates hover state from the current pointer position and painted hit regions.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
@@ -263,7 +263,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         self.hovered.as_ref()
     }
 
-    /// Performs the `click` operation.
+    /// Maps a pointer position to the semantic outcome of the painted hit region.
     pub fn click(&mut self, position: Position) -> TreeOutcome<Id> {
         if let Some(region) = self
             .disclosure_regions
@@ -420,7 +420,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `Tree`.
+/// A navigable hierarchical list with disclosure and multi-select support.
 pub struct Tree<'a, Id> {
     nodes: &'a [TreeNode<'a, Id>],
     theme: &'a Theme,
@@ -428,7 +428,7 @@ pub struct Tree<'a, Id> {
 
 impl<'a, Id> Tree<'a, Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a tree over borrowed flattened nodes and mutable tree state.
     pub const fn new(nodes: &'a [TreeNode<'a, Id>], theme: &'a Theme) -> Self {
         Self { nodes, theme }
     }

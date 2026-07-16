@@ -53,6 +53,10 @@ phosphor green and neutral gray.
 Run the interactive showcase with
 `cargo run -p termrock --example showcase --features crossterm`.
 
+The `runtime` update-loop contracts are provisional and under active design
+review; expect this surface to change as the frame-clock and application-runner
+designs mature (see [`plans/018`](../../plans/018-spike-runtime-disposition-app-runner.md)).
+
 See the [migration guide](../../MIGRATING.md) for exact consumer edits after
 breaking releases. The public API is always allowed to change. TermRock is
 deliberately not stable yet and provides no backward-compatibility guarantees

@@ -11,7 +11,7 @@ use crossterm::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Data carried by `SessionOptions`.
+/// Terminal modes acquired and restored by a [`Session`].
 pub struct SessionOptions {
     /// Enter the terminal's alternate screen buffer.
     pub alternate_screen: bool,
@@ -40,7 +40,7 @@ impl Default for SessionOptions {
     }
 }
 
-/// Data carried by `Session`.
+/// An owned Crossterm terminal session with deterministic cleanup.
 pub struct Session<W: Write> {
     writer: W,
     alternate_screen: bool,
@@ -52,7 +52,7 @@ pub struct Session<W: Write> {
 }
 
 impl<W: Write> Session<W> {
-    /// Performs the `enter` operation.
+    /// Acquires the requested terminal modes and records their cleanup obligations.
     pub fn enter(writer: W, options: SessionOptions) -> io::Result<Self> {
         let mut session = Self {
             writer,
@@ -97,7 +97,7 @@ impl<W: Write> Session<W> {
         Ok(session)
     }
 
-    /// Performs the `restore` operation.
+    /// Restores every acquired terminal mode in reverse acquisition order.
     pub fn restore(&mut self) -> io::Result<()> {
         let mut first = None;
         if self.cursor_hidden && record_first(&mut first, execute!(&mut self.writer, Show)) {
@@ -134,7 +134,7 @@ impl<W: Write> Session<W> {
     }
 
     #[must_use]
-    /// Performs the `writer_mut` operation.
+    /// Returns mutable access to the session writer.
     pub fn writer_mut(&mut self) -> &mut W {
         &mut self.writer
     }

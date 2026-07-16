@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `Viewport`.
+/// A scrollable view over borrowed terminal lines.
 pub struct Viewport<'a> {
     lines: &'a [Line<'a>],
     title: Option<&'a str>,
@@ -24,7 +24,7 @@ pub struct Viewport<'a> {
 
 impl<'a> Viewport<'a> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a viewport over borrowed lines with zero scroll offset.
     pub const fn new(lines: &'a [Line<'a>], theme: &'a Theme) -> Self {
         Self {
             lines,
@@ -36,14 +36,14 @@ impl<'a> Viewport<'a> {
     }
 
     #[must_use]
-    /// Performs the `title` operation.
+    /// Sets the optional visible title.
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = Some(title);
         self
     }
 
     #[must_use]
-    /// Performs the `content_style` operation.
+    /// Sets the style applied to dialog content.
     pub const fn content_style(mut self, content_style: Style) -> Self {
         self.content_style = Some(content_style);
         self

@@ -19,7 +19,7 @@ use super::{
 };
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `Backdrop`.
+/// A themed fill painted behind modal content.
 pub struct Backdrop {
     symbol: char,
     style: Style,
@@ -38,20 +38,20 @@ impl Default for Backdrop {
 
 impl Backdrop {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a fully opaque backdrop from a semantic theme.
     pub fn new() -> Self {
         Self::default()
     }
 
     #[must_use]
-    /// Performs the `symbol` operation.
+    /// Sets the fill symbol used across the backdrop.
     pub const fn symbol(mut self, symbol: char) -> Self {
         self.symbol = symbol;
         self
     }
 
     #[must_use]
-    /// Performs the `style` operation.
+    /// Sets the style used to fill the backdrop.
     pub const fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
@@ -207,7 +207,7 @@ mod backdrop_tests {
 }
 
 #[derive(Debug, Clone)]
-/// Data carried by `Dialog`.
+/// A framed modal surface with resolved geometry.
 pub struct Dialog<'a> {
     title: &'a str,
     body: Text<'a>,
@@ -218,7 +218,7 @@ pub struct Dialog<'a> {
 
 impl<'a> Dialog<'a> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a dialog from a geometry specification and semantic theme.
     pub const fn new(title: &'a str, body: Text<'a>, theme: &'a Theme) -> Self {
         Self {
             title,
@@ -230,14 +230,14 @@ impl<'a> Dialog<'a> {
     }
 
     #[must_use]
-    /// Performs the `style` operation.
+    /// Overrides the theme-derived dialog body style.
     pub const fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
     }
 
     #[must_use]
-    /// Performs the `emphasis` operation.
+    /// Sets the semantic panel emphasis.
     pub const fn emphasis(mut self, emphasis: PanelEmphasis) -> Self {
         self.emphasis = emphasis;
         self
@@ -265,9 +265,9 @@ impl Widget for Dialog<'_> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `ChoiceDialog`.
 pub struct ChoiceDialogState<Id> {
-    /// Documentation for `item`.
+    /// Whether this item is focused.
     pub focused: Option<Id>,
-    /// Documentation for `item`.
+    /// Hit regions produced by the most recent render.
     pub regions: Vec<HitRegion<Id>>,
 }
 
@@ -282,7 +282,7 @@ impl<Id> Default for ChoiceDialogState<Id> {
 
 impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates choice-dialog state with no focused or hovered action.
     pub const fn new(focused: Option<Id>) -> Self {
         Self {
             focused,
@@ -304,12 +304,12 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         }
     }
 
-    /// Performs the `select_next` operation.
+    /// Moves selection to the next enabled item, wrapping at the end.
     pub fn select_next(&mut self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
         self.select_relative(actions, 1)
     }
 
-    /// Performs the `select_previous` operation.
+    /// Moves selection to the previous enabled item, wrapping at the start.
     pub fn select_previous(&mut self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
         self.select_relative(actions, -1)
     }
@@ -336,7 +336,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     }
 
     #[must_use]
-    /// Performs the `activate_selected` operation.
+    /// Returns the semantic outcome for the currently selected item.
     pub fn activate_selected(&self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
         self.focused
             .as_ref()
@@ -351,7 +351,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     }
 
     #[must_use]
-    /// Performs the `click` operation.
+    /// Maps a pointer position to the semantic outcome of the painted hit region.
     pub fn click(&mut self, position: ratatui_core::layout::Position) -> Outcome<Id> {
         let Some(region) = self
             .regions
@@ -366,7 +366,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
 }
 
 #[derive(Debug, Clone)]
-/// Data carried by `ChoiceDialog`.
+/// A modal choice prompt with stable action identities.
 pub struct ChoiceDialog<'a, Id> {
     dialog: Dialog<'a>,
     actions: &'a [Action<'a, Id>],
@@ -375,7 +375,7 @@ pub struct ChoiceDialog<'a, Id> {
 
 impl<'a, Id> ChoiceDialog<'a, Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a choice dialog over borrowed actions and mutable state.
     pub const fn new(dialog: Dialog<'a>, actions: &'a [Action<'a, Id>]) -> Self {
         Self {
             dialog,
@@ -385,7 +385,7 @@ impl<'a, Id> ChoiceDialog<'a, Id> {
     }
 
     #[must_use]
-    /// Performs the `gap` operation.
+    /// Sets spacing between adjacent items in terminal cells.
     pub const fn gap(mut self, gap: &'a str) -> Self {
         self.gap = gap;
         self
@@ -430,7 +430,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for ChoiceDialog<'_, Id> {
 }
 
 #[derive(Debug, Clone)]
-/// Data carried by `MessageDialog`.
+/// A message dialog with optional scrollable details.
 pub struct MessageDialog<'a, Id> {
     dialog: Dialog<'a>,
     details: &'a [DetailRow<'a, Id>],
@@ -441,7 +441,7 @@ pub struct MessageDialog<'a, Id> {
 
 impl<'a, Id> MessageDialog<'a, Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a message dialog with no details and zero scroll offset.
     pub const fn new(
         dialog: Dialog<'a>,
         details: &'a [DetailRow<'a, Id>],
@@ -457,14 +457,14 @@ impl<'a, Id> MessageDialog<'a, Id> {
     }
 
     #[must_use]
-    /// Performs the `label_width` operation.
+    /// Reserves a fixed label width in terminal display columns.
     pub const fn label_width(mut self, label_width: u16) -> Self {
         self.label_width = label_width;
         self
     }
 
     #[must_use]
-    /// Performs the `wrap` operation.
+    /// Sets whether long content wraps instead of scrolling horizontally.
     pub const fn wrap(mut self, wrap: bool) -> Self {
         self.wrap = wrap;
         self

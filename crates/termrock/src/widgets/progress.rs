@@ -7,16 +7,14 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
-/// Available `ProgressKind` choices.
+/// Determinate and caller-ticked indeterminate progress modes.
 pub enum ProgressKind {
-    /// Selects the `Determinate` behavior.
-    /// The `Determinate { fraction` value.
+    /// A progress bar with a known completion fraction.
     Determinate {
         /// Completed fraction; rendering clamps finite values to `0.0..=1.0`.
         fraction: f64,
     },
-    /// Selects the `Indeterminate` behavior.
-    /// The `Indeterminate { tick` value.
+    /// A caller-ticked progress indicator with no known completion fraction.
     Indeterminate {
         /// Caller-owned deterministic animation tick.
         tick: u64,
@@ -24,7 +22,7 @@ pub enum ProgressKind {
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `Progress`.
+/// A one-row progress indicator with an optional label.
 pub struct Progress<'a> {
     kind: ProgressKind,
     label: Option<&'a str>,
@@ -33,7 +31,7 @@ pub struct Progress<'a> {
 
 impl<'a> Progress<'a> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates an unlabeled progress indicator in the supplied mode.
     pub const fn new(kind: ProgressKind, theme: &'a Theme) -> Self {
         Self {
             kind,
@@ -43,7 +41,7 @@ impl<'a> Progress<'a> {
     }
 
     #[must_use]
-    /// Performs the `label` operation.
+    /// Sets the optional visible label.
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = Some(label);
         self

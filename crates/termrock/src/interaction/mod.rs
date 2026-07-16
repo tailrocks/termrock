@@ -16,29 +16,29 @@ pub struct FocusState<Id> {
 
 impl<Id> FocusState<Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates an unfocused state cell.
     pub const fn new(focused: Option<Id>) -> Self {
         Self { focused }
     }
 
     #[must_use]
-    /// Performs the `focused` operation.
+    /// Returns whether this focus state currently owns focus.
     pub const fn focused(&self) -> Option<&Id> {
         self.focused.as_ref()
     }
 
-    /// Performs the `set` operation.
+    /// Updates whether this focus state owns focus.
     pub fn set(&mut self, focused: Option<Id>) {
         self.focused = focused;
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Data carried by `HitRegion`.
+/// A stable identity paired with its painted terminal rectangle.
 pub struct HitRegion<Id> {
-    /// Documentation for `item`.
+    /// Stable identity used for selection and activation.
     pub id: Id,
-    /// Documentation for `item`.
+    /// Painted terminal rectangle used for hit testing.
     pub area: Rect,
 }
 
@@ -71,7 +71,7 @@ mod hover_tests {
 }
 
 impl<Id: Clone> HoverState<Id> {
-    /// Performs the `update` operation.
+    /// Updates cached hover identity from the current pointer position and hit regions.
     pub fn update(&mut self, position: Position, regions: &[HitRegion<Id>]) -> Option<&Id> {
         self.hovered = regions
             .iter()
@@ -81,7 +81,7 @@ impl<Id: Clone> HoverState<Id> {
     }
 
     #[must_use]
-    /// Performs the `hovered` operation.
+    /// Returns the stable identity currently under the pointer.
     pub const fn hovered(&self) -> Option<&Id> {
         self.hovered.as_ref()
     }

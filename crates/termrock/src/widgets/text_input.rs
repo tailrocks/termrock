@@ -9,55 +9,55 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Available `EditAction` choices.
+/// Grapheme-safe edit operations accepted by text-input state.
 pub enum EditAction {
-    /// Selects the `Insert` behavior.
+    /// Inserts caller-provided text at the cursor.
     Insert(char),
-    /// Selects the `Backspace` behavior.
+    /// Deletes the grapheme immediately before the cursor.
     Backspace,
-    /// Selects the `Delete` behavior.
+    /// Deletes the grapheme at the cursor.
     Delete,
-    /// Selects the `MoveLeft` behavior.
+    /// Moves the cursor one grapheme to the left.
     MoveLeft,
-    /// Selects the `MoveRight` behavior.
+    /// Moves the cursor one grapheme to the right.
     MoveRight,
-    /// Selects the `Home` behavior.
+    /// Moves the cursor to the start of the input.
     Home,
-    /// Selects the `End` behavior.
+    /// Moves the cursor to the end of the input.
     End,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Available `Validation` choices.
+/// Validation state and optional feedback for a form field.
 pub enum Validation<'a> {
-    /// Selects the `Valid` behavior.
+    /// The valid state.
     Valid,
-    /// Selects the `Invalid` behavior.
+    /// The invalid state.
     Invalid(&'a str),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Available `TextInputValidity` choices.
+/// Validation states rendered by a text input.
 pub enum TextInputValidity {
-    /// Selects the `Valid` behavior.
+    /// The valid state.
     Valid,
-    /// Selects the `Empty` behavior.
+    /// The empty state.
     Empty,
-    /// Selects the `Forbidden` behavior.
+    /// The forbidden state.
     Forbidden,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `TextInputOutcome` choices.
+/// Semantic results produced by text-input interaction.
 pub enum TextInputOutcome {
-    /// Selects the `Ignored` behavior.
+    /// Reports ignored.
     Ignored,
-    /// Selects the `Changed` behavior.
+    /// Reports changed.
     Changed,
-    /// Selects the `Submitted` behavior.
+    /// Reports submitted.
     Submitted(String),
-    /// Selects the `Cancelled` behavior.
+    /// Reports cancelled.
     Cancelled,
 }
 
@@ -75,7 +75,7 @@ pub struct TextInputState {
 
 impl TextInputState {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates text-input state with the cursor at the end of the value.
     pub fn new(value: impl Into<String>) -> Self {
         let value = value.into();
         let cursor = value.len();
@@ -111,19 +111,19 @@ impl TextInputState {
     }
 
     #[must_use]
-    /// Performs the `value` operation.
+    /// Returns the current input value.
     pub fn value(&self) -> &str {
         &self.value
     }
 
     #[must_use]
-    /// Performs the `trimmed_value` operation.
+    /// Returns the input value with surrounding whitespace removed.
     pub fn trimmed_value(&self) -> &str {
         self.value.trim()
     }
 
     #[must_use]
-    /// Performs the `cursor_byte` operation.
+    /// Returns the cursor position as a UTF-8 byte offset.
     pub const fn cursor_byte(&self) -> usize {
         self.cursor
     }
@@ -146,7 +146,7 @@ impl TextInputState {
     }
 
     #[must_use]
-    /// Performs the `validity` operation.
+    /// Evaluates the current value against length, emptiness, and forbidden-value rules.
     pub fn validity(&self) -> TextInputValidity {
         let value = self.trimmed_value();
         if value.is_empty() && !self.allow_empty {
@@ -192,7 +192,7 @@ impl TextInputState {
         }
     }
 
-    /// Performs the `apply` operation.
+    /// Applies this grapheme-safe edit operation to text-input state.
     pub fn apply(&mut self, action: EditAction) -> bool {
         let before_cursor = self.cursor;
         let before_len = self.value.len();
@@ -271,7 +271,7 @@ impl TextInputState {
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `TextInput`.
+/// A single-line, grapheme-safe text input.
 pub struct TextInput<'a> {
     label: &'a str,
     placeholder: &'a str,
@@ -281,7 +281,7 @@ pub struct TextInput<'a> {
 
 impl<'a> TextInput<'a> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a text input over mutable state with no placeholder.
     pub const fn new(label: &'a str, theme: &'a Theme) -> Self {
         Self {
             label,
@@ -292,21 +292,21 @@ impl<'a> TextInput<'a> {
     }
 
     #[must_use]
-    /// Performs the `placeholder` operation.
+    /// Sets the text shown while the input value is empty.
     pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
         self.placeholder = placeholder;
         self
     }
 
     #[must_use]
-    /// Performs the `validation` operation.
+    /// Sets form-field validation feedback.
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
         self.validation = validation;
         self
     }
 
     #[must_use]
-    /// Performs the `label` operation.
+    /// Returns the visible field label.
     pub const fn label(&self) -> &'a str {
         self.label
     }

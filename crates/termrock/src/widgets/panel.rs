@@ -5,16 +5,16 @@ use crate::style::{Role, Theme};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `PanelEmphasis` choices.
+/// Semantic chrome emphasis for focused and inactive panels.
 pub enum PanelEmphasis {
-    /// Selects the `Normal` behavior.
+    /// Normal panel chrome.
     Normal,
-    /// Selects the `Focused` behavior.
+    /// Focused panel chrome.
     Focused,
 }
 
 #[derive(Debug, Clone)]
-/// Data carried by `Panel`.
+/// A themed bordered container for product-owned content.
 pub struct Panel<'a> {
     title: Option<&'a str>,
     emphasis: PanelEmphasis,
@@ -24,7 +24,7 @@ pub struct Panel<'a> {
 
 impl<'a> Panel<'a> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates an untitled panel with normal emphasis.
     pub const fn new(theme: &'a Theme) -> Self {
         Self {
             title: None,
@@ -35,28 +35,28 @@ impl<'a> Panel<'a> {
     }
 
     #[must_use]
-    /// Performs the `title` operation.
+    /// Sets the optional visible title.
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = Some(title);
         self
     }
 
     #[must_use]
-    /// Performs the `emphasis` operation.
+    /// Sets the semantic panel emphasis.
     pub const fn emphasis(mut self, emphasis: PanelEmphasis) -> Self {
         self.emphasis = emphasis;
         self
     }
 
     #[must_use]
-    /// Performs the `style` operation.
+    /// Overrides the theme-derived panel style.
     pub const fn style(mut self, style: Style) -> Self {
         self.style = Some(style);
         self
     }
 
     #[must_use]
-    /// Performs the `block` operation.
+    /// Builds the surrounding block from the current title, emphasis, and style.
     pub fn block(&self) -> Block<'a> {
         let role = if self.emphasis == PanelEmphasis::Focused {
             Role::BorderFocused
@@ -75,7 +75,7 @@ impl<'a> Panel<'a> {
     }
 
     #[must_use]
-    /// Performs the `inner` operation.
+    /// Returns the content rectangle inside dialog chrome.
     pub fn inner(&self, area: Rect) -> Rect {
         self.block().inner(area)
     }

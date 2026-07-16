@@ -8,28 +8,28 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `Severity` choices.
+/// Semantic status severities used by status-bar slots.
 pub enum Severity {
-    /// Selects the `Info` behavior.
+    /// Informational content with no success or failure implication.
     Info,
-    /// Selects the `Success` behavior.
+    /// Successful completion or a healthy state.
     Success,
-    /// Selects the `Warning` behavior.
+    /// A condition requiring attention but not an error.
     Warning,
-    /// Selects the `Error` behavior.
+    /// A failed operation or invalid state.
     Error,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `Anchor` choices.
+/// Corners used to anchor a toast within its containing rectangle.
 pub enum Anchor {
-    /// Selects the `TopLeft` behavior.
+    /// Places content at the top left.
     TopLeft,
-    /// Selects the `TopRight` behavior.
+    /// Places content at the top right.
     TopRight,
-    /// Selects the `BottomLeft` behavior.
+    /// Places content at the bottom left.
     BottomLeft,
-    /// Selects the `BottomRight` behavior.
+    /// Places content at the bottom right.
     BottomRight,
 }
 
@@ -62,7 +62,7 @@ pub struct Toast<'a> {
 
 impl<'a> Toast<'a> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a toast with default top-right anchoring and margins.
     pub const fn new(theme: &'a Theme, message: &'a str, severity: Severity) -> Self {
         Self {
             message,
@@ -76,14 +76,14 @@ impl<'a> Toast<'a> {
     }
 
     #[must_use]
-    /// Performs the `anchor` operation.
+    /// Sets the corner used to anchor this content.
     pub const fn anchor(mut self, anchor: Anchor) -> Self {
         self.anchor = anchor;
         self
     }
 
     #[must_use]
-    /// Performs the `margins` operation.
+    /// Sets horizontal and vertical margins in terminal cells.
     pub const fn margins(mut self, horizontal: u16, vertical: u16) -> Self {
         self.horizontal_margin = horizontal;
         self.vertical_margin = vertical;
@@ -91,14 +91,14 @@ impl<'a> Toast<'a> {
     }
 
     #[must_use]
-    /// Performs the `style` operation.
+    /// Overrides the theme-derived toast style.
     pub const fn style(mut self, style: Style) -> Self {
         self.style = Some(style);
         self
     }
 
     #[must_use]
-    /// Performs the `rect` operation.
+    /// Returns the resolved outer dialog rectangle.
     pub fn rect(&self, area: Rect) -> Option<Rect> {
         if area.is_empty() || self.message.is_empty() {
             return None;

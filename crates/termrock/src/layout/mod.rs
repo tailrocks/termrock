@@ -19,34 +19,34 @@ pub fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Available `Placement` choices.
+/// Vertical placement policies for bounded dialog geometry.
 pub enum Placement {
-    /// Selects the `Centered` behavior.
+    /// Places content at the centered.
     Centered,
-    /// Selects the `Top` behavior.
+    /// Places content at the top.
     Top,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Data carried by `DialogSpec`.
+/// Size constraints, margins, and placement for a dialog rectangle.
 pub struct DialogSpec {
-    /// Documentation for `item`.
+    /// Min width in terminal cells.
     pub min_width: u16,
-    /// Documentation for `item`.
+    /// Preferred width in terminal cells.
     pub preferred_width: u16,
-    /// Documentation for `item`.
+    /// Max width in terminal cells.
     pub max_width: u16,
-    /// Documentation for `item`.
+    /// Min height in terminal rows.
     pub min_height: u16,
-    /// Documentation for `item`.
+    /// Preferred height in terminal rows.
     pub preferred_height: u16,
-    /// Documentation for `item`.
+    /// Max height in terminal rows.
     pub max_height: u16,
-    /// Documentation for `item`.
+    /// Horizontal margin in terminal cells.
     pub horizontal_margin: u16,
-    /// Documentation for `item`.
+    /// Vertical margin in terminal cells.
     pub vertical_margin: u16,
-    /// Documentation for `item`.
+    /// Placement policy inside the margin-constrained area.
     pub placement: Placement,
 }
 
@@ -76,17 +76,17 @@ pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Data carried by `Slots`.
+/// Resolved body and bottom-chrome rectangles.
 pub struct Slots {
-    /// Documentation for `item`.
+    /// Remaining rectangle available to primary content.
     pub body: Rect,
-    /// Documentation for `item`.
+    /// Rectangle reserved for bottom chrome.
     pub bottom: Rect,
 }
 
 impl Slots {
     #[must_use]
-    /// Performs the `bottom` operation.
+    /// Reserves bottom chrome and returns the resulting body and bottom rectangles.
     pub const fn bottom(area: Rect, rows: u16) -> Self {
         let bottom_height = if area.height < rows {
             area.height

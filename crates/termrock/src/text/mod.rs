@@ -115,15 +115,15 @@ where
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Data carried by `FixedPrefixSegment`.
+/// A source-byte segment and its measured display-column placement.
 pub struct FixedPrefixSegment {
-    /// Documentation for `item`.
+    /// Inclusive UTF-8 byte offset in the source string.
     pub start_byte: usize,
-    /// Documentation for `item`.
+    /// Exclusive UTF-8 byte offset in the source string.
     pub end_byte: usize,
-    /// Documentation for `item`.
+    /// Zero-based output display column.
     pub target_col: usize,
-    /// Documentation for `item`.
+    /// Width of the segment in terminal display columns.
     pub display_cols: usize,
 }
 

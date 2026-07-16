@@ -1,10 +1,10 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[must_use]
-/// Available `Dirty` choices.
+/// Whether an update requires another rendered frame.
 pub enum Dirty {
-    /// Selects the `Clean` behavior.
+    /// No rendered frame is required.
     Clean,
-    /// Selects the `Redraw` behavior.
+    /// A new rendered frame is required.
     Redraw,
 }
 impl Dirty {
@@ -13,7 +13,7 @@ impl Dirty {
     pub const fn is_dirty(self) -> bool {
         matches!(self, Self::Redraw)
     }
-    /// Performs the `merge` operation.
+    /// Combines this update state with another, preserving any redraw request or effects.
     pub const fn merge(self, other: Self) -> Self {
         if self.is_dirty() || other.is_dirty() {
             Self::Redraw
@@ -24,39 +24,39 @@ impl Dirty {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Available `NoEffect` choices.
+/// An uninhabited effect type for components without effects.
 pub enum NoEffect {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[must_use]
-/// Data carried by `UpdateResult`.
+/// The redraw decision and effects produced by one component update.
 pub struct UpdateResult<Effect = NoEffect> {
     dirty: Dirty,
     effects: Vec<Effect>,
 }
 impl<Effect> UpdateResult<Effect> {
-    /// Performs the `clean` operation.
+    /// Creates an update result that does not request a redraw.
     pub const fn clean() -> Self {
         Self {
             dirty: Dirty::Clean,
             effects: Vec::new(),
         }
     }
-    /// Performs the `redraw` operation.
+    /// Creates an update result that requests another rendered frame.
     pub const fn redraw() -> Self {
         Self {
             dirty: Dirty::Redraw,
             effects: Vec::new(),
         }
     }
-    /// Performs the `with_effect` operation.
+    /// Appends an effect to this update result.
     pub fn with_effect(effect: Effect) -> Self {
         Self {
             dirty: Dirty::Redraw,
             effects: vec![effect],
         }
     }
-    /// Performs the `dirty` operation.
+    /// Returns the combined redraw decision.
     pub const fn dirty(&self) -> Dirty {
         self.dirty
     }
@@ -66,11 +66,11 @@ impl<Effect> UpdateResult<Effect> {
         self.dirty.is_dirty()
     }
     #[must_use]
-    /// Performs the `effects` operation.
+    /// Returns the effects emitted by this update.
     pub fn effects(&self) -> &[Effect] {
         &self.effects
     }
-    /// Performs the `merge` operation.
+    /// Combines this update state with another, preserving any redraw request or effects.
     pub fn merge(mut self, other: Self) -> Self {
         self.dirty = self.dirty.merge(other.dirty);
         self.effects.extend(other.effects);
@@ -78,13 +78,13 @@ impl<Effect> UpdateResult<Effect> {
     }
 }
 
-/// Documentation for `item`.
+/// Stateful update contract that translates input events into messages.
 pub trait Component<Event, Message> {
     /// Handles the `handle_event` interaction.
     fn handle_event(&mut self, event: &Event) -> Option<Message>;
 }
 
-/// Documentation for `item`.
+/// Rendering contract that projects a model into a terminal frame.
 pub trait View<Model> {
     /// Renders `render` output.
     fn render(

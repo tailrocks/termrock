@@ -2,21 +2,21 @@ use ratatui_core::layout::Rect;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `PointerShape` choices.
+/// Terminal pointer cursor shapes supported by OSC requests.
 pub enum PointerShape {
-    /// Selects the `Default` behavior.
+    /// The default terminal pointer cursor.
     Default,
-    /// Selects the `Pointer` behavior.
+    /// The pointer terminal pointer cursor.
     Pointer,
-    /// Selects the `Text` behavior.
+    /// The text terminal pointer cursor.
     Text,
-    /// Selects the `Crosshair` behavior.
+    /// The crosshair terminal pointer cursor.
     Crosshair,
-    /// Selects the `EwResize` behavior.
+    /// The ew resize terminal pointer cursor.
     EwResize,
-    /// Selects the `NsResize` behavior.
+    /// The ns resize terminal pointer cursor.
     NsResize,
-    /// Selects the `Grabbing` behavior.
+    /// The grabbing terminal pointer cursor.
     Grabbing,
 }
 
@@ -35,18 +35,18 @@ impl PointerShape {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Data carried by `HyperlinkRegion`.
+/// A painted terminal region associated with a hyperlink.
 pub struct HyperlinkRegion<'a, Id> {
-    /// Documentation for `item`.
+    /// Stable identity used for selection and activation.
     pub id: Id,
-    /// Documentation for `item`.
+    /// Painted terminal rectangle used for hit testing.
     pub area: Rect,
-    /// Documentation for `item`.
+    /// Caller-provided hyperlink target.
     pub url: &'a str,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Available `ClipboardSelection` choices.
+/// Clipboard targets supported by terminal clipboard requests.
 pub enum ClipboardSelection {
     /// The system clipboard (`c`).
     Clipboard,
@@ -64,30 +64,29 @@ impl ClipboardSelection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Data carried by `ClipboardWrite`.
+/// A sanitized terminal clipboard write request.
 pub struct ClipboardWrite<'a> {
-    /// Documentation for `item`.
+    /// Terminal clipboard target.
     pub selection: ClipboardSelection,
-    /// Documentation for `item`.
+    /// Caller-visible text.
     pub text: &'a str,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `Request` choices.
+/// Typed terminal-control requests encoded by the OSC module.
 pub enum Request<'a> {
-    /// Selects the `Pointer` behavior.
+    /// Requests terminal pointer behavior.
     Pointer(PointerShape),
-    /// Selects the `Clipboard` behavior.
+    /// Requests terminal clipboard behavior.
     Clipboard(ClipboardWrite<'a>),
-    /// Selects the `HyperlinkOpen` behavior.
-    /// The `HyperlinkOpen { id` value.
+    /// Requests terminal hyperlink open behavior.
     HyperlinkOpen {
         /// Optional stable identifier used to update an existing link region.
         id: Option<&'a str>,
         /// Validated hyperlink destination.
         url: &'a str,
     },
-    /// Selects the `HyperlinkClose` behavior.
+    /// Requests terminal hyperlink close behavior.
     HyperlinkClose,
 }

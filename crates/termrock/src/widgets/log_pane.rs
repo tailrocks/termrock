@@ -28,7 +28,7 @@ impl Default for LogPaneState {
 
 impl LogPaneState {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates an empty bounded log that follows the live tail.
     pub const fn new() -> Self {
         Self {
             lines: Vec::new(),
@@ -46,7 +46,7 @@ impl LogPaneState {
         self
     }
 
-    /// Performs the `append` operation.
+    /// Appends a line, evicting the oldest line when bounded history is full.
     pub fn append(&mut self, line: impl Into<Line<'static>>) {
         self.lines.push(line.into());
         if !self.follow {
@@ -61,7 +61,7 @@ impl LogPaneState {
         self.clamp_tail();
     }
 
-    /// Performs the `clear` operation.
+    /// Removes every checked identity.
     pub fn clear(&mut self) {
         self.lines.clear();
         self.tail = TailScroll::new(0);
@@ -69,13 +69,13 @@ impl LogPaneState {
     }
 
     #[must_use]
-    /// Performs the `lines` operation.
+    /// Returns buffered log lines from oldest to newest.
     pub fn lines(&self) -> &[Line<'static>] {
         &self.lines
     }
 
     #[must_use]
-    /// Performs the `len` operation.
+    /// Returns the number of buffered log lines.
     pub fn len(&self) -> usize {
         self.lines.len()
     }
@@ -144,7 +144,7 @@ impl LogPaneState {
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `LogPane`.
+/// A bounded, scrollable log buffer with tail-follow behavior.
 pub struct LogPane<'a> {
     title: Option<&'a str>,
     theme: &'a Theme,
@@ -152,13 +152,13 @@ pub struct LogPane<'a> {
 
 impl<'a> LogPane<'a> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a log pane over mutable log state and a semantic theme.
     pub const fn new(theme: &'a Theme) -> Self {
         Self { title: None, theme }
     }
 
     #[must_use]
-    /// Performs the `title` operation.
+    /// Sets the optional visible title.
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = Some(title);
         self

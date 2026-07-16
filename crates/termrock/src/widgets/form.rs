@@ -20,27 +20,27 @@ const MIN_COLUMN_WIDTH: u16 = 30;
 
 #[derive(Debug, Clone)]
 #[non_exhaustive]
-/// Data carried by `FormField`.
+/// A stable form field with label, value, and validation metadata.
 pub struct FormField<'a, Id> {
-    /// Documentation for `item`.
+    /// Stable identity used for selection and activation.
     pub id: Id,
-    /// Documentation for `item`.
+    /// Caller-visible label.
     pub label: Line<'a>,
-    /// Documentation for `item`.
+    /// Caller-owned value displayed by this item.
     pub value: Line<'a>,
-    /// Documentation for `item`.
+    /// Caller-visible help.
     pub help: Option<Line<'a>>,
-    /// Documentation for `item`.
+    /// Optional validation error shown for this field.
     pub error: Option<Line<'a>>,
-    /// Documentation for `item`.
+    /// Whether this item is required.
     pub required: bool,
-    /// Documentation for `item`.
+    /// Whether this item is enabled.
     pub enabled: bool,
 }
 
 impl<'a, Id> FormField<'a, Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a field with no help text and valid initial state.
     pub const fn new(id: Id, label: Line<'a>, value: Line<'a>) -> Self {
         Self {
             id,
@@ -54,28 +54,28 @@ impl<'a, Id> FormField<'a, Id> {
     }
 
     #[must_use]
-    /// Performs the `help` operation.
+    /// Sets supplemental help text.
     pub fn help(mut self, help: Line<'a>) -> Self {
         self.help = Some(help);
         self
     }
 
     #[must_use]
-    /// Performs the `error` operation.
+    /// Sets validation error text.
     pub fn error(mut self, error: Line<'a>) -> Self {
         self.error = Some(error);
         self
     }
 
     #[must_use]
-    /// Performs the `required` operation.
+    /// Marks the field as required or optional.
     pub const fn required(mut self, required: bool) -> Self {
         self.required = required;
         self
     }
 
     #[must_use]
-    /// Performs the `enabled` operation.
+    /// Sets whether this item can receive interaction.
     pub const fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
@@ -83,38 +83,38 @@ impl<'a, Id> FormField<'a, Id> {
 }
 
 #[derive(Debug, Clone)]
-/// Data carried by `FormSection`.
+/// A labeled group of form fields.
 pub struct FormSection<'a, Id> {
-    /// Documentation for `item`.
+    /// Caller-visible title.
     pub title: Line<'a>,
-    /// Documentation for `item`.
+    /// Borrowed fields rendered in caller order.
     pub fields: &'a [FormField<'a, Id>],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `FormOutcome` choices.
+/// Semantic results produced by form interaction.
 pub enum FormOutcome<Id> {
-    /// Selects the `Ignored` behavior.
+    /// Reports ignored.
     Ignored,
-    /// Selects the `FocusChanged` behavior.
+    /// Reports focus changed.
     FocusChanged(Id),
-    /// Selects the `Activated` behavior.
+    /// Reports activated.
     Activated(Id),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Data carried by `FormFieldRegion`.
+/// Painted hit geometry for one form field.
 pub struct FormFieldRegion<Id> {
-    /// Documentation for `item`.
+    /// Stable identity used for selection and activation.
     pub id: Id,
-    /// Documentation for `item`.
+    /// Painted terminal rectangle used for hit testing.
     pub area: Rect,
-    /// Documentation for `item`.
+    /// Caller-visible label.
     pub label: Option<Rect>,
-    /// Documentation for `item`.
+    /// Caller-owned value displayed by this item.
     pub value: Option<Rect>,
-    /// Documentation for `item`.
+    /// Union geometry for supporting help or error text.
     pub supporting: Option<Rect>,
 }
 
@@ -154,7 +154,7 @@ impl<Id> Default for FormState<Id> {
 
 impl<Id> FormState<Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates unfocused form state at the top of the viewport.
     pub const fn new(focused: Option<Id>) -> Self {
         Self {
             focused,
@@ -172,13 +172,13 @@ impl<Id> FormState<Id> {
     }
 
     #[must_use]
-    /// Performs the `focused` operation.
+    /// Returns whether this focus state currently owns focus.
     pub const fn focused(&self) -> Option<&Id> {
         self.focused.as_ref()
     }
 
     #[must_use]
-    /// Performs the `hovered` operation.
+    /// Returns the stable identity currently under the pointer.
     pub const fn hovered(&self) -> Option<&Id> {
         self.hovered.as_ref()
     }
@@ -194,43 +194,43 @@ impl<Id> FormState<Id> {
         self.active = active;
     }
 
-    /// Performs the `focus` operation.
+    /// Moves focus to the supplied stable identity when it is enabled.
     pub fn focus(&mut self, focused: Option<Id>) {
         self.focused = focused;
         self.follow_focus = true;
     }
 
     #[must_use]
-    /// Performs the `offset` operation.
+    /// Returns the signed distance from the live tail in rows.
     pub const fn offset(&self) -> usize {
         self.offset
     }
 
     #[must_use]
-    /// Performs the `column_count` operation.
+    /// Returns the number of columns selected by responsive layout.
     pub const fn column_count(&self) -> u8 {
         self.column_count
     }
 
     #[must_use]
-    /// Performs the `content_height` operation.
+    /// Returns the rendered content height in terminal rows.
     pub const fn content_height(&self) -> usize {
         self.content_height
     }
 
     #[must_use]
-    /// Performs the `regions` operation.
+    /// Returns the hit regions produced by the most recent render.
     pub fn regions(&self) -> &[HitRegion<Id>] {
         &self.regions
     }
 
     #[must_use]
-    /// Performs the `field_regions` operation.
+    /// Returns field hit regions produced by the most recent render.
     pub fn field_regions(&self) -> &[FormFieldRegion<Id>] {
         &self.field_regions
     }
 
-    /// Performs the `scroll_by` operation.
+    /// Moves the scroll position by a signed delta and clamps it to valid content.
     pub fn scroll_by(&mut self, delta: isize, content_len: usize) -> bool {
         let before = self.offset;
         let maximum = max_offset(content_len, self.viewport_height);
@@ -245,7 +245,7 @@ impl<Id> FormState<Id> {
         before != self.offset
     }
 
-    /// Performs the `scroll_to_position` operation.
+    /// Scrolls toward a pointer position within the painted viewport.
     pub fn scroll_to_position(&mut self, position: Position) -> bool {
         let Some(area) = self.scrollbar_region else {
             return false;
@@ -290,7 +290,7 @@ impl<Id: Clone + PartialEq> FormState<Id> {
         }
     }
 
-    /// Performs the `hover` operation.
+    /// Updates hover state from the current pointer position and painted hit regions.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
@@ -300,7 +300,7 @@ impl<Id: Clone + PartialEq> FormState<Id> {
         self.hovered.as_ref()
     }
 
-    /// Performs the `click` operation.
+    /// Maps a pointer position to the semantic outcome of the painted hit region.
     pub fn click(&mut self, position: Position) -> FormOutcome<Id> {
         let Some(id) = self
             .regions
@@ -380,7 +380,7 @@ impl<Id: Clone + PartialEq> FormState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `Form`.
+/// A responsive, navigable form assembled from borrowed sections.
 pub struct Form<'a, Id> {
     sections: &'a [FormSection<'a, Id>],
     theme: &'a Theme,
@@ -388,7 +388,7 @@ pub struct Form<'a, Id> {
 
 impl<'a, Id> Form<'a, Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a form over the supplied sections and theme.
     pub const fn new(sections: &'a [FormSection<'a, Id>], theme: &'a Theme) -> Self {
         Self { sections, theme }
     }

@@ -28,7 +28,7 @@ pub fn encode(request: Request<'_>) -> Vec<u8> {
 }
 
 #[must_use]
-/// Performs the `encode_pointer` operation.
+/// Encodes a terminal pointer-shape request as OSC bytes.
 pub fn encode_pointer(shape: PointerShape) -> Vec<u8> {
     format!("\x1b]22;{}\x1b\\", shape.name()).into_bytes()
 }
@@ -84,7 +84,7 @@ fn percent_encode_terminal_controls(value: &str) -> String {
 }
 
 #[must_use]
-/// Performs the `encode_hyperlink_close` operation.
+/// Encodes the OSC sequence that closes the active hyperlink.
 pub fn encode_hyperlink_close() -> Vec<u8> {
     b"\x1b]8;;\x1b\\".to_vec()
 }

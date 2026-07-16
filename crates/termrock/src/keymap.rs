@@ -16,9 +16,9 @@ use crate::widgets::HintSpan;
 /// A key chord: a logical key plus zero or more modifier bits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct KeyChord {
-    /// Documentation for `item`.
+    /// Key code in this chord.
     pub key: KeyCode,
-    /// Documentation for `item`.
+    /// Modifier flags required by this chord.
     pub mods: KeyModifiers,
 }
 
@@ -459,9 +459,9 @@ pub fn chord_glyph(chord: Option<KeyChord>) -> &'static str {
 /// that previously lived in `scroll_hint_spans`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScrollHintAxis {
-    /// Selects the `Vertical` behavior.
+    /// The vertical terminal axis.
     Vertical,
-    /// Selects the `Horizontal` behavior.
+    /// The horizontal terminal axis.
     Horizontal,
 }
 

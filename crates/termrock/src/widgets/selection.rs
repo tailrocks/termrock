@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Data carried by `Selection`.
+/// An ordered set of checked stable identities.
 pub struct Selection<Id> {
     checked: Vec<Id>,
 }
@@ -14,7 +14,7 @@ impl<Id> Default for Selection<Id> {
 
 impl<Id> Selection<Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates an empty ordered selection.
     pub const fn new() -> Self {
         Self {
             checked: Vec::new(),
@@ -22,12 +22,12 @@ impl<Id> Selection<Id> {
     }
 
     #[must_use]
-    /// Performs the `checked` operation.
+    /// Returns checked identities in their check order.
     pub fn checked(&self) -> &[Id] {
         &self.checked
     }
 
-    /// Performs the `clear` operation.
+    /// Removes every checked identity.
     pub fn clear(&mut self) {
         self.checked.clear();
     }

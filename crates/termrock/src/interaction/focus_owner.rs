@@ -28,7 +28,7 @@ pub trait ButtonFocus: Copy + Eq + 'static {
     }
 
     #[must_use]
-    /// Performs the `next` operation.
+    /// Returns the next focus target in cyclic traversal order.
     fn next(self) -> Self {
         let ring = Self::RING;
         if ring.is_empty() {
@@ -39,7 +39,7 @@ pub trait ButtonFocus: Copy + Eq + 'static {
     }
 
     #[must_use]
-    /// Performs the `prev` operation.
+    /// Returns the previous focus target in cyclic traversal order.
     fn prev(self) -> Self {
         let ring = Self::RING;
         if ring.is_empty() {
@@ -51,7 +51,7 @@ pub trait ButtonFocus: Copy + Eq + 'static {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-/// Available `FocusOwner` choices.
+/// The focus targets in the shared lookbook interaction model.
 pub enum FocusOwner<Tab> {
     #[default]
     /// The tab bar owns focus (green tab underline, dark content borders, no ▸).
@@ -74,7 +74,7 @@ impl<Tab: Copy> FocusOwner<Tab> {
     }
 
     #[must_use]
-    /// Performs the `content_tab` operation.
+    /// Returns the content tab owned by this focus target, if any.
     pub fn content_tab(self) -> Option<Tab> {
         match self {
             Self::Content(tab) => Some(tab),

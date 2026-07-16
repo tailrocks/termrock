@@ -12,17 +12,17 @@ use unicode_width::UnicodeWidthStr;
 /// One footer-hint span shared by terminal surfaces.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HintSpan<'a> {
-    /// Selects the `Key` behavior.
+    /// A statically borrowed key glyph.
     Key(&'a str),
-    /// Selects the `DynKey` behavior.
+    /// An owned key glyph computed at runtime.
     DynKey(String),
-    /// Selects the `Text` behavior.
+    /// Statically borrowed hint text.
     Text(&'a str),
-    /// Selects the `Dyn` behavior.
+    /// Owned hint text computed at runtime.
     Dyn(String),
-    /// Selects the `Sep` behavior.
+    /// A separator between a key and its label.
     Sep,
-    /// Selects the `GroupSep` behavior.
+    /// A separator between adjacent hint groups.
     GroupSep,
 }
 
@@ -47,20 +47,20 @@ pub fn hint_row_cols(spans: &[HintSpan<'_>]) -> usize {
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `Hint`.
+/// A key glyph and label shown in a [`HintBar`].
 pub struct Hint<'a> {
-    /// Documentation for `item`.
+    /// Key chord advertised by the hint.
     pub chord: &'a str,
-    /// Documentation for `item`.
+    /// Caller-visible label.
     pub label: &'a str,
-    /// Documentation for `item`.
+    /// Lower values are retained first when narrow layouts drop hints.
     pub priority: u8,
-    /// Documentation for `item`.
+    /// Whether the hint participates in layout and rendering.
     pub visible: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `HintBar`.
+/// A wrapping row of keyboard hints.
 pub struct HintBar<'a> {
     hints: &'a [Hint<'a>],
     separator: &'a str,
@@ -69,7 +69,7 @@ pub struct HintBar<'a> {
 
 impl<'a> HintBar<'a> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a hint bar over borrowed hints with canonical spacing.
     pub const fn new(hints: &'a [Hint<'a>], theme: &'a Theme) -> Self {
         Self {
             hints,
@@ -79,7 +79,7 @@ impl<'a> HintBar<'a> {
     }
 
     #[must_use]
-    /// Performs the `separator` operation.
+    /// Sets separator text rendered between groups.
     pub const fn separator(mut self, separator: &'a str) -> Self {
         self.separator = separator;
         self

@@ -16,47 +16,47 @@ use super::Selection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `RowRole` choices.
+/// Semantic roles for selectable, disabled, and separator list rows.
 pub enum RowRole {
-    /// Selects the `Item` behavior.
+    /// A selectable content row.
     Item,
-    /// Selects the `Separator` behavior.
+    /// A non-interactive visual separator row.
     Separator,
 }
 
 #[derive(Debug, Clone)]
-/// Data carried by `ListRow`.
+/// A stable row in a selectable list.
 pub struct ListRow<'a, Id> {
-    /// Documentation for `item`.
+    /// Stable identity used for selection and activation.
     pub id: Id,
-    /// Documentation for `item`.
+    /// Caller-visible label.
     pub label: Line<'a>,
-    /// Documentation for `item`.
+    /// Optional metadata aligned at the trailing edge.
     pub trailing: Option<Line<'a>>,
-    /// Documentation for `item`.
+    /// Interaction role controlling selection and hit testing.
     pub role: RowRole,
-    /// Documentation for `item`.
+    /// Whether this item is enabled.
     pub enabled: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `List`.
 pub struct ListState<Id> {
-    /// Documentation for `item`.
+    /// Whether this item is selected.
     pub selected: Option<Id>,
-    /// Documentation for `item`.
+    /// Whether this item is hovered.
     pub hovered: Option<Id>,
-    /// Documentation for `item`.
+    /// Whether this item is focused.
     pub focused: bool,
-    /// Documentation for `item`.
+    /// Offset in terminal cells or rows.
     pub offset: usize,
-    /// Documentation for `item`.
+    /// Viewport height in terminal rows.
     pub viewport_height: usize,
-    /// Documentation for `item`.
+    /// Hit regions produced by the most recent render.
     pub regions: Vec<HitRegion<Id>>,
-    /// Documentation for `item`.
+    /// Ordered checked identities when multi-select is enabled.
     pub selection: Option<Selection<Id>>,
-    /// Documentation for `item`.
+    /// Hit regions produced by the most recent render.
     pub check_regions: Vec<HitRegion<Id>>,
 }
 
@@ -77,7 +77,7 @@ impl<Id> Default for ListState<Id> {
 
 impl<Id: Clone + PartialEq> ListState<Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates list state with no selection, hover, checks, or scroll.
     pub const fn new(selected: Option<Id>) -> Self {
         Self {
             selected,
@@ -96,23 +96,23 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         self.selected = selected;
     }
 
-    /// Performs the `enable_multi_select` operation.
+    /// Enables ordered multi-selection with an empty selection.
     pub fn enable_multi_select(&mut self) {
         self.selection.get_or_insert_with(Selection::new);
     }
 
-    /// Performs the `disable_multi_select` operation.
+    /// Disables multi-selection and discards checked identities.
     pub fn disable_multi_select(&mut self) {
         self.selection = None;
     }
 
     #[must_use]
-    /// Performs the `selection` operation.
+    /// Returns the ordered multi-selection state, if enabled.
     pub const fn selection(&self) -> Option<&Selection<Id>> {
         self.selection.as_ref()
     }
 
-    /// Performs the `selection_mut` operation.
+    /// Returns mutable access to ordered multi-selection state, if enabled.
     pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
         self.selection.as_mut()
     }
@@ -150,12 +150,12 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         Outcome::Changed
     }
 
-    /// Performs the `select_next` operation.
+    /// Moves selection to the next enabled item, wrapping at the end.
     pub fn select_next(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.select_relative(rows, 1)
     }
 
-    /// Performs the `select_previous` operation.
+    /// Moves selection to the previous enabled item, wrapping at the start.
     pub fn select_previous(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.select_relative(rows, -1)
     }
@@ -222,7 +222,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     }
 
     #[must_use]
-    /// Performs the `activate` operation.
+    /// Returns the semantic action associated with the supplied stable identity.
     pub fn activate(&self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.selected
             .as_ref()
@@ -233,7 +233,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             .map_or(Outcome::Ignored, |row| Outcome::Activated(row.id.clone()))
     }
 
-    /// Performs the `hover` operation.
+    /// Updates hover state from the current pointer position and painted hit regions.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
@@ -244,7 +244,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     }
 
     #[must_use]
-    /// Performs the `click` operation.
+    /// Maps a pointer position to the semantic outcome of the painted hit region.
     pub fn click(&mut self, position: Position) -> Outcome<Id> {
         if let Some(id) = self
             .check_regions
@@ -269,7 +269,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         Outcome::Activated(region.id.clone())
     }
 
-    /// Performs the `scroll_by` operation.
+    /// Moves the scroll position by a signed delta and clamps it to valid content.
     pub fn scroll_by(&mut self, delta: isize, rows_len: usize) -> bool {
         let before = self.offset;
         let max = max_offset(rows_len, self.viewport_height);
@@ -281,7 +281,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         before != self.offset
     }
 
-    /// Performs the `scroll_to_position` operation.
+    /// Scrolls toward a pointer position within the painted viewport.
     pub fn scroll_to_position(&mut self, position: Position, rows_len: usize) -> bool {
         if self.viewport_height == 0 || self.regions.is_empty() {
             return false;
@@ -392,7 +392,7 @@ pub struct List<'a, Id> {
 
 impl<'a, Id> List<'a, Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a list over borrowed rows and mutable list state.
     pub const fn new(rows: &'a [ListRow<'a, Id>], theme: &'a Theme) -> Self {
         Self { rows, theme }
     }

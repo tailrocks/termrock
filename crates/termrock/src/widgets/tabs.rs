@@ -11,13 +11,13 @@ use unicode_width::UnicodeWidthStr;
 /// Per-tab descriptor shared by terminal tab renderers.
 #[derive(Debug, Clone)]
 pub struct TabCell<'a> {
-    /// Documentation for `item`.
+    /// Caller-visible label.
     pub label: &'a str,
-    /// Documentation for `item`.
+    /// Whether this painted tab is active.
     pub active: bool,
-    /// Documentation for `item`.
+    /// First painted display column relative to the tab strip.
     pub start_col: u16,
-    /// Documentation for `item`.
+    /// Number of painted display columns in the tab hit region.
     pub cell_cols: u16,
 }
 
@@ -52,30 +52,30 @@ pub fn tab_at_column(cells: &[TabCell<'_>], col: u16) -> Option<usize> {
 }
 
 #[derive(Debug, Clone)]
-/// Data carried by `Tab`.
+/// A stable tab label and enabled state.
 pub struct Tab<'a, Id> {
-    /// Documentation for `item`.
+    /// Stable identity used for selection and activation.
     pub id: Id,
-    /// Documentation for `item`.
+    /// Caller-visible label.
     pub label: &'a str,
-    /// Documentation for `item`.
+    /// Optional styled glyph displayed before the label.
     pub glyph: Option<Span<'a>>,
-    /// Documentation for `item`.
+    /// Whether this tab owns the active content.
     pub active: bool,
-    /// Documentation for `item`.
+    /// Whether this item is enabled.
     pub enabled: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `Tabs`.
 pub struct TabsState<Id> {
-    /// Documentation for `item`.
+    /// Whether this item is selected.
     pub selected: Option<Id>,
-    /// Documentation for `item`.
+    /// Whether this item is hovered.
     pub hovered: Option<Id>,
-    /// Documentation for `item`.
+    /// Whether this item is focused.
     pub focused: bool,
-    /// Documentation for `item`.
+    /// Hit regions produced by the most recent render.
     pub regions: Vec<HitRegion<Id>>,
 }
 
@@ -91,7 +91,7 @@ impl<Id> Default for TabsState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `Tabs`.
+/// A keyboard- and pointer-navigable tab strip.
 pub struct Tabs<'a, Id> {
     tabs: &'a [Tab<'a, Id>],
     gap: u16,
@@ -100,7 +100,7 @@ pub struct Tabs<'a, Id> {
 
 impl<'a, Id> Tabs<'a, Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a tab strip over borrowed tabs with no active or hovered tab.
     pub const fn new(tabs: &'a [Tab<'a, Id>], theme: &'a Theme) -> Self {
         Self {
             tabs,
@@ -110,7 +110,7 @@ impl<'a, Id> Tabs<'a, Id> {
     }
 
     #[must_use]
-    /// Performs the `gap` operation.
+    /// Sets spacing between adjacent items in terminal cells.
     pub const fn gap(mut self, gap: u16) -> Self {
         self.gap = gap;
         self

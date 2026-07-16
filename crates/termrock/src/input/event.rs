@@ -4,37 +4,37 @@ use core::ops::{BitOr, BitOrAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-/// Available `KeyCode` choices.
+/// Backend-neutral keyboard keys understood by TermRock widgets.
 pub enum KeyCode {
-    /// Selects the `Backspace` behavior.
+    /// The backspace key.
     Backspace,
-    /// Selects the `Enter` behavior.
+    /// The enter key.
     Enter,
-    /// Selects the `Left` behavior.
+    /// The left key.
     Left,
-    /// Selects the `Right` behavior.
+    /// The right key.
     Right,
-    /// Selects the `Up` behavior.
+    /// The up key.
     Up,
-    /// Selects the `Down` behavior.
+    /// The down key.
     Down,
-    /// Selects the `Home` behavior.
+    /// The home key.
     Home,
-    /// Selects the `End` behavior.
+    /// The end key.
     End,
-    /// Selects the `PageUp` behavior.
+    /// The page up key.
     PageUp,
-    /// Selects the `PageDown` behavior.
+    /// The page down key.
     PageDown,
-    /// Selects the `Tab` behavior.
+    /// The tab key.
     Tab,
-    /// Selects the `BackTab` behavior.
+    /// The back tab key.
     BackTab,
-    /// Selects the `Delete` behavior.
+    /// The delete key.
     Delete,
-    /// Selects the `Esc` behavior.
+    /// The esc key.
     Esc,
-    /// Selects the `Char` behavior.
+    /// The char key.
     Char(char),
     /// A key the neutral vocabulary does not model (function keys, media
     /// keys, lock keys, and similar keys). Widgets and keymaps must treat it
@@ -43,7 +43,7 @@ pub enum KeyCode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-/// Data carried by `KeyModifiers`.
+/// A compact set of keyboard modifier flags.
 pub struct KeyModifiers(u8);
 
 impl KeyModifiers {
@@ -75,7 +75,7 @@ impl KeyModifiers {
     }
 
     #[must_use]
-    /// Performs the `contains` operation.
+    /// Returns whether every flag in `other` is present.
     pub const fn contains(self, other: Self) -> bool {
         self.0 & other.0 == other.0
     }
@@ -101,14 +101,14 @@ impl BitOrAssign for KeyModifiers {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-/// Available `KeyEventKind` choices.
+/// The lifecycle phase of a keyboard event.
 pub enum KeyEventKind {
     #[default]
-    /// Selects the `Press` behavior.
+    /// A key press event.
     Press,
-    /// Selects the `Repeat` behavior.
+    /// A key repeat event.
     Repeat,
-    /// Selects the `Release` behavior.
+    /// A key release event.
     Release,
 }
 
@@ -122,21 +122,21 @@ impl KeyEventState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// Data carried by `KeyEvent`.
+/// A backend-neutral keyboard event.
 pub struct KeyEvent {
-    /// Documentation for `item`.
+    /// Backend-neutral key code.
     pub code: KeyCode,
-    /// Documentation for `item`.
+    /// Modifier flags held with the key.
     pub modifiers: KeyModifiers,
-    /// Documentation for `item`.
+    /// Lifecycle phase of the key event.
     pub kind: KeyEventKind,
-    /// Documentation for `item`.
+    /// Additional backend-neutral key state.
     pub state: KeyEventState,
 }
 
 impl KeyEvent {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a key-press event with the supplied code and modifiers.
     pub const fn new(code: KeyCode, modifiers: KeyModifiers) -> Self {
         Self {
             code,
@@ -149,68 +149,68 @@ impl KeyEvent {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-/// Available `MouseEventKind` choices.
+/// Backend-neutral pointer actions.
 pub enum MouseEventKind {
-    /// Selects the `ScrollUp` behavior.
+    /// A pointer scroll up event.
     ScrollUp,
-    /// Selects the `ScrollDown` behavior.
+    /// A pointer scroll down event.
     ScrollDown,
-    /// Selects the `ScrollLeft` behavior.
+    /// A pointer scroll left event.
     ScrollLeft,
-    /// Selects the `ScrollRight` behavior.
+    /// A pointer scroll right event.
     ScrollRight,
-    /// Selects the `Moved` behavior.
+    /// A pointer moved event.
     Moved,
-    /// Selects the `Down` behavior.
+    /// A pointer down event.
     Down(MouseButton),
-    /// Selects the `Up` behavior.
+    /// A pointer up event.
     Up(MouseButton),
-    /// Selects the `Drag` behavior.
+    /// A pointer drag event.
     Drag(MouseButton),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// Available `MouseButton` choices.
+/// Physical pointer buttons.
 pub enum MouseButton {
-    /// Selects the `Left` behavior.
+    /// The left pointer button.
     Left,
-    /// Selects the `Right` behavior.
+    /// The right pointer button.
     Right,
-    /// Selects the `Middle` behavior.
+    /// The middle pointer button.
     Middle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-/// Data carried by `MouseEvent`.
+/// A backend-neutral pointer event at a terminal position.
 pub struct MouseEvent {
-    /// Documentation for `item`.
+    /// Pointer action and optional button.
     pub kind: MouseEventKind,
-    /// Documentation for `item`.
+    /// Zero-based terminal cell position.
     pub position: ratatui_core::layout::Position,
-    /// Documentation for `item`.
+    /// Modifier flags held during the pointer action.
     pub modifiers: KeyModifiers,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-/// Available `Event` choices.
+/// Backend-neutral terminal input events.
 pub enum Event {
-    /// Selects the `Key` behavior.
+    /// A terminal key event.
     Key(KeyEvent),
-    /// Selects the `Mouse` behavior.
+    /// A terminal mouse event.
     Mouse(MouseEvent),
-    /// Selects the `Paste` behavior.
+    /// A terminal paste event.
     Paste,
-    /// Selects the `Resize` behavior.
+    /// A terminal resize event.
     Resize {
-        /// Documentation for `item`.
+        /// New terminal width in cells.
         width: u16,
-        /// Documentation for `item`.
+        /// New terminal height in rows.
         height: u16,
     },
-    /// Selects the `FocusGained` behavior.
+    /// A terminal focus gained event.
     FocusGained,
-    /// Selects the `FocusLost` behavior.
+    /// A terminal focus lost event.
     FocusLost,
     /// A backend event outside the neutral vocabulary.
     Unknown,

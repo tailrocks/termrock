@@ -35,7 +35,7 @@ impl<M> Default for ModalStack<M> {
 
 impl<M> ModalStack<M> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates an empty modal stack.
     pub const fn new() -> Self {
         Self {
             current: None,
@@ -59,31 +59,31 @@ impl<M> ModalStack<M> {
     }
 
     #[must_use]
-    /// Performs the `into_parts` operation.
+    /// Splits the modal stack into its current modal and parent chain.
     pub fn into_parts(self) -> (Option<M>, Vec<M>) {
         (self.current, self.parents)
     }
 
     #[must_use]
-    /// Performs the `current` operation.
+    /// Returns the currently active modal.
     pub const fn current(&self) -> Option<&M> {
         self.current.as_ref()
     }
 
     #[must_use]
-    /// Performs the `current_mut` operation.
+    /// Returns mutable access to the currently active modal.
     pub fn current_mut(&mut self) -> Option<&mut M> {
         self.current.as_mut()
     }
 
     #[must_use]
-    /// Performs the `parents` operation.
+    /// Returns the suspended parent-modal chain.
     pub fn parents(&self) -> &[M] {
         &self.parents
     }
 
     #[must_use]
-    /// Performs the `parents_mut` operation.
+    /// Returns mutable access to the suspended parent-modal chain.
     pub fn parents_mut(&mut self) -> &mut Vec<M> {
         &mut self.parents
     }
@@ -95,13 +95,13 @@ impl<M> ModalStack<M> {
     }
 
     #[must_use]
-    /// Performs the `has_parent` operation.
+    /// Returns whether closing the current modal can restore a parent.
     pub fn has_parent(&self) -> bool {
         !self.parents.is_empty()
     }
 
     #[must_use]
-    /// Performs the `depth` operation.
+    /// Returns the active modal depth, including the current modal.
     pub fn depth(&self) -> usize {
         self.parents.len() + usize::from(self.current.is_some())
     }
@@ -133,7 +133,7 @@ impl<M> ModalStack<M> {
         self.parents.clear();
     }
 
-    /// Performs the `take_current` operation.
+    /// Removes and returns the current modal, leaving an empty stack.
     pub fn take_current(&mut self) -> Option<M> {
         self.current.take()
     }

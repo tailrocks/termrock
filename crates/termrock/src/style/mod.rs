@@ -24,7 +24,7 @@ use palette::{
 };
 
 #[must_use]
-/// Performs the `color` operation.
+/// Converts this palette color into Ratatui color space.
 pub const fn color(rgb: Rgb) -> Color {
     Color::Rgb(rgb.r, rgb.g, rgb.b)
 }
@@ -73,7 +73,7 @@ pub(crate) const BORDER: Style = Style::new().fg(BORDER_GRAY);
 pub(crate) const DANGER: Style = Style::new().fg(DANGER_RED).add_modifier(Modifier::BOLD);
 
 #[must_use]
-/// Performs the `faded` operation.
+/// Blends this color toward the canvas for subdued content.
 pub fn faded(color: Color, alpha: f32) -> Color {
     match color {
         Color::Rgb(r, g, b) => {
@@ -90,81 +90,81 @@ pub fn faded(color: Color, alpha: f32) -> Color {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `Role` choices.
+/// Semantic visual roles resolved by a [`Theme`].
 pub enum Role {
-    /// Selects the `Canvas` behavior.
+    /// Styles canvas content.
     Canvas,
-    /// Selects the `Surface` behavior.
+    /// Styles surface content.
     Surface,
-    /// Selects the `Elevated` behavior.
+    /// Styles elevated content.
     Elevated,
-    /// Selects the `Backdrop` behavior.
+    /// Styles backdrop content.
     Backdrop,
-    /// Selects the `Text` behavior.
+    /// Styles text content.
     Text,
-    /// Selects the `TextMuted` behavior.
+    /// Styles text muted content.
     TextMuted,
-    /// Selects the `TextDisabled` behavior.
+    /// Styles text disabled content.
     TextDisabled,
-    /// Selects the `Border` behavior.
+    /// Styles border content.
     Border,
-    /// Selects the `BorderFocused` behavior.
+    /// Styles border focused content.
     BorderFocused,
-    /// Selects the `Selection` behavior.
+    /// Styles selection content.
     Selection,
-    /// Selects the `Focus` behavior.
+    /// Styles focus content.
     Focus,
-    /// Selects the `Accent` behavior.
+    /// Styles accent content.
     Accent,
-    /// Selects the `Success` behavior.
+    /// Styles success content.
     Success,
-    /// Selects the `Warning` behavior.
+    /// Styles warning content.
     Warning,
-    /// Selects the `Danger` behavior.
+    /// Styles danger content.
     Danger,
-    /// Selects the `Info` behavior.
+    /// Styles info content.
     Info,
-    /// Selects the `Link` behavior.
+    /// Styles link content.
     Link,
-    /// Selects the `LinkHover` behavior.
+    /// Styles link hover content.
     LinkHover,
-    /// Selects the `Input` behavior.
+    /// Styles input content.
     Input,
-    /// Selects the `InputInvalid` behavior.
+    /// Styles input invalid content.
     InputInvalid,
-    /// Selects the `ScrollTrack` behavior.
+    /// Styles scroll track content.
     ScrollTrack,
-    /// Selects the `ScrollThumb` behavior.
+    /// Styles scroll thumb content.
     ScrollThumb,
-    /// Selects the `TabActive` behavior.
+    /// Styles tab active content.
     TabActive,
-    /// Selects the `TabInactive` behavior.
+    /// Styles tab inactive content.
     TabInactive,
-    /// Selects the `TabActiveHovered` behavior.
+    /// Styles tab active hovered content.
     TabActiveHovered,
-    /// Selects the `TabInactiveHovered` behavior.
+    /// Styles tab inactive hovered content.
     TabInactiveHovered,
-    /// Selects the `TabUnderlineFocused` behavior.
+    /// Styles tab underline focused content.
     TabUnderlineFocused,
-    /// Selects the `TabUnderlineUnfocused` behavior.
+    /// Styles tab underline unfocused content.
     TabUnderlineUnfocused,
-    /// Selects the `HintKey` behavior.
+    /// Styles hint key content.
     HintKey,
-    /// Selects the `HintText` behavior.
+    /// Styles hint text content.
     HintText,
-    /// Selects the `HintDim` behavior.
+    /// Styles hint dim content.
     HintDim,
-    /// Selects the `HintSeparator` behavior.
+    /// Styles hint separator content.
     HintSeparator,
-    /// Selects the `ActionFocused` behavior.
+    /// Styles action focused content.
     ActionFocused,
-    /// Selects the `ActionDisabled` behavior.
+    /// Styles action disabled content.
     ActionDisabled,
-    /// Selects the `StatusBar` behavior.
+    /// Styles status bar content.
     StatusBar,
-    /// Selects the `DiffAdded` behavior.
+    /// Styles diff added content.
     DiffAdded,
-    /// Selects the `DiffRemoved` behavior.
+    /// Styles diff removed content.
     DiffRemoved,
 }
 
@@ -186,7 +186,7 @@ pub struct Theme {
 
 impl Theme {
     #[must_use]
-    /// Performs the `tailrocks_phosphor` operation.
+    /// Builds the default phosphor-on-black semantic theme.
     pub fn tailrocks_phosphor() -> Self {
         Self {
             roles: [
@@ -360,7 +360,7 @@ impl Theme {
     }
 
     #[must_use]
-    /// Performs the `style` operation.
+    /// Resolves the Ratatui style assigned to a semantic role.
     pub const fn style(&self, role: Role) -> Style {
         self.roles[role as usize]
     }

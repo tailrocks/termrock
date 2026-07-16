@@ -11,30 +11,30 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-/// Data carried by `StatusSlot`.
+/// A prioritized status-bar segment.
 pub struct StatusSlot<'a, Id> {
-    /// Documentation for `item`.
+    /// Stable identity used for selection and activation.
     pub id: Id,
-    /// Documentation for `item`.
+    /// Caller-visible styled content.
     pub content: &'a str,
     /// Higher-priority slots receive width before lower-priority slots.
     pub priority: u8,
     /// Minimum display columns required to keep the slot. Zero means all-or-nothing.
     pub min_width: u16,
-    /// Documentation for `item`.
+    /// Whether this item is enabled.
     pub enabled: bool,
-    /// Documentation for `item`.
+    /// Ratatui style applied while rendering this item.
     pub style: Style,
-    /// Documentation for `item`.
+    /// Optional style override while the slot is hovered.
     pub hover_style: Option<Style>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `StatusBar`.
 pub struct StatusBarState<Id> {
-    /// Documentation for `item`.
+    /// Whether this item is hovered.
     pub hovered: Option<Id>,
-    /// Documentation for `item`.
+    /// Hit regions produced by the most recent render.
     pub regions: Vec<HitRegion<Id>>,
 }
 
@@ -48,7 +48,7 @@ impl<Id> Default for StatusBarState<Id> {
 }
 
 impl<Id: Clone> StatusBarState<Id> {
-    /// Performs the `hover` operation.
+    /// Updates hover state from the current pointer position and painted hit regions.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
@@ -59,7 +59,7 @@ impl<Id: Clone> StatusBarState<Id> {
     }
 
     #[must_use]
-    /// Performs the `click` operation.
+    /// Maps a pointer position to the semantic outcome of the painted hit region.
     pub fn click(&mut self, position: Position) -> Outcome<Id> {
         self.regions
             .iter()
@@ -71,7 +71,7 @@ impl<Id: Clone> StatusBarState<Id> {
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `StatusBar`.
+/// A one-row collection of prioritized status slots.
 pub struct StatusBar<'a, Id> {
     left: &'a [StatusSlot<'a, Id>],
     right: &'a [StatusSlot<'a, Id>],
@@ -81,7 +81,7 @@ pub struct StatusBar<'a, Id> {
 
 impl<'a, Id> StatusBar<'a, Id> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a status bar over borrowed slots and a semantic theme.
     pub const fn new(
         left: &'a [StatusSlot<'a, Id>],
         right: &'a [StatusSlot<'a, Id>],
@@ -96,7 +96,7 @@ impl<'a, Id> StatusBar<'a, Id> {
     }
 
     #[must_use]
-    /// Performs the `alpha` operation.
+    /// Sets backdrop opacity.
     pub const fn alpha(mut self, alpha: f32) -> Self {
         self.alpha = alpha;
         self
@@ -129,7 +129,7 @@ struct Placement<Id> {
 
 impl<Id: Clone> StatusBar<'_, Id> {
     #[must_use]
-    /// Performs the `regions` operation.
+    /// Returns the hit regions produced by the most recent render.
     pub fn regions(&self, area: Rect) -> Vec<HitRegion<Id>> {
         self.placements(area)
             .into_iter()

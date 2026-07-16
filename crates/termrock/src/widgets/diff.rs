@@ -4,34 +4,34 @@ use crate::style::{Role, Theme};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Available `DiffKind` choices.
+/// The semantic kind of a diff line.
 pub enum DiffKind {
-    /// Selects the `Context` behavior.
+    /// A context diff line.
     Context,
-    /// Selects the `Added` behavior.
+    /// A added diff line.
     Added,
-    /// Selects the `Removed` behavior.
+    /// A removed diff line.
     Removed,
 }
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `DiffLine`.
+/// One labeled line in a diff view.
 pub struct DiffLine<'a> {
-    /// Documentation for `item`.
+    /// Caller-visible text.
     pub text: &'a str,
-    /// Documentation for `item`.
+    /// Semantic diff kind controlling prefix and style.
     pub kind: DiffKind,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Runtime state for `Diff`.
 pub struct DiffState {
-    /// Documentation for `item`.
+    /// Whether this item is selected.
     pub selected: Option<usize>,
-    /// Documentation for `item`.
+    /// Offset in terminal cells or rows.
     pub offset: usize,
 }
 #[derive(Debug, Clone, Copy)]
-/// Data carried by `DiffView`.
+/// A vertically scrollable, syntax-neutral diff presentation.
 pub struct DiffView<'a> {
     lines: &'a [DiffLine<'a>],
     theme: &'a Theme,
@@ -39,7 +39,7 @@ pub struct DiffView<'a> {
 
 impl<'a> DiffView<'a> {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a diff view at the first line.
     pub const fn new(lines: &'a [DiffLine<'a>], theme: &'a Theme) -> Self {
         Self { lines, theme }
     }

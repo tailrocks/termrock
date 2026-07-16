@@ -114,18 +114,18 @@ pub struct TailScroll {
 
 impl TailScroll {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates scroll state following the live tail.
     pub const fn new(offset: usize) -> Self {
         Self { offset }
     }
 
     #[must_use]
-    /// Performs the `offset` operation.
+    /// Returns the signed distance from the live tail in rows.
     pub const fn offset(self) -> usize {
         self.offset
     }
 
-    /// Performs the `scroll_by` operation.
+    /// Moves the scroll position by a signed delta and clamps it to valid content.
     pub fn scroll_by(&mut self, filled: usize, delta: isize) -> usize {
         let current = self.offset.min(filled);
         self.offset = if delta.is_negative() {
@@ -136,14 +136,14 @@ impl TailScroll {
         self.offset
     }
 
-    /// Performs the `clamp` operation.
+    /// Clamps the current scroll state to the supplied content and viewport bounds.
     pub fn clamp(&mut self, filled: usize) -> usize {
         self.offset = self.offset.min(filled);
         self.offset
     }
 
     #[must_use]
-    /// Performs the `to_top_offset` operation.
+    /// Converts tail-relative state to a zero-based viewport top row.
     pub fn to_top_offset(self, content_len: usize, viewport_len: usize) -> usize {
         let max = max_offset(content_len, viewport_len);
         max.saturating_sub(self.offset.min(max))
@@ -151,7 +151,7 @@ impl TailScroll {
 }
 
 #[must_use]
-/// Performs the `max_line_width` operation.
+/// Returns the widest line in terminal display columns.
 pub fn max_line_width(lines: &[Line<'_>]) -> usize {
     lines.iter().map(Line::width).max().unwrap_or(0)
 }
@@ -163,7 +163,7 @@ pub const fn is_scrollable(content_len: usize, viewport_len: usize) -> bool {
 }
 
 #[must_use]
-/// Performs the `max_offset` operation.
+/// Returns the greatest valid viewport offset.
 pub const fn max_offset(content_len: usize, viewport_len: usize) -> usize {
     if viewport_len == 0 || content_len <= viewport_len {
         0
@@ -176,26 +176,26 @@ pub const fn max_offset(content_len: usize, viewport_len: usize) -> usize {
 pub const DEFAULT_HORIZONTAL_SCROLL_STEP: u16 = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Available `ScrollAxis` choices.
+/// The terminal axis affected by scrolling.
 pub enum ScrollAxis {
-    /// Selects the `Vertical` behavior.
+    /// The vertical terminal axis.
     Vertical,
-    /// Selects the `Horizontal` behavior.
+    /// The horizontal terminal axis.
     Horizontal,
 }
 
 /// Axes that can actually move for the current content/viewport pair.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ScrollAxes {
-    /// Documentation for `item`.
+    /// Whether vertical scrolling is available.
     pub vertical: bool,
-    /// Documentation for `item`.
+    /// Whether horizontal scrolling is available.
     pub horizontal: bool,
 }
 
 impl ScrollAxes {
     #[must_use]
-    /// Performs the `none` operation.
+    /// Returns a value with both scroll axes disabled.
     pub const fn none() -> Self {
         Self {
             vertical: false,
@@ -204,27 +204,27 @@ impl ScrollAxes {
     }
 
     #[must_use]
-    /// Performs the `any` operation.
+    /// Returns whether at least one scroll axis is enabled.
     pub const fn any(self) -> bool {
         self.vertical || self.horizontal
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Data carried by `ScrollDelta`.
+/// A signed scroll amount on one axis.
 pub struct ScrollDelta {
-    /// Documentation for `item`.
+    /// Axis affected by the delta.
     pub axis: ScrollAxis,
-    /// Documentation for `item`.
+    /// Signed movement in terminal cells or rows.
     pub amount: i16,
 }
 
 /// Two-axis scroll state for dialog bodies and other bounded viewports.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DialogScroll {
-    /// Documentation for `item`.
+    /// Scroll x in terminal cells or rows.
     pub scroll_x: u16,
-    /// Documentation for `item`.
+    /// Scroll y in terminal cells or rows.
     pub scroll_y: u16,
     /// Cached dimensions used by revision-aware viewport widgets.
     pub(crate) measurement: Measured,
@@ -232,7 +232,7 @@ pub struct DialogScroll {
 
 impl DialogScroll {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates zero-offset dialog scroll state.
     pub const fn new() -> Self {
         Self {
             scroll_x: 0,
@@ -326,7 +326,7 @@ impl DialogScroll {
         true
     }
 
-    /// Performs the `clamp` operation.
+    /// Clamps the current scroll state to the supplied content and viewport bounds.
     pub fn clamp(
         &mut self,
         content_height: usize,
@@ -390,7 +390,7 @@ fn offset_after_delta(
     }
 }
 
-/// Performs the `apply_delta_u16` operation.
+/// Applies a signed delta to a bounded `u16` offset.
 pub fn apply_delta_u16(
     content_len: usize,
     viewport_len: usize,
@@ -462,7 +462,7 @@ pub fn mouse_scroll_delta_with_step(
     }
 }
 
-/// Performs the `apply_mouse_scroll_u16` operation.
+/// Applies a pointer-wheel delta when its axis is visible.
 pub fn apply_mouse_scroll_u16(
     kind: MouseEventKind,
     modifiers: KeyModifiers,
@@ -497,17 +497,17 @@ pub fn apply_mouse_scroll_u16(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Data carried by `ScrollSpan`.
+/// Content and viewport lengths used to derive bounded scroll geometry.
 pub struct ScrollSpan {
-    /// Documentation for `item`.
+    /// Total content length in cells or rows.
     pub content_len: usize,
-    /// Documentation for `item`.
+    /// Visible viewport length in cells or rows.
     pub viewport_len: usize,
 }
 
 impl ScrollSpan {
     #[must_use]
-    /// Creates a new value with canonical defaults.
+    /// Creates a scroll span from content and viewport lengths.
     pub const fn new(content_len: usize, viewport_len: usize) -> Self {
         Self {
             content_len,
@@ -553,7 +553,7 @@ pub fn scroll_selectable_list(
 }
 
 #[must_use]
-/// Performs the `max_offset_u16` operation.
+/// Returns the greatest representable viewport offset.
 pub const fn max_offset_u16(content_len: usize, viewport_len: usize) -> u16 {
     let max = max_offset(content_len, viewport_len);
     if max > u16::MAX as usize {
@@ -564,13 +564,13 @@ pub const fn max_offset_u16(content_len: usize, viewport_len: usize) -> u16 {
 }
 
 #[must_use]
-/// Performs the `effective_offset_u16` operation.
+/// Clamps an offset to the current scroll span.
 pub const fn effective_offset(content_len: usize, viewport_len: usize, offset: u16) -> u16 {
     let max = max_offset_u16(content_len, viewport_len);
     if offset > max { max } else { offset }
 }
 
-/// Performs the `clamp_offset_u16` operation.
+/// Clamps the supplied offset to the current scroll span.
 pub const fn clamp_offset_u16(content_len: usize, viewport_len: usize, offset: &mut u16) -> u16 {
     let effective = effective_offset(content_len, viewport_len, *offset);
     *offset = effective;
@@ -587,7 +587,7 @@ pub const fn apply_delta_unclamped_u16(offset: &mut u16, delta: i16) {
 }
 
 #[must_use]
-/// Performs the `offset_for_track_position` operation.
+/// Maps a scrollbar-track position to a content offset.
 pub fn offset_for_track_position(
     content_len: usize,
     viewport_len: usize,
@@ -608,7 +608,7 @@ pub fn offset_for_track_position(
 }
 
 #[must_use]
-/// Performs the `offset_for_track_position_u16` operation.
+/// Maps a `u16` scrollbar-track position to a bounded offset.
 pub fn offset_for_track_position_u16(
     content_len: usize,
     viewport_len: usize,
@@ -629,7 +629,7 @@ pub fn offset_for_track_position_u16(
 }
 
 #[must_use]
-/// Performs the `cursor_follow_offset` operation.
+/// Returns the offset that keeps a selected row visible.
 pub fn cursor_follow_offset(
     cursor: usize,
     content_len: usize,
@@ -655,7 +655,7 @@ pub fn cursor_follow_offset(
 }
 
 #[must_use]
-/// Performs the `full_cell_thumb` operation.
+/// Resolves full-cell scrollbar thumb position and length.
 pub fn full_cell_thumb(
     content_len: usize,
     viewport_len: usize,
