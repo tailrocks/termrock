@@ -5,8 +5,9 @@ use crate::{
     text::display_cols,
 };
 
-/// Default one-cell braille animation frames for indeterminate progress.
-pub const DEFAULT_PROGRESS_FRAMES: [&str; 8] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"];
+const DEFAULT_PROGRESS_FRAMES: [&str; 8] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"];
+const MIN_TRACK_WIDTH: u16 = 2;
+const MIN_WIDTH_WITH_PERCENTAGE: u16 = 16;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
@@ -26,6 +27,10 @@ pub enum ProgressKind {
 
 #[derive(Debug, Clone, Copy)]
 /// A one-row progress indicator with an optional label.
+///
+/// Determinate progress shows its percentage at widths of 16 columns or more.
+/// Narrower bars prioritize the label and filled/empty glyph cue instead,
+/// reserving two track cells whenever the available geometry permits.
 pub struct Progress<'a> {
     kind: ProgressKind,
     label: Option<&'a str>,
@@ -65,7 +70,9 @@ impl<'a> Progress<'a> {
 
 impl Widget for &Progress<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
+        if area.is_empty()
+            || matches!(self.kind, ProgressKind::Indeterminate { .. }) && self.frames.is_empty()
+        {
             return;
         }
         buffer.set_style(area, self.theme.style(Role::TextMuted));
@@ -103,24 +110,31 @@ fn render_determinate(
         0.0
     };
     let percentage = format!("{:>3}%", (fraction * 100.0).round() as u8);
-    let percentage_width = u16::try_from(display_cols(&percentage))
-        .unwrap_or(u16::MAX)
-        .min(area.width);
+    let percentage_width = if area.width >= MIN_WIDTH_WITH_PERCENTAGE {
+        u16::try_from(display_cols(&percentage))
+            .unwrap_or(u16::MAX)
+            .min(area.width)
+    } else {
+        0
+    };
     let percentage_x = area.right().saturating_sub(percentage_width);
-    buffer.set_stringn(
-        percentage_x,
-        area.y,
-        &percentage,
-        usize::from(percentage_width),
-        theme.style(Role::Text),
-    );
+    if percentage_width > 0 {
+        buffer.set_stringn(
+            percentage_x,
+            area.y,
+            &percentage,
+            usize::from(percentage_width),
+            theme.style(Role::Text),
+        );
+    }
 
     let mut track_x = area.x;
     if let Some(label) = label {
         let available = percentage_x.saturating_sub(area.x);
+        let reserved = MIN_TRACK_WIDTH.saturating_add(2);
         let label_width = u16::try_from(display_cols(label))
             .unwrap_or(u16::MAX)
-            .min(available.saturating_sub(1));
+            .min(available.saturating_sub(reserved));
         buffer.set_stringn(
             area.x,
             area.y,
@@ -129,7 +143,7 @@ fn render_determinate(
             theme.style(Role::TextMuted),
         );
         track_x = area.x.saturating_add(label_width);
-        if track_x < percentage_x {
+        if label_width > 0 && track_x < percentage_x {
             track_x = track_x.saturating_add(1);
         }
     }
@@ -238,29 +252,29 @@ mod tests {
     #[test]
     fn zero_fraction_renders_all_empty_glyphs() {
         let buffer = determinate(0.0, 9);
-        assert!((0..4).all(|x| buffer[(x, 0)].symbol() == "░"));
+        assert!((0..8).all(|x| buffer[(x, 0)].symbol() == "░"));
     }
 
     #[test]
     fn half_fraction_splits_cells_exactly() {
         let buffer = determinate(0.5, 9);
         assert_eq!(buffer[(0, 0)].symbol(), "█");
-        assert_eq!(buffer[(1, 0)].symbol(), "█");
-        assert_eq!(buffer[(2, 0)].symbol(), "░");
-        assert_eq!(buffer[(3, 0)].symbol(), "░");
+        assert_eq!(buffer[(3, 0)].symbol(), "█");
+        assert_eq!(buffer[(4, 0)].symbol(), "░");
+        assert_eq!(buffer[(7, 0)].symbol(), "░");
     }
 
     #[test]
     fn full_fraction_renders_all_filled_glyphs() {
         let buffer = determinate(1.0, 9);
-        assert!((0..4).all(|x| buffer[(x, 0)].symbol() == "█"));
+        assert!((0..8).all(|x| buffer[(x, 0)].symbol() == "█"));
     }
 
     #[test]
     fn nan_and_infinite_clamp_to_zero() {
         for fraction in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            let buffer = determinate(fraction, 9);
-            assert!((0..4).all(|x| buffer[(x, 0)].symbol() == "░"));
+            let buffer = determinate(fraction, 20);
+            assert!((0..15).all(|x| buffer[(x, 0)].symbol() == "░"));
             assert!(rendered(&buffer).contains("0%"));
         }
     }
@@ -277,13 +291,13 @@ mod tests {
     #[test]
     fn filled_and_empty_zones_differ_by_glyph() {
         let buffer = determinate(0.5, 9);
-        assert_ne!(buffer[(0, 0)].symbol(), buffer[(3, 0)].symbol());
+        assert_ne!(buffer[(0, 0)].symbol(), buffer[(7, 0)].symbol());
     }
 
     #[test]
     fn wide_char_label_truncates_on_grapheme_boundary() {
         let theme = Theme::default();
-        let area = Rect::new(0, 0, 10, 1);
+        let area = Rect::new(0, 0, 8, 1);
         let mut buffer = Buffer::empty(area);
         (&Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &theme).label("東京🪨"))
             .render(area, &mut buffer);
@@ -310,10 +324,37 @@ mod tests {
         let theme = Theme::default();
         let area = Rect::new(0, 0, 8, 1);
         let mut buffer = Buffer::empty(area);
+        let before = buffer.clone();
         (&Progress::new(ProgressKind::Indeterminate { tick: 3 }, &theme)
             .frames(&[])
             .label("hidden"))
             .render(area, &mut buffer);
-        assert!(rendered(&buffer).trim().is_empty());
+        assert_eq!(buffer, before);
+    }
+
+    #[test]
+    fn narrow_width_elides_percentage_but_keeps_glyph_cue() {
+        let theme = Theme::default();
+        let area = Rect::new(0, 0, 14, 1);
+        let mut buffer = Buffer::empty(area);
+        (&Progress::new(ProgressKind::Determinate { fraction: 0.62 }, &theme).label("Build"))
+            .render(area, &mut buffer);
+        let row = rendered(&buffer);
+        assert!(!row.contains('%'));
+        assert!(row.contains('█'));
+        assert!(row.contains('░'));
+    }
+
+    #[test]
+    fn narrow_long_label_reserves_filled_and_empty_track_cells() {
+        let theme = Theme::default();
+        let area = Rect::new(0, 0, 14, 1);
+        let mut buffer = Buffer::empty(area);
+        (&Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &theme)
+            .label("An extremely long build label"))
+            .render(area, &mut buffer);
+        let row = rendered(&buffer);
+        assert!(row.contains('█'));
+        assert!(row.contains('░'));
     }
 }

@@ -169,6 +169,7 @@ let inner = panel.inner(Rect::new(0, 0, 80, 24));`,
 use termrock::{Theme, widgets::{Progress, ProgressKind}};
 
 let theme = Theme::default();
+// Below 16 columns, the percentage yields space to the glyph track.
 let progress = Progress::new(ProgressKind::Determinate { fraction: 0.72 }, &theme)
     .label("Indexing");
 let area = Rect::new(0, 0, 40, 1);
