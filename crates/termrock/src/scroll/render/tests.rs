@@ -20,7 +20,15 @@ fn vertical_thumb_moves_and_keeps_length() {
     let render = |offset| {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 10));
         let area = buffer.area;
-        render_vertical_scrollbar_to_buffer(&mut buffer, area, 20, 5, offset, ScrollbarStyle::Line);
+        render_scrollbar(
+            &mut buffer,
+            area,
+            ScrollbarSpec::new(
+                scroll::ScrollAxis::Vertical,
+                ScrollbarGeometry::new(20, 5, offset),
+            ),
+            &Theme::default(),
+        );
         (0..10)
             .filter(|y| buffer[(0, *y)].symbol() == "┃")
             .collect::<Vec<_>>()
@@ -36,8 +44,37 @@ fn vertical_thumb_moves_and_keeps_length() {
 fn block_style_only_changes_vertical_thumb() {
     let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 5));
     let area = buffer.area;
-    render_vertical_scrollbar_to_buffer(&mut buffer, area, 10, 5, 0, ScrollbarStyle::Block);
+    render_scrollbar(
+        &mut buffer,
+        area,
+        ScrollbarSpec::new(
+            scroll::ScrollAxis::Vertical,
+            ScrollbarGeometry::new(10, 5, 0),
+        )
+        .style(ScrollbarStyle::Block),
+        &Theme::default(),
+    );
     assert!((0..5).any(|y| buffer[(0, y)].symbol() == "█"));
+}
+
+#[test]
+fn scrollbar_uses_semantic_theme_roles() {
+    let theme = Theme::default()
+        .with_role(Role::ScrollTrack, Style::new().fg(Color::Red))
+        .with_role(Role::ScrollThumb, Style::new().fg(Color::Blue));
+    let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 5));
+    let area = buffer.area;
+    render_scrollbar(
+        &mut buffer,
+        area,
+        ScrollbarSpec::new(
+            scroll::ScrollAxis::Vertical,
+            ScrollbarGeometry::new(10, 5, 0),
+        ),
+        &theme,
+    );
+    assert_eq!(buffer[(0, 0)].fg, Color::Blue);
+    assert_eq!(buffer[(0, 4)].fg, Color::Red);
 }
 
 #[test]

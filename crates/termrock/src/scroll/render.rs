@@ -3,21 +3,13 @@
 
 //! Scrollbar painting and the fixed-prefix line primitive.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Style,
-    terminal::Frame,
-    text::{Line, Span},
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, terminal::Frame, text::Line, widgets::Widget};
 use ratatui_widgets::paragraph::Paragraph;
 
 use crate::{
     scroll,
-    style::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK, Role, Theme},
+    style::{Role, Theme},
     text::{display_cols, fixed_prefix_scroll_segments},
-    widgets::{Panel, PanelEmphasis},
 };
 
 /// Dim track glyph shared by every scrollbar.
@@ -164,121 +156,62 @@ pub const fn vertical_scrollbar_area(block_area: Rect) -> Rect {
     )
 }
 
-/// Render a horizontal scrollbar on a block border.
-pub fn render_horizontal_scrollbar(
-    frame: &mut Frame<'_>,
-    block_area: Rect,
-    content_width: usize,
-    scroll_x: u16,
-) {
-    let viewport = viewport_width(block_area);
-    if !scroll::is_scrollable(content_width, viewport) {
-        return;
+/// Content and viewport dimensions used to size a scrollbar thumb.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScrollbarGeometry {
+    content_length: usize,
+    viewport_length: usize,
+    offset: u16,
+}
+
+impl ScrollbarGeometry {
+    /// Creates explicit scrollbar geometry.
+    #[must_use]
+    pub const fn new(content_length: usize, viewport_length: usize, offset: u16) -> Self {
+        Self {
+            content_length,
+            viewport_length,
+            offset,
+        }
     }
-    frame.render_widget(
-        FixedScrollbar {
-            content_length: content_width,
-            viewport,
-            offset: scroll_x,
-            orientation: FixedScrollbarOrientation::Horizontal,
+}
+
+/// Declarative scrollbar paint request for an explicit track rectangle.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScrollbarSpec {
+    axis: scroll::ScrollAxis,
+    geometry: ScrollbarGeometry,
+    style: ScrollbarStyle,
+}
+
+impl ScrollbarSpec {
+    /// Creates a line-style scrollbar request.
+    #[must_use]
+    pub const fn new(axis: scroll::ScrollAxis, geometry: ScrollbarGeometry) -> Self {
+        Self {
+            axis,
+            geometry,
             style: ScrollbarStyle::Line,
-        },
-        horizontal_scrollbar_area(block_area),
-    );
-}
-
-/// Render a line-style vertical scrollbar on a block border.
-pub fn render_vertical_scrollbar(
-    frame: &mut Frame<'_>,
-    block_area: Rect,
-    content_height: usize,
-    scroll_y: u16,
-) {
-    render_vertical_scrollbar_with_style(
-        frame,
-        block_area,
-        content_height,
-        scroll_y,
-        ScrollbarStyle::Line,
-    );
-}
-
-/// Render a styled vertical scrollbar on a block border.
-pub fn render_vertical_scrollbar_with_style(
-    frame: &mut Frame<'_>,
-    block_area: Rect,
-    content_height: usize,
-    scroll_y: u16,
-    style: ScrollbarStyle,
-) {
-    let viewport = viewport_height(block_area);
-    render_vertical_scrollbar_in_area_with_style(
-        frame,
-        vertical_scrollbar_area(block_area),
-        content_height,
-        viewport,
-        scroll_y,
-        style,
-    );
-}
-
-/// Render a line-style vertical scrollbar in an explicit track.
-pub fn render_vertical_scrollbar_in_area(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    content_height: usize,
-    viewport: usize,
-    scroll_y: u16,
-) {
-    render_vertical_scrollbar_in_area_with_style(
-        frame,
-        area,
-        content_height,
-        viewport,
-        scroll_y,
-        ScrollbarStyle::Line,
-    );
-}
-
-/// Render a styled vertical scrollbar in an explicit track.
-pub fn render_vertical_scrollbar_in_area_with_style(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    content_height: usize,
-    viewport: usize,
-    scroll_y: u16,
-    style: ScrollbarStyle,
-) {
-    render_vertical_scrollbar_to_buffer(
-        frame.buffer_mut(),
-        area,
-        content_height,
-        viewport,
-        scroll_y,
-        style,
-    );
-}
-
-/// Paint a vertical scrollbar directly into a widget buffer.
-pub fn render_vertical_scrollbar_to_buffer(
-    buffer: &mut Buffer,
-    area: Rect,
-    content_height: usize,
-    viewport: usize,
-    scroll_y: u16,
-    style: ScrollbarStyle,
-) {
-    if !scroll::is_scrollable(content_height, viewport) || area.height == 0 {
-        return;
+        }
     }
-    FixedScrollbar {
-        content_length: content_height,
-        viewport,
-        offset: scroll_y,
-        orientation: FixedScrollbarOrientation::Vertical,
-        style,
+
+    /// Sets the vertical thumb glyph style.
+    #[must_use]
+    pub const fn style(mut self, style: ScrollbarStyle) -> Self {
+        self.style = style;
+        self
     }
-    .render(area, buffer);
+}
+
+/// Paints a themed full-cell scrollbar into an explicit track rectangle.
+pub fn render_scrollbar(buffer: &mut Buffer, area: Rect, spec: ScrollbarSpec, theme: &Theme) {
+    Scrollbar { spec, theme }.render(area, buffer);
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Scrollbar<'a> {
+    spec: ScrollbarSpec,
+    theme: &'a Theme,
 }
 
 /// Render borrowed lines into a rectangle with a vertical offset and optional
@@ -286,25 +219,29 @@ pub fn render_vertical_scrollbar_to_buffer(
 pub fn render_lines_with_offset_in_area(
     frame: &mut Frame<'_>,
     area: Rect,
-    lines: Vec<Line<'_>>,
+    lines: &[Line<'_>],
     offset: u16,
+    theme: &Theme,
 ) {
     let viewport = usize::from(area.height);
     let total = lines.len();
     let clamped = scroll::effective_offset(total, viewport, offset);
     let visible: Vec<Line<'_>> = lines
-        .into_iter()
+        .iter()
         .skip(usize::from(clamped))
         .take(viewport)
+        .cloned()
         .collect();
-    frame.render_widget(Paragraph::new(visible), area);
+    frame.render_widget(Paragraph::new(visible).style(theme.style(Role::Text)), area);
     if scroll::is_scrollable(total, viewport) {
-        render_vertical_scrollbar_in_area(
-            frame,
+        render_scrollbar(
+            frame.buffer_mut(),
             vertical_list_scrollbar_area(area),
-            total,
-            viewport,
-            clamped,
+            ScrollbarSpec::new(
+                scroll::ScrollAxis::Vertical,
+                ScrollbarGeometry::new(total, viewport, clamped),
+            ),
+            theme,
         );
     }
 }
@@ -318,150 +255,31 @@ const fn vertical_list_scrollbar_area(area: Rect) -> Rect {
     }
 }
 
-fn leading_space_count(line: &Line<'_>) -> usize {
-    let mut count = 0usize;
-    for span in &line.spans {
-        for ch in span.content.chars() {
-            if ch == ' ' {
-                count = count.saturating_add(1);
-            } else {
-                return count;
-            }
-        }
-    }
-    count
-}
-
-fn add_trailing_padding(mut lines: Vec<Line<'_>>) -> Vec<Line<'_>> {
-    for line in &mut lines {
-        let padding = leading_space_count(line);
-        if padding > 0 {
-            line.spans.push(Span::raw(" ".repeat(padding)));
-        }
-    }
-    lines
-}
-
-/// Widest line including the trailing pad that scrollable blocks append.
-///
-/// Scrollable blocks mirror leading indent as trailing pad so horizontal
-/// scroll thumbs reach the true content end. Consumers that clamp scroll
-/// against those blocks must use this width, not plain [`max_line_width`].
-#[must_use]
-pub fn padded_max_line_width(lines: &[Line<'_>]) -> usize {
-    lines
-        .iter()
-        .map(|line| line.width().saturating_add(leading_space_count(line)))
-        .max()
-        .unwrap_or(0)
-}
-
-/// Render a bordered scrollable block, clamping offsets and painting scrollbars.
-///
-/// Focus maps to [`PanelEmphasis::Focused`] so the active container uses
-/// [`Role::BorderFocused`] without consumer-side theme remapping.
-pub fn render_scrollable_block(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    lines: Vec<Line<'_>>,
-    scroll_x: &mut u16,
-    scroll_y: &mut u16,
-    focused: bool,
-    title: Option<&str>,
-) {
-    let content_width = padded_max_line_width(&lines);
-    let content_height = lines.len();
-    let viewport_w = viewport_width(area);
-    let viewport_h = viewport_height(area);
-    let eff_x = scroll::effective_offset(content_width, viewport_w, *scroll_x);
-    let eff_y = scroll::effective_offset(content_height, viewport_h, *scroll_y);
-    *scroll_x = eff_x;
-    *scroll_y = eff_y;
-    render_scrollable_block_at(frame, area, lines, eff_x, eff_y, focused, title);
-}
-
-/// Render a bordered scrollable block with explicit scroll offsets.
-pub fn render_scrollable_block_at(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    lines: Vec<Line<'_>>,
-    scroll_x: u16,
-    scroll_y: u16,
-    focused: bool,
-    title: Option<&str>,
-) {
-    let content_width = padded_max_line_width(&lines);
-    let content_height = lines.len();
-    let viewport_w = viewport_width(area);
-    let viewport_h = viewport_height(area);
-    let emphasis = if focused {
-        PanelEmphasis::Focused
-    } else {
-        PanelEmphasis::Normal
-    };
-    let theme = Theme::default();
-    let mut panel = Panel::new(&theme).emphasis(emphasis);
-    if let Some(title) = title {
-        panel = panel.title(title);
-    }
-    let eff_x = scroll::effective_offset(content_width, viewport_w, scroll_x);
-    let eff_y = scroll::effective_offset(content_height, viewport_h, scroll_y);
-    let visible = lines
-        .into_iter()
-        .skip(usize::from(eff_y))
-        .take(viewport_h)
-        .collect();
-    frame.render_widget(
-        Paragraph::new(add_trailing_padding(visible))
-            .block(panel.block())
-            .style(theme.style(Role::Accent))
-            .scroll((0, eff_x)),
-        area,
-    );
-    render_horizontal_scrollbar(frame, area, content_width, eff_x);
-    render_vertical_scrollbar(frame, area, content_height, eff_y);
-}
-
-#[derive(Clone, Copy, Debug)]
-enum FixedScrollbarOrientation {
-    Horizontal,
-    Vertical,
-}
-
-#[derive(Debug)]
-struct FixedScrollbar {
-    content_length: usize,
-    viewport: usize,
-    offset: u16,
-    orientation: FixedScrollbarOrientation,
-    style: ScrollbarStyle,
-}
-
-impl Widget for FixedScrollbar {
+impl Widget for Scrollbar<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let track_len = match self.orientation {
-            FixedScrollbarOrientation::Horizontal => usize::from(area.width),
-            FixedScrollbarOrientation::Vertical => usize::from(area.height),
+        let track_len = match self.spec.axis {
+            scroll::ScrollAxis::Horizontal => usize::from(area.width),
+            scroll::ScrollAxis::Vertical => usize::from(area.height),
         };
         let Some(thumb) = scroll::full_cell_thumb(
-            self.content_length,
-            self.viewport,
+            self.spec.geometry.content_length,
+            self.spec.geometry.viewport_length,
             u16::try_from(track_len).unwrap_or(u16::MAX),
-            usize::from(self.offset),
+            usize::from(self.spec.geometry.offset),
         ) else {
             return;
         };
         let thumb_range = usize::from(thumb.start)..usize::from(thumb.start + thumb.len);
-        let thumb_style = Style::new().fg(DIALOG_SCROLL_THUMB);
-        let track_style = Style::new().fg(DIALOG_SCROLL_TRACK);
         for index in 0..track_len {
-            let (x, y, thumb_symbol) = match self.orientation {
-                FixedScrollbarOrientation::Horizontal => {
+            let (x, y, thumb_symbol) = match self.spec.axis {
+                scroll::ScrollAxis::Horizontal => {
                     (area.x + index as u16, area.y, SCROLLBAR_HORIZONTAL_THUMB)
                 }
-                FixedScrollbarOrientation::Vertical => {
-                    (area.x, area.y + index as u16, self.style.vertical_thumb())
-                }
+                scroll::ScrollAxis::Vertical => (
+                    area.x,
+                    area.y + index as u16,
+                    self.spec.style.vertical_thumb(),
+                ),
             };
             let in_thumb = thumb_range.contains(&index);
             buffer.set_string(
@@ -472,7 +290,11 @@ impl Widget for FixedScrollbar {
                 } else {
                     SCROLLBAR_TRACK
                 },
-                if in_thumb { thumb_style } else { track_style },
+                if in_thumb {
+                    self.theme.style(Role::ScrollThumb)
+                } else {
+                    self.theme.style(Role::ScrollTrack)
+                },
             );
         }
     }

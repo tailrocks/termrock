@@ -14,14 +14,10 @@
 mod render;
 
 pub use render::{
-    SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarStyle, apply_scroll_delta,
-    apply_scroll_delta_unclamped, apply_term_width_scroll_delta, clamp_scroll_offset,
-    horizontal_scrollbar_area, padded_max_line_width, render_horizontal_scrollbar,
-    render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area, render_scrollable_block,
-    render_scrollable_block_at,
-    render_vertical_scrollbar, render_vertical_scrollbar_in_area,
-    render_vertical_scrollbar_in_area_with_style, render_vertical_scrollbar_to_buffer,
-    render_vertical_scrollbar_with_style, scrollbar_offset_for_track_position,
+    SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
+    apply_scroll_delta, apply_scroll_delta_unclamped, apply_term_width_scroll_delta,
+    clamp_scroll_offset, horizontal_scrollbar_area, render_line_with_fixed_prefix_scroll,
+    render_lines_with_offset_in_area, render_scrollbar, scrollbar_offset_for_track_position,
     vertical_scrollbar_area, viewport_height, viewport_width,
 };
 
@@ -363,106 +359,6 @@ impl DialogScroll {
             .min(max_offset_u16(content_width, viewport_width));
     }
 
-    /// Apply a crossterm mouse-scroll event when both axes may move.
-    pub fn on_mouse_scroll(
-        &mut self,
-        kind: crate::input::MouseEventKind,
-        modifiers: crate::input::KeyModifiers,
-    ) -> bool {
-        self.on_mouse_scroll_for_axes(
-            kind,
-            modifiers,
-            ScrollAxes {
-                vertical: true,
-                horizontal: true,
-            },
-        )
-    }
-
-    /// Apply a mouse-scroll event gated by available axes.
-    pub fn on_mouse_scroll_for_axes(
-        &mut self,
-        kind: crate::input::MouseEventKind,
-        modifiers: crate::input::KeyModifiers,
-        axes: ScrollAxes,
-    ) -> bool {
-        self.handle_mouse(kind, modifiers, axes)
-    }
-
-    /// Apply a mouse-scroll event using content/viewport sizes to derive axes.
-    pub fn on_mouse_scroll_for_size(
-        &mut self,
-        kind: crate::input::MouseEventKind,
-        modifiers: crate::input::KeyModifiers,
-        content_height: usize,
-        viewport_height: usize,
-        content_width: usize,
-        viewport_width: usize,
-    ) -> bool {
-        self.on_mouse_scroll_for_axes(
-            kind,
-            modifiers,
-            ScrollAxes {
-                vertical: is_scrollable(content_height, viewport_height),
-                horizontal: is_scrollable(content_width, viewport_width),
-            },
-        )
-    }
-
-    /// Handle raw byte keys from surfaces that parse keyboard input before
-    /// crossing into shared TUI code.
-    pub fn handle_raw_key_for_axes(&mut self, key: &[u8], axes: ScrollAxes) -> bool {
-        match key {
-            b"\x1b[A" | b"k" | b"K" if axes.vertical => {
-                self.scroll_y = self.scroll_y.saturating_sub(1);
-                true
-            }
-            b"\x1b[B" | b"j" | b"J" if axes.vertical => {
-                self.scroll_y = self.scroll_y.saturating_add(1);
-                true
-            }
-            b"\x1b[D" | b"h" | b"H" if axes.horizontal => {
-                self.scroll_x = self.scroll_x.saturating_sub(1);
-                true
-            }
-            b"\x1b[C" | b"l" | b"L" if axes.horizontal => {
-                self.scroll_x = self.scroll_x.saturating_add(1);
-                true
-            }
-            _ => false,
-        }
-    }
-
-    /// Apply SGR wheel button bits to the dialog offsets.
-    pub fn on_sgr_wheel_button_for_axes(&mut self, button: u8, axes: ScrollAxes) -> bool {
-        let forward = (button & 1) != 0;
-        let horizontal = (button & 2) != 0 || (button & 4) != 0;
-        match (horizontal, forward) {
-            (true, _) if !axes.horizontal => false,
-            (false, _) if !axes.vertical => false,
-            (true, true) => {
-                self.scroll_x = self
-                    .scroll_x
-                    .saturating_add(DEFAULT_HORIZONTAL_SCROLL_STEP);
-                true
-            }
-            (true, false) => {
-                self.scroll_x = self
-                    .scroll_x
-                    .saturating_sub(DEFAULT_HORIZONTAL_SCROLL_STEP);
-                true
-            }
-            (false, true) => {
-                self.scroll_y = self.scroll_y.saturating_add(1);
-                true
-            }
-            (false, false) => {
-                self.scroll_y = self.scroll_y.saturating_sub(1);
-                true
-            }
-        }
-    }
-
     /// Render vertical and/or horizontal scrollbars on the block border.
     pub fn render_scrollbars(
         &self,
@@ -470,20 +366,39 @@ impl DialogScroll {
         block_area: ratatui_core::layout::Rect,
         content_height: usize,
         content_width: usize,
+        theme: &crate::style::Theme,
     ) {
         if is_scrollable(content_height, viewport_height(block_area)) {
-            render_vertical_scrollbar(frame, block_area, content_height, self.scroll_y);
+            render_scrollbar(
+                frame.buffer_mut(),
+                vertical_scrollbar_area(block_area),
+                ScrollbarSpec::new(
+                    ScrollAxis::Vertical,
+                    ScrollbarGeometry::new(
+                        content_height,
+                        viewport_height(block_area),
+                        self.scroll_y,
+                    ),
+                ),
+                theme,
+            );
         }
         if is_scrollable(content_width, viewport_width(block_area)) {
-            render_horizontal_scrollbar(frame, block_area, content_width, self.scroll_x);
+            render_scrollbar(
+                frame.buffer_mut(),
+                horizontal_scrollbar_area(block_area),
+                ScrollbarSpec::new(
+                    ScrollAxis::Horizontal,
+                    ScrollbarGeometry::new(
+                        content_width,
+                        viewport_width(block_area),
+                        self.scroll_x,
+                    ),
+                ),
+                theme,
+            );
         }
     }
-}
-
-/// Display-column width of one line without trailing-pad accounting.
-#[must_use]
-pub fn line_width(line: &Line<'_>) -> usize {
-    line.width()
 }
 
 /// Full-cell thumb geometry for downstream renderers.

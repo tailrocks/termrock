@@ -5,10 +5,7 @@ mod dialog;
 use ratatui_core::layout::Rect;
 
 pub use crate::interaction::HitRegion;
-pub use dialog::{
-    DialogBorder, dialog_inner_chunks, dialog_inner_height, render_dialog_shell,
-    render_scrollable_dialog_body,
-};
+pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
 
 /// Center a fixed-size rectangle inside `area`, leaving a one-cell margin
 /// where the terminal has room for it.

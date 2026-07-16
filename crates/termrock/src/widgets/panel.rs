@@ -11,6 +11,8 @@ pub enum PanelEmphasis {
     Normal,
     /// Focused panel chrome.
     Focused,
+    /// Danger-accent chrome for destructive or failed actions.
+    Danger,
 }
 
 #[derive(Debug, Clone)]
@@ -58,10 +60,10 @@ impl<'a> Panel<'a> {
     #[must_use]
     /// Builds the surrounding block from the current title, emphasis, and style.
     pub fn block(&self) -> Block<'a> {
-        let role = if self.emphasis == PanelEmphasis::Focused {
-            Role::BorderFocused
-        } else {
-            Role::Border
+        let role = match self.emphasis {
+            PanelEmphasis::Normal => Role::Border,
+            PanelEmphasis::Focused => Role::BorderFocused,
+            PanelEmphasis::Danger => Role::Danger,
         };
         let mut block =
             Block::bordered().border_style(self.style.unwrap_or(self.theme.style(role)));

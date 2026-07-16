@@ -508,13 +508,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             }
         }
         if scrollable {
-            crate::scroll::render_vertical_scrollbar_to_buffer(
+            crate::scroll::render_scrollbar(
                 buffer,
                 Rect::new(area.right().saturating_sub(1), area.y, 1, area.height),
-                self.rows.len(),
-                state.viewport_height,
-                u16::try_from(state.offset).unwrap_or(u16::MAX),
-                crate::scroll::ScrollbarStyle::Line,
+                crate::scroll::ScrollbarSpec::new(
+                    crate::scroll::ScrollAxis::Vertical,
+                    crate::scroll::ScrollbarGeometry::new(
+                        self.rows.len(),
+                        state.viewport_height,
+                        u16::try_from(state.offset).unwrap_or(u16::MAX),
+                    ),
+                ),
+                self.theme,
             );
         }
     }
