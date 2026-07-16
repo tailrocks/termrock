@@ -3211,6 +3211,52 @@ pub unsafe fn termrock::widgets::PanelEmphasis::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PanelEmphasis
 pub fn termrock::widgets::PanelEmphasis::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PanelEmphasis
+#[non_exhaustive] pub enum termrock::widgets::PickerOutcome<Id>
+pub termrock::widgets::PickerOutcome::Activated(Id)
+pub termrock::widgets::PickerOutcome::Cancelled
+pub termrock::widgets::PickerOutcome::Ignored
+pub termrock::widgets::PickerOutcome::QueryChanged
+pub termrock::widgets::PickerOutcome::SelectionChanged
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerOutcome<Id>::clone(&self) -> termrock::widgets::PickerOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::PickerOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerOutcome<Id>::eq(&self, &termrock::widgets::PickerOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::PickerOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::PickerOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PickerOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PickerOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PickerOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PickerOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PickerOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::PickerOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PickerOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::PickerOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::PickerOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PickerOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PickerOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PickerOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PickerOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::PickerOutcome<Id>::Owned = T
+pub fn termrock::widgets::PickerOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PickerOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PickerOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PickerOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PickerOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::PickerOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PickerOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::PickerOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PickerOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PickerOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PickerOutcome<Id>
 #[non_exhaustive] pub enum termrock::widgets::ProgressKind
 pub termrock::widgets::ProgressKind::Determinate
 pub termrock::widgets::ProgressKind::Determinate::fraction: f64
@@ -5014,6 +5060,109 @@ pub unsafe fn termrock::widgets::Panel<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Panel<'a>
+pub struct termrock::widgets::Picker<'a, Id>
+impl<'a, Id> termrock::widgets::Picker<'a, Id>
+pub const fn termrock::widgets::Picker<'a, Id>::empty_message(self, &'a str) -> Self
+pub const fn termrock::widgets::Picker<'a, Id>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::Picker<'a, Id>::new(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::Picker<'a, Id>::placeholder(self, &'a str) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Picker<'a, Id>
+pub fn termrock::widgets::Picker<'a, Id>::clone(&self) -> termrock::widgets::Picker<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Picker<'a, Id>
+pub fn termrock::widgets::Picker<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Picker<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Picker<'_, Id>
+pub type &termrock::widgets::Picker<'_, Id>::State = termrock::widgets::PickerState<Id>
+pub fn &termrock::widgets::Picker<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Picker<'_, Id>
+pub type termrock::widgets::Picker<'_, Id>::State = termrock::widgets::PickerState<Id>
+pub fn termrock::widgets::Picker<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::Picker<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::Picker<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::Picker<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::Picker<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::Picker<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Picker<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Picker<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::Picker<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::Picker<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Picker<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::Picker<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::Picker<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Picker<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Picker<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Picker<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Picker<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::Picker<'a, Id>::Owned = T
+pub fn termrock::widgets::Picker<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Picker<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Picker<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Picker<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Picker<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Picker<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Picker<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Picker<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Picker<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Picker<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Picker<'a, Id>
+pub fn termrock::widgets::Picker<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Picker<'a, Id>
+pub struct termrock::widgets::PickerState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::PickerState<Id>
+pub fn termrock::widgets::PickerState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
+pub fn termrock::widgets::PickerState<Id>::reconcile(&mut self, &[termrock::widgets::ListRow<'_, Id>])
+pub fn termrock::widgets::PickerState<Id>::scroll_by(&mut self, isize, usize) -> bool
+impl<Id> termrock::widgets::PickerState<Id>
+pub const fn termrock::widgets::PickerState<Id>::list(&self) -> &termrock::widgets::ListState<Id>
+pub const fn termrock::widgets::PickerState<Id>::list_mut(&mut self) -> &mut termrock::widgets::ListState<Id>
+pub fn termrock::widgets::PickerState<Id>::new(core::option::Option<Id>) -> Self
+pub const fn termrock::widgets::PickerState<Id>::query(&self) -> &termrock::widgets::TextInputState
+pub const fn termrock::widgets::PickerState<Id>::query_mut(&mut self) -> &mut termrock::widgets::TextInputState
+pub fn termrock::widgets::PickerState<Id>::query_text(&self) -> &str
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PickerState<Id>
+pub fn termrock::widgets::PickerState<Id>::clone(&self) -> termrock::widgets::PickerState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::PickerState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::PickerState<Id>
+pub fn termrock::widgets::PickerState<Id>::eq(&self, &termrock::widgets::PickerState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::PickerState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::PickerState<Id>
+pub fn termrock::widgets::PickerState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::PickerState<Id>
+pub fn termrock::widgets::PickerState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::PickerState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::PickerState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::PickerState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::PickerState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::PickerState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PickerState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PickerState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PickerState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PickerState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PickerState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::PickerState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PickerState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::PickerState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::PickerState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PickerState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PickerState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PickerState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PickerState<Id> where T: core::clone::Clone
+pub type termrock::widgets::PickerState<Id>::Owned = T
+pub fn termrock::widgets::PickerState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PickerState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PickerState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PickerState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PickerState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::PickerState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PickerState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::PickerState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PickerState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PickerState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PickerState<Id>
+pub fn termrock::widgets::PickerState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PickerState<Id>
 pub struct termrock::widgets::Progress<'a>
 impl<'a> termrock::widgets::Progress<'a>
 pub const fn termrock::widgets::Progress<'a>::frames(self, &'a [&'a str]) -> Self
@@ -5677,6 +5826,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TextInput<'a>
 pub struct termrock::widgets::TextInputState
 impl termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::apply(&mut self, termrock::widgets::EditAction) -> bool
+pub fn termrock::widgets::TextInputState::clear(&mut self) -> bool
 pub const fn termrock::widgets::TextInputState::cursor_byte(&self) -> usize
 pub fn termrock::widgets::TextInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::TextInputOutcome
 pub fn termrock::widgets::TextInputState::insert_str(&mut self, &str) -> termrock::widgets::TextInputOutcome

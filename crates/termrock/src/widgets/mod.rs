@@ -11,6 +11,7 @@ mod hint_bar;
 mod list;
 mod log_pane;
 mod panel;
+mod picker;
 mod progress;
 mod selection;
 mod split_pane;
@@ -34,6 +35,7 @@ pub use hint_bar::{
 pub use list::{List, ListRow, ListState, RowRole};
 pub use log_pane::{LogPane, LogPaneState};
 pub use panel::{Panel, PanelEmphasis};
+pub use picker::{Picker, PickerOutcome, PickerState};
 pub use progress::{Progress, ProgressKind};
 pub use selection::Selection;
 pub use split_pane::{

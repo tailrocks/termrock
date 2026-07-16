@@ -91,7 +91,9 @@ const UNICODE_EXEMPT = new Set([
   'Tree', 'Viewport',
 ])
 function hasAxisStory(component: string, axis: 'narrow' | 'unicode') {
-  return stories.some((story) => story.component === component && story.id.split('/').includes(axis))
+  return stories.some((story) =>
+    story.component === component && story.id.split(/[/-]/).includes(axis)
+  )
 }
 for (const [component, review] of Object.entries(contracts)) {
   if (

@@ -50,7 +50,7 @@ number is `0004`; always check `ls migrations/` before claiming.
 | 018 | SPIKE: runtime disposition + app-runner design | P3 | M-L | 011 | DONE — graduate closure runner; delete legacy runtime |
 | 019 | SPIKE: runtime-configurable keymaps | P3 | M | 006 | DONE — Cow model graduated; serde/runtime edits shipped |
 | 020 | SPIKE: lookbook → storybook (knobs, theme switcher, installable) | P3 | M | 010, 018 | DONE — graduate gallery-local knobs |
-| 021 | SPIKE: Picker / command-palette composition | P3 | M | 011 | DONE — graduate state + default widget |
+| 021 | SPIKE: Picker / command-palette composition | P3 | M | 011 | DONE — public state/widget + full catalog contract shipped |
 | 022 | Lookbook SVG correctness (invisible-text fix) + JSON/CLI hardening | P1 | M | — | DONE |
 | 023 | Contract-axis stories (narrow/unicode) + interactor dedup | P2 | M | 022 | DONE |
 | 024 | Scroll/hover support-API unification (kill dead twins, orphaned render family) | P2 | L | 012, 015, 016 | DONE |

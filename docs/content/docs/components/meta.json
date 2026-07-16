@@ -15,6 +15,7 @@
     "log-pane",
     "message-dialog",
     "panel",
+    "picker",
     "progress",
     "split-pane",
     "status-bar",

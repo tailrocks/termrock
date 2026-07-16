@@ -48,6 +48,7 @@ pub struct ListState<Id> {
     offset: usize,
     viewport_height: usize,
     regions: Vec<HitRegion<Id>>,
+    pointer: Option<Position>,
     selection: Option<Selection<Id>>,
     check_regions: Vec<HitRegion<Id>>,
 }
@@ -61,6 +62,7 @@ impl<Id> Default for ListState<Id> {
             offset: 0,
             viewport_height: 0,
             regions: Vec::new(),
+            pointer: None,
             selection: None,
             check_regions: Vec::new(),
         }
@@ -78,6 +80,7 @@ impl<Id> ListState<Id> {
             offset: 0,
             viewport_height: 0,
             regions: Vec::new(),
+            pointer: None,
             selection: None,
             check_regions: Vec::new(),
         }
@@ -158,6 +161,7 @@ impl<Id> ListState<Id> {
 
     /// Scrolls toward a pointer position within the painted viewport.
     pub fn scroll_to_position(&mut self, position: Position, rows_len: usize) -> bool {
+        self.pointer = Some(position);
         if self.viewport_height == 0 || self.regions.is_empty() {
             return false;
         }
@@ -294,6 +298,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     /// Updates hover state from the current pointer position and painted hit regions.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
+        self.pointer = Some(position);
         self.hovered = self
             .regions
             .iter()
@@ -305,6 +310,12 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     #[must_use]
     /// Maps a pointer position to the semantic outcome of the painted hit region.
     pub fn click(&mut self, position: Position) -> Outcome<Id> {
+        self.pointer = Some(position);
+        self.hovered = self
+            .regions
+            .iter()
+            .find(|region| region.area.contains(position))
+            .map(|region| region.id.clone());
         if let Some(id) = self
             .check_regions
             .iter()
@@ -474,7 +485,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 1,
             );
             let selected = state.selected.as_ref() == Some(&row.id);
-            let hovered = state.hovered.as_ref() == Some(&row.id);
+            let hovered = row.enabled
+                && row.role == RowRole::Item
+                && state
+                    .pointer
+                    .is_some_and(|position| rect.contains(position));
             let checked = state
                 .selection
                 .as_ref()
@@ -551,6 +566,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 self.theme,
             );
         }
+        state.hovered = state.pointer.and_then(|position| {
+            state
+                .regions
+                .iter()
+                .find(|region| region.area.contains(position))
+                .map(|region| region.id.clone())
+        });
     }
 }
 

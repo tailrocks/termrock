@@ -128,6 +128,18 @@ impl TextInputState {
         self.cursor
     }
 
+    /// Clears the value and resets cursor/viewport while preserving validation
+    /// and length configuration.
+    pub fn clear(&mut self) -> bool {
+        if self.value.is_empty() && self.cursor == 0 && self.viewport == 0 {
+            return false;
+        }
+        self.value.clear();
+        self.cursor = 0;
+        self.viewport = 0;
+        true
+    }
+
     /// Moves the cursor to an externally owned byte offset when it is a
     /// grapheme boundary in the current value.
     ///
@@ -462,5 +474,23 @@ mod tests {
         assert!(state.set_cursor_byte("a👩‍💻".len()));
         assert_eq!(state.cursor_byte(), "a👩‍💻".len());
         assert!(state.set_cursor_byte(state.value().len()));
+    }
+
+    #[test]
+    fn clear_preserves_configuration_and_resets_editing_state() {
+        let mut state = TextInputState::new("taken")
+            .with_forbidden(["taken".to_owned()])
+            .with_max_graphemes(3)
+            .with_allow_empty(true);
+        assert!(state.clear());
+        assert_eq!(state.value(), "");
+        assert_eq!(state.cursor_byte(), 0);
+        assert!(state.is_valid());
+        for character in "abcd".chars() {
+            let _ = state.handle_key(KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE));
+        }
+        assert_eq!(state.value(), "abc");
+        assert!(state.clear());
+        assert!(!state.clear());
     }
 }

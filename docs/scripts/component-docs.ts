@@ -162,6 +162,26 @@ let theme = Theme::default();
 let panel = Panel::new(&theme).title("Files").emphasis(PanelEmphasis::Focused);
 let inner = panel.inner(Rect::new(0, 0, 80, 24));`,
   },
+  Picker: {
+    description: 'A filterable stable-ID list composition with caller-owned matching and ordering.',
+    primaryStory: 'picker/basic',
+    usage: `use ratatui_core::text::Line;
+use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
+
+let theme = Theme::default();
+let candidates = [("open", "Open file"), ("logs", "Show logs")];
+let project = |query: &str| candidates.iter()
+    .filter(|(_, label)| label.to_lowercase().contains(&query.to_lowercase()))
+    .map(|(id, label)| ListRow { id: *id, label: Line::from(*label), trailing: None, role: RowRole::Item, enabled: true })
+    .collect::<Vec<_>>();
+let mut state = PickerState::new(Some("open"));
+let mut rows = project(state.query_text());
+if matches!(state.handle_key(&rows, KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE)), PickerOutcome::QueryChanged) {
+    rows = project(state.query_text());
+    state.reconcile(&rows);
+}
+let picker = Picker::new(&rows, &theme);`,
+  },
   Progress: {
     description: 'A deterministic determinate bar or caller-ticked indeterminate indicator.',
     primaryStory: 'progress/determinate',
@@ -216,7 +236,7 @@ state.selected = Some("logs");`,
   },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
-    primaryStory: 'text-input/filter',
+    primaryStory: 'text-input/unicode',
     usage: `use termrock::{Theme, widgets::{EditAction, TextInput, TextInputState, Validation}};
 
 let theme = Theme::default();

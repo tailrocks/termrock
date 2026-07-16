@@ -3,8 +3,7 @@
 
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Position, Rect},
-    widgets::Paragraph,
+    layout::{Position, Rect},
 };
 use termrock::{
     Theme,
@@ -12,15 +11,13 @@ use termrock::{
     interaction::Outcome,
     widgets::{
         Anchor, ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListState,
-        LogPane, LogPaneState, Severity, SplitDirection, SplitPane, SplitPaneOutcome,
-        SplitPaneState, SplitRatio, TextInput, TextInputOutcome, TextInputState, Toast, Tree,
-        TreeNode, TreeOutcome, TreeState, Validation,
+        LogPane, LogPaneState, Picker, PickerOutcome, PickerState, Severity, SplitDirection,
+        SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, TextInput, TextInputOutcome,
+        TextInputState, Toast, Tree, TreeNode, TreeOutcome, TreeState,
     },
 };
 
 use crate::knobs::{Knob, KnobValue};
-use crate::picker::{PickerOutcome, PickerState};
-
 use crate::stories::{
     SPLIT_PANE_MAX, SPLIT_PANE_MIN, choice_actions, form_fields, list_rows, picker_rows,
     render_choice_dialog, render_split_pane, tree_nodes,
@@ -194,13 +191,13 @@ impl PointerTarget for ListInteractor {
     }
 }
 
-pub(crate) struct TextInputInteractor {
+pub(crate) struct PickerInteractor {
     state: PickerState<&'static str>,
     theme: Theme,
     activated: Option<&'static str>,
 }
 
-impl TextInputInteractor {
+impl PickerInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: PickerState::new(Some("alpha")),
@@ -210,28 +207,10 @@ impl TextInputInteractor {
     }
 }
 
-impl StoryInteraction for TextInputInteractor {
+impl StoryInteraction for PickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let rows = picker_rows(self.state.query_text());
-        self.state.reconcile(&rows);
-        let [query_area, list_area] =
-            Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(area);
-        frame.render_stateful_widget(
-            &TextInput::new("Filter", &self.theme)
-                .placeholder("Type to filter")
-                .validation(Validation::Valid),
-            query_area,
-            &mut self.state.query,
-        );
-        if rows.is_empty() {
-            frame.render_widget(Paragraph::new("No matches"), list_area);
-        } else {
-            frame.render_stateful_widget(
-                &List::new(&rows, &self.theme),
-                list_area,
-                &mut self.state.list,
-            );
-        }
+        frame.render_stateful_widget(&Picker::new(&rows, &self.theme), area, &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -248,11 +227,36 @@ impl StoryInteraction for TextInputInteractor {
             }
             PickerOutcome::SelectionChanged => true,
             PickerOutcome::Ignored | PickerOutcome::Cancelled => false,
+            _ => false,
         }
     }
 
-    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
-        false
+    fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
+        if !preview_area.contains(mouse.position) {
+            return false;
+        }
+        match mouse.kind {
+            MouseEventKind::Moved => {
+                let before = self.state.list().hovered().cloned();
+                self.state.hover(mouse.position);
+                self.state.list().hovered() != before.as_ref()
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                if let PickerOutcome::Activated(id) = self.state.click(mouse.position) {
+                    self.activated = Some(id);
+                    true
+                } else {
+                    false
+                }
+            }
+            MouseEventKind::ScrollUp => self
+                .state
+                .scroll_by(-1, picker_rows(self.state.query_text()).len()),
+            MouseEventKind::ScrollDown => self
+                .state
+                .scroll_by(1, picker_rows(self.state.query_text()).len()),
+            _ => false,
+        }
     }
 
     fn set_theme(&mut self, theme: Theme) {

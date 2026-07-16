@@ -776,7 +776,7 @@ mod tests {
         let tick = tick_at(Instant::now(), 0);
         let picker = gallery_stories()
             .iter()
-            .position(|story| story.id == "text-input/filter")
+            .position(|story| story.id == "picker/basic")
             .unwrap();
         app.select(picker);
         render_app(&mut app, tick);

@@ -10,7 +10,6 @@ mod focus;
 mod interactors;
 mod json;
 mod knobs;
-mod picker;
 mod stories;
 mod svg;
 mod table;

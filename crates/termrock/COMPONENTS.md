@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Progress`, `SplitPane`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
+The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `SplitPane`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
 
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,
@@ -43,6 +43,13 @@ reserved proportional-scrollbar gutter. Stable-ID rows use the general
 navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
+
+`Picker` composes query editing, a caller-filtered stable-ID `List`,
+ID-sticky/index-fallback reconciliation, empty state, and semantic outcomes.
+Printable and cursor-editing keys route to the query while vertical/page keys
+route to results; Escape clears a non-empty query before cancelling. Pointer
+activation delegates to painted List geometry. Consumers retain matching,
+scoring, ordering, candidate lifecycle, labels, overlays, and async policy.
 
 The `tree_hot_path` evidence renders a warmed 40-row viewport over 10,000
 borrowed nodes 100 times in the Cargo test/debug profile, asserts bounded

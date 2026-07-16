@@ -1,5 +1,10 @@
 # Picker design spike
 
+> **Graduated:** `Picker`, `PickerState`, and `PickerOutcome` now ship from
+> `termrock::widgets`. The lookbook consumes that public implementation; three
+> catalog stories, contract axes, docs, previews, tests, and API inventory ship
+> with it. The local prototype was removed.
+
 > Ownership boundary: callers retain filtering, matching, scoring, ordering,
 > candidate lifecycle, and labels. Picker owns query mechanics, selection
 > reconciliation, default layout, empty state, and semantic outcomes.
@@ -85,36 +90,36 @@ the builder may override that text. Count/chrome are optional builder details,
 not required state. A modal palette composes `Backdrop` + `Dialog` + `Picker`;
 Picker owns no overlay or dismissal policy.
 
-## Prototype findings
+## Graduation findings
 
-The `text-input/filter` lookbook story now uses a local `PickerState`, a
+The `picker/basic` lookbook story now uses the public `PickerState`, a
 caller-owned case-insensitive `contains` projection, four stable IDs, and the
-default query/list layout. Five reconciliation/routing tests cover surviving
+default query/list layout. Library reconciliation/routing tests cover surviving
 IDs, filtered-out fallback, tail clamp, empty results, query edits, arrows,
-two-stage Escape, and activation. The golden intentionally grew from a frozen
-one-line input to the actual composition.
+two-stage Escape, activation, modified/release events, Unicode, tiny areas, and
+painted pointer geometry. The catalog replaces the frozen one-line filter story
+with the actual composition.
 
-No private `ListState` access was needed: `selected`, `select`, `handle_key`,
-and `activate` supply the seam. Prototype friction: clearing query recreates
-`TextInputState` because it has no public `clear`/`set_value` operation. The
-library build should add a state method that preserves configured validation
-and maximum length; do not encode that reset trick in the public Picker.
+No private `ListState` access was needed: its semantic selection, routing,
+scroll, hover, and click methods supply the seam. `TextInputState::clear`
+preserves configured validation and maximum length, removing the prototype's
+state-reconstruction workaround.
 
-## Library build plan
+## Completed library build
 
-1. Add `widgets/picker.rs` with public `Picker`, `PickerState`, and
+1. Added `widgets/picker.rs` with public `Picker`, `PickerState`, and
    `PickerOutcome`; export once from `widgets`.
-2. Add `TextInputState::clear` (or validated `set_value`) and use it for
+2. Added `TextInputState::clear` and use it for
    two-stage Escape.
-3. Test routing, ID-sticky/index-fallback reconciliation, disabled/separator
+3. Tested routing, ID-sticky/index-fallback reconciliation, disabled/separator
    rows, Unicode queries, empty/tiny areas, and mouse behavior delegated to
    `ListState`.
-4. Add `picker/basic`, `picker/empty`, and `picker/narrow-unicode` stories,
+4. Added `picker/basic`, `picker/empty`, and `picker/narrow-unicode` stories,
    deterministic previews, API inventory, component contract axes, and docs in
    the same change. Update the existing filter story rather than retain two
    parallel compositions.
-5. Because this is additive, no migration file is needed; any replacement of
-   the TextInput story/catalog identity must be documented in catalog docs.
+5. This is additive, so no migration file is needed. Picker now owns the former
+   filter-composition catalog identity; TextInput keeps its Unicode story.
 
 ## Deferred options
 

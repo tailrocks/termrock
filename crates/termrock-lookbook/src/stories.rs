@@ -18,16 +18,16 @@ use termrock::{
         Action, ActionBar, ActionBarState, Anchor, Backdrop, ChoiceDialog, ChoiceDialogState,
         DetailCapability, DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine,
         DiffState, DiffView, Form, FormField, FormSection, FormState, Hint, HintBar, List, ListRow,
-        ListState, LogPane, LogPaneState, MessageDialog, Panel, PanelEmphasis, Progress,
-        ProgressKind, RowRole, Severity, SplitDirection, SplitPane, SplitPaneState, SplitRatio,
-        StatusBar, StatusBarState, StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState,
-        Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
+        ListState, LogPane, LogPaneState, MessageDialog, Panel, PanelEmphasis, Picker, PickerState,
+        Progress, ProgressKind, RowRole, Severity, SplitDirection, SplitPane, SplitPaneState,
+        SplitRatio, StatusBar, StatusBarState, StatusSlot, Tab, Tabs, TabsState, TextInput,
+        TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
     },
 };
 
 use crate::interactors::{
-    ChoiceDialogInteractor, FormInteractor, ListInteractor, LogPaneInteractor, SplitPaneInteractor,
-    StaticStory, StoryInteraction, TextInputInteractor, ToastInteractor, TreeInteractor,
+    ChoiceDialogInteractor, FormInteractor, ListInteractor, LogPaneInteractor, PickerInteractor,
+    SplitPaneInteractor, StaticStory, StoryInteraction, ToastInteractor, TreeInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
@@ -108,8 +108,8 @@ fn list_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(ListInteractor::new())
 }
 
-fn text_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
-    Box::new(TextInputInteractor::new())
+fn picker_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PickerInteractor::new())
 }
 
 fn log_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
@@ -245,15 +245,33 @@ pub(crate) fn stories() -> Vec<Story> {
         )
         .with_interactor(split_pane_interactor),
         Story::new(
-            "text-input/filter",
-            "Filter composition",
-            "TextInput",
-            "Text input composed as a caller-owned filter.",
+            "picker/basic",
+            "Filterable picker",
+            "Picker",
+            "Caller-filtered rows with stable selection and semantic activation.",
             42,
             7,
-            text_input,
+            picker_basic,
         )
-        .with_interactor(text_input_interactor),
+        .with_interactor(picker_interactor),
+        Story::new(
+            "picker/empty",
+            "Empty picker",
+            "Picker",
+            "Product-neutral empty-result cue.",
+            30,
+            4,
+            picker_empty,
+        ),
+        Story::new(
+            "picker/narrow-unicode",
+            "Narrow Unicode picker",
+            "Picker",
+            "Wide and combining labels clipped in a narrow result list.",
+            22,
+            5,
+            picker_narrow_unicode,
+        ),
         Story::new(
             "detail-table/basic",
             "Detail table",
@@ -782,20 +800,37 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
     ]
 }
 
-fn text_input(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let [query_area, list_area] =
-        Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(area);
-    let mut state = TextInputState::new("");
-    frame.render_stateful_widget(
-        &TextInput::new("Filter", theme)
-            .placeholder("Type to filter")
-            .validation(Validation::Valid),
-        query_area,
-        &mut state,
-    );
+fn picker_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let rows = picker_rows("");
-    let mut list_state = ListState::new(Some("alpha"));
-    frame.render_stateful_widget(&List::new(&rows, theme), list_area, &mut list_state);
+    let mut state = PickerState::new(Some("alpha"));
+    frame.render_stateful_widget(&Picker::new(&rows, theme), area, &mut state);
+}
+
+fn picker_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = PickerState::<&str>::new(None);
+    frame.render_stateful_widget(&Picker::new(&[], theme), area, &mut state);
+}
+
+fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let rows = [
+        ListRow {
+            id: "tokyo",
+            label: Line::from("東京デプロイ 🧪"),
+            trailing: Some(Line::from("操作")),
+            role: RowRole::Item,
+            enabled: true,
+        },
+        ListRow {
+            id: "cafe",
+            label: Line::from("Cafe\u{301} logs"),
+            trailing: Some(Line::from("表示")),
+            role: RowRole::Item,
+            enabled: true,
+        },
+    ];
+    let mut state = PickerState::new(Some("tokyo"));
+    let _ = state.query_mut().insert_str("東");
+    frame.render_stateful_widget(&Picker::new(&rows, theme), area, &mut state);
 }
 
 fn text_input_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
