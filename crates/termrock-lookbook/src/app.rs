@@ -37,7 +37,7 @@ use crate::{
     focus::{FocusId, FocusRing, FocusScope},
     interactors::StoryInteraction,
     runner::FrameTick,
-    stories::stories,
+    stories::gallery_stories,
 };
 
 const PROTOTYPE_TOAST_TTL: Duration = Duration::from_secs(2);
@@ -116,7 +116,7 @@ pub(crate) struct Lookbook {
 impl Lookbook {
     pub(crate) fn new() -> Self {
         let theme = Theme::default();
-        let mut interactor = stories()[0].make_interactor();
+        let mut interactor = gallery_stories()[0].make_interactor();
         interactor.set_theme(theme.clone());
         Self {
             selected: 0,
@@ -225,7 +225,7 @@ impl Lookbook {
     }
 
     fn render_sidebar(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let catalog = stories();
+        let catalog = gallery_stories();
         let block = Panel::new(&self.theme)
             .title("Stories")
             .emphasis(self.focus.panel_emphasis_for(FocusId::Sidebar))
@@ -270,7 +270,7 @@ impl Lookbook {
     }
 
     fn render_description(&self, frame: &mut Frame<'_>, area: Rect) {
-        let story = stories()[self.selected];
+        let story = gallery_stories()[self.selected];
         let block = Panel::new(&self.theme).title("About").block();
         let inner = block.inner(area);
         frame.render_widget(block, area);
@@ -304,7 +304,7 @@ impl Lookbook {
     }
 
     fn render_preview(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let story = stories()[self.selected];
+        let story = gallery_stories()[self.selected];
         let block = Panel::new(&self.theme)
             .title("Preview")
             .emphasis(self.focus.panel_emphasis_for(FocusId::Preview))
@@ -453,7 +453,7 @@ impl Lookbook {
                 if self.sidebar_inner_area.contains(mouse.position) {
                     let row = usize::from(mouse.position.y - self.sidebar_inner_area.y);
                     let index = (usize::from(self.sidebar_scroll) + row / 2)
-                        .min(stories().len().saturating_sub(1));
+                        .min(gallery_stories().len().saturating_sub(1));
                     self.select(index);
                     self.focus.request_focus(FocusId::Sidebar);
                 }
@@ -472,13 +472,13 @@ impl Lookbook {
                 scroll::scroll_selectable_list(
                     &mut self.selected,
                     &mut self.sidebar_scroll,
-                    stories().len(),
+                    gallery_stories().len(),
                     self.sidebar_viewport_items,
                     delta,
                 );
                 if self.selected != before {
                     self.preview_scroll = 0;
-                    self.interactor = stories()[self.selected].make_interactor();
+                    self.interactor = gallery_stories()[self.selected].make_interactor();
                     self.interactor.set_theme(self.theme.clone());
                     self.knob_selected = 0;
                 }
@@ -495,14 +495,14 @@ impl Lookbook {
                     mouse.modifiers,
                     scroll::ScrollAxes {
                         vertical: scroll::is_scrollable(
-                            usize::from(stories()[self.selected].height),
+                            usize::from(gallery_stories()[self.selected].height),
                             self.preview_viewport_rows,
                         ),
                         horizontal: false,
                     },
                     ScrollSpan::new(0, 0),
                     ScrollSpan::new(
-                        usize::from(stories()[self.selected].height),
+                        usize::from(gallery_stories()[self.selected].height),
                         self.preview_viewport_rows,
                     ),
                     &mut ignored_x,
@@ -558,7 +558,7 @@ impl Lookbook {
         if chord.key == KeyCode::Esc && self.interactor.handle_preview_escape(key) {
             return;
         }
-        let content = usize::from(stories()[self.selected].height);
+        let content = usize::from(gallery_stories()[self.selected].height);
         match PREVIEW_KEYMAP
             .dispatch(chord)
             .unwrap_or(PreviewAction::Forward)
@@ -592,7 +592,7 @@ impl Lookbook {
             }
             _ => {
                 let changed = self.interactor.handle_knob_key(self.knob_selected, key);
-                if changed && stories()[self.selected].component == "Toast" {
+                if changed && gallery_stories()[self.selected].component == "Toast" {
                     self.prototype_toast.show(tick);
                 }
             }
@@ -608,7 +608,7 @@ impl Lookbook {
             Some(SidebarAction::Navigate) => {
                 let down = matches!(chord.key, KeyCode::Down | KeyCode::Char('j'));
                 let target = if down {
-                    (self.selected + 1).min(stories().len().saturating_sub(1))
+                    (self.selected + 1).min(gallery_stories().len().saturating_sub(1))
                 } else {
                     self.selected.saturating_sub(1)
                 };
@@ -618,7 +618,7 @@ impl Lookbook {
                 let target = if chord.key == KeyCode::Home {
                     0
                 } else {
-                    stories().len().saturating_sub(1)
+                    gallery_stories().len().saturating_sub(1)
                 };
                 self.select(target);
             }
@@ -629,7 +629,7 @@ impl Lookbook {
 
     fn select(&mut self, selected: usize) {
         if selected != self.selected {
-            self.interactor = stories()[selected].make_interactor();
+            self.interactor = gallery_stories()[selected].make_interactor();
             self.interactor.set_theme(self.theme.clone());
             self.preview_scroll = 0;
             self.knob_selected = 0;
@@ -748,7 +748,7 @@ mod tests {
     fn toast_controls_route_focus_and_update_live_values() {
         let mut app = Lookbook::new();
         let tick = tick_at(Instant::now(), 0);
-        let toast = stories()
+        let toast = gallery_stories()
             .iter()
             .position(|story| story.id == "toast/success")
             .unwrap();
@@ -773,7 +773,7 @@ mod tests {
     fn theme_toggle_changes_gallery_theme_from_every_focus_target() {
         let mut app = Lookbook::new();
         let tick = tick_at(Instant::now(), 0);
-        let toast = stories()
+        let toast = gallery_stories()
             .iter()
             .position(|story| story.id == "toast/success")
             .unwrap();
@@ -790,7 +790,7 @@ mod tests {
     fn text_story_keeps_plain_t_and_uses_control_t_for_theme() {
         let mut app = Lookbook::new();
         let tick = tick_at(Instant::now(), 0);
-        let picker = stories()
+        let picker = gallery_stories()
             .iter()
             .position(|story| story.id == "text-input/filter")
             .unwrap();
@@ -810,7 +810,7 @@ mod tests {
     #[test]
     fn toast_interactor_action_starts_and_expires_local_ttl() {
         let mut app = Lookbook::new();
-        let toast = stories()
+        let toast = gallery_stories()
             .iter()
             .position(|story| story.id == "toast/success")
             .unwrap();

@@ -12,6 +12,7 @@ mod picker;
 mod runner;
 mod stories;
 mod svg;
+mod table;
 
 use std::{ffi::OsStr, io, path::PathBuf, time::Duration};
 

@@ -49,7 +49,7 @@ pub(crate) struct Story {
 }
 
 impl Story {
-    const fn new(
+    pub(crate) const fn new(
         id: &'static str,
         title: &'static str,
         component: &'static str,
@@ -419,6 +419,14 @@ pub(crate) fn stories() -> Vec<Story> {
             detail_table_unicode,
         ),
     ]
+}
+
+/// Interactive-gallery entries, including compile-proven design prototypes.
+/// Catalog generation deliberately uses [`stories`] instead.
+pub(crate) fn gallery_stories() -> Vec<Story> {
+    let mut entries = stories();
+    entries.push(crate::table::story());
+    entries
 }
 
 fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
