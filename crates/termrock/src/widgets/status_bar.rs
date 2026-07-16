@@ -49,7 +49,7 @@ impl<Id: Clone> StatusBarState<Id> {
     }
 
     #[must_use]
-    pub fn activate_at(&self, position: Position) -> Outcome<Id> {
+    pub fn click(&mut self, position: Position) -> Outcome<Id> {
         self.regions
             .iter()
             .find(|region| region.area.contains(position))
@@ -340,7 +340,7 @@ mod tests {
         let position = Position::new(area.x, area.y);
         assert_eq!(state.hover(position), Some(&"activity"));
         (&bar).render(area, &mut buffer, &mut state);
-        assert_eq!(state.activate_at(position), Outcome::Activated("activity"));
+        assert_eq!(state.click(position), Outcome::Activated("activity"));
         assert_eq!(buffer[(area.x, area.y)].bg, Color::Rgb(40, 40, 40));
         assert_eq!(buffer[(area.x, area.y)].fg, Color::Rgb(100, 50, 20));
     }

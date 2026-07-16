@@ -91,29 +91,20 @@ fn focused_keyboard_resize_is_axis_specific_and_bounded() {
 
     state.set_focused(false);
     assert_eq!(
-        split.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)
-        ),
+        state.handle_key(&split, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
         SplitPaneOutcome::Ignored
     );
     state.set_focused(true);
     assert!(matches!(
-        split.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)
-        ),
+        state.handle_key(&split, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
         SplitPaneOutcome::RatioChanged(_)
     ));
     assert_eq!(
-        split.handle_key(&mut state, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+        state.handle_key(&split, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
         SplitPaneOutcome::Ignored
     );
     for _ in 0..100 {
-        let _ = split.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
-        );
+        let _ = state.handle_key(&split, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE));
     }
     assert_eq!(state.ratio().basis_points(), 10_000);
 }
@@ -126,17 +117,17 @@ fn collapse_preserves_ratio_and_each_side_can_expand() {
     let area = Rect::new(0, 0, 21, 4);
 
     assert_eq!(
-        split.collapse(&mut state, SplitSide::First),
+        state.collapse(SplitSide::First),
         SplitPaneOutcome::Collapsed(SplitSide::First)
     );
     let first_hidden = split.layout(area, &mut state);
     assert!(first_hidden.first.is_empty());
     assert_eq!(first_hidden.second.width, 20);
-    assert_eq!(split.expand(&mut state), SplitPaneOutcome::Expanded);
+    assert_eq!(state.expand(), SplitPaneOutcome::Expanded);
     assert_eq!(state.ratio(), SplitRatio::from_percent(35));
 
     assert_eq!(
-        split.collapse(&mut state, SplitSide::Second),
+        state.collapse(SplitSide::Second),
         SplitPaneOutcome::Collapsed(SplitSide::Second)
     );
     let second_hidden = split.layout(area, &mut state);
@@ -154,23 +145,23 @@ fn painted_divider_supports_focus_drag_and_release() {
     split.render(area, &mut buffer, &mut state);
     let divider = state.layout().divider;
 
-    assert!(split.pointer_move(&mut state, divider.as_position()));
+    assert!(state.hover(&split, divider.as_position()));
     assert!(state.is_hovered());
     split.render(area, &mut buffer, &mut state);
     assert_eq!(buffer[divider.as_position()].symbol(), "┋");
-    assert!(split.pointer_move(&mut state, Position::new(0, 0)));
+    assert!(state.hover(&split, Position::new(0, 0)));
     assert!(!state.is_hovered());
 
     assert_eq!(
-        split.pointer_down(&mut state, divider.as_position()),
+        state.drag_start(&split, divider.as_position()),
         SplitPaneOutcome::Focused
     );
     assert!(state.is_dragging());
     assert!(matches!(
-        split.pointer_drag(&mut state, Position::new(area.x + 23, area.y)),
+        state.drag_move(&split, Position::new(area.x + 23, area.y)),
         SplitPaneOutcome::RatioChanged(_)
     ));
-    split.pointer_up(&mut state);
+    state.drag_end();
     assert!(!state.is_dragging());
     let moved = split.layout(area, &mut state);
     assert_eq!(moved.first.width, 23);
@@ -186,7 +177,7 @@ fn only_same_direction_rendered_geometry_authorizes_pointer_input() {
     let computed = horizontal.layout(area, &mut state);
 
     assert_eq!(
-        horizontal.pointer_down(&mut state, computed.divider.as_position()),
+        state.drag_start(&horizontal, computed.divider.as_position()),
         SplitPaneOutcome::Ignored,
         "computed-only geometry is not a hit target"
     );
@@ -195,7 +186,7 @@ fn only_same_direction_rendered_geometry_authorizes_pointer_input() {
     horizontal.render(area, &mut buffer, &mut state);
     let painted = state.layout().divider;
     assert_eq!(
-        vertical.pointer_down(&mut state, painted.as_position()),
+        state.drag_start(&vertical, painted.as_position()),
         SplitPaneOutcome::Ignored,
         "stale geometry cannot cross directions"
     );
@@ -203,7 +194,7 @@ fn only_same_direction_rendered_geometry_authorizes_pointer_input() {
     let mut zero = Buffer::empty(Rect::ZERO);
     horizontal.render(Rect::ZERO, &mut zero, &mut state);
     assert_eq!(
-        horizontal.pointer_down(&mut state, painted.as_position()),
+        state.drag_start(&horizontal, painted.as_position()),
         SplitPaneOutcome::Ignored,
         "zero repaint invalidates the old divider"
     );
@@ -220,31 +211,31 @@ fn vertical_keyboard_pointer_and_collapsed_rendering_match_horizontal_behavior()
     split.render(area, &mut buffer, &mut state);
     let divider = state.layout().divider;
 
-    assert!(split.pointer_move(&mut state, divider.as_position()));
+    assert!(state.hover(&split, divider.as_position()));
     assert_eq!(
-        split.pointer_down(&mut state, Position::new(0, 0)),
+        state.drag_start(&split, Position::new(0, 0)),
         SplitPaneOutcome::Ignored
     );
     assert_eq!(
-        split.pointer_down(&mut state, divider.as_position()),
+        state.drag_start(&split, divider.as_position()),
         SplitPaneOutcome::Focused
     );
     assert!(matches!(
-        split.pointer_drag(&mut state, Position::new(area.x, area.y + 23)),
+        state.drag_move(&split, Position::new(area.x, area.y + 23)),
         SplitPaneOutcome::RatioChanged(_)
     ));
-    split.pointer_up(&mut state);
+    state.drag_end();
     assert_eq!(split.layout(area, &mut state).first.height, 23);
     assert!(matches!(
-        split.handle_key(&mut state, KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
+        state.handle_key(&split, KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
         SplitPaneOutcome::RatioChanged(_)
     ));
     assert!(matches!(
-        split.handle_key(&mut state, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+        state.handle_key(&split, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
         SplitPaneOutcome::RatioChanged(_)
     ));
 
-    split.collapse(&mut state, SplitSide::Second);
+    state.collapse(SplitSide::Second);
     split.render(area, &mut buffer, &mut state);
     assert_eq!(buffer[state.layout().divider.as_position()].symbol(), "⌃");
 }
@@ -261,7 +252,7 @@ fn focused_and_collapsed_dividers_have_non_color_glyphs() {
     split.render(area, &mut buffer, &mut state);
     assert_eq!(buffer[state.layout().divider.as_position()].symbol(), "┃");
 
-    split.collapse(&mut state, SplitSide::First);
+    state.collapse(SplitSide::First);
     split.render(area, &mut buffer, &mut state);
     assert_eq!(buffer[state.layout().divider.as_position()].symbol(), "›");
 }

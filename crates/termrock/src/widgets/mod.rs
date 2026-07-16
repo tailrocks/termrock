@@ -1,5 +1,7 @@
 //! Product-neutral terminal widgets with borrowed render data and stable IDs.
 
+pub use crate::interaction::Outcome;
+
 mod action_bar;
 mod detail_table;
 mod dialog;
@@ -24,7 +26,7 @@ pub use dialog::{Backdrop, ChoiceDialog, ChoiceDialogState, Dialog, MessageDialo
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
 pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans, wrapped_hint_lines};
-pub use list::{List, ListOutcome, ListRow, ListState, RowRole};
+pub use list::{List, ListRow, ListState, RowRole};
 pub use panel::{Panel, PanelEmphasis};
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,

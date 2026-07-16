@@ -7,7 +7,7 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::HitRegion,
+    interaction::{HitRegion, Outcome},
     scroll::max_offset,
     style::{Role, Theme},
 };
@@ -24,14 +24,6 @@ pub struct ListRow<'a, Id> {
     pub label: Line<'a>,
     pub role: RowRole,
     pub enabled: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ListOutcome<Id> {
-    Ignored,
-    Changed,
-    Activated(Id),
-    Cancelled,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,9 +67,9 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         self.selected = selected;
     }
 
-    pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> ListOutcome<Id> {
+    pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
-            return ListOutcome::Ignored;
+            return Outcome::Ignored;
         }
         match key.code {
             KeyCode::Up | KeyCode::Char('k' | 'K') => self.select_relative(rows, -1),
@@ -87,24 +79,24 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             KeyCode::PageUp => self.select_page(rows, -1),
             KeyCode::PageDown => self.select_page(rows, 1),
             KeyCode::Enter => self.activate(rows),
-            KeyCode::Esc => ListOutcome::Cancelled,
-            _ => ListOutcome::Ignored,
+            KeyCode::Esc => Outcome::Cancelled,
+            _ => Outcome::Ignored,
         }
     }
 
-    pub fn select_next(&mut self, rows: &[ListRow<'_, Id>]) -> ListOutcome<Id> {
+    pub fn select_next(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.select_relative(rows, 1)
     }
 
-    pub fn select_previous(&mut self, rows: &[ListRow<'_, Id>]) -> ListOutcome<Id> {
+    pub fn select_previous(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.select_relative(rows, -1)
     }
 
-    fn select_relative(&mut self, rows: &[ListRow<'_, Id>], direction: isize) -> ListOutcome<Id> {
+    fn select_relative(&mut self, rows: &[ListRow<'_, Id>], direction: isize) -> Outcome<Id> {
         let selectable = selectable_indices(rows);
         if selectable.is_empty() {
             self.selected = None;
-            return ListOutcome::Ignored;
+            return Outcome::Ignored;
         }
         let current = self.selected.as_ref().and_then(|selected| {
             selectable
@@ -118,10 +110,10 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             (None, false) => 0,
         };
         self.selected = Some(rows[selectable[next]].id.clone());
-        ListOutcome::Changed
+        Outcome::Changed
     }
 
-    fn select_edge(&mut self, rows: &[ListRow<'_, Id>], end: bool) -> ListOutcome<Id> {
+    fn select_edge(&mut self, rows: &[ListRow<'_, Id>], end: bool) -> Outcome<Id> {
         let selectable = selectable_indices(rows);
         let index = if end {
             selectable.last().copied()
@@ -130,17 +122,17 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         };
         let Some(index) = index else {
             self.selected = None;
-            return ListOutcome::Ignored;
+            return Outcome::Ignored;
         };
         self.selected = Some(rows[index].id.clone());
-        ListOutcome::Changed
+        Outcome::Changed
     }
 
-    fn select_page(&mut self, rows: &[ListRow<'_, Id>], direction: isize) -> ListOutcome<Id> {
+    fn select_page(&mut self, rows: &[ListRow<'_, Id>], direction: isize) -> Outcome<Id> {
         let selectable = selectable_indices(rows);
         if selectable.is_empty() {
             self.selected = None;
-            return ListOutcome::Ignored;
+            return Outcome::Ignored;
         }
         let current = self
             .selected
@@ -158,20 +150,18 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             current.saturating_add(page).min(selectable.len() - 1)
         };
         self.selected = Some(rows[selectable[next]].id.clone());
-        ListOutcome::Changed
+        Outcome::Changed
     }
 
     #[must_use]
-    pub fn activate(&self, rows: &[ListRow<'_, Id>]) -> ListOutcome<Id> {
+    pub fn activate(&self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.selected
             .as_ref()
             .and_then(|selected| {
                 rows.iter()
                     .find(|row| row.enabled && row.role == RowRole::Item && &row.id == selected)
             })
-            .map_or(ListOutcome::Ignored, |row| {
-                ListOutcome::Activated(row.id.clone())
-            })
+            .map_or(Outcome::Ignored, |row| Outcome::Activated(row.id.clone()))
     }
 
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
@@ -184,16 +174,16 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     }
 
     #[must_use]
-    pub fn click(&mut self, position: Position) -> ListOutcome<Id> {
+    pub fn click(&mut self, position: Position) -> Outcome<Id> {
         let Some(region) = self
             .regions
             .iter()
             .find(|region| region.area.contains(position))
         else {
-            return ListOutcome::Ignored;
+            return Outcome::Ignored;
         };
         self.selected = Some(region.id.clone());
-        ListOutcome::Activated(region.id.clone())
+        Outcome::Activated(region.id.clone())
     }
 
     pub fn scroll_by(&mut self, delta: isize, rows_len: usize) -> bool {
@@ -415,21 +405,21 @@ mod tests {
         let mut state = ListState::new(None);
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
-            ListOutcome::Changed
+            Outcome::Changed
         );
         assert_eq!(state.selected, Some("first"));
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
-            ListOutcome::Changed
+            Outcome::Changed
         );
         assert_eq!(state.selected, Some("second"));
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            ListOutcome::Activated("second")
+            Outcome::Activated("second")
         );
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            ListOutcome::Cancelled
+            Outcome::Cancelled
         );
     }
 
@@ -449,7 +439,7 @@ mod tests {
         assert_eq!(state.regions.len(), 1);
         let position = Position::new(area.x, area.y);
         assert_eq!(state.hover(position), Some(&"second"));
-        assert_eq!(state.click(position), ListOutcome::Activated("second"));
+        assert_eq!(state.click(position), Outcome::Activated("second"));
         assert_eq!(buffer[(area.x, area.y)].symbol(), "▸");
     }
 

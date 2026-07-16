@@ -115,11 +115,48 @@ pub enum MouseEventKind {
     ScrollLeft,
     ScrollRight,
     Moved,
+    Down(MouseButton),
+    Up(MouseButton),
+    Drag(MouseButton),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MouseButton {
+    Left,
+    Right,
+    Middle,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MouseEvent {
+    pub kind: MouseEventKind,
+    pub position: ratatui_core::layout::Position,
+    pub modifiers: KeyModifiers,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Event {
+    Key(KeyEvent),
+    Mouse(MouseEvent),
+    Paste,
+    Resize {
+        width: u16,
+        height: u16,
+    },
+    FocusGained,
+    FocusLost,
+    /// A backend event outside the neutral vocabulary.
+    Unknown,
 }
 
 #[cfg(feature = "crossterm")]
 mod adapter {
-    use super::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers, MouseEventKind};
+    use ratatui_core::layout::Position;
+
+    use super::{
+        Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers, MouseButton,
+        MouseEvent, MouseEventKind,
+    };
 
     impl From<crossterm::event::KeyEvent> for KeyEvent {
         fn from(value: crossterm::event::KeyEvent) -> Self {
@@ -182,7 +219,43 @@ mod adapter {
                 crossterm::event::MouseEventKind::ScrollDown => Self::ScrollDown,
                 crossterm::event::MouseEventKind::ScrollLeft => Self::ScrollLeft,
                 crossterm::event::MouseEventKind::ScrollRight => Self::ScrollRight,
-                _ => Self::Moved,
+                crossterm::event::MouseEventKind::Moved => Self::Moved,
+                crossterm::event::MouseEventKind::Down(button) => Self::Down(button.into()),
+                crossterm::event::MouseEventKind::Up(button) => Self::Up(button.into()),
+                crossterm::event::MouseEventKind::Drag(button) => Self::Drag(button.into()),
+            }
+        }
+    }
+
+    impl From<crossterm::event::MouseButton> for MouseButton {
+        fn from(value: crossterm::event::MouseButton) -> Self {
+            match value {
+                crossterm::event::MouseButton::Left => Self::Left,
+                crossterm::event::MouseButton::Right => Self::Right,
+                crossterm::event::MouseButton::Middle => Self::Middle,
+            }
+        }
+    }
+
+    impl From<crossterm::event::MouseEvent> for MouseEvent {
+        fn from(value: crossterm::event::MouseEvent) -> Self {
+            Self {
+                kind: value.kind.into(),
+                position: Position::new(value.column, value.row),
+                modifiers: value.modifiers.into(),
+            }
+        }
+    }
+
+    impl From<crossterm::event::Event> for Event {
+        fn from(value: crossterm::event::Event) -> Self {
+            match value {
+                crossterm::event::Event::Key(event) => Self::Key(event.into()),
+                crossterm::event::Event::Mouse(event) => Self::Mouse(event.into()),
+                crossterm::event::Event::Paste(_) => Self::Paste,
+                crossterm::event::Event::Resize(width, height) => Self::Resize { width, height },
+                crossterm::event::Event::FocusGained => Self::FocusGained,
+                crossterm::event::Event::FocusLost => Self::FocusLost,
             }
         }
     }

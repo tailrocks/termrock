@@ -137,6 +137,11 @@ impl<Id> FormState<Id> {
     }
 
     #[must_use]
+    pub const fn content_height(&self) -> usize {
+        self.content_height
+    }
+
+    #[must_use]
     pub fn regions(&self) -> &[HitRegion<Id>] {
         &self.regions
     }
@@ -146,15 +151,18 @@ impl<Id> FormState<Id> {
         &self.field_regions
     }
 
-    pub fn scroll_by(&mut self, delta: i32) -> usize {
-        let maximum = max_offset(self.content_height, self.viewport_height);
-        self.offset = if delta < 0 {
-            self.offset.saturating_sub(delta.unsigned_abs() as usize)
+    pub fn scroll_by(&mut self, delta: isize, content_len: usize) -> bool {
+        let before = self.offset;
+        let maximum = max_offset(content_len, self.viewport_height);
+        self.offset = if delta.is_negative() {
+            self.offset.saturating_sub(delta.unsigned_abs())
         } else {
-            self.offset.saturating_add(delta as usize).min(maximum)
+            self.offset
+                .saturating_add(delta.unsigned_abs())
+                .min(maximum)
         };
         self.follow_focus = false;
-        self.offset
+        before != self.offset
     }
 
     pub fn scroll_to_position(&mut self, position: Position) -> bool {

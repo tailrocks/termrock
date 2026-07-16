@@ -6,6 +6,7 @@ use ratatui_core::{
 };
 
 use crate::{
+    input::{KeyCode, KeyEvent, KeyEventKind},
     osc::HyperlinkRegion,
     scroll::{DialogScroll, effective_offset},
     style::{Role, Theme},
@@ -93,6 +94,22 @@ impl<Id> Default for DetailTableState<Id> {
 }
 
 impl<Id: Clone + PartialEq> DetailTableState<Id> {
+    pub fn handle_key(
+        &mut self,
+        rows: &[DetailRow<'_, Id>],
+        key: KeyEvent,
+    ) -> DetailTableOutcome<Id> {
+        if key.kind == KeyEventKind::Release {
+            return DetailTableOutcome::Ignored;
+        }
+        match key.code {
+            KeyCode::Up | KeyCode::Char('k' | 'K') => self.select_previous(rows),
+            KeyCode::Down | KeyCode::Char('j' | 'J') => self.select_next(rows),
+            KeyCode::Enter => self.activate_selected(rows),
+            _ => DetailTableOutcome::Ignored,
+        }
+    }
+
     pub fn select_next(&mut self, rows: &[DetailRow<'_, Id>]) -> DetailTableOutcome<Id> {
         self.select_relative(rows, 1)
     }
@@ -125,7 +142,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
         DetailTableOutcome::Selected(id)
     }
 
-    pub fn hover_at(&mut self, position: Position) -> Option<&Id> {
+    pub fn hover(&mut self, position: Position) -> Option<&Id> {
         self.hovered = self
             .regions
             .iter()
@@ -135,7 +152,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
     }
 
     #[must_use]
-    pub fn activate_at(&mut self, position: Position) -> DetailTableOutcome<Id> {
+    pub fn click(&mut self, position: Position) -> DetailTableOutcome<Id> {
         let Some(region) = self
             .regions
             .iter()
@@ -155,7 +172,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
     }
 
     #[must_use]
-    pub fn activate_link_at(&mut self, position: Position) -> DetailTableOutcome<Id> {
+    pub fn click_link(&mut self, position: Position) -> DetailTableOutcome<Id> {
         let Some(region) = self
             .regions
             .iter()
@@ -184,6 +201,23 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
             self.scroll.scroll_y,
         );
     }
+
+    #[must_use]
+    pub fn activate_selected(&self, rows: &[DetailRow<'_, Id>]) -> DetailTableOutcome<Id> {
+        let Some(selected) = self.selected.as_ref() else {
+            return DetailTableOutcome::Ignored;
+        };
+        let Some(row) = rows.iter().find(|row| &row.id == selected) else {
+            return DetailTableOutcome::Ignored;
+        };
+        if row.capability.copyable() {
+            DetailTableOutcome::Copy(selected.clone())
+        } else if row.capability.linkable() {
+            DetailTableOutcome::ActivateLink(selected.clone())
+        } else {
+            DetailTableOutcome::Selected(selected.clone())
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -197,32 +231,6 @@ pub struct DetailTable<'a, Id> {
 }
 
 impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
-    #[must_use]
-    pub fn outcome_at(
-        &self,
-        state: &mut DetailTableState<Id>,
-        position: Position,
-    ) -> DetailTableOutcome<Id> {
-        state.activate_at(position)
-    }
-
-    #[must_use]
-    pub fn activate_selected(&self, state: &DetailTableState<Id>) -> DetailTableOutcome<Id> {
-        let Some(selected) = state.selected.as_ref() else {
-            return DetailTableOutcome::Ignored;
-        };
-        let Some(row) = self.rows.iter().find(|row| &row.id == selected) else {
-            return DetailTableOutcome::Ignored;
-        };
-        if row.capability.copyable() {
-            DetailTableOutcome::Copy(selected.clone())
-        } else if row.capability.linkable() {
-            DetailTableOutcome::ActivateLink(selected.clone())
-        } else {
-            DetailTableOutcome::Selected(selected.clone())
-        }
-    }
-
     #[must_use]
     pub fn hyperlink_regions<'a>(
         &'a self,
@@ -576,7 +584,7 @@ mod tests {
             DetailTableOutcome::Selected("run")
         );
         assert_eq!(
-            table.activate_selected(&state),
+            state.activate_selected(&rows),
             DetailTableOutcome::Copy("run")
         );
         let area = Rect::new(4, 3, 32, 3);
@@ -588,7 +596,7 @@ mod tests {
             .find(|region| region.id == "run")
             .unwrap();
         assert_eq!(
-            state.activate_at(Position::new(run.value_area.x, run.value_area.y)),
+            state.click(Position::new(run.value_area.x, run.value_area.y)),
             DetailTableOutcome::Copy("run")
         );
         let log_position = state
@@ -597,12 +605,9 @@ mod tests {
             .find(|region| region.id == "log")
             .map(|region| Position::new(region.value_area.x, region.value_area.y))
             .unwrap();
+        assert_eq!(state.click(log_position), DetailTableOutcome::Copy("log"));
         assert_eq!(
-            state.activate_at(log_position),
-            DetailTableOutcome::Copy("log")
-        );
-        assert_eq!(
-            state.activate_link_at(log_position),
+            state.click_link(log_position),
             DetailTableOutcome::ActivateLink("log")
         );
     }

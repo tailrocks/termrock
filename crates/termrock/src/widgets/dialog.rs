@@ -84,16 +84,16 @@ mod backdrop_tests {
         ];
         let mut state = ChoiceDialogState::new(Some("accept"));
         assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &actions),
+            state.handle_key(&actions, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
             Outcome::Changed
         );
         assert_eq!(state.focused, Some("cancel"));
         assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &actions),
+            state.handle_key(&actions, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             Outcome::Activated("cancel")
         );
         assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &actions),
+            state.handle_key(&actions, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             Outcome::Cancelled
         );
     }
@@ -124,7 +124,7 @@ mod backdrop_tests {
         assert_eq!(state.regions.len(), 1);
         let region = state.regions[0].area;
         assert_eq!(
-            state.activate_at(Position::new(region.x, region.y)),
+            state.click(Position::new(region.x, region.y)),
             Outcome::Activated("accept")
         );
     }
@@ -235,7 +235,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         }
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent, actions: &[Action<'_, Id>]) -> Outcome<Id> {
+    pub fn handle_key(&mut self, actions: &[Action<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
         }
@@ -292,7 +292,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     }
 
     #[must_use]
-    pub fn activate_at(&mut self, position: ratatui_core::layout::Position) -> Outcome<Id> {
+    pub fn click(&mut self, position: ratatui_core::layout::Position) -> Outcome<Id> {
         let Some(region) = self
             .regions
             .iter()

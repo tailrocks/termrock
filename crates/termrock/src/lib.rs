@@ -30,21 +30,6 @@ pub use geometry::{
 };
 pub use scroll::{TailScroll, is_scrollable, max_line_width, max_offset};
 
-/// Outcome of a modal or component event-handling cycle.
-///
-/// Surface-specific state machines use this to decide whether to keep a
-/// component open, commit its value, or cancel the interaction. Keeping the
-/// Shared surfaces use this without depending on one another's widget modules.
-#[derive(Debug, Clone)]
-pub enum ModalOutcome<T> {
-    /// User is still interacting with the component.
-    Continue,
-    /// User committed with this value.
-    Commit(T),
-    /// User cancelled the interaction.
-    Cancel,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PointerShape {
     Default,

@@ -7,7 +7,7 @@ use termrock::{
     Theme,
     interaction::Outcome,
     widgets::{
-        ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListOutcome, ListState,
+        ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListState,
         SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, TextInput,
         TextInputOutcome, TextInputState, Tree, TreeNode, TreeOutcome, TreeState, Validation,
     },
@@ -61,7 +61,7 @@ impl StoryInteraction for ChoiceDialogInteractor {
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         !matches!(
-            self.state.handle_key(key.into(), &choice_actions()),
+            self.state.handle_key(&choice_actions(), key.into()),
             Outcome::Ignored
         )
     }
@@ -73,7 +73,7 @@ impl StoryInteraction for ChoiceDialogInteractor {
         }
         if mouse.kind == crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left)
         {
-            return !matches!(self.state.activate_at(position), Outcome::Ignored);
+            return !matches!(self.state.click(position), Outcome::Ignored);
         }
         false
     }
@@ -109,7 +109,7 @@ impl StoryInteraction for ListInteractor {
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         !matches!(
             self.state.handle_key(&list_rows(), key.into()),
-            ListOutcome::Ignored
+            Outcome::Ignored
         )
     }
 
@@ -126,7 +126,7 @@ impl StoryInteraction for ListInteractor {
                 true
             }
             crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
-                !matches!(self.state.click(position), ListOutcome::Ignored)
+                !matches!(self.state.click(position), Outcome::Ignored)
             }
             crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) => {
                 self.state.scroll_to_position(position, list_rows().len())
@@ -302,11 +302,13 @@ impl StoryInteraction for FormInteractor {
                 self.state.scroll_to_position(position)
             }
             crossterm::event::MouseEventKind::ScrollUp => {
-                self.state.scroll_by(-1);
+                let content_len = self.state.content_height();
+                self.state.scroll_by(-1, content_len);
                 true
             }
             crossterm::event::MouseEventKind::ScrollDown => {
-                self.state.scroll_by(1);
+                let content_len = self.state.content_height();
+                self.state.scroll_by(1, content_len);
                 true
             }
             _ => false,
@@ -336,7 +338,7 @@ impl StoryInteraction for SplitPaneInteractor {
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         let split = SplitPane::new(SplitDirection::Horizontal, 12, 16, &self.theme);
         !matches!(
-            split.handle_key(&mut self.state, key.into()),
+            self.state.handle_key(&split, key.into()),
             SplitPaneOutcome::Ignored
         )
     }
@@ -345,24 +347,22 @@ impl StoryInteraction for SplitPaneInteractor {
         let position = ratatui::layout::Position::new(mouse.column, mouse.row);
         let split = SplitPane::new(SplitDirection::Horizontal, 12, 16, &self.theme);
         match mouse.kind {
-            crossterm::event::MouseEventKind::Moved => {
-                split.pointer_move(&mut self.state, position)
-            }
+            crossterm::event::MouseEventKind::Moved => self.state.hover(&split, position),
             crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
                 !matches!(
-                    split.pointer_down(&mut self.state, position),
+                    self.state.drag_start(&split, position),
                     SplitPaneOutcome::Ignored
                 )
             }
             crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) => {
                 !matches!(
-                    split.pointer_drag(&mut self.state, position),
+                    self.state.drag_move(&split, position),
                     SplitPaneOutcome::Ignored
                 )
             }
             crossterm::event::MouseEventKind::Up(crossterm::event::MouseButton::Left) => {
                 let changed = self.state.is_dragging();
-                split.pointer_up(&mut self.state);
+                self.state.drag_end();
                 changed
             }
             _ => false,

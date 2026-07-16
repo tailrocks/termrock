@@ -113,15 +113,18 @@ impl<Id> TreeState<Id> {
         self.follow_selection = true;
     }
 
-    pub fn scroll_by(&mut self, delta: i32, node_count: usize) -> usize {
+    pub fn scroll_by(&mut self, delta: isize, node_count: usize) -> bool {
+        let before = self.offset;
         let maximum = max_offset(node_count, self.viewport_height);
-        self.offset = if delta < 0 {
-            self.offset.saturating_sub(delta.unsigned_abs() as usize)
+        self.offset = if delta.is_negative() {
+            self.offset.saturating_sub(delta.unsigned_abs())
         } else {
-            self.offset.saturating_add(delta as usize).min(maximum)
+            self.offset
+                .saturating_add(delta.unsigned_abs())
+                .min(maximum)
         };
         self.follow_selection = false;
-        self.offset
+        before != self.offset
     }
 
     pub fn scroll_to_position(&mut self, position: Position, node_count: usize) -> bool {

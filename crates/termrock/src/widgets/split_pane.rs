@@ -157,6 +157,122 @@ impl SplitPaneState {
     pub const fn layout(&self) -> SplitPaneLayout {
         self.layout
     }
+
+    pub fn handle_key(&mut self, spec: &SplitPane<'_>, key: KeyEvent) -> SplitPaneOutcome {
+        if !self.focused || key.kind == KeyEventKind::Release {
+            return SplitPaneOutcome::Ignored;
+        }
+        let delta = match (spec.direction, key.code) {
+            (SplitDirection::Horizontal, KeyCode::Left)
+            | (SplitDirection::Vertical, KeyCode::Up) => Some(-i32::from(KEYBOARD_STEP)),
+            (SplitDirection::Horizontal, KeyCode::Right)
+            | (SplitDirection::Vertical, KeyCode::Down) => Some(i32::from(KEYBOARD_STEP)),
+            _ => None,
+        };
+        if let Some(delta) = delta {
+            self.collapsed = None;
+            let current = i32::from(self.ratio.basis_points());
+            let next = current
+                .saturating_add(delta)
+                .clamp(0, i32::from(RATIO_SCALE));
+            self.ratio = SplitRatio::from_basis_points(next as u16);
+            return SplitPaneOutcome::RatioChanged(self.ratio);
+        }
+        SplitPaneOutcome::Ignored
+    }
+
+    pub fn collapse(&mut self, side: SplitSide) -> SplitPaneOutcome {
+        if self.collapsed == Some(side) {
+            SplitPaneOutcome::Ignored
+        } else {
+            self.collapsed = Some(side);
+            self.dragging = false;
+            SplitPaneOutcome::Collapsed(side)
+        }
+    }
+
+    pub fn expand(&mut self) -> SplitPaneOutcome {
+        if self.collapsed.take().is_some() {
+            SplitPaneOutcome::Expanded
+        } else {
+            SplitPaneOutcome::Ignored
+        }
+    }
+
+    pub fn drag_start(&mut self, spec: &SplitPane<'_>, position: Position) -> SplitPaneOutcome {
+        let Some(painted) = self
+            .painted
+            .filter(|painted| painted.direction == spec.direction)
+        else {
+            return SplitPaneOutcome::Ignored;
+        };
+        if painted.layout.divider.is_empty() || !painted.layout.divider.contains(position) {
+            return SplitPaneOutcome::Ignored;
+        }
+        self.focused = true;
+        self.hovered = true;
+        self.dragging = true;
+        SplitPaneOutcome::Focused
+    }
+
+    pub fn hover(&mut self, spec: &SplitPane<'_>, position: Position) -> bool {
+        let hovered = self
+            .painted
+            .filter(|painted| painted.direction == spec.direction)
+            .is_some_and(|painted| {
+                !painted.layout.divider.is_empty() && painted.layout.divider.contains(position)
+            });
+        let changed = self.hovered != hovered;
+        self.hovered = hovered;
+        changed
+    }
+
+    pub fn drag_move(&mut self, spec: &SplitPane<'_>, position: Position) -> SplitPaneOutcome {
+        if !self.dragging {
+            return SplitPaneOutcome::Ignored;
+        }
+        let Some(painted) = self
+            .painted
+            .filter(|painted| painted.direction == spec.direction)
+        else {
+            return SplitPaneOutcome::Ignored;
+        };
+        let area = painted_area(painted.layout, spec.direction);
+        let available = match spec.direction {
+            SplitDirection::Horizontal => painted
+                .layout
+                .first
+                .width
+                .saturating_add(painted.layout.second.width),
+            SplitDirection::Vertical => painted
+                .layout
+                .first
+                .height
+                .saturating_add(painted.layout.second.height),
+        };
+        if available == 0 {
+            return SplitPaneOutcome::Ignored;
+        }
+        let origin = match spec.direction {
+            SplitDirection::Horizontal => area.x,
+            SplitDirection::Vertical => area.y,
+        };
+        let coordinate = match spec.direction {
+            SplitDirection::Horizontal => position.x,
+            SplitDirection::Vertical => position.y,
+        };
+        let first = coordinate.saturating_sub(origin).min(available);
+        let basis_points = (u32::from(first) * u32::from(RATIO_SCALE) + u32::from(available) / 2)
+            / u32::from(available);
+        self.ratio = SplitRatio::from_basis_points(basis_points as u16);
+        self.collapsed = None;
+        spec.layout(area, self);
+        SplitPaneOutcome::RatioChanged(self.ratio)
+    }
+
+    pub const fn drag_end(&mut self) {
+        self.dragging = false;
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -205,122 +321,6 @@ impl<'a> SplitPane<'a> {
         };
         state.layout = split_rects(area, self.direction, first, available - first);
         state.layout
-    }
-
-    pub fn handle_key(&self, state: &mut SplitPaneState, key: KeyEvent) -> SplitPaneOutcome {
-        if !state.focused || key.kind == KeyEventKind::Release {
-            return SplitPaneOutcome::Ignored;
-        }
-        let delta = match (self.direction, key.code) {
-            (SplitDirection::Horizontal, KeyCode::Left)
-            | (SplitDirection::Vertical, KeyCode::Up) => Some(-i32::from(KEYBOARD_STEP)),
-            (SplitDirection::Horizontal, KeyCode::Right)
-            | (SplitDirection::Vertical, KeyCode::Down) => Some(i32::from(KEYBOARD_STEP)),
-            _ => None,
-        };
-        if let Some(delta) = delta {
-            state.collapsed = None;
-            let current = i32::from(state.ratio.basis_points());
-            let next = current
-                .saturating_add(delta)
-                .clamp(0, i32::from(RATIO_SCALE));
-            state.ratio = SplitRatio::from_basis_points(next as u16);
-            return SplitPaneOutcome::RatioChanged(state.ratio);
-        }
-        SplitPaneOutcome::Ignored
-    }
-
-    pub fn collapse(&self, state: &mut SplitPaneState, side: SplitSide) -> SplitPaneOutcome {
-        if state.collapsed == Some(side) {
-            SplitPaneOutcome::Ignored
-        } else {
-            state.collapsed = Some(side);
-            state.dragging = false;
-            SplitPaneOutcome::Collapsed(side)
-        }
-    }
-
-    pub fn expand(&self, state: &mut SplitPaneState) -> SplitPaneOutcome {
-        if state.collapsed.take().is_some() {
-            SplitPaneOutcome::Expanded
-        } else {
-            SplitPaneOutcome::Ignored
-        }
-    }
-
-    pub fn pointer_down(&self, state: &mut SplitPaneState, position: Position) -> SplitPaneOutcome {
-        let Some(painted) = state
-            .painted
-            .filter(|painted| painted.direction == self.direction)
-        else {
-            return SplitPaneOutcome::Ignored;
-        };
-        if painted.layout.divider.is_empty() || !painted.layout.divider.contains(position) {
-            return SplitPaneOutcome::Ignored;
-        }
-        state.focused = true;
-        state.hovered = true;
-        state.dragging = true;
-        SplitPaneOutcome::Focused
-    }
-
-    pub fn pointer_move(&self, state: &mut SplitPaneState, position: Position) -> bool {
-        let hovered = state
-            .painted
-            .filter(|painted| painted.direction == self.direction)
-            .is_some_and(|painted| {
-                !painted.layout.divider.is_empty() && painted.layout.divider.contains(position)
-            });
-        let changed = state.hovered != hovered;
-        state.hovered = hovered;
-        changed
-    }
-
-    pub fn pointer_drag(&self, state: &mut SplitPaneState, position: Position) -> SplitPaneOutcome {
-        if !state.dragging {
-            return SplitPaneOutcome::Ignored;
-        }
-        let Some(painted) = state
-            .painted
-            .filter(|painted| painted.direction == self.direction)
-        else {
-            return SplitPaneOutcome::Ignored;
-        };
-        let area = painted_area(painted.layout, self.direction);
-        let available = match self.direction {
-            SplitDirection::Horizontal => painted
-                .layout
-                .first
-                .width
-                .saturating_add(painted.layout.second.width),
-            SplitDirection::Vertical => painted
-                .layout
-                .first
-                .height
-                .saturating_add(painted.layout.second.height),
-        };
-        if available == 0 {
-            return SplitPaneOutcome::Ignored;
-        }
-        let origin = match self.direction {
-            SplitDirection::Horizontal => area.x,
-            SplitDirection::Vertical => area.y,
-        };
-        let coordinate = match self.direction {
-            SplitDirection::Horizontal => position.x,
-            SplitDirection::Vertical => position.y,
-        };
-        let first = coordinate.saturating_sub(origin).min(available);
-        let basis_points = (u32::from(first) * u32::from(RATIO_SCALE) + u32::from(available) / 2)
-            / u32::from(available);
-        state.ratio = SplitRatio::from_basis_points(basis_points as u16);
-        state.collapsed = None;
-        self.layout(area, state);
-        SplitPaneOutcome::RatioChanged(state.ratio)
-    }
-
-    pub const fn pointer_up(&self, state: &mut SplitPaneState) {
-        state.dragging = false;
     }
 }
 

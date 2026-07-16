@@ -18,6 +18,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0006 | `v0.9.0` | [Unified key vocabulary](migrations/0006-v0.9.0-unified-key-vocabulary.md) |
 | 0007 | `v0.9.0` | [Constructible theme](migrations/0007-v0.9.0-constructible-theme.md) |
 | 0008 | `v0.9.0` | [Semantic theme palette](migrations/0008-v0.9.0-semantic-theme-palette.md) |
+| 0009 | `v0.9.0` | [Neutral event contract](migrations/0009-v0.9.0-neutral-event-contract.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

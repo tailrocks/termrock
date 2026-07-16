@@ -197,7 +197,8 @@ fn focused_field_is_revealed_and_manual_scroll_is_bounded() {
     assert!(state.regions().iter().any(|region| region.id == 7));
     assert!(state.scroll_to_position(Position::new(area.right() - 1, area.y)));
     assert_eq!(state.offset(), 0);
-    state.scroll_by(3);
+    let content_len = state.content_height();
+    state.scroll_by(3, content_len);
     form.render(area, &mut buffer, &mut state);
     let first = state
         .field_regions()
@@ -206,9 +207,10 @@ fn focused_field_is_revealed_and_manual_scroll_is_bounded() {
         .expect("partially painted first field retains geometry");
     assert!(first.label.is_none());
     assert!(first.value.is_some());
-    let maximum = state.scroll_by(i32::MAX);
-    assert_eq!(maximum, state.offset());
-    assert_eq!(state.scroll_by(i32::MIN), 0);
+    assert!(state.scroll_by(isize::MAX, content_len));
+    assert!(!state.scroll_by(1, content_len));
+    assert!(state.scroll_by(isize::MIN, content_len));
+    assert_eq!(state.offset(), 0);
 }
 
 #[test]
@@ -428,11 +430,14 @@ fn scroll_by_clamps_at_bounds() {
     let mut state = FormState::new(None);
     form.render(area, &mut buffer, &mut state);
 
-    assert_eq!(state.scroll_by(-1), 0);
-    let maximum = state.scroll_by(i32::MAX);
+    let content_len = state.content_height();
+    assert!(!state.scroll_by(-1, content_len));
+    assert!(state.scroll_by(isize::MAX, content_len));
+    let maximum = state.offset();
     assert!(maximum > 0);
-    assert_eq!(state.scroll_by(1), maximum);
-    assert_eq!(state.scroll_by(i32::MIN), 0);
+    assert!(!state.scroll_by(1, content_len));
+    assert!(state.scroll_by(isize::MIN, content_len));
+    assert_eq!(state.offset(), 0);
 }
 
 #[test]
@@ -473,7 +478,8 @@ fn partially_clipped_field_retains_union_hit_region() {
     let mut buffer = Buffer::empty(area);
     let mut state = FormState::new(None);
     form.render(area, &mut buffer, &mut state);
-    state.scroll_by(3);
+    let content_len = state.content_height();
+    state.scroll_by(3, content_len);
     form.render(area, &mut buffer, &mut state);
     let host = state
         .field_regions()

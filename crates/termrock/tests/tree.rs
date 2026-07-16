@@ -225,7 +225,7 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
         state.handle_key(&rows, KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)),
         TreeOutcome::SelectionChanged(3)
     );
-    assert_eq!(state.scroll_by(2, rows.len()), 2);
+    assert!(state.scroll_by(2, rows.len()));
     assert_eq!(state.offset(), 2);
     assert!(
         state.scroll_to_position(Position::new(11, 2), rows.len()),

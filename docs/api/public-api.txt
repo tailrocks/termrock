@@ -4,9 +4,6 @@ pub fn termrock::ansi_text::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::ansi_text::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub mod termrock::crossterm
 pub use termrock::crossterm::CrosstermBackend
-pub use termrock::crossterm::Event
-pub use termrock::crossterm::KeyEvent
-pub use termrock::crossterm::MouseEvent
 pub struct termrock::crossterm::Session<W: core::io::write::Write>
 impl<W: core::io::write::Write> termrock::crossterm::Session<W>
 pub fn termrock::crossterm::Session<W>::enter(W, termrock::crossterm::SessionOptions) -> core::io::error::Result<Self>
@@ -86,8 +83,6 @@ pub unsafe fn termrock::crossterm::SessionOptions::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::crossterm::SessionOptions
 pub fn termrock::crossterm::SessionOptions::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::crossterm::SessionOptions
-pub fn termrock::crossterm::key(crossterm::event::KeyEvent) -> termrock::input::KeyEvent
-pub fn termrock::crossterm::mouse_kind(crossterm::event::MouseEvent) -> termrock::input::MouseEventKind
 pub mod termrock::geometry
 pub enum termrock::geometry::HintSpan<'a>
 pub termrock::geometry::HintSpan::Dyn(alloc::string::String)
@@ -237,6 +232,61 @@ pub fn termrock::geometry::sanitize_terminal_title(&str) -> alloc::string::Strin
 pub fn termrock::geometry::tab_at_column(&[termrock::geometry::TabCell<'_>], u16) -> core::option::Option<usize>
 pub fn termrock::geometry::take_display_cols(&str, usize) -> alloc::string::String
 pub mod termrock::input
+pub enum termrock::input::Event
+pub termrock::input::Event::FocusGained
+pub termrock::input::Event::FocusLost
+pub termrock::input::Event::Key(termrock::input::KeyEvent)
+pub termrock::input::Event::Mouse(termrock::input::MouseEvent)
+pub termrock::input::Event::Paste
+pub termrock::input::Event::Resize
+pub termrock::input::Event::Resize::height: u16
+pub termrock::input::Event::Resize::width: u16
+pub termrock::input::Event::Unknown
+impl core::clone::Clone for termrock::input::Event
+pub fn termrock::input::Event::clone(&self) -> termrock::input::Event
+impl core::cmp::Eq for termrock::input::Event
+impl core::cmp::PartialEq for termrock::input::Event
+pub fn termrock::input::Event::eq(&self, &termrock::input::Event) -> bool
+impl core::convert::From<crossterm::event::Event> for termrock::input::Event
+pub fn termrock::input::Event::from(crossterm::event::Event) -> Self
+impl core::fmt::Debug for termrock::input::Event
+pub fn termrock::input::Event::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::input::Event
+pub fn termrock::input::Event::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::input::Event
+impl core::marker::StructuralPartialEq for termrock::input::Event
+impl core::marker::Freeze for termrock::input::Event
+impl core::marker::Send for termrock::input::Event
+impl core::marker::Sync for termrock::input::Event
+impl core::marker::Unpin for termrock::input::Event
+impl core::marker::UnsafeUnpin for termrock::input::Event
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::input::Event
+impl core::panic::unwind_safe::UnwindSafe for termrock::input::Event
+impl<Q, K> equivalent::Equivalent<K> for termrock::input::Event where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::input::Event::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::input::Event where U: core::convert::From<T>
+pub fn termrock::input::Event::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::input::Event where U: core::convert::Into<T>
+pub type termrock::input::Event::Error = core::convert::Infallible
+pub fn termrock::input::Event::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::input::Event where U: core::convert::TryFrom<T>
+pub type termrock::input::Event::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::input::Event::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::input::Event where T: core::clone::Clone
+pub type termrock::input::Event::Owned = T
+pub fn termrock::input::Event::clone_into(&self, &mut T)
+pub fn termrock::input::Event::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::input::Event where T: 'static + ?core::marker::Sized
+pub fn termrock::input::Event::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::input::Event where T: ?core::marker::Sized
+pub fn termrock::input::Event::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::input::Event where T: ?core::marker::Sized
+pub fn termrock::input::Event::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::input::Event where T: core::clone::Clone
+pub unsafe fn termrock::input::Event::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::input::Event
+pub fn termrock::input::Event::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::input::Event
 pub enum termrock::input::KeyCode
 pub termrock::input::KeyCode::BackTab
 pub termrock::input::KeyCode::Backspace
@@ -350,12 +400,64 @@ pub unsafe fn termrock::input::KeyEventKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::input::KeyEventKind
 pub fn termrock::input::KeyEventKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::input::KeyEventKind
+pub enum termrock::input::MouseButton
+pub termrock::input::MouseButton::Left
+pub termrock::input::MouseButton::Middle
+pub termrock::input::MouseButton::Right
+impl core::clone::Clone for termrock::input::MouseButton
+pub fn termrock::input::MouseButton::clone(&self) -> termrock::input::MouseButton
+impl core::cmp::Eq for termrock::input::MouseButton
+impl core::cmp::PartialEq for termrock::input::MouseButton
+pub fn termrock::input::MouseButton::eq(&self, &termrock::input::MouseButton) -> bool
+impl core::convert::From<crossterm::event::MouseButton> for termrock::input::MouseButton
+pub fn termrock::input::MouseButton::from(crossterm::event::MouseButton) -> Self
+impl core::fmt::Debug for termrock::input::MouseButton
+pub fn termrock::input::MouseButton::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::input::MouseButton
+pub fn termrock::input::MouseButton::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::input::MouseButton
+impl core::marker::StructuralPartialEq for termrock::input::MouseButton
+impl core::marker::Freeze for termrock::input::MouseButton
+impl core::marker::Send for termrock::input::MouseButton
+impl core::marker::Sync for termrock::input::MouseButton
+impl core::marker::Unpin for termrock::input::MouseButton
+impl core::marker::UnsafeUnpin for termrock::input::MouseButton
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::input::MouseButton
+impl core::panic::unwind_safe::UnwindSafe for termrock::input::MouseButton
+impl<Q, K> equivalent::Equivalent<K> for termrock::input::MouseButton where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::input::MouseButton::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::input::MouseButton where U: core::convert::From<T>
+pub fn termrock::input::MouseButton::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::input::MouseButton where U: core::convert::Into<T>
+pub type termrock::input::MouseButton::Error = core::convert::Infallible
+pub fn termrock::input::MouseButton::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::input::MouseButton where U: core::convert::TryFrom<T>
+pub type termrock::input::MouseButton::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::input::MouseButton::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::input::MouseButton where T: core::clone::Clone
+pub type termrock::input::MouseButton::Owned = T
+pub fn termrock::input::MouseButton::clone_into(&self, &mut T)
+pub fn termrock::input::MouseButton::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::input::MouseButton where T: 'static + ?core::marker::Sized
+pub fn termrock::input::MouseButton::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::input::MouseButton where T: ?core::marker::Sized
+pub fn termrock::input::MouseButton::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::input::MouseButton where T: ?core::marker::Sized
+pub fn termrock::input::MouseButton::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::input::MouseButton where T: core::clone::Clone
+pub unsafe fn termrock::input::MouseButton::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::input::MouseButton
+pub fn termrock::input::MouseButton::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::input::MouseButton
 pub enum termrock::input::MouseEventKind
+pub termrock::input::MouseEventKind::Down(termrock::input::MouseButton)
+pub termrock::input::MouseEventKind::Drag(termrock::input::MouseButton)
 pub termrock::input::MouseEventKind::Moved
 pub termrock::input::MouseEventKind::ScrollDown
 pub termrock::input::MouseEventKind::ScrollLeft
 pub termrock::input::MouseEventKind::ScrollRight
 pub termrock::input::MouseEventKind::ScrollUp
+pub termrock::input::MouseEventKind::Up(termrock::input::MouseButton)
 impl core::clone::Clone for termrock::input::MouseEventKind
 pub fn termrock::input::MouseEventKind::clone(&self) -> termrock::input::MouseEventKind
 impl core::cmp::Eq for termrock::input::MouseEventKind
@@ -736,6 +838,55 @@ pub fn termrock::keymap::Keymap<A>::borrow_mut(&mut self) -> &mut T
 impl<T> core::convert::From<T> for termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::Keymap<A>
+pub struct termrock::input::MouseEvent
+pub termrock::input::MouseEvent::kind: termrock::input::MouseEventKind
+pub termrock::input::MouseEvent::modifiers: termrock::input::KeyModifiers
+pub termrock::input::MouseEvent::position: ratatui_core::layout::position::Position
+impl core::clone::Clone for termrock::input::MouseEvent
+pub fn termrock::input::MouseEvent::clone(&self) -> termrock::input::MouseEvent
+impl core::cmp::Eq for termrock::input::MouseEvent
+impl core::cmp::PartialEq for termrock::input::MouseEvent
+pub fn termrock::input::MouseEvent::eq(&self, &termrock::input::MouseEvent) -> bool
+impl core::convert::From<crossterm::event::MouseEvent> for termrock::input::MouseEvent
+pub fn termrock::input::MouseEvent::from(crossterm::event::MouseEvent) -> Self
+impl core::fmt::Debug for termrock::input::MouseEvent
+pub fn termrock::input::MouseEvent::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::input::MouseEvent
+pub fn termrock::input::MouseEvent::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::input::MouseEvent
+impl core::marker::StructuralPartialEq for termrock::input::MouseEvent
+impl core::marker::Freeze for termrock::input::MouseEvent
+impl core::marker::Send for termrock::input::MouseEvent
+impl core::marker::Sync for termrock::input::MouseEvent
+impl core::marker::Unpin for termrock::input::MouseEvent
+impl core::marker::UnsafeUnpin for termrock::input::MouseEvent
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::input::MouseEvent
+impl core::panic::unwind_safe::UnwindSafe for termrock::input::MouseEvent
+impl<Q, K> equivalent::Equivalent<K> for termrock::input::MouseEvent where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::input::MouseEvent::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::input::MouseEvent where U: core::convert::From<T>
+pub fn termrock::input::MouseEvent::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::input::MouseEvent where U: core::convert::Into<T>
+pub type termrock::input::MouseEvent::Error = core::convert::Infallible
+pub fn termrock::input::MouseEvent::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::input::MouseEvent where U: core::convert::TryFrom<T>
+pub type termrock::input::MouseEvent::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::input::MouseEvent::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::input::MouseEvent where T: core::clone::Clone
+pub type termrock::input::MouseEvent::Owned = T
+pub fn termrock::input::MouseEvent::clone_into(&self, &mut T)
+pub fn termrock::input::MouseEvent::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::input::MouseEvent where T: 'static + ?core::marker::Sized
+pub fn termrock::input::MouseEvent::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::input::MouseEvent where T: ?core::marker::Sized
+pub fn termrock::input::MouseEvent::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::input::MouseEvent where T: ?core::marker::Sized
+pub fn termrock::input::MouseEvent::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::input::MouseEvent where T: core::clone::Clone
+pub unsafe fn termrock::input::MouseEvent::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::input::MouseEvent
+pub fn termrock::input::MouseEvent::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::input::MouseEvent
 pub mod termrock::interaction
 pub enum termrock::interaction::FocusOwner<Tab>
 pub termrock::interaction::FocusOwner::Content(Tab)
@@ -3390,51 +3541,51 @@ pub unsafe fn termrock::widgets::FormOutcome<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormOutcome<Id>
-pub enum termrock::widgets::ListOutcome<Id>
-pub termrock::widgets::ListOutcome::Activated(Id)
-pub termrock::widgets::ListOutcome::Cancelled
-pub termrock::widgets::ListOutcome::Changed
-pub termrock::widgets::ListOutcome::Ignored
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListOutcome<Id>
-pub fn termrock::widgets::ListOutcome<Id>::clone(&self) -> termrock::widgets::ListOutcome<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ListOutcome<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ListOutcome<Id>
-pub fn termrock::widgets::ListOutcome<Id>::eq(&self, &termrock::widgets::ListOutcome<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ListOutcome<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ListOutcome<Id>
-pub fn termrock::widgets::ListOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::widgets::ListOutcome<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::ListOutcome<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::ListOutcome<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::ListOutcome<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ListOutcome<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ListOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ListOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ListOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::ListOutcome<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::ListOutcome<Id> where U: core::convert::From<T>
-pub fn termrock::widgets::ListOutcome<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ListOutcome<Id> where U: core::convert::Into<T>
-pub type termrock::widgets::ListOutcome<Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::ListOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::ListOutcome<Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::ListOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::ListOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::ListOutcome<Id> where T: core::clone::Clone
-pub type termrock::widgets::ListOutcome<Id>::Owned = T
-pub fn termrock::widgets::ListOutcome<Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::ListOutcome<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::ListOutcome<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::ListOutcome<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::ListOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::ListOutcome<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ListOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::ListOutcome<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::ListOutcome<Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::ListOutcome<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::ListOutcome<Id>
-pub fn termrock::widgets::ListOutcome<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::ListOutcome<Id>
+pub enum termrock::widgets::Outcome<T>
+pub termrock::widgets::Outcome::Activated(T)
+pub termrock::widgets::Outcome::Cancelled
+pub termrock::widgets::Outcome::Changed
+pub termrock::widgets::Outcome::Ignored
+impl<T: core::clone::Clone> core::clone::Clone for termrock::interaction::Outcome<T>
+pub fn termrock::interaction::Outcome<T>::clone(&self) -> termrock::interaction::Outcome<T>
+impl<T: core::cmp::Eq> core::cmp::Eq for termrock::interaction::Outcome<T>
+impl<T: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::Outcome<T>
+pub fn termrock::interaction::Outcome<T>::eq(&self, &termrock::interaction::Outcome<T>) -> bool
+impl<T: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::Outcome<T>
+impl<T: core::fmt::Debug> core::fmt::Debug for termrock::interaction::Outcome<T>
+pub fn termrock::interaction::Outcome<T>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<T> core::marker::Freeze for termrock::interaction::Outcome<T> where T: core::marker::Freeze
+impl<T> core::marker::Send for termrock::interaction::Outcome<T> where T: core::marker::Send
+impl<T> core::marker::Sync for termrock::interaction::Outcome<T> where T: core::marker::Sync
+impl<T> core::marker::Unpin for termrock::interaction::Outcome<T> where T: core::marker::Unpin
+impl<T> core::marker::UnsafeUnpin for termrock::interaction::Outcome<T> where T: core::marker::UnsafeUnpin
+impl<T> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::Outcome<T> where T: core::panic::unwind_safe::RefUnwindSafe
+impl<T> core::panic::unwind_safe::UnwindSafe for termrock::interaction::Outcome<T> where T: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::Outcome<T> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::Outcome<T>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::Outcome<T> where U: core::convert::From<T>
+pub fn termrock::interaction::Outcome<T>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::Outcome<T> where U: core::convert::Into<T>
+pub type termrock::interaction::Outcome<T>::Error = core::convert::Infallible
+pub fn termrock::interaction::Outcome<T>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::Outcome<T> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::Outcome<T>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::Outcome<T>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::Outcome<T> where T: core::clone::Clone
+pub type termrock::interaction::Outcome<T>::Owned = T
+pub fn termrock::interaction::Outcome<T>::clone_into(&self, &mut T)
+pub fn termrock::interaction::Outcome<T>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::Outcome<T> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::Outcome<T>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::Outcome<T> where T: ?core::marker::Sized
+pub fn termrock::interaction::Outcome<T>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::Outcome<T> where T: ?core::marker::Sized
+pub fn termrock::interaction::Outcome<T>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::Outcome<T> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::Outcome<T>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::Outcome<T>
+pub fn termrock::interaction::Outcome<T>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::Outcome<T>
 pub enum termrock::widgets::PanelEmphasis
 pub termrock::widgets::PanelEmphasis::Focused
 pub termrock::widgets::PanelEmphasis::Normal
@@ -4141,9 +4292,9 @@ pub struct termrock::widgets::ChoiceDialogState<Id>
 pub termrock::widgets::ChoiceDialogState::focused: core::option::Option<Id>
 pub termrock::widgets::ChoiceDialogState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ChoiceDialogState<Id>
-pub fn termrock::widgets::ChoiceDialogState<Id>::activate_at(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::activate_selected(&self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
-pub fn termrock::widgets::ChoiceDialogState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::handle_key(&mut self, &[termrock::widgets::Action<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::Outcome<Id>
 pub const fn termrock::widgets::ChoiceDialogState<Id>::new(core::option::Option<Id>) -> Self
 pub fn termrock::widgets::ChoiceDialogState<Id>::select_next(&mut self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::select_previous(&mut self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
@@ -4237,9 +4388,7 @@ pub termrock::widgets::DetailTable::rows: &'a [termrock::widgets::DetailRow<'a, 
 pub termrock::widgets::DetailTable::theme: &'a termrock::style::Theme
 pub termrock::widgets::DetailTable::wrap: bool
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DetailTable<'_, Id>
-pub fn termrock::widgets::DetailTable<'_, Id>::activate_selected(&self, &termrock::widgets::DetailTableState<Id>) -> termrock::widgets::DetailTableOutcome<Id>
 pub fn termrock::widgets::DetailTable<'_, Id>::hyperlink_regions<'a>(&'a self, &'a termrock::widgets::DetailTableState<Id>) -> alloc::vec::Vec<termrock::osc::HyperlinkRegion<'a, Id>>
-pub fn termrock::widgets::DetailTable<'_, Id>::outcome_at(&self, &mut termrock::widgets::DetailTableState<Id>, ratatui_core::layout::position::Position) -> termrock::widgets::DetailTableOutcome<Id>
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DetailTable<'a, Id>
 pub fn termrock::widgets::DetailTable<'a, Id>::clone(&self) -> termrock::widgets::DetailTable<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DetailTable<'a, Id>
@@ -4288,10 +4437,12 @@ pub termrock::widgets::DetailTableState::scroll: termrock::scroll::DialogScroll
 pub termrock::widgets::DetailTableState::selected: core::option::Option<Id>
 pub termrock::widgets::DetailTableState::viewport: ratatui_core::layout::rect::Rect
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DetailTableState<Id>
-pub fn termrock::widgets::DetailTableState<Id>::activate_at(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::DetailTableOutcome<Id>
-pub fn termrock::widgets::DetailTableState<Id>::activate_link_at(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::DetailTableOutcome<Id>
+pub fn termrock::widgets::DetailTableState<Id>::activate_selected(&self, &[termrock::widgets::DetailRow<'_, Id>]) -> termrock::widgets::DetailTableOutcome<Id>
 pub fn termrock::widgets::DetailTableState<Id>::clamp_scroll(&mut self)
-pub fn termrock::widgets::DetailTableState<Id>::hover_at(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
+pub fn termrock::widgets::DetailTableState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::DetailTableOutcome<Id>
+pub fn termrock::widgets::DetailTableState<Id>::click_link(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::DetailTableOutcome<Id>
+pub fn termrock::widgets::DetailTableState<Id>::handle_key(&mut self, &[termrock::widgets::DetailRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::DetailTableOutcome<Id>
+pub fn termrock::widgets::DetailTableState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 pub fn termrock::widgets::DetailTableState<Id>::mark_copied(&mut self, core::option::Option<Id>)
 pub fn termrock::widgets::DetailTableState<Id>::select_next(&mut self, &[termrock::widgets::DetailRow<'_, Id>]) -> termrock::widgets::DetailTableOutcome<Id>
 pub fn termrock::widgets::DetailTableState<Id>::select_previous(&mut self, &[termrock::widgets::DetailRow<'_, Id>]) -> termrock::widgets::DetailTableOutcome<Id>
@@ -4676,6 +4827,7 @@ pub fn termrock::widgets::FormState<Id>::handle_key(&mut self, &[termrock::widge
 pub fn termrock::widgets::FormState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id> termrock::widgets::FormState<Id>
 pub const fn termrock::widgets::FormState<Id>::column_count(&self) -> u8
+pub const fn termrock::widgets::FormState<Id>::content_height(&self) -> usize
 pub fn termrock::widgets::FormState<Id>::field_regions(&self) -> &[termrock::widgets::FormFieldRegion<Id>]
 pub fn termrock::widgets::FormState<Id>::focus(&mut self, core::option::Option<Id>)
 pub const fn termrock::widgets::FormState<Id>::focused(&self) -> core::option::Option<&Id>
@@ -4684,7 +4836,7 @@ pub const fn termrock::widgets::FormState<Id>::is_active(&self) -> bool
 pub const fn termrock::widgets::FormState<Id>::new(core::option::Option<Id>) -> Self
 pub const fn termrock::widgets::FormState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::FormState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
-pub fn termrock::widgets::FormState<Id>::scroll_by(&mut self, i32) -> usize
+pub fn termrock::widgets::FormState<Id>::scroll_by(&mut self, isize, usize) -> bool
 pub fn termrock::widgets::FormState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position) -> bool
 pub const fn termrock::widgets::FormState<Id>::set_active(&mut self, bool)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormState<Id>
@@ -4904,16 +5056,16 @@ pub fn termrock::widgets::ListState<usize>::move_index(&mut self, usize, isize) 
 pub fn termrock::widgets::ListState<usize>::reconcile_count(&mut self, usize)
 pub fn termrock::widgets::ListState<usize>::selected_item<'a, T>(&self, &'a [T]) -> core::option::Option<&'a T>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ListState<Id>
-pub fn termrock::widgets::ListState<Id>::activate(&self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::ListOutcome<Id>
-pub fn termrock::widgets::ListState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::ListOutcome<Id>
-pub fn termrock::widgets::ListState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::ListOutcome<Id>
+pub fn termrock::widgets::ListState<Id>::activate(&self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ListState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ListState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 pub const fn termrock::widgets::ListState<Id>::new(core::option::Option<Id>) -> Self
 pub fn termrock::widgets::ListState<Id>::scroll_by(&mut self, isize, usize) -> bool
 pub fn termrock::widgets::ListState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
 pub fn termrock::widgets::ListState<Id>::select(&mut self, core::option::Option<Id>)
-pub fn termrock::widgets::ListState<Id>::select_next(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::ListOutcome<Id>
-pub fn termrock::widgets::ListState<Id>::select_previous(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::ListOutcome<Id>
+pub fn termrock::widgets::ListState<Id>::select_next(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ListState<Id>::select_previous(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::clone(&self) -> termrock::widgets::ListState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ListState<Id>
@@ -5053,15 +5205,8 @@ pub termrock::widgets::SplitPane::first_min: u16
 pub termrock::widgets::SplitPane::second_min: u16
 pub termrock::widgets::SplitPane::theme: &'a termrock::style::Theme
 impl<'a> termrock::widgets::SplitPane<'a>
-pub fn termrock::widgets::SplitPane<'a>::collapse(&self, &mut termrock::widgets::SplitPaneState, termrock::widgets::SplitSide) -> termrock::widgets::SplitPaneOutcome
-pub fn termrock::widgets::SplitPane<'a>::expand(&self, &mut termrock::widgets::SplitPaneState) -> termrock::widgets::SplitPaneOutcome
-pub fn termrock::widgets::SplitPane<'a>::handle_key(&self, &mut termrock::widgets::SplitPaneState, termrock::input::KeyEvent) -> termrock::widgets::SplitPaneOutcome
 pub fn termrock::widgets::SplitPane<'a>::layout(&self, ratatui_core::layout::rect::Rect, &mut termrock::widgets::SplitPaneState) -> termrock::widgets::SplitPaneLayout
 pub const fn termrock::widgets::SplitPane<'a>::new(termrock::widgets::SplitDirection, u16, u16, &'a termrock::style::Theme) -> Self
-pub fn termrock::widgets::SplitPane<'a>::pointer_down(&self, &mut termrock::widgets::SplitPaneState, ratatui_core::layout::position::Position) -> termrock::widgets::SplitPaneOutcome
-pub fn termrock::widgets::SplitPane<'a>::pointer_drag(&self, &mut termrock::widgets::SplitPaneState, ratatui_core::layout::position::Position) -> termrock::widgets::SplitPaneOutcome
-pub fn termrock::widgets::SplitPane<'a>::pointer_move(&self, &mut termrock::widgets::SplitPaneState, ratatui_core::layout::position::Position) -> bool
-pub const fn termrock::widgets::SplitPane<'a>::pointer_up(&self, &mut termrock::widgets::SplitPaneState)
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::SplitPane<'_>
 pub type &termrock::widgets::SplitPane<'_>::State = termrock::widgets::SplitPaneState
 pub fn &termrock::widgets::SplitPane<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -5149,7 +5294,14 @@ pub fn termrock::widgets::SplitPaneLayout::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SplitPaneLayout
 pub struct termrock::widgets::SplitPaneState
 impl termrock::widgets::SplitPaneState
+pub fn termrock::widgets::SplitPaneState::collapse(&mut self, termrock::widgets::SplitSide) -> termrock::widgets::SplitPaneOutcome
 pub const fn termrock::widgets::SplitPaneState::collapsed(&self) -> core::option::Option<termrock::widgets::SplitSide>
+pub const fn termrock::widgets::SplitPaneState::drag_end(&mut self)
+pub fn termrock::widgets::SplitPaneState::drag_move(&mut self, &termrock::widgets::SplitPane<'_>, ratatui_core::layout::position::Position) -> termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPaneState::drag_start(&mut self, &termrock::widgets::SplitPane<'_>, ratatui_core::layout::position::Position) -> termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPaneState::expand(&mut self) -> termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPaneState::handle_key(&mut self, &termrock::widgets::SplitPane<'_>, termrock::input::KeyEvent) -> termrock::widgets::SplitPaneOutcome
+pub fn termrock::widgets::SplitPaneState::hover(&mut self, &termrock::widgets::SplitPane<'_>, ratatui_core::layout::position::Position) -> bool
 pub const fn termrock::widgets::SplitPaneState::is_dragging(&self) -> bool
 pub const fn termrock::widgets::SplitPaneState::is_focused(&self) -> bool
 pub const fn termrock::widgets::SplitPaneState::is_hovered(&self) -> bool
@@ -5303,7 +5455,7 @@ pub struct termrock::widgets::StatusBarState<Id>
 pub termrock::widgets::StatusBarState::hovered: core::option::Option<Id>
 pub termrock::widgets::StatusBarState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 impl<Id: core::clone::Clone> termrock::widgets::StatusBarState<Id>
-pub fn termrock::widgets::StatusBarState<Id>::activate_at(&self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::StatusBarState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::StatusBarState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::StatusBarState<Id>
 pub fn termrock::widgets::StatusBarState<Id>::clone(&self) -> termrock::widgets::StatusBarState<Id>
@@ -5755,7 +5907,7 @@ pub const fn termrock::widgets::TreeState<Id>::is_focused(&self) -> bool
 pub const fn termrock::widgets::TreeState<Id>::new(core::option::Option<Id>) -> Self
 pub const fn termrock::widgets::TreeState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::TreeState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
-pub fn termrock::widgets::TreeState<Id>::scroll_by(&mut self, i32, usize) -> usize
+pub fn termrock::widgets::TreeState<Id>::scroll_by(&mut self, isize, usize) -> bool
 pub fn termrock::widgets::TreeState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
 pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<Id>)
 pub const fn termrock::widgets::TreeState<Id>::selected(&self) -> core::option::Option<&Id>
@@ -5897,44 +6049,6 @@ pub unsafe fn termrock::geometry::HintSpan<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::geometry::HintSpan<'a>
 pub fn termrock::geometry::HintSpan<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::geometry::HintSpan<'a>
-pub enum termrock::ModalOutcome<T>
-pub termrock::ModalOutcome::Cancel
-pub termrock::ModalOutcome::Commit(T)
-pub termrock::ModalOutcome::Continue
-impl<T: core::clone::Clone> core::clone::Clone for termrock::ModalOutcome<T>
-pub fn termrock::ModalOutcome<T>::clone(&self) -> termrock::ModalOutcome<T>
-impl<T: core::fmt::Debug> core::fmt::Debug for termrock::ModalOutcome<T>
-pub fn termrock::ModalOutcome<T>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<T> core::marker::Freeze for termrock::ModalOutcome<T> where T: core::marker::Freeze
-impl<T> core::marker::Send for termrock::ModalOutcome<T> where T: core::marker::Send
-impl<T> core::marker::Sync for termrock::ModalOutcome<T> where T: core::marker::Sync
-impl<T> core::marker::Unpin for termrock::ModalOutcome<T> where T: core::marker::Unpin
-impl<T> core::marker::UnsafeUnpin for termrock::ModalOutcome<T> where T: core::marker::UnsafeUnpin
-impl<T> core::panic::unwind_safe::RefUnwindSafe for termrock::ModalOutcome<T> where T: core::panic::unwind_safe::RefUnwindSafe
-impl<T> core::panic::unwind_safe::UnwindSafe for termrock::ModalOutcome<T> where T: core::panic::unwind_safe::UnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::ModalOutcome<T> where U: core::convert::From<T>
-pub fn termrock::ModalOutcome<T>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::ModalOutcome<T> where U: core::convert::Into<T>
-pub type termrock::ModalOutcome<T>::Error = core::convert::Infallible
-pub fn termrock::ModalOutcome<T>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::ModalOutcome<T> where U: core::convert::TryFrom<T>
-pub type termrock::ModalOutcome<T>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::ModalOutcome<T>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::ModalOutcome<T> where T: core::clone::Clone
-pub type termrock::ModalOutcome<T>::Owned = T
-pub fn termrock::ModalOutcome<T>::clone_into(&self, &mut T)
-pub fn termrock::ModalOutcome<T>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::ModalOutcome<T> where T: 'static + ?core::marker::Sized
-pub fn termrock::ModalOutcome<T>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::ModalOutcome<T> where T: ?core::marker::Sized
-pub fn termrock::ModalOutcome<T>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::ModalOutcome<T> where T: ?core::marker::Sized
-pub fn termrock::ModalOutcome<T>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::ModalOutcome<T> where T: core::clone::Clone
-pub unsafe fn termrock::ModalOutcome<T>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::ModalOutcome<T>
-pub fn termrock::ModalOutcome<T>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::ModalOutcome<T>
 pub enum termrock::PointerShape
 pub termrock::PointerShape::Default
 pub termrock::PointerShape::EwResize

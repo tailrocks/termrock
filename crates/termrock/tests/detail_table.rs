@@ -4,9 +4,26 @@ use ratatui_core::{
     widgets::StatefulWidget,
 };
 use termrock::{
-    Theme, max_offset,
+    Theme,
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    max_offset,
     widgets::{DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState},
 };
+
+#[test]
+fn keyboard_navigation_and_activation_use_the_state_contract() {
+    let rows = rows();
+    let mut state = DetailTableState::default();
+
+    assert_eq!(
+        state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+        DetailTableOutcome::Selected("copy")
+    );
+    assert_eq!(
+        state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+        DetailTableOutcome::Copy("copy")
+    );
+}
 
 fn rows() -> Vec<DetailRow<'static, &'static str>> {
     vec![
@@ -92,7 +109,7 @@ fn selection_includes_rows_without_capability() {
 }
 
 #[test]
-fn activate_at_on_copyable_row_returns_copy_and_affordance_changes() {
+fn click_on_copyable_row_returns_copy_and_affordance_changes() {
     let rows = rows();
     let theme = Theme::default();
     let area = Rect::new(0, 0, 40, 3);
@@ -106,7 +123,7 @@ fn activate_at_on_copyable_row_returns_copy_and_affordance_changes() {
         .clone();
 
     assert_eq!(
-        state.activate_at(copy.action_area.as_position()),
+        state.click(copy.action_area.as_position()),
         DetailTableOutcome::Copy("copy")
     );
     assert!(before.content().iter().any(|cell| cell.symbol() == "⧉"));
@@ -116,7 +133,7 @@ fn activate_at_on_copyable_row_returns_copy_and_affordance_changes() {
 }
 
 #[test]
-fn activate_link_at_returns_activate_link() {
+fn click_link_returns_activate_link() {
     let rows = rows();
     let theme = Theme::default();
     let mut state = DetailTableState::default();
@@ -129,7 +146,7 @@ fn activate_link_at_returns_activate_link() {
         .value_area;
 
     assert_eq!(
-        state.activate_link_at(link.as_position()),
+        state.click_link(link.as_position()),
         DetailTableOutcome::ActivateLink("link")
     );
 }
@@ -147,8 +164,8 @@ fn hover_tracks_row_id() {
         .unwrap()
         .action_area;
 
-    assert_eq!(state.hover_at(copy.as_position()), Some(&"copy"));
-    assert_eq!(state.hover_at(Position::new(0, 0)), None);
+    assert_eq!(state.hover(copy.as_position()), Some(&"copy"));
+    assert_eq!(state.hover(Position::new(0, 0)), None);
 }
 
 #[test]
@@ -191,29 +208,22 @@ fn clamp_scroll_after_rows_shrink() {
 #[test]
 fn activate_selected_routes_by_capability() {
     let rows = rows();
-    let theme = Theme::default();
-    let table = DetailTable {
-        rows: &rows,
-        label_width: 0,
-        wrap: false,
-        theme: &theme,
-    };
     let mut state = DetailTableState::default();
 
-    assert_eq!(table.activate_selected(&state), DetailTableOutcome::Ignored);
+    assert_eq!(state.activate_selected(&rows), DetailTableOutcome::Ignored);
     state.selected = Some("copy");
     assert_eq!(
-        table.activate_selected(&state),
+        state.activate_selected(&rows),
         DetailTableOutcome::Copy("copy")
     );
     state.selected = Some("link");
     assert_eq!(
-        table.activate_selected(&state),
+        state.activate_selected(&rows),
         DetailTableOutcome::ActivateLink("link")
     );
     state.selected = Some("plain");
     assert_eq!(
-        table.activate_selected(&state),
+        state.activate_selected(&rows),
         DetailTableOutcome::Selected("plain")
     );
 }
