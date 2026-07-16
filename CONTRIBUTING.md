@@ -3,11 +3,18 @@
 Use Conventional Commits and `git commit -s`. Neutral defects reproducible by
 a TermRock story or fixture belong here; reports requiring consumer state,
 wording, or effects belong in that consumer. Cross-repository reports link both
-sides. All work is committed and pushed directly to `main`; do not create
-feature branches or pull requests.
+sides. Reviewed green checkpoints push directly to `main`.
 
-Changes to public APIs must update the API report, component documentation, and
-relevant guides in the same commit. Breaking changes also require a versioned
-`MIGRATING.md` entry with explicit old-to-new mappings and downstream ownership
-changes. After `v0.6.0`, incompatible changes require an intentional version
-decision. Compatibility shims are not a substitute for migration documentation.
+All work is trunk-only: use `main`, never create or publish another branch, and
+never open a pull request. Keep changes small and forward-only, run the relevant
+gates, push every green commit immediately, and verify local `HEAD` equals
+`origin/main`. Never rewrite published history.
+
+Changes to public APIs must update the API report and component documentation in
+the same commit. Breaking changes also update relevant guides, append a numbered
+file under `migrations/` with explicit old-to-new mappings and downstream
+ownership changes, and link it from the ordered `MIGRATING.md` index. After
+`v0.6.0`, `semver-candidate`, `rust-required`, and
+`docs-required` are release gates; incompatible changes require an intentional
+version decision. Compatibility shims are not a substitute for migration
+documentation.

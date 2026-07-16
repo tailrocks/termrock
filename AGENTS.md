@@ -23,8 +23,19 @@ borrowed or projected data where practical, and focused override points instead
 of consumer-specific modes. Do not add product-branded widgets, consumer
 compatibility facades, or copied neutral rendering bodies. When a capability is
 missing, extend or refactor TermRock rather than implementing a local visual
-substitute. Breaking API changes are welcome during the pre-release period when
-they improve the shared design; do not add migration shims.
+substitute.
+
+## Forward-only design
+
+Always optimize for the best current API, component model, and architecture.
+Do not preserve an inferior design merely to reduce downstream migration work:
+AI-assisted consumers can adapt quickly, while compatibility constraints make
+the shared foundation progressively harder to improve. Freely rename, remove,
+restructure, or replace public APIs and concepts when the resulting model is
+clearer, more composable, more reusable, or more correct. Prefer a coherent
+breaking redesign over deprecation layers, parallel old/new paths, or local
+exceptions. Evaluate proposals against the architecture TermRock should have
+next, not the shape it happened to have before.
 
 ## Breaking-change documentation
 
@@ -33,8 +44,9 @@ breaking or dramatic behavioral change must be understandable without reading
 the implementation or commit history. Ship the change and its migration
 documentation together on `main`:
 
-- add a versioned section to `MIGRATING.md` that names the removed API or old
-  concept, its replacement, and the downstream code or ownership change;
+- append one sequentially numbered file under `migrations/` that names the
+  removed API or old concept, its replacement, and the downstream code or
+  ownership change, then link it from the ordered `MIGRATING.md` index;
 - use an old-to-new table when more than one symbol, namespace, state owner, or
   behavior changes;
 - include short before/after Rust examples when a type signature or composition
@@ -44,9 +56,11 @@ documentation together on `main`:
 - update the component catalog, generated API inventory, contract docs, and
   relevant guide pages so they describe only the new design.
 
-Do not add deprecated aliases, compatibility facades, or migration shims. The
-migration document explains the transition; the library exposes the new model
-only. A breaking change is incomplete until this documentation is committed.
+Never rewrite an older migration to represent a newer transition. Do not add
+deprecated aliases, compatibility facades, or migration shims. The ordered
+migration documents explain the transition; the library exposes the new model
+only. A breaking change is incomplete until its new migration file and index
+entry are committed.
 
 Every public widget must be represented by the catalog's generated API
 inventory, contract matrix, documentation, story, and deterministic preview.
