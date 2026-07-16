@@ -440,7 +440,7 @@ impl Lookbook {
                 return self.handle_key(key, tick);
             }
             Event::Resize { .. } | Event::FocusGained | Event::FocusLost => {}
-            Event::Key(_) | Event::Paste | Event::Unknown => {}
+            Event::Key(_) | Event::Paste(_) | Event::Unknown => {}
             _ => {}
         }
         ControlFlow::Continue(())

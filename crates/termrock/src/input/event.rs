@@ -191,7 +191,7 @@ pub struct MouseEvent {
     pub modifiers: KeyModifiers,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 /// Backend-neutral terminal input events.
 pub enum Event {
@@ -199,8 +199,10 @@ pub enum Event {
     Key(KeyEvent),
     /// A terminal mouse event.
     Mouse(MouseEvent),
-    /// A terminal paste event.
-    Paste,
+    /// Bracketed-paste text from the backend.
+    ///
+    /// Multi-line handling belongs to the receiving consumer or widget.
+    Paste(String),
     /// A terminal resize event.
     Resize {
         /// New terminal width in cells.
@@ -212,7 +214,7 @@ pub enum Event {
     FocusGained,
     /// A terminal focus lost event.
     FocusLost,
-    /// A backend event outside the neutral vocabulary.
+    /// A backend event that degrades outside the neutral vocabulary.
     Unknown,
 }
 
@@ -316,13 +318,18 @@ mod adapter {
 
     impl From<crossterm::event::Event> for Event {
         fn from(value: crossterm::event::Event) -> Self {
+            #[allow(
+                unreachable_patterns,
+                reason = "future Crossterm event variants must degrade to Unknown"
+            )]
             match value {
                 crossterm::event::Event::Key(event) => Self::Key(event.into()),
                 crossterm::event::Event::Mouse(event) => Self::Mouse(event.into()),
-                crossterm::event::Event::Paste(_) => Self::Paste,
+                crossterm::event::Event::Paste(text) => Self::Paste(text),
                 crossterm::event::Event::Resize(width, height) => Self::Resize { width, height },
                 crossterm::event::Event::FocusGained => Self::FocusGained,
                 crossterm::event::Event::FocusLost => Self::FocusLost,
+                _ => Self::Unknown,
             }
         }
     }

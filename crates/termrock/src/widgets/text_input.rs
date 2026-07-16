@@ -192,6 +192,41 @@ impl TextInputState {
         }
     }
 
+    /// Inserts pasted text at the cursor using the same constraints as typed
+    /// characters.
+    ///
+    /// A single-line input consumes only the prefix before the first carriage
+    /// return or line feed. Characters beyond `max_graphemes` are ignored.
+    pub fn insert_str(&mut self, text: &str) -> TextInputOutcome {
+        let mut insertion = self.cursor;
+        let mut changed = false;
+        for character in text
+            .chars()
+            .take_while(|character| !matches!(character, '\n' | '\r'))
+        {
+            if character.is_control() {
+                continue;
+            }
+            let mut candidate = self.value.clone();
+            candidate.insert(insertion, character);
+            if self
+                .max_graphemes
+                .is_some_and(|max| candidate.graphemes(true).count() > max)
+            {
+                continue;
+            }
+            self.value = candidate;
+            insertion += character.len_utf8();
+            changed = true;
+        }
+        if changed {
+            self.cursor = boundary_at_or_after(&self.value, insertion);
+            TextInputOutcome::Changed
+        } else {
+            TextInputOutcome::Ignored
+        }
+    }
+
     /// Applies this grapheme-safe edit operation to text-input state.
     pub fn apply(&mut self, action: EditAction) -> bool {
         let before_cursor = self.cursor;
@@ -209,8 +244,9 @@ impl TextInputState {
                 {
                     return false;
                 }
+                let logical_end = self.cursor + character.len_utf8();
                 self.value = candidate;
-                self.cursor += character.len_utf8();
+                self.cursor = boundary_at_or_after(&self.value, logical_end);
             }
             EditAction::Backspace => {
                 if let Some((index, _)) =
@@ -268,6 +304,15 @@ impl TextInputState {
             self.viewport += grapheme.len();
         }
     }
+}
+
+fn boundary_at_or_after(value: &str, byte: usize) -> usize {
+    value
+        .grapheme_indices(true)
+        .map(|(index, _)| index)
+        .chain(core::iter::once(value.len()))
+        .find(|boundary| *boundary >= byte)
+        .unwrap_or(value.len())
 }
 
 #[derive(Debug, Clone, Copy)]

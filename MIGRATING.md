@@ -35,6 +35,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0019 | `v0.11.0` | [Bounded LogPane scrollback](migrations/0019-v0.11.0-bounded-log-pane-scrollback.md) |
 | 0020 | `v0.11.0` | [Explicit LogPane oldest navigation](migrations/0020-v0.11.0-log-pane-oldest-navigation.md) |
 | 0021 | `v0.11.0` | [Responsive Progress percentage](migrations/0021-v0.11.0-responsive-progress-percentage.md) |
+| 0022 | `v0.11.0` | [Paste payloads in neutral events](migrations/0022-v0.11.0-paste-payload.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

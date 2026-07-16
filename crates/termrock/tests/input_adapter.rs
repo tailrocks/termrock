@@ -162,3 +162,57 @@ fn release_events_are_ignored() {
     assert_eq!(list.handle_key(&rows, key), Outcome::Ignored);
     assert_eq!(dialog.handle_key(&actions, key), Outcome::Ignored);
 }
+
+#[test]
+fn paste_carries_unicode_text() {
+    let Event::Paste(text) = Event::from(crossterm::event::Event::Paste("héllo🧪".to_owned()))
+    else {
+        panic!("paste remains paste input");
+    };
+    assert_eq!(text, "héllo🧪");
+}
+
+#[test]
+fn text_input_inserts_paste_at_a_grapheme_boundary() {
+    let mut input = TextInputState::new("a🧪z");
+    assert!(input.set_cursor_byte(1));
+
+    assert_eq!(input.insert_str("界e\u{301}"), TextInputOutcome::Changed);
+    assert_eq!(input.value(), "a界e\u{301}🧪z");
+    assert_eq!(input.cursor_byte(), "a界e\u{301}".len());
+    assert!(input.set_cursor_byte(input.cursor_byte()));
+}
+
+#[test]
+fn text_input_truncates_multiline_paste_at_the_first_line_break() {
+    let mut input = TextInputState::new("start:");
+    assert_eq!(
+        input.insert_str("first\r\nsecond"),
+        TextInputOutcome::Changed
+    );
+    assert_eq!(input.value(), "start:first");
+}
+
+#[test]
+fn text_input_paste_honors_max_graphemes() {
+    let mut input = TextInputState::new("a").with_max_graphemes(3);
+    assert_eq!(input.insert_str("界🧪overflow"), TextInputOutcome::Changed);
+    assert_eq!(input.value(), "a界🧪");
+}
+
+#[test]
+fn text_input_paste_repairs_global_grapheme_boundaries() {
+    let mut combining = TextInputState::new("\u{301}x");
+    assert!(combining.set_cursor_byte(0));
+    assert_eq!(combining.insert_str("eb"), TextInputOutcome::Changed);
+    assert_eq!(combining.value(), "eb\u{301}x");
+    assert_eq!(combining.cursor_byte(), "eb\u{301}".len());
+    assert!(combining.set_cursor_byte(combining.cursor_byte()));
+
+    let mut zwj = TextInputState::new("👩👩");
+    assert!(zwj.set_cursor_byte("👩".len()));
+    assert_eq!(zwj.insert_str("\u{200d}👧"), TextInputOutcome::Changed);
+    assert_eq!(zwj.value(), "👩\u{200d}👧👩");
+    assert_eq!(zwj.cursor_byte(), "👩\u{200d}👧".len());
+    assert!(zwj.set_cursor_byte(zwj.cursor_byte()));
+}

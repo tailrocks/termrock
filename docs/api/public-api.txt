@@ -92,7 +92,7 @@ pub termrock::input::Event::FocusGained
 pub termrock::input::Event::FocusLost
 pub termrock::input::Event::Key(termrock::input::KeyEvent)
 pub termrock::input::Event::Mouse(termrock::input::MouseEvent)
-pub termrock::input::Event::Paste
+pub termrock::input::Event::Paste(alloc::string::String)
 pub termrock::input::Event::Resize
 pub termrock::input::Event::Resize::height: u16
 pub termrock::input::Event::Resize::width: u16
@@ -108,7 +108,6 @@ impl core::fmt::Debug for termrock::input::Event
 pub fn termrock::input::Event::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for termrock::input::Event
 pub fn termrock::input::Event::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::input::Event
 impl core::marker::StructuralPartialEq for termrock::input::Event
 impl core::marker::Freeze for termrock::input::Event
 impl core::marker::Send for termrock::input::Event
@@ -5627,6 +5626,7 @@ impl termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::apply(&mut self, termrock::widgets::EditAction) -> bool
 pub const fn termrock::widgets::TextInputState::cursor_byte(&self) -> usize
 pub fn termrock::widgets::TextInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::TextInputOutcome
+pub fn termrock::widgets::TextInputState::insert_str(&mut self, &str) -> termrock::widgets::TextInputOutcome
 pub fn termrock::widgets::TextInputState::is_valid(&self) -> bool
 pub fn termrock::widgets::TextInputState::new(impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::widgets::TextInputState::set_cursor_byte(&mut self, usize) -> bool

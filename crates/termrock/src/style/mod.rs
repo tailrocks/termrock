@@ -170,6 +170,71 @@ pub enum Role {
     DiffRemoved,
 }
 
+macro_rules! every_role {
+    ($macro:ident) => {
+        $macro! {
+            Canvas,
+            Surface,
+            Elevated,
+            Backdrop,
+            Text,
+            TextStrong,
+            TextMuted,
+            TextDisabled,
+            Border,
+            BorderFocused,
+            Selection,
+            Focus,
+            Accent,
+            Success,
+            Warning,
+            Danger,
+            Info,
+            Link,
+            LinkHover,
+            Input,
+            InputInvalid,
+            ScrollTrack,
+            ScrollThumb,
+            TabActive,
+            TabInactive,
+            TabActiveHovered,
+            TabInactiveHovered,
+            TabUnderlineFocused,
+            TabUnderlineUnfocused,
+            HintKey,
+            HintText,
+            HintDim,
+            HintSeparator,
+            ActionFocused,
+            ActionDisabled,
+            StatusBar,
+            DiffAdded,
+            DiffRemoved
+        }
+    };
+}
+
+macro_rules! role_array {
+    ($($role:ident),+ $(,)?) => {
+        [$(Role::$role),+]
+    };
+}
+
+#[cfg(test)]
+macro_rules! define_role_exhaustiveness_guard {
+    ($($role:ident),+ $(,)?) => {
+        const fn role_is_declared(role: Role) {
+            match role {
+                $(Role::$role => {}),+
+            }
+        }
+    };
+}
+
+#[cfg(test)]
+every_role!(define_role_exhaustiveness_guard);
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Semantic style roles used by every TermRock widget.
 ///
@@ -322,46 +387,7 @@ impl Theme {
     /// Return every semantic role in stable positional order.
     #[must_use]
     pub const fn roles() -> [Role; 38] {
-        [
-            Role::Canvas,
-            Role::Surface,
-            Role::Elevated,
-            Role::Backdrop,
-            Role::Text,
-            Role::TextStrong,
-            Role::TextMuted,
-            Role::TextDisabled,
-            Role::Border,
-            Role::BorderFocused,
-            Role::Selection,
-            Role::Focus,
-            Role::Accent,
-            Role::Success,
-            Role::Warning,
-            Role::Danger,
-            Role::Info,
-            Role::Link,
-            Role::LinkHover,
-            Role::Input,
-            Role::InputInvalid,
-            Role::ScrollTrack,
-            Role::ScrollThumb,
-            Role::TabActive,
-            Role::TabInactive,
-            Role::TabActiveHovered,
-            Role::TabInactiveHovered,
-            Role::TabUnderlineFocused,
-            Role::TabUnderlineUnfocused,
-            Role::HintKey,
-            Role::HintText,
-            Role::HintDim,
-            Role::HintSeparator,
-            Role::ActionFocused,
-            Role::ActionDisabled,
-            Role::StatusBar,
-            Role::DiffAdded,
-            Role::DiffRemoved,
-        ]
+        every_role!(role_array)
     }
 
     #[must_use]
@@ -385,7 +411,9 @@ mod tests {
     fn roles_cover_the_positional_theme_array() {
         let roles = Theme::roles();
         assert_eq!(roles.len(), 38);
+        assert_eq!(Role::DiffRemoved as usize, roles.len() - 1);
         for (index, role) in roles.into_iter().enumerate() {
+            role_is_declared(role);
             assert_eq!(role as usize, index);
         }
     }
@@ -447,6 +475,111 @@ mod tests {
             Role::DiffRemoved,
         ] {
             assert_ne!(slate.style(role), phosphor.style(role), "{role:?}");
+        }
+    }
+
+    #[test]
+    fn phosphor_preset_pins_load_bearing_role_values() {
+        let theme = Theme::tailrocks_phosphor();
+        let expected = [
+            (Role::Text, Style::new().fg(Color::Rgb(255, 255, 255))),
+            (Role::Border, Style::new().fg(Color::Rgb(80, 80, 80))),
+            (Role::BorderFocused, Style::new().fg(Color::Rgb(0, 255, 65))),
+            (
+                Role::Selection,
+                Style::new().bg(Color::Rgb(0, 255, 65)).fg(Color::Black),
+            ),
+            (Role::Success, Style::new().fg(Color::Rgb(0, 255, 65))),
+            (Role::Warning, Style::new().fg(Color::Rgb(255, 216, 94))),
+            (
+                Role::Danger,
+                Style::new()
+                    .fg(Color::Rgb(255, 94, 122))
+                    .add_modifier(Modifier::BOLD),
+            ),
+            (Role::Link, Style::new().fg(Color::Rgb(0, 200, 200))),
+            (Role::Input, Style::new().bg(Color::Rgb(20, 24, 22))),
+            (Role::ScrollThumb, Style::new().fg(Color::Rgb(0, 255, 65))),
+            (
+                Role::TabActive,
+                Style::new()
+                    .fg(Color::Rgb(255, 255, 255))
+                    .bg(Color::Rgb(42, 42, 42)),
+            ),
+            (
+                Role::HintKey,
+                Style::new()
+                    .fg(Color::Rgb(255, 255, 255))
+                    .add_modifier(Modifier::BOLD),
+            ),
+            (
+                Role::DiffAdded,
+                Style::new()
+                    .fg(Color::Rgb(0, 255, 65))
+                    .bg(Color::Rgb(20, 50, 20)),
+            ),
+            (
+                Role::DiffRemoved,
+                Style::new()
+                    .fg(Color::Rgb(255, 94, 122))
+                    .bg(Color::Rgb(60, 20, 20)),
+            ),
+        ];
+        for (role, expected) in expected {
+            assert_eq!(theme.style(role), expected, "{role:?}");
+        }
+    }
+
+    #[test]
+    fn slate_preset_pins_load_bearing_role_values() {
+        let theme = Theme::slate();
+        let expected = [
+            (Role::Text, Style::new().fg(Color::Rgb(226, 232, 240))),
+            (Role::Border, Style::new().fg(Color::Rgb(71, 85, 105))),
+            (
+                Role::BorderFocused,
+                Style::new().fg(Color::Rgb(96, 165, 250)),
+            ),
+            (
+                Role::Selection,
+                Style::new()
+                    .fg(Color::Rgb(226, 232, 240))
+                    .bg(Color::Rgb(30, 64, 175)),
+            ),
+            (Role::Success, Style::new().fg(Color::Rgb(74, 222, 128))),
+            (Role::Warning, Style::new().fg(Color::Rgb(251, 191, 36))),
+            (
+                Role::Danger,
+                Style::new().fg(Color::Rgb(248, 113, 113)).bold(),
+            ),
+            (Role::Link, Style::new().fg(Color::Rgb(125, 211, 252))),
+            (Role::Input, Style::new().bg(Color::Rgb(30, 41, 59))),
+            (Role::ScrollThumb, Style::new().fg(Color::Rgb(96, 165, 250))),
+            (
+                Role::TabActive,
+                Style::new()
+                    .fg(Color::Rgb(226, 232, 240))
+                    .bg(Color::Rgb(51, 65, 85)),
+            ),
+            (
+                Role::HintKey,
+                Style::new().fg(Color::Rgb(226, 232, 240)).bold(),
+            ),
+            (
+                Role::DiffAdded,
+                Style::new()
+                    .fg(Color::Rgb(134, 239, 172))
+                    .bg(Color::Rgb(20, 83, 45)),
+            ),
+            (
+                Role::DiffRemoved,
+                Style::new()
+                    .fg(Color::Rgb(252, 165, 165))
+                    .bg(Color::Rgb(127, 29, 29)),
+            ),
+        ];
+        for (role, expected) in expected {
+            assert_eq!(theme.style(role), expected, "{role:?}");
         }
     }
 }
