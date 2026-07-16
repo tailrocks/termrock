@@ -37,6 +37,30 @@ for (const [component, review] of Object.entries(contracts)) {
   }
 }
 
+// Base stories for these widgets already demonstrate the axis by construction;
+// all other `covered` claims require a named axis story.
+const NARROW_EXEMPT = new Set([
+  'ActionBar', 'Backdrop', 'ChoiceDialog', 'DetailTable', 'DiffView', 'HintBar',
+  'LogPane', 'MessageDialog', 'Panel', 'Progress', 'SplitPane', 'TextInput',
+  'Tree', 'Viewport',
+])
+const UNICODE_EXEMPT = new Set([
+  'ActionBar', 'ChoiceDialog', 'Dialog', 'DiffView', 'Form', 'HintBar',
+  'LogPane', 'MessageDialog', 'Panel', 'Progress', 'StatusBar', 'Tabs', 'Toast',
+  'Tree', 'Viewport',
+])
+function hasAxisStory(component: string, axis: 'narrow' | 'unicode') {
+  return stories.some((story) => story.component === component && story.id.split('/').includes(axis))
+}
+for (const [component, review] of Object.entries(contracts)) {
+  if (review.narrowTerminal === 'covered' && !NARROW_EXEMPT.has(component) && !hasAxisStory(component, 'narrow')) {
+    throw new Error(`${component} claims narrowTerminal covered without a /narrow story`)
+  }
+  if (review.unicode === 'covered' && !UNICODE_EXEMPT.has(component) && !hasAxisStory(component, 'unicode')) {
+    throw new Error(`${component} claims unicode covered without a /unicode story`)
+  }
+}
+
 const docsDir = join(root, 'docs', 'content', 'docs')
 const docs = readdirSync(docsDir).filter((name) => name.endsWith('.mdx')).map((name) => readFileSync(join(docsDir, name), 'utf8')).join('\n')
 for (const story of stories) {

@@ -33,6 +33,9 @@ use crate::interactors::{
 type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
 type InteractorFactory = fn(RenderFn) -> Box<dyn StoryInteraction>;
 
+pub(crate) const SPLIT_PANE_MIN: u16 = 12;
+pub(crate) const SPLIT_PANE_MAX: u16 = 16;
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Story {
     pub id: &'static str,
@@ -307,6 +310,87 @@ pub(crate) fn stories() -> Vec<Story> {
             7,
             viewport,
         ),
+        Story::new(
+            "list/narrow",
+            "Narrow list",
+            "List",
+            "Narrow-terminal clipping and metadata priority.",
+            14,
+            6,
+            list,
+        ),
+        Story::new(
+            "tabs/narrow",
+            "Narrow tabs",
+            "Tabs",
+            "Narrow-terminal tab clipping and selection cues.",
+            16,
+            2,
+            tabs,
+        ),
+        Story::new(
+            "form/narrow",
+            "Narrow form",
+            "Form",
+            "Responsive single-column form at narrow width.",
+            24,
+            12,
+            form,
+        ),
+        Story::new(
+            "status-bar/narrow",
+            "Narrow status bar",
+            "StatusBar",
+            "Priority-based slot elision at narrow width.",
+            20,
+            1,
+            status_bar,
+        ),
+        Story::new(
+            "dialog/narrow",
+            "Narrow dialog",
+            "Dialog",
+            "Responsive dialog shell at narrow width.",
+            20,
+            7,
+            dialog,
+        ),
+        Story::new(
+            "toast/narrow",
+            "Narrow toast",
+            "Toast",
+            "Bounded transient message at narrow width.",
+            16,
+            4,
+            toast,
+        ),
+        Story::new(
+            "list/unicode",
+            "Unicode list",
+            "List",
+            "CJK, emoji, and combining-mark row geometry.",
+            28,
+            5,
+            list_unicode,
+        ),
+        Story::new(
+            "text-input/unicode",
+            "Unicode text input",
+            "TextInput",
+            "Wide and combining graphemes with a mid-string cursor.",
+            28,
+            1,
+            text_input_unicode,
+        ),
+        Story::new(
+            "detail-table/unicode",
+            "Unicode detail table",
+            "DetailTable",
+            "CJK labels and emoji values under wrapping.",
+            30,
+            6,
+            detail_table_unicode,
+        ),
     ]
 }
 
@@ -452,7 +536,12 @@ pub(crate) fn render_split_pane(
     state: &mut SplitPaneState,
     theme: &Theme,
 ) {
-    let split = SplitPane::new(SplitDirection::Horizontal, 12, 16, theme);
+    let split = SplitPane::new(
+        SplitDirection::Horizontal,
+        SPLIT_PANE_MIN,
+        SPLIT_PANE_MAX,
+        theme,
+    );
     let layout = split.layout(area, state);
     if !layout.first.is_empty() {
         frame.render_widget(
@@ -550,6 +639,34 @@ fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&List::new(&rows, theme), area, &mut state);
 }
 
+fn list_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let rows = [
+        ListRow {
+            id: "cjk",
+            label: Line::from("東京 設定"),
+            trailing: Some(Line::from("日本語")),
+            role: RowRole::Item,
+            enabled: true,
+        },
+        ListRow {
+            id: "emoji",
+            label: Line::from("🧪 Laboratory"),
+            trailing: Some(Line::from("✅")),
+            role: RowRole::Item,
+            enabled: true,
+        },
+        ListRow {
+            id: "combining",
+            label: Line::from("Cafe\u{301} profile"),
+            trailing: Some(Line::from("e\u{301}")),
+            role: RowRole::Item,
+            enabled: true,
+        },
+    ];
+    let mut state = ListState::new(Some("cjk"));
+    frame.render_stateful_widget(&List::new(&rows, theme), area, &mut state);
+}
+
 pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
     [
         ListRow {
@@ -599,6 +716,16 @@ fn text_input(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&List::new(&rows, theme), list_area, &mut list_state);
 }
 
+fn text_input_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = TextInputState::new("東京🧪 Cafe\u{301}");
+    assert!(state.set_cursor_byte("東京".len()));
+    frame.render_stateful_widget(
+        &TextInput::new("Query", theme).validation(Validation::Valid),
+        area,
+        &mut state,
+    );
+}
+
 pub(crate) fn picker_rows(query: &str) -> Vec<ListRow<'static, &'static str>> {
     let query = query.to_ascii_lowercase();
     [
@@ -643,6 +770,35 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = DetailTableState::default();
     frame.render_stateful_widget(
         &DetailTable::new(&rows, theme).label_width(14).wrap(true),
+        area,
+        &mut state,
+    );
+}
+
+fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let rows = [
+        DetailRow {
+            id: "region",
+            label: "地域",
+            value: "東京 🇯🇵",
+            href: None,
+            capability: DetailCapability::None,
+            emphasis: true,
+            style: None,
+        },
+        DetailRow {
+            id: "status",
+            label: "状態",
+            value: "準備完了 ✅ Cafe\u{301}",
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: false,
+            style: None,
+        },
+    ];
+    let mut state = DetailTableState::default();
+    frame.render_stateful_widget(
+        &DetailTable::new(&rows, theme).label_width(8).wrap(true),
         area,
         &mut state,
     );

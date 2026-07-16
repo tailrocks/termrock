@@ -37,3 +37,8 @@ panel's border contract.
 - `Viewport`: borrowed lines with bounded two-axis scroll state. Story `viewport/both-axes`.
 
 All widgets tolerate empty and narrow rectangles. Disabled items are not hit targets. Mouse regions derive from painted geometry. Consumers own navigation policy and dialog stacking. The reviewed contract matrix in `docs/api/component-contracts.json` classifies keyboard, mouse, focus, non-color, Unicode, and narrow-terminal responsibility for every widget derived from the public API report; the catalog gate rejects missing or stale classifications.
+
+Contract-axis previews make those classifications executable. Narrow stories:
+`list/narrow`, `tabs/narrow`, `form/narrow`, `status-bar/narrow`,
+`dialog/narrow`, and `toast/narrow`. Unicode stories: `list/unicode`,
+`text-input/unicode`, and `detail-table/unicode`.

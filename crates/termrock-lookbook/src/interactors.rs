@@ -3,7 +3,7 @@
 
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Position, Rect},
     widgets::Paragraph,
 };
 use termrock::{
@@ -22,9 +22,31 @@ use crate::knobs::{Knob, KnobValue};
 use crate::picker::{PickerOutcome, PickerState};
 
 use crate::stories::{
-    choice_actions, form_fields, list_rows, picker_rows, render_choice_dialog, render_split_pane,
-    tree_nodes,
+    SPLIT_PANE_MAX, SPLIT_PANE_MIN, choice_actions, form_fields, list_rows, picker_rows,
+    render_choice_dialog, render_split_pane, tree_nodes,
 };
+
+trait PointerTarget {
+    fn hover_at(&mut self, position: Position) -> bool;
+    fn click_at(&mut self, position: Position) -> bool;
+    fn drag_to(&mut self, position: Position) -> bool;
+    fn wheel(&mut self, delta: isize) -> bool;
+}
+
+fn route_pointer(target: &mut impl PointerTarget, mouse: MouseEvent, preview_area: Rect) -> bool {
+    let position = mouse.position;
+    if !preview_area.contains(position) {
+        return target.hover_at(position);
+    }
+    match mouse.kind {
+        MouseEventKind::Moved => target.hover_at(position),
+        MouseEventKind::Down(MouseButton::Left) => target.click_at(position),
+        MouseEventKind::Drag(MouseButton::Left) => target.drag_to(position),
+        MouseEventKind::ScrollUp => target.wheel(-1),
+        MouseEventKind::ScrollDown => target.wheel(1),
+        _ => false,
+    }
+}
 
 pub(crate) trait StoryInteraction {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect);
@@ -139,31 +161,28 @@ impl StoryInteraction for ListInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        let position = mouse.position;
-        if !preview_area.contains(position) {
-            let changed = self.state.hovered.is_some();
-            self.state.hover(position);
-            return changed;
-        }
-        match mouse.kind {
-            MouseEventKind::Moved => {
-                self.state.hover(position);
-                true
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                !matches!(self.state.click(position), Outcome::Ignored)
-            }
-            MouseEventKind::Drag(MouseButton::Left) => {
-                self.state.scroll_to_position(position, list_rows().len())
-            }
-            MouseEventKind::ScrollUp => self.state.scroll_by(-1, list_rows().len()),
-            MouseEventKind::ScrollDown => self.state.scroll_by(1, list_rows().len()),
-            _ => false,
-        }
+        route_pointer(self, mouse, preview_area)
     }
 
     fn set_theme(&mut self, theme: Theme) {
         self.theme = theme;
+    }
+}
+
+impl PointerTarget for ListInteractor {
+    fn hover_at(&mut self, position: Position) -> bool {
+        let before = self.state.hovered;
+        self.state.hover(position);
+        self.state.hovered != before
+    }
+    fn click_at(&mut self, position: Position) -> bool {
+        !matches!(self.state.click(position), Outcome::Ignored)
+    }
+    fn drag_to(&mut self, position: Position) -> bool {
+        self.state.scroll_to_position(position, list_rows().len())
+    }
+    fn wheel(&mut self, delta: isize) -> bool {
+        self.state.scroll_by(delta, list_rows().len())
     }
 }
 
@@ -320,38 +339,30 @@ impl StoryInteraction for TreeInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        let position = mouse.position;
-        if !preview_area.contains(position) {
-            let changed = self.state.hovered().is_some();
-            self.state.hover(position);
-            return changed;
-        }
-        match mouse.kind {
-            MouseEventKind::Moved => {
-                self.state.hover(position);
-                true
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                self.state.scroll_to_position(position, self.nodes.len())
-                    || !matches!(self.state.click(position), TreeOutcome::Ignored)
-            }
-            MouseEventKind::Drag(MouseButton::Left) => {
-                self.state.scroll_to_position(position, self.nodes.len())
-            }
-            MouseEventKind::ScrollUp => {
-                self.state.scroll_by(-1, self.nodes.len());
-                true
-            }
-            MouseEventKind::ScrollDown => {
-                self.state.scroll_by(1, self.nodes.len());
-                true
-            }
-            _ => false,
-        }
+        route_pointer(self, mouse, preview_area)
     }
 
     fn set_theme(&mut self, theme: Theme) {
         self.theme = theme;
+    }
+}
+
+impl PointerTarget for TreeInteractor {
+    fn hover_at(&mut self, position: Position) -> bool {
+        let before = self.state.hovered().cloned();
+        self.state.hover(position);
+        self.state.hovered() != before.as_ref()
+    }
+    fn click_at(&mut self, position: Position) -> bool {
+        self.state.scroll_to_position(position, self.nodes.len())
+            || !matches!(self.state.click(position), TreeOutcome::Ignored)
+    }
+    fn drag_to(&mut self, position: Position) -> bool {
+        self.state.scroll_to_position(position, self.nodes.len())
+    }
+    fn wheel(&mut self, delta: isize) -> bool {
+        self.state.scroll_by(delta, self.nodes.len());
+        true
     }
 }
 
@@ -371,6 +382,8 @@ impl FormInteractor {
 
 impl StoryInteraction for FormInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        // FormSection borrows its fields, so storing both in the interactor
+        // would be self-referential. Rebuild this tiny fixture at each call.
         let fields = form_fields();
         let sections = [FormSection {
             title: ratatui::text::Line::from("General"),
@@ -389,38 +402,31 @@ impl StoryInteraction for FormInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        let position = mouse.position;
-        if !preview_area.contains(position) {
-            let changed = self.state.hovered().is_some();
-            self.state.hover(position);
-            return changed;
-        }
-        match mouse.kind {
-            MouseEventKind::Moved => {
-                self.state.hover(position);
-                true
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                self.state.scroll_to_position(position)
-                    || !matches!(self.state.click(position), FormOutcome::Ignored)
-            }
-            MouseEventKind::Drag(MouseButton::Left) => self.state.scroll_to_position(position),
-            MouseEventKind::ScrollUp => {
-                let content_len = self.state.content_height();
-                self.state.scroll_by(-1, content_len);
-                true
-            }
-            MouseEventKind::ScrollDown => {
-                let content_len = self.state.content_height();
-                self.state.scroll_by(1, content_len);
-                true
-            }
-            _ => false,
-        }
+        route_pointer(self, mouse, preview_area)
     }
 
     fn set_theme(&mut self, theme: Theme) {
         self.theme = theme;
+    }
+}
+
+impl PointerTarget for FormInteractor {
+    fn hover_at(&mut self, position: Position) -> bool {
+        let before = self.state.hovered().cloned();
+        self.state.hover(position);
+        self.state.hovered() != before.as_ref()
+    }
+    fn click_at(&mut self, position: Position) -> bool {
+        self.state.scroll_to_position(position)
+            || !matches!(self.state.click(position), FormOutcome::Ignored)
+    }
+    fn drag_to(&mut self, position: Position) -> bool {
+        self.state.scroll_to_position(position)
+    }
+    fn wheel(&mut self, delta: isize) -> bool {
+        let content_len = self.state.content_height();
+        self.state.scroll_by(delta, content_len);
+        true
     }
 }
 
@@ -444,7 +450,12 @@ impl StoryInteraction for SplitPaneInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let split = SplitPane::new(SplitDirection::Horizontal, 12, 16, &self.theme);
+        let split = SplitPane::new(
+            SplitDirection::Horizontal,
+            SPLIT_PANE_MIN,
+            SPLIT_PANE_MAX,
+            &self.theme,
+        );
         !matches!(
             self.state.handle_key(&split, key),
             SplitPaneOutcome::Ignored
@@ -453,7 +464,12 @@ impl StoryInteraction for SplitPaneInteractor {
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
         let position = mouse.position;
-        let split = SplitPane::new(SplitDirection::Horizontal, 12, 16, &self.theme);
+        let split = SplitPane::new(
+            SplitDirection::Horizontal,
+            SPLIT_PANE_MIN,
+            SPLIT_PANE_MAX,
+            &self.theme,
+        );
         match mouse.kind {
             MouseEventKind::Moved => self.state.hover(&split, position),
             MouseEventKind::Down(MouseButton::Left) => !matches!(
