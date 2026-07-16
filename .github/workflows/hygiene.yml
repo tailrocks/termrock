@@ -9,6 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
-      - run: cargo deny check advisories
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo deny check advisories bans licenses sources
       - run: cargo tree --workspace --locked
       - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews

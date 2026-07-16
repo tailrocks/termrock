@@ -9,6 +9,7 @@ jobs:
       - uses: jdx/mise-action@v2
         with: { install: false }
       - run: mise install rust
+      - uses: Swatinem/rust-cache@v2
       - run: mise install bun
       - working-directory: docs
         run: bun install --frozen-lockfile
