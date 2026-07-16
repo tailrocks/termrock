@@ -210,16 +210,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if first == OsStr::new("render") {
-        if args.next().as_deref() != Some(OsStr::new("--out")) {
-            return Err("usage: termrock-lookbook render --out <dir>".into());
+        let usage = "usage: termrock-lookbook render [--theme <phosphor|slate>] --out <dir>";
+        let mut out_dir = None;
+        let mut theme = None;
+        while let Some(flag) = args.next() {
+            if flag == OsStr::new("--out") && out_dir.is_none() {
+                out_dir = args.next().map(PathBuf::from);
+            } else if flag == OsStr::new("--theme") && theme.is_none() {
+                theme = match args.next().as_deref() {
+                    Some(value) if value == OsStr::new("phosphor") => Some(Theme::default()),
+                    Some(value) if value == OsStr::new("slate") => Some(Theme::slate()),
+                    _ => return Err(usage.into()),
+                };
+            } else {
+                return Err(usage.into());
+            }
         }
-        let Some(dir) = args.next() else {
-            return Err("usage: termrock-lookbook render --out <dir>".into());
+        let Some(out_dir) = out_dir else {
+            return Err(usage.into());
         };
-        if args.next().is_some() {
-            return Err("usage: termrock-lookbook render --out <dir>".into());
-        }
-        return write_svgs(PathBuf::from(dir));
+        return write_svgs(out_dir, &theme.unwrap_or_default());
     }
 
     if first == OsStr::new("check") {
@@ -743,8 +753,8 @@ impl Drop for TerminalGuard {
 #[cfg(test)]
 mod tests;
 
-fn write_svgs(out_dir: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-    for path in write_story_svgs(&out_dir)? {
+fn write_svgs(out_dir: PathBuf, theme: &Theme) -> Result<(), Box<dyn std::error::Error>> {
+    for path in write_story_svgs(&out_dir, theme)? {
         let mut stdout = io::stdout().lock();
         drop(io::Write::write_fmt(
             &mut stdout,

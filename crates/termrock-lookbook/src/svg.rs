@@ -20,7 +20,7 @@ use ratatui::{
     style::{Color, Style},
     widgets::{Block, Clear},
 };
-use termrock::theme::PREVIEW_CARD;
+use termrock::{Theme, theme::PREVIEW_CARD};
 
 use crate::stories::{Story, stories};
 
@@ -40,7 +40,7 @@ fn stderr_line(args: Arguments<'_>) {
 }
 
 /// Render the story into a ratatui test buffer and return it.
-pub(crate) fn render_story_to_buffer(story: Story) -> Buffer {
+pub(crate) fn render_story_to_buffer(story: Story, theme: &Theme) -> Buffer {
     let width = story.width.saturating_add(STORY_PAD * 2);
     let height = story.height.saturating_add(STORY_PAD * 2);
     let backend = TestBackend::new(width, height);
@@ -67,7 +67,7 @@ pub(crate) fn render_story_to_buffer(story: Story) -> Buffer {
         // renders on the same surface as the real app, with PREVIEW_CARD only
         // as the surround — identical to the interactive preview.
         frame.render_widget(Clear, inner);
-        story.render(frame, inner);
+        story.render(frame, inner, theme);
     }) {
         Ok(_) => {}
         Err(error) => match error {},
@@ -77,8 +77,8 @@ pub(crate) fn render_story_to_buffer(story: Story) -> Buffer {
 
 /// Render the story to an SVG string.
 #[must_use]
-pub(crate) fn render_story_to_svg(story: Story) -> String {
-    let buffer = render_story_to_buffer(story);
+pub(crate) fn render_story_to_svg(story: Story, theme: &Theme) -> String {
+    let buffer = render_story_to_buffer(story, theme);
     buffer_to_svg(&buffer, story.title)
 }
 
@@ -89,13 +89,16 @@ pub(crate) fn story_svg_filename(story: Story) -> String {
 }
 
 /// Write all story SVGs to `out_dir`, creating it if needed.
-pub(crate) fn write_story_svgs(out_dir: impl AsRef<Path>) -> io::Result<Vec<PathBuf>> {
+pub(crate) fn write_story_svgs(
+    out_dir: impl AsRef<Path>,
+    theme: &Theme,
+) -> io::Result<Vec<PathBuf>> {
     let out_dir = out_dir.as_ref();
     fs::create_dir_all(out_dir)?;
     let mut paths = Vec::new();
     for story in stories() {
         let path = out_dir.join(story_svg_filename(story));
-        fs::write(&path, render_story_to_svg(story))?;
+        fs::write(&path, render_story_to_svg(story, theme))?;
         paths.push(path);
     }
     let manifest = stories()
@@ -116,6 +119,7 @@ pub(crate) fn write_story_svgs(out_dir: impl AsRef<Path>) -> io::Result<Vec<Path
 /// Check that all SVGs in `dir` are current. Prints a success message and
 /// returns `Ok(())` when they match; returns `Err` with failure details otherwise.
 pub(crate) fn check_svgs(dir: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    let theme = Theme::default();
     let expected = expected_svg_names();
     let actual = actual_svg_names(&dir)?;
     let mut failures = Vec::new();
@@ -134,7 +138,7 @@ pub(crate) fn check_svgs(dir: PathBuf) -> Result<(), Box<dyn std::error::Error>>
             continue;
         }
         let committed = fs::read_to_string(&path)?;
-        let rendered = render_story_to_svg(story);
+        let rendered = render_story_to_svg(story, &theme);
         if committed != rendered {
             failures.push(format!("generated preview is stale: {}", path.display()));
         }
@@ -255,7 +259,7 @@ fn escape_xml(value: &str) -> String {
     reason = "debug helper kept for snapshot triage outside normal lookbook flow"
 )]
 pub(crate) fn render_story_to_text(story: Story) -> String {
-    let buffer = render_story_to_buffer(story);
+    let buffer = render_story_to_buffer(story, &Theme::default());
     let mut out = String::new();
     for y in 0..story.height {
         for x in 0..story.width {

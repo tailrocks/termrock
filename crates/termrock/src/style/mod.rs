@@ -175,6 +175,73 @@ impl Theme {
         }
     }
 
+    /// Cool-gray neutrality proof and rebranding reference.
+    ///
+    /// Consumers can copy this preset into their application and adjust its
+    /// role mappings without depending on TermRock's default design language.
+    #[must_use]
+    pub fn slate() -> Self {
+        let canvas = Color::Rgb(15, 23, 42);
+        let surface = Color::Rgb(30, 41, 59);
+        let elevated = Color::Rgb(51, 65, 85);
+        let text = Color::Rgb(226, 232, 240);
+        let muted = Color::Rgb(148, 163, 184);
+        let disabled = Color::Rgb(100, 116, 139);
+        let border = Color::Rgb(71, 85, 105);
+        let accent = Color::Rgb(96, 165, 250);
+        let selection = Color::Rgb(30, 64, 175);
+        let success = Color::Rgb(74, 222, 128);
+        let warning = Color::Rgb(251, 191, 36);
+        let danger = Color::Rgb(248, 113, 113);
+        let info = Color::Rgb(56, 189, 248);
+
+        Self {
+            roles: [
+                Style::new().bg(canvas),
+                Style::new().bg(surface),
+                Style::new().bg(elevated),
+                Style::new().bg(Color::Rgb(2, 6, 23)),
+                Style::new().fg(text).bold(),
+                Style::new().fg(muted),
+                Style::new().fg(disabled).dim(),
+                Style::new().fg(border),
+                Style::new().fg(accent),
+                Style::new().fg(text).bg(selection),
+                Style::new().fg(accent),
+                Style::new().fg(accent),
+                Style::new().fg(success),
+                Style::new().fg(warning),
+                Style::new().fg(danger).bold(),
+                Style::new().fg(info),
+                Style::new().fg(Color::Rgb(125, 211, 252)),
+                Style::new().fg(Color::Rgb(186, 230, 253)).underlined(),
+                Style::new().bg(surface),
+                Style::new().fg(danger).bg(Color::Rgb(69, 10, 10)),
+                Style::new().fg(elevated),
+                Style::new().fg(accent),
+                Style::new().fg(text).bg(elevated),
+                Style::new().fg(muted).bg(surface),
+                Style::new().fg(text).bg(Color::Rgb(71, 85, 105)),
+                Style::new().fg(text).bg(elevated),
+                Style::new().fg(accent),
+                Style::new().fg(muted),
+                Style::new().fg(text).bold(),
+                Style::new().fg(accent),
+                Style::new().fg(muted),
+                Style::new().fg(border),
+                Style::new().fg(canvas).bg(accent).bold(),
+                Style::new().fg(disabled).dim(),
+                Style::new().fg(text).bg(surface),
+                Style::new()
+                    .fg(Color::Rgb(134, 239, 172))
+                    .bg(Color::Rgb(20, 83, 45)),
+                Style::new()
+                    .fg(Color::Rgb(252, 165, 165))
+                    .bg(Color::Rgb(127, 29, 29)),
+            ],
+        }
+    }
+
     /// Start from an existing theme and override one semantic role.
     #[must_use]
     pub fn with_role(mut self, role: Role, style: Style) -> Self {
@@ -276,5 +343,22 @@ mod tests {
     #[test]
     fn default_is_the_phosphor_preset() {
         assert_eq!(Theme::default(), Theme::tailrocks_phosphor());
+    }
+
+    #[test]
+    fn slate_visibly_diverges_from_phosphor() {
+        let slate = Theme::slate();
+        let phosphor = Theme::tailrocks_phosphor();
+        for role in [
+            Role::Accent,
+            Role::Selection,
+            Role::BorderFocused,
+            Role::TabActive,
+            Role::HintText,
+            Role::DiffAdded,
+            Role::DiffRemoved,
+        ] {
+            assert_ne!(slate.style(role), phosphor.style(role), "{role:?}");
+        }
     }
 }

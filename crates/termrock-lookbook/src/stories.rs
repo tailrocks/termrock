@@ -30,7 +30,7 @@ use crate::interactors::{
     StoryInteraction, TextInputInteractor, TreeInteractor,
 };
 
-type RenderFn = fn(&mut Frame<'_>, Rect);
+type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
 type InteractorFactory = fn(RenderFn) -> Box<dyn StoryInteraction>;
 
 #[derive(Debug, Clone, Copy)]
@@ -70,8 +70,8 @@ impl Story {
         self.interactor = interactor;
         self
     }
-    pub(crate) fn render(self, frame: &mut Frame<'_>, area: Rect) {
-        (self.render)(frame, area);
+    pub(crate) fn render(self, frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+        (self.render)(frame, area, theme);
     }
     pub(crate) fn make_interactor(&self) -> Box<dyn StoryInteraction> {
         (self.interactor)(self.render)
@@ -79,7 +79,10 @@ impl Story {
 }
 
 fn static_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
-    Box::new(StaticStory { render_fn: render })
+    Box::new(StaticStory {
+        render_fn: render,
+        theme: Theme::default(),
+    })
 }
 
 fn tree_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
@@ -279,10 +282,9 @@ pub(crate) fn stories() -> Vec<Story> {
     ]
 }
 
-fn panel(frame: &mut Frame<'_>, area: Rect) {
-    let theme = Theme::default();
+fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(
-        &Panel::new(&theme)
+        &Panel::new(theme)
             .title("Summary")
             .emphasis(PanelEmphasis::Focused),
         area,
@@ -295,8 +297,7 @@ fn panel(frame: &mut Frame<'_>, area: Rect) {
     }
 }
 
-fn action_bar(frame: &mut Frame<'_>, area: Rect) {
-    let theme = Theme::default();
+fn action_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let actions = [
         Action {
             id: "accept",
@@ -319,7 +320,7 @@ fn action_bar(frame: &mut Frame<'_>, area: Rect) {
         &ActionBar {
             actions: &actions,
             gap: "  ",
-            theme: &theme,
+            theme,
         },
         area,
         &mut state,
@@ -399,15 +400,14 @@ pub(crate) fn form_fields() -> Vec<FormField<'static, &'static str>> {
     ]
 }
 
-fn form(frame: &mut Frame<'_>, area: Rect) {
+fn form(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let fields = form_fields();
     let sections = [FormSection {
         title: Line::from("General"),
         fields: &fields,
     }];
-    let theme = Theme::default();
     let mut state = FormState::new(Some("name"));
-    frame.render_stateful_widget(&Form::new(&sections, &theme), area, &mut state);
+    frame.render_stateful_widget(&Form::new(&sections, theme), area, &mut state);
 }
 
 pub(crate) fn render_split_pane(
@@ -433,29 +433,26 @@ pub(crate) fn render_split_pane(
     frame.render_stateful_widget(&split, area, state);
 }
 
-fn split_pane(frame: &mut Frame<'_>, area: Rect) {
-    let theme = Theme::default();
+fn split_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = SplitPaneState::new(SplitRatio::from_percent(38));
     state.set_focused(true);
-    render_split_pane(frame, area, &mut state, &theme);
+    render_split_pane(frame, area, &mut state, theme);
 }
 
-fn tree(frame: &mut Frame<'_>, area: Rect) {
+fn tree(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let nodes = tree_nodes();
     let mut state = TreeState::new(Some("workspace"));
-    let theme = Theme::default();
     frame.render_stateful_widget(
         &Tree {
             nodes: &nodes,
-            theme: &theme,
+            theme,
         },
         area,
         &mut state,
     );
 }
 
-fn tabs(frame: &mut Frame<'_>, area: Rect) {
-    let theme = Theme::tailrocks_phosphor();
+fn tabs(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let items = [
         Tab {
             id: "overview",
@@ -481,19 +478,24 @@ fn tabs(frame: &mut Frame<'_>, area: Rect) {
         &Tabs {
             tabs: &items,
             gap: 1,
-            theme: &theme,
+            theme,
         },
         area,
         &mut state,
     );
 }
 
-fn hint_bar(frame: &mut Frame<'_>, area: Rect) {
-    let theme = Theme::default()
-        .with_role(Role::HintKey, Style::new().bold())
-        .with_role(Role::HintText, Style::new())
-        .with_role(Role::HintDim, Style::new())
-        .with_role(Role::HintSeparator, Style::new());
+fn hint_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let theme = if *theme == Theme::tailrocks_phosphor() {
+        theme
+            .clone()
+            .with_role(Role::HintKey, Style::new().bold())
+            .with_role(Role::HintText, Style::new())
+            .with_role(Role::HintDim, Style::new())
+            .with_role(Role::HintSeparator, Style::new())
+    } else {
+        theme.clone()
+    };
     let hints = [
         Hint {
             chord: "↑↓",
@@ -524,18 +526,10 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect) {
     );
 }
 
-fn list(frame: &mut Frame<'_>, area: Rect) {
+fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let rows = list_rows();
-    let theme = Theme::default();
     let mut state = ListState::new(Some("beta"));
-    frame.render_stateful_widget(
-        &List {
-            rows: &rows,
-            theme: &theme,
-        },
-        area,
-        &mut state,
-    );
+    frame.render_stateful_widget(&List { rows: &rows, theme }, area, &mut state);
 }
 
 pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
@@ -567,22 +561,21 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
     ]
 }
 
-fn text_input(frame: &mut Frame<'_>, area: Rect) {
+fn text_input(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = TextInputState::new("search");
-    let theme = Theme::default();
     frame.render_stateful_widget(
         &TextInput {
             label: "Filter",
             placeholder: "Type to filter",
             validation: Validation::Valid,
-            theme: &theme,
+            theme,
         },
         area,
         &mut state,
     );
 }
 
-fn detail_table(frame: &mut Frame<'_>, area: Rect) {
+fn detail_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let rows = [
         DetailRow {
             id: "state",
@@ -604,21 +597,19 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect) {
         },
     ];
     let mut state = DetailTableState::default();
-    let theme = Theme::default();
     frame.render_stateful_widget(
         &DetailTable {
             rows: &rows,
             label_width: 14,
             wrap: true,
-            theme: &theme,
+            theme,
         },
         area,
         &mut state,
     );
 }
 
-fn status_bar(frame: &mut Frame<'_>, area: Rect) {
-    let theme = Theme::default();
+fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let left = [StatusSlot {
         id: "state",
         content: " Ready ",
@@ -642,7 +633,7 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect) {
         &StatusBar {
             left: &left,
             right: &right,
-            theme: &theme,
+            theme,
             alpha: 1.0,
         },
         area,
@@ -650,23 +641,22 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect) {
     );
 }
 
-fn dialog(frame: &mut Frame<'_>, area: Rect) {
-    let theme = Theme::default();
+fn dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(
         &Dialog {
             title: "Notice",
             body: Line::from("The operation completed.").into(),
             style: Style::new(),
-            theme: &theme,
+            theme,
             emphasis: termrock::widgets::PanelEmphasis::Focused,
         },
         area,
     );
 }
 
-fn choice_dialog(frame: &mut Frame<'_>, area: Rect) {
+fn choice_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = ChoiceDialogState::new(Some("continue"));
-    render_choice_dialog(frame, area, &mut state);
+    render_choice_dialog(frame, area, &mut state, theme);
 }
 
 pub(crate) fn choice_actions() -> [Action<'static, &'static str>; 2] {
@@ -690,16 +680,16 @@ pub(crate) fn render_choice_dialog(
     frame: &mut Frame<'_>,
     area: Rect,
     state: &mut ChoiceDialogState<&'static str>,
+    theme: &Theme,
 ) {
     let actions = choice_actions();
-    let theme = Theme::default();
     frame.render_stateful_widget(
         &ChoiceDialog {
             dialog: Dialog {
                 title: "Choose",
                 body: Line::from("Continue with this operation?").into(),
                 style: Style::new(),
-                theme: &theme,
+                theme,
                 emphasis: termrock::widgets::PanelEmphasis::Focused,
             },
             actions: &actions,
@@ -710,7 +700,7 @@ pub(crate) fn render_choice_dialog(
     );
 }
 
-fn message_dialog(frame: &mut Frame<'_>, area: Rect) {
+fn message_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let details = [
         DetailRow {
             id: "state",
@@ -731,7 +721,6 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect) {
             style: None,
         },
     ];
-    let theme = Theme::default();
     let mut state = DetailTableState::default();
     frame.render_stateful_widget(
         &MessageDialog {
@@ -739,23 +728,28 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect) {
                 title: "Result",
                 body: Line::from("The operation completed.").into(),
                 style: Style::new(),
-                theme: &theme,
+                theme,
                 emphasis: termrock::widgets::PanelEmphasis::Focused,
             },
             details: &details,
             label_width: 14,
             wrap: true,
-            theme: &theme,
+            theme,
         },
         area,
         &mut state,
     );
 }
 
-fn diff(frame: &mut Frame<'_>, area: Rect) {
-    let theme = Theme::default()
-        .with_role(Role::DiffAdded, Style::new().bold())
-        .with_role(Role::DiffRemoved, Style::new().dim());
+fn diff(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let theme = if *theme == Theme::tailrocks_phosphor() {
+        theme
+            .clone()
+            .with_role(Role::DiffAdded, Style::new().bold())
+            .with_role(Role::DiffRemoved, Style::new().dim())
+    } else {
+        theme.clone()
+    };
     let lines = [
         DiffLine {
             text: " context",
@@ -780,24 +774,27 @@ fn diff(frame: &mut Frame<'_>, area: Rect) {
     );
 }
 
-fn toast(frame: &mut Frame<'_>, area: Rect) {
-    let theme = Theme::default();
+fn toast(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(
-        &Toast::new(&theme, "Updated", Severity::Success).anchor(Anchor::TopRight),
+        &Toast::new(theme, "Updated", Severity::Success).anchor(Anchor::TopRight),
         area,
     );
 }
-fn backdrop(frame: &mut Frame<'_>, area: Rect) {
+fn backdrop(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let style = if *theme == Theme::tailrocks_phosphor() {
+        Style::new().dim()
+    } else {
+        theme.style(Role::Backdrop)
+    };
     frame.render_widget(
         &Backdrop {
-            symbol: '░',
-            style: Style::new().dim(),
+            symbol: '░', style
         },
         area,
     );
 }
 
-fn viewport(frame: &mut Frame<'_>, area: Rect) {
+fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let lines = [
         Line::from("alpha: short"),
         Line::from("beta: a deliberately wide borrowed row for horizontal scrolling"),
@@ -806,9 +803,8 @@ fn viewport(frame: &mut Frame<'_>, area: Rect) {
         Line::from("epsilon: fifth row"),
         Line::from("zeta: sixth row"),
     ];
-    let theme = Theme::default();
     let border_style = theme.style(Role::BorderFocused);
-    let theme = theme.with_role(Role::Border, border_style);
+    let theme = theme.clone().with_role(Role::Border, border_style);
     let mut state = DialogScroll::default();
     frame.render_stateful_widget(
         &Viewport {

@@ -2,9 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use termrock::keymap::glyph;
-use termrock::{input::KeyCode, keymap::KeyChord};
+use termrock::{Theme, input::KeyCode, keymap::KeyChord};
 
-use crate::{PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction};
+use crate::{
+    PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction, stories::stories,
+    svg::render_story_to_buffer,
+};
+
+#[test]
+fn list_story_visibly_uses_the_selected_theme() {
+    let story = stories()
+        .into_iter()
+        .find(|story| story.id == "list/selection")
+        .expect("list story exists");
+    let phosphor = render_story_to_buffer(story, &Theme::tailrocks_phosphor());
+    let slate = render_story_to_buffer(story, &Theme::slate());
+
+    assert_eq!(phosphor.area, slate.area);
+    assert!(
+        phosphor
+            .content()
+            .iter()
+            .zip(slate.content())
+            .any(|(left, right)| left.symbol() == right.symbol()
+                && !left.symbol().trim().is_empty()
+                && (left.fg, left.bg, left.modifier) != (right.fg, right.bg, right.modifier)),
+        "list cells must visibly differ between themes"
+    );
+}
 
 // ── SIDEBAR ───────────────────────────────────────────────────────────────────
 

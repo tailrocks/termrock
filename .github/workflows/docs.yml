@@ -26,3 +26,4 @@ jobs:
       - run: cargo run -p termrock-lookbook -- render --out target/render-a >/dev/null
       - run: cargo run -p termrock-lookbook -- render --out target/render-b >/dev/null
       - run: diff -r target/render-a target/render-b
+      - run: cargo run -p termrock-lookbook -- render --theme slate --out target/render-slate >/dev/null

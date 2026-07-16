@@ -24,12 +24,13 @@ pub(crate) trait StoryInteraction {
 }
 
 pub(crate) struct StaticStory {
-    pub(crate) render_fn: fn(&mut Frame<'_>, Rect),
+    pub(crate) render_fn: fn(&mut Frame<'_>, Rect, &Theme),
+    pub(crate) theme: Theme,
 }
 
 impl StoryInteraction for StaticStory {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        (self.render_fn)(frame, area);
+        (self.render_fn)(frame, area, &self.theme);
     }
     fn handle_key(&mut self, _key: KeyEvent) -> bool {
         false
@@ -41,19 +42,21 @@ impl StoryInteraction for StaticStory {
 
 pub(crate) struct ChoiceDialogInteractor {
     state: ChoiceDialogState<&'static str>,
+    theme: Theme,
 }
 
 impl ChoiceDialogInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: ChoiceDialogState::new(Some("continue")),
+            theme: Theme::default(),
         }
     }
 }
 
 impl StoryInteraction for ChoiceDialogInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        render_choice_dialog(frame, area, &mut self.state);
+        render_choice_dialog(frame, area, &mut self.state, &self.theme);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {

@@ -2822,6 +2822,7 @@ pub struct termrock::style::Theme
 impl termrock::style::Theme
 pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
 pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 37]
+pub fn termrock::style::Theme::slate() -> Self
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
 pub fn termrock::style::Theme::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
@@ -3060,6 +3061,7 @@ pub struct termrock::theme::Theme
 impl termrock::style::Theme
 pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
 pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 37]
+pub fn termrock::style::Theme::slate() -> Self
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
 pub fn termrock::style::Theme::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
@@ -6122,6 +6124,7 @@ pub struct termrock::Theme
 impl termrock::style::Theme
 pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
 pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 37]
+pub fn termrock::style::Theme::slate() -> Self
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
 pub fn termrock::style::Theme::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
