@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use std::{
     alloc::System,
     hint::black_box,

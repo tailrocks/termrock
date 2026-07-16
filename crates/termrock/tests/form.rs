@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},

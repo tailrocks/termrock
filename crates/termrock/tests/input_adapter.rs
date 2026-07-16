@@ -1,4 +1,5 @@
 #![cfg(feature = "crossterm")]
+#![allow(missing_docs)]
 
 use crossterm::event::{
     KeyCode as CrosstermKeyCode, MediaKeyCode, MouseButton as CrosstermMouseButton,

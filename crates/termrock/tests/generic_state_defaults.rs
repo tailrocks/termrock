@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use termrock::widgets::{
     ActionBarState, ChoiceDialogState, DetailTableState, ListState, StatusBarState, TabsState,
 };

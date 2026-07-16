@@ -105,7 +105,6 @@ pub const STORIES: &[StoryMetadata] = &[
     },
 ];
 
-#[must_use]
 /// Returns the generated catalog story inventory.
 #[must_use]
 pub fn stories() -> &'static [StoryMetadata] {
