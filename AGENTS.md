@@ -25,6 +25,26 @@ compatibility facades, or copied neutral rendering bodies. When a capability is
 missing, extend or refactor TermRock rather than implementing a local visual
 substitute.
 
+## Modern-first, pre-stable API
+
+TermRock's goal is to become the best possible components and widgets library
+for the Rust TUI experience — the terminal equivalent of what shadcn/ui
+demonstrated for React and frontend development. To get there, TermRock always
+follows modern concepts, modern approaches, and cutting-edge technologies,
+ideas, and API design. When choosing between preserving an existing shape and
+adopting a better modern one, adopt the better one.
+
+The public API is always allowed to change. TermRock is deliberately not
+stable yet and provides no backward-compatibility guarantees of any kind.
+Every consumer that relies on this library must accept this reality: pin an
+exact revision and migrate forward. Backward compatibility is never a design
+input — we always look forward, never back.
+
+The current phosphor design concept is loved and stays the default: it is the
+default theme and the design language Tailrocks projects ship with. That
+default must never prevent the library from being product-neutral, fully
+re-themable, and adoptable by projects with entirely different brands.
+
 ## Forward-only design
 
 Always optimize for the best current API, domain model, module boundary, and
