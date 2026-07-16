@@ -24,3 +24,13 @@ Pin a reviewed full Git revision and commit the Cargo lockfile. TermRock keeps e
 The canonical namespaces own their complete implementation. Import dialog geometry from `termrock::layout`, focus/hover/modal lifecycle from `termrock::interaction`, scroll geometry and rendering from `termrock::scroll`, and backdrop policy from `termrock::widgets::Backdrop`. `Backdrop::default()` provides the opaque terminal-background policy. The entire `termrock::components` facade is removed; consumers must compose the canonical widgets instead of retaining donor-shaped render helpers or imports.
 
 Wrap foreign receivers with `runtime::ClosureSubscription`; TermRock deliberately does not depend on Tokio. Brand headers, row construction, lifecycle stacks, output policy, and application-specific runtime helpers remain in the consumer.
+
+## `v0.8.0` canonical contract completion
+
+`v0.8.0` completes the first multi-surface consumer migration. `DialogSpec`
+uses independent horizontal and vertical margins, `Dialog` requires a theme
+and semantic emphasis, `Toast` is constructed with a theme/message/severity and
+owns anchored placement, and `ListState<usize>` owns indexed-picker selection.
+Consumers should delete local geometry, toast, table, status-footer, and picker
+selection implementations when adopting these contracts; no compatibility
+facade is provided.

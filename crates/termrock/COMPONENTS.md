@@ -37,6 +37,12 @@ hit regions. Keyboard, wheel, click, and scrollbar-position methods return or
 apply semantic selection/toggle/activation/scroll outcomes; callers retain
 hierarchy, filtering, lazy loading, and expansion policy.
 
+`List` owns selection, hover, focus, viewport offset, painted regions, and a
+reserved proportional-scrollbar gutter. Stable-ID rows use the general
+navigation contract. Index-addressed pickers use the `ListState<usize>` count,
+wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
+consumers do not retain a second list-state crate or generic picker helpers.
+
 The `tree_hot_path` evidence renders a warmed 40-row viewport over 10,000
 borrowed nodes 100 times in the Cargo test/debug profile, asserts bounded
 painted regions, rejects allocator or reallocator calls, and enforces a 250 ms

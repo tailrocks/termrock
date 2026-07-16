@@ -1768,7 +1768,7 @@ impl<T> core::convert::From<T> for termrock::layout::DialogBodyScroll
 pub fn termrock::layout::DialogBodyScroll::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::DialogBodyScroll
 pub struct termrock::layout::DialogSpec
-pub termrock::layout::DialogSpec::margin: u16
+pub termrock::layout::DialogSpec::horizontal_margin: u16
 pub termrock::layout::DialogSpec::max_height: u16
 pub termrock::layout::DialogSpec::max_width: u16
 pub termrock::layout::DialogSpec::min_height: u16
@@ -1776,6 +1776,7 @@ pub termrock::layout::DialogSpec::min_width: u16
 pub termrock::layout::DialogSpec::placement: termrock::layout::Placement
 pub termrock::layout::DialogSpec::preferred_height: u16
 pub termrock::layout::DialogSpec::preferred_width: u16
+pub termrock::layout::DialogSpec::vertical_margin: u16
 impl core::clone::Clone for termrock::layout::DialogSpec
 pub fn termrock::layout::DialogSpec::clone(&self) -> termrock::layout::DialogSpec
 impl core::cmp::Eq for termrock::layout::DialogSpec
@@ -1956,6 +1957,7 @@ impl<T> core::convert::From<T> for termrock::layout::Slots
 pub fn termrock::layout::Slots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::Slots
 pub const termrock::layout::DIALOG_HORIZONTAL_SCROLL_STEP: u16
+pub fn termrock::layout::bottom_rows<const N: usize>(ratatui_core::layout::rect::Rect, [u16; N]) -> (ratatui_core::layout::rect::Rect, [ratatui_core::layout::rect::Rect; N])
 pub fn termrock::layout::dialog_inner_chunks(ratatui_core::layout::rect::Rect, core::option::Option<u16>) -> [ratatui_core::layout::rect::Rect; 5]
 pub const fn termrock::layout::dialog_inner_height(u16) -> u16
 pub fn termrock::layout::dialog_scroll_axes(usize, usize, ratatui_core::layout::rect::Rect) -> termrock::scroll::ScrollAxes
@@ -2859,6 +2861,7 @@ pub fn termrock::scroll::render_selected_lines_in_area(&mut ratatui_core::termin
 pub fn termrock::scroll::render_vertical_scrollbar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, u16)
 pub fn termrock::scroll::render_vertical_scrollbar_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize, u16)
 pub fn termrock::scroll::render_vertical_scrollbar_in_area_with_style(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize, u16, termrock::scroll::ScrollbarStyle)
+pub fn termrock::scroll::render_vertical_scrollbar_to_buffer(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, termrock::scroll::ScrollbarStyle)
 pub fn termrock::scroll::render_vertical_scrollbar_with_style(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, u16, termrock::scroll::ScrollbarStyle)
 pub fn termrock::scroll::rendered_cursor_follow_offset(usize, usize, usize, u16) -> u16
 pub fn termrock::scroll::rendered_max_line_width(&[ratatui_core::text::line::Line<'_>]) -> usize
@@ -4464,7 +4467,9 @@ pub fn termrock::widgets::DetailTableState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailTableState<Id>
 pub struct termrock::widgets::Dialog<'a>
 pub termrock::widgets::Dialog::body: ratatui_core::text::text::Text<'a>
+pub termrock::widgets::Dialog::emphasis: termrock::widgets::PanelEmphasis
 pub termrock::widgets::Dialog::style: ratatui_core::style::Style
+pub termrock::widgets::Dialog::theme: &'a termrock::style::Theme
 pub termrock::widgets::Dialog::title: &'a str
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Dialog<'_>
 pub fn &termrock::widgets::Dialog<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
@@ -5020,6 +5025,12 @@ pub termrock::widgets::ListState::offset: usize
 pub termrock::widgets::ListState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 pub termrock::widgets::ListState::selected: core::option::Option<Id>
 pub termrock::widgets::ListState::viewport_height: usize
+impl termrock::widgets::ListState<usize>
+pub fn termrock::widgets::ListState<usize>::cycle_index(&mut self, usize, isize) -> bool
+pub const fn termrock::widgets::ListState<usize>::for_count(usize) -> Self
+pub fn termrock::widgets::ListState<usize>::move_index(&mut self, usize, isize) -> bool
+pub fn termrock::widgets::ListState<usize>::reconcile_count(&mut self, usize)
+pub fn termrock::widgets::ListState<usize>::selected_item<'a, T>(&self, &'a [T]) -> core::option::Option<&'a T>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::activate(&self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::ListOutcome<Id>
 pub fn termrock::widgets::ListState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::ListOutcome<Id>
@@ -5028,6 +5039,7 @@ pub fn termrock::widgets::ListState<Id>::hover(&mut self, ratatui_core::layout::
 pub const fn termrock::widgets::ListState<Id>::new(core::option::Option<Id>) -> Self
 pub fn termrock::widgets::ListState<Id>::scroll_by(&mut self, isize, usize) -> bool
 pub fn termrock::widgets::ListState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
+pub fn termrock::widgets::ListState<Id>::select(&mut self, core::option::Option<Id>)
 pub fn termrock::widgets::ListState<Id>::select_next(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::ListOutcome<Id>
 pub fn termrock::widgets::ListState<Id>::select_previous(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::ListOutcome<Id>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListState<Id>
@@ -5733,10 +5745,12 @@ impl<T> core::convert::From<T> for termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TextInputState
 pub struct termrock::widgets::Toast<'a>
-pub termrock::widgets::Toast::anchor: termrock::widgets::Anchor
-pub termrock::widgets::Toast::message: &'a str
-pub termrock::widgets::Toast::severity: termrock::widgets::Severity
-pub termrock::widgets::Toast::style: ratatui_core::style::Style
+impl<'a> termrock::widgets::Toast<'a>
+pub const fn termrock::widgets::Toast<'a>::anchor(self, termrock::widgets::Anchor) -> Self
+pub const fn termrock::widgets::Toast<'a>::margins(self, u16, u16) -> Self
+pub const fn termrock::widgets::Toast<'a>::new(&'a termrock::style::Theme, &'a str, termrock::widgets::Severity) -> Self
+pub fn termrock::widgets::Toast<'a>::rect(&self, ratatui_core::layout::rect::Rect) -> core::option::Option<ratatui_core::layout::rect::Rect>
+pub const fn termrock::widgets::Toast<'a>::style(self, ratatui_core::style::Style) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Toast<'_>
 pub fn &termrock::widgets::Toast<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Toast<'a>
