@@ -30,20 +30,20 @@ pub enum EditAction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Validation state and optional feedback for a form field.
 pub enum Validation<'a> {
-    /// The valid state.
+    /// Field value is accepted and has no feedback message.
     Valid,
-    /// The invalid state.
+    /// Field value is rejected with caller-provided feedback.
     Invalid(&'a str),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Validation states rendered by a text input.
 pub enum TextInputValidity {
-    /// The valid state.
+    /// Trimmed value satisfies every configured rule.
     Valid,
-    /// The empty state.
+    /// Trimmed value is empty while empty input is disallowed.
     Empty,
-    /// The forbidden state.
+    /// Trimmed value exactly matches a configured forbidden value.
     Forbidden,
 }
 
@@ -51,13 +51,13 @@ pub enum TextInputValidity {
 #[non_exhaustive]
 /// Semantic results produced by text-input interaction.
 pub enum TextInputOutcome {
-    /// Reports ignored.
+    /// The key produced no editing or submission action.
     Ignored,
-    /// Reports changed.
+    /// The input value or cursor position changed.
     Changed,
-    /// Reports submitted.
+    /// The current value passed trimmed validation and was submitted unchanged.
     Submitted(String),
-    /// Reports cancelled.
+    /// Editing was cancelled by the user.
     Cancelled,
 }
 
@@ -90,21 +90,21 @@ impl TextInputState {
     }
 
     #[must_use]
-    /// Returns this value with `max_graphemes` configured.
+    /// Limits accepted input to this many extended grapheme clusters.
     pub fn with_max_graphemes(mut self, max_graphemes: usize) -> Self {
         self.max_graphemes = Some(max_graphemes);
         self
     }
 
     #[must_use]
-    /// Returns this value with `forbidden` configured.
+    /// Replaces the exact trimmed values rejected by validation.
     pub fn with_forbidden(mut self, forbidden: impl IntoIterator<Item = String>) -> Self {
         self.forbidden = forbidden.into_iter().collect();
         self
     }
 
     #[must_use]
-    /// Returns this value with `allow_empty` configured.
+    /// Configures whether a trimmed empty value is valid.
     pub const fn with_allow_empty(mut self, allow_empty: bool) -> Self {
         self.allow_empty = allow_empty;
         self
@@ -159,12 +159,12 @@ impl TextInputState {
     }
 
     #[must_use]
-    /// Returns whether `valid`.
+    /// Returns whether the current value can be submitted.
     pub fn is_valid(&self) -> bool {
         self.validity() == TextInputValidity::Valid
     }
 
-    /// Handles the `handle_key` interaction.
+    /// Routes canonical editing, submission, and cancellation keys.
     pub fn handle_key(&mut self, key: KeyEvent) -> TextInputOutcome {
         if key.kind == KeyEventKind::Release {
             return TextInputOutcome::Ignored;

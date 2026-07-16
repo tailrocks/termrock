@@ -68,13 +68,13 @@ pub struct DetailRow<'a, Id> {
 #[non_exhaustive]
 /// Semantic results produced by detail-table interaction.
 pub enum DetailTableOutcome<Id> {
-    /// Reports ignored.
+    /// The event produced no table-state change.
     Ignored,
-    /// Reports selected.
+    /// Interaction selected this row without activating a row capability.
     Selected(Id),
-    /// Reports copy.
+    /// The identified row requested its copy capability.
     Copy(Id),
-    /// Reports activate link.
+    /// The identified row requested hyperlink activation.
     ActivateLink(Id),
 }
 
@@ -148,7 +148,7 @@ impl<Id> Default for DetailTableState<Id> {
 }
 
 impl<Id: Clone + PartialEq> DetailTableState<Id> {
-    /// Handles the `handle_key` interaction.
+    /// Routes row navigation and capability activation from canonical keys.
     pub fn handle_key(
         &mut self,
         rows: &[DetailRow<'_, Id>],

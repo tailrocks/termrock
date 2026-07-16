@@ -176,7 +176,7 @@ impl<Id> ListState<Id> {
 }
 
 impl<Id: Clone + PartialEq> ListState<Id> {
-    /// Handles the `handle_key` interaction.
+    /// Routes navigation, checking, activation, and cancellation keys.
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;

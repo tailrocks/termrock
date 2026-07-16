@@ -9,7 +9,7 @@ pub enum Dirty {
 }
 impl Dirty {
     #[must_use]
-    /// Returns whether `dirty`.
+    /// Returns whether another frame must be rendered.
     pub const fn is_dirty(self) -> bool {
         matches!(self, Self::Redraw)
     }
@@ -61,7 +61,7 @@ impl<Effect> UpdateResult<Effect> {
         self.dirty
     }
     #[must_use]
-    /// Returns whether `dirty`.
+    /// Returns whether this update requests another rendered frame.
     pub const fn is_dirty(&self) -> bool {
         self.dirty.is_dirty()
     }
@@ -80,13 +80,13 @@ impl<Effect> UpdateResult<Effect> {
 
 /// Stateful update contract that translates input events into messages.
 pub trait Component<Event, Message> {
-    /// Handles the `handle_event` interaction.
+    /// Translates one borrowed input event into an optional application message.
     fn handle_event(&mut self, event: &Event) -> Option<Message>;
 }
 
 /// Rendering contract that projects a model into a terminal frame.
 pub trait View<Model> {
-    /// Renders `render` output.
+    /// Projects the current model into the supplied terminal rectangle.
     fn render(
         &self,
         model: &Model,

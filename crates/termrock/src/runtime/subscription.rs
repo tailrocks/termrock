@@ -12,7 +12,7 @@ pub enum SubscriptionPoll<Event> {
 }
 impl<Event> SubscriptionPoll<Event> {
     #[must_use]
-    /// Returns whether `pending`.
+    /// Returns whether polling produced neither a value nor closure.
     pub const fn is_pending(&self) -> bool {
         matches!(self, Self::Pending)
     }
@@ -20,7 +20,7 @@ impl<Event> SubscriptionPoll<Event> {
 
 /// Non-blocking source of runtime values.
 pub trait Subscription {
-    /// The `Output;` value produced by this contract.
+    /// Value emitted when the subscription becomes ready.
     type Output;
     /// Polls the subscription once without blocking.
     fn poll_next(&mut self) -> SubscriptionPoll<Self::Output>;

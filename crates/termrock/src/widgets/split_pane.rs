@@ -38,7 +38,7 @@ pub struct SplitRatio(u16);
 
 impl SplitRatio {
     #[must_use]
-    /// Creates a value from `basis_points`.
+    /// Creates a ratio clamped to the inclusive 0–10,000 basis-point range.
     pub const fn from_basis_points(basis_points: u16) -> Self {
         Self(if basis_points > RATIO_SCALE {
             RATIO_SCALE
@@ -48,7 +48,7 @@ impl SplitRatio {
     }
 
     #[must_use]
-    /// Creates a value from `percent`.
+    /// Creates a ratio from a percentage clamped to the inclusive 0–100 range.
     pub const fn from_percent(percent: u8) -> Self {
         Self::from_basis_points(if percent > 100 {
             RATIO_SCALE
@@ -85,15 +85,15 @@ pub struct SplitPaneLayout {
 #[non_exhaustive]
 /// Semantic results produced by split-pane interaction.
 pub enum SplitPaneOutcome {
-    /// Reports ignored.
+    /// The gesture did not apply to the divider.
     Ignored,
-    /// Reports focused.
+    /// Pointer interaction moved focus to the divider.
     Focused,
-    /// Reports ratio changed.
+    /// The divider moved to this new bounded ratio.
     RatioChanged(SplitRatio),
-    /// Reports collapsed.
+    /// The identified pane side became collapsed.
     Collapsed(SplitSide),
-    /// Reports expanded.
+    /// A collapsed pane returned to the remembered ratio.
     Expanded,
 }
 
@@ -146,19 +146,19 @@ impl SplitPaneState {
         self.ratio
     }
 
-    /// Sets `ratio`.
+    /// Replaces the expanded ratio and clears any collapsed side.
     pub const fn set_ratio(&mut self, ratio: SplitRatio) {
         self.ratio = ratio;
         self.collapsed = None;
     }
 
     #[must_use]
-    /// Returns whether `focused`.
+    /// Returns whether the divider owns keyboard focus.
     pub const fn is_focused(&self) -> bool {
         self.focused
     }
 
-    /// Sets `focused`.
+    /// Updates divider focus, cancelling an active drag when focus leaves.
     pub const fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
         if !focused {
@@ -167,13 +167,13 @@ impl SplitPaneState {
     }
 
     #[must_use]
-    /// Returns whether `hovered`.
+    /// Returns whether the pointer is over the painted divider.
     pub const fn is_hovered(&self) -> bool {
         self.hovered
     }
 
     #[must_use]
-    /// Returns whether `dragging`.
+    /// Returns whether a divider drag is currently active.
     pub const fn is_dragging(&self) -> bool {
         self.dragging
     }
@@ -190,7 +190,7 @@ impl SplitPaneState {
         self.layout
     }
 
-    /// Handles the `handle_key` interaction.
+    /// Moves the focused divider along its layout axis with arrow keys.
     pub fn handle_key(&mut self, spec: &SplitPane<'_>, key: KeyEvent) -> SplitPaneOutcome {
         if !self.focused || key.kind == KeyEventKind::Release {
             return SplitPaneOutcome::Ignored;

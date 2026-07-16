@@ -27,7 +27,7 @@ impl<Id> Selection<Id> {
         &self.checked
     }
 
-    /// Removes every checked identity.
+    /// Clears the checked-identity set.
     pub fn clear(&mut self) {
         self.checked.clear();
     }
@@ -48,7 +48,7 @@ impl<Id: Clone + PartialEq> Selection<Id> {
     }
 
     #[must_use]
-    /// Returns whether `checked`.
+    /// Returns whether the stable identity is currently checked.
     pub fn is_checked(&self, id: &Id) -> bool {
         self.checked.iter().any(|checked| checked == id)
     }

@@ -15,7 +15,7 @@ use crate::widgets::PanelEmphasis;
 /// Focus behavior shared by every button-row dialog: a closed ring of
 /// semantic focus states with a stable button-strip index.
 pub trait ButtonFocus: Copy + Eq + 'static {
-    /// The `RING` constant.
+    /// Closed traversal order for every focusable button state.
     const RING: &'static [Self];
 
     /// Index into the dialog's button strip items.
@@ -62,13 +62,13 @@ pub enum FocusOwner<Tab> {
 
 impl<Tab: Copy> FocusOwner<Tab> {
     #[must_use]
-    /// Returns whether `tab_bar`.
+    /// Returns whether the tab strip owns focus.
     pub const fn is_tab_bar(self) -> bool {
         matches!(self, Self::TabBar)
     }
 
     #[must_use]
-    /// Returns whether `content`.
+    /// Returns whether a tab's content region owns focus.
     pub const fn is_content(self) -> bool {
         matches!(self, Self::Content(_))
     }

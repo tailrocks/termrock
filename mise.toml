@@ -45,8 +45,12 @@ cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
 [tasks.docs-quality]
 description = "Reject generated placeholder rustdoc phrasing"
 run = """
-if grep -rEn 'Documentation for `|Performs the `[a-z_]+` operation|Selects the `[A-Za-z]+` behavior|Creates a new value with canonical defaults|Data carried by `|Available `[A-Za-z]+` choices|The `[A-Za-z]+ \\{' crates/ --include='*.rs'; then
+if grep -rEn 'Documentation for `|Performs the `[a-z_]+` operation|Selects the `[A-Za-z]+` behavior|Creates a new value with canonical defaults|Data carried by `|Available `[A-Za-z]+` choices|The `[A-Za-z]+ \\{|Returns whether `[a-z_]+`[.]|Handles the `[a-z_]+` interaction[.]|Sets `[a-z_]+`[.]|Creates a value from `[a-z_]+`[.]|Returns this value with `[a-z_]+` configured[.]|The `[A-Z_]+` constant[.]|The `[A-Za-z_]+;` value produced by this contract[.]|Reports [a-z][a-z ]+[.]|Renders `[a-z_]+` output[.]|Styles [a-z][a-z ]+ content[.]' crates/ --include='*.rs'; then
   echo 'placeholder rustdoc phrasing is forbidden' >&2
+  exit 1
+fi
+if grep -rEn 'Removes every checked identity[.]' crates/ --include='*.rs'; then
+  echo 'copied rustdoc phrasing is forbidden' >&2
   exit 1
 fi
 """

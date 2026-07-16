@@ -19,6 +19,31 @@ for (const line of api.split('\n')) {
 }
 if (publicComponents.size === 0) throw new Error('public API report contains no canonical widgets')
 
+const componentInventory = await Bun.file(`${root}/crates/termrock/COMPONENTS.md`).text()
+const inventorySentence = componentInventory.match(
+  /The public widget set is derived from the reviewed API report and currently contains ([^.]+)\./,
+)?.[1]
+if (!inventorySentence) throw new Error('COMPONENTS.md has no canonical public widget inventory')
+const inventoryComponents = new Set(
+  [...inventorySentence.matchAll(/`([A-Z][A-Za-z0-9_]*)`/g)].map((match) => {
+    const component = match[1]
+    if (!component) throw new Error('COMPONENTS.md contains an empty component name')
+    return component
+  }),
+)
+const missingInventory = [...publicComponents].filter(
+  (component) => !inventoryComponents.has(component),
+)
+const staleInventory = [...inventoryComponents].filter(
+  (component) => !publicComponents.has(component),
+)
+if (missingInventory.length) {
+  throw new Error(`COMPONENTS.md omits public components: ${missingInventory.join(', ')}`)
+}
+if (staleInventory.length) {
+  throw new Error(`COMPONENTS.md lists non-public components: ${staleInventory.join(', ')}`)
+}
+
 const storyComponents = new Set(stories.map((story) => story.component))
 const missingStories = [...publicComponents].filter((component) => !storyComponents.has(component))
 if (missingStories.length) throw new Error(`public components without stories: ${missingStories.join(', ')}`)

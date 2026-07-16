@@ -47,29 +47,29 @@ pub enum KeyCode {
 pub struct KeyModifiers(u8);
 
 impl KeyModifiers {
-    /// The `NONE` constant.
+    /// No modifier keys are held.
     pub const NONE: Self = Self(0);
-    /// The `SHIFT` constant.
+    /// The Shift key is held.
     pub const SHIFT: Self = Self(1);
-    /// The `CONTROL` constant.
+    /// The Control key is held.
     pub const CONTROL: Self = Self(2);
-    /// The `ALT` constant.
+    /// The Alt or Option key is held.
     pub const ALT: Self = Self(4);
 
     #[must_use]
-    /// Returns this value with `ctrl` configured.
+    /// Adds the Control modifier while preserving existing flags.
     pub const fn with_ctrl(self) -> Self {
         Self(self.0 | Self::CONTROL.0)
     }
 
     #[must_use]
-    /// Returns this value with `alt` configured.
+    /// Adds the Alt modifier while preserving existing flags.
     pub const fn with_alt(self) -> Self {
         Self(self.0 | Self::ALT.0)
     }
 
     #[must_use]
-    /// Returns this value with `shift` configured.
+    /// Adds the Shift modifier while preserving existing flags.
     pub const fn with_shift(self) -> Self {
         Self(self.0 | Self::SHIFT.0)
     }
@@ -81,7 +81,7 @@ impl KeyModifiers {
     }
 
     #[must_use]
-    /// Returns whether `empty`.
+    /// Returns whether no modifier keys are held.
     pub const fn is_empty(self) -> bool {
         self.0 == 0
     }
@@ -113,11 +113,11 @@ pub enum KeyEventKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-/// Runtime state for `KeyEvent`.
+/// Reserved backend-neutral key-state marker; currently carries no flags.
 pub struct KeyEventState;
 
 impl KeyEventState {
-    /// The `NONE` constant.
+    /// No additional backend-neutral key state.
     pub const NONE: Self = Self;
 }
 

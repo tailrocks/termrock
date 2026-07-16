@@ -29,10 +29,10 @@ pub const fn color(rgb: Rgb) -> Color {
     Color::Rgb(rgb.r, rgb.g, rgb.b)
 }
 
-/// The `PHOSPHOR_GREEN` constant.
+/// Primary phosphor accent used by the default design language.
 pub const PHOSPHOR_GREEN: Color = color(PHOSPHOR_GREEN_RGB);
 pub(crate) const PHOSPHOR_DIM: Color = color(PHOSPHOR_DIM_RGB);
-/// The `PHOSPHOR_DARK` constant.
+/// Dark phosphor surface used behind emphasized content.
 pub const PHOSPHOR_DARK: Color = color(PHOSPHOR_DARK_RGB);
 pub(crate) const INPUT_BG_DIM: Color = color(INPUT_BG_DIM_RGB);
 // Dialog backdrops paint the terminal's DEFAULT background, not a
@@ -58,7 +58,7 @@ pub(crate) const BORDER_GRAY: Color = color(BORDER_GRAY_RGB);
 pub(crate) const DANGER_RED: Color = color(DANGER_RED_RGB);
 pub(crate) const CYAN: Color = color(CYAN_RGB);
 pub(crate) const WARNING_YELLOW: Color = color(WARNING_YELLOW_RGB);
-/// The `PREVIEW_CARD` constant.
+/// Elevated preview-card background in the phosphor palette.
 pub const PREVIEW_CARD: Color = color(PREVIEW_CARD_RGB);
 pub(crate) const DIFF_REMOVED_BG: Color = Color::Rgb(60, 20, 20);
 pub(crate) const DIFF_ADDED_BG: Color = Color::Rgb(20, 50, 20);
@@ -92,81 +92,81 @@ pub fn faded(color: Color, alpha: f32) -> Color {
 #[non_exhaustive]
 /// Semantic visual roles resolved by a [`Theme`].
 pub enum Role {
-    /// Styles canvas content.
+    /// Terminal-wide base background.
     Canvas,
-    /// Styles surface content.
+    /// Ordinary component surface above the canvas.
     Surface,
-    /// Styles elevated content.
+    /// Raised surface such as a dialog or preview card.
     Elevated,
-    /// Styles backdrop content.
+    /// Occluding layer behind modal content.
     Backdrop,
     /// Ordinary body text (default weight).
     Text,
     /// Strong or heading text (bold).
     TextStrong,
-    /// Styles text muted content.
+    /// Secondary explanatory text.
     TextMuted,
-    /// Styles text disabled content.
+    /// Unavailable or non-interactive text.
     TextDisabled,
-    /// Styles border content.
+    /// Inactive component border.
     Border,
-    /// Styles border focused content.
+    /// Border of the component that owns focus.
     BorderFocused,
-    /// Styles selection content.
+    /// Active row or item selection.
     Selection,
-    /// Styles focus content.
+    /// Non-border focus indicator.
     Focus,
-    /// Styles accent content.
+    /// Brand-neutral visual accent.
     Accent,
-    /// Styles success content.
+    /// Successful or completed state.
     Success,
-    /// Styles warning content.
+    /// Cautionary state that is not yet an error.
     Warning,
-    /// Styles danger content.
+    /// Error, failure, or destructive state.
     Danger,
-    /// Styles info content.
+    /// Informational status or annotation.
     Info,
-    /// Styles link content.
+    /// Inactive hyperlink text.
     Link,
-    /// Styles link hover content.
+    /// Hyperlink text under the pointer.
     LinkHover,
-    /// Styles input content.
+    /// Editable input value and cursor surface.
     Input,
-    /// Styles input invalid content.
+    /// Input that fails its validation contract.
     InputInvalid,
-    /// Styles scroll track content.
+    /// Unoccupied scrollbar track.
     ScrollTrack,
-    /// Styles scroll thumb content.
+    /// Scrollbar thumb representing the visible window.
     ScrollThumb,
-    /// Styles tab active content.
+    /// Selected tab label and fill.
     TabActive,
-    /// Styles tab inactive content.
+    /// Unselected tab label and fill.
     TabInactive,
-    /// Styles tab active hovered content.
+    /// Selected tab while hovered.
     TabActiveHovered,
-    /// Styles tab inactive hovered content.
+    /// Unselected tab while hovered.
     TabInactiveHovered,
-    /// Styles tab underline focused content.
+    /// Active-tab underline while the tab strip owns focus.
     TabUnderlineFocused,
-    /// Styles tab underline unfocused content.
+    /// Active-tab underline while content owns focus.
     TabUnderlineUnfocused,
-    /// Styles hint key content.
+    /// Key chord in an interaction hint.
     HintKey,
-    /// Styles hint text content.
+    /// Action label paired with a hint key.
     HintText,
-    /// Styles hint dim content.
+    /// De-emphasized optional hint content.
     HintDim,
-    /// Styles hint separator content.
+    /// Separator between adjacent interaction hints.
     HintSeparator,
-    /// Styles action focused content.
+    /// Focused dialog or action-bar control.
     ActionFocused,
-    /// Styles action disabled content.
+    /// Disabled dialog or action-bar control.
     ActionDisabled,
-    /// Styles status bar content.
+    /// Status-bar background and ordinary text.
     StatusBar,
-    /// Styles diff added content.
+    /// Added line or segment in a diff.
     DiffAdded,
-    /// Styles diff removed content.
+    /// Removed line or segment in a diff.
     DiffRemoved,
 }
 

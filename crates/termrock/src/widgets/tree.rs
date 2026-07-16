@@ -19,11 +19,11 @@ use super::Selection;
 #[non_exhaustive]
 /// Loading and error states associated with a tree node.
 pub enum TreeNodeStatus {
-    /// The ready state.
+    /// Node content is available for ordinary interaction.
     Ready,
-    /// The loading state.
+    /// Node content is still being loaded.
     Loading,
-    /// The error state.
+    /// Node content could not be loaded.
     Error,
 }
 
@@ -52,15 +52,15 @@ pub struct TreeNode<'a, Id> {
 #[non_exhaustive]
 /// Semantic results produced by tree interaction.
 pub enum TreeOutcome<Id> {
-    /// Reports ignored.
+    /// The event produced no tree-state change.
     Ignored,
-    /// Reports selection changed.
+    /// Navigation selected this stable node identity.
     SelectionChanged(Id),
-    /// Reports toggle.
+    /// The identified branch requested disclosure inversion.
     Toggle(Id),
-    /// Reports check toggled.
+    /// Multi-selection toggled this stable node identity.
     CheckToggled(Id),
-    /// Reports activated.
+    /// The identified enabled node requested activation.
     Activated(Id),
 }
 
@@ -130,18 +130,18 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
-    /// Returns whether `focused`.
+    /// Returns whether the tree owns keyboard focus.
     pub const fn is_focused(&self) -> bool {
         self.focused
     }
 
-    /// Sets `focused`.
+    /// Updates whether the tree accepts keyboard interaction.
     pub const fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
     }
 
     #[must_use]
-    /// Returns the signed distance from the live tail in rows.
+    /// Returns the zero-based first visible node index.
     pub const fn offset(&self) -> usize {
         self.offset
     }
@@ -214,7 +214,7 @@ impl<Id> TreeState<Id> {
 }
 
 impl<Id: Clone + PartialEq> TreeState<Id> {
-    /// Handles the `handle_key` interaction.
+    /// Routes navigation, disclosure, checking, and activation keys.
     pub fn handle_key(&mut self, nodes: &[TreeNode<'_, Id>], key: KeyEvent) -> TreeOutcome<Id> {
         if !self.focused || key.kind == KeyEventKind::Release {
             return TreeOutcome::Ignored;

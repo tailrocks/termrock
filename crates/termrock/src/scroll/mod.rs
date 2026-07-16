@@ -155,7 +155,7 @@ pub fn max_line_width(lines: &[Line<'_>]) -> usize {
 }
 
 #[must_use]
-/// Returns whether `scrollable`.
+/// Returns whether content exceeds a non-empty viewport.
 pub const fn is_scrollable(content_len: usize, viewport_len: usize) -> bool {
     viewport_len > 0 && content_len > viewport_len
 }
@@ -258,7 +258,7 @@ impl DialogScroll {
         }
     }
 
-    /// Handles the `handle_key` interaction.
+    /// Applies canonical two-axis navigation keys within content bounds.
     pub fn handle_key(
         &mut self,
         key: crate::input::KeyEvent,
@@ -280,7 +280,7 @@ impl DialogScroll {
         )
     }
 
-    /// Handles the `handle_key_for_axes` interaction.
+    /// Applies navigation keys only on axes currently allowed to move.
     pub fn handle_key_for_axes(
         &mut self,
         key: crate::input::KeyEvent,
@@ -326,7 +326,7 @@ impl DialogScroll {
         true
     }
 
-    /// Handles the `handle_mouse` interaction.
+    /// Applies a wheel gesture using vertical or Shift-horizontal semantics.
     pub fn handle_mouse(
         &mut self,
         kind: crate::input::MouseEventKind,

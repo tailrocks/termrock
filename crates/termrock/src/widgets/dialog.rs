@@ -290,7 +290,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         }
     }
 
-    /// Handles the `handle_key` interaction.
+    /// Routes cancellation, cyclic action focus, and activation keys.
     pub fn handle_key(&mut self, actions: &[Action<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;

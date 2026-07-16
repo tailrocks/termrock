@@ -95,11 +95,11 @@ pub struct FormSection<'a, Id> {
 #[non_exhaustive]
 /// Semantic results produced by form interaction.
 pub enum FormOutcome<Id> {
-    /// Reports ignored.
+    /// The event produced no form-state change.
     Ignored,
-    /// Reports focus changed.
+    /// Keyboard or pointer navigation focused this field identity.
     FocusChanged(Id),
-    /// Reports activated.
+    /// The identified enabled field requested activation.
     Activated(Id),
 }
 
@@ -154,7 +154,7 @@ impl<Id> Default for FormState<Id> {
 
 impl<Id> FormState<Id> {
     #[must_use]
-    /// Creates unfocused form state at the top of the viewport.
+    /// Creates form state at the top of the viewport with optional initial focus.
     pub const fn new(focused: Option<Id>) -> Self {
         Self {
             focused,
@@ -172,7 +172,7 @@ impl<Id> FormState<Id> {
     }
 
     #[must_use]
-    /// Returns whether this focus state currently owns focus.
+    /// Returns the stable identity of the focused field.
     pub const fn focused(&self) -> Option<&Id> {
         self.focused.as_ref()
     }
@@ -184,12 +184,12 @@ impl<Id> FormState<Id> {
     }
 
     #[must_use]
-    /// Returns whether `active`.
+    /// Returns whether the form currently accepts interaction.
     pub const fn is_active(&self) -> bool {
         self.active
     }
 
-    /// Sets `active`.
+    /// Enables or disables form keyboard and pointer interaction.
     pub const fn set_active(&mut self, active: bool) {
         self.active = active;
     }
@@ -201,7 +201,7 @@ impl<Id> FormState<Id> {
     }
 
     #[must_use]
-    /// Returns the signed distance from the live tail in rows.
+    /// Returns the zero-based top row of the form viewport.
     pub const fn offset(&self) -> usize {
         self.offset
     }
@@ -265,7 +265,7 @@ impl<Id> FormState<Id> {
 }
 
 impl<Id: Clone + PartialEq> FormState<Id> {
-    /// Handles the `handle_key` interaction.
+    /// Routes canonical focus-navigation and activation keys across enabled fields.
     pub fn handle_key(
         &mut self,
         sections: &[FormSection<'_, Id>],

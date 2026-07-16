@@ -44,7 +44,7 @@ impl<M> ModalStack<M> {
     }
 
     #[must_use]
-    /// Creates a value from `current`.
+    /// Creates a root stack containing one active modal.
     pub fn from_current(current: M) -> Self {
         Self {
             current: Some(current),
@@ -53,7 +53,7 @@ impl<M> ModalStack<M> {
     }
 
     #[must_use]
-    /// Creates a value from `parts`.
+    /// Restores an active modal and its suspended parent chain.
     pub fn from_parts(current: Option<M>, parents: Vec<M>) -> Self {
         Self { current, parents }
     }
@@ -89,7 +89,7 @@ impl<M> ModalStack<M> {
     }
 
     #[must_use]
-    /// Returns whether `open`.
+    /// Returns whether the stack has an active modal.
     pub const fn is_open(&self) -> bool {
         self.current.is_some()
     }
@@ -133,7 +133,10 @@ impl<M> ModalStack<M> {
         self.parents.clear();
     }
 
-    /// Removes and returns the current modal, leaving an empty stack.
+    /// Removes and returns the active modal without discarding saved parents.
+    ///
+    /// Use [`Self::pop`] to restore a parent or [`Self::clear_chain`] to discard
+    /// the complete modal flow after taking the active value.
     pub fn take_current(&mut self) -> Option<M> {
         self.current.take()
     }

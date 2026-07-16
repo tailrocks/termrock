@@ -352,21 +352,21 @@ pub fn raw_bytes_to_chord(bytes: &[u8]) -> Option<KeyChord> {
 /// Every `KeyBinding.glyph` override and `HintSpan::Key` literal for these keys
 /// must use these constants: one spelling per key, everywhere.
 pub mod glyph {
-    /// The `TAB` constant.
+    /// Canonical Tab-key hint glyph.
     pub const TAB: &str = "\u{21e5}";
-    /// The `UP_DOWN` constant.
+    /// Canonical grouped vertical-arrow hint glyph.
     pub const UP_DOWN: &str = "\u{2191}\u{2193}";
-    /// The `LEFT_RIGHT` constant.
+    /// Canonical grouped horizontal-arrow hint glyph.
     pub const LEFT_RIGHT: &str = "\u{2190}\u{2192}";
-    /// The `ALL_ARROWS` constant.
+    /// Canonical grouped four-direction hint glyph.
     pub const ALL_ARROWS: &str = "\u{2191}\u{2193}\u{2190}\u{2192}";
-    /// The `ALT_SHIFT_ALL_ARROWS` constant.
+    /// Canonical Alt-Shift four-direction resize hint.
     pub const ALT_SHIFT_ALL_ARROWS: &str = "Alt-Shift-\u{2191}\u{2193}\u{2190}\u{2192}";
-    /// The `PGUP_PGDN` constant.
+    /// Canonical paired page-navigation hint.
     pub const PGUP_PGDN: &str = "PgUp/PgDn";
-    /// The `ESC` constant.
+    /// Canonical Escape-key hint label.
     pub const ESC: &str = "Esc";
-    /// The `ENTER` constant.
+    /// Canonical Enter-key hint glyph.
     pub const ENTER: &str = "\u{21b5}";
 }
 

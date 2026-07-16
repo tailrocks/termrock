@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `MessageDialog`, `Panel`, `SplitPane`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
+The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Progress`, `SplitPane`, `StatusBar`, `Tabs`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
 
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,

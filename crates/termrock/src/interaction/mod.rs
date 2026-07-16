@@ -22,7 +22,7 @@ impl<Id> FocusState<Id> {
     }
 
     #[must_use]
-    /// Returns whether this focus state currently owns focus.
+    /// Returns the stable identity that currently owns focus.
     pub const fn focused(&self) -> Option<&Id> {
         self.focused.as_ref()
     }

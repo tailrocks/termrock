@@ -57,7 +57,9 @@ impl LogPaneState {
     }
 
     #[must_use]
-    /// Returns this value with `max_lines` configured.
+    /// Sets the retained history bound for subsequent appends.
+    ///
+    /// Existing excess history is retained until the next line is appended.
     pub const fn with_max_lines(mut self, max_lines: usize) -> Self {
         self.max_lines = Some(max_lines);
         self
@@ -81,7 +83,7 @@ impl LogPaneState {
         self.clamp_tail();
     }
 
-    /// Removes every checked identity.
+    /// Clears all history and resumes following an empty live tail.
     pub fn clear(&mut self) {
         self.lines.clear();
         self.history_start = 0;
@@ -104,13 +106,13 @@ impl LogPaneState {
     }
 
     #[must_use]
-    /// Returns whether `empty`.
+    /// Returns whether the retained history contains no lines.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     #[must_use]
-    /// Returns whether `following`.
+    /// Returns whether the viewport tracks the live tail.
     pub const fn is_following(&self) -> bool {
         self.follow
     }
@@ -166,7 +168,7 @@ impl LogPaneState {
         before != (self.tail.offset(), self.follow, self.pending_oldest)
     }
 
-    /// Handles the `handle_key` interaction.
+    /// Applies line, page, oldest, and live-tail scrollback navigation.
     pub fn handle_key(&mut self, key: KeyEvent) -> Outcome<()> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
