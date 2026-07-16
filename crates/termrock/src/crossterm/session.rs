@@ -315,6 +315,34 @@ mod tests {
         );
     }
 
+    #[test]
+    fn multiple_restore_failures_return_the_earliest_error() {
+        let state = Rc::new(RefCell::new(MultiFailState::default()));
+        let writer = MultiFailWriter {
+            state: Rc::clone(&state),
+        };
+        let options = SessionOptions {
+            raw_mode: false,
+            ..SessionOptions::default()
+        };
+        let mut session = Session::enter(writer, options).expect("enter session");
+        {
+            let mut state = state.borrow_mut();
+            let next = state.writes + 1;
+            state.failures = vec![
+                (next, "first cleanup failure"),
+                (next + 1, "second cleanup failure"),
+            ];
+        }
+
+        let error = session.restore().expect_err("cleanup must fail");
+        assert_eq!(error.to_string(), "first cleanup failure");
+        assert!(
+            state.borrow().failures.is_empty(),
+            "all cleanup paths must run"
+        );
+    }
+
     #[derive(Debug)]
     struct WriterState {
         writes: usize,
@@ -419,6 +447,39 @@ mod tests {
             if !state.failed {
                 state.completed_acquisitions += 1;
             }
+            Ok(())
+        }
+    }
+
+    #[derive(Debug, Default)]
+    struct MultiFailState {
+        writes: usize,
+        failures: Vec<(usize, &'static str)>,
+        bytes: Vec<u8>,
+    }
+
+    #[derive(Debug)]
+    struct MultiFailWriter {
+        state: Rc<RefCell<MultiFailState>>,
+    }
+
+    impl Write for MultiFailWriter {
+        fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
+            let mut state = self.state.borrow_mut();
+            state.writes += 1;
+            if state
+                .failures
+                .first()
+                .is_some_and(|(write, _)| *write == state.writes)
+            {
+                let (_, message) = state.failures.remove(0);
+                return Err(io::Error::other(message));
+            }
+            state.bytes.extend_from_slice(buffer);
+            Ok(buffer.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
             Ok(())
         }
     }
