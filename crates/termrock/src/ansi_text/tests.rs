@@ -25,6 +25,19 @@ fn converts_sgr_to_styled_spans() {
 }
 
 #[test]
+fn converts_ansi_to_an_owned_line_once_at_ingest() {
+    let default = Style::default().fg(Color::Gray);
+    let styled = line_from_ansi("plain \x1b[31mbad\x1b[0m", default);
+    assert_eq!(styled.to_string(), "plain bad");
+    assert_eq!(styled.spans[1].style.fg, Some(Color::Red));
+
+    let plain = line_from_ansi("plain", default);
+    assert_eq!(plain.spans.len(), 1);
+    assert_eq!(plain.spans[0].content, "plain");
+    assert_eq!(plain.spans[0].style, default);
+}
+
+#[test]
 fn parses_indexed_truecolor_bright_and_background_colors() {
     for (input, foreground, background) in [
         ("\x1b[38;5;196mx", Some(Color::Indexed(196)), None),

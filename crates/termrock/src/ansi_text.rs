@@ -9,7 +9,7 @@
 
 use anstyle_parse::{DefaultCharAccumulator, Params, Parser, Perform};
 use ratatui_core::style::{Color, Modifier, Style};
-use ratatui_core::text::Span;
+use ratatui_core::text::{Line, Span};
 
 #[must_use]
 /// Removes ANSI escape sequences while preserving printable bytes and basic whitespace.
@@ -54,6 +54,15 @@ pub fn styled_spans(input: &str, default_style: Style) -> Vec<Span<'static>> {
     }
     performer.flush();
     performer.spans
+}
+
+/// Parses ANSI SGR text into one owned line for append-time ingestion.
+///
+/// Parse once before appending to a scrollback buffer; rendering the returned
+/// line does not re-run the ANSI parser.
+#[must_use]
+pub fn line_from_ansi(input: &str, default_style: Style) -> Line<'static> {
+    Line::from(styled_spans(input, default_style))
 }
 
 struct StyledPerformer {

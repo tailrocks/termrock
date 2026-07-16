@@ -32,6 +32,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0016 | `v0.11.0` | [Ordinary vs strong text and Viewport emphasis](migrations/0016-v0.11.0-text-strong-and-viewport-emphasis.md) |
 | 0017 | `v0.11.0` | [First-class scrollable block helpers](migrations/0017-v0.11.0-scrollable-block-helpers.md) |
 | 0018 | `v0.11.0` | [Theme-explicit scroll and typed dialog input](migrations/0018-v0.11.0-theme-explicit-scroll.md) |
+| 0019 | `v0.11.0` | [Bounded LogPane scrollback](migrations/0019-v0.11.0-bounded-log-pane-scrollback.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

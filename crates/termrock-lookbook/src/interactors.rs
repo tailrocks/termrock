@@ -27,10 +27,18 @@ use crate::stories::{
 };
 
 trait PointerTarget {
-    fn hover_at(&mut self, position: Position) -> bool;
-    fn click_at(&mut self, position: Position) -> bool;
-    fn drag_to(&mut self, position: Position) -> bool;
-    fn wheel(&mut self, delta: isize) -> bool;
+    fn hover_at(&mut self, _position: Position) -> bool {
+        false
+    }
+    fn click_at(&mut self, _position: Position) -> bool {
+        false
+    }
+    fn drag_to(&mut self, _position: Position) -> bool {
+        false
+    }
+    fn wheel(&mut self, _delta: isize) -> bool {
+        false
+    }
 }
 
 fn route_pointer(target: &mut impl PointerTarget, mouse: MouseEvent, preview_area: Rect) -> bool {
@@ -298,12 +306,18 @@ impl StoryInteraction for LogPaneInteractor {
         !matches!(self.state.handle_key(key), Outcome::Ignored)
     }
 
-    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
-        false
+    fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
+        route_pointer(self, mouse, preview_area)
     }
 
     fn set_theme(&mut self, theme: Theme) {
         self.theme = theme;
+    }
+}
+
+impl PointerTarget for LogPaneInteractor {
+    fn wheel(&mut self, delta: isize) -> bool {
+        self.state.scroll_by(delta)
     }
 }
 
@@ -623,7 +637,29 @@ mod tests {
 
     use termrock::input::{KeyCode, KeyEvent};
 
-    use super::{FormInteractor, SplitPaneInteractor, StoryInteraction, ToastInteractor};
+    use super::{
+        FormInteractor, LogPaneInteractor, SplitPaneInteractor, StoryInteraction, ToastInteractor,
+    };
+
+    #[test]
+    fn log_pane_wheel_freezes_tail_following() {
+        let area = Rect::new(0, 0, 52, 5);
+        let mut interactor = LogPaneInteractor::new();
+        let mut terminal = Terminal::new(TestBackend::new(area.width, area.height)).unwrap();
+        terminal
+            .draw(|frame| interactor.render(frame, area))
+            .unwrap();
+
+        assert!(interactor.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::ScrollUp,
+                position: Position::new(1, 1),
+                modifiers: KeyModifiers::NONE,
+            },
+            area,
+        ));
+        assert!(!interactor.state.is_following());
+    }
 
     #[test]
     fn form_hover_clears_when_pointer_leaves_preview() {

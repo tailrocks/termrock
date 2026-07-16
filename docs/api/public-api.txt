@@ -1,5 +1,6 @@
 pub mod termrock
 pub mod termrock::ansi_text
+pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
 pub fn termrock::ansi_text::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::ansi_text::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub mod termrock::crossterm
@@ -4818,23 +4819,26 @@ pub struct termrock::widgets::LogPaneState
 impl termrock::widgets::LogPaneState
 pub fn termrock::widgets::LogPaneState::append(&mut self, impl core::convert::Into<ratatui_core::text::line::Line<'static>>)
 pub fn termrock::widgets::LogPaneState::clear(&mut self)
+pub fn termrock::widgets::LogPaneState::follow(&mut self)
 pub fn termrock::widgets::LogPaneState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::interaction::Outcome<()>
 pub fn termrock::widgets::LogPaneState::is_empty(&self) -> bool
 pub const fn termrock::widgets::LogPaneState::is_following(&self) -> bool
 pub fn termrock::widgets::LogPaneState::len(&self) -> usize
 pub fn termrock::widgets::LogPaneState::lines(&self) -> &[ratatui_core::text::line::Line<'static>]
 pub const fn termrock::widgets::LogPaneState::new() -> Self
+pub fn termrock::widgets::LogPaneState::scroll_by(&mut self, isize) -> bool
+pub fn termrock::widgets::LogPaneState::scroll_to_oldest(&mut self) -> bool
+pub fn termrock::widgets::LogPaneState::unbounded(self) -> Self
 pub const fn termrock::widgets::LogPaneState::with_max_lines(self, usize) -> Self
 impl core::clone::Clone for termrock::widgets::LogPaneState
 pub fn termrock::widgets::LogPaneState::clone(&self) -> termrock::widgets::LogPaneState
 impl core::cmp::Eq for termrock::widgets::LogPaneState
 impl core::cmp::PartialEq for termrock::widgets::LogPaneState
-pub fn termrock::widgets::LogPaneState::eq(&self, &termrock::widgets::LogPaneState) -> bool
+pub fn termrock::widgets::LogPaneState::eq(&self, &Self) -> bool
 impl core::default::Default for termrock::widgets::LogPaneState
 pub fn termrock::widgets::LogPaneState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::LogPaneState
 pub fn termrock::widgets::LogPaneState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::widgets::LogPaneState
 impl core::marker::Freeze for termrock::widgets::LogPaneState
 impl core::marker::Send for termrock::widgets::LogPaneState
 impl core::marker::Sync for termrock::widgets::LogPaneState

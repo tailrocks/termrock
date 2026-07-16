@@ -198,6 +198,15 @@ pub(crate) fn stories() -> Vec<Story> {
         )
         .with_interactor(log_pane_interactor),
         Story::new(
+            "log-pane/scrolled",
+            "Frozen log scrollback",
+            "LogPane",
+            "Scrolled-back distance plus wide CJK and emoji output.",
+            52,
+            8,
+            log_pane_scrolled,
+        ),
+        Story::new(
             "form/responsive",
             "Responsive form",
             "Form",
@@ -434,6 +443,24 @@ fn log_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         state.append(line);
     }
     frame.render_stateful_widget(&LogPane::new(theme).title("Build log"), area, &mut state);
+}
+
+fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = LogPaneState::new();
+    for line in [
+        "[12:04:01] resolving workspace",
+        "[12:04:02] 東京 worker ready 🪨",
+        "[12:04:03] compiling termrock",
+        "[12:04:04] running tests",
+        "[12:04:05] rendering previews",
+        "[12:04:06] result: ok ✓",
+        "[12:04:07] waiting for changes",
+    ] {
+        state.append(line);
+    }
+    let pane = LogPane::new(theme).title("Frozen build log");
+    state.scroll_to_oldest();
+    frame.render_stateful_widget(&pane, area, &mut state);
 }
 
 fn action_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
