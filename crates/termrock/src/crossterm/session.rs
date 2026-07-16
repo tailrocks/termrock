@@ -1,9 +1,13 @@
 use std::io::{self, Write};
 
 use crossterm::{
+    cursor::{Hide, Show},
     event::{DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{
+        DisableLineWrap, EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen,
+        disable_raw_mode, enable_raw_mode,
+    },
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,6 +34,8 @@ pub struct Session<W: Write> {
     alternate_screen: bool,
     mouse_capture: bool,
     bracketed_paste: bool,
+    line_wrap_disabled: bool,
+    cursor_hidden: bool,
     raw_mode: bool,
 }
 
@@ -40,24 +46,34 @@ impl<W: Write> Session<W> {
             alternate_screen: false,
             mouse_capture: false,
             bracketed_paste: false,
+            line_wrap_disabled: false,
+            cursor_hidden: false,
             raw_mode: false,
         };
         let result = (|| {
             if options.raw_mode {
-                enable_raw_mode()?;
                 session.raw_mode = true;
+                enable_raw_mode()?;
             }
             if options.alternate_screen {
-                execute!(&mut session.writer, EnterAlternateScreen)?;
                 session.alternate_screen = true;
+                execute!(&mut session.writer, EnterAlternateScreen)?;
             }
             if options.mouse_capture {
-                execute!(&mut session.writer, EnableMouseCapture)?;
                 session.mouse_capture = true;
+                execute!(&mut session.writer, EnableMouseCapture)?;
             }
             if options.bracketed_paste {
-                execute!(&mut session.writer, EnableBracketedPaste)?;
                 session.bracketed_paste = true;
+                execute!(&mut session.writer, EnableBracketedPaste)?;
+            }
+            if options.alternate_screen {
+                session.line_wrap_disabled = true;
+                execute!(&mut session.writer, DisableLineWrap)?;
+            }
+            if options.alternate_screen {
+                session.cursor_hidden = true;
+                execute!(&mut session.writer, Hide)?;
             }
             Ok(())
         })();
@@ -70,41 +86,36 @@ impl<W: Write> Session<W> {
 
     pub fn restore(&mut self) -> io::Result<()> {
         let mut first = None;
-        if self.bracketed_paste {
-            if let Err(error) = execute!(&mut self.writer, DisableBracketedPaste) {
-                first = Some(error);
-            } else {
-                self.bracketed_paste = false;
-            }
+        if self.cursor_hidden && record_first(&mut first, execute!(&mut self.writer, Show)) {
+            self.cursor_hidden = false;
         }
-        if self.mouse_capture {
-            if let Err(error) = execute!(&mut self.writer, DisableMouseCapture) {
-                if first.is_none() {
-                    first = Some(error);
-                }
-            } else {
-                self.mouse_capture = false;
-            }
+        if self.line_wrap_disabled
+            && record_first(&mut first, execute!(&mut self.writer, EnableLineWrap))
+        {
+            self.line_wrap_disabled = false;
         }
-        if self.alternate_screen {
-            if let Err(error) = execute!(&mut self.writer, LeaveAlternateScreen) {
-                if first.is_none() {
-                    first = Some(error);
-                }
-            } else {
-                self.alternate_screen = false;
-            }
+        if self.bracketed_paste
+            && record_first(
+                &mut first,
+                execute!(&mut self.writer, DisableBracketedPaste),
+            )
+        {
+            self.bracketed_paste = false;
         }
-        if self.raw_mode {
-            if let Err(error) = disable_raw_mode() {
-                if first.is_none() {
-                    first = Some(error);
-                }
-            } else {
-                self.raw_mode = false;
-            }
+        if self.mouse_capture
+            && record_first(&mut first, execute!(&mut self.writer, DisableMouseCapture))
+        {
+            self.mouse_capture = false;
         }
-        self.writer.flush()?;
+        if self.alternate_screen
+            && record_first(&mut first, execute!(&mut self.writer, LeaveAlternateScreen))
+        {
+            self.alternate_screen = false;
+        }
+        if self.raw_mode && record_first(&mut first, disable_raw_mode()) {
+            self.raw_mode = false;
+        }
+        record_first(&mut first, self.writer.flush());
         first.map_or(Ok(()), Err)
     }
 
@@ -114,8 +125,301 @@ impl<W: Write> Session<W> {
     }
 }
 
+fn record_first(first: &mut Option<io::Error>, result: io::Result<()>) -> bool {
+    match result {
+        Ok(()) => true,
+        Err(error) => {
+            if first.is_none() {
+                *first = Some(error);
+            }
+            false
+        }
+    }
+}
+
 impl<W: Write> Drop for Session<W> {
     fn drop(&mut self) {
         let _ = self.restore();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::RefCell, rc::Rc};
+
+    use super::*;
+
+    #[test]
+    fn owns_and_restores_every_writer_backed_mode_in_reverse_order() {
+        let options = SessionOptions {
+            raw_mode: false,
+            ..SessionOptions::default()
+        };
+        let mut session = Session::enter(Vec::new(), options).expect("in-memory session");
+
+        session.restore().expect("restore session");
+        let bytes = session.writer_mut();
+        let text = String::from_utf8_lossy(bytes);
+        let sequences = [
+            "\u{1b}[?1049h",
+            "\u{1b}[?1000h",
+            "\u{1b}[?2004h",
+            "\u{1b}[?7l",
+            "\u{1b}[?25l",
+            "\u{1b}[?25h",
+            "\u{1b}[?7h",
+            "\u{1b}[?2004l",
+            "\u{1b}[?1000l",
+            "\u{1b}[?1049l",
+        ];
+        let positions = sequences.map(|sequence| {
+            text.find(sequence)
+                .unwrap_or_else(|| panic!("missing terminal sequence {sequence:?}"))
+        });
+        assert!(
+            positions.windows(2).all(|pair| pair[0] < pair[1]),
+            "terminal modes must acquire forward and restore in exact reverse order"
+        );
+    }
+
+    #[test]
+    fn restore_is_idempotent_for_all_writer_backed_modes() {
+        let options = SessionOptions {
+            raw_mode: false,
+            ..SessionOptions::default()
+        };
+        let mut session = Session::enter(Vec::new(), options).expect("in-memory session");
+        session.restore().expect("first restore");
+        let first_length = session.writer_mut().len();
+        session.restore().expect("second restore");
+        assert_eq!(session.writer_mut().len(), first_length);
+    }
+
+    #[test]
+    fn partial_write_at_each_acquisition_restores_every_armed_mode() {
+        let inverses = [
+            "\u{1b}[?1049l",
+            "\u{1b}[?1000l",
+            "\u{1b}[?2004l",
+            "\u{1b}[?7h",
+            "\u{1b}[?25h",
+        ];
+        for target_acquisition in 1..=inverses.len() {
+            let state = Rc::new(RefCell::new(PartialWriterState {
+                target_acquisition,
+                ..PartialWriterState::default()
+            }));
+            let writer = PartialThenFailWriter {
+                state: Rc::clone(&state),
+            };
+            let options = SessionOptions {
+                raw_mode: false,
+                ..SessionOptions::default()
+            };
+
+            assert!(Session::enter(writer, options).is_err());
+            let bytes = state.borrow();
+            assert!(
+                bytes.partial_written,
+                "target {target_acquisition} was not partially written"
+            );
+            let text = String::from_utf8_lossy(&bytes.bytes);
+            for inverse in &inverses[..target_acquisition] {
+                assert!(
+                    text.contains(inverse),
+                    "partial acquisition {target_acquisition} did not restore {inverse:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn failure_at_each_acquisition_flush_restores_every_armed_mode() {
+        let inverses = [
+            "\u{1b}[?1049l",
+            "\u{1b}[?1000l",
+            "\u{1b}[?2004l",
+            "\u{1b}[?7h",
+            "\u{1b}[?25h",
+        ];
+        for fail_flush_at in 1..=inverses.len() {
+            let state = Rc::new(RefCell::new(WriterState {
+                fail_flush_at,
+                ..WriterState::default()
+            }));
+            let writer = FailOnceWriter {
+                state: Rc::clone(&state),
+            };
+            let options = SessionOptions {
+                raw_mode: false,
+                ..SessionOptions::default()
+            };
+
+            assert!(Session::enter(writer, options).is_err());
+            let bytes = state.borrow();
+            let text = String::from_utf8_lossy(&bytes.bytes);
+            for inverse in &inverses[..fail_flush_at] {
+                assert!(
+                    text.contains(inverse),
+                    "flush {fail_flush_at} did not restore {inverse:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn flush_failure_after_acquisition_still_runs_safe_inverse() {
+        let state = Rc::new(RefCell::new(WriterState {
+            fail_flush_at: 1,
+            ..WriterState::default()
+        }));
+        let writer = FailOnceWriter {
+            state: Rc::clone(&state),
+        };
+        let options = SessionOptions {
+            alternate_screen: true,
+            mouse_capture: false,
+            bracketed_paste: false,
+            raw_mode: false,
+        };
+
+        assert!(Session::enter(writer, options).is_err());
+        let bytes = state.borrow();
+        let text = String::from_utf8_lossy(&bytes.bytes);
+        assert!(text.contains("\u{1b}[?1049h"));
+        assert!(text.contains("\u{1b}[?1049l"));
+    }
+
+    #[test]
+    fn failed_restore_keeps_cleanup_armed_for_retry() {
+        let state = Rc::new(RefCell::new(WriterState::default()));
+        let writer = FailOnceWriter {
+            state: Rc::clone(&state),
+        };
+        let options = SessionOptions {
+            raw_mode: false,
+            ..SessionOptions::default()
+        };
+        let mut session = Session::enter(writer, options).expect("enter session");
+        {
+            let mut state = state.borrow_mut();
+            state.fail_write_at = state.writes + 1;
+            state.failed_write = false;
+        }
+
+        assert!(session.restore().is_err());
+        session.restore().expect("retry failed cleanup");
+        assert!(
+            String::from_utf8_lossy(&state.borrow().bytes).contains("\u{1b}[?25h"),
+            "cursor restore must be retried"
+        );
+    }
+
+    #[derive(Debug)]
+    struct WriterState {
+        writes: usize,
+        flushes: usize,
+        fail_write_at: usize,
+        fail_flush_at: usize,
+        failed_write: bool,
+        failed_flush: bool,
+        bytes: Vec<u8>,
+    }
+
+    impl Default for WriterState {
+        fn default() -> Self {
+            Self {
+                writes: 0,
+                flushes: 0,
+                fail_write_at: usize::MAX,
+                fail_flush_at: usize::MAX,
+                failed_write: false,
+                failed_flush: false,
+                bytes: Vec::new(),
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    struct FailOnceWriter {
+        state: Rc<RefCell<WriterState>>,
+    }
+
+    impl Write for FailOnceWriter {
+        fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
+            let mut state = self.state.borrow_mut();
+            state.writes += 1;
+            if !state.failed_write && state.writes == state.fail_write_at {
+                state.failed_write = true;
+                return Err(io::Error::other("injected writer failure"));
+            }
+            state.bytes.extend_from_slice(buffer);
+            Ok(buffer.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            let mut state = self.state.borrow_mut();
+            state.flushes += 1;
+            if !state.failed_flush && state.flushes == state.fail_flush_at {
+                state.failed_flush = true;
+                return Err(io::Error::other("injected flush failure"));
+            }
+            Ok(())
+        }
+    }
+
+    #[derive(Debug)]
+    struct PartialThenFailWriter {
+        state: Rc<RefCell<PartialWriterState>>,
+    }
+
+    #[derive(Debug)]
+    struct PartialWriterState {
+        target_acquisition: usize,
+        completed_acquisitions: usize,
+        partial_written: bool,
+        failed: bool,
+        bytes: Vec<u8>,
+    }
+
+    impl Default for PartialWriterState {
+        fn default() -> Self {
+            Self {
+                target_acquisition: usize::MAX,
+                completed_acquisitions: 0,
+                partial_written: false,
+                failed: false,
+                bytes: Vec::new(),
+            }
+        }
+    }
+
+    impl Write for PartialThenFailWriter {
+        fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
+            let mut state = self.state.borrow_mut();
+            if state.partial_written && !state.failed {
+                state.failed = true;
+                return Err(io::Error::other("injected failure after partial write"));
+            }
+            if !state.failed
+                && state.completed_acquisitions + 1 == state.target_acquisition
+                && buffer.len() > 1
+            {
+                let accepted = buffer.len() - 1;
+                state.bytes.extend_from_slice(&buffer[..accepted]);
+                state.partial_written = true;
+                return Ok(accepted);
+            }
+            state.bytes.extend_from_slice(buffer);
+            Ok(buffer.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            let mut state = self.state.borrow_mut();
+            if !state.failed {
+                state.completed_acquisitions += 1;
+            }
+            Ok(())
+        }
     }
 }
