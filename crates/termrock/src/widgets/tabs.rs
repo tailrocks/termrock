@@ -2,6 +2,7 @@ use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},
+    text::Span,
     widgets::StatefulWidget,
 };
 
@@ -17,7 +18,7 @@ use unicode_width::UnicodeWidthStr;
 pub struct Tab<'a, Id> {
     pub id: Id,
     pub label: &'a str,
-    pub glyph: Option<&'a str>,
+    pub glyph: Option<Span<'a>>,
     pub active: bool,
     pub enabled: bool,
 }
@@ -53,8 +54,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
         state.regions.clear();
         let mut x = area.x;
         for tab in self.tabs {
-            let label = match tab.glyph {
-                Some(glyph) => format!("{glyph} {}", tab.label),
+            let label = match &tab.glyph {
+                Some(glyph) => format!("{} {}", glyph.content, tab.label),
                 None => tab.label.to_owned(),
             };
             let width = UnicodeWidthStr::width(label.as_str())
@@ -88,6 +89,17 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
                 label_rect.width as usize,
                 style,
             );
+            if label_rect.height > 0
+                && label_rect.width > 1
+                && let Some(glyph) = &tab.glyph
+            {
+                buffer.set_span(
+                    label_rect.x.saturating_add(1),
+                    label_rect.y,
+                    glyph,
+                    label_rect.width.saturating_sub(1),
+                );
+            }
             if selected && area.height > 1 {
                 let underline_style = if state.focused {
                     GREEN
@@ -125,6 +137,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
 mod tests {
     use super::*;
     use ratatui_core::layout::Position;
+    use ratatui_core::style::Color;
 
     #[test]
     fn selection_cue_and_hit_regions_share_two_row_geometry() {
@@ -163,5 +176,29 @@ mod tests {
         assert!(buffer[(3, 4)].modifier.contains(Modifier::UNDERLINED));
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
+    }
+
+    #[test]
+    fn glyph_span_style_overrides_the_tab_foreground_without_losing_its_fill() {
+        let tabs = [Tab {
+            id: "running",
+            label: "Build",
+            glyph: Some(Span::styled("●", Style::new().fg(Color::Yellow))),
+            active: true,
+            enabled: true,
+        }];
+        let area = Rect::new(0, 0, 20, 2);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TabsState::default();
+
+        (&Tabs {
+            tabs: &tabs,
+            gap: 1,
+        })
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(buffer[(1, 0)].symbol(), "●");
+        assert_eq!(buffer[(1, 0)].fg, Color::Yellow);
+        assert_eq!(buffer[(1, 0)].bg, TAB_BG_ACTIVE);
     }
 }

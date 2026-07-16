@@ -3,7 +3,13 @@
 
 //! Product-neutral stories rendered through TermRock's public widget API.
 
-use ratatui::{Frame, layout::Rect, style::Style, text::Line, widgets::Paragraph};
+use ratatui::{
+    Frame,
+    layout::Rect,
+    style::Style,
+    text::{Line, Span},
+    widgets::Paragraph,
+};
 use termrock::{
     Theme,
     scroll::DialogScroll,
@@ -124,7 +130,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "tabs/status",
             "Tabs",
             "Tabs",
-            "Tabs with per-item glyph and state.",
+            "Tabs with styled per-item glyphs and state.",
             52,
             2,
             tabs,
@@ -447,11 +453,12 @@ fn tree(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn tabs(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::tailrocks_phosphor();
     let items = [
         Tab {
             id: "overview",
             label: "Overview",
-            glyph: Some("●"),
+            glyph: Some(Span::styled("●", theme.style(Role::Success))),
             active: true,
             enabled: true,
         },
