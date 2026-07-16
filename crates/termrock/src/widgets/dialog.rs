@@ -211,10 +211,19 @@ impl Widget for &Dialog<'_> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChoiceDialogState<Id> {
     pub focused: Option<Id>,
     pub regions: Vec<HitRegion<Id>>,
+}
+
+impl<Id> Default for ChoiceDialogState<Id> {
+    fn default() -> Self {
+        Self {
+            focused: None,
+            regions: Vec::new(),
+        }
+    }
 }
 
 impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {

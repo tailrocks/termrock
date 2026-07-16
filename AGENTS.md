@@ -27,40 +27,30 @@ substitute.
 
 ## Forward-only design
 
-Always optimize for the best current API, component model, and architecture.
-Do not preserve an inferior design merely to reduce downstream migration work:
-AI-assisted consumers can adapt quickly, while compatibility constraints make
-the shared foundation progressively harder to improve. Freely rename, remove,
-restructure, or replace public APIs and concepts when the resulting model is
-clearer, more composable, more reusable, or more correct. Prefer a coherent
-breaking redesign over deprecation layers, parallel old/new paths, or local
-exceptions. Evaluate proposals against the architecture TermRock should have
-next, not the shape it happened to have before.
+Always optimize for the best current API, domain model, module boundary, and
+architecture. Compatibility never blocks a better design: AI-assisted consumers
+can migrate quickly, while compatibility constraints permanently weaken the
+shared foundation. Freely rename, remove, restructure, or replace public APIs
+and concepts. Prefer one coherent breaking redesign over deprecated aliases,
+parallel old/new implementations, compatibility facades, or local exceptions.
+Evaluate changes against the architecture TermRock should have next, not the
+shape it happened to have before.
 
 ## Breaking-change documentation
 
-Backward compatibility must not constrain a better component model, but every
-breaking or dramatic behavioral change must be understandable without reading
-the implementation or commit history. Ship the change and its migration
-documentation together on `main`:
+Every breaking or dramatic public change must add the next sequential file
+under `migrations/` and link it from `MIGRATING.md` in the same commit. The file
+records the removed surface, canonical replacement, exact consumer edits,
+before/after examples, removed concepts, ownership changes, and validation
+commands. Documentation must let another agent migrate a pinned consumer
+without reconstructing intent from the implementation, diff, or commit history.
 
-- append one sequentially numbered file under `migrations/` that names the
-  removed API or old concept, its replacement, and the downstream code or
-  ownership change, then link it from the ordered `MIGRATING.md` index;
-- use an old-to-new table when more than one symbol, namespace, state owner, or
-  behavior changes;
-- include short before/after Rust examples when a type signature or composition
-  pattern changes and prose alone is ambiguous;
-- state explicitly when consumers must delete a local implementation, move
-  state into TermRock, or retain product-owned state/effects;
-- update the component catalog, generated API inventory, contract docs, and
-  relevant guide pages so they describe only the new design.
-
-Never rewrite an older migration to represent a newer transition. Do not add
-deprecated aliases, compatibility facades, or migration shims. The ordered
-migration documents explain the transition; the library exposes the new model
-only. A breaking change is incomplete until its new migration file and index
-entry are committed.
+Existing migration files are historical boundaries. Add a new numbered file
+instead of rewriting an older migration for a later API. Migration documentation
+coordinates forward adoption; it never authorizes deprecated aliases, duplicate
+implementations, compatibility facades, or retention of an inferior path. A
+breaking change is incomplete until its migration file and ordered index entry
+are committed.
 
 Every public widget must be represented by the catalog's generated API
 inventory, contract matrix, documentation, story, and deterministic preview.

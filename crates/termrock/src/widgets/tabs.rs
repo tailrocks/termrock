@@ -22,12 +22,23 @@ pub struct Tab<'a, Id> {
     pub enabled: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TabsState<Id> {
     pub selected: Option<Id>,
     pub hovered: Option<Id>,
     pub focused: bool,
     pub regions: Vec<HitRegion<Id>>,
+}
+
+impl<Id> Default for TabsState<Id> {
+    fn default() -> Self {
+        Self {
+            selected: None,
+            hovered: None,
+            focused: false,
+            regions: Vec::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

@@ -1,22 +1,20 @@
-# Migrating TermRock consumers
+# TermRock migration index
 
-TermRock optimizes for the best forward design rather than API compatibility.
-Breaking changes expose only the new model: there are no deprecated aliases,
-compatibility facades, or transition shims.
+TermRock optimizes for the best current API and architecture, not backward
+compatibility. Consumers pin reviewed full Git revisions and migrate forward
+without compatibility shims or parallel legacy paths. TermRock keeps executor,
+output, validation, wording, and application models consumer-owned unless a
+migration explicitly changes that boundary.
 
-Pin a reviewed full Git revision and commit the Cargo lockfile. Before changing
-that revision, apply every migration after the consumer's current version in
-the order listed below. Each migration records the previous model, the new
-model, and the downstream action required. TermRock keeps executor, output,
-validation, wording, and application models consumer-owned unless a migration
-explicitly changes that boundary.
+Apply every migration after the consumer's pinned version in numeric order:
 
-## Ordered migrations
+| Sequence | Version | Migration |
+|---:|---|---|
+| 0001 | `v0.7.0` | [Canonical namespaces](migrations/0001-v0.7.0-canonical-namespaces.md) |
+| 0002 | `v0.8.0` | [Canonical widget contracts](migrations/0002-v0.8.0-canonical-widget-contracts.md) |
 
-1. [`0001 — canonical namespaces (v0.7.0)`](migrations/0001-canonical-namespaces-v0.7.0.md)
-2. [`0002 — canonical contracts (v0.8.0)`](migrations/0002-canonical-contracts-v0.8.0.md)
-
-New breaking changes append one numbered file and one link to this list. Never
-rewrite an older migration to describe a later API: agents must be able to walk
-the history sequentially and identify exactly which transition resolves an
-incompatibility.
+Each breaking or dramatic public change adds the next zero-padded file and an
+index row in the same commit. Existing migration files describe historical
+boundaries and are not rewritten to describe a later API. Agents encountering
+an incompatibility should locate the consumer's pinned version, then walk these
+files sequentially until reaching the target revision.

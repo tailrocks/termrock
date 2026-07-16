@@ -23,10 +23,19 @@ pub struct StatusSlot<'a, Id> {
     pub hover_style: Option<Style>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatusBarState<Id> {
     pub hovered: Option<Id>,
     pub regions: Vec<HitRegion<Id>>,
+}
+
+impl<Id> Default for StatusBarState<Id> {
+    fn default() -> Self {
+        Self {
+            hovered: None,
+            regions: Vec::new(),
+        }
+    }
 }
 
 impl<Id: Clone> StatusBarState<Id> {

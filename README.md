@@ -15,7 +15,8 @@ Reusable visual and interaction behavior belongs here. Applications keep only
 their domain state and wording, effects, process policy, secrets, executor
 choices, and projections into TermRock components. During this pre-release
 period, shared design quality takes priority over API compatibility; consumers
-pin exact revisions and adapt to deliberate breaking changes.
+pin exact revisions and adapt to deliberate breaking changes using
+[`MIGRATING.md`](MIGRATING.md).
 
 The repository is in its bootstrap extraction period. Consumers pin exact Git
 revisions; crates.io publication is not part of the initial migration.
