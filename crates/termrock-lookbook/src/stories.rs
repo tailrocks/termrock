@@ -18,10 +18,10 @@ use termrock::{
         Action, ActionBar, ActionBarState, Anchor, Backdrop, ChoiceDialog, ChoiceDialogState,
         DetailCapability, DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine,
         DiffState, DiffView, Form, FormField, FormSection, FormState, Hint, HintBar, List, ListRow,
-        ListState, MessageDialog, Panel, PanelEmphasis, RowRole, Severity, SplitDirection,
-        SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Tab, Tabs,
-        TabsState, TextInput, TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState,
-        Validation, Viewport,
+        ListState, MessageDialog, Panel, PanelEmphasis, Progress, ProgressKind, RowRole, Severity,
+        SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState,
+        StatusSlot, Tab, Tabs, TabsState, TextInput, TextInputState, Toast, Tree, TreeNode,
+        TreeNodeStatus, TreeState, Validation, Viewport,
     },
 };
 
@@ -168,6 +168,15 @@ pub(crate) fn stories() -> Vec<Story> {
         )
         .with_interactor(tree_interactor),
         Story::new(
+            "progress/determinate",
+            "Progress",
+            "Progress",
+            "Caller-ticked determinate and indeterminate progress.",
+            42,
+            2,
+            progress,
+        ),
+        Story::new(
             "form/responsive",
             "Responsive form",
             "Form",
@@ -293,6 +302,28 @@ fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         frame.render_widget(
             Paragraph::new("State   Ready\nMode    Interactive"),
             Rect::new(area.x + 1, area.y + 1, area.width - 2, area.height - 2),
+        );
+    }
+}
+
+fn progress(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let determinate = Rect::new(area.x, area.y, area.width, area.height.min(1));
+    frame.render_widget(
+        &Progress {
+            kind: ProgressKind::Determinate { fraction: 0.62 },
+            label: Some("Processing"),
+            theme,
+        },
+        determinate,
+    );
+    if area.height > 1 {
+        frame.render_widget(
+            &Progress {
+                kind: ProgressKind::Indeterminate { tick: 3 },
+                label: Some("Waiting"),
+                theme,
+            },
+            Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
         );
     }
 }

@@ -5,6 +5,7 @@
   {"id":"hint-bar/wrapped","file":"hint-bar-wrapped.svg"},
   {"id":"list/selection","file":"list-selection.svg"},
   {"id":"tree/navigation","file":"tree-navigation.svg"},
+  {"id":"progress/determinate","file":"progress-determinate.svg"},
   {"id":"form/responsive","file":"form-responsive.svg"},
   {"id":"split-pane/horizontal","file":"split-pane-horizontal.svg"},
   {"id":"text-input/filter","file":"text-input-filter.svg"},

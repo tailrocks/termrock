@@ -15,6 +15,7 @@ Every component accepts consumer-owned labels and borrowed data. Keyboard routin
 - `HintBar`: prioritized chord descriptors and semantic group wrapping that never splits a key/label pair. Story `hint-bar/wrapped`.
 - `List`: borrowed stable-ID rows with owned keyboard navigation, optional ordered multi-selection (`Space` and painted `[ ]`/`[x]` regions), selection-following scroll state, a proportional scrollbar gutter, right-aligned trailing metadata that survives label truncation, activation, hover, and painted click regions. Index-addressed pickers use `ListState::for_count`, `cycle_index`, `move_index`, `reconcile_count`, and `selected_item` instead of a parallel selection model. Story `list/selection`.
 - `Panel`: semantic framing. Story `panel/focused`.
+- `Progress`: deterministic caller-ticked determinate bars and indeterminate spinners with percentage or glyph non-color cues. Story `progress/determinate`.
 - `SplitPane`: horizontal/vertical bounded pane geometry, integer remembered ratio, proportional minimum degradation in tiny areas, render-authorized divider focus/hover/drag, and caller-mapped collapse/expand. Story `split-pane/horizontal`.
 - `StatusBar`: caller-owned left/right slots with priority and minimum-width allocation, Unicode-safe truncation, painted hit regions, hover styles, and bar-wide fade. Story `status-bar/basic`.
 - `Tabs`: stable IDs, caller-styled glyph spans, explicit state, active/hover fills, a non-color active underline, and shared two-row pointer geometry. Story `tabs/status`.
