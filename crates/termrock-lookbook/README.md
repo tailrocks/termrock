@@ -6,7 +6,7 @@ Interactive component lookbook for `termrock` — the reference rendering of eve
 
 - A `story_*()` per component variant, each calling the **public** `render_*()` helper or `Widget::render` exactly as the real surfaces do.
 - Interactive `*Interactor` structs that drive a real component `*State` through `handle_key`, matching real-app usage.
-- The SVG preview generator that feeds `docs/public/tui-lookbook/`.
+- The SVG preview generator that feeds `docs/public/component-previews/`.
 
 ## Architecture tier and allowed dependencies
 
@@ -17,7 +17,7 @@ Interactive component lookbook for `termrock` — the reference rendering of eve
 | Module | Owns | Tests |
 |---|---|---|
 | [`main.rs`](src/main.rs) | lookbook runner + `check --dir` drift gate | — |
-| [`stories.rs`](src/stories.rs) · [`stories/`](src/stories) | one story per component variant | [`tests.rs`](src/stories/tests.rs) |
+| [`stories.rs`](src/stories.rs) | one story per component variant | [`tests.rs`](src/tests.rs) |
 | [`interactors.rs`](src/interactors.rs) | interactive state drivers | — |
 | [`svg.rs`](src/svg.rs) | SVG preview rendering for the docs | — |
 | [`tests.rs`](src/tests.rs) | tests | — |

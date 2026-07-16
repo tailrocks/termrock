@@ -5,6 +5,7 @@
 
 mod app;
 mod interactors;
+mod json;
 mod runner;
 mod stories;
 mod svg;
@@ -12,6 +13,7 @@ mod svg;
 use std::{ffi::OsStr, io, path::PathBuf, time::Duration};
 
 use app::Lookbook;
+use json::json_escape;
 use stories::stories;
 use svg::{check_svgs, write_story_svgs};
 use termrock::{
@@ -174,7 +176,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map(|story| {
                     format!(
                         r#"{{"id":"{}","title":"{}","component":"{}"}}"#,
-                        story.id, story.title, story.component
+                        json_escape(story.id),
+                        json_escape(story.title),
+                        json_escape(story.component)
                     )
                 })
                 .collect::<Vec<_>>()

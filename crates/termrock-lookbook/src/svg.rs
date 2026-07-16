@@ -101,18 +101,6 @@ pub(crate) fn write_story_svgs(
         fs::write(&path, render_story_to_svg(story, theme))?;
         paths.push(path);
     }
-    let manifest = stories()
-        .iter()
-        .map(|story| {
-            format!(
-                r#"  {{"id":"{}","file":"{}"}}"#,
-                story.id,
-                story_svg_filename(*story)
-            )
-        })
-        .collect::<Vec<_>>()
-        .join(",\n");
-    fs::write(out_dir.join("manifest.json"), format!("[\n{manifest}\n]\n"))?;
     Ok(paths)
 }
 
@@ -153,7 +141,7 @@ pub(crate) fn check_svgs(dir: PathBuf) -> Result<(), Box<dyn std::error::Error>>
         }
         Err(concat!(
             "tui lookbook previews are out of date; regenerate with ",
-            "`cargo run -p termrock-lookbook -- docs/public/tui-lookbook`",
+            "`cargo run -p termrock-lookbook -- render --out docs/public/component-previews`",
         )
         .into())
     }
@@ -208,7 +196,7 @@ fn buffer_to_svg(buffer: &Buffer, title: &str) -> String {
             }
             let symbol = cell.symbol();
             if !symbol.trim().is_empty() {
-                let fg = color_to_css(cell.fg);
+                let fg = foreground_to_css(cell.fg);
                 let text_y = py.saturating_add(BASELINE);
                 out.push_str(&format!(
                     r#"<text x="{px}" y="{text_y}" fill="{fg}">{}</text>"#,
@@ -241,6 +229,14 @@ fn color_to_css(color: Color) -> String {
         Color::Rgb(r, g, b) => format!("#{r:02x}{g:02x}{b:02x}"),
         Color::Reset => "#000000".into(),
         Color::Indexed(_) => "#ffffff".into(),
+    }
+}
+
+fn foreground_to_css(color: Color) -> String {
+    if color == Color::Reset {
+        "#ffffff".into()
+    } else {
+        color_to_css(color)
     }
 }
 
@@ -279,5 +275,31 @@ mod color_tests {
     #[test]
     fn arbitrary_rgb_is_serialized_without_palette_table() {
         assert_eq!(color_to_css(Color::Rgb(1, 35, 255)), "#0123ff");
+    }
+
+    #[test]
+    fn default_foreground_is_visible_on_the_black_page() {
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 1));
+        buffer[(0, 0)].set_symbol("x");
+
+        let svg = buffer_to_svg(&buffer, "default foreground");
+
+        assert!(svg.contains(r##"<text x="0" y="14" fill="#ffffff">x</text>"##));
+    }
+
+    #[test]
+    fn xml_escape_matches_double_quoted_attribute_context() {
+        assert_eq!(escape_xml("&<>\"'"), "&amp;&lt;&gt;&quot;'");
+    }
+
+    #[test]
+    fn wide_character_emits_one_text_element_at_its_cell_x() {
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 3, 1));
+        buffer.set_string(1, 0, "日", Style::default());
+
+        let svg = buffer_to_svg(&buffer, "wide");
+
+        assert_eq!(svg.matches(">日</text>").count(), 1);
+        assert!(svg.contains(r##"<text x="9" y="14" fill="#ffffff">日</text>"##));
     }
 }
