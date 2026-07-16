@@ -1,7 +1,4 @@
-use crate::{
-    HintSpan,
-    style::{Role, Theme},
-};
+use crate::style::{Role, Theme};
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -10,6 +7,38 @@ use ratatui_core::{
     widgets::Widget,
 };
 use ratatui_widgets::paragraph::{Paragraph, Wrap};
+use unicode_width::UnicodeWidthStr;
+
+/// One footer-hint span shared by terminal surfaces.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HintSpan<'a> {
+    Key(&'a str),
+    DynKey(String),
+    Text(&'a str),
+    Dyn(String),
+    Sep,
+    GroupSep,
+}
+
+impl HintSpan<'_> {
+    /// Display-column width contribution of this span.
+    #[must_use]
+    pub fn display_cols(&self) -> usize {
+        match self {
+            Self::Key(key) => UnicodeWidthStr::width(*key),
+            Self::DynKey(key) => UnicodeWidthStr::width(key.as_str()),
+            Self::Text(text) => 1 + UnicodeWidthStr::width(*text),
+            Self::Dyn(text) => 1 + UnicodeWidthStr::width(text.as_str()),
+            Self::Sep | Self::GroupSep => 3,
+        }
+    }
+}
+
+/// Total display-column width of a hint-span sequence.
+#[must_use]
+pub fn hint_row_cols(spans: &[HintSpan<'_>]) -> usize {
+    spans.iter().map(HintSpan::display_cols).sum()
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Hint<'a> {

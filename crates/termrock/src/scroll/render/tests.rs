@@ -10,7 +10,7 @@ use super::{
     render_vertical_scrollbar_in_area_with_style, scrollbar_offset_for_track_position,
     scrollbar_thumb_geometry,
 };
-use crate::theme::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK, PHOSPHOR_GREEN};
+use crate::style::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK, PHOSPHOR_GREEN};
 use ratatui_core::{
     backend::TestBackend, layout::Rect, style::Style, terminal::Terminal, text::Line,
 };

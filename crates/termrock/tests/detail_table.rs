@@ -6,7 +6,7 @@ use ratatui_core::{
 use termrock::{
     Theme,
     input::{KeyCode, KeyEvent, KeyModifiers},
-    max_offset,
+    scroll::max_offset,
     widgets::{DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState},
 };
 

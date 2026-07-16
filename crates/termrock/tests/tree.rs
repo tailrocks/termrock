@@ -7,7 +7,7 @@ use ratatui_core::{
 use termrock::{
     Theme,
     input::{KeyCode, KeyEvent, KeyModifiers},
-    theme::Role,
+    style::Role,
     widgets::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
 };
 

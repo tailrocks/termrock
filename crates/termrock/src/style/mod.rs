@@ -5,7 +5,7 @@
 //!
 //! Also exposes named `Style` constants for the most-repeated combinations
 //! (`BOLD_WHITE`, `BOLD_GREEN`, `DIM`, `DANGER`) so callers avoid writing
-//! `crate::theme::BOLD_WHITE` inline.
+//! `crate::style::BOLD_WHITE` inline.
 
 use ratatui_core::style::{Color, Modifier, Style};
 

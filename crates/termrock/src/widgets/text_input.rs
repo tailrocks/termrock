@@ -3,9 +3,9 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    geometry::take_display_cols,
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     style::{Role, Theme},
+    text::take_display_cols,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

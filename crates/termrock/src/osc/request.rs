@@ -6,6 +6,9 @@ pub enum PointerShape {
     Pointer,
     Text,
     Crosshair,
+    EwResize,
+    NsResize,
+    Grabbing,
 }
 
 impl PointerShape {
@@ -15,6 +18,9 @@ impl PointerShape {
             Self::Pointer => "pointer",
             Self::Text => "text",
             Self::Crosshair => "crosshair",
+            Self::EwResize => "ew-resize",
+            Self::NsResize => "ns-resize",
+            Self::Grabbing => "grabbing",
         }
     }
 }

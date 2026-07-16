@@ -416,7 +416,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 TreeNodeStatus::Error => Some(" error"),
             };
             let status_width = status
-                .map(crate::display_cols)
+                .map(crate::text::display_cols)
                 .and_then(|width| u16::try_from(width).ok())
                 .filter(|width| *width <= content_area.width)
                 .unwrap_or(0);

@@ -8,6 +8,45 @@ use crate::{
 };
 use unicode_width::UnicodeWidthStr;
 
+/// Per-tab descriptor shared by terminal tab renderers.
+#[derive(Debug, Clone)]
+pub struct TabCell<'a> {
+    pub label: &'a str,
+    pub active: bool,
+    pub start_col: u16,
+    pub cell_cols: u16,
+}
+
+/// Single space between adjacent tab cells.
+pub const TAB_GAP: u16 = 1;
+
+/// Build tab-cell geometry from `(label, active)` pairs.
+#[must_use]
+pub fn lay_out_tabs<'a>(labels: &[(&'a str, bool)], start_col: u16) -> Vec<TabCell<'a>> {
+    let mut col = start_col;
+    let mut out = Vec::with_capacity(labels.len());
+    for &(label, active) in labels {
+        let label_cols = u16::try_from(UnicodeWidthStr::width(label)).unwrap_or(u16::MAX);
+        let cell_cols = label_cols.saturating_add(2);
+        out.push(TabCell {
+            label,
+            active,
+            start_col: col,
+            cell_cols,
+        });
+        col = col.saturating_add(cell_cols).saturating_add(TAB_GAP);
+    }
+    out
+}
+
+/// Index of the tab cell whose column range contains `col`.
+#[must_use]
+pub fn tab_at_column(cells: &[TabCell<'_>], col: u16) -> Option<usize> {
+    cells.iter().position(|cell| {
+        col >= cell.start_col && col < cell.start_col.saturating_add(cell.cell_cols)
+    })
+}
+
 #[derive(Debug, Clone)]
 pub struct Tab<'a, Id> {
     pub id: Id,

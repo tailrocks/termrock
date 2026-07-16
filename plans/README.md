@@ -28,7 +28,7 @@ breaking plan that lands, and so on).
 | 009 | Brand-constant purge (RAIN_*/MENU_*/jk-brand out of public API) | P1 | M | 008 | DONE |
 | 010 | Second theme preset (slate) + dual-theme canary | P2 | S | 008, 009 | DONE |
 | 011 | Event-model convergence (neutral Event/MouseEvent, state-owned handlers, outcome consolidation) | P1 | L | 005, 006, 007 | DONE |
-| 012 | Module structure & surface trim (geometry split, single export paths, PointerShape merge) | P2 | M-L | 009, 011 | TODO |
+| 012 | Module structure & surface trim (geometry split, single export paths, PointerShape merge) | P2 | M-L | 009, 011 | DONE |
 | 013 | Construction idiom, non_exhaustive, owned Widget impls, serde feature | P2 | M | 008, 011 | TODO |
 | 014 | missing_docs enforcement, doctests, real showcase example | P2 | M | 011, 013 | TODO |
 | 015 | Viewport/dialog slice-before-clone (per-frame O(viewport)) | P2 | M | — | TODO |

@@ -9,9 +9,9 @@
 //! advertised keys is therefore structurally impossible for [`Visibility::Shown`] and
 //! [`Visibility::HiddenAlias`] bindings.
 
-use crate::geometry::HintSpan;
 use crate::input::{KeyCode, KeyModifiers};
 use crate::scroll::ScrollAxes;
+use crate::widgets::HintSpan;
 
 /// A key chord: a logical key plus zero or more modifier bits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

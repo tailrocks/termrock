@@ -255,7 +255,7 @@ impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
         if self.label_width == 0 {
             self.rows
                 .iter()
-                .map(|row| crate::display_cols(row.label))
+                .map(|row| crate::text::display_cols(row.label))
                 .max()
                 .unwrap_or(0)
         } else {
@@ -264,16 +264,18 @@ impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
     }
 
     fn row_width(&self, row: &DetailRow<'_, Id>, label_width: usize) -> usize {
-        crate::display_cols(SELECTED_MARKER)
+        crate::text::display_cols(SELECTED_MARKER)
             + label_width
-            + crate::display_cols(SEPARATOR)
-            + crate::display_cols(row.value)
+            + crate::text::display_cols(SEPARATOR)
+            + crate::text::display_cols(row.value)
             + affordance_width(row, false)
     }
 
     fn value_width(&self, area: Rect, label_width: usize) -> usize {
         usize::from(area.width).saturating_sub(
-            crate::display_cols(SELECTED_MARKER) + label_width + crate::display_cols(SEPARATOR),
+            crate::text::display_cols(SELECTED_MARKER)
+                + label_width
+                + crate::text::display_cols(SEPARATOR),
         )
     }
 
@@ -281,7 +283,8 @@ impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
         if !self.wrap {
             return 1;
         }
-        let width = crate::display_cols(row.value).saturating_add(affordance_width(row, false));
+        let width =
+            crate::text::display_cols(row.value).saturating_add(affordance_width(row, false));
         width.max(1).div_ceil(value_width.max(1))
     }
 }
@@ -382,8 +385,8 @@ fn render_row<Id: Clone + PartialEq>(
     } else {
         NORMAL_MARKER
     };
-    let marker_width = crate::display_cols(marker);
-    let separator_width = crate::display_cols(SEPARATOR);
+    let marker_width = crate::text::display_cols(marker);
+    let separator_width = crate::text::display_cols(SEPARATOR);
     let value_col = marker_width + label_width + separator_width;
     let value_style = row.style.unwrap_or_else(|| {
         if hovered && (row.capability.copyable() || row.capability.linkable()) {
@@ -432,11 +435,11 @@ fn render_row<Id: Clone + PartialEq>(
     let chunk_width = if table.wrap {
         value_width.max(1)
     } else {
-        crate::display_cols(row.value).saturating_add(affordance_width(row, copied))
+        crate::text::display_cols(row.value).saturating_add(affordance_width(row, copied))
     };
     let chunk_start = continuation.saturating_mul(chunk_width);
     let value_and_affordance = format!("{}{}", row.value, affordance(row, copied));
-    let chunk = crate::display_cols_slice(&value_and_affordance, chunk_start, chunk_width);
+    let chunk = crate::text::display_cols_slice(&value_and_affordance, chunk_start, chunk_width);
     let global_value_col = if table.wrap && continuation > 0 {
         value_col
     } else {
@@ -453,10 +456,10 @@ fn render_row<Id: Clone + PartialEq>(
 
     let painted_start = global_value_col.max(scroll_x);
     let painted_end = global_value_col
-        .saturating_add(crate::display_cols(&chunk))
+        .saturating_add(crate::text::display_cols(&chunk))
         .min(scroll_x.saturating_add(usize::from(area.width)));
     let value_end = global_value_col
-        .saturating_add(crate::display_cols(row.value).saturating_sub(chunk_start))
+        .saturating_add(crate::text::display_cols(row.value).saturating_sub(chunk_start))
         .min(painted_end);
     if painted_start < painted_end {
         let row_area = Rect::new(area.x, area.y, area.width, 1);
@@ -494,14 +497,14 @@ fn paint_segment(
     scroll_x: usize,
     style: Style,
 ) {
-    let end = start.saturating_add(crate::display_cols(text));
+    let end = start.saturating_add(crate::text::display_cols(text));
     let viewport_end = scroll_x.saturating_add(usize::from(area.width));
     let visible_start = start.max(scroll_x);
     let visible_end = end.min(viewport_end);
     if visible_start >= visible_end {
         return;
     }
-    let visible = crate::display_cols_slice(
+    let visible = crate::text::display_cols_slice(
         text,
         visible_start.saturating_sub(start),
         visible_end.saturating_sub(visible_start),
@@ -528,7 +531,7 @@ fn affordance<Id>(row: &DetailRow<'_, Id>, copied: bool) -> &'static str {
 }
 
 fn affordance_width<Id>(row: &DetailRow<'_, Id>, copied: bool) -> usize {
-    crate::display_cols(affordance(row, copied))
+    crate::text::display_cols(affordance(row, copied))
 }
 
 #[cfg(test)]

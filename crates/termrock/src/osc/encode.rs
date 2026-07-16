@@ -1,5 +1,5 @@
 use super::{ClipboardWrite, PointerShape, Request};
-use crate::geometry::is_terminal_control_char;
+use crate::text::is_terminal_control_char;
 use base64::Engine as _;
 use std::fmt::Write as _;
 
@@ -97,6 +97,10 @@ mod tests {
         assert_eq!(
             encode_pointer(PointerShape::Pointer),
             b"\x1b]22;pointer\x1b\\"
+        );
+        assert_eq!(
+            encode_pointer(PointerShape::EwResize),
+            b"\x1b]22;ew-resize\x1b\\"
         );
         assert_eq!(
             encode_hyperlink_open(Some("docs"), "https://example.invalid"),

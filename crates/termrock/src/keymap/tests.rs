@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use crate::geometry::HintSpan;
 use crate::scroll::ScrollAxes;
+use crate::widgets::HintSpan;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TestAction {

@@ -90,8 +90,8 @@ impl<K: Clone + PartialEq> HoverTracker<K> {
 
     /// Return whether any registered element is currently hovered.
     ///
-    /// Feed the result into [`crate::clickable_pointer_shape`] and
-    /// [`crate::osc22_pointer_shape`] to toggle the OSC 22 pointer cue.
+    /// Map the result to [`crate::osc::PointerShape`] and pass it to
+    /// [`crate::osc::encode_pointer`] to toggle the OSC 22 pointer cue.
     #[must_use]
     pub fn any_hovered(&self, col: u16, row: u16) -> bool {
         self.hovered(col, row).is_some()

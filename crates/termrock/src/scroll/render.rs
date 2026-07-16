@@ -19,9 +19,11 @@ use ratatui_widgets::{
 };
 
 use crate::{
-    display_cols, fixed_prefix_scroll_segments, leading_space_cols, padded_line_display_cols,
     scroll,
-    theme::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK},
+    style::{DIALOG_SCROLL_THUMB, DIALOG_SCROLL_TRACK},
+    text::{
+        display_cols, fixed_prefix_scroll_segments, leading_space_cols, padded_line_display_cols,
+    },
 };
 
 use crate::widgets::{Panel, PanelEmphasis};
@@ -411,8 +413,8 @@ impl<'a> ScrollableList<'a> {
             offset: 0,
             style: Style::default(),
             highlight_style: Style::default()
-                .bg(crate::theme::PHOSPHOR_GREEN)
-                .fg(crate::theme::PHOSPHOR_DARK)
+                .bg(crate::style::PHOSPHOR_GREEN)
+                .fg(crate::style::PHOSPHOR_DARK)
                 .add_modifier(Modifier::BOLD),
             highlight_symbol: None,
             highlight_spacing: HighlightSpacing::Never,
@@ -684,7 +686,7 @@ pub fn render_scrollable_block_at(
     frame.render_widget(
         Paragraph::new(add_trailing_padding(lines))
             .block(panel.block())
-            .style(crate::theme::GREEN)
+            .style(crate::style::GREEN)
             .scroll((eff_y, eff_x)),
         area,
     );

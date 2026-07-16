@@ -33,7 +33,7 @@ fn scroll_hint_spans_reflect_available_axes_only() {
         scroll_hint_spans(axes)
             .into_iter()
             .filter_map(|s| match s {
-                crate::HintSpan::Key(k) => Some(k),
+                crate::widgets::HintSpan::Key(k) => Some(k),
                 _ => None,
             })
             .collect()

@@ -25,7 +25,9 @@ pub use detail_table::{
 pub use dialog::{Backdrop, ChoiceDialog, ChoiceDialogState, Dialog, MessageDialog};
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
-pub use hint_bar::{Hint, HintBar, render_hint_bar, styled_hint_spans, wrapped_hint_lines};
+pub use hint_bar::{
+    Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
+};
 pub use list::{List, ListRow, ListState, RowRole};
 pub use panel::{Panel, PanelEmphasis};
 pub use split_pane::{
@@ -33,7 +35,7 @@ pub use split_pane::{
     SplitSide,
 };
 pub use status_bar::{StatusBar, StatusBarState, StatusSlot};
-pub use tabs::{Tab, Tabs, TabsState};
+pub use tabs::{TAB_GAP, Tab, TabCell, Tabs, TabsState, lay_out_tabs, tab_at_column};
 pub use text_input::{
     EditAction, TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation,
 };

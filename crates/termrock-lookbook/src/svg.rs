@@ -20,7 +20,7 @@ use ratatui::{
     style::{Color, Style},
     widgets::{Block, Clear},
 };
-use termrock::{Theme, theme::PREVIEW_CARD};
+use termrock::{Theme, style::PREVIEW_CARD};
 
 use crate::stories::{Story, stories};
 

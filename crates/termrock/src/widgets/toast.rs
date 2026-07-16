@@ -2,8 +2,8 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget};
 use ratatui_widgets::{block::Block, clear::Clear, paragraph::Paragraph};
 
 use crate::{
-    display_cols,
     style::{Role, Theme},
+    text::display_cols,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

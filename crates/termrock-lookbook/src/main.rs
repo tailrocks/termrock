@@ -35,7 +35,7 @@ use termrock::{
     input::KeyCode,
     keymap::{KeyBinding, KeyChord, Keymap, Visibility, glyph},
     scroll::{self, ScrollSpan},
-    theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN, PREVIEW_CARD, Role},
+    style::{PHOSPHOR_DARK, PHOSPHOR_GREEN, PREVIEW_CARD, Role},
 };
 
 const USAGE: &str = "usage: termrock-lookbook <terminal|list|render|check>";
@@ -498,10 +498,13 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
             let hint_text = hint_spans
                 .iter()
                 .map(|span| match span {
-                    termrock::HintSpan::Key(v) | termrock::HintSpan::Text(v) => (*v).to_owned(),
-                    termrock::HintSpan::DynKey(v) | termrock::HintSpan::Dyn(v) => v.clone(),
-                    termrock::HintSpan::Sep => " · ".to_owned(),
-                    termrock::HintSpan::GroupSep => "   ".to_owned(),
+                    termrock::widgets::HintSpan::Key(v) | termrock::widgets::HintSpan::Text(v) => {
+                        (*v).to_owned()
+                    }
+                    termrock::widgets::HintSpan::DynKey(v)
+                    | termrock::widgets::HintSpan::Dyn(v) => v.clone(),
+                    termrock::widgets::HintSpan::Sep => " · ".to_owned(),
+                    termrock::widgets::HintSpan::GroupSep => "   ".to_owned(),
                 })
                 .collect::<Vec<_>>()
                 .join(" ");

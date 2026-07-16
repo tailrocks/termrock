@@ -83,154 +83,6 @@ pub unsafe fn termrock::crossterm::SessionOptions::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::crossterm::SessionOptions
 pub fn termrock::crossterm::SessionOptions::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::crossterm::SessionOptions
-pub mod termrock::geometry
-pub enum termrock::geometry::HintSpan<'a>
-pub termrock::geometry::HintSpan::Dyn(alloc::string::String)
-pub termrock::geometry::HintSpan::DynKey(alloc::string::String)
-pub termrock::geometry::HintSpan::GroupSep
-pub termrock::geometry::HintSpan::Key(&'a str)
-pub termrock::geometry::HintSpan::Sep
-pub termrock::geometry::HintSpan::Text(&'a str)
-impl termrock::geometry::HintSpan<'_>
-pub fn termrock::geometry::HintSpan<'_>::display_cols(&self) -> usize
-impl<'a> core::clone::Clone for termrock::geometry::HintSpan<'a>
-pub fn termrock::geometry::HintSpan<'a>::clone(&self) -> termrock::geometry::HintSpan<'a>
-impl<'a> core::cmp::Eq for termrock::geometry::HintSpan<'a>
-impl<'a> core::cmp::PartialEq for termrock::geometry::HintSpan<'a>
-pub fn termrock::geometry::HintSpan<'a>::eq(&self, &termrock::geometry::HintSpan<'a>) -> bool
-impl<'a> core::fmt::Debug for termrock::geometry::HintSpan<'a>
-pub fn termrock::geometry::HintSpan<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::StructuralPartialEq for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::Freeze for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::Send for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::Sync for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::Unpin for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::geometry::HintSpan<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::geometry::HintSpan<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::geometry::HintSpan<'a>
-impl<Q, K> equivalent::Equivalent<K> for termrock::geometry::HintSpan<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::geometry::HintSpan<'a>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::geometry::HintSpan<'a> where U: core::convert::From<T>
-pub fn termrock::geometry::HintSpan<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::geometry::HintSpan<'a> where U: core::convert::Into<T>
-pub type termrock::geometry::HintSpan<'a>::Error = core::convert::Infallible
-pub fn termrock::geometry::HintSpan<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::geometry::HintSpan<'a> where U: core::convert::TryFrom<T>
-pub type termrock::geometry::HintSpan<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::geometry::HintSpan<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::geometry::HintSpan<'a> where T: core::clone::Clone
-pub type termrock::geometry::HintSpan<'a>::Owned = T
-pub fn termrock::geometry::HintSpan<'a>::clone_into(&self, &mut T)
-pub fn termrock::geometry::HintSpan<'a>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::geometry::HintSpan<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::geometry::HintSpan<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::geometry::HintSpan<'a> where T: ?core::marker::Sized
-pub fn termrock::geometry::HintSpan<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::geometry::HintSpan<'a> where T: ?core::marker::Sized
-pub fn termrock::geometry::HintSpan<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::geometry::HintSpan<'a> where T: core::clone::Clone
-pub unsafe fn termrock::geometry::HintSpan<'a>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::geometry::HintSpan<'a>
-pub fn termrock::geometry::HintSpan<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::geometry::HintSpan<'a>
-pub struct termrock::geometry::FixedPrefixSegment
-pub termrock::geometry::FixedPrefixSegment::display_cols: usize
-pub termrock::geometry::FixedPrefixSegment::end_byte: usize
-pub termrock::geometry::FixedPrefixSegment::start_byte: usize
-pub termrock::geometry::FixedPrefixSegment::target_col: usize
-impl core::clone::Clone for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::clone(&self) -> termrock::geometry::FixedPrefixSegment
-impl core::cmp::Eq for termrock::geometry::FixedPrefixSegment
-impl core::cmp::PartialEq for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::eq(&self, &termrock::geometry::FixedPrefixSegment) -> bool
-impl core::fmt::Debug for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::geometry::FixedPrefixSegment
-impl core::marker::StructuralPartialEq for termrock::geometry::FixedPrefixSegment
-impl core::marker::Freeze for termrock::geometry::FixedPrefixSegment
-impl core::marker::Send for termrock::geometry::FixedPrefixSegment
-impl core::marker::Sync for termrock::geometry::FixedPrefixSegment
-impl core::marker::Unpin for termrock::geometry::FixedPrefixSegment
-impl core::marker::UnsafeUnpin for termrock::geometry::FixedPrefixSegment
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::geometry::FixedPrefixSegment
-impl core::panic::unwind_safe::UnwindSafe for termrock::geometry::FixedPrefixSegment
-impl<Q, K> equivalent::Equivalent<K> for termrock::geometry::FixedPrefixSegment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::geometry::FixedPrefixSegment where U: core::convert::From<T>
-pub fn termrock::geometry::FixedPrefixSegment::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::geometry::FixedPrefixSegment where U: core::convert::Into<T>
-pub type termrock::geometry::FixedPrefixSegment::Error = core::convert::Infallible
-pub fn termrock::geometry::FixedPrefixSegment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::geometry::FixedPrefixSegment where U: core::convert::TryFrom<T>
-pub type termrock::geometry::FixedPrefixSegment::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::geometry::FixedPrefixSegment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::geometry::FixedPrefixSegment where T: core::clone::Clone
-pub type termrock::geometry::FixedPrefixSegment::Owned = T
-pub fn termrock::geometry::FixedPrefixSegment::clone_into(&self, &mut T)
-pub fn termrock::geometry::FixedPrefixSegment::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::geometry::FixedPrefixSegment where T: 'static + ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::geometry::FixedPrefixSegment where T: ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::geometry::FixedPrefixSegment where T: ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::geometry::FixedPrefixSegment where T: core::clone::Clone
-pub unsafe fn termrock::geometry::FixedPrefixSegment::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::geometry::FixedPrefixSegment
-pub struct termrock::geometry::TabCell<'a>
-pub termrock::geometry::TabCell::active: bool
-pub termrock::geometry::TabCell::cell_cols: u16
-pub termrock::geometry::TabCell::label: &'a str
-pub termrock::geometry::TabCell::start_col: u16
-impl<'a> core::clone::Clone for termrock::geometry::TabCell<'a>
-pub fn termrock::geometry::TabCell<'a>::clone(&self) -> termrock::geometry::TabCell<'a>
-impl<'a> core::fmt::Debug for termrock::geometry::TabCell<'a>
-pub fn termrock::geometry::TabCell<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Freeze for termrock::geometry::TabCell<'a>
-impl<'a> core::marker::Send for termrock::geometry::TabCell<'a>
-impl<'a> core::marker::Sync for termrock::geometry::TabCell<'a>
-impl<'a> core::marker::Unpin for termrock::geometry::TabCell<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::geometry::TabCell<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::geometry::TabCell<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::geometry::TabCell<'a>
-impl<T, U> core::convert::Into<U> for termrock::geometry::TabCell<'a> where U: core::convert::From<T>
-pub fn termrock::geometry::TabCell<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::geometry::TabCell<'a> where U: core::convert::Into<T>
-pub type termrock::geometry::TabCell<'a>::Error = core::convert::Infallible
-pub fn termrock::geometry::TabCell<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::geometry::TabCell<'a> where U: core::convert::TryFrom<T>
-pub type termrock::geometry::TabCell<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::geometry::TabCell<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::geometry::TabCell<'a> where T: core::clone::Clone
-pub type termrock::geometry::TabCell<'a>::Owned = T
-pub fn termrock::geometry::TabCell<'a>::clone_into(&self, &mut T)
-pub fn termrock::geometry::TabCell<'a>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::geometry::TabCell<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::geometry::TabCell<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::geometry::TabCell<'a> where T: ?core::marker::Sized
-pub fn termrock::geometry::TabCell<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::geometry::TabCell<'a> where T: ?core::marker::Sized
-pub fn termrock::geometry::TabCell<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::geometry::TabCell<'a> where T: core::clone::Clone
-pub unsafe fn termrock::geometry::TabCell<'a>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::geometry::TabCell<'a>
-pub fn termrock::geometry::TabCell<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::geometry::TabCell<'a>
-pub const termrock::geometry::TAB_GAP: u16
-pub fn termrock::geometry::centered_rect(u16, u16, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
-pub fn termrock::geometry::display_cols(&str) -> usize
-pub fn termrock::geometry::display_cols_slice(&str, usize, usize) -> alloc::string::String
-pub fn termrock::geometry::fixed_prefix_scroll_segments(&str, usize, usize, usize, usize) -> alloc::vec::Vec<termrock::geometry::FixedPrefixSegment>
-pub fn termrock::geometry::hint_row_cols(&[termrock::geometry::HintSpan<'_>]) -> usize
-pub fn termrock::geometry::is_terminal_control_char(char) -> bool
-pub fn termrock::geometry::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::geometry::TabCell<'a>>
-pub fn termrock::geometry::leading_space_cols<S>(impl core::iter::traits::collect::IntoIterator<Item = S>) -> usize where S: core::convert::AsRef<str>
-pub fn termrock::geometry::padded_line_display_cols<I, S>(I) -> usize where I: core::iter::traits::collect::IntoIterator<Item = S> + core::clone::Clone, S: core::convert::AsRef<str>
-pub fn termrock::geometry::sanitize_terminal_title(&str) -> alloc::string::String
-pub fn termrock::geometry::tab_at_column(&[termrock::geometry::TabCell<'_>], u16) -> core::option::Option<usize>
-pub fn termrock::geometry::take_display_cols(&str, usize) -> alloc::string::String
 pub mod termrock::input
 pub enum termrock::input::Event
 pub termrock::input::Event::FocusGained
@@ -805,13 +657,13 @@ pub struct termrock::input::Keymap<A: 'static>
 impl<A: core::marker::Copy + 'static> termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::bindings(&self) -> &[termrock::keymap::KeyBinding<A>]
 pub fn termrock::keymap::Keymap<A>::dispatch(&self, termrock::keymap::KeyChord) -> core::option::Option<A>
-pub fn termrock::keymap::Keymap<A>::hint_spans(&self) -> alloc::vec::Vec<termrock::geometry::HintSpan<'static>>
-pub fn termrock::keymap::Keymap<A>::hint_spans_for_axes(&self, termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::geometry::HintSpan<'static>>
+pub fn termrock::keymap::Keymap<A>::hint_spans(&self) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
+pub fn termrock::keymap::Keymap<A>::hint_spans_for_axes(&self, termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
 pub const fn termrock::keymap::Keymap<A>::new(&'static [termrock::keymap::KeyBinding<A>]) -> Self
 impl<A: core::marker::Copy + core::cmp::PartialEq + 'static> termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::binding_for(&self, A) -> core::option::Option<&termrock::keymap::KeyBinding<A>>
 pub fn termrock::keymap::Keymap<A>::glyph_for(&self, A) -> &'static str
-pub fn termrock::keymap::Keymap<A>::push_spans_for(&self, A, &mut alloc::vec::Vec<termrock::geometry::HintSpan<'static>>)
+pub fn termrock::keymap::Keymap<A>::push_spans_for(&self, A, &mut alloc::vec::Vec<termrock::widgets::HintSpan<'static>>)
 impl<A: core::fmt::Debug + 'static> core::fmt::Debug for termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<A> core::marker::Freeze for termrock::keymap::Keymap<A>
@@ -1469,13 +1321,13 @@ pub struct termrock::keymap::Keymap<A: 'static>
 impl<A: core::marker::Copy + 'static> termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::bindings(&self) -> &[termrock::keymap::KeyBinding<A>]
 pub fn termrock::keymap::Keymap<A>::dispatch(&self, termrock::keymap::KeyChord) -> core::option::Option<A>
-pub fn termrock::keymap::Keymap<A>::hint_spans(&self) -> alloc::vec::Vec<termrock::geometry::HintSpan<'static>>
-pub fn termrock::keymap::Keymap<A>::hint_spans_for_axes(&self, termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::geometry::HintSpan<'static>>
+pub fn termrock::keymap::Keymap<A>::hint_spans(&self) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
+pub fn termrock::keymap::Keymap<A>::hint_spans_for_axes(&self, termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
 pub const fn termrock::keymap::Keymap<A>::new(&'static [termrock::keymap::KeyBinding<A>]) -> Self
 impl<A: core::marker::Copy + core::cmp::PartialEq + 'static> termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::binding_for(&self, A) -> core::option::Option<&termrock::keymap::KeyBinding<A>>
 pub fn termrock::keymap::Keymap<A>::glyph_for(&self, A) -> &'static str
-pub fn termrock::keymap::Keymap<A>::push_spans_for(&self, A, &mut alloc::vec::Vec<termrock::geometry::HintSpan<'static>>)
+pub fn termrock::keymap::Keymap<A>::push_spans_for(&self, A, &mut alloc::vec::Vec<termrock::widgets::HintSpan<'static>>)
 impl<A: core::fmt::Debug + 'static> core::fmt::Debug for termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<A> core::marker::Freeze for termrock::keymap::Keymap<A>
@@ -1884,6 +1736,7 @@ pub fn termrock::layout::Slots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::Slots
 pub const termrock::layout::DIALOG_HORIZONTAL_SCROLL_STEP: u16
 pub fn termrock::layout::bottom_rows<const N: usize>(ratatui_core::layout::rect::Rect, [u16; N]) -> (ratatui_core::layout::rect::Rect, [ratatui_core::layout::rect::Rect; N])
+pub fn termrock::layout::centered_rect(u16, u16, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::dialog_inner_chunks(ratatui_core::layout::rect::Rect, core::option::Option<u16>) -> [ratatui_core::layout::rect::Rect; 5]
 pub const fn termrock::layout::dialog_inner_height(u16) -> u16
 pub fn termrock::layout::dialog_scroll_axes(usize, usize, ratatui_core::layout::rect::Rect) -> termrock::scroll::ScrollAxes
@@ -1891,7 +1744,7 @@ pub fn termrock::layout::mouse_scroll_delta(termrock::input::MouseEventKind, ter
 pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::layout::DialogBorder) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::layout::DialogBodyScroll) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect
-pub fn termrock::layout::scroll_hint_spans(termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::geometry::HintSpan<'static>>
+pub fn termrock::layout::scroll_hint_spans(termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
 pub mod termrock::osc
 pub enum termrock::osc::ClipboardSelection
 pub termrock::osc::ClipboardSelection::Clipboard
@@ -1940,6 +1793,9 @@ impl<T> either::into_either::IntoEither for termrock::osc::ClipboardSelection
 pub enum termrock::osc::PointerShape
 pub termrock::osc::PointerShape::Crosshair
 pub termrock::osc::PointerShape::Default
+pub termrock::osc::PointerShape::EwResize
+pub termrock::osc::PointerShape::Grabbing
+pub termrock::osc::PointerShape::NsResize
 pub termrock::osc::PointerShape::Pointer
 pub termrock::osc::PointerShape::Text
 impl core::clone::Clone for termrock::osc::PointerShape
@@ -3030,50 +2886,50 @@ pub termrock::text::FixedPrefixSegment::display_cols: usize
 pub termrock::text::FixedPrefixSegment::end_byte: usize
 pub termrock::text::FixedPrefixSegment::start_byte: usize
 pub termrock::text::FixedPrefixSegment::target_col: usize
-impl core::clone::Clone for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::clone(&self) -> termrock::geometry::FixedPrefixSegment
-impl core::cmp::Eq for termrock::geometry::FixedPrefixSegment
-impl core::cmp::PartialEq for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::eq(&self, &termrock::geometry::FixedPrefixSegment) -> bool
-impl core::fmt::Debug for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::geometry::FixedPrefixSegment
-impl core::marker::StructuralPartialEq for termrock::geometry::FixedPrefixSegment
-impl core::marker::Freeze for termrock::geometry::FixedPrefixSegment
-impl core::marker::Send for termrock::geometry::FixedPrefixSegment
-impl core::marker::Sync for termrock::geometry::FixedPrefixSegment
-impl core::marker::Unpin for termrock::geometry::FixedPrefixSegment
-impl core::marker::UnsafeUnpin for termrock::geometry::FixedPrefixSegment
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::geometry::FixedPrefixSegment
-impl core::panic::unwind_safe::UnwindSafe for termrock::geometry::FixedPrefixSegment
-impl<Q, K> equivalent::Equivalent<K> for termrock::geometry::FixedPrefixSegment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::geometry::FixedPrefixSegment where U: core::convert::From<T>
-pub fn termrock::geometry::FixedPrefixSegment::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::geometry::FixedPrefixSegment where U: core::convert::Into<T>
-pub type termrock::geometry::FixedPrefixSegment::Error = core::convert::Infallible
-pub fn termrock::geometry::FixedPrefixSegment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::geometry::FixedPrefixSegment where U: core::convert::TryFrom<T>
-pub type termrock::geometry::FixedPrefixSegment::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::geometry::FixedPrefixSegment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::geometry::FixedPrefixSegment where T: core::clone::Clone
-pub type termrock::geometry::FixedPrefixSegment::Owned = T
-pub fn termrock::geometry::FixedPrefixSegment::clone_into(&self, &mut T)
-pub fn termrock::geometry::FixedPrefixSegment::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::geometry::FixedPrefixSegment where T: 'static + ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::geometry::FixedPrefixSegment where T: ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::geometry::FixedPrefixSegment where T: ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::geometry::FixedPrefixSegment where T: core::clone::Clone
-pub unsafe fn termrock::geometry::FixedPrefixSegment::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::geometry::FixedPrefixSegment
+impl core::clone::Clone for termrock::text::FixedPrefixSegment
+pub fn termrock::text::FixedPrefixSegment::clone(&self) -> termrock::text::FixedPrefixSegment
+impl core::cmp::Eq for termrock::text::FixedPrefixSegment
+impl core::cmp::PartialEq for termrock::text::FixedPrefixSegment
+pub fn termrock::text::FixedPrefixSegment::eq(&self, &termrock::text::FixedPrefixSegment) -> bool
+impl core::fmt::Debug for termrock::text::FixedPrefixSegment
+pub fn termrock::text::FixedPrefixSegment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::text::FixedPrefixSegment
+impl core::marker::StructuralPartialEq for termrock::text::FixedPrefixSegment
+impl core::marker::Freeze for termrock::text::FixedPrefixSegment
+impl core::marker::Send for termrock::text::FixedPrefixSegment
+impl core::marker::Sync for termrock::text::FixedPrefixSegment
+impl core::marker::Unpin for termrock::text::FixedPrefixSegment
+impl core::marker::UnsafeUnpin for termrock::text::FixedPrefixSegment
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::text::FixedPrefixSegment
+impl core::panic::unwind_safe::UnwindSafe for termrock::text::FixedPrefixSegment
+impl<Q, K> equivalent::Equivalent<K> for termrock::text::FixedPrefixSegment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::text::FixedPrefixSegment::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::text::FixedPrefixSegment where U: core::convert::From<T>
+pub fn termrock::text::FixedPrefixSegment::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::text::FixedPrefixSegment where U: core::convert::Into<T>
+pub type termrock::text::FixedPrefixSegment::Error = core::convert::Infallible
+pub fn termrock::text::FixedPrefixSegment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::text::FixedPrefixSegment where U: core::convert::TryFrom<T>
+pub type termrock::text::FixedPrefixSegment::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::text::FixedPrefixSegment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::text::FixedPrefixSegment where T: core::clone::Clone
+pub type termrock::text::FixedPrefixSegment::Owned = T
+pub fn termrock::text::FixedPrefixSegment::clone_into(&self, &mut T)
+pub fn termrock::text::FixedPrefixSegment::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::text::FixedPrefixSegment where T: 'static + ?core::marker::Sized
+pub fn termrock::text::FixedPrefixSegment::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::text::FixedPrefixSegment where T: ?core::marker::Sized
+pub fn termrock::text::FixedPrefixSegment::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::text::FixedPrefixSegment where T: ?core::marker::Sized
+pub fn termrock::text::FixedPrefixSegment::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::text::FixedPrefixSegment where T: core::clone::Clone
+pub unsafe fn termrock::text::FixedPrefixSegment::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::text::FixedPrefixSegment
+pub fn termrock::text::FixedPrefixSegment::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::text::FixedPrefixSegment
 pub fn termrock::text::display_cols(&str) -> usize
 pub fn termrock::text::display_cols_slice(&str, usize, usize) -> alloc::string::String
-pub fn termrock::text::fixed_prefix_scroll_segments(&str, usize, usize, usize, usize) -> alloc::vec::Vec<termrock::geometry::FixedPrefixSegment>
+pub fn termrock::text::fixed_prefix_scroll_segments(&str, usize, usize, usize, usize) -> alloc::vec::Vec<termrock::text::FixedPrefixSegment>
 pub fn termrock::text::is_terminal_control_char(char) -> bool
 pub fn termrock::text::leading_space_cols<S>(impl core::iter::traits::collect::IntoIterator<Item = S>) -> usize where S: core::convert::AsRef<str>
 pub fn termrock::text::padded_line_display_cols<I, S>(I) -> usize where I: core::iter::traits::collect::IntoIterator<Item = S> + core::clone::Clone, S: core::convert::AsRef<str>
@@ -3081,188 +2937,6 @@ pub fn termrock::text::sanitize_terminal_title(&str) -> alloc::string::String
 pub fn termrock::text::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::text::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub fn termrock::text::take_display_cols(&str, usize) -> alloc::string::String
-pub mod termrock::theme
-pub enum termrock::theme::Role
-pub termrock::theme::Role::Accent
-pub termrock::theme::Role::ActionDisabled
-pub termrock::theme::Role::ActionFocused
-pub termrock::theme::Role::Backdrop
-pub termrock::theme::Role::Border
-pub termrock::theme::Role::BorderFocused
-pub termrock::theme::Role::Canvas
-pub termrock::theme::Role::Danger
-pub termrock::theme::Role::DiffAdded
-pub termrock::theme::Role::DiffRemoved
-pub termrock::theme::Role::Elevated
-pub termrock::theme::Role::Focus
-pub termrock::theme::Role::HintDim
-pub termrock::theme::Role::HintKey
-pub termrock::theme::Role::HintSeparator
-pub termrock::theme::Role::HintText
-pub termrock::theme::Role::Info
-pub termrock::theme::Role::Input
-pub termrock::theme::Role::InputInvalid
-pub termrock::theme::Role::Link
-pub termrock::theme::Role::LinkHover
-pub termrock::theme::Role::ScrollThumb
-pub termrock::theme::Role::ScrollTrack
-pub termrock::theme::Role::Selection
-pub termrock::theme::Role::StatusBar
-pub termrock::theme::Role::Success
-pub termrock::theme::Role::Surface
-pub termrock::theme::Role::TabActive
-pub termrock::theme::Role::TabActiveHovered
-pub termrock::theme::Role::TabInactive
-pub termrock::theme::Role::TabInactiveHovered
-pub termrock::theme::Role::TabUnderlineFocused
-pub termrock::theme::Role::TabUnderlineUnfocused
-pub termrock::theme::Role::Text
-pub termrock::theme::Role::TextDisabled
-pub termrock::theme::Role::TextMuted
-pub termrock::theme::Role::Warning
-impl core::clone::Clone for termrock::style::Role
-pub fn termrock::style::Role::clone(&self) -> termrock::style::Role
-impl core::cmp::Eq for termrock::style::Role
-impl core::cmp::PartialEq for termrock::style::Role
-pub fn termrock::style::Role::eq(&self, &termrock::style::Role) -> bool
-impl core::fmt::Debug for termrock::style::Role
-pub fn termrock::style::Role::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::style::Role
-impl core::marker::StructuralPartialEq for termrock::style::Role
-impl core::marker::Freeze for termrock::style::Role
-impl core::marker::Send for termrock::style::Role
-impl core::marker::Sync for termrock::style::Role
-impl core::marker::Unpin for termrock::style::Role
-impl core::marker::UnsafeUnpin for termrock::style::Role
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::Role
-impl core::panic::unwind_safe::UnwindSafe for termrock::style::Role
-impl<Q, K> equivalent::Equivalent<K> for termrock::style::Role where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::style::Role::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::style::Role where U: core::convert::From<T>
-pub fn termrock::style::Role::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::style::Role where U: core::convert::Into<T>
-pub type termrock::style::Role::Error = core::convert::Infallible
-pub fn termrock::style::Role::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::style::Role where U: core::convert::TryFrom<T>
-pub type termrock::style::Role::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::style::Role::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::style::Role where T: core::clone::Clone
-pub type termrock::style::Role::Owned = T
-pub fn termrock::style::Role::clone_into(&self, &mut T)
-pub fn termrock::style::Role::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::style::Role where T: 'static + ?core::marker::Sized
-pub fn termrock::style::Role::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::style::Role where T: ?core::marker::Sized
-pub fn termrock::style::Role::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::style::Role where T: ?core::marker::Sized
-pub fn termrock::style::Role::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::style::Role where T: core::clone::Clone
-pub unsafe fn termrock::style::Role::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::style::Role
-pub fn termrock::style::Role::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::style::Role
-pub struct termrock::theme::Rgb
-pub termrock::theme::Rgb::b: u8
-pub termrock::theme::Rgb::g: u8
-pub termrock::theme::Rgb::r: u8
-impl termrock::style::Rgb
-pub const fn termrock::style::Rgb::new(u8, u8, u8) -> Self
-impl core::clone::Clone for termrock::style::Rgb
-pub fn termrock::style::Rgb::clone(&self) -> termrock::style::Rgb
-impl core::cmp::Eq for termrock::style::Rgb
-impl core::cmp::PartialEq for termrock::style::Rgb
-pub fn termrock::style::Rgb::eq(&self, &termrock::style::Rgb) -> bool
-impl core::fmt::Debug for termrock::style::Rgb
-pub fn termrock::style::Rgb::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::style::Rgb
-impl core::marker::StructuralPartialEq for termrock::style::Rgb
-impl core::marker::Freeze for termrock::style::Rgb
-impl core::marker::Send for termrock::style::Rgb
-impl core::marker::Sync for termrock::style::Rgb
-impl core::marker::Unpin for termrock::style::Rgb
-impl core::marker::UnsafeUnpin for termrock::style::Rgb
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::Rgb
-impl core::panic::unwind_safe::UnwindSafe for termrock::style::Rgb
-impl<Q, K> equivalent::Equivalent<K> for termrock::style::Rgb where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::style::Rgb::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::style::Rgb where U: core::convert::From<T>
-pub fn termrock::style::Rgb::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::style::Rgb where U: core::convert::Into<T>
-pub type termrock::style::Rgb::Error = core::convert::Infallible
-pub fn termrock::style::Rgb::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::style::Rgb where U: core::convert::TryFrom<T>
-pub type termrock::style::Rgb::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::style::Rgb::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::style::Rgb where T: core::clone::Clone
-pub type termrock::style::Rgb::Owned = T
-pub fn termrock::style::Rgb::clone_into(&self, &mut T)
-pub fn termrock::style::Rgb::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::style::Rgb where T: 'static + ?core::marker::Sized
-pub fn termrock::style::Rgb::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::style::Rgb where T: ?core::marker::Sized
-pub fn termrock::style::Rgb::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::style::Rgb where T: ?core::marker::Sized
-pub fn termrock::style::Rgb::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::style::Rgb where T: core::clone::Clone
-pub unsafe fn termrock::style::Rgb::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::style::Rgb
-pub fn termrock::style::Rgb::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::style::Rgb
-pub struct termrock::theme::Theme
-impl termrock::style::Theme
-pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
-pub const fn termrock::style::Theme::roles() -> [termrock::style::Role; 37]
-pub fn termrock::style::Theme::slate() -> Self
-pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
-pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
-pub fn termrock::style::Theme::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
-impl core::clone::Clone for termrock::style::Theme
-pub fn termrock::style::Theme::clone(&self) -> termrock::style::Theme
-impl core::cmp::Eq for termrock::style::Theme
-impl core::cmp::PartialEq for termrock::style::Theme
-pub fn termrock::style::Theme::eq(&self, &termrock::style::Theme) -> bool
-impl core::default::Default for termrock::style::Theme
-pub fn termrock::style::Theme::default() -> Self
-impl core::fmt::Debug for termrock::style::Theme
-pub fn termrock::style::Theme::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::style::Theme
-impl core::marker::Freeze for termrock::style::Theme
-impl core::marker::Send for termrock::style::Theme
-impl core::marker::Sync for termrock::style::Theme
-impl core::marker::Unpin for termrock::style::Theme
-impl core::marker::UnsafeUnpin for termrock::style::Theme
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::Theme
-impl core::panic::unwind_safe::UnwindSafe for termrock::style::Theme
-impl<Q, K> equivalent::Equivalent<K> for termrock::style::Theme where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::style::Theme::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::style::Theme where U: core::convert::From<T>
-pub fn termrock::style::Theme::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::style::Theme where U: core::convert::Into<T>
-pub type termrock::style::Theme::Error = core::convert::Infallible
-pub fn termrock::style::Theme::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::style::Theme where U: core::convert::TryFrom<T>
-pub type termrock::style::Theme::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::style::Theme::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::style::Theme where T: core::clone::Clone
-pub type termrock::style::Theme::Owned = T
-pub fn termrock::style::Theme::clone_into(&self, &mut T)
-pub fn termrock::style::Theme::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::style::Theme where T: 'static + ?core::marker::Sized
-pub fn termrock::style::Theme::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::style::Theme where T: ?core::marker::Sized
-pub fn termrock::style::Theme::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::style::Theme where T: ?core::marker::Sized
-pub fn termrock::style::Theme::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::style::Theme where T: core::clone::Clone
-pub unsafe fn termrock::style::Theme::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::style::Theme
-pub fn termrock::style::Theme::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::style::Theme
-pub const termrock::theme::PHOSPHOR_DARK: ratatui_core::style::color::Color
-pub const termrock::theme::PHOSPHOR_GREEN: ratatui_core::style::color::Color
-pub const termrock::theme::PREVIEW_CARD: ratatui_core::style::color::Color
-pub const fn termrock::theme::color(termrock::style::Rgb) -> ratatui_core::style::color::Color
-pub fn termrock::theme::faded(ratatui_core::style::color::Color, f32) -> ratatui_core::style::color::Color
 pub mod termrock::widgets
 pub enum termrock::widgets::Anchor
 pub termrock::widgets::Anchor::BottomLeft
@@ -3541,6 +3215,55 @@ pub unsafe fn termrock::widgets::FormOutcome<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormOutcome<Id>
+pub enum termrock::widgets::HintSpan<'a>
+pub termrock::widgets::HintSpan::Dyn(alloc::string::String)
+pub termrock::widgets::HintSpan::DynKey(alloc::string::String)
+pub termrock::widgets::HintSpan::GroupSep
+pub termrock::widgets::HintSpan::Key(&'a str)
+pub termrock::widgets::HintSpan::Sep
+pub termrock::widgets::HintSpan::Text(&'a str)
+impl termrock::widgets::HintSpan<'_>
+pub fn termrock::widgets::HintSpan<'_>::display_cols(&self) -> usize
+impl<'a> core::clone::Clone for termrock::widgets::HintSpan<'a>
+pub fn termrock::widgets::HintSpan<'a>::clone(&self) -> termrock::widgets::HintSpan<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::HintSpan<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::HintSpan<'a>
+pub fn termrock::widgets::HintSpan<'a>::eq(&self, &termrock::widgets::HintSpan<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::HintSpan<'a>
+pub fn termrock::widgets::HintSpan<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::HintSpan<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::HintSpan<'a>
+impl<'a> core::marker::Send for termrock::widgets::HintSpan<'a>
+impl<'a> core::marker::Sync for termrock::widgets::HintSpan<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::HintSpan<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::HintSpan<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HintSpan<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::HintSpan<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HintSpan<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HintSpan<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HintSpan<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::HintSpan<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HintSpan<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::HintSpan<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::HintSpan<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HintSpan<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HintSpan<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HintSpan<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HintSpan<'a> where T: core::clone::Clone
+pub type termrock::widgets::HintSpan<'a>::Owned = T
+pub fn termrock::widgets::HintSpan<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::HintSpan<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HintSpan<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HintSpan<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HintSpan<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HintSpan<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HintSpan<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HintSpan<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HintSpan<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HintSpan<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HintSpan<'a>
+pub fn termrock::widgets::HintSpan<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HintSpan<'a>
 pub enum termrock::widgets::Outcome<T>
 pub termrock::widgets::Outcome::Activated(T)
 pub termrock::widgets::Outcome::Cancelled
@@ -5581,6 +5304,45 @@ pub unsafe fn termrock::widgets::Tab<'a, Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Tab<'a, Id>
 pub fn termrock::widgets::Tab<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Tab<'a, Id>
+pub struct termrock::widgets::TabCell<'a>
+pub termrock::widgets::TabCell::active: bool
+pub termrock::widgets::TabCell::cell_cols: u16
+pub termrock::widgets::TabCell::label: &'a str
+pub termrock::widgets::TabCell::start_col: u16
+impl<'a> core::clone::Clone for termrock::widgets::TabCell<'a>
+pub fn termrock::widgets::TabCell<'a>::clone(&self) -> termrock::widgets::TabCell<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::TabCell<'a>
+pub fn termrock::widgets::TabCell<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for termrock::widgets::TabCell<'a>
+impl<'a> core::marker::Send for termrock::widgets::TabCell<'a>
+impl<'a> core::marker::Sync for termrock::widgets::TabCell<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TabCell<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TabCell<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TabCell<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TabCell<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::TabCell<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TabCell<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TabCell<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TabCell<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TabCell<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TabCell<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TabCell<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TabCell<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TabCell<'a> where T: core::clone::Clone
+pub type termrock::widgets::TabCell<'a>::Owned = T
+pub fn termrock::widgets::TabCell<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TabCell<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TabCell<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TabCell<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TabCell<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TabCell<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TabCell<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TabCell<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TabCell<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TabCell<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TabCell<'a>
+pub fn termrock::widgets::TabCell<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TabCell<'a>
 pub struct termrock::widgets::Tabs<'a, Id>
 pub termrock::widgets::Tabs::gap: u16
 pub termrock::widgets::Tabs::tabs: &'a [termrock::widgets::Tab<'a, Id>]
@@ -5997,243 +5759,13 @@ pub unsafe fn termrock::widgets::Viewport<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Viewport<'a>
-pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::geometry::HintSpan<'_>], &termrock::style::Theme)
-pub fn termrock::widgets::styled_hint_spans(&[termrock::geometry::HintSpan<'_>], &termrock::style::Theme, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
-pub fn termrock::widgets::wrapped_hint_lines(&[termrock::geometry::HintSpan<'_>], u16, &termrock::style::Theme) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
-pub enum termrock::HintSpan<'a>
-pub termrock::HintSpan::Dyn(alloc::string::String)
-pub termrock::HintSpan::DynKey(alloc::string::String)
-pub termrock::HintSpan::GroupSep
-pub termrock::HintSpan::Key(&'a str)
-pub termrock::HintSpan::Sep
-pub termrock::HintSpan::Text(&'a str)
-impl termrock::geometry::HintSpan<'_>
-pub fn termrock::geometry::HintSpan<'_>::display_cols(&self) -> usize
-impl<'a> core::clone::Clone for termrock::geometry::HintSpan<'a>
-pub fn termrock::geometry::HintSpan<'a>::clone(&self) -> termrock::geometry::HintSpan<'a>
-impl<'a> core::cmp::Eq for termrock::geometry::HintSpan<'a>
-impl<'a> core::cmp::PartialEq for termrock::geometry::HintSpan<'a>
-pub fn termrock::geometry::HintSpan<'a>::eq(&self, &termrock::geometry::HintSpan<'a>) -> bool
-impl<'a> core::fmt::Debug for termrock::geometry::HintSpan<'a>
-pub fn termrock::geometry::HintSpan<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::StructuralPartialEq for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::Freeze for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::Send for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::Sync for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::Unpin for termrock::geometry::HintSpan<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::geometry::HintSpan<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::geometry::HintSpan<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::geometry::HintSpan<'a>
-impl<Q, K> equivalent::Equivalent<K> for termrock::geometry::HintSpan<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::geometry::HintSpan<'a>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::geometry::HintSpan<'a> where U: core::convert::From<T>
-pub fn termrock::geometry::HintSpan<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::geometry::HintSpan<'a> where U: core::convert::Into<T>
-pub type termrock::geometry::HintSpan<'a>::Error = core::convert::Infallible
-pub fn termrock::geometry::HintSpan<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::geometry::HintSpan<'a> where U: core::convert::TryFrom<T>
-pub type termrock::geometry::HintSpan<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::geometry::HintSpan<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::geometry::HintSpan<'a> where T: core::clone::Clone
-pub type termrock::geometry::HintSpan<'a>::Owned = T
-pub fn termrock::geometry::HintSpan<'a>::clone_into(&self, &mut T)
-pub fn termrock::geometry::HintSpan<'a>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::geometry::HintSpan<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::geometry::HintSpan<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::geometry::HintSpan<'a> where T: ?core::marker::Sized
-pub fn termrock::geometry::HintSpan<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::geometry::HintSpan<'a> where T: ?core::marker::Sized
-pub fn termrock::geometry::HintSpan<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::geometry::HintSpan<'a> where T: core::clone::Clone
-pub unsafe fn termrock::geometry::HintSpan<'a>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::geometry::HintSpan<'a>
-pub fn termrock::geometry::HintSpan<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::geometry::HintSpan<'a>
-pub enum termrock::PointerShape
-pub termrock::PointerShape::Default
-pub termrock::PointerShape::EwResize
-pub termrock::PointerShape::Grabbing
-pub termrock::PointerShape::NsResize
-pub termrock::PointerShape::Pointer
-pub termrock::PointerShape::Text
-impl termrock::PointerShape
-pub const fn termrock::PointerShape::as_osc22_name(self) -> &'static str
-impl core::clone::Clone for termrock::PointerShape
-pub fn termrock::PointerShape::clone(&self) -> termrock::PointerShape
-impl core::cmp::Eq for termrock::PointerShape
-impl core::cmp::PartialEq for termrock::PointerShape
-pub fn termrock::PointerShape::eq(&self, &termrock::PointerShape) -> bool
-impl core::fmt::Debug for termrock::PointerShape
-pub fn termrock::PointerShape::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::PointerShape
-impl core::marker::StructuralPartialEq for termrock::PointerShape
-impl core::marker::Freeze for termrock::PointerShape
-impl core::marker::Send for termrock::PointerShape
-impl core::marker::Sync for termrock::PointerShape
-impl core::marker::Unpin for termrock::PointerShape
-impl core::marker::UnsafeUnpin for termrock::PointerShape
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::PointerShape
-impl core::panic::unwind_safe::UnwindSafe for termrock::PointerShape
-impl<Q, K> equivalent::Equivalent<K> for termrock::PointerShape where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::PointerShape::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::PointerShape where U: core::convert::From<T>
-pub fn termrock::PointerShape::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::PointerShape where U: core::convert::Into<T>
-pub type termrock::PointerShape::Error = core::convert::Infallible
-pub fn termrock::PointerShape::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::PointerShape where U: core::convert::TryFrom<T>
-pub type termrock::PointerShape::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::PointerShape::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::PointerShape where T: core::clone::Clone
-pub type termrock::PointerShape::Owned = T
-pub fn termrock::PointerShape::clone_into(&self, &mut T)
-pub fn termrock::PointerShape::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::PointerShape where T: 'static + ?core::marker::Sized
-pub fn termrock::PointerShape::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::PointerShape where T: ?core::marker::Sized
-pub fn termrock::PointerShape::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::PointerShape where T: ?core::marker::Sized
-pub fn termrock::PointerShape::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::PointerShape where T: core::clone::Clone
-pub unsafe fn termrock::PointerShape::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::PointerShape
-pub fn termrock::PointerShape::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::PointerShape
-pub struct termrock::FixedPrefixSegment
-pub termrock::FixedPrefixSegment::display_cols: usize
-pub termrock::FixedPrefixSegment::end_byte: usize
-pub termrock::FixedPrefixSegment::start_byte: usize
-pub termrock::FixedPrefixSegment::target_col: usize
-impl core::clone::Clone for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::clone(&self) -> termrock::geometry::FixedPrefixSegment
-impl core::cmp::Eq for termrock::geometry::FixedPrefixSegment
-impl core::cmp::PartialEq for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::eq(&self, &termrock::geometry::FixedPrefixSegment) -> bool
-impl core::fmt::Debug for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::geometry::FixedPrefixSegment
-impl core::marker::StructuralPartialEq for termrock::geometry::FixedPrefixSegment
-impl core::marker::Freeze for termrock::geometry::FixedPrefixSegment
-impl core::marker::Send for termrock::geometry::FixedPrefixSegment
-impl core::marker::Sync for termrock::geometry::FixedPrefixSegment
-impl core::marker::Unpin for termrock::geometry::FixedPrefixSegment
-impl core::marker::UnsafeUnpin for termrock::geometry::FixedPrefixSegment
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::geometry::FixedPrefixSegment
-impl core::panic::unwind_safe::UnwindSafe for termrock::geometry::FixedPrefixSegment
-impl<Q, K> equivalent::Equivalent<K> for termrock::geometry::FixedPrefixSegment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::geometry::FixedPrefixSegment where U: core::convert::From<T>
-pub fn termrock::geometry::FixedPrefixSegment::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::geometry::FixedPrefixSegment where U: core::convert::Into<T>
-pub type termrock::geometry::FixedPrefixSegment::Error = core::convert::Infallible
-pub fn termrock::geometry::FixedPrefixSegment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::geometry::FixedPrefixSegment where U: core::convert::TryFrom<T>
-pub type termrock::geometry::FixedPrefixSegment::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::geometry::FixedPrefixSegment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::geometry::FixedPrefixSegment where T: core::clone::Clone
-pub type termrock::geometry::FixedPrefixSegment::Owned = T
-pub fn termrock::geometry::FixedPrefixSegment::clone_into(&self, &mut T)
-pub fn termrock::geometry::FixedPrefixSegment::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::geometry::FixedPrefixSegment where T: 'static + ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::geometry::FixedPrefixSegment where T: ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::geometry::FixedPrefixSegment where T: ?core::marker::Sized
-pub fn termrock::geometry::FixedPrefixSegment::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::geometry::FixedPrefixSegment where T: core::clone::Clone
-pub unsafe fn termrock::geometry::FixedPrefixSegment::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::geometry::FixedPrefixSegment
-pub fn termrock::geometry::FixedPrefixSegment::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::geometry::FixedPrefixSegment
-pub struct termrock::TabCell<'a>
-pub termrock::TabCell::active: bool
-pub termrock::TabCell::cell_cols: u16
-pub termrock::TabCell::label: &'a str
-pub termrock::TabCell::start_col: u16
-impl<'a> core::clone::Clone for termrock::geometry::TabCell<'a>
-pub fn termrock::geometry::TabCell<'a>::clone(&self) -> termrock::geometry::TabCell<'a>
-impl<'a> core::fmt::Debug for termrock::geometry::TabCell<'a>
-pub fn termrock::geometry::TabCell<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Freeze for termrock::geometry::TabCell<'a>
-impl<'a> core::marker::Send for termrock::geometry::TabCell<'a>
-impl<'a> core::marker::Sync for termrock::geometry::TabCell<'a>
-impl<'a> core::marker::Unpin for termrock::geometry::TabCell<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::geometry::TabCell<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::geometry::TabCell<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::geometry::TabCell<'a>
-impl<T, U> core::convert::Into<U> for termrock::geometry::TabCell<'a> where U: core::convert::From<T>
-pub fn termrock::geometry::TabCell<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::geometry::TabCell<'a> where U: core::convert::Into<T>
-pub type termrock::geometry::TabCell<'a>::Error = core::convert::Infallible
-pub fn termrock::geometry::TabCell<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::geometry::TabCell<'a> where U: core::convert::TryFrom<T>
-pub type termrock::geometry::TabCell<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::geometry::TabCell<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::geometry::TabCell<'a> where T: core::clone::Clone
-pub type termrock::geometry::TabCell<'a>::Owned = T
-pub fn termrock::geometry::TabCell<'a>::clone_into(&self, &mut T)
-pub fn termrock::geometry::TabCell<'a>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::geometry::TabCell<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::geometry::TabCell<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::geometry::TabCell<'a> where T: ?core::marker::Sized
-pub fn termrock::geometry::TabCell<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::geometry::TabCell<'a> where T: ?core::marker::Sized
-pub fn termrock::geometry::TabCell<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::geometry::TabCell<'a> where T: core::clone::Clone
-pub unsafe fn termrock::geometry::TabCell<'a>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::geometry::TabCell<'a>
-pub fn termrock::geometry::TabCell<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::geometry::TabCell<'a>
-pub struct termrock::TailScroll
-impl termrock::scroll::TailScroll
-pub fn termrock::scroll::TailScroll::clamp(&mut self, usize) -> usize
-pub const fn termrock::scroll::TailScroll::new(usize) -> Self
-pub const fn termrock::scroll::TailScroll::offset(self) -> usize
-pub fn termrock::scroll::TailScroll::scroll_by(&mut self, usize, isize) -> usize
-pub fn termrock::scroll::TailScroll::to_top_offset(self, usize, usize) -> usize
-impl core::clone::Clone for termrock::scroll::TailScroll
-pub fn termrock::scroll::TailScroll::clone(&self) -> termrock::scroll::TailScroll
-impl core::cmp::Eq for termrock::scroll::TailScroll
-impl core::cmp::PartialEq for termrock::scroll::TailScroll
-pub fn termrock::scroll::TailScroll::eq(&self, &termrock::scroll::TailScroll) -> bool
-impl core::default::Default for termrock::scroll::TailScroll
-pub fn termrock::scroll::TailScroll::default() -> termrock::scroll::TailScroll
-impl core::fmt::Debug for termrock::scroll::TailScroll
-pub fn termrock::scroll::TailScroll::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::scroll::TailScroll
-impl core::marker::StructuralPartialEq for termrock::scroll::TailScroll
-impl core::marker::Freeze for termrock::scroll::TailScroll
-impl core::marker::Send for termrock::scroll::TailScroll
-impl core::marker::Sync for termrock::scroll::TailScroll
-impl core::marker::Unpin for termrock::scroll::TailScroll
-impl core::marker::UnsafeUnpin for termrock::scroll::TailScroll
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::scroll::TailScroll
-impl core::panic::unwind_safe::UnwindSafe for termrock::scroll::TailScroll
-impl<Q, K> equivalent::Equivalent<K> for termrock::scroll::TailScroll where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::scroll::TailScroll::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::scroll::TailScroll where U: core::convert::From<T>
-pub fn termrock::scroll::TailScroll::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::scroll::TailScroll where U: core::convert::Into<T>
-pub type termrock::scroll::TailScroll::Error = core::convert::Infallible
-pub fn termrock::scroll::TailScroll::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::scroll::TailScroll where U: core::convert::TryFrom<T>
-pub type termrock::scroll::TailScroll::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::scroll::TailScroll::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::scroll::TailScroll where T: core::clone::Clone
-pub type termrock::scroll::TailScroll::Owned = T
-pub fn termrock::scroll::TailScroll::clone_into(&self, &mut T)
-pub fn termrock::scroll::TailScroll::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::scroll::TailScroll where T: 'static + ?core::marker::Sized
-pub fn termrock::scroll::TailScroll::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::scroll::TailScroll where T: ?core::marker::Sized
-pub fn termrock::scroll::TailScroll::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::scroll::TailScroll where T: ?core::marker::Sized
-pub fn termrock::scroll::TailScroll::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::scroll::TailScroll where T: core::clone::Clone
-pub unsafe fn termrock::scroll::TailScroll::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::scroll::TailScroll
-pub fn termrock::scroll::TailScroll::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::scroll::TailScroll
+pub const termrock::widgets::TAB_GAP: u16
+pub fn termrock::widgets::hint_row_cols(&[termrock::widgets::HintSpan<'_>]) -> usize
+pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>
+pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::Theme)
+pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::Theme, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>
+pub fn termrock::widgets::wrapped_hint_lines(&[termrock::widgets::HintSpan<'_>], u16, &termrock::style::Theme) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub struct termrock::Theme
 impl termrock::style::Theme
 pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
@@ -6284,21 +5816,3 @@ pub unsafe fn termrock::style::Theme::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Theme
 pub fn termrock::style::Theme::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Theme
-pub const termrock::TAB_GAP: u16
-pub fn termrock::centered_rect(u16, u16, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
-pub const fn termrock::clickable_pointer_shape(bool) -> termrock::PointerShape
-pub fn termrock::display_cols(&str) -> usize
-pub fn termrock::display_cols_slice(&str, usize, usize) -> alloc::string::String
-pub fn termrock::fixed_prefix_scroll_segments(&str, usize, usize, usize, usize) -> alloc::vec::Vec<termrock::geometry::FixedPrefixSegment>
-pub fn termrock::hint_row_cols(&[termrock::geometry::HintSpan<'_>]) -> usize
-pub const fn termrock::is_scrollable(usize, usize) -> bool
-pub fn termrock::is_terminal_control_char(char) -> bool
-pub fn termrock::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::geometry::TabCell<'a>>
-pub fn termrock::leading_space_cols<S>(impl core::iter::traits::collect::IntoIterator<Item = S>) -> usize where S: core::convert::AsRef<str>
-pub fn termrock::max_line_width(&[ratatui_core::text::line::Line<'_>]) -> usize
-pub const fn termrock::max_offset(usize, usize) -> usize
-pub fn termrock::osc22_pointer_shape(termrock::PointerShape) -> alloc::string::String
-pub fn termrock::padded_line_display_cols<I, S>(I) -> usize where I: core::iter::traits::collect::IntoIterator<Item = S> + core::clone::Clone, S: core::convert::AsRef<str>
-pub fn termrock::sanitize_terminal_title(&str) -> alloc::string::String
-pub fn termrock::tab_at_column(&[termrock::geometry::TabCell<'_>], u16) -> core::option::Option<usize>
-pub fn termrock::take_display_cols(&str, usize) -> alloc::string::String

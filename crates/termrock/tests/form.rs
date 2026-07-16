@@ -5,7 +5,7 @@ use ratatui_core::{
     text::Line,
     widgets::StatefulWidget,
 };
-use termrock::theme::Role;
+use termrock::style::Role;
 use termrock::{
     Theme,
     input::{KeyCode, KeyEvent, KeyModifiers},

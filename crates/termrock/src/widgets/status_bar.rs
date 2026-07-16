@@ -220,7 +220,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
                 slot.style
             };
             let content =
-                crate::display_cols_slice(slot.content, 0, usize::from(placement.area.width));
+                crate::text::display_cols_slice(slot.content, 0, usize::from(placement.area.width));
             buffer.set_stringn(
                 placement.area.x,
                 placement.area.y,
@@ -244,7 +244,7 @@ fn allocation<Id: Clone>(
     if !slot.enabled {
         return None;
     }
-    let full_width = u16::try_from(crate::display_cols(slot.content)).unwrap_or(u16::MAX);
+    let full_width = u16::try_from(crate::text::display_cols(slot.content)).unwrap_or(u16::MAX);
     if full_width == 0 {
         return None;
     }

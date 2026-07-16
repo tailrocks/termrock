@@ -114,7 +114,7 @@ fn sidebar_hints_advertise_navigate_and_quit() {
     let text: String = spans
         .iter()
         .filter_map(|s| match s {
-            termrock::HintSpan::Key(k) | termrock::HintSpan::Text(k) => Some(*k),
+            termrock::widgets::HintSpan::Key(k) | termrock::widgets::HintSpan::Text(k) => Some(*k),
             _ => None,
         })
         .collect::<Vec<_>>()
@@ -211,7 +211,7 @@ fn preview_hints_advertise_back_and_interact() {
     let text: String = spans
         .iter()
         .filter_map(|s| match s {
-            termrock::HintSpan::Key(k) | termrock::HintSpan::Text(k) => Some(*k),
+            termrock::widgets::HintSpan::Key(k) | termrock::widgets::HintSpan::Text(k) => Some(*k),
             _ => None,
         })
         .collect::<Vec<_>>()

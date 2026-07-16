@@ -30,7 +30,7 @@ impl Default for Backdrop {
             symbol: ' ',
             style: Style::new()
                 .fg(Color::Reset)
-                .bg(crate::theme::DIALOG_BACKDROP),
+                .bg(crate::style::DIALOG_BACKDROP),
         }
     }
 }

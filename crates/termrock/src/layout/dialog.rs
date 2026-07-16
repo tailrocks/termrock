@@ -325,12 +325,12 @@ pub fn dialog_scroll_axes(
 /// scrollable dialog/overlay composes its full hint from this primitive plus
 /// its own dismiss/copy keys.
 #[must_use]
-/// Produce axis-gated scroll key [`crate::HintSpan`]s.
+/// Produce axis-gated scroll key [`crate::widgets::HintSpan`]s.
 ///
 /// Delegates to [`crate::keymap::SCROLL_HINT_KEYMAP`] so the gating logic
 /// lives in one place (the registry's `axis_gate_passes`) rather than being
 /// duplicated here and in the keymap.
-pub fn scroll_hint_spans(axes: ScrollAxes) -> Vec<crate::HintSpan<'static>> {
+pub fn scroll_hint_spans(axes: ScrollAxes) -> Vec<crate::widgets::HintSpan<'static>> {
     crate::keymap::SCROLL_HINT_KEYMAP.hint_spans_for_axes(axes)
 }
 
@@ -410,11 +410,11 @@ pub fn render_dialog_shell(
         DialogBorder::Danger => {
             let mut block = Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(crate::theme::DANGER_RED));
+                .border_style(Style::default().fg(crate::style::DANGER_RED));
             if let Some(t) = title {
                 block = block.title(Span::styled(
                     format!(" {} ", t.trim()),
-                    crate::theme::DANGER,
+                    crate::style::DANGER,
                 ));
             }
             block
