@@ -252,6 +252,7 @@ pub termrock::input::KeyCode::PageDown
 pub termrock::input::KeyCode::PageUp
 pub termrock::input::KeyCode::Right
 pub termrock::input::KeyCode::Tab
+pub termrock::input::KeyCode::Unknown
 pub termrock::input::KeyCode::Up
 impl core::clone::Clone for termrock::input::KeyCode
 pub fn termrock::input::KeyCode::clone(&self) -> termrock::input::KeyCode

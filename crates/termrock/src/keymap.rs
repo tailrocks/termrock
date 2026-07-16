@@ -135,8 +135,8 @@ impl KeyChord {
 ///
 /// Shift is only tracked for non-`Char` keys because for `Char` keys the
 /// shifted character is already encoded in the `char` value (`'Q'` vs `'q'`).
-/// Unknown key codes (function keys, media keys, …) map to
-/// `LogicalKey::Char('\0')` which will never match a real binding.
+/// Unknown backend keys become `KeyCode::Unknown`, then map to
+/// `LogicalKey::Char('\0')`, which never matches a real binding.
 impl From<crate::input::KeyEvent> for KeyChord {
     fn from(ev: crate::input::KeyEvent) -> Self {
         use crate::input::{KeyCode, KeyModifiers};
@@ -157,6 +157,7 @@ impl From<crate::input::KeyEvent> for KeyChord {
             KeyCode::PageDown => LogicalKey::PageDown,
             KeyCode::Backspace => LogicalKey::Backspace,
             KeyCode::Delete => LogicalKey::Delete,
+            KeyCode::Unknown => LogicalKey::Char('\0'),
         };
         let mut mods = Mods::NONE;
         if ev.modifiers.contains(KeyModifiers::CONTROL) {
@@ -198,6 +199,7 @@ impl From<crate::input::KeyCode> for KeyChord {
             KeyCode::PageDown => LogicalKey::PageDown,
             KeyCode::Backspace => LogicalKey::Backspace,
             KeyCode::Delete => LogicalKey::Delete,
+            KeyCode::Unknown => LogicalKey::Char('\0'),
         };
         Self {
             key,

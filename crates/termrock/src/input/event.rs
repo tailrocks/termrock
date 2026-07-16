@@ -19,6 +19,10 @@ pub enum KeyCode {
     Delete,
     Esc,
     Char(char),
+    /// A key the neutral vocabulary does not model (function keys, media
+    /// keys, lock keys, and similar keys). Widgets and keymaps must treat it
+    /// as non-actionable.
+    Unknown,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -130,7 +134,7 @@ mod adapter {
                 crossterm::event::KeyCode::Delete => Self::Delete,
                 crossterm::event::KeyCode::Esc => Self::Esc,
                 crossterm::event::KeyCode::Char(c) => Self::Char(c),
-                _ => Self::Esc,
+                _ => Self::Unknown,
             }
         }
     }

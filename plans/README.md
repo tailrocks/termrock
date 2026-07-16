@@ -21,7 +21,7 @@ breaking plan that lands, and so on).
 | 002 | CI hardening: full cargo-deny on push, gitleaks, actionlint, rust-cache | P1 | S | 001 | DONE |
 | 003 | Generated-artifact freshness (public-api.txt gate; delete dead fixtures/dep-tree) | P2 | S | — | DONE |
 | 004 | OSC escape hardening (hyperlink/clipboard encoders) | P1 | S | — | DONE |
-| 005 | Input correctness: KeyCode::Unknown, release guards | P1 | M | — | TODO |
+| 005 | Input correctness: KeyCode::Unknown, release guards | P1 | M | — | DONE |
 | 006 | Key vocabulary unification (LogicalKey/Mods → KeyCode/KeyModifiers) | P1 | M | 005 | TODO |
 | 007 | Characterization tests: Form + DetailTable | P1 | M | — | TODO |
 | 008 | Theme constructor + full role threading (6 bypassing widgets) | P1 | M | — | TODO |

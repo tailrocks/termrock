@@ -6,7 +6,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent},
+    input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::HitRegion,
     scroll::max_offset,
     style::{Role, Theme},
@@ -76,6 +76,9 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     }
 
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> ListOutcome<Id> {
+        if key.kind == KeyEventKind::Release {
+            return ListOutcome::Ignored;
+        }
         match key.code {
             KeyCode::Up | KeyCode::Char('k' | 'K') => self.select_relative(rows, -1),
             KeyCode::Down | KeyCode::Char('j' | 'J') => self.select_relative(rows, 1),

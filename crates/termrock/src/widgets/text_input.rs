@@ -4,7 +4,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     geometry::take_display_cols,
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     style::{Role, Theme},
 };
 
@@ -133,6 +133,9 @@ impl TextInputState {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) -> TextInputOutcome {
+        if key.kind == KeyEventKind::Release {
+            return TextInputOutcome::Ignored;
+        }
         match key.code {
             KeyCode::Enter => self.submit(),
             KeyCode::Char('m' | 'M') if key.modifiers.contains(KeyModifiers::CONTROL) => {

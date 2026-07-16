@@ -8,7 +8,7 @@ use ratatui_core::{
 use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
-    input::{KeyCode, KeyEvent},
+    input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::{HitRegion, Outcome},
     style::Theme,
 };
@@ -236,6 +236,9 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent, actions: &[Action<'_, Id>]) -> Outcome<Id> {
+        if key.kind == KeyEventKind::Release {
+            return Outcome::Ignored;
+        }
         match key.code {
             KeyCode::Esc => Outcome::Cancelled,
             KeyCode::Enter => self.activate_selected(actions),
