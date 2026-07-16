@@ -27,10 +27,78 @@ Wrap foreign receivers with `runtime::ClosureSubscription`; TermRock deliberatel
 
 ## `v0.8.0` canonical contract completion
 
-`v0.8.0` completes the first multi-surface consumer migration. `DialogSpec`
-uses independent horizontal and vertical margins, `Dialog` requires a theme
-and semantic emphasis, `Toast` is constructed with a theme/message/severity and
-owns anchored placement, and `ListState<usize>` owns indexed-picker selection.
-Consumers should delete local geometry, toast, table, status-footer, and picker
-selection implementations when adopting these contracts; no compatibility
+`v0.8.0` completes the first multi-surface consumer migration. No compatibility
 facade is provided.
+
+| Removed or changed `v0.6.0` surface | Canonical `v0.8.0` surface | Required consumer edit |
+|---|---|---|
+| `DialogSpec { margin, .. }` | `DialogSpec { horizontal_margin, vertical_margin, .. }` | Replace `margin` with both axis values. Keep them equal for identical geometry or choose them independently. |
+| `Dialog { title, body: Line, style }` | `Dialog { title, body: Text, style, theme, emphasis }` | Convert the body to `Text`, pass the shared `Theme`, and select a semantic `PanelEmphasis`. Remove local border/focus styling. |
+| Public-field `Toast { message, severity, anchor, style }` rendered into a caller-computed rectangle | `Toast::new(theme, message, severity).anchor(...).margins(...).style(...)` rendered over the full available area | Delete local toast sizing and placement. Pass the full area; `Toast` computes and clears its anchored rectangle. |
+| Application-owned picker index and wrap/clamp helpers | `ListState::<usize>::for_count`, `cycle_index`, `move_index`, `reconcile_count`, and `selected_item` | Replace the parallel index with `ListState<usize>` and route keyboard/pointer changes through its methods. |
+| Stateless `List { rows }` with consumer styling | `List { rows, theme }` plus state-owned keyboard, hover, scroll, activation, and painted regions | Pass the shared theme; delete duplicate selection, scrolling, hover, and hit-testing helpers. |
+| Stateless detail/status/dialog interaction | `DetailTableState`, `StatusBarState`, `ChoiceDialogState`, and typed outcomes | Keep domain meaning in the application, but route navigation, hover, activation, copying, and painted hit regions through canonical state. |
+
+### Dialog layout
+
+Before:
+
+```rust
+DialogSpec { margin: 4, /* size and placement */ }
+```
+
+After:
+
+```rust
+DialogSpec {
+    horizontal_margin: 4,
+    vertical_margin: 4,
+    /* size and placement */
+}
+```
+
+### Toast placement
+
+Before:
+
+```rust
+let toast = Toast { message, severity, anchor, style };
+frame.render_widget(&toast, application_computed_rect);
+```
+
+After:
+
+```rust
+let toast = Toast::new(&theme, message, severity)
+    .anchor(anchor)
+    .margins(2, 1)
+    .style(style);
+frame.render_widget(&toast, frame.area());
+```
+
+### Indexed picker state
+
+Before:
+
+```rust
+selected = wrap_index(selected, items.len(), direction);
+```
+
+After:
+
+```rust
+let mut state = ListState::<usize>::for_count(items.len());
+state.cycle_index(items.len(), direction);
+state.reconcile_count(items.len());
+let selected = state.selected_item(&items);
+```
+
+After updating the exact revision pin, run:
+
+```text
+cargo check --workspace --all-targets --all-features --locked
+cargo test --workspace --all-features --locked
+```
+
+Delete consumer-local compatibility wrappers after migration. Retaining the old
+and new paths together defeats the canonical-state contract and is unsupported.

@@ -24,7 +24,15 @@ of consumer-specific modes. Do not add product-branded widgets, consumer
 compatibility facades, or copied neutral rendering bodies. When a capability is
 missing, extend or refactor TermRock rather than implementing a local visual
 substitute. Breaking API changes are welcome during the pre-release period when
-they improve the shared design; do not add migration shims.
+they improve the shared design; do not add migration shims. Every breaking or
+dramatic public change must update `MIGRATING.md` in the same commit with the
+removed surface, its canonical replacement, exact consumer edits, a minimal
+before/after example, and validation commands. Documentation must let another
+agent migrate a pinned consumer without reconstructing intent from the diff.
+Compatibility never blocks a better API, domain model, module boundary, or
+architecture. Migration documentation coordinates forward adoption; it never
+authorizes deprecated aliases, duplicate implementations, compatibility
+facades, or retention of an inferior path.
 
 Every public widget must be represented by the catalog's generated API
 inventory, contract matrix, documentation, story, and deterministic preview.
