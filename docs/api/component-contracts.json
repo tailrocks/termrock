@@ -7,7 +7,7 @@
   "DiffView": { "keyboard": "caller-owned", "mouse": "caller-owned", "focus": "caller-owned", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "Form": { "keyboard": "covered", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "HintBar": { "keyboard": "not-applicable", "mouse": "not-applicable", "focus": "not-applicable", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
-  "List": { "keyboard": "caller-owned", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
+  "List": { "keyboard": "covered", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "MessageDialog": { "keyboard": "caller-owned", "mouse": "caller-owned", "focus": "caller-owned", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "Panel": { "keyboard": "not-applicable", "mouse": "not-applicable", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "SplitPane": { "keyboard": "covered", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "not-applicable", "narrowTerminal": "covered" },

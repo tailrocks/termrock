@@ -20,8 +20,8 @@ use termrock::{
 };
 
 use crate::interactors::{
-    ChoiceDialogInteractor, FormInteractor, SplitPaneInteractor, StaticStory, StoryInteraction,
-    TreeInteractor,
+    ChoiceDialogInteractor, FormInteractor, ListInteractor, SplitPaneInteractor, StaticStory,
+    StoryInteraction, TreeInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect);
@@ -92,6 +92,10 @@ fn choice_dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(ChoiceDialogInteractor::new())
 }
 
+fn list_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ListInteractor::new())
+}
+
 pub(crate) fn stories() -> Vec<Story> {
     vec![
         Story::new(
@@ -138,7 +142,8 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             6,
             list,
-        ),
+        )
+        .with_interactor(list_interactor),
         Story::new(
             "tree/navigation",
             "Tree navigation",
@@ -499,7 +504,27 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn list(frame: &mut Frame<'_>, area: Rect) {
-    let rows = [
+    let rows = list_rows();
+    let theme = Theme::default();
+    let mut state = ListState::new(Some("beta"));
+    frame.render_stateful_widget(
+        &List {
+            rows: &rows,
+            theme: &theme,
+        },
+        area,
+        &mut state,
+    );
+}
+
+pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
+    [
+        ListRow {
+            id: "section",
+            label: Line::from("Workspace"),
+            role: RowRole::Separator,
+            enabled: true,
+        },
         ListRow {
             id: "alpha",
             label: Line::from("Alpha"),
@@ -518,12 +543,7 @@ fn list(frame: &mut Frame<'_>, area: Rect) {
             role: RowRole::Item,
             enabled: false,
         },
-    ];
-    let mut state = ListState {
-        selected: Some("beta"),
-        ..ListState::default()
-    };
-    frame.render_stateful_widget(&List { rows: &rows }, area, &mut state);
+    ]
 }
 
 fn text_input(frame: &mut Frame<'_>, area: Rect) {

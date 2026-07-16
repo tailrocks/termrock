@@ -7,13 +7,14 @@ use termrock::{
     Theme,
     interaction::Outcome,
     widgets::{
-        ChoiceDialogState, Form, FormOutcome, FormSection, FormState, SplitDirection, SplitPane,
-        SplitPaneOutcome, SplitPaneState, SplitRatio, Tree, TreeNode, TreeOutcome, TreeState,
+        ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListOutcome, ListState,
+        SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, Tree, TreeNode,
+        TreeOutcome, TreeState,
     },
 };
 
 use crate::stories::{
-    choice_actions, form_fields, render_choice_dialog, render_split_pane, tree_nodes,
+    choice_actions, form_fields, list_rows, render_choice_dialog, render_split_pane, tree_nodes,
 };
 
 pub(crate) trait StoryInteraction {
@@ -72,6 +73,69 @@ impl StoryInteraction for ChoiceDialogInteractor {
             return !matches!(self.state.activate_at(position), Outcome::Ignored);
         }
         false
+    }
+}
+
+pub(crate) struct ListInteractor {
+    state: ListState<&'static str>,
+    theme: Theme,
+}
+
+impl ListInteractor {
+    pub(crate) fn new() -> Self {
+        Self {
+            state: ListState::new(Some("beta")),
+            theme: Theme::default(),
+        }
+    }
+}
+
+impl StoryInteraction for ListInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        let rows = list_rows();
+        frame.render_stateful_widget(
+            &List {
+                rows: &rows,
+                theme: &self.theme,
+            },
+            area,
+            &mut self.state,
+        );
+    }
+
+    fn handle_key(&mut self, key: KeyEvent) -> bool {
+        !matches!(
+            self.state.handle_key(&list_rows(), key.into()),
+            ListOutcome::Ignored
+        )
+    }
+
+    fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
+        let position = ratatui::layout::Position::new(mouse.column, mouse.row);
+        if !preview_area.contains(position) {
+            let changed = self.state.hovered.is_some();
+            self.state.hover(position);
+            return changed;
+        }
+        match mouse.kind {
+            crossterm::event::MouseEventKind::Moved => {
+                self.state.hover(position);
+                true
+            }
+            crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
+                !matches!(self.state.click(position), ListOutcome::Ignored)
+            }
+            crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) => {
+                self.state.scroll_to_position(position, list_rows().len())
+            }
+            crossterm::event::MouseEventKind::ScrollUp => {
+                self.state.scroll_by(-1, list_rows().len())
+            }
+            crossterm::event::MouseEventKind::ScrollDown => {
+                self.state.scroll_by(1, list_rows().len())
+            }
+            _ => false,
+        }
     }
 }
 

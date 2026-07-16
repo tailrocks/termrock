@@ -3518,6 +3518,7 @@ pub fn termrock::widgets::FormOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormOutcome<Id>
 pub enum termrock::widgets::ListOutcome<Id>
 pub termrock::widgets::ListOutcome::Activated(Id)
+pub termrock::widgets::ListOutcome::Cancelled
 pub termrock::widgets::ListOutcome::Changed
 pub termrock::widgets::ListOutcome::Ignored
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListOutcome<Id>
@@ -4844,6 +4845,7 @@ pub fn termrock::widgets::HintBar<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HintBar<'a>
 pub struct termrock::widgets::List<'a, Id>
 pub termrock::widgets::List::rows: &'a [termrock::widgets::ListRow<'a, Id>]
+pub termrock::widgets::List::theme: &'a termrock::style::Theme
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::List<'a, Id>
 pub fn termrock::widgets::List<'a, Id>::clone(&self) -> termrock::widgets::List<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::List<'a, Id>
@@ -4922,10 +4924,22 @@ impl<T> core::convert::From<T> for termrock::widgets::ListRow<'a, Id>
 pub fn termrock::widgets::ListRow<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ListRow<'a, Id>
 pub struct termrock::widgets::ListState<Id>
+pub termrock::widgets::ListState::focused: bool
 pub termrock::widgets::ListState::hovered: core::option::Option<Id>
 pub termrock::widgets::ListState::offset: usize
 pub termrock::widgets::ListState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 pub termrock::widgets::ListState::selected: core::option::Option<Id>
+pub termrock::widgets::ListState::viewport_height: usize
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ListState<Id>
+pub fn termrock::widgets::ListState<Id>::activate(&self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::ListOutcome<Id>
+pub fn termrock::widgets::ListState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::ListOutcome<Id>
+pub fn termrock::widgets::ListState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::ListOutcome<Id>
+pub fn termrock::widgets::ListState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
+pub const fn termrock::widgets::ListState<Id>::new(core::option::Option<Id>) -> Self
+pub fn termrock::widgets::ListState<Id>::scroll_by(&mut self, isize, usize) -> bool
+pub fn termrock::widgets::ListState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
+pub fn termrock::widgets::ListState<Id>::select_next(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::ListOutcome<Id>
+pub fn termrock::widgets::ListState<Id>::select_previous(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::ListOutcome<Id>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::clone(&self) -> termrock::widgets::ListState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ListState<Id>
