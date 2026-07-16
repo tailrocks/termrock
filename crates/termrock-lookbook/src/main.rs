@@ -31,7 +31,8 @@ use ratatui::{
 use stories::stories;
 use svg::{check_svgs, write_story_svgs};
 use termrock::{
-    keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Visibility, glyph},
+    input::KeyCode,
+    keymap::{KeyBinding, KeyChord, Keymap, Visibility, glyph},
     scroll::{self, ScrollSpan},
     theme::{PHOSPHOR_DARK, PHOSPHOR_GREEN, PREVIEW_CARD},
 };
@@ -61,10 +62,7 @@ enum PreviewAction {
 
 static SIDEBAR_KEYMAP: Keymap<SidebarAction> = Keymap::new(&[
     KeyBinding {
-        chords: &[
-            KeyChord::plain(LogicalKey::Down),
-            KeyChord::plain(LogicalKey::Up),
-        ],
+        chords: &[KeyChord::plain(KeyCode::Down), KeyChord::plain(KeyCode::Up)],
         action: SidebarAction::Navigate,
         hint: Some("navigate"),
         visibility: Visibility::Shown,
@@ -72,8 +70,8 @@ static SIDEBAR_KEYMAP: Keymap<SidebarAction> = Keymap::new(&[
     },
     KeyBinding {
         chords: &[
-            KeyChord::plain(LogicalKey::Char('j')),
-            KeyChord::plain(LogicalKey::Char('k')),
+            KeyChord::plain(KeyCode::Char('j')),
+            KeyChord::plain(KeyCode::Char('k')),
         ],
         action: SidebarAction::Navigate,
         hint: None,
@@ -82,8 +80,8 @@ static SIDEBAR_KEYMAP: Keymap<SidebarAction> = Keymap::new(&[
     },
     KeyBinding {
         chords: &[
-            KeyChord::plain(LogicalKey::Home),
-            KeyChord::plain(LogicalKey::End),
+            KeyChord::plain(KeyCode::Home),
+            KeyChord::plain(KeyCode::End),
         ],
         action: SidebarAction::GoToEdge,
         hint: Some("first/last"),
@@ -91,7 +89,7 @@ static SIDEBAR_KEYMAP: Keymap<SidebarAction> = Keymap::new(&[
         glyph: Some("Home/End"),
     },
     KeyBinding {
-        chords: &[KeyChord::plain(LogicalKey::Tab)],
+        chords: &[KeyChord::plain(KeyCode::Tab)],
         action: SidebarAction::FocusPreview,
         hint: Some("focus preview"),
         visibility: Visibility::Shown,
@@ -99,8 +97,8 @@ static SIDEBAR_KEYMAP: Keymap<SidebarAction> = Keymap::new(&[
     },
     KeyBinding {
         chords: &[
-            KeyChord::plain(LogicalKey::Char('q')),
-            KeyChord::plain(LogicalKey::Esc),
+            KeyChord::plain(KeyCode::Char('q')),
+            KeyChord::plain(KeyCode::Esc),
         ],
         action: SidebarAction::Quit,
         hint: Some("quit"),
@@ -112,9 +110,9 @@ static SIDEBAR_KEYMAP: Keymap<SidebarAction> = Keymap::new(&[
 static PREVIEW_KEYMAP: Keymap<PreviewAction> = Keymap::new(&[
     KeyBinding {
         chords: &[
-            KeyChord::plain(LogicalKey::Esc),
-            KeyChord::plain(LogicalKey::Tab),
-            KeyChord::plain(LogicalKey::BackTab),
+            KeyChord::plain(KeyCode::Esc),
+            KeyChord::plain(KeyCode::Tab),
+            KeyChord::plain(KeyCode::BackTab),
         ],
         action: PreviewAction::BackToList,
         hint: Some("back to list"),
@@ -123,10 +121,10 @@ static PREVIEW_KEYMAP: Keymap<PreviewAction> = Keymap::new(&[
     },
     KeyBinding {
         chords: &[
-            KeyChord::plain(LogicalKey::Up),
-            KeyChord::plain(LogicalKey::Down),
-            KeyChord::plain(LogicalKey::Left),
-            KeyChord::plain(LogicalKey::Right),
+            KeyChord::plain(KeyCode::Up),
+            KeyChord::plain(KeyCode::Down),
+            KeyChord::plain(KeyCode::Left),
+            KeyChord::plain(KeyCode::Right),
         ],
         action: PreviewAction::Forward,
         hint: Some("interact"),
@@ -134,28 +132,28 @@ static PREVIEW_KEYMAP: Keymap<PreviewAction> = Keymap::new(&[
         glyph: Some(glyph::ALL_ARROWS),
     },
     KeyBinding {
-        chords: &[KeyChord::plain(LogicalKey::PageDown)],
+        chords: &[KeyChord::plain(KeyCode::PageDown)],
         action: PreviewAction::PageDown,
         hint: Some("page"),
         visibility: Visibility::Shown,
         glyph: Some(glyph::PGUP_PGDN),
     },
     KeyBinding {
-        chords: &[KeyChord::plain(LogicalKey::PageUp)],
+        chords: &[KeyChord::plain(KeyCode::PageUp)],
         action: PreviewAction::PageUp,
         hint: None,
         visibility: Visibility::HiddenAlias,
         glyph: None,
     },
     KeyBinding {
-        chords: &[KeyChord::plain(LogicalKey::Char('J'))],
+        chords: &[KeyChord::plain(KeyCode::Char('J'))],
         action: PreviewAction::MovePreviewDown,
         hint: Some("move preview"),
         visibility: Visibility::Shown,
         glyph: Some("J/K"),
     },
     KeyBinding {
-        chords: &[KeyChord::plain(LogicalKey::Char('K'))],
+        chords: &[KeyChord::plain(KeyCode::Char('K'))],
         action: PreviewAction::MovePreviewUp,
         hint: None,
         visibility: Visibility::HiddenAlias,
@@ -643,7 +641,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
                     Focus::Sidebar => {
                         // Navigate and GoToEdge are directional: two chords share
                         // one action; direction resolved by inspecting chord.key.
-                        use LogicalKey::{Char, Down, Home};
+                        use KeyCode::{Char, Down, Home};
                         match SIDEBAR_KEYMAP.dispatch(chord) {
                             Some(SidebarAction::Quit) => break,
                             Some(SidebarAction::FocusPreview) => {

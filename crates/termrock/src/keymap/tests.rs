@@ -15,7 +15,7 @@ enum TestAction {
 
 const TEST_BINDINGS: &[KeyBinding<TestAction>] = &[
     KeyBinding {
-        chords: &[KeyChord::plain(LogicalKey::Enter)],
+        chords: &[KeyChord::plain(KeyCode::Enter)],
         action: TestAction::Confirm,
         hint: Some("confirm"),
         visibility: Visibility::Shown,
@@ -23,9 +23,9 @@ const TEST_BINDINGS: &[KeyBinding<TestAction>] = &[
     },
     KeyBinding {
         chords: &[
-            KeyChord::plain(LogicalKey::Esc),
-            KeyChord::plain(LogicalKey::Char('n')),
-            KeyChord::plain(LogicalKey::Char('N')),
+            KeyChord::plain(KeyCode::Esc),
+            KeyChord::plain(KeyCode::Char('n')),
+            KeyChord::plain(KeyCode::Char('N')),
         ],
         action: TestAction::Cancel,
         hint: Some("cancel"),
@@ -33,10 +33,7 @@ const TEST_BINDINGS: &[KeyBinding<TestAction>] = &[
         glyph: Some("N/Esc"),
     },
     KeyBinding {
-        chords: &[
-            KeyChord::plain(LogicalKey::Up),
-            KeyChord::plain(LogicalKey::Down),
-        ],
+        chords: &[KeyChord::plain(KeyCode::Up), KeyChord::plain(KeyCode::Down)],
         action: TestAction::Navigate,
         hint: Some("navigate"),
         visibility: Visibility::Shown,
@@ -44,8 +41,8 @@ const TEST_BINDINGS: &[KeyBinding<TestAction>] = &[
     },
     KeyBinding {
         chords: &[
-            KeyChord::plain(LogicalKey::Char('k')),
-            KeyChord::plain(LogicalKey::Char('j')),
+            KeyChord::plain(KeyCode::Char('k')),
+            KeyChord::plain(KeyCode::Char('j')),
         ],
         action: TestAction::HiddenVim,
         hint: None,
@@ -56,10 +53,41 @@ const TEST_BINDINGS: &[KeyBinding<TestAction>] = &[
 
 static TEST_MAP: Keymap<TestAction> = Keymap::new(TEST_BINDINGS);
 
+const CTRL_BINDINGS: &[KeyBinding<TestAction>] = &[KeyBinding {
+    chords: &[KeyChord::ctrl(KeyCode::Char('x'))],
+    action: TestAction::Confirm,
+    hint: None,
+    visibility: Visibility::Internal,
+    glyph: None,
+}];
+
+static CTRL_MAP: Keymap<TestAction> = Keymap::new(CTRL_BINDINGS);
+
+#[test]
+fn binding_tables_do_not_use_unknown_keys() {
+    assert!(
+        TEST_BINDINGS
+            .iter()
+            .flat_map(|binding| binding.chords)
+            .all(|chord| chord.key != KeyCode::Unknown)
+    );
+}
+
+#[test]
+fn key_event_conversion_preserves_unified_modifiers() {
+    let chord = KeyChord::from(crate::input::KeyEvent::new(
+        KeyCode::Char('x'),
+        KeyModifiers::CONTROL,
+    ));
+
+    assert_eq!(chord, KeyChord::ctrl(KeyCode::Char('x')));
+    assert_eq!(CTRL_MAP.dispatch(chord), Some(TestAction::Confirm));
+}
+
 #[test]
 fn dispatch_finds_primary_chord() {
     assert_eq!(
-        TEST_MAP.dispatch(KeyChord::plain(LogicalKey::Enter)),
+        TEST_MAP.dispatch(KeyChord::plain(KeyCode::Enter)),
         Some(TestAction::Confirm)
     );
 }
@@ -67,22 +95,22 @@ fn dispatch_finds_primary_chord() {
 #[test]
 fn dispatch_finds_alias_chord() {
     assert_eq!(
-        TEST_MAP.dispatch(KeyChord::plain(LogicalKey::Esc)),
+        TEST_MAP.dispatch(KeyChord::plain(KeyCode::Esc)),
         Some(TestAction::Cancel)
     );
     assert_eq!(
-        TEST_MAP.dispatch(KeyChord::plain(LogicalKey::Char('n'))),
+        TEST_MAP.dispatch(KeyChord::plain(KeyCode::Char('n'))),
         Some(TestAction::Cancel)
     );
     assert_eq!(
-        TEST_MAP.dispatch(KeyChord::plain(LogicalKey::Char('k'))),
+        TEST_MAP.dispatch(KeyChord::plain(KeyCode::Char('k'))),
         Some(TestAction::HiddenVim)
     );
 }
 
 #[test]
 fn dispatch_returns_none_for_unbound_chord() {
-    assert_eq!(TEST_MAP.dispatch(KeyChord::plain(LogicalKey::Tab)), None);
+    assert_eq!(TEST_MAP.dispatch(KeyChord::plain(KeyCode::Tab)), None);
 }
 
 #[test]
@@ -158,41 +186,26 @@ fn hint_spans_for_axes_includes_arrows_when_vertical_available() {
 #[test]
 fn chord_glyph_reproduces_existing_glyphs() {
     assert_eq!(
-        chord_glyph(Some(KeyChord::ctrl(LogicalKey::Char('q')))),
+        chord_glyph(Some(KeyChord::ctrl(KeyCode::Char('q')))),
         "Ctrl-Q"
     );
     assert_eq!(
-        chord_glyph(Some(KeyChord::ctrl(LogicalKey::Char('c')))),
+        chord_glyph(Some(KeyChord::ctrl(KeyCode::Char('c')))),
         "Ctrl-C"
     );
     assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Enter))),
+        chord_glyph(Some(KeyChord::plain(KeyCode::Enter))),
         glyph::ENTER
     );
+    assert_eq!(chord_glyph(Some(KeyChord::plain(KeyCode::Esc))), glyph::ESC);
+    assert_eq!(chord_glyph(Some(KeyChord::plain(KeyCode::Tab))), glyph::TAB);
+    assert_eq!(chord_glyph(Some(KeyChord::plain(KeyCode::Up))), "\u{2191}");
     assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Esc))),
-        glyph::ESC
-    );
-    assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Tab))),
-        glyph::TAB
-    );
-    assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Up))),
-        "\u{2191}"
-    );
-    assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Down))),
+        chord_glyph(Some(KeyChord::plain(KeyCode::Down))),
         "\u{2193}"
     );
-    assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Char('y')))),
-        "Y"
-    );
-    assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Char('Y')))),
-        "Y"
-    );
+    assert_eq!(chord_glyph(Some(KeyChord::plain(KeyCode::Char('y')))), "Y");
+    assert_eq!(chord_glyph(Some(KeyChord::plain(KeyCode::Char('Y')))), "Y");
     assert_eq!(chord_glyph(None), "");
 }
 
@@ -203,28 +216,22 @@ fn canonical_glyph_constants_reject_known_drift_spellings() {
     assert_ne!(glyph::LEFT_RIGHT, "\u{2190}/\u{2192}");
     assert_ne!(glyph::PGUP_PGDN, concat!("PgUp", " PgDn"));
     assert!(!glyph::ALL_ARROWS.contains('+'));
+    assert_eq!(chord_glyph(Some(KeyChord::plain(KeyCode::Tab))), glyph::TAB);
+    assert_eq!(chord_glyph(Some(KeyChord::plain(KeyCode::Esc))), glyph::ESC);
     assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Tab))),
-        glyph::TAB
-    );
-    assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Esc))),
-        glyph::ESC
-    );
-    assert_eq!(
-        chord_glyph(Some(KeyChord::plain(LogicalKey::Enter))),
+        chord_glyph(Some(KeyChord::plain(KeyCode::Enter))),
         glyph::ENTER
     );
 }
 
 #[test]
 fn mods_bit_flags_combine_correctly() {
-    let ctrl_shift = Mods::NONE.with_ctrl().with_shift();
-    assert!(ctrl_shift.contains(Mods::CTRL));
-    assert!(ctrl_shift.contains(Mods::SHIFT));
-    assert!(!ctrl_shift.contains(Mods::ALT));
+    let ctrl_shift = KeyModifiers::NONE.with_ctrl().with_shift();
+    assert!(ctrl_shift.contains(KeyModifiers::CONTROL));
+    assert!(ctrl_shift.contains(KeyModifiers::SHIFT));
+    assert!(!ctrl_shift.contains(KeyModifiers::ALT));
     assert!(!ctrl_shift.is_empty());
-    assert!(Mods::NONE.is_empty());
+    assert!(KeyModifiers::NONE.is_empty());
 }
 
 #[test]
@@ -238,8 +245,8 @@ fn from_crossterm_key_event_converts_basic_keys() {
         state: KeyEventState::NONE,
     };
     let chord = KeyChord::from(ev);
-    assert_eq!(chord.key, LogicalKey::Char('q'));
-    assert!(chord.mods.contains(Mods::CTRL));
+    assert_eq!(chord.key, KeyCode::Char('q'));
+    assert!(chord.mods.contains(KeyModifiers::CONTROL));
 
     let ev2 = KeyEvent {
         code: KeyCode::Enter,
@@ -247,7 +254,7 @@ fn from_crossterm_key_event_converts_basic_keys() {
         kind: KeyEventKind::Press,
         state: KeyEventState::NONE,
     };
-    assert_eq!(KeyChord::from(ev2), KeyChord::plain(LogicalKey::Enter));
+    assert_eq!(KeyChord::from(ev2), KeyChord::plain(KeyCode::Enter));
 }
 
 // ── raw_bytes_to_chord ────────────────────────────────────────────────────────
@@ -256,15 +263,15 @@ fn from_crossterm_key_event_converts_basic_keys() {
 fn raw_bytes_enter_and_escape() {
     assert_eq!(
         raw_bytes_to_chord(b"\r"),
-        Some(KeyChord::plain(LogicalKey::Enter))
+        Some(KeyChord::plain(KeyCode::Enter))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\n"),
-        Some(KeyChord::plain(LogicalKey::Enter))
+        Some(KeyChord::plain(KeyCode::Enter))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x1b"),
-        Some(KeyChord::plain(LogicalKey::Esc))
+        Some(KeyChord::plain(KeyCode::Esc))
     );
 }
 
@@ -272,15 +279,15 @@ fn raw_bytes_enter_and_escape() {
 fn raw_bytes_tab_and_backspace() {
     assert_eq!(
         raw_bytes_to_chord(b"\t"),
-        Some(KeyChord::plain(LogicalKey::Tab))
+        Some(KeyChord::plain(KeyCode::Tab))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x08"),
-        Some(KeyChord::plain(LogicalKey::Backspace))
+        Some(KeyChord::plain(KeyCode::Backspace))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x7f"),
-        Some(KeyChord::plain(LogicalKey::Backspace))
+        Some(KeyChord::plain(KeyCode::Backspace))
     );
 }
 
@@ -288,11 +295,11 @@ fn raw_bytes_tab_and_backspace() {
 fn raw_bytes_printable_ascii() {
     assert_eq!(
         raw_bytes_to_chord(b"y"),
-        Some(KeyChord::plain(LogicalKey::Char('y')))
+        Some(KeyChord::plain(KeyCode::Char('y')))
     );
     assert_eq!(
         raw_bytes_to_chord(b"N"),
-        Some(KeyChord::plain(LogicalKey::Char('N')))
+        Some(KeyChord::plain(KeyCode::Char('N')))
     );
 }
 
@@ -300,7 +307,7 @@ fn raw_bytes_printable_ascii() {
 fn raw_bytes_ctrl_c() {
     assert_eq!(
         raw_bytes_to_chord(b"\x03"),
-        Some(KeyChord::ctrl(LogicalKey::Char('c')))
+        Some(KeyChord::ctrl(KeyCode::Char('c')))
     );
 }
 
@@ -308,27 +315,27 @@ fn raw_bytes_ctrl_c() {
 fn raw_bytes_csi_and_ss3_arrows() {
     assert_eq!(
         raw_bytes_to_chord(b"\x1b[A"),
-        Some(KeyChord::plain(LogicalKey::Up))
+        Some(KeyChord::plain(KeyCode::Up))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x1b[B"),
-        Some(KeyChord::plain(LogicalKey::Down))
+        Some(KeyChord::plain(KeyCode::Down))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x1b[C"),
-        Some(KeyChord::plain(LogicalKey::Right))
+        Some(KeyChord::plain(KeyCode::Right))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x1b[D"),
-        Some(KeyChord::plain(LogicalKey::Left))
+        Some(KeyChord::plain(KeyCode::Left))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x1bOA"),
-        Some(KeyChord::plain(LogicalKey::Up))
+        Some(KeyChord::plain(KeyCode::Up))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x1bOD"),
-        Some(KeyChord::plain(LogicalKey::Left))
+        Some(KeyChord::plain(KeyCode::Left))
     );
 }
 
@@ -342,18 +349,18 @@ fn raw_bytes_unknown_returns_none() {
 fn raw_bytes_csi_alt_shift_arrows() {
     assert_eq!(
         raw_bytes_to_chord(b"\x1b[1;4A"),
-        Some(KeyChord::alt_shift(LogicalKey::Up))
+        Some(KeyChord::alt_shift(KeyCode::Up))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x1b[1;4B"),
-        Some(KeyChord::alt_shift(LogicalKey::Down))
+        Some(KeyChord::alt_shift(KeyCode::Down))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x1b[1;4C"),
-        Some(KeyChord::alt_shift(LogicalKey::Right))
+        Some(KeyChord::alt_shift(KeyCode::Right))
     );
     assert_eq!(
         raw_bytes_to_chord(b"\x1b[1;4D"),
-        Some(KeyChord::alt_shift(LogicalKey::Left))
+        Some(KeyChord::alt_shift(KeyCode::Left))
     );
 }

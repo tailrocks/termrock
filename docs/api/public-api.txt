@@ -350,65 +350,6 @@ pub unsafe fn termrock::input::KeyEventKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::input::KeyEventKind
 pub fn termrock::input::KeyEventKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::input::KeyEventKind
-pub enum termrock::input::LogicalKey
-pub termrock::input::LogicalKey::BackTab
-pub termrock::input::LogicalKey::Backspace
-pub termrock::input::LogicalKey::Char(char)
-pub termrock::input::LogicalKey::Delete
-pub termrock::input::LogicalKey::Down
-pub termrock::input::LogicalKey::End
-pub termrock::input::LogicalKey::Enter
-pub termrock::input::LogicalKey::Esc
-pub termrock::input::LogicalKey::Home
-pub termrock::input::LogicalKey::Left
-pub termrock::input::LogicalKey::PageDown
-pub termrock::input::LogicalKey::PageUp
-pub termrock::input::LogicalKey::Right
-pub termrock::input::LogicalKey::Tab
-pub termrock::input::LogicalKey::Up
-impl core::clone::Clone for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::clone(&self) -> termrock::keymap::LogicalKey
-impl core::cmp::Eq for termrock::keymap::LogicalKey
-impl core::cmp::PartialEq for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::eq(&self, &termrock::keymap::LogicalKey) -> bool
-impl core::fmt::Debug for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::keymap::LogicalKey
-impl core::marker::StructuralPartialEq for termrock::keymap::LogicalKey
-impl core::marker::Freeze for termrock::keymap::LogicalKey
-impl core::marker::Send for termrock::keymap::LogicalKey
-impl core::marker::Sync for termrock::keymap::LogicalKey
-impl core::marker::Unpin for termrock::keymap::LogicalKey
-impl core::marker::UnsafeUnpin for termrock::keymap::LogicalKey
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::keymap::LogicalKey
-impl core::panic::unwind_safe::UnwindSafe for termrock::keymap::LogicalKey
-impl<Q, K> equivalent::Equivalent<K> for termrock::keymap::LogicalKey where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::keymap::LogicalKey::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::keymap::LogicalKey where U: core::convert::From<T>
-pub fn termrock::keymap::LogicalKey::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::keymap::LogicalKey where U: core::convert::Into<T>
-pub type termrock::keymap::LogicalKey::Error = core::convert::Infallible
-pub fn termrock::keymap::LogicalKey::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::keymap::LogicalKey where U: core::convert::TryFrom<T>
-pub type termrock::keymap::LogicalKey::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::keymap::LogicalKey::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::keymap::LogicalKey where T: core::clone::Clone
-pub type termrock::keymap::LogicalKey::Owned = T
-pub fn termrock::keymap::LogicalKey::clone_into(&self, &mut T)
-pub fn termrock::keymap::LogicalKey::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::keymap::LogicalKey where T: 'static + ?core::marker::Sized
-pub fn termrock::keymap::LogicalKey::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::keymap::LogicalKey where T: ?core::marker::Sized
-pub fn termrock::keymap::LogicalKey::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::keymap::LogicalKey where T: ?core::marker::Sized
-pub fn termrock::keymap::LogicalKey::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::keymap::LogicalKey where T: core::clone::Clone
-pub unsafe fn termrock::keymap::LogicalKey::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::keymap::LogicalKey
 pub enum termrock::input::MouseEventKind
 pub termrock::input::MouseEventKind::Moved
 pub termrock::input::MouseEventKind::ScrollDown
@@ -538,14 +479,14 @@ impl<T> core::convert::From<T> for termrock::keymap::KeyBinding<A>
 pub fn termrock::keymap::KeyBinding<A>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::KeyBinding<A>
 pub struct termrock::input::KeyChord
-pub termrock::input::KeyChord::key: termrock::keymap::LogicalKey
-pub termrock::input::KeyChord::mods: termrock::keymap::Mods
+pub termrock::input::KeyChord::key: termrock::input::KeyCode
+pub termrock::input::KeyChord::mods: termrock::input::KeyModifiers
 impl termrock::keymap::KeyChord
-pub const fn termrock::keymap::KeyChord::alt(termrock::keymap::LogicalKey) -> Self
-pub const fn termrock::keymap::KeyChord::alt_shift(termrock::keymap::LogicalKey) -> Self
-pub const fn termrock::keymap::KeyChord::ctrl(termrock::keymap::LogicalKey) -> Self
-pub const fn termrock::keymap::KeyChord::plain(termrock::keymap::LogicalKey) -> Self
-pub const fn termrock::keymap::KeyChord::shift(termrock::keymap::LogicalKey) -> Self
+pub const fn termrock::keymap::KeyChord::alt(termrock::input::KeyCode) -> Self
+pub const fn termrock::keymap::KeyChord::alt_shift(termrock::input::KeyCode) -> Self
+pub const fn termrock::keymap::KeyChord::ctrl(termrock::input::KeyCode) -> Self
+pub const fn termrock::keymap::KeyChord::plain(termrock::input::KeyCode) -> Self
+pub const fn termrock::keymap::KeyChord::shift(termrock::input::KeyCode) -> Self
 impl core::clone::Clone for termrock::keymap::KeyChord
 pub fn termrock::keymap::KeyChord::clone(&self) -> termrock::keymap::KeyChord
 impl core::cmp::Eq for termrock::keymap::KeyChord
@@ -702,6 +643,10 @@ pub const termrock::input::KeyModifiers::CONTROL: Self
 pub const termrock::input::KeyModifiers::NONE: Self
 pub const termrock::input::KeyModifiers::SHIFT: Self
 pub const fn termrock::input::KeyModifiers::contains(self, Self) -> bool
+pub const fn termrock::input::KeyModifiers::is_empty(self) -> bool
+pub const fn termrock::input::KeyModifiers::with_alt(self) -> Self
+pub const fn termrock::input::KeyModifiers::with_ctrl(self) -> Self
+pub const fn termrock::input::KeyModifiers::with_shift(self) -> Self
 impl core::clone::Clone for termrock::input::KeyModifiers
 pub fn termrock::input::KeyModifiers::clone(&self) -> termrock::input::KeyModifiers
 impl core::cmp::Eq for termrock::input::KeyModifiers
@@ -791,62 +736,6 @@ pub fn termrock::keymap::Keymap<A>::borrow_mut(&mut self) -> &mut T
 impl<T> core::convert::From<T> for termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::Keymap<A>
-pub struct termrock::input::Mods(_)
-impl termrock::keymap::Mods
-pub const termrock::keymap::Mods::ALT: Self
-pub const termrock::keymap::Mods::CTRL: Self
-pub const termrock::keymap::Mods::NONE: Self
-pub const termrock::keymap::Mods::SHIFT: Self
-pub const fn termrock::keymap::Mods::contains(self, Self) -> bool
-pub const fn termrock::keymap::Mods::is_empty(self) -> bool
-pub const fn termrock::keymap::Mods::with_alt(self) -> Self
-pub const fn termrock::keymap::Mods::with_ctrl(self) -> Self
-pub const fn termrock::keymap::Mods::with_shift(self) -> Self
-impl core::clone::Clone for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::clone(&self) -> termrock::keymap::Mods
-impl core::cmp::Eq for termrock::keymap::Mods
-impl core::cmp::PartialEq for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::eq(&self, &termrock::keymap::Mods) -> bool
-impl core::default::Default for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::default() -> termrock::keymap::Mods
-impl core::fmt::Debug for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::keymap::Mods
-impl core::marker::StructuralPartialEq for termrock::keymap::Mods
-impl core::marker::Freeze for termrock::keymap::Mods
-impl core::marker::Send for termrock::keymap::Mods
-impl core::marker::Sync for termrock::keymap::Mods
-impl core::marker::Unpin for termrock::keymap::Mods
-impl core::marker::UnsafeUnpin for termrock::keymap::Mods
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::keymap::Mods
-impl core::panic::unwind_safe::UnwindSafe for termrock::keymap::Mods
-impl<Q, K> equivalent::Equivalent<K> for termrock::keymap::Mods where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::keymap::Mods::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::keymap::Mods where U: core::convert::From<T>
-pub fn termrock::keymap::Mods::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::keymap::Mods where U: core::convert::Into<T>
-pub type termrock::keymap::Mods::Error = core::convert::Infallible
-pub fn termrock::keymap::Mods::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::keymap::Mods where U: core::convert::TryFrom<T>
-pub type termrock::keymap::Mods::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::keymap::Mods::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::keymap::Mods where T: core::clone::Clone
-pub type termrock::keymap::Mods::Owned = T
-pub fn termrock::keymap::Mods::clone_into(&self, &mut T)
-pub fn termrock::keymap::Mods::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::keymap::Mods where T: 'static + ?core::marker::Sized
-pub fn termrock::keymap::Mods::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::keymap::Mods where T: ?core::marker::Sized
-pub fn termrock::keymap::Mods::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::keymap::Mods where T: ?core::marker::Sized
-pub fn termrock::keymap::Mods::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::keymap::Mods where T: core::clone::Clone
-pub unsafe fn termrock::keymap::Mods::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::keymap::Mods
 pub mod termrock::interaction
 pub enum termrock::interaction::FocusOwner<Tab>
 pub termrock::interaction::FocusOwner::Content(Tab)
@@ -1248,65 +1137,6 @@ pub const termrock::keymap::glyph::LEFT_RIGHT: &str
 pub const termrock::keymap::glyph::PGUP_PGDN: &str
 pub const termrock::keymap::glyph::TAB: &str
 pub const termrock::keymap::glyph::UP_DOWN: &str
-pub enum termrock::keymap::LogicalKey
-pub termrock::keymap::LogicalKey::BackTab
-pub termrock::keymap::LogicalKey::Backspace
-pub termrock::keymap::LogicalKey::Char(char)
-pub termrock::keymap::LogicalKey::Delete
-pub termrock::keymap::LogicalKey::Down
-pub termrock::keymap::LogicalKey::End
-pub termrock::keymap::LogicalKey::Enter
-pub termrock::keymap::LogicalKey::Esc
-pub termrock::keymap::LogicalKey::Home
-pub termrock::keymap::LogicalKey::Left
-pub termrock::keymap::LogicalKey::PageDown
-pub termrock::keymap::LogicalKey::PageUp
-pub termrock::keymap::LogicalKey::Right
-pub termrock::keymap::LogicalKey::Tab
-pub termrock::keymap::LogicalKey::Up
-impl core::clone::Clone for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::clone(&self) -> termrock::keymap::LogicalKey
-impl core::cmp::Eq for termrock::keymap::LogicalKey
-impl core::cmp::PartialEq for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::eq(&self, &termrock::keymap::LogicalKey) -> bool
-impl core::fmt::Debug for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::keymap::LogicalKey
-impl core::marker::StructuralPartialEq for termrock::keymap::LogicalKey
-impl core::marker::Freeze for termrock::keymap::LogicalKey
-impl core::marker::Send for termrock::keymap::LogicalKey
-impl core::marker::Sync for termrock::keymap::LogicalKey
-impl core::marker::Unpin for termrock::keymap::LogicalKey
-impl core::marker::UnsafeUnpin for termrock::keymap::LogicalKey
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::keymap::LogicalKey
-impl core::panic::unwind_safe::UnwindSafe for termrock::keymap::LogicalKey
-impl<Q, K> equivalent::Equivalent<K> for termrock::keymap::LogicalKey where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::keymap::LogicalKey::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::keymap::LogicalKey where U: core::convert::From<T>
-pub fn termrock::keymap::LogicalKey::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::keymap::LogicalKey where U: core::convert::Into<T>
-pub type termrock::keymap::LogicalKey::Error = core::convert::Infallible
-pub fn termrock::keymap::LogicalKey::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::keymap::LogicalKey where U: core::convert::TryFrom<T>
-pub type termrock::keymap::LogicalKey::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::keymap::LogicalKey::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::keymap::LogicalKey where T: core::clone::Clone
-pub type termrock::keymap::LogicalKey::Owned = T
-pub fn termrock::keymap::LogicalKey::clone_into(&self, &mut T)
-pub fn termrock::keymap::LogicalKey::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::keymap::LogicalKey where T: 'static + ?core::marker::Sized
-pub fn termrock::keymap::LogicalKey::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::keymap::LogicalKey where T: ?core::marker::Sized
-pub fn termrock::keymap::LogicalKey::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::keymap::LogicalKey where T: ?core::marker::Sized
-pub fn termrock::keymap::LogicalKey::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::keymap::LogicalKey where T: core::clone::Clone
-pub unsafe fn termrock::keymap::LogicalKey::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::keymap::LogicalKey
-pub fn termrock::keymap::LogicalKey::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::keymap::LogicalKey
 pub enum termrock::keymap::ScrollHintAxis
 pub termrock::keymap::ScrollHintAxis::Horizontal
 pub termrock::keymap::ScrollHintAxis::Vertical
@@ -1429,14 +1259,14 @@ impl<T> core::convert::From<T> for termrock::keymap::KeyBinding<A>
 pub fn termrock::keymap::KeyBinding<A>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::KeyBinding<A>
 pub struct termrock::keymap::KeyChord
-pub termrock::keymap::KeyChord::key: termrock::keymap::LogicalKey
-pub termrock::keymap::KeyChord::mods: termrock::keymap::Mods
+pub termrock::keymap::KeyChord::key: termrock::input::KeyCode
+pub termrock::keymap::KeyChord::mods: termrock::input::KeyModifiers
 impl termrock::keymap::KeyChord
-pub const fn termrock::keymap::KeyChord::alt(termrock::keymap::LogicalKey) -> Self
-pub const fn termrock::keymap::KeyChord::alt_shift(termrock::keymap::LogicalKey) -> Self
-pub const fn termrock::keymap::KeyChord::ctrl(termrock::keymap::LogicalKey) -> Self
-pub const fn termrock::keymap::KeyChord::plain(termrock::keymap::LogicalKey) -> Self
-pub const fn termrock::keymap::KeyChord::shift(termrock::keymap::LogicalKey) -> Self
+pub const fn termrock::keymap::KeyChord::alt(termrock::input::KeyCode) -> Self
+pub const fn termrock::keymap::KeyChord::alt_shift(termrock::input::KeyCode) -> Self
+pub const fn termrock::keymap::KeyChord::ctrl(termrock::input::KeyCode) -> Self
+pub const fn termrock::keymap::KeyChord::plain(termrock::input::KeyCode) -> Self
+pub const fn termrock::keymap::KeyChord::shift(termrock::input::KeyCode) -> Self
 impl core::clone::Clone for termrock::keymap::KeyChord
 pub fn termrock::keymap::KeyChord::clone(&self) -> termrock::keymap::KeyChord
 impl core::cmp::Eq for termrock::keymap::KeyChord
@@ -1521,62 +1351,6 @@ pub fn termrock::keymap::Keymap<A>::borrow_mut(&mut self) -> &mut T
 impl<T> core::convert::From<T> for termrock::keymap::Keymap<A>
 pub fn termrock::keymap::Keymap<A>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::keymap::Keymap<A>
-pub struct termrock::keymap::Mods(_)
-impl termrock::keymap::Mods
-pub const termrock::keymap::Mods::ALT: Self
-pub const termrock::keymap::Mods::CTRL: Self
-pub const termrock::keymap::Mods::NONE: Self
-pub const termrock::keymap::Mods::SHIFT: Self
-pub const fn termrock::keymap::Mods::contains(self, Self) -> bool
-pub const fn termrock::keymap::Mods::is_empty(self) -> bool
-pub const fn termrock::keymap::Mods::with_alt(self) -> Self
-pub const fn termrock::keymap::Mods::with_ctrl(self) -> Self
-pub const fn termrock::keymap::Mods::with_shift(self) -> Self
-impl core::clone::Clone for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::clone(&self) -> termrock::keymap::Mods
-impl core::cmp::Eq for termrock::keymap::Mods
-impl core::cmp::PartialEq for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::eq(&self, &termrock::keymap::Mods) -> bool
-impl core::default::Default for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::default() -> termrock::keymap::Mods
-impl core::fmt::Debug for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::keymap::Mods
-impl core::marker::StructuralPartialEq for termrock::keymap::Mods
-impl core::marker::Freeze for termrock::keymap::Mods
-impl core::marker::Send for termrock::keymap::Mods
-impl core::marker::Sync for termrock::keymap::Mods
-impl core::marker::Unpin for termrock::keymap::Mods
-impl core::marker::UnsafeUnpin for termrock::keymap::Mods
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::keymap::Mods
-impl core::panic::unwind_safe::UnwindSafe for termrock::keymap::Mods
-impl<Q, K> equivalent::Equivalent<K> for termrock::keymap::Mods where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::keymap::Mods::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::keymap::Mods where U: core::convert::From<T>
-pub fn termrock::keymap::Mods::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::keymap::Mods where U: core::convert::Into<T>
-pub type termrock::keymap::Mods::Error = core::convert::Infallible
-pub fn termrock::keymap::Mods::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::keymap::Mods where U: core::convert::TryFrom<T>
-pub type termrock::keymap::Mods::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::keymap::Mods::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::keymap::Mods where T: core::clone::Clone
-pub type termrock::keymap::Mods::Owned = T
-pub fn termrock::keymap::Mods::clone_into(&self, &mut T)
-pub fn termrock::keymap::Mods::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::keymap::Mods where T: 'static + ?core::marker::Sized
-pub fn termrock::keymap::Mods::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::keymap::Mods where T: ?core::marker::Sized
-pub fn termrock::keymap::Mods::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::keymap::Mods where T: ?core::marker::Sized
-pub fn termrock::keymap::Mods::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::keymap::Mods where T: core::clone::Clone
-pub unsafe fn termrock::keymap::Mods::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::keymap::Mods
-pub fn termrock::keymap::Mods::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::keymap::Mods
 pub static termrock::keymap::SCROLL_HINT_KEYMAP: termrock::keymap::Keymap<termrock::keymap::ScrollHintAxis>
 pub fn termrock::keymap::chord_glyph(core::option::Option<termrock::keymap::KeyChord>) -> &'static str
 pub fn termrock::keymap::raw_bytes_to_chord(&[u8]) -> core::option::Option<termrock::keymap::KeyChord>

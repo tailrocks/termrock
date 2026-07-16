@@ -15,6 +15,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0003 | `v0.9.0` | [Styled tab glyphs](migrations/0003-v0.9.0-styled-tab-glyphs.md) |
 | 0004 | `v0.9.0` | [Typed OSC requests](migrations/0004-v0.9.0-typed-osc-requests.md) |
 | 0005 | `v0.9.0` | [Unknown key handling](migrations/0005-v0.9.0-unknown-key-handling.md) |
+| 0006 | `v0.9.0` | [Unified key vocabulary](migrations/0006-v0.9.0-unified-key-vocabulary.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

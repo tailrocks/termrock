@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use termrock::keymap::glyph;
-use termrock::keymap::{KeyChord, LogicalKey};
+use termrock::{input::KeyCode, keymap::KeyChord};
 
 use crate::{PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction};
 
@@ -11,11 +11,11 @@ use crate::{PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction};
 #[test]
 fn sidebar_down_up_dispatch_navigate() {
     assert_eq!(
-        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Down)),
+        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::Down)),
         Some(SidebarAction::Navigate)
     );
     assert_eq!(
-        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Up)),
+        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::Up)),
         Some(SidebarAction::Navigate)
     );
 }
@@ -23,11 +23,11 @@ fn sidebar_down_up_dispatch_navigate() {
 #[test]
 fn sidebar_vim_aliases_dispatch_navigate() {
     assert_eq!(
-        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Char('j'))),
+        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::Char('j'))),
         Some(SidebarAction::Navigate)
     );
     assert_eq!(
-        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Char('k'))),
+        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::Char('k'))),
         Some(SidebarAction::Navigate)
     );
 }
@@ -35,11 +35,11 @@ fn sidebar_vim_aliases_dispatch_navigate() {
 #[test]
 fn sidebar_home_end_dispatch_go_to_edge() {
     assert_eq!(
-        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Home)),
+        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::Home)),
         Some(SidebarAction::GoToEdge)
     );
     assert_eq!(
-        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(LogicalKey::End)),
+        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::End)),
         Some(SidebarAction::GoToEdge)
     );
 }
@@ -47,7 +47,7 @@ fn sidebar_home_end_dispatch_go_to_edge() {
 #[test]
 fn sidebar_tab_dispatches_focus_preview() {
     assert_eq!(
-        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Tab)),
+        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::Tab)),
         Some(SidebarAction::FocusPreview)
     );
 }
@@ -55,11 +55,11 @@ fn sidebar_tab_dispatches_focus_preview() {
 #[test]
 fn sidebar_q_esc_dispatch_quit() {
     assert_eq!(
-        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Char('q'))),
+        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::Char('q'))),
         Some(SidebarAction::Quit)
     );
     assert_eq!(
-        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Esc)),
+        SIDEBAR_KEYMAP.dispatch(KeyChord::plain(KeyCode::Esc)),
         Some(SidebarAction::Quit)
     );
 }
@@ -67,13 +67,13 @@ fn sidebar_q_esc_dispatch_quit() {
 #[test]
 fn sidebar_non_registered_keys_return_none() {
     for chord in [
-        KeyChord::plain(LogicalKey::Enter),
-        KeyChord::plain(LogicalKey::Char('a')),
-        KeyChord::plain(LogicalKey::Char('Q')),
-        KeyChord::ctrl(LogicalKey::Char('c')),
-        KeyChord::plain(LogicalKey::PageUp),
-        KeyChord::plain(LogicalKey::PageDown),
-        KeyChord::plain(LogicalKey::BackTab),
+        KeyChord::plain(KeyCode::Enter),
+        KeyChord::plain(KeyCode::Char('a')),
+        KeyChord::plain(KeyCode::Char('Q')),
+        KeyChord::ctrl(KeyCode::Char('c')),
+        KeyChord::plain(KeyCode::PageUp),
+        KeyChord::plain(KeyCode::PageDown),
+        KeyChord::plain(KeyCode::BackTab),
     ] {
         assert_eq!(
             SIDEBAR_KEYMAP.dispatch(chord),
@@ -111,9 +111,9 @@ fn sidebar_hints_advertise_navigate_and_quit() {
 #[test]
 fn preview_esc_tab_backtab_dispatch_back_to_list() {
     for chord in [
-        KeyChord::plain(LogicalKey::Esc),
-        KeyChord::plain(LogicalKey::Tab),
-        KeyChord::plain(LogicalKey::BackTab),
+        KeyChord::plain(KeyCode::Esc),
+        KeyChord::plain(KeyCode::Tab),
+        KeyChord::plain(KeyCode::BackTab),
     ] {
         assert_eq!(
             PREVIEW_KEYMAP.dispatch(chord),
@@ -126,10 +126,10 @@ fn preview_esc_tab_backtab_dispatch_back_to_list() {
 #[test]
 fn preview_arrows_dispatch_forward() {
     for chord in [
-        KeyChord::plain(LogicalKey::Up),
-        KeyChord::plain(LogicalKey::Down),
-        KeyChord::plain(LogicalKey::Left),
-        KeyChord::plain(LogicalKey::Right),
+        KeyChord::plain(KeyCode::Up),
+        KeyChord::plain(KeyCode::Down),
+        KeyChord::plain(KeyCode::Left),
+        KeyChord::plain(KeyCode::Right),
     ] {
         assert_eq!(
             PREVIEW_KEYMAP.dispatch(chord),
@@ -142,11 +142,11 @@ fn preview_arrows_dispatch_forward() {
 #[test]
 fn preview_page_keys_dispatch() {
     assert_eq!(
-        PREVIEW_KEYMAP.dispatch(KeyChord::plain(LogicalKey::PageDown)),
+        PREVIEW_KEYMAP.dispatch(KeyChord::plain(KeyCode::PageDown)),
         Some(PreviewAction::PageDown)
     );
     assert_eq!(
-        PREVIEW_KEYMAP.dispatch(KeyChord::plain(LogicalKey::PageUp)),
+        PREVIEW_KEYMAP.dispatch(KeyChord::plain(KeyCode::PageUp)),
         Some(PreviewAction::PageUp)
     );
 }
@@ -154,11 +154,11 @@ fn preview_page_keys_dispatch() {
 #[test]
 fn preview_shift_j_k_dispatch_move_preview() {
     assert_eq!(
-        PREVIEW_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Char('J'))),
+        PREVIEW_KEYMAP.dispatch(KeyChord::plain(KeyCode::Char('J'))),
         Some(PreviewAction::MovePreviewDown)
     );
     assert_eq!(
-        PREVIEW_KEYMAP.dispatch(KeyChord::plain(LogicalKey::Char('K'))),
+        PREVIEW_KEYMAP.dispatch(KeyChord::plain(KeyCode::Char('K'))),
         Some(PreviewAction::MovePreviewUp)
     );
 }
@@ -166,11 +166,11 @@ fn preview_shift_j_k_dispatch_move_preview() {
 #[test]
 fn preview_non_registered_keys_return_none() {
     for chord in [
-        KeyChord::plain(LogicalKey::Enter),
-        KeyChord::plain(LogicalKey::Char('q')),
-        KeyChord::plain(LogicalKey::Char('j')),
-        KeyChord::plain(LogicalKey::Char('k')),
-        KeyChord::ctrl(LogicalKey::Char('q')),
+        KeyChord::plain(KeyCode::Enter),
+        KeyChord::plain(KeyCode::Char('q')),
+        KeyChord::plain(KeyCode::Char('j')),
+        KeyChord::plain(KeyCode::Char('k')),
+        KeyChord::ctrl(KeyCode::Char('q')),
     ] {
         assert_eq!(
             PREVIEW_KEYMAP.dispatch(chord),

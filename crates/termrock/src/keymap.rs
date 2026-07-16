@@ -10,123 +10,59 @@
 //! [`Visibility::HiddenAlias`] bindings.
 
 use crate::geometry::HintSpan;
+use crate::input::{KeyCode, KeyModifiers};
 use crate::scroll::ScrollAxes;
-
-// ── Neutral logical key ──────────────────────────────────────────────────────
-
-/// Platform-neutral key identity. Both the crossterm surfaces (host, launch) and
-/// raw-byte parsers produce and match this type, so a single
-/// [`Keymap`] covers all surfaces.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum LogicalKey {
-    Char(char),
-    Enter,
-    Esc,
-    Tab,
-    BackTab,
-    Up,
-    Down,
-    Left,
-    Right,
-    Home,
-    End,
-    PageUp,
-    PageDown,
-    Backspace,
-    Delete,
-}
-
-/// Modifier flags packed into a `u8`. Bit 0 = Ctrl, bit 1 = Alt, bit 2 = Shift.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub struct Mods(u8);
-
-impl Mods {
-    pub const NONE: Self = Self(0);
-    pub const CTRL: Self = Self(1);
-    pub const ALT: Self = Self(2);
-    pub const SHIFT: Self = Self(4);
-
-    /// Return a copy of `self` with the Ctrl bit set.
-    #[must_use]
-    pub const fn with_ctrl(self) -> Self {
-        Self(self.0 | Self::CTRL.0)
-    }
-
-    /// Return a copy of `self` with the Alt bit set.
-    #[must_use]
-    pub const fn with_alt(self) -> Self {
-        Self(self.0 | Self::ALT.0)
-    }
-
-    /// Return a copy of `self` with the Shift bit set.
-    #[must_use]
-    pub const fn with_shift(self) -> Self {
-        Self(self.0 | Self::SHIFT.0)
-    }
-
-    /// True if every bit in `other` is also set in `self`.
-    #[must_use]
-    pub const fn contains(self, other: Self) -> bool {
-        (self.0 & other.0) == other.0
-    }
-
-    /// True if no modifier bits are set.
-    #[must_use]
-    pub const fn is_empty(self) -> bool {
-        self.0 == 0
-    }
-}
 
 /// A key chord: a logical key plus zero or more modifier bits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct KeyChord {
-    pub key: LogicalKey,
-    pub mods: Mods,
+    pub key: KeyCode,
+    pub mods: KeyModifiers,
 }
 
 impl KeyChord {
     /// Chord with no modifiers.
     #[must_use]
-    pub const fn plain(key: LogicalKey) -> Self {
+    pub const fn plain(key: KeyCode) -> Self {
         Self {
             key,
-            mods: Mods::NONE,
+            mods: KeyModifiers::NONE,
         }
     }
 
     /// Chord with Ctrl held.
     #[must_use]
-    pub const fn ctrl(key: LogicalKey) -> Self {
+    pub const fn ctrl(key: KeyCode) -> Self {
         Self {
             key,
-            mods: Mods::CTRL,
+            mods: KeyModifiers::CONTROL,
         }
     }
 
     /// Chord with Alt held.
     #[must_use]
-    pub const fn alt(key: LogicalKey) -> Self {
+    pub const fn alt(key: KeyCode) -> Self {
         Self {
             key,
-            mods: Mods::ALT,
+            mods: KeyModifiers::ALT,
         }
     }
 
     /// Chord with Shift held (typically only meaningful for non-Char keys).
     #[must_use]
-    pub const fn shift(key: LogicalKey) -> Self {
+    pub const fn shift(key: KeyCode) -> Self {
         Self {
             key,
-            mods: Mods::SHIFT,
+            mods: KeyModifiers::SHIFT,
         }
     }
 
     /// Chord with Alt-Shift held (used for pane-resize CSI sequences).
     #[must_use]
-    pub const fn alt_shift(key: LogicalKey) -> Self {
+    pub const fn alt_shift(key: KeyCode) -> Self {
         Self {
             key,
-            mods: Mods(Mods::ALT.0 | Mods::SHIFT.0),
+            mods: KeyModifiers::ALT.with_shift(),
         }
     }
 }
@@ -135,31 +71,12 @@ impl KeyChord {
 ///
 /// Shift is only tracked for non-`Char` keys because for `Char` keys the
 /// shifted character is already encoded in the `char` value (`'Q'` vs `'q'`).
-/// Unknown backend keys become `KeyCode::Unknown`, then map to
-/// `LogicalKey::Char('\0')`, which never matches a real binding.
+/// Unknown backend keys remain `KeyCode::Unknown`, which never appears in a
+/// binding table and therefore stays inert.
 impl From<crate::input::KeyEvent> for KeyChord {
     fn from(ev: crate::input::KeyEvent) -> Self {
-        use crate::input::{KeyCode, KeyModifiers};
         let is_char = matches!(ev.code, KeyCode::Char(_));
-        let key = match ev.code {
-            KeyCode::Char(c) => LogicalKey::Char(c),
-            KeyCode::Enter => LogicalKey::Enter,
-            KeyCode::Esc => LogicalKey::Esc,
-            KeyCode::Tab => LogicalKey::Tab,
-            KeyCode::BackTab => LogicalKey::BackTab,
-            KeyCode::Up => LogicalKey::Up,
-            KeyCode::Down => LogicalKey::Down,
-            KeyCode::Left => LogicalKey::Left,
-            KeyCode::Right => LogicalKey::Right,
-            KeyCode::Home => LogicalKey::Home,
-            KeyCode::End => LogicalKey::End,
-            KeyCode::PageUp => LogicalKey::PageUp,
-            KeyCode::PageDown => LogicalKey::PageDown,
-            KeyCode::Backspace => LogicalKey::Backspace,
-            KeyCode::Delete => LogicalKey::Delete,
-            KeyCode::Unknown => LogicalKey::Char('\0'),
-        };
-        let mut mods = Mods::NONE;
+        let mut mods = KeyModifiers::NONE;
         if ev.modifiers.contains(KeyModifiers::CONTROL) {
             mods = mods.with_ctrl();
         }
@@ -170,7 +87,7 @@ impl From<crate::input::KeyEvent> for KeyChord {
         if !is_char && ev.modifiers.contains(KeyModifiers::SHIFT) {
             mods = mods.with_shift();
         }
-        Self { key, mods }
+        Self { key: ev.code, mods }
     }
 }
 
@@ -182,29 +99,7 @@ impl From<crate::input::KeyEvent> for KeyChord {
 /// dispatch identical in spirit to the `KeyEvent`-based surfaces.
 impl From<crate::input::KeyCode> for KeyChord {
     fn from(code: crate::input::KeyCode) -> Self {
-        use crate::input::KeyCode;
-        let key = match code {
-            KeyCode::Char(c) => LogicalKey::Char(c),
-            KeyCode::Enter => LogicalKey::Enter,
-            KeyCode::Esc => LogicalKey::Esc,
-            KeyCode::Tab => LogicalKey::Tab,
-            KeyCode::BackTab => LogicalKey::BackTab,
-            KeyCode::Up => LogicalKey::Up,
-            KeyCode::Down => LogicalKey::Down,
-            KeyCode::Left => LogicalKey::Left,
-            KeyCode::Right => LogicalKey::Right,
-            KeyCode::Home => LogicalKey::Home,
-            KeyCode::End => LogicalKey::End,
-            KeyCode::PageUp => LogicalKey::PageUp,
-            KeyCode::PageDown => LogicalKey::PageDown,
-            KeyCode::Backspace => LogicalKey::Backspace,
-            KeyCode::Delete => LogicalKey::Delete,
-            KeyCode::Unknown => LogicalKey::Char('\0'),
-        };
-        Self {
-            key,
-            mods: Mods::NONE,
-        }
+        Self::plain(code)
     }
 }
 
@@ -319,11 +214,12 @@ impl<A: Copy + 'static> Keymap<A> {
             && binding
                 .chords
                 .iter()
-                .all(|c| matches!(c.key, LogicalKey::Up | LogicalKey::Down) && c.mods.is_empty());
+                .all(|c| matches!(c.key, KeyCode::Up | KeyCode::Down) && c.mods.is_empty());
         let all_horizontal = !binding.chords.is_empty()
-            && binding.chords.iter().all(|c| {
-                matches!(c.key, LogicalKey::Left | LogicalKey::Right) && c.mods.is_empty()
-            });
+            && binding
+                .chords
+                .iter()
+                .all(|c| matches!(c.key, KeyCode::Left | KeyCode::Right) && c.mods.is_empty());
         if all_vertical && !axes.vertical {
             return false;
         }
@@ -387,40 +283,40 @@ pub fn raw_bytes_to_chord(bytes: &[u8]) -> Option<KeyChord> {
     match bytes {
         // Specific control bytes handled before the generic range below.
         // Enter (\r or \n — 0x0d / 0x0a both in the Ctrl range)
-        [b'\r' | b'\n'] => Some(KeyChord::plain(LogicalKey::Enter)),
+        [b'\r' | b'\n'] => Some(KeyChord::plain(KeyCode::Enter)),
         // Esc (0x1b — just above the Ctrl range)
-        [0x1b] => Some(KeyChord::plain(LogicalKey::Esc)),
+        [0x1b] => Some(KeyChord::plain(KeyCode::Esc)),
         // Tab (0x09 — inside Ctrl range; map to Tab, not Ctrl+I)
-        [0x09] => Some(KeyChord::plain(LogicalKey::Tab)),
+        [0x09] => Some(KeyChord::plain(KeyCode::Tab)),
         // Backspace: both the Ctrl+H byte (0x08) and the DEL byte (0x7f)
-        [0x08 | 0x7f] => Some(KeyChord::plain(LogicalKey::Backspace)),
+        [0x08 | 0x7f] => Some(KeyChord::plain(KeyCode::Backspace)),
         // Printable ASCII (0x20 .. 0x7e, single byte, no modifier)
-        [b] if (0x20..=0x7e).contains(b) => Some(KeyChord::plain(LogicalKey::Char(*b as char))),
+        [b] if (0x20..=0x7e).contains(b) => Some(KeyChord::plain(KeyCode::Char(*b as char))),
         // Remaining single-byte control codes: Ctrl+A (0x01) through Ctrl+Z (0x1A),
         // minus the already-matched 0x08 (Backspace), 0x09 (Tab), 0x0a (LF), 0x0d (CR).
         // Formula: letter = 'a' + (byte - 1).
         [b @ 0x01..=0x1a] => {
             let letter = (b'a' + (b - 1)) as char;
-            Some(KeyChord::ctrl(LogicalKey::Char(letter)))
+            Some(KeyChord::ctrl(KeyCode::Char(letter)))
         }
         // Delete (CSI 3~)
-        b"\x1b[3~" => Some(KeyChord::plain(LogicalKey::Delete)),
+        b"\x1b[3~" => Some(KeyChord::plain(KeyCode::Delete)),
         // CSI (legacy xterm/VT100) and SS3 (application cursor mode) arrows
-        b"\x1b[A" | b"\x1bOA" => Some(KeyChord::plain(LogicalKey::Up)),
-        b"\x1b[B" | b"\x1bOB" => Some(KeyChord::plain(LogicalKey::Down)),
-        b"\x1b[C" | b"\x1bOC" => Some(KeyChord::plain(LogicalKey::Right)),
-        b"\x1b[D" | b"\x1bOD" => Some(KeyChord::plain(LogicalKey::Left)),
+        b"\x1b[A" | b"\x1bOA" => Some(KeyChord::plain(KeyCode::Up)),
+        b"\x1b[B" | b"\x1bOB" => Some(KeyChord::plain(KeyCode::Down)),
+        b"\x1b[C" | b"\x1bOC" => Some(KeyChord::plain(KeyCode::Right)),
+        b"\x1b[D" | b"\x1bOD" => Some(KeyChord::plain(KeyCode::Left)),
         // Home / End variants
-        b"\x1b[H" | b"\x1b[1~" => Some(KeyChord::plain(LogicalKey::Home)),
-        b"\x1b[F" | b"\x1b[4~" => Some(KeyChord::plain(LogicalKey::End)),
+        b"\x1b[H" | b"\x1b[1~" => Some(KeyChord::plain(KeyCode::Home)),
+        b"\x1b[F" | b"\x1b[4~" => Some(KeyChord::plain(KeyCode::End)),
         // Page Up / Down
-        b"\x1b[5~" => Some(KeyChord::plain(LogicalKey::PageUp)),
-        b"\x1b[6~" => Some(KeyChord::plain(LogicalKey::PageDown)),
+        b"\x1b[5~" => Some(KeyChord::plain(KeyCode::PageUp)),
+        b"\x1b[6~" => Some(KeyChord::plain(KeyCode::PageDown)),
         // CSI with modifier 4 = Alt-Shift — resize pane arrows
-        b"\x1b[1;4A" => Some(KeyChord::alt_shift(LogicalKey::Up)),
-        b"\x1b[1;4B" => Some(KeyChord::alt_shift(LogicalKey::Down)),
-        b"\x1b[1;4C" => Some(KeyChord::alt_shift(LogicalKey::Right)),
-        b"\x1b[1;4D" => Some(KeyChord::alt_shift(LogicalKey::Left)),
+        b"\x1b[1;4A" => Some(KeyChord::alt_shift(KeyCode::Up)),
+        b"\x1b[1;4B" => Some(KeyChord::alt_shift(KeyCode::Down)),
+        b"\x1b[1;4C" => Some(KeyChord::alt_shift(KeyCode::Right)),
+        b"\x1b[1;4D" => Some(KeyChord::alt_shift(KeyCode::Left)),
         _ => None,
     }
 }
@@ -455,14 +351,16 @@ pub mod glyph {
 pub fn chord_glyph(chord: Option<KeyChord>) -> &'static str {
     let Some(chord) = chord else { return "" };
     match chord.key {
-        LogicalKey::Char(c) if chord.mods.contains(Mods::CTRL) => match c.to_ascii_lowercase() {
-            'q' => "Ctrl-Q",
-            'c' => "Ctrl-C",
-            'l' => "Ctrl-L",
-            'h' => "Ctrl-H",
-            _ => "Ctrl-?",
-        },
-        LogicalKey::Char(c) if chord.mods.is_empty() || chord.mods == Mods::SHIFT => {
+        KeyCode::Char(c) if chord.mods.contains(KeyModifiers::CONTROL) => {
+            match c.to_ascii_lowercase() {
+                'q' => "Ctrl-Q",
+                'c' => "Ctrl-C",
+                'l' => "Ctrl-L",
+                'h' => "Ctrl-H",
+                _ => "Ctrl-?",
+            }
+        }
+        KeyCode::Char(c) if chord.mods.is_empty() || chord.mods == KeyModifiers::SHIFT => {
             match c.to_ascii_uppercase() {
                 'A' => "A",
                 'B' => "B",
@@ -498,23 +396,24 @@ pub fn chord_glyph(chord: Option<KeyChord>) -> &'static str {
                 _ => "?",
             }
         }
-        LogicalKey::Enter => glyph::ENTER,
-        LogicalKey::Esc => glyph::ESC,
-        LogicalKey::Tab => glyph::TAB,
-        LogicalKey::BackTab => "\u{21e4}", // ⇤
-        LogicalKey::Up => "\u{2191}",      // ↑
-        LogicalKey::Down => "\u{2193}",    // ↓
-        LogicalKey::Left => "\u{2190}",    // ←
-        LogicalKey::Right => "\u{2192}",   // →
-        LogicalKey::Home => "Home",
-        LogicalKey::End => "End",
-        LogicalKey::PageUp => "PgUp",
-        LogicalKey::PageDown => "PgDn",
-        LogicalKey::Backspace => "⌫",
-        LogicalKey::Delete => "Del",
+        KeyCode::Enter => glyph::ENTER,
+        KeyCode::Esc => glyph::ESC,
+        KeyCode::Tab => glyph::TAB,
+        KeyCode::BackTab => "\u{21e4}", // ⇤
+        KeyCode::Up => "\u{2191}",      // ↑
+        KeyCode::Down => "\u{2193}",    // ↓
+        KeyCode::Left => "\u{2190}",    // ←
+        KeyCode::Right => "\u{2192}",   // →
+        KeyCode::Home => "Home",
+        KeyCode::End => "End",
+        KeyCode::PageUp => "PgUp",
+        KeyCode::PageDown => "PgDn",
+        KeyCode::Backspace => "⌫",
+        KeyCode::Delete => "Del",
         // Other modifier combos on Char (e.g. Alt-Shift-Arrow converted as Char)
         // are not in the common-shortcut set — callers must supply an explicit glyph.
-        LogicalKey::Char(_) => "?",
+        KeyCode::Char(_) => "?",
+        KeyCode::Unknown => "",
     }
 }
 
@@ -545,10 +444,7 @@ pub enum ScrollHintAxis {
 /// `ScrollHintAxis::Vertical`, so the return value has no directional meaning.
 pub static SCROLL_HINT_KEYMAP: Keymap<ScrollHintAxis> = Keymap::new(&[
     KeyBinding {
-        chords: &[
-            KeyChord::plain(LogicalKey::Up),
-            KeyChord::plain(LogicalKey::Down),
-        ],
+        chords: &[KeyChord::plain(KeyCode::Up), KeyChord::plain(KeyCode::Down)],
         action: ScrollHintAxis::Vertical,
         hint: Some("scroll"),
         visibility: Visibility::Shown,
@@ -556,8 +452,8 @@ pub static SCROLL_HINT_KEYMAP: Keymap<ScrollHintAxis> = Keymap::new(&[
     },
     KeyBinding {
         chords: &[
-            KeyChord::plain(LogicalKey::Left),
-            KeyChord::plain(LogicalKey::Right),
+            KeyChord::plain(KeyCode::Left),
+            KeyChord::plain(KeyCode::Right),
         ],
         action: ScrollHintAxis::Horizontal,
         hint: Some("scroll"),

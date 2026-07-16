@@ -2,5 +2,5 @@
 
 mod event;
 
-pub use crate::keymap::{KeyBinding, KeyChord, Keymap, LogicalKey, Mods, Visibility};
+pub use crate::keymap::{KeyBinding, KeyChord, Keymap, Visibility};
 pub use event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers, MouseEventKind};
