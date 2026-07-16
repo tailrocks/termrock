@@ -9,6 +9,7 @@ jobs:
       - uses: jdx/mise-action@v2
         with: { install: false }
       - run: mise install rust
+      - run: rustup component add rustfmt clippy
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo test --workspace --all-features --locked
