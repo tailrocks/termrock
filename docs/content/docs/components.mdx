@@ -7,7 +7,7 @@ Every component accepts consumer-owned labels and borrowed data. Keyboard routin
 - `ActionBar`: caller-defined actions and activation regions. Story `action-bar/basic`.
 - `Backdrop`: backdrop without lifecycle ownership. Story `backdrop/basic`.
 - `DetailTable`: borrowed stable-ID label/value rows with selection, hover, emphasis, wrapping or bounded two-axis scrolling, exact copy/link hit regions, typed outcomes, and typed hyperlink regions. Story `detail-table/basic`.
-- `Dialog`: neutral shell and caller-owned content. Story `dialog/message`.
+- `Dialog`: semantic themed panel chrome, padded title, caller-owned content, and focused or normal emphasis. Story `dialog/message`.
 - `ChoiceDialog`: neutral shell with caller-owned stable actions plus canonical focus traversal and painted keyboard/mouse activation outcomes. Story `choice-dialog/basic`.
 - `MessageDialog`: wrapped neutral message shell composed with the canonical `DetailTable` state and non-overlapping responsive body allocation. Story `message-dialog/details`.
 - `DiffView`: borrowed projected lines. Story `diff/basic`.
@@ -17,7 +17,7 @@ Every component accepts consumer-owned labels and borrowed data. Keyboard routin
 - `Panel`: semantic framing. Story `panel/focused`.
 - `SplitPane`: horizontal/vertical bounded pane geometry, integer remembered ratio, proportional minimum degradation in tiny areas, render-authorized divider focus/hover/drag, and caller-mapped collapse/expand. Story `split-pane/horizontal`.
 - `StatusBar`: caller-owned left/right slots with priority and minimum-width allocation, Unicode-safe truncation, painted hit regions, hover styles, and bar-wide fade. Story `status-bar/basic`.
-- `Tabs`: stable IDs, glyphs, and explicit state. Story `tabs/status`.
+- `Tabs`: stable IDs, glyphs, explicit state, active/hover fills, a non-color active underline, and shared two-row pointer geometry. Story `tabs/status`.
 - `TextInput`: grapheme-safe editing, validated external cursor placement, cursor viewport, submission/cancellation outcomes, maximum-length and duplicate validation, and external validation styling. Story `text-input/filter`.
 - `Toast`: severity and anchor metadata. Story `toast/success`.
 - `Tree`: caller-flattened hierarchy, stable disclosure/selection IDs, explicit focus/loading/error rows, Page/wheel/scrollbar navigation, and painted hit regions. Story `tree/navigation`.

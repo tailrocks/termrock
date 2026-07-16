@@ -5,7 +5,7 @@ use ratatui_core::{
     text::Text,
     widgets::{StatefulWidget, Widget},
 };
-use ratatui_widgets::{block::Block, clear::Clear, paragraph::Paragraph};
+use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
     input::{KeyCode, KeyEvent},
@@ -13,7 +13,10 @@ use crate::{
     style::Theme,
 };
 
-use super::{Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState};
+use super::{
+    Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel,
+    PanelEmphasis,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Backdrop {
@@ -108,6 +111,8 @@ mod backdrop_tests {
                 title: "Choose",
                 body: Text::from("Continue?"),
                 style: Style::new(),
+                theme: &Theme::default(),
+                emphasis: PanelEmphasis::Focused,
             },
             actions: &actions,
             gap: " ",
@@ -141,6 +146,8 @@ mod backdrop_tests {
                 title: "Failure",
                 body: Text::from("a message that wraps"),
                 style: Style::new(),
+                theme: &theme,
+                emphasis: PanelEmphasis::Focused,
             },
             details: &details,
             label_width: 0,
@@ -153,6 +160,34 @@ mod backdrop_tests {
         (&dialog).render(area, &mut buffer, &mut state);
         assert_eq!(state.viewport.y, 3);
     }
+
+    #[test]
+    fn dialog_uses_semantic_focused_panel_chrome() {
+        let theme = Theme::default();
+        let dialog = Dialog {
+            title: " Notice ",
+            body: Text::from("Done"),
+            style: Style::new(),
+            theme: &theme,
+            emphasis: PanelEmphasis::Focused,
+        };
+        let area = Rect::new(0, 0, 18, 4);
+        let mut buffer = Buffer::empty(area);
+        (&dialog).render(area, &mut buffer);
+
+        assert_eq!(
+            buffer[(0, 0)].fg,
+            theme.style(crate::style::Role::BorderFocused).fg.unwrap()
+        );
+        assert!(
+            buffer
+                .content()
+                .iter()
+                .map(|cell| cell.symbol())
+                .collect::<String>()
+                .contains(" Notice ")
+        );
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -160,12 +195,17 @@ pub struct Dialog<'a> {
     pub title: &'a str,
     pub body: Text<'a>,
     pub style: Style,
+    pub theme: &'a Theme,
+    pub emphasis: PanelEmphasis,
 }
 impl Widget for &Dialog<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         Clear.render(area, buffer);
+        let panel = Panel::new(self.theme)
+            .title(self.title)
+            .emphasis(self.emphasis);
         Paragraph::new(self.body.clone())
-            .block(Block::bordered().title(self.title))
+            .block(panel.block())
             .style(self.style)
             .render(area, buffer);
     }

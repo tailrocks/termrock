@@ -634,11 +634,14 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn dialog(frame: &mut Frame<'_>, area: Rect) {
+    let theme = Theme::default();
     frame.render_widget(
         &Dialog {
             title: "Notice",
             body: Line::from("The operation completed.").into(),
             style: Style::new(),
+            theme: &theme,
+            emphasis: termrock::widgets::PanelEmphasis::Focused,
         },
         area,
     );
@@ -672,12 +675,15 @@ pub(crate) fn render_choice_dialog(
     state: &mut ChoiceDialogState<&'static str>,
 ) {
     let actions = choice_actions();
+    let theme = Theme::default();
     frame.render_stateful_widget(
         &ChoiceDialog {
             dialog: Dialog {
                 title: "Choose",
                 body: Line::from("Continue with this operation?").into(),
                 style: Style::new(),
+                theme: &theme,
+                emphasis: termrock::widgets::PanelEmphasis::Focused,
             },
             actions: &actions,
             gap: " ",
@@ -716,6 +722,8 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect) {
                 title: "Result",
                 body: Line::from("The operation completed.").into(),
                 style: Style::new(),
+                theme: &theme,
+                emphasis: termrock::widgets::PanelEmphasis::Focused,
             },
             details: &details,
             label_width: 14,
