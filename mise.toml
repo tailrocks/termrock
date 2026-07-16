@@ -16,6 +16,7 @@ rust = "1.97.0"
 [tasks.check]
 description = "Fast pre-commit check: fmt, clippy, all-feature nextest"
 run = """
+mise run docs-quality
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo nextest run --workspace --all-features --locked
@@ -25,6 +26,7 @@ cargo test --doc --workspace --locked
 [tasks.gate]
 description = "Full pre-push gate mirroring rust-required + policy checks"
 run = """
+mise run docs-quality
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo nextest run --workspace --all-features --locked
@@ -38,4 +40,13 @@ cargo deny check advisories bans licenses sources
 cargo shear
 cargo package -p termrock --locked --allow-dirty
 cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+"""
+
+[tasks.docs-quality]
+description = "Reject generated placeholder rustdoc phrasing"
+run = """
+if grep -rEn 'Documentation for `|Performs the `[a-z_]+` operation|Selects the `[A-Za-z]+` behavior|Creates a new value with canonical defaults|Data carried by `|Available `[A-Za-z]+` choices|The `[A-Za-z]+ \\{' crates/ --include='*.rs'; then
+  echo 'placeholder rustdoc phrasing is forbidden' >&2
+  exit 1
+fi
 """
