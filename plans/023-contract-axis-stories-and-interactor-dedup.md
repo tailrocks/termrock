@@ -127,12 +127,12 @@ Extend `check-catalog.ts` (additive): for each component whose contract says `na
 
 ## Done criteria
 
-- [ ] One `route_pointer` implementation; duplicated mouse blocks gone
-- [ ] `SPLIT_PANE_MIN/MAX` constants; `grep -rn "12, 16" crates/termrock-lookbook/src/` → no raw-magic hits at the three sites
-- [ ] ≥6 narrow + ≥3 unicode story variants committed with previews and MDX mentions
-- [ ] `check-catalog.ts` enforces axis-story linkage (with documented exempt list)
-- [ ] All gates green (lookbook tests, render/check, determinism, bun build, workspace tests)
-- [ ] `plans/README.md` status row updated
+- [x] One `route_pointer` implementation; duplicated mouse blocks gone
+- [x] `SPLIT_PANE_MIN/MAX` constants; `grep -rn "12, 16" crates/termrock-lookbook/src/` → no raw-magic hits at the three sites
+- [x] ≥6 narrow + ≥3 unicode story variants committed with previews and MDX mentions
+- [x] `check-catalog.ts` enforces axis-story linkage (with documented exempt list)
+- [x] All gates green (lookbook tests, render/check, determinism, bun build, workspace tests)
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

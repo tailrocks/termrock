@@ -106,10 +106,10 @@ Step 2's three byte-stream tests; suite green.
 
 ## Done criteria
 
-- [ ] `grep -n "if options.alternate_screen" crates/termrock/src/crossterm/session.rs` → exactly one hit (the alt-screen block itself)
-- [ ] 3 new session tests pass; full crossterm + workspace suites green
-- [ ] COMPONENTS.md updated; migration file indexed; `public-api.txt` regenerated
-- [ ] `plans/README.md` status row updated
+- [x] `grep -n "if options.alternate_screen" crates/termrock/src/crossterm/session.rs` → exactly one hit (the alt-screen block itself)
+- [x] 3 new session tests pass; full crossterm + workspace suites green
+- [x] COMPONENTS.md updated; migration file indexed; `public-api.txt` regenerated
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

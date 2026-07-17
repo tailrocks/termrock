@@ -131,11 +131,11 @@ Next-numbered migration: removed `DialogBodyScroll` (→ `scroll::DialogScroll`)
 
 ## Done criteria
 
-- [ ] Greps empty: `DialogBodyScroll`, `ScrollableList`, `render_scrollable_block`, `rendered_`, `HoverTracker`, `dismiss_current`
-- [ ] Exactly one `max_line_width`/`max_offset`/`cursor_follow_offset`/`is_scrollable`/`effective_offset` in `scroll`
-- [ ] Preview SVGs byte-identical; full workspace + gate green
-- [ ] Migration file indexed; `public-api.txt` regenerated
-- [ ] plans/README.md updated (incl. F-A marked resolved-by-deletion, 017-coordination note)
+- [x] Greps empty: `DialogBodyScroll`, `ScrollableList`, `render_scrollable_block`, `rendered_`, `HoverTracker`, `dismiss_current`
+- [x] Exactly one `max_line_width`/`max_offset`/`cursor_follow_offset`/`is_scrollable`/`effective_offset` in `scroll`
+- [x] Preview SVGs byte-identical; full workspace + gate green
+- [x] Migration file indexed; `public-api.txt` regenerated
+- [x] plans/README.md updated (incl. F-A marked resolved-by-deletion, 017-coordination note)
 
 ## STOP conditions
 

@@ -141,12 +141,12 @@ Steps 1/3/5 define it: ~6-8 new tests, red→green for the two fixes. The SVG re
 
 ## Done criteria
 
-- [ ] No `fill="#000000"` on default-foreground content text in regenerated previews (spot-grep 3 files)
-- [ ] `list --format json` and any remaining JSON emission escaped + tested
-- [ ] Stale `tui-lookbook` command/dir references gone from error message, AGENTS.md, README.md
-- [ ] `lib.rs` dead catalog + `manifest.json` generation removed
-- [ ] `cargo test --workspace --all-features --locked`, preview `check`, determinism diff, `bun run build` — all green
-- [ ] `plans/README.md` status row updated
+- [x] No `fill="#000000"` on default-foreground content text in regenerated previews (spot-grep 3 files)
+- [x] `list --format json` and any remaining JSON emission escaped + tested
+- [x] Stale `tui-lookbook` command/dir references gone from error message, AGENTS.md, README.md
+- [x] `lib.rs` dead catalog + `manifest.json` generation removed
+- [x] `cargo test --workspace --all-features --locked`, preview `check`, determinism diff, `bun run build` — all green
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

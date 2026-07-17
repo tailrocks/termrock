@@ -116,12 +116,12 @@ No Rust tests. Verification = actionlint, local git-cliff output, tag-set assert
 
 ## Done criteria
 
-- [ ] semver job baselines `git describe --tags --abbrev=0`; no hardcoded v0.6.0
-- [ ] Tags v0.7.0/v0.8.0/v0.9.0 exist locally and on origin, each on its verified bump commit
-- [ ] `cliff.toml` + generated `CHANGELOG.md` committed; release.yml uses `--notes-file` with migration link injection
-- [ ] `RELEASING.md` exists; CONTRIBUTING/MIGRATING point at it
-- [ ] `mise x -- actionlint` → exit 0
-- [ ] `plans/README.md` status row updated
+- [x] semver job baselines `git describe --tags --abbrev=0`; no hardcoded v0.6.0
+- [x] Tags v0.7.0/v0.8.0/v0.9.0 exist locally and on origin at their unique version-bump commits; v0.7/v0.8 guides were reconstructed in `3a47a4f`, while v0.9 is the first atomic boundary
+- [x] `cliff.toml` + generated `CHANGELOG.md` committed; release.yml uses `--notes-file` with migration link injection
+- [x] `RELEASING.md` exists; CONTRIBUTING/MIGRATING point at it
+- [x] `mise x -- actionlint` → exit 0
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 
