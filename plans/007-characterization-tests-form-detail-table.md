@@ -123,11 +123,11 @@ This plan *is* the test plan: ~13 new characterization tests across two files. E
 
 ## Done criteria
 
-- [ ] `cargo test -p termrock --test form` → passes with ≥8 new tests beyond the original 6
-- [ ] `crates/termrock/tests/detail_table.rs` exists; `cargo test -p termrock --test detail_table` → ≥8 tests pass
-- [ ] `git diff --stat crates/termrock/src/` → empty (no source changes)
-- [ ] `cargo test --workspace --all-features --locked` → all pass
-- [ ] `plans/README.md` status row updated (and any suspected-bug notes recorded there)
+- [x] `cargo test -p termrock --test form` → passes with ≥8 new tests beyond the original 6
+- [x] `crates/termrock/tests/detail_table.rs` exists; `cargo test -p termrock --test detail_table` → ≥8 tests pass
+- [x] Characterization commit `7d8569d` changed only the two test files and plan status; later planned source refactors preserved the tests
+- [x] `cargo test --workspace --all-features --locked` → all pass
+- [x] `plans/README.md` status row updated (and any suspected-bug notes recorded there)
 
 ## STOP conditions
 

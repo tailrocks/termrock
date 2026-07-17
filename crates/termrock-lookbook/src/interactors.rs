@@ -25,7 +25,7 @@ use crate::stories::{
 };
 
 trait PointerTarget {
-    fn hover_at(&mut self, _position: Position) -> bool {
+    fn hover(&mut self, _position: Position) -> bool {
         false
     }
     fn click_at(&mut self, _position: Position) -> bool {
@@ -42,10 +42,10 @@ trait PointerTarget {
 fn route_pointer(target: &mut impl PointerTarget, mouse: MouseEvent, preview_area: Rect) -> bool {
     let position = mouse.position;
     if !preview_area.contains(position) {
-        return target.hover_at(position);
+        return target.hover(position);
     }
     match mouse.kind {
-        MouseEventKind::Moved => target.hover_at(position),
+        MouseEventKind::Moved => target.hover(position),
         MouseEventKind::Down(MouseButton::Left) => target.click_at(position),
         MouseEventKind::Drag(MouseButton::Left) => target.drag_to(position),
         MouseEventKind::ScrollUp => target.wheel(-1),
@@ -218,7 +218,7 @@ impl StoryInteraction for ListInteractor {
 }
 
 impl PointerTarget for ListInteractor {
-    fn hover_at(&mut self, position: Position) -> bool {
+    fn hover(&mut self, position: Position) -> bool {
         let before = self.state.hovered().cloned();
         self.state.hover(position);
         self.state.hovered() != before.as_ref()
@@ -292,7 +292,7 @@ impl StoryInteraction for PickerInteractor {
 }
 
 impl PointerTarget for PickerInteractor {
-    fn hover_at(&mut self, position: Position) -> bool {
+    fn hover(&mut self, position: Position) -> bool {
         let before = self.state.list().hovered().cloned();
         self.state.hover(position);
         self.state.list().hovered() != before.as_ref()
@@ -407,7 +407,7 @@ impl StoryInteraction for TreeInteractor {
 }
 
 impl PointerTarget for TreeInteractor {
-    fn hover_at(&mut self, position: Position) -> bool {
+    fn hover(&mut self, position: Position) -> bool {
         let before = self.state.hovered().cloned();
         self.state.hover(position);
         self.state.hovered() != before.as_ref()
@@ -470,7 +470,7 @@ impl StoryInteraction for FormInteractor {
 }
 
 impl PointerTarget for FormInteractor {
-    fn hover_at(&mut self, position: Position) -> bool {
+    fn hover(&mut self, position: Position) -> bool {
         let before = self.state.hovered().cloned();
         self.state.hover(position);
         self.state.hovered() != before.as_ref()

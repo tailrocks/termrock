@@ -94,12 +94,12 @@ In `crates/termrock/README.md` (currently ~9 lines), add a short "Theming" secti
 
 ## Done criteria
 
-- [ ] `Theme::slate()` public, documented, all roles covered
-- [ ] Dual-theme canary test exists and passes
-- [ ] `cargo run -p termrock-lookbook -- render --theme slate --out target/render-slate` → exit 0
-- [ ] Phosphor goldens in `docs/public/component-previews/` unchanged (`git diff --stat` empty for that dir unless the set intentionally grew)
-- [ ] `cargo test --workspace --all-features --locked` → all pass
-- [ ] `plans/README.md` status row updated
+- [x] `Theme::slate()` public, documented, all roles covered
+- [x] Dual-theme canary test exists and passes
+- [x] `cargo run -p termrock-lookbook -- render --theme slate --out target/render-slate` → exit 0
+- [x] Phosphor goldens in `docs/public/component-previews/` unchanged (`git diff --stat` empty for that dir unless the set intentionally grew)
+- [x] `cargo test --workspace --all-features --locked` → all pass
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

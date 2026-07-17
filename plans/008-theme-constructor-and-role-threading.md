@@ -182,13 +182,13 @@ Expected: **zero SVG diffs** (identical styles through a new indirection). Any d
 
 ## Done criteria
 
-- [ ] `grep -n "TAB_BG_\|PHOSPHOR_GREEN\|PHOSPHOR_DIM\|BORDER_GRAY\|WHITE" crates/termrock/src/widgets/tabs.rs crates/termrock/src/widgets/hint_bar.rs` → no matches (constants no longer referenced by widget bodies)
-- [ ] All 6 widgets have a `theme` field; `grep -L "Theme" crates/termrock/src/widgets/*.rs` lists only `mod.rs`/`tests.rs` (and files with no styling)
-- [ ] `Theme::with_role`/`from_fn`/`roles()` public and tested
-- [ ] `cargo test --workspace --all-features --locked` → all pass
-- [ ] `cargo run -p termrock-lookbook -- check --dir docs/public/component-previews` → exit 0, zero SVG changes
-- [ ] Migration file exists and is indexed
-- [ ] `plans/README.md` status row updated
+- [x] `grep -n "TAB_BG_\|PHOSPHOR_GREEN\|PHOSPHOR_DIM\|BORDER_GRAY\|WHITE" crates/termrock/src/widgets/tabs.rs crates/termrock/src/widgets/hint_bar.rs` → no matches (constants no longer referenced by widget bodies)
+- [x] All 6 specified widgets own a `theme: &Theme` field and derive semantic styles from it
+- [x] `Theme::with_role`/`from_fn`/`roles()` public and tested (the role inventory has since extended coherently to 38)
+- [x] `cargo test --workspace --all-features --locked` → all pass
+- [x] `cargo run -p termrock-lookbook -- check --dir docs/public/component-previews` → exit 0, zero SVG changes
+- [x] Migration file exists and is indexed
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

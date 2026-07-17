@@ -132,12 +132,12 @@ Old→new path table for every moved item (three-path items list all removed pat
 
 ## Done criteria
 
-- [ ] `geometry.rs` deleted; `text/` owns measurement/sanitization bodies; tab/hint/centering items live with their consumers
-- [ ] Exactly one public path per moved item (`grep -n "pub use geometry\|pub use scroll" crates/termrock/src/lib.rs` → empty; `pub use style as theme` gone)
-- [ ] One `PointerShape` (union variants) in `osc`; root copy + 3 helpers deleted
-- [ ] `cargo test --workspace --all-features --locked` + preview check + docs build → all green
-- [ ] Migration file indexed; `public-api.txt` regenerated
-- [ ] `plans/README.md` status row updated
+- [x] `geometry.rs` deleted; `text/` owns measurement/sanitization bodies; tab/hint/centering items live with their consumers
+- [x] Exactly one public path per moved item (`grep -n "pub use geometry\|pub use scroll" crates/termrock/src/lib.rs` → empty; `pub use style as theme` gone)
+- [x] One `PointerShape` (union variants) in `osc`; root copy + 3 helpers deleted
+- [x] `cargo test --workspace --all-features --locked` + preview check + docs build → all green
+- [x] Migration file indexed; `public-api.txt` regenerated and byte-fresh
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

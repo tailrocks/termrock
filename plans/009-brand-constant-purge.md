@@ -106,12 +106,12 @@ Regenerate `docs/api/public-api.txt` per Plan 003 Step 1's command.
 
 ## Done criteria
 
-- [ ] `grep -rn "RAIN_\|MENU_IDLE\|MENU_AWAITING\|DEBUG_AMBER\|STATUS_BLOCKED_RED\|BRAND_BLOCK\|LINK_BLUE" crates/ --include="*.rs"` → no matches
-- [ ] `grep -rni "jk-brand\|digital.rain\|cockpit\|brand pill\|stuck tab" crates/termrock/src/` → no matches
-- [ ] `lib.rs` no longer defines `Rgb` or color constants (moved to `style/`)
-- [ ] `cargo test --workspace --all-features --locked` → all pass; preview check → zero diffs
-- [ ] Migration file exists and is indexed; `public-api.txt` regenerated
-- [ ] `plans/README.md` status row updated
+- [x] `grep -rn "RAIN_\|MENU_IDLE\|MENU_AWAITING\|DEBUG_AMBER\|STATUS_BLOCKED_RED\|BRAND_BLOCK\|LINK_BLUE" crates/ --include="*.rs"` → no matches
+- [x] `grep -rni "jk-brand\|digital.rain\|cockpit\|brand pill\|stuck tab" crates/termrock/src/` → no matches
+- [x] `lib.rs` no longer defines `Rgb` or color constants (moved to `style/`)
+- [x] `cargo test --workspace --all-features --locked` → all pass; preview check → zero diffs
+- [x] Migration file exists and is indexed; `public-api.txt` regenerated and byte-fresh
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

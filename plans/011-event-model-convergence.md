@@ -203,12 +203,12 @@ Next-numbered migration file with the complete old→new method table (every ren
 
 ## Done criteria
 
-- [ ] Every interactive widget's methods live on its State with data-first/event-last order (manual grep sweep: `grep -n "pub fn handle_key" crates/termrock/src/widgets/*.rs` shows uniform shapes)
-- [ ] `grep -rn "activate_at\|hover_at\|pointer_down\|pointer_drag\|ModalOutcome\|ListOutcome" crates/ --include="*.rs"` → no matches
-- [ ] Neutral `Event`/`MouseEvent`/`MouseButton` exist; crossterm types no longer re-exported (`grep -n "pub use crossterm" crates/termrock/src/` → empty)
-- [ ] `cargo test --workspace --all-features --locked` + crossterm-feature tests → all pass
-- [ ] Preview check → zero diffs; migration file indexed; `public-api.txt` + `component-contracts.json` updated
-- [ ] `plans/README.md` status row updated
+- [x] Every interactive widget's methods live on its State with data-first/event-last order (manual grep sweep: `grep -n "pub fn handle_key" crates/termrock/src/widgets/*.rs` shows uniform shapes)
+- [x] `grep -rn "activate_at\|hover_at\|pointer_down\|pointer_drag\|ModalOutcome\|ListOutcome" crates/ --include="*.rs"` → no matches
+- [x] Neutral `Event`/`MouseEvent`/`MouseButton` exist; crossterm types no longer re-exported (`grep -n "pub use crossterm" crates/termrock/src/` → empty)
+- [x] `cargo test --workspace --all-features --locked` + crossterm-feature tests → all pass
+- [x] Preview check → zero diffs; migration file indexed; `public-api.txt` + `component-contracts.json` updated
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 
