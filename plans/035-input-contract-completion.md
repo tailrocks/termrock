@@ -115,12 +115,12 @@ Steps 3–4: ≥3 adapter/paste tests + 2 preset-pinning tests (with the bite-pr
 
 ## Done criteria
 
-- [ ] `grep -n "Paste(_)" crates/termrock/src/input/event.rs` → no match; `Paste(text) => Self::Paste(text)` present
-- [ ] `_ => Self::Unknown` (or non_exhaustive-forced equivalent) in the Event adapter; clippy clean
-- [ ] `TextInputState` paste-insert method exists, grapheme-tested
-- [ ] Preset value table + Role-length guard tests pass; swap experiment demonstrated
-- [ ] Migration indexed; `public-api.txt` regenerated; `mise run gate` → exit 0
-- [ ] `plans/README.md` status row updated
+- [x] `grep -n "Paste(_)" crates/termrock/src/input/event.rs` → no match; `Paste(text) => Self::Paste(text)` present
+- [x] `_ => Self::Unknown` (or non_exhaustive-forced equivalent) in the Event adapter; clippy clean
+- [x] `TextInputState` paste-insert method exists, grapheme-tested
+- [x] Preset value table + Role-length guard tests pass; swap experiment demonstrated
+- [x] Migration indexed; `public-api.txt` regenerated; `mise run gate` → exit 0
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

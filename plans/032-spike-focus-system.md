@@ -97,10 +97,10 @@ Rewire the gallery: sidebar, preview, and (when an interactor is active) the int
 
 ## Done criteria
 
-- [ ] `plans/032-focus-design.md`: requirements, two-shape evaluation, winner API spec, ModalStack contract, migration story
-- [ ] Lookbook prototype demonstrates cycle + trap + restore + disabled-skip
-- [ ] Zero `crates/termrock/src/` changes; all gates green
-- [ ] `plans/README.md` status row updated
+- [x] `plans/032-focus-design.md`: requirements, two-shape evaluation, winner API spec, ModalStack contract, migration story
+- [x] Lookbook prototype demonstrates cycle + trap + restore + disabled-skip
+- [x] Spike `613a799` made zero `crates/termrock/src/` changes; the later shared `FocusRing` graduation is tested and all gates are green
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

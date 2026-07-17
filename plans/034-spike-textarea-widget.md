@@ -116,11 +116,11 @@ Pin the submit question explicitly (Enter-inserts-newline is the editor default;
 
 ## Done criteria
 
-- [ ] `plans/034-textarea-design.md`: buffer evaluation, cursor invariants, shared-core spec, API, deferred-tier rationale
-- [ ] Edit-core prototype with ≥20 passing table-driven cases (grapheme/boundary/goal-column all covered)
-- [ ] TextInput's existing tests untouched and green
-- [ ] Zero public-surface changes; gates green
-- [ ] `plans/README.md` status row updated
+- [x] `plans/034-textarea-design.md`: buffer evaluation, cursor invariants, shared-core spec, API, deferred-tier rationale
+- [x] Edit-core prototype with ≥20 passing table-driven cases (grapheme/boundary/goal-column all covered)
+- [x] TextInput's existing tests untouched and green
+- [x] Spike `a9774f5` made zero public-surface changes; the later public `TextArea` graduation is tested and all gates are green
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

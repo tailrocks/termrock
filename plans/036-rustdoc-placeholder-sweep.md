@@ -106,12 +106,12 @@ No behavior tests. Gates: stub greps zero, strict docs build, doctests still pas
 
 ## Done criteria
 
-- [ ] All stub-phrase greps return 0 across `crates/`
-- [ ] `RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked` → exit 0
-- [ ] CI tripwire wired and demonstrated to bite
-- [ ] README runtime paragraph carries the provisional note
-- [ ] `mise run gate` → exit 0
-- [ ] `plans/README.md` status row updated
+- [x] All stub-phrase greps return 0 across `crates/`
+- [x] `RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked` → exit 0
+- [x] CI tripwire wired and demonstrated to bite
+- [x] README carried the provisional runtime note while Plan 018 was unresolved; after graduation it now documents the shipped closure runner and `FrameTick`
+- [x] `mise run gate` → exit 0
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

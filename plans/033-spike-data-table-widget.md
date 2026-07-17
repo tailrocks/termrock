@@ -111,11 +111,11 @@ Render a static 5-column × 12-row table in a lookbook-local story via the solve
 
 ## Done criteria
 
-- [ ] `plans/033-table-design.md`: model, solver spec, interaction contract, roles, perf plan, open questions
-- [ ] Width solver prototyped with ≥10 passing table-driven tests
-- [ ] Static story sketch renders (unicode truncation proven)
-- [ ] Zero `crates/termrock/src/` changes; gates green
-- [ ] `plans/README.md` status row updated
+- [x] `plans/033-table-design.md`: model, solver spec, interaction contract, roles, perf plan, open questions
+- [x] Width solver prototyped with ≥10 passing table-driven cases
+- [x] Static story sketch renders (unicode truncation proven)
+- [x] Spike `87b6a28` made zero `crates/termrock/src/` changes; the later public `Table` graduation is tested and all gates are green
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

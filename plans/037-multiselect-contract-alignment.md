@@ -100,11 +100,11 @@ Step 3's two List tests + existing list/tree suites + preview zero-diff (no rend
 
 ## Done criteria
 
-- [ ] `grep -n "pub selected\|pub selection\|pub check_regions" crates/termrock/src/widgets/list.rs` → no matches
-- [ ] List and Tree both report an id-carrying check-toggle outcome; tests assert it
-- [ ] Previews byte-identical; full gate green
-- [ ] Migration indexed; `public-api.txt` regenerated
-- [ ] `plans/README.md` status row updated (naming-collision question recorded as open)
+- [x] `grep -n "pub selected\|pub selection\|pub check_regions" crates/termrock/src/widgets/list.rs` → no matches
+- [x] List and Tree both report an id-carrying check-toggle outcome; tests assert it
+- [x] Previews byte-identical; full gate green
+- [x] Migration indexed; `public-api.txt` regenerated
+- [x] `plans/README.md` status row updated (naming-collision question recorded as open)
 
 ## STOP conditions
 
