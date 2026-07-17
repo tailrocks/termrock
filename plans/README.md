@@ -95,8 +95,8 @@ REJECTED (with one-line rationale).
 - **F-A**: `crates/termrock/src/scroll/render.rs` `render_scrollable_block_at` hardcodes `let theme = crate::Theme::default();` and `crate::theme::GREEN` inside a render helper (same pattern at `layout/dialog.rs:398`) — RESOLVED BY Plan 024, which deletes those orphaned functions. If 024 is rejected, revert to the original disposition (theme parameter via 012/016).
 - **F-B** (round 2): `scroll::ScrollableList::new` hardcodes a `PHOSPHOR_GREEN` highlight — additional evidence for its deletion in Plan 024.
 - Executors of Plans 007/017 may add `// CHARACTERIZATION: BUG` pins — list them here as they appear.
-- **F-C** (round 3): neutral `input::Event` has zero runtime consumers — the lookbook loop still matches raw crossterm events. Dogfooding lands via Plan 018's runner prototype; recorded so nobody mistakes the shipped contract for a driven one.
-- **F-D** (round 3, open naming question): three meanings of "select*" coexist in `list.rs` — `ListState.selected` (cursor), `Selection` (ordered multi-check), selection-following scroll. Resolve before Plan 033's Table adds a fourth consumer of the vocabulary.
+- **F-C** (round 3): RESOLVED — the graduated Plan 018 runner consumes neutral `input::Event` and adapts Crossterm events at the runtime boundary; the lookbook now dogfoods that runner.
+- **F-D** (round 3, open naming question): `selected` now consistently names the active cursor/row across List and the graduated Table, while `Selection` names ordered multi-check state and selection-following names viewport behavior. The remaining type/verb collision is recorded terminology debt, not a behavioral or ownership split; resolve it as one forward-only vocabulary redesign if a canonical replacement proves clearer across all consumers.
 - **F-E** (round 3): commit `38d7080` published `Selection` one commit before regenerating `public-api.txt` — per-commit artifact freshness lapse; the docs.yml gate catches it on push but not per intermediate commit. Process note only.
 
 ## Findings considered and rejected (do not re-audit)
