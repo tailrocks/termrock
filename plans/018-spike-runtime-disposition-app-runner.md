@@ -112,11 +112,11 @@ With the prototype as evidence, recommend per item: `drive_frame` (subsumed by t
 
 ## Done criteria
 
-- [ ] `plans/018-runner-design.md` exists with inventory, API, four verdicts, open questions
-- [ ] Lookbook runs through the prototype runner; `TerminalGuard` deleted; too-many-lines allow removed
-- [ ] `cargo test --workspace --all-features --locked` → all pass
-- [ ] No `crates/termrock/src/` changes
-- [ ] `plans/README.md` status row updated
+- [x] `plans/018-runner-design.md` exists with inventory, API, four verdicts, open questions
+- [x] Spike commit `2031822` moved the lookbook through its prototype runner; `TerminalGuard` and too-many-lines allowances were deleted
+- [x] `cargo test --workspace --all-features --locked` → all pass
+- [x] Spike commit `2031822` changed only lookbook and plan files; graduation later implemented the accepted design under `crates/termrock/src/runtime`
+- [x] `plans/README.md` status row updated; the closure runner is now graduated and extended with immutable frame time
 
 ## STOP conditions
 

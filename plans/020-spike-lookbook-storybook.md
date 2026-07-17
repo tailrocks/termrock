@@ -89,10 +89,10 @@ Answer in the doc: does `cargo install --git https://github.com/tailrocks/termro
 
 ## Done criteria
 
-- [ ] One story drives real knobs in the gallery; theme toggle works globally
-- [ ] SVG determinism + catalog gate + workspace tests all green
-- [ ] `plans/020-storybook-design.md` complete incl. friction list + installability verdict
-- [ ] `plans/README.md` status row updated
+- [x] Toast drives real Choice/Text knobs in the gallery; theme toggle works globally, including text-input-safe `Ctrl+t`
+- [x] SVG determinism, catalog gate, and workspace tests are green
+- [x] `plans/020-storybook-design.md` includes the knob model, migration inventory, interaction/layout spec, friction list, installability proof, estimate, and open decisions
+- [x] `plans/README.md` status row updated with the gallery-local graduation verdict
 
 ## STOP conditions
 

@@ -93,11 +93,11 @@ Implement enough to compile and pass: construct a default table, apply a runtime
 
 ## Done criteria
 
-- [ ] `plans/019-keymap-design.md` with three-candidate evaluation + winner + full API sketch
-- [ ] Winner prototype compiles + ≥4 prototype tests pass (remap hit, old-chord miss, hint reflects remap, conflict detection)
-- [ ] Const-Cow feasibility fact recorded (candidate 2's make-or-break) even if another candidate wins
-- [ ] No public surface changed; workspace tests green
-- [ ] `plans/README.md` status row updated
+- [x] `plans/019-keymap-design.md` has the three-candidate evaluation, winner, full API, invariant flow, serde sketch, migration, and open questions
+- [x] Cow winner compiles; production tests cover remap hit, old-chord miss, hint/glyph updates, and conflict detection
+- [x] Const-Cow feasibility is recorded and remains compiler-checked by the static-construction test
+- [x] Spike commit `bbc6c98` left the generated public API unchanged and passed tests; the accepted model later graduated in `0d85cfd`
+- [x] `plans/README.md` status row updated with the graduated Cow-backed verdict
 
 ## STOP conditions
 

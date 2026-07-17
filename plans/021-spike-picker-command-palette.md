@@ -99,11 +99,11 @@ Rebuild the `text-input/filter` story/interactor on `PickerState` (locally in th
 
 ## Done criteria
 
-- [ ] `plans/021-picker-design.md` with normative routing table + stability rule + placement plan
-- [ ] Lookbook `text-input/filter` runs on the prototype `PickerState`; ≥5 reconciliation tests pass
-- [ ] `cargo test --workspace --all-features --locked` green; previews consistent
-- [ ] No `crates/termrock/src/` changes (library lands in the build plan)
-- [ ] `plans/README.md` status row updated
+- [x] `plans/021-picker-design.md` has the normative routing table, stability rule, ownership boundary, default widget, placement/catalog plan, and deferred options
+- [x] Spike `3a80ef0` ran the lookbook composition on local `PickerState` with exactly five reconciliation/routing tests
+- [x] `cargo test --workspace --all-features --locked` is green; graduated Picker previews are current
+- [x] Spike `3a80ef0` changed no `crates/termrock/src/`; graduation later shipped the public implementation in `4a073ce`
+- [x] `plans/README.md` status row updated with public state/widget and catalog-contract graduation
 
 ## STOP conditions
 
