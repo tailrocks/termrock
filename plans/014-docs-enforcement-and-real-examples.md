@@ -141,12 +141,12 @@ Expand `crates/termrock/README.md` to ~40 lines: what it is (2 sentences), the p
 
 ## Done criteria
 
-- [ ] `missing_docs = "deny"` active workspace-wide; strict docs build green
-- [ ] ≥5 doctests pass
-- [ ] Stub examples deleted; `examples/showcase.rs` compiles under `--features crossterm`; `examples/` contains no file that only calls a shared render stub
-- [ ] Crate README ≥ 30 lines including quick-start and instability notice
-- [ ] `cargo test --workspace --all-features --locked` → all pass
-- [ ] `plans/README.md` status row updated
+- [x] `missing_docs = "deny"` active workspace-wide; strict docs build green
+- [x] ≥5 doctests pass
+- [x] Stub examples deleted; `examples/showcase.rs` compiles under `--features crossterm`; `examples/` contains no file that only calls a shared render stub
+- [x] Crate README ≥ 30 lines including quick-start and instability notice
+- [x] `cargo test --workspace --all-features --locked` → all pass
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

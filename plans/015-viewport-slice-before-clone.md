@@ -125,11 +125,11 @@ Add `crates/termrock/tests/viewport_hot_path.rs` modeled directly on `crates/ter
 
 ## Done criteria
 
-- [ ] `grep -n "to_vec()" crates/termrock/src/widgets/viewport.rs crates/termrock/src/layout/dialog.rs` → no full-content clones remain in render paths
-- [ ] `cargo test --workspace --all-features --locked` → all pass, including the new hot-path test
-- [ ] Preview check → zero diffs
-- [ ] The hot-path test demonstrably fails against the old implementation (state this in your report with the failing number observed)
-- [ ] `plans/README.md` status row updated
+- [x] `grep -n "to_vec()" crates/termrock/src/widgets/viewport.rs crates/termrock/src/layout/dialog.rs` → no full-content clones remain in render paths
+- [x] `cargo test --workspace --all-features --locked` → all pass, including the new hot-path test
+- [x] Preview check → zero diffs
+- [x] The hot-path test demonstrably fails against `d960b6b^`: 1,000,200 allocations / 88,051,200 bytes across 100 renders versus the <20,000-allocation budget
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

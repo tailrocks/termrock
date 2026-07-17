@@ -140,11 +140,11 @@ Add alongside `display_cols_slice(s, start, width) -> String` a writer variant `
 
 ## Done criteria
 
-- [ ] Cursor-only repaint of an unchanged 10k-row DetailTable performs no full-content width/height pass (hot-path test proves allocation/time bound)
-- [ ] Paint loops in detail_table/form skip off-window items (code inspection + wrap-window characterization tests pass)
-- [ ] `display_cols_slice_into` exists; detail_table/status_bar use scratch buffers
-- [ ] `cargo test --workspace --all-features --locked` → all pass; previews zero-diff
-- [ ] `plans/README.md` status row updated (including the status_bar sort note as considered/rejected)
+- [x] Cursor-only repaint of an unchanged 10k-row DetailTable performs no full-content width/height pass (hot-path test proves allocation/time bound)
+- [x] Paint loops in detail_table/form skip off-window items (code inspection + wrap-window characterization tests pass)
+- [x] `display_cols_slice_into` exists; detail_table/status_bar use scratch buffers
+- [x] `cargo test --workspace --all-features --locked` → all pass; previews zero-diff
+- [x] `plans/README.md` status row updated (including the status_bar sort note as considered/rejected)
 
 ## STOP conditions
 

@@ -147,12 +147,12 @@ Old→new construction table for every widget whose literal construction broke (
 
 ## Done criteria
 
-- [ ] Every widget constructs via `new(required)` + builders; `grep -rn "List {\|Tabs {\|Viewport {\|DiffView {\|StatusBar {" crates/ --include="*.rs"` (as struct literals) → no non-test matches
-- [ ] `grep -rc "non_exhaustive" crates/termrock/src/` → ≥ 15
-- [ ] Owned + reference render impls both exist for all 18 widgets
-- [ ] `serde` feature compiles standalone and in powerset
-- [ ] Full suite + previews green; migration indexed; `public-api.txt` regenerated
-- [ ] `plans/README.md` status row updated
+- [x] Every widget constructs via `new(required)` + builders; `grep -rn "List {\|Tabs {\|Viewport {\|DiffView {\|StatusBar {" crates/ --include="*.rs"` (as struct literals) → no non-test matches
+- [x] `grep -rc "non_exhaustive" crates/termrock/src/` → ≥ 15
+- [x] Owned + reference render impls both exist for all 23 current public widgets (the original 18 plus later graduations)
+- [x] `serde` feature compiles standalone and in powerset
+- [x] Full suite + previews green; migration indexed; `public-api.txt` regenerated and byte-fresh
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

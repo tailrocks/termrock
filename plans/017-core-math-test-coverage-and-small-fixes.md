@@ -139,12 +139,12 @@ Steps 1–4 are the test plan (~35 new tests). Patterns: `scroll/tests.rs` (tabl
 
 ## Done criteria
 
-- [ ] geometry/text functions have a test module (~20 cases); ansi ~12 new; focus_owner + diff modules exist
-- [ ] `grep -c "as u16" crates/termrock/src/layout/dialog.rs` — the four clamp sites replaced with saturating forms (some unrelated `as u16` may remain; verify the four sites specifically)
-- [ ] Diff over-scroll clamped, tested
-- [ ] `cargo test --workspace --all-features --locked` → all pass; clippy clean
-- [ ] Any pinned `CHARACTERIZATION: BUG` findings listed in plans/README.md
-- [ ] `plans/README.md` status row updated
+- [x] Geometry/text, ANSI, focus, and diff coverage landed in `4b79273`; the later shared `FocusRing` supersedes `focus_owner` with a richer suite
+- [x] The four dialog clamp casts were replaced with saturating forms; Plan 024 later deleted that duplicate dialog-scroll implementation entirely
+- [x] Diff over-scroll clamped, tested
+- [x] `cargo test --workspace --all-features --locked` → all pass; clippy clean
+- [x] No `CHARACTERIZATION: BUG` findings were pinned; the README finding slot remains empty
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 
