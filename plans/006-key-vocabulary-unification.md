@@ -140,12 +140,12 @@ Link from `MIGRATING.md` in the same commit.
 
 ## Done criteria
 
-- [ ] `grep -rn "LogicalKey\|struct Mods" crates/ --include="*.rs"` → no matches
-- [ ] `cargo test --workspace --all-features --locked` → all pass
-- [ ] `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` → exit 0
-- [ ] `KeyChord` constructors still `const fn` (a `static` binding table still compiles — the lookbook's tables prove it)
-- [ ] Migration file exists and is indexed
-- [ ] `plans/README.md` status row updated
+- [x] `grep -rn "LogicalKey\|struct Mods" crates/ --include="*.rs"` → no matches
+- [x] `cargo test --workspace --all-features --locked` → all pass
+- [x] `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` → exit 0
+- [x] `KeyChord` constructors still `const fn` (a `static` binding table still compiles — the lookbook's tables prove it)
+- [x] Migration file exists and is indexed
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

@@ -147,14 +147,14 @@ No new Rust tests. Gates: `cd docs && bun run build` exit 0; `actionlint` exit 0
 
 ## Done criteria
 
-- [ ] `docs.yml` contains a `cargo public-api` + `diff` step
-- [ ] `git diff docs/api/public-api.txt` empty after regeneration (fresh) OR the regenerated file is committed and `bun run build` passes
-- [ ] `dependency-tree.txt` deleted; no dangling references
-- [ ] `fixtures/renders/` deleted (or marked historical per Step 3's provenance escape)
-- [ ] `performance-baseline.md` carries the staleness note
-- [ ] `cargo test --workspace --all-features --locked` → all pass
-- [ ] `cd docs && bun install --frozen-lockfile && bun run build` → exit 0
-- [ ] `plans/README.md` status row updated
+- [x] `docs.yml` contains a `cargo public-api` + `diff` step
+- [x] `git diff docs/api/public-api.txt` empty after regeneration (fresh) OR the regenerated file is committed and `bun run build` passes
+- [x] `dependency-tree.txt` deleted; no dangling references
+- [x] `fixtures/renders/` deleted (or marked historical per Step 3's provenance escape)
+- [x] `performance-baseline.md` carries the staleness note
+- [x] `cargo test --workspace --all-features --locked` → all pass
+- [x] `cd docs && bun install --frozen-lockfile && bun run build` → exit 0
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

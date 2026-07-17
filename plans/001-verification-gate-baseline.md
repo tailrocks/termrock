@@ -225,15 +225,15 @@ No new Rust tests. The deliverable *is* verification infrastructure:
 
 ## Done criteria
 
-- [ ] `mise run check` → exit 0
-- [ ] `mise run gate` → exit 0
-- [ ] `grep -c "nextest" .github/workflows/rust.yml` ≥ 1; `grep -c "feature-powerset" .github/workflows/rust.yml` ≥ 1; `grep -c "shear" .github/workflows/rust.yml` ≥ 1
-- [ ] `grep -n "1.95" .github/workflows/rust.yml` → MSRV job present
-- [ ] `grep -n "reuse lint" .github/workflows/rust.yml` → present
-- [ ] `mise x -- actionlint` → exit 0
-- [ ] `TESTING.md` names `mise run check` / `mise run gate`; no claim of an unenforced gate remains
-- [ ] `git status` shows no modified files outside the in-scope list
-- [ ] `plans/README.md` status row updated
+- [x] `mise run check` → exit 0
+- [x] `mise run gate` → exit 0
+- [x] `grep -c "nextest" .github/workflows/rust.yml` ≥ 1; `grep -c "feature-powerset" .github/workflows/rust.yml` ≥ 1; `grep -c "shear" .github/workflows/rust.yml` ≥ 1
+- [x] CI pins and verifies the manifest's current Rust 1.97 MSRV, then checks latest stable separately
+- [x] `grep -n "reuse lint" .github/workflows/rust.yml` → present
+- [x] `mise x -- actionlint` → exit 0
+- [x] `TESTING.md` names `mise run check` / `mise run gate`; no claim of an unenforced gate remains
+- [x] `git status` shows no unrelated modified files outside the verification/doc reconciliation
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

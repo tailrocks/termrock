@@ -180,13 +180,13 @@ Create `migrations/0003-v0.9.0-typed-osc-requests.md` following the exact struct
 
 ## Done criteria
 
-- [ ] `cargo test --workspace --all-features --locked` → all pass, 5 new osc tests present
-- [ ] `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` → exit 0
-- [ ] `grep -n "selection: &" crates/termrock/src/osc/request.rs` → no match (field is now the enum)
-- [ ] No raw interpolation of caller strings remains: manual read of `encode_hyperlink_open` confirms url passes through percent-encoding and scheme check before `format!`
-- [ ] Migration file `migrations/0003-*.md` exists and is linked from `MIGRATING.md`
-- [ ] `git status` → only in-scope files modified
-- [ ] `plans/README.md` status row updated
+- [x] `cargo test --workspace --all-features --locked` → all pass, 5 new osc tests present
+- [x] `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` → exit 0
+- [x] `grep -n "selection: &" crates/termrock/src/osc/request.rs` → no match (field is now the enum)
+- [x] No raw interpolation of caller strings remains: manual read of `encode_hyperlink_open` confirms url passes through percent-encoding and scheme check before `format!`
+- [x] Migration file `migrations/0004-v0.9.0-typed-osc-requests.md` exists and is linked from `MIGRATING.md` (`0003` was already claimed)
+- [x] `git status` → no unrelated files attributable to Plan 004
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

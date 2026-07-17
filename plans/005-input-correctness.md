@@ -159,13 +159,13 @@ Covered in Step 4 — 4 new tests; pattern: existing `crates/termrock/tests/*.rs
 
 ## Done criteria
 
-- [ ] `grep -n "_ => Self::Esc" crates/termrock/src/input/event.rs` → no match
-- [ ] `grep -n "Unknown" crates/termrock/src/input/event.rs` → variant present with doc comment
-- [ ] All three previously-unguarded `handle_key`s start with a `KeyEventKind::Release` guard (grep each file)
-- [ ] `cargo test --workspace --all-features --locked` and `cargo test -p termrock --features crossterm --locked` → all pass, ≥4 new tests
-- [ ] `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` → exit 0
-- [ ] Migration file exists and is indexed
-- [ ] `plans/README.md` status row updated
+- [x] `grep -n "_ => Self::Esc" crates/termrock/src/input/event.rs` → no match
+- [x] `grep -n "Unknown" crates/termrock/src/input/event.rs` → variant present with doc comment
+- [x] All three previously-unguarded `handle_key`s start with a `KeyEventKind::Release` guard (grep each file)
+- [x] `cargo test --workspace --all-features --locked` and `cargo test -p termrock --features crossterm --locked` → all pass, ≥4 new tests
+- [x] `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` → exit 0
+- [x] Migration file exists and is indexed
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

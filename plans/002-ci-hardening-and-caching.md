@@ -154,14 +154,14 @@ No Rust tests. Verification = the three commands in "Commands you will need" all
 
 ## Done criteria
 
-- [ ] `grep -n "advisories bans licenses sources" .github/workflows/rust.yml .github/workflows/hygiene.yml` → one hit in each
-- [ ] `grep -n "gitleaks detect" .github/workflows/rust.yml` → present
-- [ ] `grep -n "actionlint" .github/workflows/rust.yml` → present as a run step
-- [ ] `grep -c "Swatinem/rust-cache" .github/workflows/*.yml` ≥ 4
-- [ ] `mise x -- actionlint` → exit 0
-- [ ] `mise x -- gitleaks detect --no-banner --redact --source .` → exit 0
-- [ ] `git status` → no files outside scope modified
-- [ ] `plans/README.md` status row updated
+- [x] `grep -n "advisories bans licenses sources" .github/workflows/rust.yml .github/workflows/hygiene.yml` → one hit in each
+- [x] `grep -n "gitleaks detect" .github/workflows/rust.yml` → present
+- [x] `grep -n "actionlint" .github/workflows/rust.yml` → present as a run step
+- [x] `grep -c "Swatinem/rust-cache" .github/workflows/*.yml` ≥ 4
+- [x] `mise x -- actionlint` → exit 0
+- [x] `mise x -- gitleaks detect --no-banner --redact --source .` → exit 0
+- [x] `git status` → no unrelated files attributable to Plan 002
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 
