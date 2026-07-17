@@ -84,12 +84,12 @@ In `ansi_text.rs`: `pub fn line_from_ansi(input: &str, default_style: Style) -> 
 
 ## Done criteria
 
-- [ ] Ownership decision recorded (doc or report)
-- [ ] `scroll_by`/`follow`/`Home`/bounded-default/scrolled-back cue shipped + tested; interactor wheel works
-- [ ] `line_from_ansi` exists + tested
-- [ ] `log_pane_hot_path` test green with stated budget; `log-pane/scrolled` story + preview committed
-- [ ] Contract row accurate (mouse still caller-owned is now defensible — scroll_by exists; unicode demonstrated)
-- [ ] `mise run gate` → exit 0; `plans/README.md` row updated
+- [x] Ownership decision recorded (doc or report)
+- [x] `scroll_by`/`follow`/`Home`/bounded-default/scrolled-back cue shipped + tested; interactor wheel works
+- [x] `line_from_ansi` exists + tested
+- [x] `log_pane_hot_path` test green with stated budget; `log-pane/scrolled` story + preview committed
+- [x] Contract row accurate (mouse still caller-owned is now defensible — scroll_by exists; unicode demonstrated)
+- [x] `mise run gate` → exit 0; `plans/README.md` row updated
 
 ## STOP conditions
 

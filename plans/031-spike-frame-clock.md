@@ -85,10 +85,10 @@ In the lookbook loop (post-018 runner): (a) Toast TTL — show a toast on some i
 
 ## Done criteria
 
-- [ ] `plans/031-frame-clock-design.md` with three-shape evaluation, winner spec, runner poll-timeout contract, testing pattern
-- [ ] Toast TTL + Spinner advancement demonstrably working in the lookbook via the prototype
-- [ ] Zero `crates/termrock/src/` changes; workspace tests + preview gates green
-- [ ] `plans/README.md` status row updated
+- [x] `plans/031-frame-clock-design.md` with three-shape evaluation, winner spec, runner poll-timeout contract, testing pattern
+- [x] Toast TTL + Spinner advancement demonstrably working in the lookbook; the prototype has since graduated into `FrameTick`, the runner, and `ToastState`
+- [x] The spike preserved zero library-source changes; its later graduated implementation is tested and the workspace + preview gates are green
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

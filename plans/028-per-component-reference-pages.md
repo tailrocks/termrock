@@ -132,11 +132,11 @@ Wire generation: add `"gen:components": "bun run scripts/gen-component-pages.ts"
 
 ## Done criteria
 
-- [ ] One MDX page per public widget with preview embed, usage snippet, contract table, story list
-- [ ] Generator + `--check` freshness gate wired into `bun run build`
-- [ ] `components.mdx` is the linked overview; catalog gate green; site builds and renders
-- [ ] Snippets verified against live APIs (method stated in report)
-- [ ] `plans/README.md` status row updated
+- [x] One MDX page per public widget with preview embed, usage snippet, contract table, story list
+- [x] Generator + `--check` freshness gate wired into `bun run build`
+- [x] `components.mdx` is the linked overview; catalog gate green; site builds and renders
+- [x] Snippets verified against live APIs by compiling all generated snippets in a scratch crate
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 

@@ -76,11 +76,11 @@ Add `progress/narrow` (width ~14: bar + spinner squeezed; percentage elision beh
 
 ## Done criteria
 
-- [ ] Custom frames + empty guard shipped, documented (non-stub), tested
-- [ ] ≥9 new tests incl. the glyph-difference assertion and wide-char truncation
-- [ ] Narrow + unicode story coverage committed (or contract row honestly downgraded)
-- [ ] `public-api.txt` regenerated; `mise run gate` → exit 0
-- [ ] `plans/README.md` row updated
+- [x] Custom frames + empty guard shipped, documented (non-stub), tested
+- [x] ≥9 new tests incl. the glyph-difference assertion and wide-char truncation
+- [x] Narrow + unicode story coverage committed (or contract row honestly downgraded)
+- [x] `public-api.txt` regenerated; `mise run gate` → exit 0
+- [x] `plans/README.md` row updated
 
 ## STOP conditions
 

@@ -150,12 +150,12 @@ The count-assertion test is executed by nothing. Simplest coherent fix: delete `
 
 ## Done criteria
 
-- [ ] `bun run dev` serves the site; all five MDX pages render with nav
-- [ ] `bun run build` emits deployable static output AND still runs the catalog gate
-- [ ] `docs.yml` builds the site and deploys on main (workflow lints clean; first-run watch noted)
-- [ ] `tsconfig.json` covers all TS/TSX in docs/
-- [ ] `catalog.test.ts` deleted-or-wired (no dead test remains)
-- [ ] `plans/README.md` status row updated
+- [x] `bun run dev` serves the site; all five MDX pages render with nav
+- [x] `bun run build` emits deployable static output AND still runs the catalog gate
+- [x] `docs.yml` builds the site and deploys on main (workflow lints clean; first-run watch noted)
+- [x] `tsconfig.json` covers all TS/TSX in docs/
+- [x] `catalog.test.ts` deleted-or-wired (no dead test remains)
+- [x] `plans/README.md` status row updated
 
 ## STOP conditions
 
