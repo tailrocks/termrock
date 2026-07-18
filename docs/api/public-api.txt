@@ -3200,6 +3200,50 @@ pub unsafe fn termrock::widgets::FormOutcome<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormOutcome<Id>
+pub enum termrock::widgets::GridColumnWidth
+pub termrock::widgets::GridColumnWidth::Fixed(u16)
+pub termrock::widgets::GridColumnWidth::Min(u16)
+impl core::clone::Clone for termrock::widgets::GridColumnWidth
+pub fn termrock::widgets::GridColumnWidth::clone(&self) -> termrock::widgets::GridColumnWidth
+impl core::cmp::Eq for termrock::widgets::GridColumnWidth
+impl core::cmp::PartialEq for termrock::widgets::GridColumnWidth
+pub fn termrock::widgets::GridColumnWidth::eq(&self, &termrock::widgets::GridColumnWidth) -> bool
+impl core::fmt::Debug for termrock::widgets::GridColumnWidth
+pub fn termrock::widgets::GridColumnWidth::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::GridColumnWidth
+impl core::marker::StructuralPartialEq for termrock::widgets::GridColumnWidth
+impl core::marker::Freeze for termrock::widgets::GridColumnWidth
+impl core::marker::Send for termrock::widgets::GridColumnWidth
+impl core::marker::Sync for termrock::widgets::GridColumnWidth
+impl core::marker::Unpin for termrock::widgets::GridColumnWidth
+impl core::marker::UnsafeUnpin for termrock::widgets::GridColumnWidth
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::GridColumnWidth
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::GridColumnWidth
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::GridColumnWidth where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::GridColumnWidth::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::GridColumnWidth where U: core::convert::From<T>
+pub fn termrock::widgets::GridColumnWidth::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::GridColumnWidth where U: core::convert::Into<T>
+pub type termrock::widgets::GridColumnWidth::Error = core::convert::Infallible
+pub fn termrock::widgets::GridColumnWidth::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::GridColumnWidth where U: core::convert::TryFrom<T>
+pub type termrock::widgets::GridColumnWidth::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::GridColumnWidth::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::GridColumnWidth where T: core::clone::Clone
+pub type termrock::widgets::GridColumnWidth::Owned = T
+pub fn termrock::widgets::GridColumnWidth::clone_into(&self, &mut T)
+pub fn termrock::widgets::GridColumnWidth::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::GridColumnWidth where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::GridColumnWidth::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::GridColumnWidth where T: ?core::marker::Sized
+pub fn termrock::widgets::GridColumnWidth::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::GridColumnWidth where T: ?core::marker::Sized
+pub fn termrock::widgets::GridColumnWidth::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::GridColumnWidth where T: core::clone::Clone
+pub unsafe fn termrock::widgets::GridColumnWidth::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::GridColumnWidth
+pub fn termrock::widgets::GridColumnWidth::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::GridColumnWidth
 pub enum termrock::widgets::HintSpan<'a>
 pub termrock::widgets::HintSpan::Dyn(alloc::string::String)
 pub termrock::widgets::HintSpan::DynKey(alloc::string::String)
@@ -4060,6 +4104,65 @@ pub unsafe fn termrock::widgets::Validation<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Validation<'a>
 pub fn termrock::widgets::Validation<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Validation<'a>
+#[non_exhaustive] pub enum termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub termrock::widgets::VirtualGridOutcome::Activated
+pub termrock::widgets::VirtualGridOutcome::Activated::col: usize
+pub termrock::widgets::VirtualGridOutcome::Activated::col_id: ColId
+pub termrock::widgets::VirtualGridOutcome::Activated::row: u64
+pub termrock::widgets::VirtualGridOutcome::Activated::row_id: core::option::Option<RowId>
+pub termrock::widgets::VirtualGridOutcome::Cancelled
+pub termrock::widgets::VirtualGridOutcome::CursorMoved
+pub termrock::widgets::VirtualGridOutcome::CursorMoved::col: usize
+pub termrock::widgets::VirtualGridOutcome::CursorMoved::col_id: ColId
+pub termrock::widgets::VirtualGridOutcome::CursorMoved::row: u64
+pub termrock::widgets::VirtualGridOutcome::CursorMoved::row_id: core::option::Option<RowId>
+pub termrock::widgets::VirtualGridOutcome::Ignored
+pub termrock::widgets::VirtualGridOutcome::RangeChanged
+pub termrock::widgets::VirtualGridOutcome::RangeChanged::end: (u64, usize)
+pub termrock::widgets::VirtualGridOutcome::RangeChanged::start: (u64, usize)
+pub termrock::widgets::VirtualGridOutcome::ViewportChanged
+pub termrock::widgets::VirtualGridOutcome::ViewportChanged::first_col: usize
+pub termrock::widgets::VirtualGridOutcome::ViewportChanged::first_row: u64
+impl<RowId: core::clone::Clone, ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::clone(&self) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
+impl<RowId: core::cmp::Eq, ColId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::VirtualGridOutcome<RowId, ColId>
+impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::eq(&self, &termrock::widgets::VirtualGridOutcome<RowId, ColId>) -> bool
+impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::VirtualGridOutcome<RowId, ColId>
+impl<RowId: core::fmt::Debug, ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<RowId, ColId> core::marker::Freeze for termrock::widgets::VirtualGridOutcome<RowId, ColId> where ColId: core::marker::Freeze, RowId: core::marker::Freeze
+impl<RowId, ColId> core::marker::Send for termrock::widgets::VirtualGridOutcome<RowId, ColId> where ColId: core::marker::Send, RowId: core::marker::Send
+impl<RowId, ColId> core::marker::Sync for termrock::widgets::VirtualGridOutcome<RowId, ColId> where ColId: core::marker::Sync, RowId: core::marker::Sync
+impl<RowId, ColId> core::marker::Unpin for termrock::widgets::VirtualGridOutcome<RowId, ColId> where ColId: core::marker::Unpin, RowId: core::marker::Unpin
+impl<RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::VirtualGridOutcome<RowId, ColId> where ColId: core::marker::UnsafeUnpin, RowId: core::marker::UnsafeUnpin
+impl<RowId, ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::VirtualGridOutcome<RowId, ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe
+impl<RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::VirtualGridOutcome<RowId, ColId> where ColId: core::panic::unwind_safe::UnwindSafe, RowId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::VirtualGridOutcome<RowId, ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::VirtualGridOutcome<RowId, ColId> where U: core::convert::From<T>
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::VirtualGridOutcome<RowId, ColId> where U: core::convert::Into<T>
+pub type termrock::widgets::VirtualGridOutcome<RowId, ColId>::Error = core::convert::Infallible
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::VirtualGridOutcome<RowId, ColId> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::VirtualGridOutcome<RowId, ColId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::VirtualGridOutcome<RowId, ColId> where T: core::clone::Clone
+pub type termrock::widgets::VirtualGridOutcome<RowId, ColId>::Owned = T
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::clone_into(&self, &mut T)
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::VirtualGridOutcome<RowId, ColId> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::VirtualGridOutcome<RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::VirtualGridOutcome<RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::VirtualGridOutcome<RowId, ColId> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub struct termrock::widgets::Action<'a, Id>
 pub termrock::widgets::Action::enabled: bool
 pub termrock::widgets::Action::id: Id
@@ -4945,6 +5048,240 @@ pub unsafe fn termrock::widgets::FormState<Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::FormState<Id>
 pub fn termrock::widgets::FormState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormState<Id>
+pub struct termrock::widgets::GridCell<'a>
+pub termrock::widgets::GridCell::pending: bool
+pub termrock::widgets::GridCell::style: core::option::Option<ratatui_core::style::Style>
+pub termrock::widgets::GridCell::text: &'a str
+impl<'a> termrock::widgets::GridCell<'a>
+pub const fn termrock::widgets::GridCell<'a>::pending() -> Self
+pub const fn termrock::widgets::GridCell<'a>::style(self, ratatui_core::style::Style) -> Self
+pub const fn termrock::widgets::GridCell<'a>::text(&'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::GridCell<'a>
+pub fn termrock::widgets::GridCell<'a>::clone(&self) -> termrock::widgets::GridCell<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::GridCell<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::GridCell<'a>
+pub fn termrock::widgets::GridCell<'a>::eq(&self, &termrock::widgets::GridCell<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::GridCell<'a>
+pub fn termrock::widgets::GridCell<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::GridCell<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::GridCell<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::GridCell<'a>
+impl<'a> core::marker::Send for termrock::widgets::GridCell<'a>
+impl<'a> core::marker::Sync for termrock::widgets::GridCell<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::GridCell<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::GridCell<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::GridCell<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::GridCell<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::GridCell<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::GridCell<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::GridCell<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::GridCell<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::GridCell<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::GridCell<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::GridCell<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::GridCell<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::GridCell<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::GridCell<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::GridCell<'a> where T: core::clone::Clone
+pub type termrock::widgets::GridCell<'a>::Owned = T
+pub fn termrock::widgets::GridCell<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::GridCell<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::GridCell<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::GridCell<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::GridCell<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridCell<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::GridCell<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridCell<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::GridCell<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::GridCell<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::GridCell<'a>
+pub fn termrock::widgets::GridCell<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::GridCell<'a>
+pub struct termrock::widgets::GridCellRegion<RowId, ColId>
+pub termrock::widgets::GridCellRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::GridCellRegion::col_id: ColId
+pub termrock::widgets::GridCellRegion::col_index: usize
+pub termrock::widgets::GridCellRegion::row_id: core::option::Option<RowId>
+pub termrock::widgets::GridCellRegion::row_index: u64
+impl<RowId: core::clone::Clone, ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::GridCellRegion<RowId, ColId>
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::clone(&self) -> termrock::widgets::GridCellRegion<RowId, ColId>
+impl<RowId: core::cmp::Eq, ColId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::GridCellRegion<RowId, ColId>
+impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::GridCellRegion<RowId, ColId>
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::eq(&self, &termrock::widgets::GridCellRegion<RowId, ColId>) -> bool
+impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::GridCellRegion<RowId, ColId>
+impl<RowId: core::fmt::Debug, ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::GridCellRegion<RowId, ColId>
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<RowId, ColId> core::marker::Freeze for termrock::widgets::GridCellRegion<RowId, ColId> where ColId: core::marker::Freeze, RowId: core::marker::Freeze
+impl<RowId, ColId> core::marker::Send for termrock::widgets::GridCellRegion<RowId, ColId> where ColId: core::marker::Send, RowId: core::marker::Send
+impl<RowId, ColId> core::marker::Sync for termrock::widgets::GridCellRegion<RowId, ColId> where ColId: core::marker::Sync, RowId: core::marker::Sync
+impl<RowId, ColId> core::marker::Unpin for termrock::widgets::GridCellRegion<RowId, ColId> where ColId: core::marker::Unpin, RowId: core::marker::Unpin
+impl<RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::GridCellRegion<RowId, ColId> where ColId: core::marker::UnsafeUnpin, RowId: core::marker::UnsafeUnpin
+impl<RowId, ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::GridCellRegion<RowId, ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe
+impl<RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::GridCellRegion<RowId, ColId> where ColId: core::panic::unwind_safe::UnwindSafe, RowId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::GridCellRegion<RowId, ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::GridCellRegion<RowId, ColId> where U: core::convert::From<T>
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::GridCellRegion<RowId, ColId> where U: core::convert::Into<T>
+pub type termrock::widgets::GridCellRegion<RowId, ColId>::Error = core::convert::Infallible
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::GridCellRegion<RowId, ColId> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::GridCellRegion<RowId, ColId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::GridCellRegion<RowId, ColId> where T: core::clone::Clone
+pub type termrock::widgets::GridCellRegion<RowId, ColId>::Owned = T
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::clone_into(&self, &mut T)
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::GridCellRegion<RowId, ColId> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::GridCellRegion<RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::GridCellRegion<RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::GridCellRegion<RowId, ColId> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::GridCellRegion<RowId, ColId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::GridCellRegion<RowId, ColId>
+pub fn termrock::widgets::GridCellRegion<RowId, ColId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::GridCellRegion<RowId, ColId>
+pub struct termrock::widgets::GridColumn<'a, ColId>
+pub termrock::widgets::GridColumn::id: ColId
+pub termrock::widgets::GridColumn::title: &'a str
+pub termrock::widgets::GridColumn::width: termrock::widgets::GridColumnWidth
+impl<'a, ColId> termrock::widgets::GridColumn<'a, ColId>
+pub const fn termrock::widgets::GridColumn<'a, ColId>::fixed(ColId, &'a str, u16) -> Self
+pub const fn termrock::widgets::GridColumn<'a, ColId>::min(ColId, &'a str, u16) -> Self
+impl<'a, ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::GridColumn<'a, ColId>
+pub fn termrock::widgets::GridColumn<'a, ColId>::clone(&self) -> termrock::widgets::GridColumn<'a, ColId>
+impl<'a, ColId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::GridColumn<'a, ColId>
+impl<'a, ColId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::GridColumn<'a, ColId>
+pub fn termrock::widgets::GridColumn<'a, ColId>::eq(&self, &termrock::widgets::GridColumn<'a, ColId>) -> bool
+impl<'a, ColId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::GridColumn<'a, ColId>
+impl<'a, ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::GridColumn<'a, ColId>
+pub fn termrock::widgets::GridColumn<'a, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, ColId> core::marker::Freeze for termrock::widgets::GridColumn<'a, ColId> where ColId: core::marker::Freeze
+impl<'a, ColId> core::marker::Send for termrock::widgets::GridColumn<'a, ColId> where ColId: core::marker::Send
+impl<'a, ColId> core::marker::Sync for termrock::widgets::GridColumn<'a, ColId> where ColId: core::marker::Sync
+impl<'a, ColId> core::marker::Unpin for termrock::widgets::GridColumn<'a, ColId> where ColId: core::marker::Unpin
+impl<'a, ColId> core::marker::UnsafeUnpin for termrock::widgets::GridColumn<'a, ColId> where ColId: core::marker::UnsafeUnpin
+impl<'a, ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::GridColumn<'a, ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::GridColumn<'a, ColId> where ColId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::GridColumn<'a, ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::GridColumn<'a, ColId>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::GridColumn<'a, ColId> where U: core::convert::From<T>
+pub fn termrock::widgets::GridColumn<'a, ColId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::GridColumn<'a, ColId> where U: core::convert::Into<T>
+pub type termrock::widgets::GridColumn<'a, ColId>::Error = core::convert::Infallible
+pub fn termrock::widgets::GridColumn<'a, ColId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::GridColumn<'a, ColId> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::GridColumn<'a, ColId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::GridColumn<'a, ColId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::GridColumn<'a, ColId> where T: core::clone::Clone
+pub type termrock::widgets::GridColumn<'a, ColId>::Owned = T
+pub fn termrock::widgets::GridColumn<'a, ColId>::clone_into(&self, &mut T)
+pub fn termrock::widgets::GridColumn<'a, ColId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::GridColumn<'a, ColId> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::GridColumn<'a, ColId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::GridColumn<'a, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridColumn<'a, ColId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::GridColumn<'a, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridColumn<'a, ColId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::GridColumn<'a, ColId> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::GridColumn<'a, ColId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::GridColumn<'a, ColId>
+pub fn termrock::widgets::GridColumn<'a, ColId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::GridColumn<'a, ColId>
+pub struct termrock::widgets::GridHeaderRegion<ColId>
+pub termrock::widgets::GridHeaderRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::GridHeaderRegion::id: ColId
+pub termrock::widgets::GridHeaderRegion::index: usize
+impl<ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::GridHeaderRegion<ColId>
+pub fn termrock::widgets::GridHeaderRegion<ColId>::clone(&self) -> termrock::widgets::GridHeaderRegion<ColId>
+impl<ColId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::GridHeaderRegion<ColId>
+impl<ColId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::GridHeaderRegion<ColId>
+pub fn termrock::widgets::GridHeaderRegion<ColId>::eq(&self, &termrock::widgets::GridHeaderRegion<ColId>) -> bool
+impl<ColId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::GridHeaderRegion<ColId>
+impl<ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::GridHeaderRegion<ColId>
+pub fn termrock::widgets::GridHeaderRegion<ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<ColId> core::marker::Freeze for termrock::widgets::GridHeaderRegion<ColId> where ColId: core::marker::Freeze
+impl<ColId> core::marker::Send for termrock::widgets::GridHeaderRegion<ColId> where ColId: core::marker::Send
+impl<ColId> core::marker::Sync for termrock::widgets::GridHeaderRegion<ColId> where ColId: core::marker::Sync
+impl<ColId> core::marker::Unpin for termrock::widgets::GridHeaderRegion<ColId> where ColId: core::marker::Unpin
+impl<ColId> core::marker::UnsafeUnpin for termrock::widgets::GridHeaderRegion<ColId> where ColId: core::marker::UnsafeUnpin
+impl<ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::GridHeaderRegion<ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe
+impl<ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::GridHeaderRegion<ColId> where ColId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::GridHeaderRegion<ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::GridHeaderRegion<ColId>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::GridHeaderRegion<ColId> where U: core::convert::From<T>
+pub fn termrock::widgets::GridHeaderRegion<ColId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::GridHeaderRegion<ColId> where U: core::convert::Into<T>
+pub type termrock::widgets::GridHeaderRegion<ColId>::Error = core::convert::Infallible
+pub fn termrock::widgets::GridHeaderRegion<ColId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::GridHeaderRegion<ColId> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::GridHeaderRegion<ColId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::GridHeaderRegion<ColId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::GridHeaderRegion<ColId> where T: core::clone::Clone
+pub type termrock::widgets::GridHeaderRegion<ColId>::Owned = T
+pub fn termrock::widgets::GridHeaderRegion<ColId>::clone_into(&self, &mut T)
+pub fn termrock::widgets::GridHeaderRegion<ColId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::GridHeaderRegion<ColId> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::GridHeaderRegion<ColId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::GridHeaderRegion<ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridHeaderRegion<ColId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::GridHeaderRegion<ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridHeaderRegion<ColId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::GridHeaderRegion<ColId> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::GridHeaderRegion<ColId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::GridHeaderRegion<ColId>
+pub fn termrock::widgets::GridHeaderRegion<ColId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::GridHeaderRegion<ColId>
+pub struct termrock::widgets::GridRow<'a, RowId>
+pub termrock::widgets::GridRow::cells: &'a [termrock::widgets::GridCell<'a>]
+pub termrock::widgets::GridRow::enabled: bool
+pub termrock::widgets::GridRow::id: RowId
+pub termrock::widgets::GridRow::index: u64
+impl<'a, RowId> termrock::widgets::GridRow<'a, RowId>
+pub const fn termrock::widgets::GridRow<'a, RowId>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::GridRow<'a, RowId>::new(RowId, u64, &'a [termrock::widgets::GridCell<'a>]) -> Self
+impl<'a, RowId: core::clone::Clone> core::clone::Clone for termrock::widgets::GridRow<'a, RowId>
+pub fn termrock::widgets::GridRow<'a, RowId>::clone(&self) -> termrock::widgets::GridRow<'a, RowId>
+impl<'a, RowId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::GridRow<'a, RowId>
+impl<'a, RowId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::GridRow<'a, RowId>
+pub fn termrock::widgets::GridRow<'a, RowId>::eq(&self, &termrock::widgets::GridRow<'a, RowId>) -> bool
+impl<'a, RowId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::GridRow<'a, RowId>
+impl<'a, RowId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::GridRow<'a, RowId>
+pub fn termrock::widgets::GridRow<'a, RowId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, RowId> core::marker::Freeze for termrock::widgets::GridRow<'a, RowId> where RowId: core::marker::Freeze
+impl<'a, RowId> core::marker::Send for termrock::widgets::GridRow<'a, RowId> where RowId: core::marker::Send
+impl<'a, RowId> core::marker::Sync for termrock::widgets::GridRow<'a, RowId> where RowId: core::marker::Sync
+impl<'a, RowId> core::marker::Unpin for termrock::widgets::GridRow<'a, RowId> where RowId: core::marker::Unpin
+impl<'a, RowId> core::marker::UnsafeUnpin for termrock::widgets::GridRow<'a, RowId> where RowId: core::marker::UnsafeUnpin
+impl<'a, RowId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::GridRow<'a, RowId> where RowId: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, RowId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::GridRow<'a, RowId> where RowId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::GridRow<'a, RowId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::GridRow<'a, RowId>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::GridRow<'a, RowId> where U: core::convert::From<T>
+pub fn termrock::widgets::GridRow<'a, RowId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::GridRow<'a, RowId> where U: core::convert::Into<T>
+pub type termrock::widgets::GridRow<'a, RowId>::Error = core::convert::Infallible
+pub fn termrock::widgets::GridRow<'a, RowId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::GridRow<'a, RowId> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::GridRow<'a, RowId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::GridRow<'a, RowId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::GridRow<'a, RowId> where T: core::clone::Clone
+pub type termrock::widgets::GridRow<'a, RowId>::Owned = T
+pub fn termrock::widgets::GridRow<'a, RowId>::clone_into(&self, &mut T)
+pub fn termrock::widgets::GridRow<'a, RowId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::GridRow<'a, RowId> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::GridRow<'a, RowId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::GridRow<'a, RowId> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridRow<'a, RowId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::GridRow<'a, RowId> where T: ?core::marker::Sized
+pub fn termrock::widgets::GridRow<'a, RowId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::GridRow<'a, RowId> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::GridRow<'a, RowId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::GridRow<'a, RowId>
+pub fn termrock::widgets::GridRow<'a, RowId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::GridRow<'a, RowId>
 pub struct termrock::widgets::Hint<'a>
 pub termrock::widgets::Hint::chord: &'a str
 pub termrock::widgets::Hint::label: &'a str
@@ -6888,6 +7225,109 @@ pub unsafe fn termrock::widgets::Viewport<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Viewport<'a>
+pub struct termrock::widgets::VirtualGrid<'a, RowId, ColId>
+impl<'a, RowId, ColId> termrock::widgets::VirtualGrid<'a, RowId, ColId>
+pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::gutter(self, bool) -> Self
+pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::header(self, bool) -> Self
+pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::new(&'a [termrock::widgets::GridColumn<'a, ColId>], &'a [termrock::widgets::GridRow<'a, RowId>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::total_rows(self, u64) -> Self
+impl<'a, RowId: core::clone::Clone, ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::VirtualGrid<'a, RowId, ColId>
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::clone(&self) -> termrock::widgets::VirtualGrid<'a, RowId, ColId>
+impl<'a, RowId: core::fmt::Debug, ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::VirtualGrid<'a, RowId, ColId>
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<RowId: core::clone::Clone + core::cmp::Eq, ColId: core::clone::Clone + core::cmp::Eq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::VirtualGrid<'_, RowId, ColId>
+pub type &termrock::widgets::VirtualGrid<'_, RowId, ColId>::State = termrock::widgets::VirtualGridState<RowId, ColId>
+pub fn &termrock::widgets::VirtualGrid<'_, RowId, ColId>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, RowId, ColId> core::marker::Freeze for termrock::widgets::VirtualGrid<'a, RowId, ColId>
+impl<'a, RowId, ColId> core::marker::Send for termrock::widgets::VirtualGrid<'a, RowId, ColId> where ColId: core::marker::Sync, RowId: core::marker::Sync
+impl<'a, RowId, ColId> core::marker::Sync for termrock::widgets::VirtualGrid<'a, RowId, ColId> where ColId: core::marker::Sync, RowId: core::marker::Sync
+impl<'a, RowId, ColId> core::marker::Unpin for termrock::widgets::VirtualGrid<'a, RowId, ColId>
+impl<'a, RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::VirtualGrid<'a, RowId, ColId>
+impl<'a, RowId, ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::VirtualGrid<'a, RowId, ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::VirtualGrid<'a, RowId, ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::VirtualGrid<'a, RowId, ColId> where U: core::convert::From<T>
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::VirtualGrid<'a, RowId, ColId> where U: core::convert::Into<T>
+pub type termrock::widgets::VirtualGrid<'a, RowId, ColId>::Error = core::convert::Infallible
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::VirtualGrid<'a, RowId, ColId> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::VirtualGrid<'a, RowId, ColId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::VirtualGrid<'a, RowId, ColId> where T: core::clone::Clone
+pub type termrock::widgets::VirtualGrid<'a, RowId, ColId>::Owned = T
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::clone_into(&self, &mut T)
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::VirtualGrid<'a, RowId, ColId> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::VirtualGrid<'a, RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::VirtualGrid<'a, RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::VirtualGrid<'a, RowId, ColId> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::VirtualGrid<'a, RowId, ColId>
+pub fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::VirtualGrid<'a, RowId, ColId>
+pub struct termrock::widgets::VirtualGridState<RowId, ColId>
+pub termrock::widgets::VirtualGridState::cell_regions: alloc::vec::Vec<termrock::widgets::GridCellRegion<RowId, ColId>>
+pub termrock::widgets::VirtualGridState::header_regions: alloc::vec::Vec<termrock::widgets::GridHeaderRegion<ColId>>
+impl<RowId, ColId> termrock::widgets::VirtualGridState<RowId, ColId>
+pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::anchor(&self) -> core::option::Option<(u64, usize)>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::clear_anchor(&mut self)
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::column_widths(&self) -> &[u16]
+pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::cursor_col(&self) -> usize
+pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::cursor_row(&self) -> u64
+pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::first_col(&self) -> usize
+pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::first_row(&self) -> u64
+pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::is_focused(&self) -> bool
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::new() -> Self
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_column_widths(&mut self, alloc::vec::Vec<u16>)
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_focused(&mut self, bool)
+impl<RowId: core::clone::Clone + core::cmp::Eq, ColId: core::clone::Clone + core::cmp::Eq> termrock::widgets::VirtualGridState<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::GridColumn<'_, ColId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::GridColumn<'_, ColId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
+impl<RowId, ColId> core::default::Default for termrock::widgets::VirtualGridState<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::default() -> Self
+impl<RowId: core::clone::Clone, ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::VirtualGridState<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::clone(&self) -> termrock::widgets::VirtualGridState<RowId, ColId>
+impl<RowId: core::cmp::Eq, ColId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::VirtualGridState<RowId, ColId>
+impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::VirtualGridState<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::eq(&self, &termrock::widgets::VirtualGridState<RowId, ColId>) -> bool
+impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::VirtualGridState<RowId, ColId>
+impl<RowId: core::fmt::Debug, ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::VirtualGridState<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<RowId, ColId> core::marker::Freeze for termrock::widgets::VirtualGridState<RowId, ColId>
+impl<RowId, ColId> core::marker::Send for termrock::widgets::VirtualGridState<RowId, ColId> where ColId: core::marker::Send, RowId: core::marker::Send
+impl<RowId, ColId> core::marker::Sync for termrock::widgets::VirtualGridState<RowId, ColId> where ColId: core::marker::Sync, RowId: core::marker::Sync
+impl<RowId, ColId> core::marker::Unpin for termrock::widgets::VirtualGridState<RowId, ColId> where ColId: core::marker::Unpin, RowId: core::marker::Unpin
+impl<RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::VirtualGridState<RowId, ColId>
+impl<RowId, ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::VirtualGridState<RowId, ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe
+impl<RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::VirtualGridState<RowId, ColId> where ColId: core::panic::unwind_safe::UnwindSafe, RowId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::VirtualGridState<RowId, ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::VirtualGridState<RowId, ColId> where U: core::convert::From<T>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::VirtualGridState<RowId, ColId> where U: core::convert::Into<T>
+pub type termrock::widgets::VirtualGridState<RowId, ColId>::Error = core::convert::Infallible
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::VirtualGridState<RowId, ColId> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::VirtualGridState<RowId, ColId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::VirtualGridState<RowId, ColId> where T: core::clone::Clone
+pub type termrock::widgets::VirtualGridState<RowId, ColId>::Owned = T
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::clone_into(&self, &mut T)
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::VirtualGridState<RowId, ColId> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::VirtualGridState<RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::VirtualGridState<RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::VirtualGridState<RowId, ColId> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::VirtualGridState<RowId, ColId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::VirtualGridState<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::VirtualGridState<RowId, ColId>
 pub const termrock::widgets::TAB_GAP: u16
 pub fn termrock::widgets::hint_row_cols(&[termrock::widgets::HintSpan<'_>]) -> usize
 pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>

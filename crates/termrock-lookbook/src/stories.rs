@@ -20,12 +20,13 @@ use termrock::{
         Action, ActionBar, ActionBarState, Anchor, Backdrop, CellAlignment, ChoiceDialog,
         ChoiceDialogState, Column, ColumnWidth, DetailCapability, DetailRow, DetailTable,
         DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Form, FormField,
-        FormSection, FormState, Hint, HintBar, List, ListRow, ListState, LogPane, LogPaneState,
-        MessageDialog, Panel, PanelEmphasis, Picker, PickerState, Progress, ProgressKind, RowRole,
-        Severity, SortDirection, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
-        StatusBarState, StatusSlot, Tab, Table, TableRow, TableState, Tabs, TabsState, TextArea,
-        TextAreaState, TextCursor, TextInput, TextInputState, Toast, Tree, TreeNode,
-        TreeNodeStatus, TreeState, Validation, Viewport,
+        FormSection, FormState, GridCell, GridColumn, GridRow, Hint, HintBar, List, ListRow,
+        ListState, LogPane, LogPaneState, MessageDialog, Panel, PanelEmphasis, Picker, PickerState,
+        Progress, ProgressKind, RowRole, Severity, SortDirection, SplitDirection, SplitPane,
+        SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Tab, Table, TableRow,
+        TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
+        TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
+        VirtualGrid, VirtualGridState,
     },
 };
 
@@ -289,6 +290,24 @@ pub(crate) fn stories() -> Vec<Story> {
             54,
             5,
             detail_table,
+        ),
+        Story::new(
+            "virtual-grid/basic",
+            "Virtual grid",
+            "VirtualGrid",
+            "Two-axis virtualized grid with resident window and pending cells.",
+            72,
+            12,
+            virtual_grid_basic,
+        ),
+        Story::new(
+            "virtual-grid/million",
+            "Virtual grid million-row window",
+            "VirtualGrid",
+            "Viewport over a synthetic 1_000_000-row corpus (windowed only).",
+            72,
+            14,
+            virtual_grid_million,
         ),
         Story::new(
             "table/basic",
@@ -1036,6 +1055,71 @@ enum TableVariant {
     Unicode,
     Disabled,
     Empty,
+}
+
+fn virtual_grid_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_virtual_grid(frame, area, theme, 20);
+}
+
+fn virtual_grid_million(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    render_virtual_grid(frame, area, theme, 1_000_000);
+}
+
+fn render_virtual_grid(frame: &mut Frame<'_>, area: Rect, theme: &Theme, total_rows: u64) {
+    let columns = [
+        GridColumn::fixed("id", "id", 8),
+        GridColumn::fixed("name", "name", 16),
+        GridColumn::min("value", "value", 10),
+        GridColumn::fixed("flag", "flag", 6),
+    ];
+    let cells0 = [
+        GridCell::text("0"),
+        GridCell::text("alpha"),
+        GridCell::text("1"),
+        GridCell::text("y"),
+    ];
+    let cells1 = [
+        GridCell::text("1"),
+        GridCell::text("beta"),
+        GridCell::pending(),
+        GridCell::text("n"),
+    ];
+    let cells2 = [
+        GridCell::text("2"),
+        GridCell::text("gamma"),
+        GridCell::text("3"),
+        GridCell::text("y"),
+    ];
+    let cells3 = [
+        GridCell::text("3"),
+        GridCell::text("delta"),
+        GridCell::text("4"),
+        GridCell::text("y"),
+    ];
+    let cells4 = [
+        GridCell::text("4"),
+        GridCell::text("eps"),
+        GridCell::pending(),
+        GridCell::text("n"),
+    ];
+    let cells5 = [
+        GridCell::text("5"),
+        GridCell::text("zeta"),
+        GridCell::text("6"),
+        GridCell::text("y"),
+    ];
+    let rows = [
+        GridRow::new(0u64, 0, &cells0),
+        GridRow::new(1, 1, &cells1),
+        GridRow::new(2, 2, &cells2),
+        GridRow::new(3, 3, &cells3),
+        GridRow::new(4, 4, &cells4),
+        GridRow::new(5, 5, &cells5),
+    ];
+    let grid = VirtualGrid::new(&columns, &rows, theme).total_rows(total_rows);
+    let mut state = VirtualGridState::new();
+    state.set_focused(true);
+    frame.render_stateful_widget(&grid, area, &mut state);
 }
 
 fn table_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {

@@ -21,5 +21,6 @@
   "TextInput": { "keyboard": "covered", "mouse": "caller-owned", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "Toast": { "keyboard": "not-applicable", "mouse": "not-applicable", "focus": "not-applicable", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
   "Tree": { "keyboard": "covered", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
-  "Viewport": { "keyboard": "caller-owned", "mouse": "caller-owned", "focus": "caller-owned", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" }
+  "Viewport": { "keyboard": "caller-owned", "mouse": "caller-owned", "focus": "caller-owned", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" },
+  "VirtualGrid": { "keyboard": "covered", "mouse": "covered", "focus": "covered", "nonColor": "covered", "unicode": "covered", "narrowTerminal": "covered" }
 }

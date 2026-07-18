@@ -41,6 +41,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0025 | `v0.11.0` | [Runtime-configurable keymaps](migrations/0025-v0.11.0-runtime-configurable-keymaps.md) |
 | 0026 | `v0.11.0` | [Scoped per-frame focus ring](migrations/0026-v0.11.0-scoped-focus-ring.md) |
 | 0027 | `v0.11.0` | [TextInput insertion boundary repair](migrations/0027-v0.11.0-text-input-boundary-repair.md) |
+| 0028 | `v0.11.0` | [VirtualGrid widget](migrations/0028-v0.11.0-virtual-grid.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

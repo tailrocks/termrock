@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `SplitPane`, `StatusBar`, `Table`, `Tabs`, `TextArea`, `TextInput`, `Toast`, `Tree`, and `Viewport`.
+The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `SplitPane`, `StatusBar`, `Table`, `Tabs`, `TextArea`, `TextInput`, `Toast`, `Tree`, `Viewport`, and `VirtualGrid`.
 
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,
@@ -52,6 +52,16 @@ painted header/row regions. Keyboard and pointer methods emit typed row
 selection/activation or column sort requests. Callers own sorting execution,
 row ordering, data loading, wording, and effects. Rendering scans only the
 visible body window and reuses state-owned layout scratch buffers.
+
+`VirtualGrid` is a two-axis virtualized grid over caller-projected resident
+cells. Callers supply column specs, a window of borrowed cells with absolute
+row indices, optional known totals, and pending markers for non-resident
+data. `VirtualGridState` owns two-axis viewport origin, cursor cell, optional
+range anchor, column widths, focus, and painted header/cell hit regions.
+Keyboard (arrows/page/home/end, shift-range), wheel, click, and drag emit
+semantic cursor/range/viewport/activate outcomes. The grid never fetches or
+edits data and never allocates the full dataset; render cost is bounded by
+the painted viewport.
 
 `TextArea` owns a normalized nonempty line buffer, grapheme-boundary cursor,
 remembered vertical goal column, and two-axis `DialogScroll`. Enter inserts a
