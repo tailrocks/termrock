@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `SplitPane`, `StatusBar`, `Table`, `Tabs`, `TextArea`, `TextInput`, `Toast`, `Tree`, `Viewport`, and `VirtualGrid`.
+The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `ChoiceDialog`, `CompletionMenu`, `DetailTable`, `Dialog`, `DiffView`, `Form`, `HintBar`, `List`, `LogPane`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `SplitPane`, `StatusBar`, `Table`, `Tabs`, `TextArea`, `TextInput`, `Toast`, `Tree`, `Viewport`, and `VirtualGrid`.
 
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,
@@ -76,6 +76,13 @@ Printable and cursor-editing keys route to the query while vertical/page keys
 route to results; Escape clears a non-empty query before cancelling. Pointer
 activation delegates to painted List geometry. Consumers retain matching,
 scoring, ordering, candidate lifecycle, labels, overlays, and async policy.
+
+`CompletionMenu` is a popup candidate list with stable caller-owned IDs,
+selected ID, scroll, and keyboard/mouse routing. Geometry is placed by
+`place_completion_menu` so the menu never covers the anchor cell and
+flips/clamps inside a caller-supplied bounding rect. Enter/Tab report
+`Committed(id)`; Escape reports `Dismissed`. Consumers own ranking,
+filtering, label text, kind annotations, and commit policy (token replace).
 
 The `tree_hot_path` evidence renders a warmed 40-row viewport over 10,000
 borrowed nodes 100 times in the Cargo test/debug profile, asserts bounded

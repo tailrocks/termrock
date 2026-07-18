@@ -26,7 +26,8 @@ use termrock::{
         SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Tab, Table, TableRow,
         TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
         TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
-        VirtualGrid, VirtualGridState,
+        CompletionCandidate, CompletionMenu, CompletionMenuSize, CompletionMenuState, VirtualGrid,
+        VirtualGridState,
     },
 };
 
@@ -290,6 +291,24 @@ pub(crate) fn stories() -> Vec<Story> {
             54,
             5,
             detail_table,
+        ),
+        Story::new(
+            "completion-menu/basic",
+            "Completion menu",
+            "CompletionMenu",
+            "Popup candidates with stable IDs, kind annotations, and anchor clamp.",
+            48,
+            12,
+            completion_menu_basic,
+        ),
+        Story::new(
+            "completion-menu/edge",
+            "Completion menu edge flip",
+            "CompletionMenu",
+            "Bottom-right anchor flips above and clamps inside bounds.",
+            40,
+            12,
+            completion_menu_edge,
         ),
         Story::new(
             "virtual-grid/basic",
@@ -1055,6 +1074,54 @@ enum TableVariant {
     Unicode,
     Disabled,
     Empty,
+}
+
+fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(Panel::new(theme).title("Editor"), area);
+    let candidates = [
+        CompletionCandidate::new("select", "SELECT").kind("keyword"),
+        CompletionCandidate::new("from", "FROM").kind("keyword"),
+        CompletionCandidate::new("users", "users").kind("table"),
+        CompletionCandidate::new("orders", "orders").kind("table"),
+        CompletionCandidate::new("where", "WHERE").kind("keyword"),
+    ];
+    let anchor = Rect::new(area.x.saturating_add(4), area.y.saturating_add(2), 1, 1);
+    let mut state = CompletionMenuState::new(Some("select"));
+    frame.render_stateful_widget(
+        &CompletionMenu::new(&candidates, theme, area, anchor)
+            .preferred_size(CompletionMenuSize {
+                width: 28,
+                height: 6,
+            }),
+        area,
+        &mut state,
+    );
+}
+
+fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(Panel::new(theme).title("Edge"), area);
+    let candidates = [
+        CompletionCandidate::new("alpha", "αlpha-wide-label"),
+        CompletionCandidate::new("beta", "βeta"),
+        CompletionCandidate::new("gamma", "γamma").kind("fn"),
+    ];
+    // Anchor near bottom-right so the menu must flip and clamp.
+    let anchor = Rect::new(
+        area.x.saturating_add(area.width.saturating_sub(2)),
+        area.y.saturating_add(area.height.saturating_sub(2)),
+        1,
+        1,
+    );
+    let mut state = CompletionMenuState::new(Some("beta"));
+    frame.render_stateful_widget(
+        &CompletionMenu::new(&candidates, theme, area, anchor)
+            .preferred_size(CompletionMenuSize {
+                width: 24,
+                height: 5,
+            }),
+        area,
+        &mut state,
+    );
 }
 
 fn virtual_grid_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
