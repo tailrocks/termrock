@@ -3,6 +3,7 @@
 pub use crate::interaction::Outcome;
 
 mod action_bar;
+mod completion_menu;
 mod detail_table;
 mod dialog;
 mod diff;
@@ -24,10 +25,13 @@ mod text_input;
 mod toast;
 mod tree;
 mod viewport;
-mod completion_menu;
 mod virtual_grid;
 
 pub use action_bar::{Action, ActionBar, ActionBarState};
+pub use completion_menu::{
+    CompletionCandidate, CompletionMenu, CompletionMenuOutcome, CompletionMenuSize,
+    CompletionMenuState, place_completion_menu,
+};
 pub use detail_table::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState,
 };
@@ -60,10 +64,6 @@ pub use text_input::{
 pub use toast::{Anchor, Severity, Toast, ToastLifetime, ToastState};
 pub use tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState};
 pub use viewport::Viewport;
-pub use completion_menu::{
-    CompletionCandidate, CompletionMenu, CompletionMenuOutcome, CompletionMenuSize,
-    CompletionMenuState, place_completion_menu,
-};
 pub use virtual_grid::{
     GridCell, GridCellRegion, GridColumn, GridColumnWidth, GridHeaderRegion, GridRow, VirtualGrid,
     VirtualGridOutcome, VirtualGridState,

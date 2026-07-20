@@ -18,7 +18,8 @@ use termrock::{
     style::Role,
     widgets::{
         Action, ActionBar, ActionBarState, Anchor, Backdrop, CellAlignment, ChoiceDialog,
-        ChoiceDialogState, Column, ColumnWidth, DetailCapability, DetailRow, DetailTable,
+        ChoiceDialogState, Column, ColumnWidth, CompletionCandidate, CompletionMenu,
+        CompletionMenuSize, CompletionMenuState, DetailCapability, DetailRow, DetailTable,
         DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Form, FormField,
         FormSection, FormState, GridCell, GridColumn, GridRow, Hint, HintBar, List, ListRow,
         ListState, LogPane, LogPaneState, MessageDialog, Panel, PanelEmphasis, Picker, PickerState,
@@ -26,8 +27,7 @@ use termrock::{
         SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Tab, Table, TableRow,
         TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
         TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
-        CompletionCandidate, CompletionMenu, CompletionMenuSize, CompletionMenuState, VirtualGrid,
-        VirtualGridState,
+        VirtualGrid, VirtualGridState,
     },
 };
 
@@ -1088,11 +1088,10 @@ fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let anchor = Rect::new(area.x.saturating_add(4), area.y.saturating_add(2), 1, 1);
     let mut state = CompletionMenuState::new(Some("select"));
     frame.render_stateful_widget(
-        &CompletionMenu::new(&candidates, theme, area, anchor)
-            .preferred_size(CompletionMenuSize {
-                width: 28,
-                height: 6,
-            }),
+        &CompletionMenu::new(&candidates, theme, area, anchor).preferred_size(CompletionMenuSize {
+            width: 28,
+            height: 6,
+        }),
         area,
         &mut state,
     );
@@ -1114,11 +1113,10 @@ fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
     let mut state = CompletionMenuState::new(Some("beta"));
     frame.render_stateful_widget(
-        &CompletionMenu::new(&candidates, theme, area, anchor)
-            .preferred_size(CompletionMenuSize {
-                width: 24,
-                height: 5,
-            }),
+        &CompletionMenu::new(&candidates, theme, area, anchor).preferred_size(CompletionMenuSize {
+            width: 24,
+            height: 5,
+        }),
         area,
         &mut state,
     );
