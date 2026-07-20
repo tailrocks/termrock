@@ -61,6 +61,3 @@ jobs:
       - run: cargo deny check advisories bans licenses sources
       - run: cargo tree --workspace --locked
       - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
-      - name: sccache stats
-        if: always() && steps.sccache.outcome == 'success'
-        run: sccache --show-stats
