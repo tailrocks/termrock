@@ -1,3 +1,9 @@
 [profile.default]
 retries = 0
 fail-fast = false
+
+# Wall-clock performance contracts need one uncontended machine-wide slot.
+# Allocation assertions remain exact inside each test process.
+[[profile.default.overrides]]
+filter = 'binary(/_hot_path$/)'
+threads-required = "num-test-threads"
