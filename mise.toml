@@ -46,6 +46,7 @@ cargo deny check advisories bans licenses sources
 cargo shear
 cargo package -p termrock --locked --allow-dirty
 cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+(cd docs && bun install --frozen-lockfile && bun run build)
 """
 
 [tasks.docs-quality]
