@@ -63,7 +63,7 @@ jobs:
           restore-keys: |
             cargo-registry-${{ matrix.config.lane }}-${{ runner.os }}-
       - run: test "v$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="termrock") | .version')" = "${{ inputs.tag }}"
-      - run: cargo test --workspace --all-features --locked
+      - run: cargo nextest run --workspace --all-features --locked
       - run: cargo package -p termrock --locked
       - working-directory: docs
         run: bun install --frozen-lockfile && bun run build

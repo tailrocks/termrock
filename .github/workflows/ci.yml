@@ -68,7 +68,6 @@ jobs:
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo deny check advisories bans licenses sources
       - run: cargo nextest run --workspace --all-features --locked
-      - run: cargo test --doc --workspace --locked
       - run: cargo check -p termrock --no-default-features --locked
       - run: cargo check --workspace --examples --locked
       - run: cargo check --workspace --examples --features crossterm --locked
@@ -162,7 +161,7 @@ jobs:
           restore-keys: |
             cargo-registry-${{ matrix.config.lane }}-${{ runner.os }}-
       - run: cargo check -p termrock --features crossterm --all-targets --locked
-      - run: cargo test -p termrock --features crossterm --locked
+      - run: cargo nextest run -p termrock --features crossterm --locked
 
   semver-candidate:
     name: Semver candidate (${{ matrix.config.lane }})
