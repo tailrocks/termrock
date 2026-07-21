@@ -37,7 +37,7 @@ jobs:
       SCCACHE_GHA_ENABLED: "false"
       SCCACHE_CACHE_SIZE: 20G
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444 # v1
@@ -93,7 +93,7 @@ jobs:
       SCCACHE_GHA_ENABLED: "false"
       SCCACHE_CACHE_SIZE: 20G
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444 # v1
@@ -136,7 +136,7 @@ jobs:
       SCCACHE_GHA_ENABLED: "false"
       SCCACHE_CACHE_SIZE: 20G
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444 # v1
@@ -179,11 +179,11 @@ jobs:
       SCCACHE_GHA_ENABLED: "false"
       SCCACHE_CACHE_SIZE: 20G
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           # Required to discover the previous release tag.
-          fetch-depth: 0
+          fetch-depth: 0 # required to discover the previous release tag
       - uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444 # v1
       - id: sccache
         uses: mozilla-actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696 # v0.0.10

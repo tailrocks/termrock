@@ -37,10 +37,10 @@ jobs:
       SCCACHE_GHA_ENABLED: "false"
       SCCACHE_CACHE_SIZE: 20G
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Required to create and push the release tag.
-          fetch-depth: 0
+          fetch-depth: 0 # required to create and push the release tag
           persist-credentials: ${{ matrix.config.writer }}
       - uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444 # v1
       - id: sccache
