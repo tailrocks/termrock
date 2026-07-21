@@ -37,6 +37,10 @@ cargo check -p termrock --no-default-features --locked
 cargo check --workspace --examples --locked
 cargo check --workspace --examples --features crossterm --locked
 RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
+mkdir -p target
+rustup toolchain install nightly --profile minimal
+mise x -- cargo public-api -p termrock --all-features > target/public-api-fresh.txt
+diff -u docs/api/public-api.txt target/public-api-fresh.txt
 cargo hack check --workspace --feature-powerset --all-targets --locked
 cargo deny check advisories bans licenses sources
 cargo shear
