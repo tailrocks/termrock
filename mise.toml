@@ -1,5 +1,7 @@
 [settings]
 idiomatic_version_file_enable_tools = ["rust"]
+cargo.binstall_only = true
+cargo.binstall_quickinstall = true
 
 [tools]
 actionlint = "1.7.12"
@@ -9,7 +11,7 @@ uv = "0.11.29"
 cargo-binstall = "1.21.0"
 "cargo:cargo-deny" = "0.20.2"
 "cargo:cargo-hack" = "0.6.45"
-"cargo:cargo-nextest" = "0.9.140"
+"aqua:nextest-rs/nextest/cargo-nextest" = "0.9.140"
 "cargo:cargo-shear" = "1.13.1"
 "cargo:cargo-public-api" = "0.52.0"
 "cargo:cargo-semver-checks" = "0.48.0"
