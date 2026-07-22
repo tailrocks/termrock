@@ -6,6 +6,7 @@
     "action-bar",
     "backdrop",
     "choice-dialog",
+    "completion-menu",
     "detail-table",
     "dialog",
     "diff-view",
@@ -25,6 +26,7 @@
     "text-input",
     "toast",
     "tree",
-    "viewport"
+    "viewport",
+    "virtual-grid"
   ]
 }

@@ -157,16 +157,13 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
     /// Keeps the previous id when still present; otherwise selects the first
     /// enabled candidate (or none when empty).
     pub fn reconcile(&mut self, candidates: &[CompletionCandidate<'_, Id>]) {
-        if let Some(selected) = self.selected.clone() {
-            if candidates.iter().any(|c| c.id == selected && c.enabled) {
-                self.ensure_visible(candidates);
-                return;
-            }
+        if let Some(selected) = self.selected.clone()
+            && candidates.iter().any(|c| c.id == selected && c.enabled)
+        {
+            self.ensure_visible(candidates);
+            return;
         }
-        self.selected = candidates
-            .iter()
-            .find(|c| c.enabled)
-            .map(|c| c.id.clone());
+        self.selected = candidates.iter().find(|c| c.enabled).map(|c| c.id.clone());
         self.offset = 0;
         self.ensure_visible(candidates);
     }
@@ -310,26 +307,25 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
                 self.move_by(candidates, 1)
             }
             MouseEventKind::Moved | MouseEventKind::Drag(MouseButton::Left) => {
-                if let Some(id) = self.hit_at(mouse.position) {
-                    if candidates.iter().any(|c| c.id == id && c.enabled)
-                        && self.hovered.as_ref() != Some(&id)
-                    {
-                        self.hovered = Some(id.clone());
-                        if self.selected.as_ref() != Some(&id) {
-                            self.selected = Some(id);
-                            self.ensure_visible(candidates);
-                            return CompletionMenuOutcome::SelectionChanged;
-                        }
+                if let Some(id) = self.hit_at(mouse.position)
+                    && candidates.iter().any(|c| c.id == id && c.enabled)
+                    && self.hovered.as_ref() != Some(&id)
+                {
+                    self.hovered = Some(id.clone());
+                    if self.selected.as_ref() != Some(&id) {
+                        self.selected = Some(id);
+                        self.ensure_visible(candidates);
+                        return CompletionMenuOutcome::SelectionChanged;
                     }
                 }
                 CompletionMenuOutcome::Ignored
             }
             MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Up(MouseButton::Left) => {
-                if let Some(id) = self.hit_at(mouse.position) {
-                    if candidates.iter().any(|c| c.id == id && c.enabled) {
-                        self.selected = Some(id.clone());
-                        return CompletionMenuOutcome::Committed(id);
-                    }
+                if let Some(id) = self.hit_at(mouse.position)
+                    && candidates.iter().any(|c| c.id == id && c.enabled)
+                {
+                    self.selected = Some(id.clone());
+                    return CompletionMenuOutcome::Committed(id);
                 }
                 // Click outside dismisses.
                 if !self.painted.contains(mouse.position) && !self.painted.is_empty() {
@@ -522,9 +518,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
         if self.candidates.is_empty() {
             preferred.height = preferred.height.min(1);
         } else {
-            preferred.height = preferred
-                .height
-                .min(u16::try_from(self.candidates.len()).unwrap_or(u16::MAX).max(1));
+            preferred.height = preferred.height.min(
+                u16::try_from(self.candidates.len())
+                    .unwrap_or(u16::MAX)
+                    .max(1),
+            );
         }
         // Fit width to longest label+kind with padding, capped by preferred.
         let content_width = self
@@ -537,9 +535,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
             .max()
             .unwrap_or(display_cols(self.empty_message))
             .saturating_add(2);
-        preferred.width = preferred
-            .width
-            .max(u16::try_from(content_width).unwrap_or(u16::MAX).min(preferred.width.max(12)));
+        preferred.width = preferred.width.max(
+            u16::try_from(content_width)
+                .unwrap_or(u16::MAX)
+                .min(preferred.width.max(12)),
+        );
 
         let menu = place_completion_menu(self.bounds, self.anchor, preferred);
         state.painted = menu;
@@ -566,7 +566,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
                 cell.set_symbol("┌");
                 cell.set_style(border);
             }
-            if let Some(cell) = buffer.cell_mut((menu.x.saturating_add(menu.width).saturating_sub(1), menu.y))
+            if let Some(cell) =
+                buffer.cell_mut((menu.x.saturating_add(menu.width).saturating_sub(1), menu.y))
             {
                 cell.set_symbol("┐");
                 cell.set_style(border);
@@ -574,7 +575,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
         }
 
         if self.candidates.is_empty() {
-            let text = take_display_cols(self.empty_message, usize::from(menu.width.saturating_sub(2)));
+            let text = take_display_cols(
+                self.empty_message,
+                usize::from(menu.width.saturating_sub(2)),
+            );
             buffer.set_stringn(
                 menu.x.saturating_add(1),
                 menu.y,
@@ -594,7 +598,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
         }
         let end = (state.offset + usize::from(menu.height)).min(self.candidates.len());
         for (row, candidate) in self.candidates[state.offset..end].iter().enumerate() {
-            let y = menu.y.saturating_add(u16::try_from(row).unwrap_or(u16::MAX));
+            let y = menu
+                .y
+                .saturating_add(u16::try_from(row).unwrap_or(u16::MAX));
             let row_rect = Rect::new(menu.x, y, menu.width, 1);
             state.hits.push((candidate.id.clone(), row_rect));
 
@@ -612,13 +618,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
                 .saturating_sub(2)
                 .saturating_sub(kind_budget);
             let label = take_display_cols(candidate.label, label_budget);
-            buffer.set_stringn(
-                menu.x.saturating_add(1),
-                y,
-                label,
-                label_budget,
-                style,
-            );
+            buffer.set_stringn(menu.x.saturating_add(1), y, label, label_budget, style);
             if let Some(kind) = candidate.kind {
                 let kind_text = take_display_cols(kind, kind_cols.min(usize::from(menu.width) / 2));
                 let kind_x = menu
@@ -638,11 +638,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
                 );
             }
             // Non-color selection marker in the left gutter.
-            if selected {
-                if let Some(cell) = buffer.cell_mut((menu.x, y)) {
-                    cell.set_symbol("›");
-                    cell.set_style(style);
-                }
+            if selected && let Some(cell) = buffer.cell_mut((menu.x, y)) {
+                cell.set_symbol("›");
+                cell.set_style(style);
             }
         }
     }
@@ -676,7 +674,7 @@ mod tests {
 
     fn candidates(ids: &[&'static str]) -> Vec<CompletionCandidate<'static, &'static str>> {
         ids.iter()
-            .map(|id| CompletionCandidate::new(*id, *id))
+            .map(|id| CompletionCandidate::new(*id, id))
             .collect()
     }
 
@@ -736,18 +734,12 @@ mod tests {
         let mut state = CompletionMenuState::new(Some("alpha"));
         state.viewport_height = 3;
         assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-                &items
-            ),
+            state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items),
             CompletionMenuOutcome::SelectionChanged
         );
         assert_eq!(state.selected().copied(), Some("beta"));
         assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-                &items
-            ),
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
             CompletionMenuOutcome::Committed("beta")
         );
         assert_eq!(

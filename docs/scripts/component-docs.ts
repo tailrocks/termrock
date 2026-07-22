@@ -40,6 +40,22 @@ let dialog = ChoiceDialog::new(Dialog::new("Confirm", Text::from("Continue?"), &
 let mut state = ChoiceDialogState::new(Some("accept"));
 let outcome = state.handle_key(&actions, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
   },
+  CompletionMenu: {
+    description: 'An anchored popup of caller-ranked completion candidates with stable selection and typed outcomes.',
+    primaryStory: 'completion-menu/basic',
+    usage: `use ratatui_core::layout::Rect;
+use termrock::{Theme, widgets::{CompletionCandidate, CompletionMenu, CompletionMenuState}};
+
+let theme = Theme::default();
+let candidates = [
+  CompletionCandidate::new("select", "SELECT").kind("keyword"),
+  CompletionCandidate::new("schema", "schema_name"),
+];
+let bounds = Rect::new(0, 0, 80, 24);
+let anchor = Rect::new(12, 6, 1, 1);
+let menu = CompletionMenu::new(&candidates, &theme, bounds, anchor);
+let state = CompletionMenuState::new(Some("select"));`,
+  },
   DetailTable: {
     description: 'A selectable key/value table with stable rows and typed activation capabilities.',
     primaryStory: 'detail-table/basic',
@@ -298,6 +314,21 @@ let nodes = [TreeNode { id: "src", label: Line::from("src"), trailing: None, dep
 let tree = Tree::new(&nodes, &theme);
 let mut state = TreeState::new(Some("src"));
 let outcome = state.handle_key(&nodes, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
+  },
+  VirtualGrid: {
+    description: 'A two-axis virtualized grid whose paint cost is bounded by caller-projected resident rows.',
+    primaryStory: 'virtual-grid/basic',
+    usage: `use termrock::{Theme, widgets::{GridCell, GridColumn, GridRow, VirtualGrid, VirtualGridState}};
+
+let theme = Theme::default();
+let columns = [
+  GridColumn::fixed("id", "ID", 8),
+  GridColumn::min("name", "Name", 16),
+];
+let cells = [GridCell::text("42"), GridCell::text("termrock")];
+let rows = [GridRow::new("row-42", 42, &cells)];
+let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(1_000_000);
+let state = VirtualGridState::<&str, &str>::new();`,
   },
   Viewport: {
     description: 'A two-axis scrollable view over borrowed terminal lines.',

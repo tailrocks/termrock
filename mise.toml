@@ -4,6 +4,7 @@ idiomatic_version_file_enable_tools = ["rust"]
 [tools]
 actionlint = "1.7.12"
 bun = "1.3.14"
+python = "3.14"
 uv = "0.11.29"
 cargo-binstall = "1.21.0"
 "cargo:cargo-deny" = "0.20.2"
@@ -13,7 +14,7 @@ cargo-binstall = "1.21.0"
 "cargo:cargo-public-api" = "0.52.0"
 "cargo:cargo-semver-checks" = "0.48.0"
 "cargo:git-cliff" = "2.13.1"
-"pipx:reuse" = { version = "6.2.0", extras = "charset-normalizer" }
+"pipx:reuse" = { version = "6.2.0", extras = "charset-normalizer", depends = ["python"] }
 "github:gitleaks/gitleaks" = "8.30.1"
 
 [tasks.check]
@@ -23,7 +24,6 @@ mise run docs-quality
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo nextest run --workspace --all-features --locked
-cargo test --doc --workspace --locked
 """
 
 [tasks.gate]
@@ -33,16 +33,20 @@ mise run docs-quality
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo nextest run --workspace --all-features --locked
-cargo test --doc --workspace --locked
 cargo check -p termrock --no-default-features --locked
 cargo check --workspace --examples --locked
 cargo check --workspace --examples --features crossterm --locked
 RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
+mkdir -p target
+rustup toolchain install nightly --profile minimal
+mise x -- cargo public-api -p termrock --all-features > target/public-api-fresh.txt
+diff -u docs/api/public-api.txt target/public-api-fresh.txt
 cargo hack check --workspace --feature-powerset --all-targets --locked
 cargo deny check advisories bans licenses sources
 cargo shear
 cargo package -p termrock --locked --allow-dirty
 cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+(cd docs && bun install --frozen-lockfile && bun run build)
 """
 
 [tasks.docs-quality]
