@@ -1139,13 +1139,17 @@ pub fn termrock::interaction::HoverState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::HoverState<Id>
 pub struct termrock::interaction::ModalStack<M>
 impl<M> termrock::interaction::ModalStack<M>
+pub fn termrock::interaction::ModalStack<M>::clear_chain(&mut self)
 pub const fn termrock::interaction::ModalStack<M>::current(&self) -> core::option::Option<&M>
 pub fn termrock::interaction::ModalStack<M>::current_mut(&mut self) -> core::option::Option<&mut M>
 pub fn termrock::interaction::ModalStack<M>::depth(&self) -> usize
 pub fn termrock::interaction::ModalStack<M>::has_parent(&self) -> bool
 pub const fn termrock::interaction::ModalStack<M>::is_open(&self) -> bool
 pub const fn termrock::interaction::ModalStack<M>::new() -> Self
+pub fn termrock::interaction::ModalStack<M>::open(&mut self, M)
+pub fn termrock::interaction::ModalStack<M>::open_sub(&mut self, M)
 pub fn termrock::interaction::ModalStack<M>::parents(&self) -> &[M]
+pub fn termrock::interaction::ModalStack<M>::pop(&mut self)
 impl<M: core::clone::Clone> core::clone::Clone for termrock::interaction::ModalStack<M>
 pub fn termrock::interaction::ModalStack<M>::clone(&self) -> termrock::interaction::ModalStack<M>
 impl<M: core::cmp::Eq> core::cmp::Eq for termrock::interaction::ModalStack<M>
