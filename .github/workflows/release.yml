@@ -99,6 +99,3 @@ jobs:
         env:
           GH_TOKEN: "${{ github.token }}"
         run: gh release create "${{ inputs.tag }}" --notes-file /tmp/notes.md
-      - name: sccache stats
-        if: always() && steps.sccache.outcome == 'success'
-        run: sccache --show-stats
