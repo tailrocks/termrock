@@ -80,13 +80,13 @@ impl<M> ModalStack<M> {
     }
 
     /// Open a new root modal and discard any existing parent chain.
-    pub(super) fn open(&mut self, modal: M) {
+    pub fn open(&mut self, modal: M) {
         self.current = Some(modal);
         self.parents.clear();
     }
 
     /// Open a child modal, preserving the existing active modal as the parent.
-    pub(super) fn open_sub(&mut self, child: M) {
+    pub fn open_sub(&mut self, child: M) {
         if let Some(parent) = self.current.take() {
             self.parents.push(parent);
         } else {
@@ -96,12 +96,12 @@ impl<M> ModalStack<M> {
     }
 
     /// Close the active modal and restore one parent, if any.
-    pub(super) fn pop(&mut self) {
+    pub fn pop(&mut self) {
         self.current = self.parents.pop();
     }
 
     /// Close the active modal and every saved parent.
-    pub(super) fn clear_chain(&mut self) {
+    pub fn clear_chain(&mut self) {
         self.current = None;
         self.parents.clear();
     }
