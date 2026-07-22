@@ -63,14 +63,17 @@ jobs:
           key: cargo-registry-${{ matrix.config.lane }}-${{ runner.os }}-${{ hashFiles('**/Cargo.lock', 'docs/bun.lock') }}
           restore-keys: |
             cargo-registry-${{ matrix.config.lane }}-${{ runner.os }}-
+      - name: Cache Cargo target
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: target
+          key: cargo-target-${{ matrix.config.lane }}-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: cargo-target-${{ matrix.config.lane }}-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-
       - run: rustup toolchain install nightly --profile minimal
       - working-directory: docs
         run: bun install --frozen-lockfile
       - working-directory: docs
         run: bun run types:check
-      - run: |
-          mise x -- cargo public-api -p termrock --all-features > /tmp/public-api-fresh.txt
-          diff -u docs/api/public-api.txt /tmp/public-api-fresh.txt
       - working-directory: docs
         run: bun run build
       - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
@@ -87,7 +90,6 @@ jobs:
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: docs/dist/client
-
   deploy-pages:
     name: Deploy Pages (${{ matrix.config.lane }})
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'

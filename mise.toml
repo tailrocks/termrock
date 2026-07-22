@@ -1,5 +1,7 @@
 [settings]
 idiomatic_version_file_enable_tools = ["rust"]
+cargo.binstall_only = true
+cargo.binstall_quickinstall = true
 
 [tools]
 actionlint = "1.7.12"
@@ -9,9 +11,8 @@ uv = "0.11.29"
 cargo-binstall = "1.21.0"
 "cargo:cargo-deny" = "0.20.2"
 "cargo:cargo-hack" = "0.6.45"
-"cargo:cargo-nextest" = "0.9.140"
+"aqua:nextest-rs/nextest/cargo-nextest" = "0.9.140"
 "cargo:cargo-shear" = "1.13.1"
-"cargo:cargo-public-api" = "0.52.0"
 "cargo:cargo-semver-checks" = "0.48.0"
 "cargo:git-cliff" = "2.13.1"
 "pipx:reuse" = { version = "6.2.0", extras = "charset-normalizer", depends = ["python"] }
@@ -39,7 +40,7 @@ cargo check --workspace --examples --features crossterm --locked
 RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
 mkdir -p target
 rustup toolchain install nightly --profile minimal
-mise x -- cargo public-api -p termrock --all-features > target/public-api-fresh.txt
+mise x cargo:cargo-public-api@0.52.0 -- cargo public-api -p termrock --all-features > target/public-api-fresh.txt
 diff -u docs/api/public-api.txt target/public-api-fresh.txt
 cargo hack check --workspace --feature-powerset --all-targets --locked
 cargo deny check advisories bans licenses sources
