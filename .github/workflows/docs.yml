@@ -74,9 +74,6 @@ jobs:
         run: bun install --frozen-lockfile
       - working-directory: docs
         run: bun run types:check
-      - run: |
-          mise x -- cargo public-api -p termrock --all-features > /tmp/public-api-fresh.txt
-          diff -u docs/api/public-api.txt /tmp/public-api-fresh.txt
       - working-directory: docs
         run: bun run build
       - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews

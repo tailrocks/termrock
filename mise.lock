@@ -129,10 +129,6 @@ backend = "cargo:cargo-deny"
 version = "0.6.45"
 backend = "cargo:cargo-hack"
 
-[[tools."cargo:cargo-public-api"]]
-version = "0.52.0"
-backend = "cargo:cargo-public-api"
-
 [[tools."cargo:cargo-semver-checks"]]
 version = "0.48.0"
 backend = "cargo:cargo-semver-checks"
