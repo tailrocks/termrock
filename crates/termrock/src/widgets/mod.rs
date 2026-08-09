@@ -25,6 +25,7 @@ mod markdown;
 mod panel;
 mod picker;
 mod progress;
+mod prompt_composer;
 mod selection;
 mod split_pane;
 mod status_bar;
@@ -88,6 +89,12 @@ pub use markdown::{MarkdownBlock, MarkdownBlockKind, MarkdownView, project_plain
 pub use panel::{Panel, PanelEmphasis, PanelSlots};
 pub use picker::{Picker, PickerOutcome, PickerState};
 pub use progress::{Progress, ProgressKind};
+pub use prompt_composer::{
+    LARGE_PASTE_THRESHOLD, PROMPT_COMPLETION_OVERLAY_ID, PROMPT_FULLSCREEN_OVERLAY_ID, ChipKind,
+    CompletionKind, CompletionQuery, ComposerChip, ComposerConnection, ComposerPresentation,
+    ContextEstimate, ModeIndicator, ModelIndicator, PromptComposer, PromptComposerLayout,
+    PromptComposerOutcome, PromptComposerState, QueuedPrompt, SubmitPolicy,
+};
 pub use selection::Selection;
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,

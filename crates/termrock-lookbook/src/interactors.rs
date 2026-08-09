@@ -15,13 +15,15 @@ use termrock::{
     widgets::{
         Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk, BUILTIN_THEME_PRESETS,
         CellAlignment, ChoiceDialogState, Column, ColumnWidth, CommandPalette, CommandPaletteState,
-        DesignInspector, DesignInspectorFrame, Form, FormOutcome, FormSection, FormState,
-        InspectorPanel, List, ListState, LogPane, LogPaneState, Picker, PickerOutcome, PickerState,
-        PromptBox, PromptBoxState, Severity, SplitDirection, SplitPane, SplitPaneOutcome,
-        SplitPaneState, SplitRatio, Tab, Table, TableOutcome, TableRow, TableState, Tabs,
-        TabsState, TextArea, TextAreaOutcome, TextAreaState, TextInput, TextInputOutcome,
-        TextInputState, ThemePicker, ThemePickerState, Toast, Transcript, TranscriptBlock,
-        TranscriptKind, TranscriptState, Tree, TreeNode, TreeOutcome, TreeState, VirtualGridState,
+        ComposerChip, ContextEstimate, DesignInspector, DesignInspectorFrame,
+        Form, FormOutcome, FormSection, FormState, InspectorPanel, List, ListState, LogPane,
+        LogPaneState, ModeIndicator, ModelIndicator, Picker, PickerOutcome, PickerState, PromptBox,
+        PromptBoxState, PromptComposer, PromptComposerOutcome, PromptComposerState, Severity,
+        SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, Tab, Table,
+        TableOutcome, TableRow, TableState, Tabs, TabsState, TextArea, TextAreaOutcome,
+        TextAreaState, TextInput, TextInputOutcome, TextInputState, ThemePicker, ThemePickerState,
+        Toast, Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode,
+        TreeOutcome, TreeState, VirtualGridState,
     },
 };
 
@@ -1083,6 +1085,73 @@ impl StoryInteraction for PromptBoxInteractor {
 
     fn set_theme(&mut self, theme: Theme) {
         self.theme = theme;
+    }
+
+    fn captures_text_input(&self) -> bool {
+        true
+    }
+}
+
+pub(crate) struct PromptComposerInteractor {
+    state: PromptComposerState,
+    theme: Theme,
+    tokens: DesignTokens,
+}
+
+impl PromptComposerInteractor {
+    pub(crate) fn new() -> Self {
+        let theme = Theme::default();
+        let tokens = DesignTokens::new(theme.clone(), Density::Comfortable);
+        let mut state = PromptComposerState::new();
+        state.set_placeholder("Ask anything…");
+        state.set_mode(Some(ModeIndicator {
+            label: "EDIT".into(),
+            warning: false,
+        }));
+        state.set_model(Some(ModelIndicator {
+            label: "model".into(),
+        }));
+        state.set_context(ContextEstimate {
+            used: 12_000,
+            limit: 128_000,
+        });
+        state.add_chip(ComposerChip::file("f1", "main.rs"));
+        Self {
+            state,
+            theme,
+            tokens,
+        }
+    }
+}
+
+impl StoryInteraction for PromptComposerInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        frame.render_stateful_widget(
+            &PromptComposer::new(&self.tokens, &self.theme),
+            area,
+            &mut self.state,
+        );
+    }
+
+    fn handle_key(&mut self, key: KeyEvent) -> bool {
+        !matches!(
+            self.state.handle_key(key),
+            PromptComposerOutcome::Ignored
+        )
+    }
+
+    fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
+        let layout = self.state.layout_in(preview_area);
+        !matches!(
+            self.state
+                .handle_mouse(mouse, layout.editor, &layout.chip_hits),
+            PromptComposerOutcome::Ignored
+        )
+    }
+
+    fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme.clone();
+        self.tokens = DesignTokens::new(theme, Density::Comfortable);
     }
 
     fn captures_text_input(&self) -> bool {

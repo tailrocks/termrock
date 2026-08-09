@@ -16,6 +16,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/source-owned-registry.md`](../docs/design/source-owned-registry.md) | **Source-owned registry + CLI architecture** (shadcn-class distribution) |
 | [`docs/design/termrock-studio.md`](../docs/design/termrock-studio.md) | **TermRock Studio** (Storybook/DevTools-class lookbook evolution) |
 | [`docs/design/termrock-agent.md`](../docs/design/termrock-agent.md) | **`@termrock/agent`** agent component collection + AgentWorkbench |
+| [`docs/design/prompt-composer.md`](../docs/design/prompt-composer.md) | **PromptComposer** flagship agent input surface |
 
 ### Using the component prompt library
 

@@ -29,7 +29,8 @@ use termrock::{
         ImageMeta, ImageProtocol, ImageSurface, JumpOverlay, JumpTarget, List, ListRow, ListState,
         LoadingView, LogPane, LogPaneState, MarkdownBlock, MarkdownBlockKind, MarkdownView,
         MessageDialog, MeterSegment, Panel, PanelEmphasis, Picker, PickerState, Progress,
-        ProgressKind, PromptBox, PromptBoxState, RowRole, SegmentedMeter, Severity, Skeleton,
+        ProgressKind, PromptBox, PromptBoxState, PromptComposer, PromptComposerState, RowRole,
+        SegmentedMeter, Severity, Skeleton,
         SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
         StatusBarState, StatusSlot, StreamItem, StreamItemKind, StreamView, Tab, Table, TableRow,
         TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
@@ -43,9 +44,9 @@ use termrock::{
 use crate::interactors::{
     ApprovalCardInteractor, ChoiceDialogInteractor, CommandPaletteInteractor,
     DesignInspectorInteractor, FormInteractor, ListInteractor, LogPaneInteractor, PickerInteractor,
-    PromptBoxInteractor, SplitPaneInteractor, StaticStory, StoryInteraction, TableInteractor,
-    TabsInteractor, TextAreaInteractor, ThemePickerInteractor, ToastInteractor,
-    TranscriptInteractor, TreeInteractor, VirtualGridInteractor,
+    PromptBoxInteractor, PromptComposerInteractor, SplitPaneInteractor, StaticStory,
+    StoryInteraction, TableInteractor, TabsInteractor, TextAreaInteractor, ThemePickerInteractor,
+    ToastInteractor, TranscriptInteractor, TreeInteractor, VirtualGridInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
@@ -172,6 +173,10 @@ fn transcript_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 
 fn prompt_box_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(PromptBoxInteractor::new())
+}
+
+fn prompt_composer_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PromptComposerInteractor::new())
 }
 
 fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
@@ -908,6 +913,34 @@ pub(crate) fn stories() -> Vec<Story> {
             prompt_box,
         )
         .with_interactor(prompt_box_interactor),
+        Story::new(
+            "prompt-composer/basic",
+            "Prompt composer",
+            "PromptComposer",
+            "Flagship agent input: chips, mode, model, context, draft.",
+            56,
+            8,
+            prompt_composer_basic,
+        )
+        .with_interactor(prompt_composer_interactor),
+        Story::new(
+            "prompt-composer/busy-queue",
+            "Prompt composer busy",
+            "PromptComposer",
+            "Busy agent queues submit; stop chrome.",
+            56,
+            8,
+            prompt_composer_busy,
+        ),
+        Story::new(
+            "prompt-composer/compact",
+            "Prompt composer compact",
+            "PromptComposer",
+            "Narrow-terminal compact presentation.",
+            36,
+            5,
+            prompt_composer_compact,
+        ),
         Story::new(
             "theme-picker/basic",
             "Theme picker",
@@ -2281,6 +2314,56 @@ fn prompt_box(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         area,
         &mut state,
     );
+}
+
+fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    use termrock::widgets::{
+        ComposerChip, ContextEstimate, ModeIndicator, ModelIndicator,
+    };
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::Comfortable);
+    let mut state = PromptComposerState::new();
+    state.set_placeholder("Ask anything…");
+    state.set_text("Explain this module");
+    state.set_mode(Some(ModeIndicator {
+        label: "EDIT".into(),
+        warning: false,
+    }));
+    state.set_model(Some(ModelIndicator {
+        label: "grok".into(),
+    }));
+    state.set_context(ContextEstimate {
+        used: 24_000,
+        limit: 128_000,
+    });
+    state.add_chip(ComposerChip::file("a", "lib.rs"));
+    frame.render_stateful_widget(&PromptComposer::new(&tokens, theme), area, &mut state);
+}
+
+fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    use termrock::widgets::{ModeIndicator, ModelIndicator};
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::Compact);
+    let mut state = PromptComposerState::new();
+    state.set_busy(true);
+    state.set_text("follow-up while running");
+    state.set_mode(Some(ModeIndicator {
+        label: "AUTO".into(),
+        warning: true,
+    }));
+    state.set_model(Some(ModelIndicator {
+        label: "model".into(),
+    }));
+    frame.render_stateful_widget(&PromptComposer::new(&tokens, theme), area, &mut state);
+}
+
+fn prompt_composer_compact(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    use termrock::widgets::ComposerPresentation;
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::Dashboard);
+    let mut state = PromptComposerState::new();
+    state.set_presentation(ComposerPresentation::Compact);
+    state.set_ascii_fallback(true);
+    state.set_placeholder("msg");
+    state.set_text("compact draft");
+    frame.render_stateful_widget(&PromptComposer::new(&tokens, theme), area, &mut state);
 }
 
 fn theme_picker(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
