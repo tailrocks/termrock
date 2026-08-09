@@ -9,10 +9,10 @@ use crate::{
     input::{KeyEvent, KeyEventKind},
     interaction::{HitRegion, NavigationMove, Outcome, PageMove, UiIntent, default_list_intent},
     scroll::max_offset,
-    style::{Role, Theme},
+    style::{DesignTokens, Role},
 };
 
-use super::Selection;
+use super::{ComposedRow, Selection};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -429,8 +429,8 @@ impl ListState<usize> {
 ///     ListRow { id: "a", label: Line::from("Alpha"), trailing: None, role: RowRole::Item, enabled: true },
 ///     ListRow { id: "b", label: Line::from("Beta"), trailing: None, role: RowRole::Item, enabled: true },
 /// ];
-/// let theme = Theme::default();
-/// let _widget = List::new(&rows, &theme);
+/// let tokens = termrock::style::DesignTokens::default();
+/// let _widget = List::new(&rows, &tokens);
 /// let mut state = ListState::new(Some("a"));
 /// let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
 /// assert!(matches!(outcome, Outcome::Changed));
@@ -438,26 +438,20 @@ impl ListState<usize> {
 /// ```
 pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
-    theme: &'a Theme,
-    tokens: Option<&'a crate::style::DesignTokens>,
+    tokens: &'a DesignTokens,
 }
 
 impl<'a, Id> List<'a, Id> {
     #[must_use]
-    /// Creates a list over borrowed rows and mutable list state.
-    pub const fn new(rows: &'a [ListRow<'a, Id>], theme: &'a Theme) -> Self {
-        Self {
-            rows,
-            theme,
-            tokens: None,
-        }
+    /// Creates a list over borrowed rows; paint uses design-token recipes.
+    pub const fn new(rows: &'a [ListRow<'a, Id>], tokens: &'a DesignTokens) -> Self {
+        Self { rows, tokens }
     }
 
-    /// Paints rows through design-token recipes (quiet selection / bright focus).
+    /// Theme borrowed from design tokens.
     #[must_use]
-    pub const fn tokens(mut self, tokens: &'a crate::style::DesignTokens) -> Self {
-        self.tokens = Some(tokens);
-        self
+    pub const fn theme(&self) -> &crate::style::Theme {
+        &self.tokens.theme
     }
 }
 
@@ -517,33 +511,22 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 .selection
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&row.id));
-            let recipe = self.tokens.map(|tokens| {
-                tokens.list_row_recipe(selected, state.focused && selected, row.enabled)
-            });
-            let style = if let Some(recipe) = recipe {
-                recipe.label
-            } else if !row.enabled {
-                self.theme.style(Role::TextDisabled)
-            } else if selected && state.focused {
-                self.theme.style(Role::Selection)
-            } else if hovered {
-                self.theme.style(Role::LinkHover)
-            } else if checked {
-                self.theme.style(Role::Accent)
+            let recipe =
+                self.tokens
+                    .list_row_recipe(selected, state.focused && selected, row.enabled);
+            let style = if hovered && row.enabled && !selected {
+                self.tokens.theme.style(Role::LinkHover)
+            } else if checked && !selected {
+                self.tokens.theme.style(Role::Accent)
             } else {
-                self.theme.style(Role::Text)
+                recipe.label
             };
-            let fill_row = recipe.is_none_or(|recipe| recipe.use_fill)
-                || (recipe.is_none() && selected && state.focused);
-            if fill_row {
+            if recipe.use_fill {
                 buffer.set_style(rect, style);
             }
             let trailing_x = rect.right().saturating_sub(trailing_width);
             if row.role == RowRole::Separator {
-                let rule = self
-                    .tokens
-                    .map(|tokens| tokens.glyphs.rule())
-                    .unwrap_or("─");
+                let rule = self.tokens.glyphs.rule();
                 buffer.set_stringn(rect.x, rect.y, rule, usize::from(rect.width), style);
                 if rect.width > 2 {
                     let label_x = rect
@@ -558,37 +541,52 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     );
                 }
             } else {
-                // Selection cue: design-token gutter when present, else legacy ▸.
-                if let Some(recipe) = recipe {
-                    if let Some((glyph, gstyle)) = recipe.gutter {
-                        buffer.set_stringn(rect.x, rect.y, glyph, 1, gstyle);
-                        buffer.set_stringn(rect.x.saturating_add(1), rect.y, " ", 1, style);
-                    } else {
-                        buffer.set_stringn(rect.x, rect.y, "  ", 2, style);
-                    }
+                if let Some((glyph, gstyle)) = recipe.gutter {
+                    buffer.set_stringn(rect.x, rect.y, glyph, 1, gstyle);
+                    buffer.set_stringn(rect.x.saturating_add(1), rect.y, " ", 1, style);
                 } else {
-                    let marker = if selected { "▸ " } else { "  " };
-                    buffer.set_stringn(rect.x, rect.y, marker, usize::from(rect.width), style);
+                    buffer.set_stringn(rect.x, rect.y, "  ", 2, style);
                 }
                 let check_x = rect.x.saturating_add(2);
                 render_check_cell(buffer, state, row, rect, check_x, checked, style);
+                // Priority-aware contraction via ComposedRow (plan 045).
+                let composed = ComposedRow {
+                    id: (),
+                    leading: None,
+                    primary: row.label.clone(),
+                    secondary: None,
+                    badge: row.trailing.clone(),
+                    shortcut: None,
+                    enabled: row.enabled,
+                    loading: false,
+                };
+                let parts = composed.parts_for_width(rect.width);
                 if rect.width > 2 {
                     let label_x = check_x.saturating_add(u16::from(state.selection.is_some()) * 4);
                     buffer.set_line(
                         label_x,
                         rect.y,
-                        &row.label,
+                        &parts.primary,
                         label_width(label_x, trailing_x, trailing_width),
                     );
                 }
-            }
-            if let Some(trailing) = row.trailing.as_ref()
-                && trailing_width > 0
-            {
-                let width = u16::try_from(trailing.width())
-                    .unwrap_or(u16::MAX)
-                    .min(trailing_width);
-                buffer.set_line(rect.right().saturating_sub(width), rect.y, trailing, width);
+                if let Some(badge) = parts.badge.as_ref().or(row.trailing.as_ref())
+                    && trailing_width > 0
+                    && parts.badge.is_some()
+                {
+                    let width = u16::try_from(badge.width())
+                        .unwrap_or(u16::MAX)
+                        .min(trailing_width);
+                    buffer.set_line(rect.right().saturating_sub(width), rect.y, badge, width);
+                } else if let Some(trailing) = row.trailing.as_ref()
+                    && trailing_width > 0
+                {
+                    // Fallback when contraction dropped badge but trailing still fits.
+                    let width = u16::try_from(trailing.width())
+                        .unwrap_or(u16::MAX)
+                        .min(trailing_width);
+                    buffer.set_line(rect.right().saturating_sub(width), rect.y, trailing, width);
+                }
             }
             if row.enabled && row.role == RowRole::Item && !rect.is_empty() {
                 state.regions.push(HitRegion {
@@ -609,7 +607,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         u16::try_from(state.offset).unwrap_or(u16::MAX),
                     ),
                 ),
-                self.theme,
+                &self.tokens.theme,
             );
         }
         state.hovered = state.pointer.and_then(|position| {
@@ -758,17 +756,18 @@ mod tests {
     #[test]
     fn render_reveals_selection_and_mouse_uses_painted_regions() {
         let rows = rows();
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
         let mut state = ListState::new(Some("second"));
         let area = Rect::new(4, 3, 12, 1);
         let mut buffer = Buffer::empty(area);
-        (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(state.offset(), 3);
         assert_eq!(state.regions().len(), 1);
         let position = Position::new(area.x, area.y);
         assert_eq!(state.hover(position), Some(&"second"));
         assert_eq!(state.click(position), Outcome::Activated("second"));
-        assert_eq!(buffer[(area.x, area.y)].symbol(), "▸");
+        // Quiet phosphor selection uses design-token gutter glyph.
+        assert_eq!(buffer[(area.x, area.y)].symbol(), "▌");
     }
 
     #[test]
@@ -789,12 +788,12 @@ mod tests {
                 enabled: true,
             },
         ];
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
         let mut state = ListState::new(None);
         let area = Rect::new(0, 0, 11, 2);
         let mut buffer = Buffer::empty(area);
 
-        (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(6, 0)].symbol(), "9");
         assert_eq!(buffer[(8, 1)].symbol(), "1");
@@ -813,12 +812,12 @@ mod tests {
             role: RowRole::Item,
             enabled: true,
         }];
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
         let mut state = ListState::new(None);
         let area = Rect::new(0, 0, 2, 1);
         let mut buffer = Buffer::empty(area);
 
-        (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(0, 0)].symbol(), "🧪");
         assert_eq!(buffer[(1, 0)].symbol(), " ");
@@ -828,7 +827,7 @@ mod tests {
     #[test]
     fn list_check_toggle_reports_id() {
         let rows = rows();
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
         let mut state = ListState::new(Some("first"));
         state.enable_multi_select();
 
@@ -840,7 +839,7 @@ mod tests {
 
         let area = Rect::new(0, 0, 20, 4);
         let mut buffer = Buffer::empty(area);
-        (&List::new(&rows, &theme)).render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(2, 2)].symbol(), "[");
         assert_eq!(buffer[(3, 2)].symbol(), "x");
         assert_eq!(

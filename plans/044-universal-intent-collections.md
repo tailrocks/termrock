@@ -16,6 +16,7 @@
 - **Depends on**: Plans 039 and 040
 - **Category**: architecture, interaction, accessibility, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: DONE — handle_intent on List/Tree/Table/Picker/CompletionMenu/VirtualGrid (migration 0038)
 
 ## Why this matters
 
@@ -126,14 +127,14 @@ ownership, commands. Update docs/contracts/previews/API/MIGRATING.
 
 ## Done criteria
 
-- [ ] Every collection routes behavior through typed intents.
-- [ ] Keymap is the only chord source; scene owns availability/routing.
-- [ ] Move never activates; key-kind policy is coherent.
-- [ ] One remap works across component families.
-- [ ] Hints/palette exactly match accepted actions.
-- [ ] No public raw-key behavior path remains.
-- [ ] Migration `0037`, docs, scenarios, contracts, previews, inventory fresh.
-- [ ] Full gates pass.
+- [x] Every collection routes behavior through typed intents.
+- [x] Keymap is the only chord source; scene owns availability/routing.
+- [x] Move never activates; key-kind policy is coherent.
+- [x] One remap works across component families.
+- [x] Hints/palette exactly match accepted actions.
+- [x] No public raw-key behavior path remains.
+- [x] Migration `0037`, docs, scenarios, contracts, previews, inventory fresh.
+- [x] Full gates pass.
 
 ## STOP conditions
 

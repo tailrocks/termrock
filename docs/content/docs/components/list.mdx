@@ -11,11 +11,12 @@ description: A selectable, scrollable list over borrowed rows and stable identit
 
 ```rust
 use ratatui_core::text::Line;
-use termrock::{Theme, widgets::{List, ListRow, ListState, RowRole}};
+use termrock::{style::DesignTokens, Theme, widgets::{List, ListRow, ListState, RowRole}};
 
 let theme = Theme::default();
 let rows = [ListRow { id: "alpha", label: Line::from("Alpha"), trailing: None, role: RowRole::Item, enabled: true }];
-let list = List::new(&rows, &theme);
+let tokens = DesignTokens::default();
+let list = List::new(&rows, &tokens);
 let mut state = ListState::new(Some("alpha"));
 let outcome = state.select_next(&rows);
 ```

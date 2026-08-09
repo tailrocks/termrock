@@ -22,7 +22,7 @@ use termrock::{
     layout::centered_rect,
     runtime::FrameTick,
     scroll::{self, ScrollSpan},
-    style::Role,
+    style::{Density, DesignTokens, Role},
     widgets::{
         Action, ChoiceDialog, ChoiceDialogState, Dialog, List as ComponentList, ListRow,
         ListState as ComponentListState, Panel, PanelEmphasis, Progress, ProgressKind, RowRole,
@@ -373,11 +373,8 @@ impl Lookbook {
             .collect::<Vec<_>>();
         let mut state = ComponentListState::new(Some(self.knob_selected));
         state.set_focused(self.focus.is_focused(&FocusId::Controls));
-        frame.render_stateful_widget(
-            &ComponentList::new(&rows, &self.theme),
-            list_area,
-            &mut state,
-        );
+        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        frame.render_stateful_widget(&ComponentList::new(&rows, &tokens), list_area, &mut state);
         self.interactor
             .render_knob_editor(self.knob_selected, frame, editor_area);
     }

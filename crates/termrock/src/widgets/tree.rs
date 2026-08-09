@@ -10,7 +10,7 @@ use crate::{
     input::KeyEvent,
     interaction::HitRegion,
     scroll::max_offset,
-    style::{Role, Theme},
+    style::{DesignTokens, Role},
 };
 
 use super::Selection;
@@ -437,14 +437,14 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 /// A navigable hierarchical list with disclosure and multi-select support.
 pub struct Tree<'a, Id> {
     nodes: &'a [TreeNode<'a, Id>],
-    theme: &'a Theme,
+    tokens: &'a DesignTokens,
 }
 
 impl<'a, Id> Tree<'a, Id> {
     #[must_use]
     /// Creates a tree over borrowed flattened nodes and mutable tree state.
-    pub const fn new(nodes: &'a [TreeNode<'a, Id>], theme: &'a Theme) -> Self {
-        Self { nodes, theme }
+    pub const fn new(nodes: &'a [TreeNode<'a, Id>], tokens: &'a DesignTokens) -> Self {
+        Self { nodes, tokens }
     }
 }
 
@@ -511,28 +511,35 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&node.id));
             let mut style = match node.status {
-                TreeNodeStatus::Ready if node.enabled => self.theme.style(Role::Text),
-                TreeNodeStatus::Ready => self.theme.style(Role::TextDisabled),
-                TreeNodeStatus::Loading => self.theme.style(Role::TextMuted),
-                TreeNodeStatus::Error => self.theme.style(Role::Danger),
+                TreeNodeStatus::Ready if node.enabled => self.tokens.theme.style(Role::Text),
+                TreeNodeStatus::Ready => self.tokens.theme.style(Role::TextDisabled),
+                TreeNodeStatus::Loading => self.tokens.theme.style(Role::TextMuted),
+                TreeNodeStatus::Error => self.tokens.theme.style(Role::Danger),
             };
             if !node.enabled {
                 style = style.add_modifier(Modifier::DIM);
             }
-            if selected && node.enabled && state.focused {
-                style = style
-                    .patch(self.theme.style(Role::Selection))
-                    .add_modifier(Modifier::BOLD);
-            } else if selected && node.enabled {
-                style = style
-                    .patch(self.theme.style(Role::Accent))
-                    .add_modifier(Modifier::UNDERLINED);
+            // Quiet phosphor: selection via DesignTokens recipe (gutter, not full fill).
+            let recipe =
+                self.tokens
+                    .list_row_recipe(selected, state.focused && selected, node.enabled);
+            if selected && node.enabled {
+                style = recipe.label;
+                // Non-color cues: unfocused selection underlines; focused selection bolds.
+                if state.focused {
+                    style = style.add_modifier(Modifier::BOLD);
+                    if recipe.show_focus_underline {
+                        style = style.add_modifier(Modifier::UNDERLINED);
+                    }
+                } else {
+                    style = style.add_modifier(Modifier::UNDERLINED);
+                }
             } else if hovered && node.enabled {
                 style = style
-                    .patch(self.theme.style(Role::Focus))
+                    .patch(self.tokens.theme.style(Role::Focus))
                     .add_modifier(Modifier::UNDERLINED);
             } else if checked && node.enabled {
-                style = style.patch(self.theme.style(Role::Accent));
+                style = style.patch(self.tokens.theme.style(Role::Accent));
             }
 
             let indent = node.depth.saturating_mul(2).min(content_area.width);
@@ -623,7 +630,12 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             let scrollbar = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
             state.scrollbar_region = Some(scrollbar);
             for y in scrollbar.top()..scrollbar.bottom() {
-                buffer.set_string(scrollbar.x, y, "│", self.theme.style(Role::ScrollTrack));
+                buffer.set_string(
+                    scrollbar.x,
+                    y,
+                    "│",
+                    self.tokens.theme.style(Role::ScrollTrack),
+                );
             }
             if let Some(thumb) = crate::scroll::full_cell_thumb(
                 self.nodes.len(),
@@ -636,7 +648,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                         scrollbar.x,
                         scrollbar.y.saturating_add(y),
                         "█",
-                        self.theme.style(Role::ScrollThumb),
+                        self.tokens.theme.style(Role::ScrollThumb),
                     );
                 }
             }

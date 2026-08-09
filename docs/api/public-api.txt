@@ -3543,10 +3543,46 @@ pub unsafe fn termrock::patterns::ResourceBrowserSlots::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::patterns::ResourceBrowserSlots
 pub fn termrock::patterns::ResourceBrowserSlots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::ResourceBrowserSlots
+pub struct termrock::patterns::WorkbenchSurfaces<'a, 'b>
+pub termrock::patterns::WorkbenchSurfaces::approval: core::option::Option<(&'a termrock::widgets::ApprovalCard<'a>, &'a mut termrock::widgets::ApprovalCardState)>
+pub termrock::patterns::WorkbenchSurfaces::prompt: &'a termrock::widgets::PromptBox<'a>
+pub termrock::patterns::WorkbenchSurfaces::prompt_state: &'a mut termrock::widgets::PromptBoxState
+pub termrock::patterns::WorkbenchSurfaces::status_slots: &'a [termrock::widgets::StatusSlot<'a, &'b str>]
+pub termrock::patterns::WorkbenchSurfaces::status_state: &'a mut termrock::widgets::StatusBarState<&'b str>
+pub termrock::patterns::WorkbenchSurfaces::tokens: &'a termrock::DesignTokens
+pub termrock::patterns::WorkbenchSurfaces::transcript: &'a termrock::widgets::Transcript<'a, &'b str>
+pub termrock::patterns::WorkbenchSurfaces::transcript_state: &'a mut termrock::widgets::TranscriptState<&'b str>
+pub termrock::patterns::WorkbenchSurfaces::workspace: &'a termrock::layout::WorkspaceState
+impl<'a, 'b> core::marker::Freeze for termrock::patterns::WorkbenchSurfaces<'a, 'b>
+impl<'a, 'b> core::marker::Send for termrock::patterns::WorkbenchSurfaces<'a, 'b>
+impl<'a, 'b> core::marker::Sync for termrock::patterns::WorkbenchSurfaces<'a, 'b>
+impl<'a, 'b> core::marker::Unpin for termrock::patterns::WorkbenchSurfaces<'a, 'b>
+impl<'a, 'b> core::marker::UnsafeUnpin for termrock::patterns::WorkbenchSurfaces<'a, 'b>
+impl<'a, 'b> core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::WorkbenchSurfaces<'a, 'b>
+impl<'a, 'b> !core::panic::unwind_safe::UnwindSafe for termrock::patterns::WorkbenchSurfaces<'a, 'b>
+impl<T, U> core::convert::Into<U> for termrock::patterns::WorkbenchSurfaces<'a, 'b> where U: core::convert::From<T>
+pub fn termrock::patterns::WorkbenchSurfaces<'a, 'b>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::WorkbenchSurfaces<'a, 'b> where U: core::convert::Into<T>
+pub type termrock::patterns::WorkbenchSurfaces<'a, 'b>::Error = core::convert::Infallible
+pub fn termrock::patterns::WorkbenchSurfaces<'a, 'b>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::WorkbenchSurfaces<'a, 'b> where U: core::convert::TryFrom<T>
+pub type termrock::patterns::WorkbenchSurfaces<'a, 'b>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::WorkbenchSurfaces<'a, 'b>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> core::any::Any for termrock::patterns::WorkbenchSurfaces<'a, 'b> where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchSurfaces<'a, 'b>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::WorkbenchSurfaces<'a, 'b> where T: ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchSurfaces<'a, 'b>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::WorkbenchSurfaces<'a, 'b> where T: ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchSurfaces<'a, 'b>::borrow_mut(&mut self) -> &mut T
+impl<T> core::convert::From<T> for termrock::patterns::WorkbenchSurfaces<'a, 'b>
+pub fn termrock::patterns::WorkbenchSurfaces<'a, 'b>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::WorkbenchSurfaces<'a, 'b>
 pub fn termrock::patterns::agent_workbench_layout(ratatui_core::layout::rect::Rect, &termrock::layout::WorkspaceState) -> alloc::vec::Vec<termrock::layout::PaneGeom>
 pub fn termrock::patterns::layout_agent_shell(ratatui_core::layout::rect::Rect, termrock::patterns::AgentShellLayout) -> termrock::patterns::AgentShellSlots
 pub fn termrock::patterns::layout_ops_dashboard(ratatui_core::layout::rect::Rect, termrock::patterns::OpsDashboardLayout) -> termrock::patterns::OpsDashboardSlots
 pub fn termrock::patterns::layout_resource_browser(ratatui_core::layout::rect::Rect, termrock::patterns::ResourceBrowserLayout) -> termrock::patterns::ResourceBrowserSlots
+pub fn termrock::patterns::register_workbench_scene(&mut termrock::InteractionScene<&'static str, &'static str, ()>, &[termrock::layout::PaneGeom])
+pub fn termrock::patterns::render_agent_workbench(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::WorkbenchSurfaces<'_, '_>)
 pub mod termrock::runtime
 pub struct termrock::runtime::FrameTick
 impl termrock::runtime::FrameTick
@@ -4457,6 +4493,54 @@ pub unsafe fn termrock::Motion::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::Motion
 pub fn termrock::Motion::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::Motion
+#[non_exhaustive] pub enum termrock::style::PreviewSurfaceKind
+pub termrock::style::PreviewSurfaceKind::AsyncPayload
+pub termrock::style::PreviewSurfaceKind::Image
+pub termrock::style::PreviewSurfaceKind::ResourceDetail
+pub termrock::style::PreviewSurfaceKind::Theme
+impl core::clone::Clone for termrock::style::PreviewSurfaceKind
+pub fn termrock::style::PreviewSurfaceKind::clone(&self) -> termrock::style::PreviewSurfaceKind
+impl core::cmp::Eq for termrock::style::PreviewSurfaceKind
+impl core::cmp::PartialEq for termrock::style::PreviewSurfaceKind
+pub fn termrock::style::PreviewSurfaceKind::eq(&self, &termrock::style::PreviewSurfaceKind) -> bool
+impl core::fmt::Debug for termrock::style::PreviewSurfaceKind
+pub fn termrock::style::PreviewSurfaceKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::PreviewSurfaceKind
+pub fn termrock::style::PreviewSurfaceKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::PreviewSurfaceKind
+impl core::marker::StructuralPartialEq for termrock::style::PreviewSurfaceKind
+impl core::marker::Freeze for termrock::style::PreviewSurfaceKind
+impl core::marker::Send for termrock::style::PreviewSurfaceKind
+impl core::marker::Sync for termrock::style::PreviewSurfaceKind
+impl core::marker::Unpin for termrock::style::PreviewSurfaceKind
+impl core::marker::UnsafeUnpin for termrock::style::PreviewSurfaceKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::PreviewSurfaceKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::PreviewSurfaceKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::PreviewSurfaceKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::PreviewSurfaceKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::PreviewSurfaceKind where U: core::convert::From<T>
+pub fn termrock::style::PreviewSurfaceKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::PreviewSurfaceKind where U: core::convert::Into<T>
+pub type termrock::style::PreviewSurfaceKind::Error = core::convert::Infallible
+pub fn termrock::style::PreviewSurfaceKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::PreviewSurfaceKind where U: core::convert::TryFrom<T>
+pub type termrock::style::PreviewSurfaceKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::PreviewSurfaceKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::PreviewSurfaceKind where T: core::clone::Clone
+pub type termrock::style::PreviewSurfaceKind::Owned = T
+pub fn termrock::style::PreviewSurfaceKind::clone_into(&self, &mut T)
+pub fn termrock::style::PreviewSurfaceKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::PreviewSurfaceKind where T: 'static + ?core::marker::Sized
+pub fn termrock::style::PreviewSurfaceKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::PreviewSurfaceKind where T: ?core::marker::Sized
+pub fn termrock::style::PreviewSurfaceKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::PreviewSurfaceKind where T: ?core::marker::Sized
+pub fn termrock::style::PreviewSurfaceKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::PreviewSurfaceKind where T: core::clone::Clone
+pub unsafe fn termrock::style::PreviewSurfaceKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::PreviewSurfaceKind
+pub fn termrock::style::PreviewSurfaceKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::PreviewSurfaceKind
 #[non_exhaustive] pub enum termrock::style::Role
 pub termrock::style::Role::Accent
 pub termrock::style::Role::ActionDisabled
@@ -4636,11 +4720,17 @@ pub fn termrock::AppearanceThemeMap::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::AppearanceThemeMap
 pub struct termrock::style::CapabilityPreviewHost
 pub termrock::style::CapabilityPreviewHost::capability: termrock::ColorCapability
+pub termrock::style::CapabilityPreviewHost::surfaces: alloc::vec::Vec<termrock::style::PreviewSurface>
 pub termrock::style::CapabilityPreviewHost::system: termrock::DesignSystem
 impl termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::begin_frame(&mut self)
 pub const fn termrock::CapabilityPreviewHost::capability(self, termrock::ColorCapability) -> Self
+pub fn termrock::CapabilityPreviewHost::mark_stale(&mut self, termrock::style::PreviewSurfaceKind)
+pub fn termrock::CapabilityPreviewHost::pending_count(&self) -> usize
+pub fn termrock::CapabilityPreviewHost::place_image(&mut self, ratatui_core::layout::rect::Rect, impl core::convert::Into<alloc::string::String>, bool)
 pub fn termrock::CapabilityPreviewHost::projected_theme(&self) -> termrock::style::Theme
 pub fn termrock::CapabilityPreviewHost::projected_tokens(&self) -> termrock::DesignTokens
+pub fn termrock::CapabilityPreviewHost::register_surface(&mut self, termrock::style::PreviewSurface)
 pub fn termrock::CapabilityPreviewHost::truecolor(termrock::DesignSystem) -> Self
 impl core::clone::Clone for termrock::CapabilityPreviewHost
 pub fn termrock::CapabilityPreviewHost::clone(&self) -> termrock::CapabilityPreviewHost
@@ -4836,6 +4926,52 @@ pub unsafe fn termrock::style::ListRowRecipe::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::ListRowRecipe
 pub fn termrock::style::ListRowRecipe::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::ListRowRecipe
+pub struct termrock::style::PreviewSurface
+pub termrock::style::PreviewSurface::area: ratatui_core::layout::rect::Rect
+pub termrock::style::PreviewSurface::kind: termrock::style::PreviewSurfaceKind
+pub termrock::style::PreviewSurface::pending: bool
+pub termrock::style::PreviewSurface::resource_id: core::option::Option<alloc::string::String>
+pub termrock::style::PreviewSurface::stale: bool
+impl core::clone::Clone for termrock::style::PreviewSurface
+pub fn termrock::style::PreviewSurface::clone(&self) -> termrock::style::PreviewSurface
+impl core::cmp::Eq for termrock::style::PreviewSurface
+impl core::cmp::PartialEq for termrock::style::PreviewSurface
+pub fn termrock::style::PreviewSurface::eq(&self, &termrock::style::PreviewSurface) -> bool
+impl core::fmt::Debug for termrock::style::PreviewSurface
+pub fn termrock::style::PreviewSurface::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::style::PreviewSurface
+impl core::marker::Freeze for termrock::style::PreviewSurface
+impl core::marker::Send for termrock::style::PreviewSurface
+impl core::marker::Sync for termrock::style::PreviewSurface
+impl core::marker::Unpin for termrock::style::PreviewSurface
+impl core::marker::UnsafeUnpin for termrock::style::PreviewSurface
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::PreviewSurface
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::PreviewSurface
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::PreviewSurface where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::PreviewSurface::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::PreviewSurface where U: core::convert::From<T>
+pub fn termrock::style::PreviewSurface::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::PreviewSurface where U: core::convert::Into<T>
+pub type termrock::style::PreviewSurface::Error = core::convert::Infallible
+pub fn termrock::style::PreviewSurface::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::PreviewSurface where U: core::convert::TryFrom<T>
+pub type termrock::style::PreviewSurface::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::PreviewSurface::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::PreviewSurface where T: core::clone::Clone
+pub type termrock::style::PreviewSurface::Owned = T
+pub fn termrock::style::PreviewSurface::clone_into(&self, &mut T)
+pub fn termrock::style::PreviewSurface::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::PreviewSurface where T: 'static + ?core::marker::Sized
+pub fn termrock::style::PreviewSurface::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::PreviewSurface where T: ?core::marker::Sized
+pub fn termrock::style::PreviewSurface::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::PreviewSurface where T: ?core::marker::Sized
+pub fn termrock::style::PreviewSurface::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::PreviewSurface where T: core::clone::Clone
+pub unsafe fn termrock::style::PreviewSurface::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::PreviewSurface
+pub fn termrock::style::PreviewSurface::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::PreviewSurface
 pub struct termrock::style::Rgb
 pub termrock::style::Rgb::b: u8
 pub termrock::style::Rgb::g: u8
@@ -7704,7 +7840,7 @@ pub fn termrock::widgets::Column<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Column<'a, Id>
 pub struct termrock::widgets::CommandPalette<'a, Id>
 impl<'a, Id> termrock::widgets::CommandPalette<'a, Id>
-pub const fn termrock::widgets::CommandPalette<'a, Id>::new(&'a str, &'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::CommandPalette<'a, Id>::new(&'a str, &'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::DesignTokens) -> Self
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::CommandPalette<'_, Id>
 pub fn termrock::widgets::CommandPalette<'_, Id>::handle_key(&mut termrock::widgets::CommandPaletteState<Id>, termrock::input::KeyEvent, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::CommandPaletteOutcome<Id>
 pub fn termrock::widgets::CommandPalette<'_, Id>::query(&termrock::widgets::CommandPaletteState<Id>) -> &termrock::widgets::TextInputState
@@ -7883,6 +8019,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::CompletionMenuSiz
 pub struct termrock::widgets::CompletionMenuState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::CompletionMenuState<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::commit(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
+pub fn termrock::widgets::CompletionMenuState<Id>::handle_intent(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>], termrock::UiIntent) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::move_by(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>], isize) -> termrock::widgets::CompletionMenuOutcome<Id>
@@ -9315,8 +9452,8 @@ pub fn termrock::widgets::JumpTarget<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::JumpTarget<Id>
 pub struct termrock::widgets::List<'a, Id>
 impl<'a, Id> termrock::widgets::List<'a, Id>
-pub const fn termrock::widgets::List<'a, Id>::new(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::Theme) -> Self
-pub const fn termrock::widgets::List<'a, Id>::tokens(self, &'a termrock::DesignTokens) -> Self
+pub const fn termrock::widgets::List<'a, Id>::new(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::DesignTokens) -> Self
+pub const fn termrock::widgets::List<'a, Id>::theme(&self) -> &termrock::style::Theme
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::List<'a, Id>
 pub fn termrock::widgets::List<'a, Id>::clone(&self) -> termrock::widgets::List<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::List<'a, Id>
@@ -9791,6 +9928,7 @@ pub struct termrock::widgets::Panel<'a>
 impl<'a> termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::block(&self) -> ratatui_widgets::block::Block<'a>
 pub const fn termrock::widgets::Panel<'a>::emphasis(self, termrock::widgets::PanelEmphasis) -> Self
+pub const fn termrock::widgets::Panel<'a>::from_tokens(&'a termrock::DesignTokens) -> Self
 pub fn termrock::widgets::Panel<'a>::inner(&self, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::widgets::Panel<'a>::new(&'a termrock::style::Theme) -> Self
 pub const fn termrock::widgets::Panel<'a>::style(self, ratatui_core::style::Style) -> Self
@@ -9837,7 +9975,7 @@ pub struct termrock::widgets::Picker<'a, Id>
 impl<'a, Id> termrock::widgets::Picker<'a, Id>
 pub const fn termrock::widgets::Picker<'a, Id>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::Picker<'a, Id>::label(self, &'a str) -> Self
-pub const fn termrock::widgets::Picker<'a, Id>::new(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::Picker<'a, Id>::new(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::DesignTokens) -> Self
 pub const fn termrock::widgets::Picker<'a, Id>::placeholder(self, &'a str) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Picker<'a, Id>
 pub fn termrock::widgets::Picker<'a, Id>::clone(&self) -> termrock::widgets::Picker<'a, Id>
@@ -9883,6 +10021,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::Picker<'a, Id>
 pub struct termrock::widgets::PickerState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::PickerState<Id>
 pub fn termrock::widgets::PickerState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerState<Id>::handle_intent(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::UiIntent) -> termrock::widgets::PickerOutcome<Id>
 pub fn termrock::widgets::PickerState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::PickerOutcome<Id>
 pub fn termrock::widgets::PickerState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 pub fn termrock::widgets::PickerState<Id>::reconcile(&mut self, &[termrock::widgets::ListRow<'_, Id>])
@@ -10810,7 +10949,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TabCell<'a>
 pub struct termrock::widgets::Table<'a, RowId, ColumnId>
 impl<'a, RowId, ColumnId> termrock::widgets::Table<'a, RowId, ColumnId>
 pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::column_gap(self, u16) -> Self
-pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::new(&'a [termrock::widgets::Column<'a, ColumnId>], &'a [termrock::widgets::TableRow<'a, RowId>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::new(&'a [termrock::widgets::Column<'a, ColumnId>], &'a [termrock::widgets::TableRow<'a, RowId>], &'a termrock::DesignTokens) -> Self
 impl<'a, RowId: core::clone::Clone, ColumnId: core::clone::Clone> core::clone::Clone for termrock::widgets::Table<'a, RowId, ColumnId>
 pub fn termrock::widgets::Table<'a, RowId, ColumnId>::clone(&self) -> termrock::widgets::Table<'a, RowId, ColumnId>
 impl<'a, RowId: core::fmt::Debug, ColumnId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Table<'a, RowId, ColumnId>
@@ -10997,6 +11136,7 @@ pub termrock::widgets::TableState::resolved_widths: alloc::vec::Vec<u16>
 pub termrock::widgets::TableState::row_regions: alloc::vec::Vec<termrock::widgets::TableRowRegion<RowId>>
 impl<RowId: core::clone::Clone + core::cmp::Eq, ColumnId: core::clone::Clone + core::cmp::Eq> termrock::widgets::TableState<RowId, ColumnId>
 pub fn termrock::widgets::TableState<RowId, ColumnId>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::TableOutcome<RowId, ColumnId>
+pub fn termrock::widgets::TableState<RowId, ColumnId>::handle_intent(&mut self, &[termrock::widgets::TableRow<'_, RowId>], termrock::UiIntent) -> termrock::widgets::TableOutcome<RowId, ColumnId>
 pub fn termrock::widgets::TableState<RowId, ColumnId>::handle_key(&mut self, &[termrock::widgets::TableRow<'_, RowId>], termrock::input::KeyEvent) -> termrock::widgets::TableOutcome<RowId, ColumnId>
 pub fn termrock::widgets::TableState<RowId, ColumnId>::handle_mouse(&mut self, termrock::input::MouseEvent, usize) -> termrock::widgets::TableOutcome<RowId, ColumnId>
 pub fn termrock::widgets::TableState<RowId, ColumnId>::hover(&mut self, ratatui_core::layout::position::Position) -> bool
@@ -12057,7 +12197,7 @@ pub fn termrock::widgets::TranscriptState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TranscriptState<Id>
 pub struct termrock::widgets::Tree<'a, Id>
 impl<'a, Id> termrock::widgets::Tree<'a, Id>
-pub const fn termrock::widgets::Tree<'a, Id>::new(&'a [termrock::widgets::TreeNode<'a, Id>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::Tree<'a, Id>::new(&'a [termrock::widgets::TreeNode<'a, Id>], &'a termrock::DesignTokens) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tree<'a, Id>
 pub fn termrock::widgets::Tree<'a, Id>::clone(&self) -> termrock::widgets::Tree<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Tree<'a, Id>
@@ -12312,6 +12452,7 @@ pub fn termrock::widgets::VirtualGridState<RowId, ColId>::new() -> Self
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_column_widths(&mut self, alloc::vec::Vec<u16>)
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_focused(&mut self, bool)
 impl<RowId: core::clone::Clone + core::cmp::Eq, ColId: core::clone::Clone + core::cmp::Eq> termrock::widgets::VirtualGridState<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_intent(&mut self, termrock::UiIntent, bool, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
 impl<RowId, ColId> core::default::Default for termrock::widgets::VirtualGridState<RowId, ColId>
@@ -13132,11 +13273,17 @@ pub fn termrock::AppearanceThemeMap::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::AppearanceThemeMap
 pub struct termrock::CapabilityPreviewHost
 pub termrock::CapabilityPreviewHost::capability: termrock::ColorCapability
+pub termrock::CapabilityPreviewHost::surfaces: alloc::vec::Vec<termrock::style::PreviewSurface>
 pub termrock::CapabilityPreviewHost::system: termrock::DesignSystem
 impl termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::begin_frame(&mut self)
 pub const fn termrock::CapabilityPreviewHost::capability(self, termrock::ColorCapability) -> Self
+pub fn termrock::CapabilityPreviewHost::mark_stale(&mut self, termrock::style::PreviewSurfaceKind)
+pub fn termrock::CapabilityPreviewHost::pending_count(&self) -> usize
+pub fn termrock::CapabilityPreviewHost::place_image(&mut self, ratatui_core::layout::rect::Rect, impl core::convert::Into<alloc::string::String>, bool)
 pub fn termrock::CapabilityPreviewHost::projected_theme(&self) -> termrock::style::Theme
 pub fn termrock::CapabilityPreviewHost::projected_tokens(&self) -> termrock::DesignTokens
+pub fn termrock::CapabilityPreviewHost::register_surface(&mut self, termrock::style::PreviewSurface)
 pub fn termrock::CapabilityPreviewHost::truecolor(termrock::DesignSystem) -> Self
 impl core::clone::Clone for termrock::CapabilityPreviewHost
 pub fn termrock::CapabilityPreviewHost::clone(&self) -> termrock::CapabilityPreviewHost

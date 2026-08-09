@@ -7,7 +7,7 @@ use ratatui_core::{
 };
 
 use super::*;
-use crate::style::{Role, Theme};
+use crate::style::{DesignTokens, Role, Theme};
 
 #[cfg(feature = "serde")]
 #[test]
@@ -97,6 +97,7 @@ fn assert_panel_border(buffer: &Buffer, area: Rect, expected: Style) {
 
 #[test]
 fn stable_ids_survive_reordering() {
+    let _tokens = DesignTokens::default();
     let first = [
         ListRow {
             id: "a",
@@ -117,9 +118,19 @@ fn stable_ids_survive_reordering() {
     let mut state = ListState::new(Some("b"));
     let area = Rect::new(0, 0, 20, 2);
     let mut buffer = Buffer::empty(area);
-    let theme = Theme::default();
-    StatefulWidget::render(&List::new(&first, &theme), area, &mut buffer, &mut state);
-    StatefulWidget::render(&List::new(&second, &theme), area, &mut buffer, &mut state);
+    let _theme = Theme::default();
+    StatefulWidget::render(
+        &List::new(&first, &DesignTokens::default()),
+        area,
+        &mut buffer,
+        &mut state,
+    );
+    StatefulWidget::render(
+        &List::new(&second, &DesignTokens::default()),
+        area,
+        &mut buffer,
+        &mut state,
+    );
     assert_eq!(state.selected(), Some(&"b"));
     assert_eq!(
         state
@@ -135,6 +146,7 @@ fn stable_ids_survive_reordering() {
 
 #[test]
 fn disabled_and_separator_rows_have_no_hit_regions() {
+    let _tokens = DesignTokens::default();
     let rows = [
         ListRow {
             id: 1,
@@ -161,8 +173,13 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
     let mut state = ListState::default();
     let area = Rect::new(4, 3, 20, 3);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 10));
-    let theme = Theme::default();
-    StatefulWidget::render(&List::new(&rows, &theme), area, &mut buffer, &mut state);
+    let _theme = Theme::default();
+    StatefulWidget::render(
+        &List::new(&rows, &DesignTokens::default()),
+        area,
+        &mut buffer,
+        &mut state,
+    );
     assert_eq!(state.regions().len(), 1);
     assert_eq!(state.regions()[0].id, 3);
     assert_eq!(state.regions()[0].area, Rect::new(4, 5, 20, 1));

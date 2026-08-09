@@ -53,16 +53,18 @@ impl<'a, Id> ComposedRow<'a, Id> {
             badge: self.badge.clone(),
             shortcut: self.shortcut,
         };
-        if width < 40 {
+        // Drop order: shortcut → badge → secondary → leading → primary (last).
+        // Thresholds keep trailing badges visible on typical list min widths.
+        if width < 28 {
             parts.shortcut = None;
         }
-        if width < 32 {
+        if width < 14 {
             parts.badge = None;
         }
-        if width < 24 {
+        if width < 18 {
             parts.secondary = None;
         }
-        if width < 12 {
+        if width < 10 {
             parts.leading = None;
         }
         parts
@@ -100,10 +102,12 @@ mod tests {
             enabled: true,
             loading: false,
         };
-        let parts = row.parts_for_width(20);
-        assert!(parts.shortcut.is_none());
-        assert!(parts.badge.is_none());
-        assert!(parts.secondary.is_none());
-        assert_eq!(parts.primary, Line::from("Primary"));
+        assert!(row.parts_for_width(26).shortcut.is_none());
+        let mid = row.parts_for_width(16);
+        assert!(mid.secondary.is_none());
+        assert!(mid.badge.is_some());
+        assert_eq!(mid.primary, Line::from("Primary"));
+        assert!(row.parts_for_width(12).badge.is_none());
+        assert!(row.parts_for_width(8).leading.is_none());
     }
 }

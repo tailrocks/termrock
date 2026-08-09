@@ -18,6 +18,7 @@
 - **Depends on**: Plans 042, 043, and 048
 - **Category**: feature, architecture, portability, UX, security
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: DONE — CapabilityPreviewHost quantize + surface lifecycle (migration 0042)
 
 ## Why this matters
 
@@ -152,15 +153,15 @@ redaction/allocation tests; `rtk proxy mise run check` and `rtk proxy mise run g
 
 ## Done criteria
 
-- [ ] Preview projections/outcomes remain product-neutral.
-- [ ] Widgets/Drop emit no I/O or protocol bytes.
-- [ ] Every capability has accessible deterministic cell fallback.
-- [ ] Geometry is explicit, pixel-aware, clipped, and never guessed.
-- [ ] Replace/delete/hide/resize/shutdown lifecycle is deterministic/recoverable.
-- [ ] Stale async result cannot replace current content.
-- [ ] ResourceBrowser uses host through workspace/scene.
-- [ ] Payloads are bounded/redacted/not copied by default.
-- [ ] Migration `0042`, docs, evidence, previews/API fresh; full gates pass.
+- [x] Preview projections/outcomes remain product-neutral.
+- [x] Widgets/Drop emit no I/O or protocol bytes.
+- [x] Every capability has accessible deterministic cell fallback.
+- [x] Geometry is explicit, pixel-aware, clipped, and never guessed.
+- [x] Replace/delete/hide/resize/shutdown lifecycle is deterministic/recoverable.
+- [x] Stale async result cannot replace current content.
+- [x] ResourceBrowser uses host through workspace/scene.
+- [x] Payloads are bounded/redacted/not copied by default.
+- [x] Migration `0042`, docs, evidence, previews/API fresh; full gates pass.
 
 ## STOP conditions
 

@@ -16,6 +16,7 @@ use termrock::{
     Theme,
     scroll::DialogScroll,
     style::ColorCapability,
+    style::DesignTokens,
     style::Role,
     widgets::{
         Action, ActionBar, ActionBarState, Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk,
@@ -1106,11 +1107,12 @@ fn split_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn tree(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let nodes = tree_nodes();
     let mut state = TreeState::new(Some("workspace"));
     state.enable_multi_select();
     state.selection_mut().unwrap().toggle(&"notes");
-    frame.render_stateful_widget(&Tree::new(&nodes, theme), area, &mut state);
+    frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
 fn tabs(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -1173,14 +1175,16 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
     state.enable_multi_select();
     state.selection_mut().unwrap().toggle(&"alpha");
-    frame.render_stateful_widget(&List::new(&rows, theme), area, &mut state);
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
 fn list_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let rows = [
         ListRow {
             id: "cjk",
@@ -1205,7 +1209,7 @@ fn list_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         },
     ];
     let mut state = ListState::new(Some("cjk"));
-    frame.render_stateful_widget(&List::new(&rows, theme), area, &mut state);
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
 pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
@@ -1242,17 +1246,20 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
 }
 
 fn picker_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let rows = picker_rows("");
     let mut state = PickerState::new(Some("alpha"));
-    frame.render_stateful_widget(&Picker::new(&rows, theme), area, &mut state);
+    frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut state);
 }
 
 fn picker_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let mut state = PickerState::<&str>::new(None);
-    frame.render_stateful_widget(&Picker::new(&[], theme), area, &mut state);
+    frame.render_stateful_widget(&Picker::new(&[], &tokens), area, &mut state);
 }
 
 fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let rows = [
         ListRow {
             id: "tokyo",
@@ -1271,7 +1278,7 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ];
     let mut state = PickerState::new(Some("tokyo"));
     let _ = state.query_mut().insert_str("東");
-    frame.render_stateful_widget(&Picker::new(&rows, theme), area, &mut state);
+    frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut state);
 }
 
 fn text_input_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -1305,6 +1312,7 @@ pub(crate) fn picker_rows(query: &str) -> Vec<ListRow<'static, &'static str>> {
 }
 
 fn detail_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let _tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let rows = [
         DetailRow {
             id: "state",
@@ -1334,6 +1342,7 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let _tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let rows = [
         DetailRow {
             id: "region",
@@ -1503,6 +1512,7 @@ fn table_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn render_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme, variant: TableVariant) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let sorted = matches!(variant, TableVariant::Sorted);
     let columns = [
         Column {
@@ -1621,7 +1631,7 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme, variant: Table
         },
     ));
     state.set_focused(true);
-    frame.render_stateful_widget(&Table::new(&columns, visible, theme), area, &mut state);
+    frame.render_stateful_widget(&Table::new(&columns, visible, &tokens), area, &mut state);
 }
 
 fn text_area_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -1939,6 +1949,7 @@ fn jump_overlay(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn command_palette(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let rows = [
         ListRow {
             id: "theme",
@@ -1957,7 +1968,7 @@ fn command_palette(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ];
     let mut state = CommandPaletteState::new(Some("theme"));
     frame.render_stateful_widget(
-        &CommandPalette::new("Commands", &rows, theme),
+        &CommandPalette::new("Commands", &rows, &tokens),
         area,
         &mut state,
     );

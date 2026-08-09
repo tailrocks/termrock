@@ -86,13 +86,14 @@ let outcome = state.select_next(&rows);`,
     primaryStory: 'table/basic',
     usage: `use std::num::NonZeroU16;
 use ratatui_core::text::Line;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState}};
 
 let theme = Theme::default();
 let columns = [Column { id: "name", title: Line::from("Name"), width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()), alignment: CellAlignment::Left, sortable: true, sort: None }];
 let cells = [Line::from("termrock")];
 let rows = [TableRow { id: "termrock", cells: &cells, enabled: true, emphasis: false, style: None }];
-let table = Table::new(&columns, &rows, &theme);
+let tokens = DesignTokens::default();
+let table = Table::new(&columns, &rows, &tokens);
 let mut state = TableState::<&str, &str>::new(Some("termrock"));
 state.set_focused(true);
 let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
@@ -150,11 +151,12 @@ bar.render(area, &mut Buffer::empty(area));`,
     description: 'A selectable, scrollable list over borrowed rows and stable identities.',
     primaryStory: 'list/selection',
     usage: `use ratatui_core::text::Line;
-use termrock::{Theme, widgets::{List, ListRow, ListState, RowRole}};
+use termrock::{style::DesignTokens, Theme, widgets::{List, ListRow, ListState, RowRole}};
 
 let theme = Theme::default();
 let rows = [ListRow { id: "alpha", label: Line::from("Alpha"), trailing: None, role: RowRole::Item, enabled: true }];
-let list = List::new(&rows, &theme);
+let tokens = DesignTokens::default();
+let list = List::new(&rows, &tokens);
 let mut state = ListState::new(Some("alpha"));
 let outcome = state.select_next(&rows);`,
   },
@@ -212,7 +214,7 @@ let inner = panel.inner(Rect::new(0, 0, 80, 24));`,
     description: 'A filterable stable-ID list composition with caller-owned matching and ordering.',
     primaryStory: 'picker/basic',
     usage: `use ratatui_core::text::Line;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
 
 let theme = Theme::default();
 let candidates = [("open", "Open file"), ("logs", "Show logs")];
@@ -226,7 +228,8 @@ if matches!(state.handle_key(&rows, KeyEvent::new(KeyCode::Char('l'), KeyModifie
     rows = project(state.query_text());
     state.reconcile(&rows);
 }
-let picker = Picker::new(&rows, &theme);`,
+let tokens = DesignTokens::default();
+let picker = Picker::new(&rows, &tokens);`,
   },
   Progress: {
     description: 'A deterministic determinate bar or caller-ticked indeterminate indicator.',
@@ -321,11 +324,12 @@ let rect = toast.rect(Rect::new(0, 0, 80, 24));`,
     description: 'A navigable flattened hierarchy with disclosure and multi-select support.',
     primaryStory: 'tree/navigation',
     usage: `use ratatui_core::text::Line;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeNodeStatus, TreeState}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeNodeStatus, TreeState}};
 
 let theme = Theme::default();
 let nodes = [TreeNode { id: "src", label: Line::from("src"), trailing: None, depth: 0, branch: true, expanded: true, enabled: true, status: TreeNodeStatus::Ready }];
-let tree = Tree::new(&nodes, &theme);
+let tokens = DesignTokens::default();
+let tree = Tree::new(&nodes, &tokens);
 let mut state = TreeState::new(Some("src"));
 let outcome = state.handle_key(&nodes, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
   },
@@ -402,11 +406,12 @@ let block = CodeBlock::new(&lines, &theme).language("rust").line_numbers(true);`
     description: 'Filterable command list chrome over the picker contract.',
     primaryStory: 'command-palette/basic',
     usage: `use ratatui_core::text::Line;
-use termrock::{Theme, widgets::{CommandPalette, CommandPaletteState, ListRow, RowRole}};
+use termrock::{style::DesignTokens, Theme, widgets::{CommandPalette, CommandPaletteState, ListRow, RowRole}};
 
 let theme = Theme::default();
 let rows = [ListRow { id: "quit", label: Line::from("Quit"), trailing: None, enabled: true, role: RowRole::Item }];
-let palette = CommandPalette::new("Commands", &rows, &theme);
+let tokens = DesignTokens::default();
+let palette = CommandPalette::new("Commands", &rows, &tokens);
 let state = CommandPaletteState::new(Some("quit"));`,
   },
   EmptyState: {

@@ -9,16 +9,15 @@ use std::{
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
-use termrock::{
-    Theme,
-    widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState},
-};
+use termrock::style::DesignTokens;
+use termrock::widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState};
 
 #[global_allocator]
 static GLOBAL: &StatsAlloc<System> = &INSTRUMENTED_SYSTEM;
 
 #[test]
 fn warmed_large_table_paints_only_the_viewport_without_allocating() {
+    let tokens = DesignTokens::default();
     const ROW_COUNT: usize = 10_000;
     const HEIGHT: u16 = 40;
     const SAMPLES: usize = 100;
@@ -68,8 +67,7 @@ fn warmed_large_table_paints_only_the_viewport_without_allocating() {
             style: None,
         })
         .collect::<Vec<_>>();
-    let theme = Theme::default();
-    let table = Table::new(&columns, &rows, &theme);
+    let table = Table::new(&columns, &rows, &tokens);
     let area = Rect::new(0, 0, 100, HEIGHT);
     let mut buffer = Buffer::empty(area);
     let mut state = TableState::new(Some(ROW_COUNT - 1));

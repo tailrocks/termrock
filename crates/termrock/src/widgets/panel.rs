@@ -1,7 +1,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Span, widgets::Widget};
 use ratatui_widgets::block::Block;
 
-use crate::style::{Role, Theme};
+use crate::style::{DesignTokens, Role, Theme};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -34,6 +34,12 @@ impl<'a> Panel<'a> {
             style: None,
             theme,
         }
+    }
+
+    /// Creates a panel driven by design tokens (canonical design input).
+    #[must_use]
+    pub const fn from_tokens(tokens: &'a DesignTokens) -> Self {
+        Self::new(&tokens.theme)
     }
 
     #[must_use]

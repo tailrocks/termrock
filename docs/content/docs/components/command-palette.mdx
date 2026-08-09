@@ -11,11 +11,12 @@ description: Filterable command list chrome over the picker contract.
 
 ```rust
 use ratatui_core::text::Line;
-use termrock::{Theme, widgets::{CommandPalette, CommandPaletteState, ListRow, RowRole}};
+use termrock::{style::DesignTokens, Theme, widgets::{CommandPalette, CommandPaletteState, ListRow, RowRole}};
 
 let theme = Theme::default();
 let rows = [ListRow { id: "quit", label: Line::from("Quit"), trailing: None, enabled: true, role: RowRole::Item }];
-let palette = CommandPalette::new("Commands", &rows, &theme);
+let tokens = DesignTokens::default();
+let palette = CommandPalette::new("Commands", &rows, &tokens);
 let state = CommandPaletteState::new(Some("quit"));
 ```
 

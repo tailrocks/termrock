@@ -9,6 +9,7 @@ use termrock::{
     Theme,
     input::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::Outcome,
+    style::{Density, DesignTokens},
     widgets::{
         Anchor, ChoiceDialogState, Form, FormOutcome, FormSection, FormState, List, ListState,
         LogPane, LogPaneState, Picker, PickerOutcome, PickerState, Severity, SplitDirection,
@@ -201,7 +202,8 @@ impl ListInteractor {
 impl StoryInteraction for ListInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let rows = list_rows();
-        frame.render_stateful_widget(&List::new(&rows, &self.theme), area, &mut self.state);
+        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -253,7 +255,8 @@ impl PickerInteractor {
 impl StoryInteraction for PickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let rows = picker_rows(self.state.query_text());
-        frame.render_stateful_widget(&Picker::new(&rows, &self.theme), area, &mut self.state);
+        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -387,7 +390,8 @@ impl TreeInteractor {
 
 impl StoryInteraction for TreeInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        frame.render_stateful_widget(&Tree::new(&self.nodes, &self.theme), area, &mut self.state);
+        let tokens = DesignTokens::new(self.theme.clone(), termrock::Density::default());
+        frame.render_stateful_widget(&Tree::new(&self.nodes, &tokens), area, &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {

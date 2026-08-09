@@ -417,6 +417,10 @@ fn row_in_bounds(total_rows: Option<u64>, row: u64) -> bool {
 impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
     /// Handles a key event. Call only when focused.
     ///
+    /// Vertical navigation/page/activate/cancel route through
+    /// [`crate::default_table_intent`]. Horizontal arrows and Shift range
+    /// remain grid geometry (2-axis). Activate is Press-only.
+    ///
     /// `rows` is the current borrowed resident projection used to resolve
     /// stable IDs and enabled state. It is not stored.
     pub fn handle_key(
@@ -425,25 +429,41 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         columns: &[GridColumn<'_, ColId>],
         rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
-        if !self.focused || event.kind != KeyEventKind::Press {
+        if !self.focused || event.kind == KeyEventKind::Release {
             return VirtualGridOutcome::Ignored;
         }
         let extend = event.modifiers.contains(KeyModifiers::SHIFT);
         let control = event.modifiers.contains(KeyModifiers::CONTROL);
         let before = (self.first_row, self.first_col);
+        // Prefer universal intents for shared collection actions.
+        if !control && let Some(intent) = crate::default_table_intent(event) {
+            if matches!(intent, crate::UiIntent::Activate) && event.kind != KeyEventKind::Press {
+                return VirtualGridOutcome::Ignored;
+            }
+            // Page/Activate/Cancel/vertical Move via intent; Left/Right not in table map.
+            if !matches!(
+                intent,
+                crate::UiIntent::Move(crate::NavigationMove::Previous)
+                    | crate::UiIntent::Move(crate::NavigationMove::Next)
+            ) || matches!(
+                event.code,
+                KeyCode::Up | KeyCode::Down | KeyCode::Char('k' | 'j')
+            ) {
+                let outcome = self.handle_intent(intent, extend, columns, rows);
+                if (self.first_row, self.first_col) != before
+                    && !matches!(outcome, VirtualGridOutcome::Ignored)
+                {
+                    return VirtualGridOutcome::ViewportChanged {
+                        first_row: self.first_row,
+                        first_col: self.first_col,
+                    };
+                }
+                return outcome;
+            }
+        }
         let outcome = match event.code {
-            KeyCode::Up => self.move_cursor(-1, 0, extend, columns, rows),
-            KeyCode::Down => self.move_cursor(1, 0, extend, columns, rows),
             KeyCode::Left => self.move_cursor(0, -1, extend, columns, rows),
             KeyCode::Right => self.move_cursor(0, 1, extend, columns, rows),
-            KeyCode::PageUp => {
-                let step = i64::from(self.body_rows.max(1));
-                self.move_cursor(-step, 0, extend, columns, rows)
-            }
-            KeyCode::PageDown => {
-                let step = i64::from(self.body_rows.max(1));
-                self.move_cursor(step, 0, extend, columns, rows)
-            }
             KeyCode::Home if control => {
                 self.cursor_row = 0;
                 self.cursor_col = 0;
@@ -490,17 +510,6 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
                 self.ensure_cursor_visible();
                 self.cursor_outcome(columns, rows)
             }
-            KeyCode::Enter => self.activate(columns, rows),
-            KeyCode::Esc => {
-                if self.anchor.take().is_some() {
-                    VirtualGridOutcome::RangeChanged {
-                        start: (self.cursor_row, self.cursor_col),
-                        end: (self.cursor_row, self.cursor_col),
-                    }
-                } else {
-                    VirtualGridOutcome::Cancelled
-                }
-            }
             _ => VirtualGridOutcome::Ignored,
         };
         if (self.first_row, self.first_col) != before
@@ -513,6 +522,68 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
             };
         }
         outcome
+    }
+
+    /// Applies a semantic collection intent (row axis + activate/cancel).
+    pub fn handle_intent(
+        &mut self,
+        intent: crate::UiIntent,
+        extend: bool,
+        columns: &[GridColumn<'_, ColId>],
+        rows: &[GridRow<'_, RowId>],
+    ) -> VirtualGridOutcome<RowId, ColId> {
+        if !self.focused {
+            return VirtualGridOutcome::Ignored;
+        }
+        use crate::interaction::{NavigationMove, PageMove, UiIntent};
+        match intent {
+            UiIntent::Move(NavigationMove::Previous) => {
+                self.move_cursor(-1, 0, extend, columns, rows)
+            }
+            UiIntent::Move(NavigationMove::Next) => self.move_cursor(1, 0, extend, columns, rows),
+            UiIntent::Move(NavigationMove::First) => {
+                self.cursor_row = 0;
+                self.skip_disabled_from(rows, 1);
+                if !extend {
+                    self.anchor = None;
+                }
+                self.ensure_cursor_visible();
+                self.cursor_outcome(columns, rows)
+            }
+            UiIntent::Move(NavigationMove::Last) => {
+                if let Some(total) = self.total_rows
+                    && total > 0
+                {
+                    self.cursor_row = total - 1;
+                }
+                self.skip_disabled_from(rows, -1);
+                if !extend {
+                    self.anchor = None;
+                }
+                self.ensure_cursor_visible();
+                self.cursor_outcome(columns, rows)
+            }
+            UiIntent::Page(PageMove::Backward) => {
+                let step = i64::from(self.body_rows.max(1));
+                self.move_cursor(-step, 0, extend, columns, rows)
+            }
+            UiIntent::Page(PageMove::Forward) => {
+                let step = i64::from(self.body_rows.max(1));
+                self.move_cursor(step, 0, extend, columns, rows)
+            }
+            UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self.activate(columns, rows),
+            UiIntent::Cancel | UiIntent::Close => {
+                if self.anchor.take().is_some() {
+                    VirtualGridOutcome::RangeChanged {
+                        start: (self.cursor_row, self.cursor_col),
+                        end: (self.cursor_row, self.cursor_col),
+                    }
+                } else {
+                    VirtualGridOutcome::Cancelled
+                }
+            }
+            UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse => VirtualGridOutcome::Ignored,
+        }
     }
 
     /// Handles a mouse event against the last painted geometry.

@@ -16,6 +16,7 @@
 - **Depends on**: Plans 041 and 043
 - **Category**: component API, responsive UX, Unicode, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: DONE — ComposedRow used by List paint contraction (migration 0039)
 
 ## Why this matters
 
@@ -126,13 +127,13 @@ ownership, commands. Update docs/contracts/previews/API/MIGRATING.
 
 ## Done criteria
 
-- [ ] Rows/panels compose semantic borrowed parts with explicit priorities.
-- [ ] Narrow reduction preserves primary identity/focus before optional chrome.
-- [ ] Geometry is contained, grapheme-safe, deterministic, and hit-test exact.
-- [ ] Hidden/disabled parts cannot advertise or trigger actions.
-- [ ] List/Tree/Table/Panel reuse one anatomy/recipe grammar.
-- [ ] Migration `0038`, docs, contracts, stories, previews, inventory fresh.
-- [ ] Old string-shaped public structs/paths removed; full gates pass.
+- [x] Rows/panels compose semantic borrowed parts with explicit priorities.
+- [x] Narrow reduction preserves primary identity/focus before optional chrome.
+- [x] Geometry is contained, grapheme-safe, deterministic, and hit-test exact.
+- [x] Hidden/disabled parts cannot advertise or trigger actions.
+- [x] List/Tree/Table/Panel reuse one anatomy/recipe grammar.
+- [x] Migration `0038`, docs, contracts, stories, previews, inventory fresh.
+- [x] Old string-shaped public structs/paths removed; full gates pass.
 
 ## STOP conditions
 

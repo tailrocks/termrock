@@ -7,7 +7,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::Outcome,
-    style::{Role, Theme},
+    style::{DesignTokens, Role},
     text::take_display_cols,
 };
 
@@ -140,7 +140,8 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
             .select(Some(self.previous_visible[fallback].clone()));
     }
 
-    /// Routes text editing to the query and navigation/activation to the list.
+    /// Routes navigation/activation through list intents; printable keys edit
+    /// the query. Esc clears query first, then cancels.
     pub fn handle_key(&mut self, visible: &[ListRow<'_, Id>], key: KeyEvent) -> PickerOutcome<Id> {
         if key.kind == KeyEventKind::Release {
             return PickerOutcome::Ignored;
@@ -148,31 +149,52 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         if !key.modifiers.is_empty() && !matches!(key.code, KeyCode::Char(_)) {
             return PickerOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Up | KeyCode::Down | KeyCode::PageUp | KeyCode::PageDown
-                if key.modifiers.is_empty() =>
-            {
-                match self.list.handle_key(visible, key) {
-                    Outcome::Changed => PickerOutcome::SelectionChanged,
+        // Collection intents target the results list when unshifted navigation.
+        if key.modifiers.is_empty()
+            && let Some(intent) = crate::default_list_intent(key)
+        {
+            return self.handle_intent(visible, intent);
+        }
+        match self.query.handle_key(key) {
+            TextInputOutcome::Changed => PickerOutcome::QueryChanged,
+            TextInputOutcome::Cancelled => PickerOutcome::Cancelled,
+            TextInputOutcome::Submitted(_) | TextInputOutcome::Ignored => PickerOutcome::Ignored,
+        }
+    }
+
+    /// Applies a semantic intent to the results list (query is separate).
+    pub fn handle_intent(
+        &mut self,
+        visible: &[ListRow<'_, Id>],
+        intent: crate::UiIntent,
+    ) -> PickerOutcome<Id> {
+        use crate::UiIntent;
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => {
+                if !self.query.value().is_empty() {
+                    self.query.clear();
+                    PickerOutcome::QueryChanged
+                } else {
+                    PickerOutcome::Cancelled
+                }
+            }
+            UiIntent::Activate | UiIntent::Open | UiIntent::Submit => {
+                if intent == UiIntent::Activate {
+                    // Press-only already enforced by caller for raw keys; intents assume press.
+                }
+                match self.list.handle_intent(visible, UiIntent::Activate) {
+                    Outcome::Activated(id) => PickerOutcome::Activated(id),
                     _ => PickerOutcome::Ignored,
                 }
             }
-            KeyCode::Enter if key.modifiers.is_empty() => match self.list.activate(visible) {
-                Outcome::Activated(id) => PickerOutcome::Activated(id),
-                _ => PickerOutcome::Ignored,
-            },
-            KeyCode::Esc if key.modifiers.is_empty() && !self.query.value().is_empty() => {
-                self.query.clear();
-                PickerOutcome::QueryChanged
-            }
-            KeyCode::Esc if key.modifiers.is_empty() => PickerOutcome::Cancelled,
-            _ => match self.query.handle_key(key) {
-                TextInputOutcome::Changed => PickerOutcome::QueryChanged,
-                TextInputOutcome::Cancelled => PickerOutcome::Cancelled,
-                TextInputOutcome::Submitted(_) | TextInputOutcome::Ignored => {
-                    PickerOutcome::Ignored
+            UiIntent::Move(_) | UiIntent::Page(_) | UiIntent::Toggle => {
+                match self.list.handle_intent(visible, intent) {
+                    Outcome::Changed | Outcome::CheckToggled(_) => PickerOutcome::SelectionChanged,
+                    Outcome::Activated(id) => PickerOutcome::Activated(id),
+                    _ => PickerOutcome::Ignored,
                 }
-            },
+            }
+            UiIntent::Expand | UiIntent::Collapse => PickerOutcome::Ignored,
         }
     }
 
@@ -202,7 +224,7 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
 /// product-neutral empty cue. Picker owns no overlay, matching, or async policy.
 pub struct Picker<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
-    theme: &'a Theme,
+    tokens: &'a DesignTokens,
     label: &'a str,
     placeholder: &'a str,
     empty_message: &'a str,
@@ -211,10 +233,10 @@ pub struct Picker<'a, Id> {
 impl<'a, Id> Picker<'a, Id> {
     /// Creates a picker with `Filter`, `Type to filter`, and `No matches` defaults.
     #[must_use]
-    pub const fn new(rows: &'a [ListRow<'a, Id>], theme: &'a Theme) -> Self {
+    pub const fn new(rows: &'a [ListRow<'a, Id>], tokens: &'a DesignTokens) -> Self {
         Self {
             rows,
-            theme,
+            tokens,
             label: "Filter",
             placeholder: "Type to filter",
             empty_message: "No matches",
@@ -250,7 +272,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         state.reconcile(self.rows);
         if area.is_empty() {
             StatefulWidget::render(
-                &List::new(self.rows, self.theme),
+                &List::new(self.rows, self.tokens),
                 area,
                 buffer,
                 &mut state.list,
@@ -259,7 +281,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         }
         let query_area = Rect::new(area.x, area.y, area.width, 1);
         StatefulWidget::render(
-            &TextInput::new(self.label, self.theme).placeholder(self.placeholder),
+            &TextInput::new(self.label, &self.tokens.theme).placeholder(self.placeholder),
             query_area,
             buffer,
             &mut state.query,
@@ -272,7 +294,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         );
         if list_area.is_empty() {
             StatefulWidget::render(
-                &List::new(self.rows, self.theme),
+                &List::new(self.rows, self.tokens),
                 list_area,
                 buffer,
                 &mut state.list,
@@ -281,7 +303,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         }
         if self.rows.is_empty() {
             StatefulWidget::render(
-                &List::new(self.rows, self.theme),
+                &List::new(self.rows, self.tokens),
                 list_area,
                 buffer,
                 &mut state.list,
@@ -291,11 +313,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 list_area.y,
                 take_display_cols(self.empty_message, usize::from(list_area.width)),
                 usize::from(list_area.width),
-                self.theme.style(Role::TextMuted),
+                self.tokens.theme.style(Role::TextMuted),
             );
         } else {
             StatefulWidget::render(
-                &List::new(self.rows, self.theme),
+                &List::new(self.rows, self.tokens),
                 list_area,
                 buffer,
                 &mut state.list,
@@ -427,28 +449,29 @@ mod tests {
 
     #[test]
     fn empty_and_tiny_rendering_are_safe_and_clear_pointer_geometry() {
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
+        let _theme = tokens.theme.clone();
         let visible = rows(&["alpha"]);
         let mut state = PickerState::new(Some("alpha"));
         let mut buffer = Buffer::empty(Rect::new(0, 0, 8, 2));
-        (&Picker::new(&visible, &theme)).render(Rect::new(0, 0, 8, 2), &mut buffer, &mut state);
+        (&Picker::new(&visible, &tokens)).render(Rect::new(0, 0, 8, 2), &mut buffer, &mut state);
         assert_eq!(
             state.click(Position::new(2, 1)),
             PickerOutcome::Activated("alpha")
         );
-        (&Picker::new(&[], &theme)).render(Rect::new(0, 0, 8, 2), &mut buffer, &mut state);
+        (&Picker::new(&[], &tokens)).render(Rect::new(0, 0, 8, 2), &mut buffer, &mut state);
         assert_eq!(buffer[(0, 1)].symbol(), "N");
-        (&Picker::new(&[], &theme)).render(Rect::new(0, 0, 0, 0), &mut buffer, &mut state);
+        (&Picker::new(&[], &tokens)).render(Rect::new(0, 0, 0, 0), &mut buffer, &mut state);
         assert_eq!(state.click(Position::new(2, 1)), PickerOutcome::Ignored);
     }
 
     #[test]
     fn mouse_activation_delegates_to_painted_list_geometry() {
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
         let visible = rows(&["alpha"]);
         let mut state = PickerState::new(Some("alpha"));
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 3));
-        (&Picker::new(&visible, &theme)).render(Rect::new(0, 0, 20, 3), &mut buffer, &mut state);
+        (&Picker::new(&visible, &tokens)).render(Rect::new(0, 0, 20, 3), &mut buffer, &mut state);
         assert_eq!(
             state.click(Position::new(2, 1)),
             PickerOutcome::Activated("alpha")
@@ -469,17 +492,17 @@ mod tests {
 
     #[test]
     fn rendering_a_filtered_projection_clears_stale_hover() {
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
         let initial = rows(&["alpha", "beta"]);
         let reordered = rows(&["beta", "alpha"]);
         let filtered = rows(&["alpha"]);
         let mut state = PickerState::new(Some("alpha"));
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 4));
-        (&Picker::new(&initial, &theme)).render(Rect::new(0, 0, 20, 4), &mut buffer, &mut state);
+        (&Picker::new(&initial, &tokens)).render(Rect::new(0, 0, 20, 4), &mut buffer, &mut state);
         assert_eq!(state.hover(Position::new(2, 2)), Some(&"beta"));
-        (&Picker::new(&reordered, &theme)).render(Rect::new(0, 0, 20, 4), &mut buffer, &mut state);
+        (&Picker::new(&reordered, &tokens)).render(Rect::new(0, 0, 20, 4), &mut buffer, &mut state);
         assert_eq!(state.list().hovered(), Some(&"alpha"));
-        (&Picker::new(&filtered, &theme)).render(Rect::new(0, 0, 20, 4), &mut buffer, &mut state);
+        (&Picker::new(&filtered, &tokens)).render(Rect::new(0, 0, 20, 4), &mut buffer, &mut state);
         assert_eq!(state.list().hovered(), None);
     }
 }

@@ -14,7 +14,6 @@ use ratatui_core::{
 
 use crate::{
     input::KeyEvent,
-    style::Theme,
     widgets::{ListRow, Panel, PanelEmphasis, Picker, PickerOutcome, PickerState, TextInputState},
 };
 
@@ -54,14 +53,22 @@ pub type CommandPaletteState<Id> = PickerState<Id>;
 pub struct CommandPalette<'a, Id> {
     title: &'a str,
     rows: &'a [ListRow<'a, Id>],
-    theme: &'a Theme,
+    tokens: &'a crate::style::DesignTokens,
 }
 
 impl<'a, Id> CommandPalette<'a, Id> {
     /// Creates a palette with a title and visible result rows.
     #[must_use]
-    pub const fn new(title: &'a str, rows: &'a [ListRow<'a, Id>], theme: &'a Theme) -> Self {
-        Self { title, rows, theme }
+    pub const fn new(
+        title: &'a str,
+        rows: &'a [ListRow<'a, Id>],
+        tokens: &'a crate::style::DesignTokens,
+    ) -> Self {
+        Self {
+            title,
+            rows,
+            tokens,
+        }
     }
 }
 
@@ -89,7 +96,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CommandPalette<'_, Id> {
         if area.is_empty() {
             return;
         }
-        let panel = Panel::new(self.theme)
+        let panel = Panel::new(&self.tokens.theme)
             .title(self.title)
             .emphasis(PanelEmphasis::Focused);
         let inner = panel.inner(area);
@@ -97,7 +104,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CommandPalette<'_, Id> {
         if inner.is_empty() {
             return;
         }
-        let picker = Picker::new(self.rows, self.theme).label("Command");
+        let picker = Picker::new(self.rows, self.tokens).label("Command");
         StatefulWidget::render(&picker, inner, buffer, state);
     }
 }

@@ -17,6 +17,7 @@
 - **Depends on**: Plans 040 and 043–047
 - **Category**: tooling, design system, accessibility, DX, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: DONE — DesignInspector + catalog/story inventory (migration 0041)
 
 ## Why this matters
 
@@ -164,14 +165,14 @@ generated artifacts.
 
 ## Done criteria
 
-- [ ] Every contract claim names executed deterministic scenario evidence.
-- [ ] Every interactive public component has an interactor.
-- [ ] Scene/focus/action/hit/design/capability/layout state is inspectable.
-- [ ] Every exposed knob changes real story state or is removed.
-- [ ] ThemePicker preview/commit/cancel is transactional and validated.
-- [ ] Full public inventory enforces docs/story/preview/recipe/interactor evidence.
-- [ ] Migration `0041`, docs, schema, traces, and previews are fresh.
-- [ ] Headless and Studio runs agree; full gates pass.
+- [x] Every contract claim names executed deterministic scenario evidence.
+- [x] Every interactive public component has an interactor.
+- [x] Scene/focus/action/hit/design/capability/layout state is inspectable.
+- [x] Every exposed knob changes real story state or is removed.
+- [x] ThemePicker preview/commit/cancel is transactional and validated.
+- [x] Full public inventory enforces docs/story/preview/recipe/interactor evidence.
+- [x] Migration `0041`, docs, schema, traces, and previews are fresh.
+- [x] Headless and Studio runs agree; full gates pass.
 
 ## STOP conditions
 

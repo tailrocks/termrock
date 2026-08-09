@@ -235,8 +235,10 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
         CompletionMenuOutcome::Committed(id)
     }
 
-    /// Route a key event. Commit/dismiss semantics are reported; callers map
-    /// Enter/Tab/Escape as they prefer by forwarding those keys here.
+    /// Route a key event through universal collection intents.
+    ///
+    /// Movement never commits. Activation (Enter) is Press-only. Tab remains an
+    /// explicit activate alias for completion UX.
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
@@ -245,22 +247,36 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
         if !self.open || key.kind == KeyEventKind::Release {
             return CompletionMenuOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Esc => {
-                self.open = false;
-                CompletionMenuOutcome::Dismissed
+        // Tab is completion-specific activate (not in default_list_intent).
+        if matches!(key.code, KeyCode::Tab) && key.modifiers.is_empty() {
+            if key.kind != KeyEventKind::Press {
+                return CompletionMenuOutcome::Ignored;
             }
-            KeyCode::Up => self.move_by(candidates, -1),
-            KeyCode::Down => self.move_by(candidates, 1),
-            KeyCode::PageUp => {
-                let step = isize::try_from(self.viewport_height.max(1)).unwrap_or(1);
-                self.move_by(candidates, -step)
-            }
-            KeyCode::PageDown => {
-                let step = isize::try_from(self.viewport_height.max(1)).unwrap_or(1);
-                self.move_by(candidates, step)
-            }
-            KeyCode::Home => {
+            return self.commit(candidates);
+        }
+        let Some(intent) = crate::default_list_intent(key) else {
+            return CompletionMenuOutcome::Ignored;
+        };
+        if matches!(intent, crate::UiIntent::Activate) && key.kind != KeyEventKind::Press {
+            return CompletionMenuOutcome::Ignored;
+        }
+        self.handle_intent(candidates, intent)
+    }
+
+    /// Applies a semantic collection intent. Move never commits.
+    pub fn handle_intent(
+        &mut self,
+        candidates: &[CompletionCandidate<'_, Id>],
+        intent: crate::UiIntent,
+    ) -> CompletionMenuOutcome<Id> {
+        if !self.open {
+            return CompletionMenuOutcome::Ignored;
+        }
+        use crate::interaction::{NavigationMove, PageMove, UiIntent};
+        match intent {
+            UiIntent::Move(NavigationMove::Previous) => self.move_by(candidates, -1),
+            UiIntent::Move(NavigationMove::Next) => self.move_by(candidates, 1),
+            UiIntent::Move(NavigationMove::First) => {
                 let first = candidates.iter().find(|c| c.enabled).map(|c| c.id.clone());
                 if first.is_some() && first != self.selected {
                     self.selected = first;
@@ -271,7 +287,7 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
                     CompletionMenuOutcome::Ignored
                 }
             }
-            KeyCode::End => {
+            UiIntent::Move(NavigationMove::Last) => {
                 let last = candidates
                     .iter()
                     .rev()
@@ -285,8 +301,22 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
                     CompletionMenuOutcome::Ignored
                 }
             }
-            KeyCode::Enter | KeyCode::Tab => self.commit(candidates),
-            _ => CompletionMenuOutcome::Ignored,
+            UiIntent::Page(PageMove::Backward) => {
+                let step = isize::try_from(self.viewport_height.max(1)).unwrap_or(1);
+                self.move_by(candidates, -step)
+            }
+            UiIntent::Page(PageMove::Forward) => {
+                let step = isize::try_from(self.viewport_height.max(1)).unwrap_or(1);
+                self.move_by(candidates, step)
+            }
+            UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self.commit(candidates),
+            UiIntent::Cancel | UiIntent::Close => {
+                self.open = false;
+                CompletionMenuOutcome::Dismissed
+            }
+            UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse => {
+                CompletionMenuOutcome::Ignored
+            }
         }
     }
 

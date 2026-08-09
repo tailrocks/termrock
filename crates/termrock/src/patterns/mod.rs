@@ -12,6 +12,9 @@ mod ops_dashboard;
 mod resource_browser;
 
 pub use agent_shell::{AgentShellLayout, AgentShellSlots, layout_agent_shell};
-pub use agent_workbench::{WorkbenchPane, agent_workbench_layout};
+pub use agent_workbench::{
+    WorkbenchPane, WorkbenchSurfaces, agent_workbench_layout, register_workbench_scene,
+    render_agent_workbench,
+};
 pub use ops_dashboard::{OpsDashboardLayout, OpsDashboardSlots, layout_ops_dashboard};
 pub use resource_browser::{ResourceBrowserLayout, ResourceBrowserSlots, layout_resource_browser};

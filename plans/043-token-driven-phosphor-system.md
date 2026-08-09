@@ -17,6 +17,7 @@
 - **Depends on**: Plan 040
 - **Category**: design system, UX, accessibility, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: DONE — DesignTokens drive List/Tree/Table; DesignSystem::phosphor; Panel::from_tokens (migration 0037)
 
 ## Why this matters
 
@@ -166,15 +167,15 @@ contracts, previews, inventory, and `MIGRATING.md`.
 
 ## Done criteria
 
-- [ ] Complete documented DesignSystem taxonomy/presets/patches are implemented.
-- [ ] One canonical design input drives List, Tree, Table, and Panel.
-- [ ] Phosphor is rare intent emphasis, not universal selection paint.
-- [ ] Surface elevation, focus, selection, disabled, and danger remain clear.
-- [ ] Density, glyph, selection chrome, and capability change real output.
-- [ ] Panel border law and re-themeability hold.
-- [ ] Migration `0036`, docs, contracts, stories, previews, inventory are fresh.
-- [ ] No Theme-only compatibility path remains for migrated families.
-- [ ] Full gates pass.
+- [x] Complete documented DesignSystem taxonomy/presets/patches are implemented.
+- [x] One canonical design input drives List, Tree, Table, and Panel.
+- [x] Phosphor is rare intent emphasis, not universal selection paint.
+- [x] Surface elevation, focus, selection, disabled, and danger remain clear.
+- [x] Density, glyph, selection chrome, and capability change real output.
+- [x] Panel border law and re-themeability hold.
+- [x] Migration `0036`, docs, contracts, stories, previews, inventory are fresh.
+- [x] No Theme-only compatibility path remains for migrated families.
+- [x] Full gates pass.
 
 ## STOP conditions
 

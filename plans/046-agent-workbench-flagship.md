@@ -16,6 +16,7 @@
 - **Depends on**: Plans 039–045
 - **Category**: flagship feature, composition, UX, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: DONE — render_agent_workbench composes Transcript/Prompt/Status/Approval + scene (migration 0040)
 
 ## Why this matters
 
@@ -142,13 +143,13 @@ fixture; lookbook check; `rtk proxy mise run check` and `rtk proxy mise run gate
 
 ## Done criteria
 
-- [ ] One controlled flagship composes all shared experience layers.
-- [ ] No product policy/effect/domain state enters TermRock.
-- [ ] Transcript, prompt, tools, approvals, rail, modes, overlays compose.
-- [ ] Responsive widths preserve focus/anchor and expose valid actions only.
-- [ ] Flagship scripts prove safety, streaming, nesting, and design axes.
-- [ ] Migration `0039`, docs, contracts, stories, traces, previews/API fresh.
-- [ ] Geometry-only/duplicate agent paths removed; full gates pass.
+- [x] One controlled flagship composes all shared experience layers.
+- [x] No product policy/effect/domain state enters TermRock.
+- [x] Transcript, prompt, tools, approvals, rail, modes, overlays compose.
+- [x] Responsive widths preserve focus/anchor and expose valid actions only.
+- [x] Flagship scripts prove safety, streaming, nesting, and design axes.
+- [x] Migration `0039`, docs, contracts, stories, traces, previews/API fresh.
+- [x] Geometry-only/duplicate agent paths removed; full gates pass.
 
 ## STOP conditions
 

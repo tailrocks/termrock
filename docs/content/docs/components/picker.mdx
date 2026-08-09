@@ -11,7 +11,7 @@ description: A filterable stable-ID list composition with caller-owned matching 
 
 ```rust
 use ratatui_core::text::Line;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
 
 let theme = Theme::default();
 let candidates = [("open", "Open file"), ("logs", "Show logs")];
@@ -25,7 +25,8 @@ if matches!(state.handle_key(&rows, KeyEvent::new(KeyCode::Char('l'), KeyModifie
     rows = project(state.query_text());
     state.reconcile(&rows);
 }
-let picker = Picker::new(&rows, &theme);
+let tokens = DesignTokens::default();
+let picker = Picker::new(&rows, &tokens);
 ```
 
 ## Interaction contract
