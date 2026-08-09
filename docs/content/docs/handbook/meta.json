@@ -16,6 +16,7 @@
     "form",
     "menu",
     "object-inspector",
-    "log-stream"
+    "log-stream",
+    "diff-review"
   ]
 }\n

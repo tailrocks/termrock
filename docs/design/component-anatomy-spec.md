@@ -1619,29 +1619,29 @@ Every component below uses sections **1–24**:
 
 ## DiffReview
 
-1. **Purpose:** Reviewable unified/split diff with hunk navigation.  
-2. **Anatomy:** `root` · `hunk_header` · `line[]` · `gutter` · `marker` (+/−)  
-3. **Public properties:** lines, hunk index, `design`  
-4. **State:** offset, selected hunk, cursor line.  
-5. **Variants:** `unified` · `split` (wide only)  
-6. **Sizes/density:** gutter width fixed.  
-7. **Visual states:** add/del/context roles.  
-8. **Interaction states:** hunk nav · scroll.  
-9. **Keyboard:** n/p hunk; page; optional stage request outcome.  
-10. **Mouse:** wheel; click hunk.  
-11. **Focus:** focusable.  
-12. **Disabled:** N/A.  
-13. **Loading:** streaming patch append.  
-14. **Error:** N/A.  
-15. **Narrow:** force unified.  
-16. **Tiny:** current hunk header + few lines.  
-17. **Unicode:** no mid-grapheme; markers `+`/`-`/` `.  
-18. **Colorless:** `+`/`-` prefix always; bold add.  
-19. **Composition:** PlanReview, PR agent tools.  
-20. **Outcomes:** `HunkActivated` · `Scrolled` · `StageRequested` (optional)  
-21. **Stories:** `diff-review/hunks`, `diff-review/narrow-unified`  
-22. **Snapshots:** add/del lines.  
-23. **Interaction tests:** hunk next/prev bounds.  
+1. **Purpose:** Reviewable unified/split preference diff with hunk navigation.  
+2. **Anatomy:** `root` · `hunk_header?` · `line[]` · hunk gutter · empty mark  
+3. **Public properties:** lines, hunks, `system`, `focused`, `ascii`, `colorless`  
+4. **State:** hunk cursor + scroll + split flag + `accepts_input`.  
+5. **Variants:** unified paint always on narrow; split preference retained.  
+6. **Sizes/density:** 2-col gutter + line.  
+7. **Visual states:** active hunk gutter; add/del/context roles.  
+8. **Interaction states:** hunk step · line scroll · activate · toggle mode.  
+9. **Keyboard:** n/p hunk; j/k/page line; Enter activate; s toggle (`default_diff_review_intent`).  
+10. **Mouse:** wheel line scroll; click line → hunk cursor / activate.  
+11. **Focus:** scene owns surface; DiffReview owns hunk cursor.  
+12. **Disabled:** `accepts_input = false`.  
+13. **Loading:** host streams projected lines.  
+14. **Error:** N/A (consumer).  
+15. **Narrow:** force unified paint.  
+16. **Tiny:** current hunk header strip + clipped lines.  
+17. **Unicode/ASCII:** gutter `›`/`>`; empty `∅`/`[ ]`.  
+18. **Colorless:** strong add/remove; strong active context.  
+19. **Composition:** PlanReview, PR agent tools, overlay.  
+20. **Outcomes:** `HunkCursorMoved` · `HunkActivated` · `Scrolled` · `ToggleMode` · `Ignored`  
+21. **Stories:** `diff-review/{hunks,empty,narrow,ascii}`  
+22. **Snapshots:** gutter, empty, tiny header.  
+23. **Interaction tests:** n/p bounds, mouse, accepts_input, cursor-follow.  
 24. **Perf:** O(visible lines).
 
 ## Sparkline

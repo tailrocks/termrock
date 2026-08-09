@@ -2852,6 +2852,7 @@ impl<T> core::convert::From<T> for termrock::interaction::SemanticElement<Id>
 pub fn termrock::interaction::SemanticElement<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticElement<Id>
 pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
+pub fn termrock::interaction::default_diff_review_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_form_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_inspector_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -9082,9 +9083,11 @@ impl<T> either::into_either::IntoEither for termrock::widgets::DiffKind
 #[non_exhaustive] pub enum termrock::widgets::DiffReviewOutcome
 pub termrock::widgets::DiffReviewOutcome::HunkActivated
 pub termrock::widgets::DiffReviewOutcome::HunkActivated::index: usize
-pub termrock::widgets::DiffReviewOutcome::HunkFocused
-pub termrock::widgets::DiffReviewOutcome::HunkFocused::index: usize
+pub termrock::widgets::DiffReviewOutcome::HunkCursorMoved
+pub termrock::widgets::DiffReviewOutcome::HunkCursorMoved::index: usize
 pub termrock::widgets::DiffReviewOutcome::Ignored
+pub termrock::widgets::DiffReviewOutcome::Scrolled
+pub termrock::widgets::DiffReviewOutcome::Scrolled::offset: u16
 pub termrock::widgets::DiffReviewOutcome::ToggleMode
 impl core::clone::Clone for termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewOutcome::clone(&self) -> termrock::widgets::DiffReviewOutcome
@@ -14884,6 +14887,9 @@ pub struct termrock::widgets::DiffHunk
 pub termrock::widgets::DiffHunk::header: alloc::string::String
 pub termrock::widgets::DiffHunk::len: usize
 pub termrock::widgets::DiffHunk::start: usize
+impl termrock::widgets::DiffHunk
+pub fn termrock::widgets::DiffHunk::contains_line(&self, usize) -> bool
+pub fn termrock::widgets::DiffHunk::end(&self) -> usize
 impl core::clone::Clone for termrock::widgets::DiffHunk
 pub fn termrock::widgets::DiffHunk::clone(&self) -> termrock::widgets::DiffHunk
 impl core::cmp::Eq for termrock::widgets::DiffHunk
@@ -14964,8 +14970,12 @@ pub fn termrock::widgets::DiffLine<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffLine<'a>
 pub struct termrock::widgets::DiffReview<'a>
 impl<'a> termrock::widgets::DiffReview<'a>
+pub const fn termrock::widgets::DiffReview<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::DiffReview<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::DiffReview<'a>::focused(self, bool) -> Self
+pub const fn termrock::widgets::DiffReview<'a>::hunks(self, &'a [termrock::widgets::DiffHunk]) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::new(&'a [(&'a str, termrock::style::Role)], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::DiffReview<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::DiffReviewState)
+pub fn termrock::widgets::DiffReview<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DiffReviewState)
 impl<'a> core::clone::Clone for termrock::widgets::DiffReview<'a>
 pub fn termrock::widgets::DiffReview<'a>::clone(&self) -> termrock::widgets::DiffReview<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::DiffReview<'a>
@@ -15003,9 +15013,17 @@ pub fn termrock::widgets::DiffReview<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffReview<'a>
 pub struct termrock::widgets::DiffReviewState
 impl termrock::widgets::DiffReviewState
-pub fn termrock::widgets::DiffReviewState::handle_key(&mut self, termrock::input::KeyEvent, usize) -> termrock::widgets::DiffReviewOutcome
+pub const fn termrock::widgets::DiffReviewState::accepts_input(&self) -> bool
+pub fn termrock::widgets::DiffReviewState::handle_intent(&mut self, termrock::interaction::UiIntent, &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
+pub fn termrock::widgets::DiffReviewState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
+pub fn termrock::widgets::DiffReviewState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::DiffHunk], usize) -> termrock::widgets::DiffReviewOutcome
+pub const fn termrock::widgets::DiffReviewState::hunk_cursor(&self) -> usize
+pub const fn termrock::widgets::DiffReviewState::hunk_index(&self) -> usize
 pub const fn termrock::widgets::DiffReviewState::is_split(&self) -> bool
 pub fn termrock::widgets::DiffReviewState::new() -> Self
+pub fn termrock::widgets::DiffReviewState::offset_y(&self) -> u16
+pub fn termrock::widgets::DiffReviewState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::DiffReviewState::set_hunk_cursor(&mut self, usize)
 impl core::clone::Clone for termrock::widgets::DiffReviewState
 pub fn termrock::widgets::DiffReviewState::clone(&self) -> termrock::widgets::DiffReviewState
 impl core::cmp::Eq for termrock::widgets::DiffReviewState

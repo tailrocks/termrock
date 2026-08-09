@@ -25,25 +25,25 @@ use termrock::{
         CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
         CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
-        DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Drawer, EmptyState,
-        ErrorView, Form, FormField, FormSection, FormState, FormWizardState, GridCell, GridColumn,
-        GridRow, Heading, HeadingLevel, Hint, HintBar, ImageMeta, ImageProtocol, ImageSurface,
-        InspectorField, JumpOverlay, JumpTarget, Kbd, List, ListRow, ListState, LoadingView,
-        LogLevel, LogLine, LogPane, LogPaneState, LogStream, LogStreamState, MarkdownBlock,
-        MarkdownBlockKind, MarkdownView, Menu, MenuItem, MenuState, MessageDialog, MeterSegment,
-        ModeRibbon, ObjectInspector, ObjectInspectorState, Panel, PanelChrome,
-        PermissionActionKind, PermissionPrompt, PermissionPromptState, PermissionProvenance,
-        PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview, PlanReviewState,
-        PlanStep, Popover, Progress, ProgressKind, PromptComposer, PromptComposerState,
-        QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep, RowRole, SegmentedMeter,
-        SeparatorLine, SessionItem, SessionPicker, Severity, Skeleton, SortDirection, Sparkline,
-        SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState,
-        StatusSlot, Surface, SurfaceElevation, Switch, SwitchState, Tab, Table, TableRow,
-        TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor, TextInput,
-        TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline, TimelineEvent,
-        Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock, TranscriptKind,
-        TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
-        VirtualGrid, VirtualGridState, WorkbenchMode,
+        DetailTableState, Dialog, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
+        DiffState, DiffView, Drawer, EmptyState, ErrorView, Form, FormField, FormSection,
+        FormState, FormWizardState, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
+        HintBar, ImageMeta, ImageProtocol, ImageSurface, InspectorField, JumpOverlay, JumpTarget,
+        Kbd, List, ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane, LogPaneState,
+        LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, Menu, MenuItem,
+        MenuState, MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
+        Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
+        PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
+        PlanReviewState, PlanStep, Popover, Progress, ProgressKind, PromptComposer,
+        PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep,
+        RowRole, SegmentedMeter, SeparatorLine, SessionItem, SessionPicker, Severity, Skeleton,
+        SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
+        StatusBarState, StatusSlot, Surface, SurfaceElevation, Switch, SwitchState, Tab, Table,
+        TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
+        TextInput, TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
+        TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
+        TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
+        Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
     },
 };
 
@@ -486,6 +486,42 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             6,
             log_stream_ascii,
+        ),
+        Story::new(
+            "diff-review/hunks",
+            "Diff review hunks",
+            "DiffReview",
+            "Multi-hunk projected patch with active hunk gutter.",
+            52,
+            10,
+            diff_review_hunks,
+        ),
+        Story::new(
+            "diff-review/empty",
+            "Diff review empty",
+            "DiffReview",
+            "Empty-diff non-color mark.",
+            32,
+            3,
+            diff_review_empty,
+        ),
+        Story::new(
+            "diff-review/narrow",
+            "Diff review narrow",
+            "DiffReview",
+            "Narrow unified geometry (22 cols).",
+            22,
+            8,
+            diff_review_hunks,
+        ),
+        Story::new(
+            "diff-review/ascii",
+            "Diff review ASCII",
+            "DiffReview",
+            "ASCII hunk gutter and colorless add/remove.",
+            48,
+            8,
+            diff_review_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -3514,6 +3550,59 @@ fn log_stream_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = LogStreamState::new();
     state.on_append(lines.len() as u16, area.height.saturating_sub(1));
     LogStream::new(&lines, system)
+        .ascii(true)
+        .colorless(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diff_review_sample() -> ([(&'static str, Role); 10], [DiffHunk; 2]) {
+    let lines = [
+        ("@@ -1,4 +1,5 @@", Role::TextMuted),
+        (" fn main() {", Role::Text),
+        ("-    println!(\"hi\");", Role::DiffRemoved),
+        ("+    println!(\"hello 東京\");", Role::DiffAdded),
+        ("+    // ready 🧪", Role::DiffAdded),
+        (" }", Role::Text),
+        ("@@ -20,3 +21,3 @@", Role::TextMuted),
+        ("-old", Role::DiffRemoved),
+        ("+new", Role::DiffAdded),
+        (" context", Role::Text),
+    ];
+    let hunks = [
+        DiffHunk {
+            start: 0,
+            len: 6,
+            header: "@@ -1,4 +1,5 @@".into(),
+        },
+        DiffHunk {
+            start: 6,
+            len: 4,
+            header: "@@ -20,3 +21,3 @@".into(),
+        },
+    ];
+    (lines, hunks)
+}
+
+fn diff_review_hunks(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (lines, hunks) = diff_review_sample();
+    let mut state = DiffReviewState::new();
+    state.set_hunk_cursor(0);
+    DiffReview::new(&lines, system)
+        .hunks(&hunks)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diff_review_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = DiffReviewState::new();
+    DiffReview::new(&[], system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diff_review_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (lines, hunks) = diff_review_sample();
+    let mut state = DiffReviewState::new();
+    state.set_hunk_cursor(1);
+    DiffReview::new(&lines, system)
+        .hunks(&hunks)
         .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);

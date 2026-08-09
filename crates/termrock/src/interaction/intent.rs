@@ -210,6 +210,30 @@ pub fn default_inspector_intent(key: KeyEvent) -> Option<UiIntent> {
     })
 }
 
+/// Default intent map for [`crate::widgets::DiffReview`] line scroll + activate.
+///
+/// Product chords **n/p** (hunk step) and **s** (toggle split) stay on
+/// [`crate::widgets::DiffReviewState::handle_key`]. j/k and arrows scroll lines;
+/// Home/End jump first/last hunk when hunks exist.
+#[must_use]
+pub fn default_diff_review_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let is_press = key.kind == KeyEventKind::Press;
+    match key.code {
+        KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Char(' ') if is_press => Some(UiIntent::Toggle),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::LogStream`] scroll + follow.
 ///
 /// - Arrows / j/k / page / Home → scroll (host maps to Detach/Scrolled)
@@ -359,6 +383,22 @@ mod tests {
         );
         assert_eq!(
             default_log_stream_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            None
+        );
+    }
+
+    #[test]
+    fn default_diff_review_intent_maps_scroll_and_activate() {
+        assert_eq!(
+            default_diff_review_intent(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::Next))
+        );
+        assert_eq!(
+            default_diff_review_intent(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            Some(UiIntent::Activate)
+        );
+        assert_eq!(
+            default_diff_review_intent(KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE)),
             None
         );
     }
