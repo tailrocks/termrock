@@ -1,0 +1,46 @@
+---
+title: ActionLink
+description: 'Inline action with link chrome — no navigation destination, optional risk note.'
+---
+
+## Previews
+
+### `action-link/basic`
+
+![Basic](/component-previews/action-link-basic.svg)
+
+### `action-link/narrow`
+
+![Narrow](/component-previews/action-link-narrow.svg)
+
+### `action-link/unicode`
+
+![Unicode](/component-previews/action-link-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{ActionLink, ActionLinkOutcome, LinkState};
+
+let mut state = LinkState::new();
+state.set_focused(true);
+let action = ActionLink::new("Run tests", &system).risk_note("cargo test");
+let _ = action.paint(area, buf, &mut state);
+match action.handle_key(&mut state, key) {
+    ActionLinkOutcome::Activated => { /* run */ }
+    ActionLinkOutcome::Ignored => {}
+}
+```
+
+## vs Link
+
+| | Link | ActionLink |
+|---|------|------------|
+| Destination | URL or app route | None |
+| OSC 8 | URL when capable | Never |
+| Risk | Destination / external cue | Optional `risk_note` |
+| Outcomes | Activate + Copy | Activate |
+
+## Migration
+
+See `migrations/0121-v0.13.0-link-action-link.md`.

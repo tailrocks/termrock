@@ -19,6 +19,7 @@ mod badge;
 mod icon;
 mod label;
 mod kbd;
+mod link;
 mod tag_chip;
 mod text;
 mod separator;
@@ -103,6 +104,10 @@ pub use badge::{
 pub use kbd::{
     ChordFormat, Kbd, KbdVariant, ModifierStyle, Platform, ShortcutForm, ShortcutHint,
     format_alternatives, format_binding, format_chord, format_sequence, kbd_from_chord,
+};
+pub use link::{
+    ActionLink, ActionLinkOutcome, DestinationDisplay, Link, LinkDestination, LinkOutcome,
+    LinkParts, LinkState, LinkVariant,
 };
 pub use icon::{Icon, IconParts};
 pub use label::{

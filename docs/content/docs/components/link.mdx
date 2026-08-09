@@ -1,0 +1,66 @@
+---
+title: Link
+description: 'Terminal-safe navigation links — OSC 8, visible URL fallback, copy, app routes.'
+---
+
+## Previews
+
+### `link/basic`
+
+![External](/component-previews/link-basic.svg)
+
+### `link/no-hyperlink`
+
+![No hyperlink](/component-previews/link-no-hyperlink.svg)
+
+### `link/no-color`
+
+![No color](/component-previews/link-no-color.svg)
+
+### `link/app-route`
+
+![App route](/component-previews/link-app-route.svg)
+
+### `link/narrow`
+
+![Narrow](/component-previews/link-narrow.svg)
+
+### `link/unicode`
+
+![Unicode](/component-previews/link-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{Link, LinkOutcome, LinkState};
+
+let mut state = LinkState::new();
+state.set_focused(true);
+let link = Link::url("docs", "https://example.invalid/docs", &system)
+    .hyperlinks(true)
+    .osc_id("docs");
+let parts = link.paint(area, buf, &mut state);
+if let Some((open, close)) = link.osc_requests(&state) {
+    // host emits OSC bytes
+    let _ = (open, close);
+}
+match link.handle_key(&mut state, key) {
+    LinkOutcome::Activated { destination, external } => { /* open */ }
+    LinkOutcome::Copy { text } => { /* clipboard */ }
+    _ => {}
+}
+```
+
+## Destination policy
+
+External URLs never hide risk: Auto/Always paint the URL; Never still paints
+an external cue (`↗` / ASCII `^`). App routes default to no OSC 8 and no
+external cue.
+
+## With ActionLink
+
+Use [`ActionLink`](./action-link) for button-like inline actions (no destination URL).
+
+## Migration
+
+See `migrations/0121-v0.13.0-link-action-link.md`.

@@ -5,6 +5,7 @@
   "pages": [
     "accordion",
     "action-bar",
+    "action-link",
     "approval-card",
     "backdrop",
     "badge",
@@ -37,6 +38,7 @@
     "jump-overlay",
     "kbd",
     "label",
+    "link",
     "list",
     "loading-view",
     "log-pane",

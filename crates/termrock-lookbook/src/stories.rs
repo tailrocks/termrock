@@ -19,7 +19,8 @@ use termrock::{
     scroll::DialogScroll,
     style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
     widgets::{
-        Action, ActionBar, ActionBarState, Anchor, BUILTIN_THEME_PRESETS, Backdrop, Badge, Banner,
+        Action, ActionBar, ActionBarState, ActionLink, Anchor, BUILTIN_THEME_PRESETS, Backdrop,
+        Badge, Banner,
         BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
         CheckboxState, ChoiceDialog, ChoiceDialogState, CodeBlock, Column, ColumnWidth,
         CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
@@ -30,7 +31,8 @@ use termrock::{
         DiffState, DiffView, Drawer, EmptyState, ErrorView, Form, FormField, FormSection,
         FormState, FormWizardState, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
         HintBar, ImageMeta, ImageProtocol, ImageSurface, InspectorField, JumpOverlay, JumpTarget,
-        Kbd, List, ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane, LogPaneState,
+        Kbd, Link, LinkState, List, ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
+        LogPaneState,
         LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, Menu, MenuItem,
         MenuState, MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
         Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
@@ -2489,6 +2491,51 @@ pub(crate) fn stories() -> Vec<Story> {
             kbd_platform_story,
         ),
         Story::new(
+            "link/basic",
+            "Link external",
+            "Link",
+            "External URL with visible destination and external cue.",
+            56,
+            3,
+            link_basic_story,
+        ),
+        Story::new(
+            "link/no-hyperlink",
+            "Link no-hyperlink",
+            "Link",
+            "OSC 8 off — destination always painted as text fallback.",
+            56,
+            3,
+            link_no_hyperlink_story,
+        ),
+        Story::new(
+            "link/no-color",
+            "Link no-color",
+            "Link",
+            "No-color path: underline + focus bold; destination still visible.",
+            56,
+            3,
+            link_no_color_story,
+        ),
+        Story::new(
+            "link/app-route",
+            "Link app route",
+            "Link",
+            "Application-routed link (no OSC 8, no external cue).",
+            40,
+            3,
+            link_app_route_story,
+        ),
+        Story::new(
+            "action-link/basic",
+            "ActionLink",
+            "ActionLink",
+            "Inline action with link chrome and visible risk note.",
+            40,
+            3,
+            action_link_story,
+        ),
+        Story::new(
             "shortcut-hint/footer",
             "ShortcutHint footer",
             "ShortcutHint",
@@ -3262,6 +3309,42 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             3,
             kbd_unicode_story,
+        ),
+        Story::new(
+            "link/narrow",
+            "Narrow Link",
+            "Link",
+            "Narrow-terminal geometry for Link (16 cols).",
+            16,
+            2,
+            link_basic_story,
+        ),
+        Story::new(
+            "link/unicode",
+            "Unicode Link",
+            "Link",
+            "Unicode-safe paint path for Link (CJK/emoji-capable layout).",
+            48,
+            2,
+            link_unicode_story,
+        ),
+        Story::new(
+            "action-link/narrow",
+            "Narrow ActionLink",
+            "ActionLink",
+            "Narrow-terminal geometry for ActionLink (14 cols).",
+            14,
+            2,
+            action_link_story,
+        ),
+        Story::new(
+            "action-link/unicode",
+            "Unicode ActionLink",
+            "ActionLink",
+            "Unicode-safe paint path for ActionLink.",
+            36,
+            2,
+            action_link_unicode_story,
         ),
         Story::new(
             "loading-view/narrow",
@@ -9250,6 +9333,58 @@ fn description_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 fn kbd_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Kbd;
     let _ = Kbd::new("C-k", system).keycap().paint(area, frame.buffer_mut());
+}
+
+fn link_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = LinkState::new();
+    state.set_focused(true);
+    let _ = Link::url("docs", "https://example.invalid/docs", system)
+        .hyperlinks(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn link_no_hyperlink_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = LinkState::new();
+    let _ = Link::url("docs", "https://example.invalid/docs", system)
+        .hyperlinks(false)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn link_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let system = system.clone().no_color();
+    let mut state = LinkState::new();
+    state.set_focused(true);
+    let _ = Link::url("docs", "https://example.invalid", &system)
+        .hyperlinks(false)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn link_app_route_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = LinkState::new();
+    state.set_hovered(true);
+    let _ = Link::app_route("Settings", "app://settings", system)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn link_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = LinkState::new();
+    let _ = Link::url("文档 🔗", "https://example.invalid/文档", system)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn action_link_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = LinkState::new();
+    state.set_focused(true);
+    let _ = ActionLink::new("Run tests", system)
+        .risk_note("cargo test")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn action_link_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = LinkState::new();
+    let _ = ActionLink::new("运行测试", system)
+        .risk_note("cargo test")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn kbd_platform_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
