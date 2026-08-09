@@ -13,25 +13,32 @@
 
 ## A. Current inventory → proposed taxonomy
 
-| Current TermRock surface | Taxonomy | Status |
-|--------------------------|----------|--------|
-| *(none as first-class)* Button, IconButton, Badge, Tag, Chip, Kbd | Primitives | **New** (ActionBar paints ad-hoc actions today) |
-| Panel, Backdrop | Layout / Primitives | Evolve → **Surface** (+ keep Panel as bordered Surface recipe) |
-| Implicit `─` dividers | Primitives | **Separator** |
-| Heading, Paragraph | Content | **New** |
-| MarkdownView, CodeBlock, DiffView | Content / Data | Rename Markdown; Diff → **DiffReview** |
-| Progress (incl. indeterminate), Skeleton, EmptyState, ErrorView, Banner, Toast, LoadingView | Feedback | Banner → **Callout** / **Alert**; Spinner **promoted** |
-| TextInput, TextArea, Form | Forms | + Checkbox, RadioGroup, Switch, Select, MultiSelect |
-| List, Tree, Table, VirtualGrid, DetailTable, Picker, CompletionMenu, Selection | Selection / Data | Picker → **Combobox**; DetailTable → **ObjectInspector** |
-| Tabs, ActionBar, HintBar, StatusBar | Navigation | + Sidebar, Breadcrumbs, Menu |
-| Dialog, MessageDialog, ChoiceDialog, CommandPalette, JumpOverlay, Toast | Overlays | + ContextMenu, Popover, Tooltip, Drawer |
-| SplitPane, WorkSurface, Viewport | Layout | → Workspace tree (plan 042); Viewport → ScrollArea |
-| StreamView, ToolCard, ApprovalCard, PromptBox, Timeline, ThinkingBlock, TokenMeter | AI-agent | + QuestionFlow, PlanReview, TaskRail, SessionPicker; harden PermissionPrompt |
-| Sparkline, BarSeries, SegmentedMeter | Data presentation | Keep under charts |
-| ThemePicker, ImageSurface | Dev tools / content | ThemePicker = developer tools |
-| agent_shell, ops_dashboard, resource_browser | Application blocks | Elevate: AgentWorkbench, OpsDashboard, ResourceBrowser, … |
+**HEAD inventory** (`COMPONENTS.md` / public API): ActionBar, ApprovalCard, Backdrop, Badge, Banner, BarSeries, Button, Callout, Checkbox, ChoiceDialog, CodeBlock, CommandPalette, CompletionMenu, DataTable, DesignInspector, DetailTable, Dialog, DiffView, Drawer, EmptyState, ErrorView, Form, FormWizard, Heading, HintBar, ImageSurface, JumpOverlay, Kbd, List, LoadingView, LogPane, MarkdownView, Menu, MessageDialog, ModeRibbon, Panel, Paragraph, PermissionPrompt, Picker, PlanReview, Popover, Progress, PromptBox, PromptComposer, QuestionFlow, SegmentedMeter, SeparatorLine, SessionPicker, Skeleton, Sparkline, SplitPane, StatusBar, StreamView, Surface, Table, Tabs, TaskRail, TextArea, TextInput, ThemePicker, ThinkingBlock, Timeline, Toast, TokenMeter, ToolCard, Transcript, Tree, Viewport, VirtualGrid (+ patterns: agent_shell, ops_dashboard, resource_browser, studio_shell).
 
-**Completeness rule:** every claimed axis in the contract table is specified, story-covered, and tested—or explicitly marked N/A with reason.
+| Proposed name | Taxonomy | HEAD mapping | Status |
+|---------------|----------|--------------|--------|
+| Button, IconButton | Primitives | Button exists; IconButton incomplete | Harden / add |
+| Badge, Tag, Chip, Kbd | Primitives | Badge, Kbd exist; Tag/Chip partial | Harden / add |
+| Separator | Primitives | SeparatorLine | Rename recipe-only ok |
+| Spinner | Primitives | Inside Progress/Loading | Promote first-class |
+| Heading, Paragraph, Markdown, CodeBlock | Content | Heading, Paragraph, MarkdownView, CodeBlock | Rename Markdown |
+| Surface, Section, Callout, Alert | Content/Layout | Surface, Panel, Callout, Banner | Section new; Banner→Alert |
+| ScrollArea, WorkspacePane | Layout | Viewport, SplitPane | Evolve names |
+| Tabs, Sidebar, Breadcrumbs, Menu, ContextMenu | Navigation | Tabs, Menu exist; Sidebar/Breadcrumbs/ContextMenu gaps | Fill |
+| ActionBar, HintBar, StatusBar | Navigation | Exist | Contract stories |
+| TextInput, TextArea, Checkbox, RadioGroup, Switch, Form | Forms | Input/Area/Checkbox/Form exist; Radio/Switch gaps | Fill |
+| Select, MultiSelect, Combobox | Selection | Picker → Combobox; Select/MultiSelect thin | Fill |
+| List, Tree, CompletionMenu | Selection | Exist | Full part×state recipes |
+| Toast, Progress, Skeleton, EmptyState, LoadingView, ErrorView | Feedback | Exist | Spinner + Alert polish |
+| Dialog, Drawer, Popover, Tooltip, CommandPalette | Overlays | Most exist; Tooltip thin | Fill |
+| Table, DataTable, ObjectInspector, LogStream, Timeline, DiffReview | Data | Table/DataTable/DetailTable/LogPane/Timeline/DiffView | Rename + harden |
+| Charts | Data | Sparkline, BarSeries, SegmentedMeter | Keep |
+| ThemePicker, DesignInspector | Dev tools | Exist | Studio only defaults |
+| PromptComposer, PermissionPrompt, QuestionFlow, PlanReview, ToolCallCard, TaskRail, SessionPicker | AI-agent | Exist (ToolCard/ApprovalCard lineage) | Harden safety + recipes |
+| ThinkingBlock, TokenMeter, Transcript | AI-agent | Exist | Transcript engine |
+| AgentWorkbench, OpsDashboard, ResourceBrowser, SettingsShell, FormWizard | Blocks | Patterns + FormWizard | Elevate contracts |
+
+**Completeness rule:** every axis **1–24** is specified, story-covered, and tested—or explicitly **N/A with reason**. Rendering alone never completes a component.
 
 ---
 
@@ -652,7 +659,8 @@ Every component below uses sections **1–24**:
 10. **Mouse:** click crumb.  
 11. **Focus:** roving among crumbs or single widget + index.  
 12. **Disabled:** N/A.  
-13–14. N/A.  
+13. **Loading:** N/A.  
+14. **Error:** N/A.  
 15. **Narrow:** collapse middle to `…` overflow.  
 16. **Tiny:** last crumb only.  
 17. **Unicode/ASCII:** sep `/` or `›`/`>`.  
@@ -699,16 +707,18 @@ Every component below uses sections **1–24**:
 4. **State:** open boolean + Menu open path.  
 5. **Variants:** `default`  
 6. **Sizes/density:** as Menu; clamp to parent.  
-7. **Visual states:** as Menu.  
-8. **Interaction states:** open at · dismiss.  
-9. **Keyboard:** as Menu when open.  
+7. **Visual states:** as Menu (open path, disabled items).  
+8. **Interaction states:** open at · navigate · activate · dismiss.  
+9. **Keyboard:** arrows, Enter activate, Esc dismiss (Menu keys when open).  
 10. **Mouse:** right-click open; outside click dismiss; click item.  
 11. **Focus:** trap while open; restore prior focus on close.  
-12. **Disabled:** target may suppress open.  
-13–14. N/A.  
+12. **Disabled:** target may suppress open; disabled items skip.  
+13. **Loading:** optional spinner on async item (rare).  
+14. **Error:** N/A.  
 15. **Narrow:** flip/clamp placement (CompletionMenu rules).  
-16. **Tiny:** may refuse open if &lt;10 cols free—document fallback to Menu panel.  
-17–18. as Menu.  
+16. **Tiny:** may refuse open if &lt;10 cols free—fallback to full-width Menu panel.  
+17. **Unicode/ASCII:** Menu item glyphs catalog.  
+18. **Colorless:** selected item reverse; disabled dim.  
 19. **Composition:** List/Table/Tree row actions.  
 20. **Outcomes:** Menu outcomes ∪ `OpenAt { x, y }`  
 21. **Stories:** `context-menu/basic`, `context-menu/clamp`  
@@ -716,17 +726,80 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** outside dismiss; Esc.  
 24. **Perf:** O(items).
 
-## ActionBar / HintBar / StatusBar
+## ActionBar
 
-Supporting navigation chrome (exist today).
+1. **Purpose:** Horizontal group of primary actions.  
+2. **Anatomy:** `root` · `action[]` · `overflow`  
+3. **Public properties:** actions projection (`id`, label, icon?, kbd?, enabled, danger?), `design`  
+4. **State:** focus index; overflow open.  
+5. **Variants:** `default` · `dense`  
+6. **Sizes/density:** 1 row; pad by density; Comfortable shows labels, Dashboard prefers icons.  
+7. **Visual states:** action hover/focus/disabled/loading.  
+8. **Interaction states:** activate · open overflow.  
+9. **Keyboard:** Left/Right among actions; Enter/Space activate; overflow Menu keys.  
+10. **Mouse:** click action; overflow chevron.  
+11. **Focus:** one tab stop or per-action stops (document: per-action when few).  
+12. **Disabled:** skip disabled actions.  
+13. **Loading:** per-action Spinner.  
+14. **Error:** N/A.  
+15. **Narrow:** drop labels → icons → overflow Menu (priority order).  
+16. **Tiny:** overflow Menu only (hamburger glyph).  
+17. **Unicode/ASCII:** icons catalog; overflow `…`/`...`.  
+18. **Colorless:** focused action underline; danger `!` prefix.  
+19. **Composition:** Dialog footer, workbench chrome.  
+20. **Outcomes:** `Activated(Id)` · `OverflowOpened`  
+21. **Stories:** `action-bar/basic`, `action-bar/overflow`, `action-bar/narrow`  
+22. **Snapshots:** overflow collapsed.  
+23. **Interaction tests:** overflow activates nested item.  
+24. **Perf:** O(actions).
 
-| Component | Purpose summary | Key contraction |
-|-----------|-----------------|-----------------|
-| **ActionBar** | Horizontal Button/IconButton group | Drop labels → icons → overflow Menu |
-| **HintBar** | Keymap-driven Kbd+labels | Priority drop right-to-left |
-| **StatusBar** | Slots with priority | Drop low-priority slots first |
+## HintBar
 
-Full Button/Kbd contracts apply to parts. Stories: existing + density/narrow. Outcomes: `Activated` from actions; HintBar none; StatusBar optional slot activate.
+1. **Purpose:** Keymap-driven hints (Kbd + short labels).  
+2. **Anatomy:** `root` · `hint[]` (`kbd` · `label`) · `separator`  
+3. **Public properties:** hints projection with priority, `design`  
+4. **State:** none (or hover highlight).  
+5. **Variants:** `inline` · `stacked` (density).  
+6. **Sizes/density:** Comfortable 2 rows allowed; Compact/Dashboard 1.  
+7. **Visual states:** default.  
+8–14. **Interactive/loading/error:** N/A (not focusable by default).  
+15. **Narrow:** drop lowest priority right-to-left.  
+16. **Tiny:** highest priority single hint.  
+17. **Unicode/ASCII:** Kbd rules.  
+18. **Colorless:** kbd reverse; label dim.  
+19. **Composition:** footer of panels, Dialog, workbench.  
+20. **Outcomes:** none.  
+21. **Stories:** `hint-bar/priority`, `hint-bar/narrow`  
+22. **Snapshots:** priority drop matrix.  
+23. **Interaction tests:** N/A.  
+24. **Perf:** O(hints).
+
+## StatusBar
+
+1. **Purpose:** Persistent status slots with priority.  
+2. **Anatomy:** `root` · `slot[]` · optional `separator`  
+3. **Public properties:** slots (`id`, content, priority, interactive?), `design`  
+4. **State:** optional focus slot if interactive.  
+5. **Variants:** `default`  
+6. **Sizes/density:** always 1 row.  
+7. **Visual states:** slot tones (ok/warn/error).  
+8. **Interaction states:** activate interactive slot.  
+9. **Keyboard:** optional Left/Right + Enter if interactive slots.  
+10. **Mouse:** click interactive slot.  
+11. **Focus:** only if any slot interactive.  
+12. **Disabled:** N/A.  
+13. **Loading:** spinner slot.  
+14. **Error:** danger tone slot.  
+15. **Narrow:** drop low-priority slots first.  
+16. **Tiny:** single highest-priority slot.  
+17. **Unicode/ASCII:** slot glyphs.  
+18. **Colorless:** danger/warn prefixes.  
+19. **Composition:** workbench south/status.  
+20. **Outcomes:** `Activated(Id)` optional.  
+21. **Stories:** `status-bar/priority`, `status-bar/interactive`  
+22. **Snapshots:** priority drop.  
+23. **Interaction tests:** activate interactive.  
+24. **Perf:** O(slots).
 
 ---
 
@@ -885,7 +958,8 @@ Full Button/Kbd contracts apply to parts. Stories: existing + density/narrow. Ou
 14. **Error:** field-level + form-level messages.  
 15. **Narrow:** stack label above control.  
 16. **Tiny:** focused field only.  
-17–18. child contracts.  
+17. **Unicode/ASCII:** required `*` and disabled `⊘` markers; child control glyphs.  
+18. **Colorless:** invalid field bold `!` prefix; required `*` always.  
 19. **Composition:** TextInput/TextArea/Checkbox/Select…  
 20. **Outcomes:** `FocusField` · `SubmitRequested` · child outcomes  
 21. **Stories:** existing form stories + invalid.  
@@ -915,7 +989,8 @@ Full Button/Kbd contracts apply to parts. Stories: existing + density/narrow. Ou
 14. **Error:** invalid trigger chrome.  
 15. **Narrow:** menu full width of parent.  
 16. **Tiny:** value only; menu may full-screen.  
-17–18. as List options.  
+17. **Unicode/ASCII:** option glyphs + chevron from catalog; labels grapheme-safe.  
+18. **Colorless:** open menu bold border; selected option reverse/gutter `>`.  
 19. **Composition:** Form fields.  
 20. **Outcomes:** `Selected(Id)` · `Opened` · `Cancelled`  
 21. **Stories:** `select/basic`, `select/loading-options`  
@@ -941,7 +1016,8 @@ Full Button/Kbd contracts apply to parts. Stories: existing + density/narrow. Ou
 14. **Error:** invalid if required empty.  
 15. **Narrow:** chip row scroll/drop trailing chips + count Badge.  
 16. **Tiny:** count Badge only + open.  
-17–18. Checkbox + Tag rules.  
+17. **Unicode/ASCII:** checkboxes `[x]`/`[ ]`; chip remove `×`/`x`.  
+18. **Colorless:** selected options reverse; chips bold label.  
 19. **Composition:** filters, Form.  
 20. **Outcomes:** `SelectionChanged { selected }` · `Cancelled`  
 21. **Stories:** `multi-select/chips`, `multi-select/checkbox`  
@@ -967,7 +1043,8 @@ Full Button/Kbd contracts apply to parts. Stories: existing + density/narrow. Ou
 14. **Error:** invalid free_text validation.  
 15. **Narrow:** full width overlay.  
 16. **Tiny:** input only.  
-17–18. TextInput + List.  
+17. **Unicode/ASCII:** query grapheme-safe; list gutters catalog.  
+18. **Colorless:** cursor cell reverse; selected result gutter/reverse.  
 19. **Composition:** SessionPicker, resource filter, CommandPalette cousin.  
 20. **Outcomes:** `Activated(Id)` · `QueryChanged` · `FreeTextSubmit(String)` · `Cancelled`  
 21. **Stories:** existing picker + `combobox/free-text`, `combobox/empty`  
@@ -1031,7 +1108,30 @@ Full Button/Kbd contracts apply to parts. Stories: existing + density/narrow. Ou
 
 ## CompletionMenu
 
-Supporting selection overlay (exists): candidate list + size planner + place helper. Contracts as Combobox list layer; outcomes `Accepted(Id)` · `Cancelled`. Stories/tests existing.
+1. **Purpose:** Anchored candidate list for editors (completion popup).  
+2. **Anatomy:** `frame` · `row[]` · `kind` · `label` · `detail` · `scrollbar`  
+3. **Public properties:** candidates projection (stable IDs), selected, `design`  
+4. **State:** selected_id, scroll offset; open controlled by editor.  
+5. **Variants:** `default` · `rich` (kind + detail)  
+6. **Sizes/density:** size planner + `place_completion_menu` clamp/flip.  
+7. **Visual states:** selected, empty.  
+8. **Interaction states:** navigate · accept · dismiss.  
+9. **Keyboard:** Up/Down; Enter/Tab `Accepted`; Esc `Dismissed`.  
+10. **Mouse:** click row; wheel.  
+11. **Focus:** not a global tab stop; receives keys while editor owns completion mode.  
+12. **Disabled:** skip disabled candidates.  
+13. **Loading:** Skeleton rows or spinner footer.  
+14. **Error:** N/A.  
+15. **Narrow:** drop detail then kind.  
+16. **Tiny:** label only; clamp inside parent.  
+17. **Unicode/ASCII:** kind glyphs catalog.  
+18. **Colorless:** selected reverse/gutter.  
+19. **Composition:** TextInput/TextArea/PromptComposer completion.  
+20. **Outcomes:** `Accepted(Id)` · `Dismissed` · `Changed`  
+21. **Stories:** existing completion + `completion-menu/place-flip`  
+22. **Snapshots:** placement above/below anchor.  
+23. **Interaction tests:** never covers anchor cell; Esc dismiss.  
+24. **Perf:** O(visible candidates).
 
 ---
 
@@ -1055,7 +1155,8 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 14. **Error:** severity danger.  
 15. **Narrow:** full width bottom.  
 16. **Tiny:** message only one line.  
-17–18. severity glyphs.  
+17. **Unicode/ASCII:** severity glyphs catalog; close `×`/`x`.  
+18. **Colorless:** severity letter prefix (`i`/`!`/`x`/`ok`) + bold message.  
 19. **Composition:** OverlayHost non-blocking layer.  
 20. **Outcomes:** `Dismissed` · `Expired`  
 21. **Stories:** existing toast stories.  
@@ -1072,7 +1173,11 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 5. **Variants:** `bar` · `meter`  
 6. **Sizes/density:** height 1.  
 7. **Visual states:** partial/full/indeterminate.  
-8–12. N/A interactive.  
+8. **Interaction states:** N/A.  
+9. **Keyboard:** N/A.  
+10. **Mouse:** N/A.  
+11. **Focus:** not a tab stop.  
+12. **Disabled:** N/A.  
 13. **Loading:** indeterminate uses Spinner frames when Motion on.  
 14. **Error:** optional danger tone on failure value.  
 15. **Narrow:** drop percent then label.  
@@ -1095,7 +1200,11 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 5. **Variants:** `text` · `card` · `table`  
 6. **Sizes/density:** bone height/gap from density.  
 7. **Visual states:** pulse if Motion full; static if off.  
-8–12. N/A.  
+8. **Interaction states:** N/A.  
+9. **Keyboard:** N/A.  
+10. **Mouse:** N/A.  
+11. **Focus:** not a tab stop.  
+12. **Disabled:** N/A.  
 13. **Loading:** this *is* loading UI.  
 14. **Error:** N/A (ErrorView).  
 15. **Narrow:** fewer/shorter bones.  
@@ -1136,18 +1245,55 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 23. **Interaction tests:** action Enter/click.  
 24. **Perf:** O(text).
 
-## LoadingView / ErrorView
+## LoadingView
 
-| | LoadingView | ErrorView |
-|--|-------------|-----------|
-| 1 Purpose | Full-region loading | Hard failure surface |
-| 2 Anatomy | spinner · label | glyph · title · detail · action |
-| 3–6 | tick, block/inline | title/detail, default/compact |
-| 9–12 | non-interactive | action like EmptyState |
-| 13–14 | is loading | is error |
-| 15–16 | label truncate / spinner only | stack / title+action |
-| 20 | none | ActionActivated |
-| 21–24 | motion-off stories | retry action tests |
+1. **Purpose:** Full-region or inline loading surface.  
+2. **Anatomy:** `root` · `spinner` · `label`  
+3. **Public properties:** `tick`/`FrameTick`, `label`, `variant` (`block`/`inline`), `design`  
+4. **State:** frame from tick + Motion.  
+5. **Variants:** `block` · `inline`  
+6. **Sizes/density:** block centers in parent; inline 1 row.  
+7. **Visual states:** animating / static (Motion off).  
+8–12. **Interaction/focus/disabled:** non-interactive; not a tab stop.  
+13. **Loading:** this *is* loading UI.  
+14. **Error:** N/A (use ErrorView).  
+15. **Narrow:** truncate label.  
+16. **Tiny:** spinner only.  
+17. **Unicode/ASCII:** Spinner catalog.  
+18. **Colorless:** same glyphs; dim label.  
+19. **Composition:** panel body, dialog body, workbench center.  
+20. **Outcomes:** none.  
+21. **Stories:** `loading-view/block`, `loading-view/motion-off`  
+22. **Snapshots:** fixed tick.  
+23. **Interaction tests:** Motion::Off stable.  
+24. **Perf:** O(1).
+
+## ErrorView
+
+1. **Purpose:** Hard failure surface with optional recovery action.  
+2. **Anatomy:** `root` · `glyph` · `title` · `detail` · `action`  
+3. **Public properties:** title, detail, action?, `design`  
+4. **State:** action Button state only.  
+5. **Variants:** `default` · `compact`  
+6. **Sizes/density:** compact drops detail padding.  
+7. **Visual states:** danger tone; action states.  
+8. **Interaction states:** action activate.  
+9. **Keyboard:** Tab action; Enter activate.  
+10. **Mouse:** click action.  
+11. **Focus:** action if present.  
+12. **Disabled:** action disabled respected.  
+13. **Loading:** N/A.  
+14. **Error:** this *is* error UI.  
+15. **Narrow:** stack parts.  
+16. **Tiny:** title + action.  
+17. **Unicode/ASCII:** danger glyph catalog.  
+18. **Colorless:** `!`/`x` prefix + bold title.  
+19. **Composition:** workbench center, dialog body, empty failure.  
+20. **Outcomes:** `ActionActivated(Id)`  
+21. **Stories:** `error-view/basic`, `error-view/retry`  
+22. **Snapshots:** compact vs default.  
+23. **Interaction tests:** retry activate.  
+24. **Perf:** O(text).
 
 ---
 
@@ -1193,10 +1339,13 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 9. **Keyboard:** Esc dismiss; Tab trap.  
 10. **Mouse:** outside on backdrop dismiss if allowed.  
 11. **Focus:** trap.  
-12–14. as Dialog.  
+12. **Disabled:** N/A shell; body children respect own disabled.  
+13. **Loading:** footer primary loading as Dialog.  
+14. **Error:** danger border + body Callout as Dialog.  
 15. **Narrow:** full width/height.  
 16. **Tiny:** full screen panel.  
-17–18. as Dialog.  
+17. **Unicode/ASCII:** single-line border glyphs.  
+18. **Colorless:** bold title; danger `!` when risk.  
 19. **Composition:** settings, TaskRail expanded.  
 20. **Outcomes:** `Closed`  
 21. **Stories:** `drawer/right`, `drawer/bottom-narrow`  
@@ -1217,10 +1366,13 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 9. **Keyboard:** Esc dismiss; no full app trap if non-modal policy.  
 10. **Mouse:** outside click dismiss.  
 11. **Focus:** optional initial focus inside.  
-12–14. N/A.  
+12. **Disabled:** N/A shell.  
+13. **Loading:** content may be Skeleton.  
+14. **Error:** N/A (content Callout).  
 15. **Narrow:** flip/clamp (CompletionMenu placement).  
 16. **Tiny:** may become Dialog fallback—document.  
-17–18. elevated surface mono bold border.  
+17. **Unicode/ASCII:** elevated single-line border glyphs.  
+18. **Colorless:** bold border; elevated dim surface via reverse edge.  
 19. **Composition:** Select menu, rich Tooltip.  
 20. **Outcomes:** `Closed`  
 21. **Stories:** `popover/flip`, `popover/clamp`  
@@ -1242,10 +1394,12 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 10. **Mouse:** show on hover after delay.  
 11. **Focus:** follows owner focus-visible.  
 12. **Disabled:** owner disabled → no show.  
-13–14. N/A.  
+13. **Loading:** N/A.  
+14. **Error:** N/A.  
 15. **Narrow:** clamp inside window.  
 16. **Tiny:** hide if &lt;10 free cols.  
-17–18. plain text.  
+17. **Unicode/ASCII:** plain text; grapheme-safe wrap.  
+18. **Colorless:** reverse or bold tooltip frame.  
 19. **Composition:** IconButton, truncated Table cells.  
 20. **Outcomes:** none.  
 21. **Stories:** `tooltip/basic`, `tooltip/delay`  
@@ -1271,7 +1425,8 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 14. **Error:** N/A.  
 15. **Narrow:** full width; drop footer.  
 16. **Tiny:** query only.  
-17–18. List rules.  
+17. **Unicode/ASCII:** query grapheme-safe; list gutters catalog.  
+18. **Colorless:** selected command reverse/gutter; query cursor reverse.  
 19. **Composition:** scene modal/palette layer.  
 20. **Outcomes:** `Activated(Id)` · `QueryChanged` · `Cancelled`  
 21. **Stories:** existing + `command-palette/loading`  
@@ -1279,14 +1434,49 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 23. **Interaction tests:** two-stage Esc.  
 24. **Perf:** filter O(n) consumer; paint O(visible).
 
-## Backdrop / JumpOverlay
+## Backdrop
 
-| | Backdrop | JumpOverlay |
-|--|----------|-------------|
-| Purpose | Occlusion wash | Letter-jump targets |
-| Interactive | no | badge assign + jump |
-| Outcomes | none | JumpOutcome |
-| Notes | Reset bg sacred | scene registration |
+1. **Purpose:** Occlusion wash behind modal content.  
+2. **Anatomy:** `root` (full rect) · optional `wash_glyph` field  
+3. **Public properties:** `design` (reads backdrop token)  
+4. **State:** none.  
+5. **Variants:** `reset` · `dim` (glyph wash)  
+6. **Sizes/density:** fills parent.  
+7. **Visual states:** visible only.  
+8–14. **Interaction/loading/error:** non-interactive; clicks may bubble as outside-dismiss to owner.  
+15–16. **Narrow/tiny:** full area still.  
+17. **Unicode/ASCII:** optional `░`/` `.  
+18. **Colorless:** Reset bg; no color required.  
+19. **Composition:** Dialog, Drawer, CommandPalette.  
+20. **Outcomes:** optional `OutsideClick` to owner.  
+21. **Stories:** `backdrop/reset`, `backdrop/dim`  
+22. **Snapshots:** dim wash.  
+23. **Interaction tests:** outside click forwarding.  
+24. **Perf:** O(area) fill.
+
+## JumpOverlay
+
+1. **Purpose:** Letter-jump targets over registered hit regions.  
+2. **Anatomy:** `badge[]` over scene geometry  
+3. **Public properties:** registered targets from InteractionScene, `design`  
+4. **State:** typed prefix buffer.  
+5. **Variants:** `default`  
+6. **Sizes/density:** badge 1–2 cells.  
+7. **Visual states:** candidate / matched / eliminated.  
+8. **Interaction states:** type filter · jump · cancel.  
+9. **Keyboard:** printable accumulates; Esc cancel; exact match jumps.  
+10. **Mouse:** click badge jumps.  
+11. **Focus:** overlay layer owns keys until done.  
+12–14. N/A.  
+15–16. clamp badges inside window; drop if no space.  
+17. **Unicode/ASCII:** ASCII letters preferred for typing.  
+18. **Colorless:** reverse badges.  
+19. **Composition:** scene overlay registration.  
+20. **Outcomes:** `Jumped(Id)` · `Cancelled`  
+21. **Stories:** existing jump-overlay.  
+22. **Snapshots:** multi-badge.  
+23. **Interaction tests:** type disambiguation; Esc.  
+24. **Perf:** O(targets).
 
 ---
 
@@ -1337,7 +1527,8 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 14. **Error:** composed Callout above.  
 15. **Narrow:** toolbar labels→icons; column collapse; bulk bar stacks.  
 16. **Tiny:** document List fallback or single-column Table.  
-17–18. Table + stripe via dim alternate.  
+17. **Unicode/ASCII:** Table cell graphemes; toolbar icon catalog.  
+18. **Colorless:** stripe via dim alternate rows; bulk bar reverse header; selected reverse.  
 19. **Composition:** wraps Table; toolbar Buttons.  
 20. **Outcomes:** Table ∪ `BulkAction` ∪ `SelectAllRequested` ∪ `ClearBulk`  
 21. **Stories:** `datatable/striped`, `datatable/bulk`, `datatable/narrow-toolbar`  
@@ -1363,7 +1554,8 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 14. **Error:** field error tone.  
 15. **Narrow:** stack key above value.  
 16. **Tiny:** selected key=value one line.  
-17–18. mono keys bold; values default.  
+17. **Unicode/ASCII:** disclosure `▾`/`▸` vs `v`/`>`; keys grapheme-safe.  
+18. **Colorless:** keys bold; selected reverse; disclosure always present.  
 19. **Composition:** ResourceBrowser east; ToolCallCard detail.  
 20. **Outcomes:** `Selected` · `Action(Id)` · `Copied` request · `ToggledExpand`  
 21. **Stories:** `object-inspector/flat`, `object-inspector/nested`  
@@ -1410,8 +1602,10 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 8. **Interaction states:** select.  
 9. **Keyboard:** up/down.  
 10. **Mouse:** click event.  
-11. **Focus:** optional.  
-12–14. N/A.  
+11. **Focus:** optional list focus.  
+12. **Disabled:** skip disabled events.  
+13. **Loading:** pending event Skeleton row.  
+14. **Error:** failed event danger tone.  
 15. **Narrow:** drop time to secondary line.  
 16. **Tiny:** text only.  
 17. **Unicode/ASCII:** bullet `•`/`*`.  
@@ -1450,9 +1644,46 @@ Supporting selection overlay (exists): candidate list + size planner + place hel
 23. **Interaction tests:** hunk next/prev bounds.  
 24. **Perf:** O(visible lines).
 
-## Charts (Sparkline, BarSeries, SegmentedMeter)
+## Sparkline
 
-Viz tokens; non-interactive by default; colorless = glyph density only; narrow drops labels; perf O(points visible). Stories exist.
+1. **Purpose:** Compact 1-row series viz.  
+2. **Anatomy:** `root` · `points` · optional `label`  
+3. **Public properties:** series `&[f64]`, `design` (viz tokens)  
+4–14. Non-interactive controlled data; no focus.  
+15. **Narrow:** drop label; fewer columns sample.  
+16. **Tiny:** min 3 cells density glyphs.  
+17. **Unicode/ASCII:** block levels vs `#*.-`.  
+18. **Colorless:** glyph height only.  
+19. **Composition:** StatusBar, TokenMeter cousin, dashboards.  
+20. **Outcomes:** none.  
+21. **Stories:** existing sparkline.  
+22. **Snapshots:** fixed series.  
+23. **Interaction tests:** N/A.  
+24. **Perf:** O(width).
+
+## BarSeries
+
+1. **Purpose:** Multi-bar chart in cells.  
+2. **Anatomy:** `root` · `bar[]` · `axis` · `label[]`  
+3. **Public properties:** bars, labels, `design`  
+4–14. Non-interactive.  
+15. **Narrow:** drop axis labels then collapse bars.  
+16. **Tiny:** single bar summary.  
+17–18. viz fill glyphs; mono density.  
+19. **Composition:** OpsDashboard.  
+20–24. stories/snapshots existing; O(bars×height).
+
+## SegmentedMeter
+
+1. **Purpose:** Segmented usage/quota meter.  
+2. **Anatomy:** `track` · `segment[]` · `label`  
+3. **Public properties:** segments (value+tone), `design`  
+4–14. Non-interactive.  
+15. **Narrow:** drop labels.  
+16. **Tiny:** track only.  
+17–18. fill glyphs; mono hatch per segment.  
+19. **Composition:** TokenMeter, StatusBar.  
+20–24. existing stories; O(width).
 
 ---
 
@@ -1463,28 +1694,53 @@ Viz tokens; non-interactive by default; colorless = glyph density only; narrow d
 1. **Purpose:** Select DesignSystem/theme preset with preview.  
 2. **Anatomy:** `root` · `list` · `swatch` · `name` · `preview`  
 3. **Public properties:** presets, selected, `design`  
-4. **State:** selection index.  
+4. **State:** selection index (List-like).  
 5. **Variants:** `list` · `grid`  
-6–12. List-like navigation.  
-13–14. N/A.  
-15–16. list only on narrow/tiny.  
-17–18. swatch mono → name only.  
-19. Lookbook / settings.  
+6. **Sizes/density:** preview pane min width; density compact in studio.  
+7. **Visual states:** selected row; swatch samples.  
+8. **Interaction states:** navigate · select · preview.  
+9. **Keyboard:** List keys; Enter select.  
+10. **Mouse:** click row/swatch.  
+11. **Focus:** list focus.  
+12. **Disabled:** skip disabled presets.  
+13. **Loading:** N/A.  
+14. **Error:** N/A.  
+15. **Narrow:** list only; hide preview.  
+16. **Tiny:** name list only.  
+17. **Unicode/ASCII:** swatch blocks; names plain.  
+18. **Colorless:** name only (no swatch reliance).  
+19. **Composition:** lookbook / settings shell.  
 20. **Outcomes:** `Selected(PresetId)` · `Preview(PresetId)`  
-21–24. existing ThemePicker stories/tests; live preview host (plan 049).
+21. **Stories:** existing ThemePicker + capability host.  
+22. **Snapshots:** list + swatch mono.  
+23. **Interaction tests:** select emits preset id.  
+24. **Perf:** O(visible presets) + preview paint.
 
 ## DesignInspector (studio)
 
-1. **Purpose:** Debug focus, scene layers, tokens, capabilities.  
-2. **Anatomy:** panels for layers, focus id, capability, recipes.  
+1. **Purpose:** Debug focus, scene layers, tokens, capabilities (not production default).  
+2. **Anatomy:** `tabs` · `layers` · `focus_id` · `capability` · `recipe` panels  
 3. **Public properties:** scene snapshot, tokens, `design`  
 4. **State:** selected panel tab.  
-5–18. lookbook-only; density compact.  
-19. Not production default.  
-20. none (or copy token outcome).  
-21. `studio/inspector`  
-22–23. focus id updates.  
-24. O(layers).
+5. **Variants:** `docked` · `overlay`  
+6. **Sizes/density:** compact density forced.  
+7. **Visual states:** active tab; selected layer.  
+8. **Interaction states:** tab switch · select layer.  
+9. **Keyboard:** Tabs keys; list nav in panels.  
+10. **Mouse:** click tabs/rows.  
+11. **Focus:** inspector root; internal stops.  
+12. **Disabled:** N/A.  
+13–14. N/A.  
+15. **Narrow:** single panel stack.  
+16. **Tiny:** focus_id only.  
+17. **Unicode/ASCII:** tree/list glyphs.  
+18. **Colorless:** selected reverse.  
+19. **Composition:** TermRock Studio / lookbook only.  
+20. **Outcomes:** optional `CopyToken` request.  
+21. **Stories:** `studio/inspector`  
+22. **Snapshots:** layers panel.  
+23. **Interaction tests:** focus id updates with scene.  
+24. **Perf:** O(layers).
 
 ---
 
@@ -1508,7 +1764,8 @@ Viz tokens; non-interactive by default; colorless = glyph density only; narrow d
 14. **Error:** N/A (Callout above).  
 15. **Narrow:** drop chips → mode → hints.  
 16. **Tiny:** single-line input fallback.  
-17–18. TextArea rules.  
+17. **Unicode/ASCII:** editor grapheme cursor; attach chip remove `×`/`x`.  
+18. **Colorless:** cursor reverse; mode badge bold prefix; send focus underline.  
 19. **Composition:** AgentWorkbench south.  
 20. **Outcomes:** `Submitted { text }` · `Changed` · `Cancelled` · `ModeChanged` · `Detach(Id)`  
 21. **Stories:** `prompt-composer/submit`, `prompt-composer/newline`, `prompt-composer/streaming-locked`  
@@ -1530,7 +1787,8 @@ Viz tokens; non-interactive by default; colorless = glyph density only; narrow d
 10. **Mouse:** click decision.  
 11. **Focus:** trap; initial focus = default decision.  
 12. **Disabled:** N/A.  
-13–14. N/A.  
+13. **Loading:** N/A (decision is sync message).  
+14. **Error:** risk tone is not validation; invalid props refuse paint tests.  
 15. **Narrow:** stack decisions vertically.  
 16. **Tiny:** title + Deny/Allow only.  
 17. **Unicode/ASCII:** risk glyphs catalog.  
@@ -1560,7 +1818,8 @@ Viz tokens; non-interactive by default; colorless = glyph density only; narrow d
 14. **Error:** validation on next.  
 15. **Narrow:** stack nav.  
 16. **Tiny:** question + options only.  
-17–18. Radio/MultiSelect.  
+17. **Unicode/ASCII:** radio/check glyphs; progress bar blocks catalog.  
+18. **Colorless:** selected option reverse; progress via fill density.  
 19. **Composition:** plan mode overlay.  
 20. **Outcomes:** `Answered { step, values }` · `Back` · `Skip` · `Finished`  
 21. **Stories:** `question-flow/basic`, `question-flow/required`  
@@ -1581,10 +1840,13 @@ Viz tokens; non-interactive by default; colorless = glyph density only; narrow d
 9. **Keyboard:** list nav; `a` accept / `r` reject optional outcomes.  
 10. **Mouse:** click step/actions.  
 11. **Focus:** list or actions.  
-12–14. N/A / consumer.  
+12. **Disabled:** accept/reject disabled while consumer marks pending.  
+13. **Loading:** step detail Skeleton when plan streams.  
+14. **Error:** rejected step tone; invalid plan Callout.  
 15. **Narrow:** stack detail under list.  
 16. **Tiny:** selected step title + Accept/Reject.  
-17–18. List + Markdown.  
+17. **Unicode/ASCII:** step status glyphs; markdown body rules.  
+18. **Colorless:** accepted check prefix; selected reverse.  
 19. **Composition:** agent plan mode.  
 20. **Outcomes:** `Accepted` · `Rejected` · `StepSelected` · `EditRequested`  
 21. **Stories:** `plan-review/basic`, `plan-review/narrow`  
@@ -1637,7 +1899,8 @@ Viz tokens; non-interactive by default; colorless = glyph density only; narrow d
 14. **Error:** failed status.  
 15. **Narrow:** title only.  
 16. **Tiny:** status + first grapheme.  
-17–18. List composition.  
+17. **Unicode/ASCII:** task status glyphs catalog.  
+18. **Colorless:** status letter + selected reverse.  
 19. **Composition:** AgentWorkbench east/west.  
 20. **Outcomes:** `Selected` · `Activated`  
 21. **Stories:** `task-rail/statuses`  
@@ -1658,10 +1921,13 @@ Viz tokens; non-interactive by default; colorless = glyph density only; narrow d
 9. **Keyboard:** Combobox/List keys.  
 10. **Mouse:** click row.  
 11. **Focus:** trap if modal.  
-12–14. N/A.  
+12. **Disabled:** skip disabled sessions.  
+13. **Loading:** Skeleton list while sessions fetch.  
+14. **Error:** EmptyState error-lite or ErrorView.  
 15. **Narrow:** drop preview.  
 16. **Tiny:** title only rows.  
-17–18. List/Combobox.  
+17. **Unicode/ASCII:** timestamps plain; list gutters.  
+18. **Colorless:** selected reverse; empty bold title.  
 19. **Composition:** startup overlay.  
 20. **Outcomes:** `Picked(Id)` · `Cancelled` · `QueryChanged`  
 21. **Stories:** `session-picker/basic`, `session-picker/empty`  
@@ -1669,15 +1935,77 @@ Viz tokens; non-interactive by default; colorless = glyph density only; narrow d
 23. **Interaction tests:** pick/cancel.  
 24. **Perf:** O(visible).
 
-## ThinkingBlock / TokenMeter / Transcript
+## ThinkingBlock
 
-| Component | Notes |
-|-----------|--------|
-| **ThinkingBlock** | Collapsible reasoning; Esc/enter expand; mono dim body; streaming append |
-| **TokenMeter** | Segmented usage; colorless hatch; narrow drop labels |
-| **Transcript** | Plan 041 variable-height engine replacing StreamView; virtualize; sticky user/anchor; compose Markdown, ToolCallCard, Permission inline |
+1. **Purpose:** Collapsible agent reasoning stream.  
+2. **Anatomy:** `root` · `header` · `status` · `body` · `expand`  
+3. **Public properties:** text/lines, expanded, streaming, `design`  
+4. **State:** expanded controlled or uncontrolled.  
+5. **Variants:** `inline` · `card`  
+6. **Sizes/density:** collapsed 1 row; expanded variable.  
+7. **Visual states:** streaming, collapsed, expanded.  
+8. **Interaction states:** toggle expand.  
+9. **Keyboard:** Enter toggle when focused.  
+10. **Mouse:** click header.  
+11. **Focus:** optional tab stop in Transcript.  
+12. **Disabled:** N/A.  
+13. **Loading/async:** streaming append; no full rebuffer.  
+14. **Error:** N/A.  
+15. **Narrow:** collapsed default; drop header chrome.  
+16. **Tiny:** status glyph only until expand forced full.  
+17. **Unicode/ASCII:** disclosure glyphs.  
+18. **Colorless:** dim body; bold header when expanded.  
+19. **Composition:** Transcript items.  
+20. **Outcomes:** `ToggledExpand`  
+21. **Stories:** `thinking-block/stream`, `thinking-block/collapsed`  
+22. **Snapshots:** expanded body dim.  
+23. **Interaction tests:** toggle.  
+24. **Perf:** O(visible body lines).
 
-Each inherits ScrollArea + content contracts; outcomes Scrolled / ItemActivated / ToggledExpand.
+## TokenMeter
+
+1. **Purpose:** Context/token usage meter.  
+2. **Anatomy:** SegmentedMeter parts + `label` · `ratio`  
+3. **Public properties:** used, limit, segments?, `design`  
+4–12. Non-interactive by default.  
+13. **Loading:** optional indeterminate.  
+14. **Error:** over-limit danger tone.  
+15. **Narrow:** drop labels keep track.  
+16. **Tiny:** track only.  
+17–18. SegmentedMeter glyphs; mono hatch.  
+19. **Composition:** StatusBar, workbench chrome.  
+20. **Outcomes:** none (or `Activated` if clickable).  
+21. **Stories:** existing token-meter.  
+22. **Snapshots:** near-limit / over.  
+23. **Interaction tests:** N/A default.  
+24. **Perf:** O(width).
+
+## Transcript
+
+1. **Purpose:** Variable-height agent conversation surface (StreamView evolution).  
+2. **Anatomy:** `root` · `item[]` · `sticky_user?` · `scrollbar` · `follow`  
+3. **Public properties:** items projection (Markdown, ToolCallCard, Thinking, Permission inline, …), `design`  
+4. **State:** offset, follow, focused item; virtualized window.  
+5. **Variants:** `chat` · `log`  
+6. **Sizes/density:** item pad by density.  
+7. **Visual states:** streaming tail; follow chip.  
+8. **Interaction states:** scroll · activate item · expand child.  
+9. **Keyboard:** page/arrows; item intents when focused.  
+10. **Mouse:** wheel (breaks follow); click items.  
+11. **Focus:** transcript surface + optional item focus.  
+12. **Disabled:** N/A.  
+13. **Loading/async:** append/stream without full scan; skeleton pending.  
+14. **Error:** ErrorView item or banner.  
+15. **Narrow:** drop secondary item parts via child recipes.  
+16. **Tiny:** last item + composer sibling.  
+17. **Unicode/ASCII:** child rules.  
+18. **Colorless:** child rules + follow chip bold.  
+19. **Composition:** AgentWorkbench center; children pure.  
+20. **Outcomes:** `Scrolled` · `ItemActivated` · child unions · `FollowToggled`  
+21. **Stories:** `transcript/stream`, `transcript/mixed-items`, `transcript/follow`  
+22. **Snapshots:** mixed ToolCall + Markdown.  
+23. **Interaction tests:** follow breaks on wheel; virtualize bounds.  
+24. **Perf:** O(visible items × item paint); never O(total history) in render.
 
 ---
 
@@ -1701,7 +2029,8 @@ Each inherits ScrollArea + content contracts; outcomes Scrolled / ItemActivated 
 14. **Error:** ErrorView in center optional.  
 15. **Narrow:** collapse TaskRail to rail; stack south.  
 16. **Tiny:** Transcript + Prompt only.  
-17–18. child rules.  
+17. **Unicode/ASCII:** child glyph catalogs.  
+18. **Colorless:** child non-color cues; pane focus underline/border role.  
 19. **Composition:** only block; **no domain I/O**.  
 20. **Outcomes:** union of children.  
 21. **Stories:** `blocks/agent-workbench`, `blocks/agent-workbench-narrow`  
@@ -1709,16 +2038,76 @@ Each inherits ScrollArea + content contracts; outcomes Scrolled / ItemActivated 
 23. **Interaction tests:** Esc peel approval → prompt focus.  
 24. **Perf:** sum of children; no O(n²) layout thrash.
 
-## OpsDashboard / ResourceBrowser / SettingsShell / FormWizard
+## OpsDashboard
 
-| Block | Compose | Contraction |
-|-------|---------|-------------|
-| **OpsDashboard** | charts + LogStream + StatusBar | drop charts first |
-| **ResourceBrowser** | Tree + ObjectInspector + preview + Breadcrumbs | tree rail; hide preview |
-| **SettingsShell** | Sidebar + Section stack + Form | sidebar rail |
-| **FormWizard** | stepper + Form + nav actions | step title + form only |
+1. **Purpose:** Ops overview block: metrics + logs + status.  
+2. **Anatomy:** `root` · `charts` · `log` · `status`  
+3. **Public properties:** chart series, log lines, status slots, `design`  
+4. **State:** focus region; log follow.  
+5. **Variants:** `default`  
+6. **Sizes/density:** dashboard density default.  
+7–14. Child visual/interaction/loading.  
+15. **Narrow:** drop charts first; keep LogStream + StatusBar.  
+16. **Tiny:** StatusBar + last log lines.  
+17–18. child rules.  
+19. **Composition:** Workspace geometry.  
+20. **Outcomes:** child unions.  
+21. **Stories:** `blocks/ops-dashboard`, `blocks/ops-dashboard-narrow`  
+22–24. snapshots + O(visible).
 
-All: geometry from Workspace; child contracts apply; outcomes = child unions; stories under `blocks/*`.
+## ResourceBrowser
+
+1. **Purpose:** Hierarchical resource explorer.  
+2. **Anatomy:** `breadcrumbs` · `tree` · `inspector` · `preview?`  
+3. **Public properties:** nodes, fields, preview, `design`  
+4. **State:** tree selection + inspector path.  
+5. **Variants:** `default`  
+6. **Sizes/density:** tree rail width tokens.  
+7–14. Tree + ObjectInspector contracts.  
+15. **Narrow:** tree rail; hide preview.  
+16. **Tiny:** tree only.  
+17–18. child rules.  
+19. **Composition:** Workspace.  
+20. **Outcomes:** Tree ∪ ObjectInspector.  
+21. **Stories:** `blocks/resource-browser`  
+22–24. selection sync tests; O(visible).
+
+## SettingsShell
+
+1. **Purpose:** Settings navigation + form body.  
+2. **Anatomy:** `sidebar` · `section` · `form`  
+3. **Public properties:** nav items, form sections, `design`  
+4. **State:** selected nav; form focus.  
+5–14. Sidebar + Form.  
+15. **Narrow:** sidebar rail.  
+16. **Tiny:** form only with Breadcrumbs back.  
+17–24. child rules; stories `blocks/settings-shell`.
+
+## FormWizard
+
+1. **Purpose:** Multi-step form flow.  
+2. **Anatomy:** `stepper` · `form` · `nav` (back/next/finish)  
+3. **Public properties:** steps, current, form fields, `design`  
+4. **State:** step index; form state.  
+5. **Variants:** `linear`  
+6. **Sizes/density:** stepper 1 row.  
+7. **Visual states:** step complete/current/upcoming.  
+8. **Interaction states:** next/back/finish.  
+9. **Keyboard:** Form keys; next/back bindings.  
+10. **Mouse:** stepper + nav buttons.  
+11. **Focus:** form then nav.  
+12. **Disabled:** next until valid.  
+13. **Loading:** step transition skeleton.  
+14. **Error:** field validation blocks next.  
+15. **Narrow:** stepper titles truncate.  
+16. **Tiny:** step title + form only.  
+17–18. Form + Button.  
+19. **Composition:** Dialog or full workspace.  
+20. **Outcomes:** `StepChanged` · `Finished` · Form outcomes.  
+21. **Stories:** `blocks/form-wizard`  
+22. **Snapshots:** mid-step.  
+23. **Interaction tests:** required blocks next.  
+24. **Perf:** O(visible fields).
 
 ---
 
@@ -1792,3 +2181,36 @@ pub enum ApprovalDecision {
 - [ ] Lookbook story IDs registered  
 
 **Rendering alone never checks the box.**
+
+---
+
+## H. Required component coverage matrix
+
+Every row must have axes **1–24** specified in this document (interactive axes may be N/A with reason).
+
+| Taxonomy | Components |
+|----------|------------|
+| Primitives | Button, IconButton, Badge, Tag, Chip, Kbd, Separator, Spinner |
+| Content | Heading, Paragraph, Markdown, CodeBlock, Surface, Section, Callout, Alert |
+| Layout | Surface, Section, ScrollArea, WorkspacePane/Split |
+| Navigation | Tabs, Sidebar, Breadcrumbs, Menu, ContextMenu, ActionBar, HintBar, StatusBar |
+| Forms | TextInput, TextArea, Checkbox, RadioGroup, Switch, Form |
+| Selection | Select, MultiSelect, Combobox, List, Tree, CompletionMenu |
+| Feedback | Toast, Progress, Skeleton, EmptyState, LoadingView, ErrorView, Spinner |
+| Overlays | Dialog, Drawer, Popover, Tooltip, CommandPalette, Backdrop, JumpOverlay |
+| Data | Table, DataTable, ObjectInspector, LogStream, Timeline, DiffReview, Sparkline, BarSeries, SegmentedMeter |
+| Dev tools | ThemePicker, DesignInspector |
+| AI-agent | PromptComposer, PermissionPrompt, QuestionFlow, PlanReview, ToolCallCard, TaskRail, SessionPicker, ThinkingBlock, TokenMeter, Transcript |
+| Blocks | AgentWorkbench, OpsDashboard, ResourceBrowser, SettingsShell, FormWizard |
+
+### Axis legend (1–24)
+
+1 Purpose · 2 Anatomy · 3 Public properties · 4 Controlled/uncontrolled state · 5 Variants · 6 Sizes/density · 7 Visual states · 8 Interaction states · 9 Keyboard · 10 Mouse · 11 Focus · 12 Disabled · 13 Loading/async · 14 Error/validation · 15 Narrow · 16 Tiny · 17 Unicode/ASCII · 18 Colorless · 19 Composition · 20 Outcomes · 21 Stories · 22 Snapshots · 23 Interaction tests · 24 Performance
+
+### Cross-links
+
+- Tokens/recipes: [`terminal-design-system.md`](./terminal-design-system.md)  
+- Quality gate: [`component-quality-standard.md`](./component-quality-standard.md)  
+- Agent implement prompts: [`component-prompt-library.md`](./component-prompt-library.md)  
+- Agent pack: [`termrock-agent.md`](./termrock-agent.md)  
+- Contracts JSON: `docs/api/component-contracts.json` (machine inventory)
