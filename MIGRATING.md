@@ -147,6 +147,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0131 | `v0.13.0` | [Toggle & ToggleGroup](migrations/0131-v0.13.0-toggle.md) |
 | 0132 | `v0.13.0` | [Checkbox](migrations/0132-v0.13.0-checkbox.md) |
 | 0133 | `v0.13.0` | [RadioGroup](migrations/0133-v0.13.0-radio-group.md) |
+| 0134 | `v0.13.0` | [Switch](migrations/0134-v0.13.0-switch.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

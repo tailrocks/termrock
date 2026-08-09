@@ -591,6 +591,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "Switch": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "DataTable": {
     "keyboard": "covered",
     "mouse": "covered",

@@ -1,0 +1,69 @@
+---
+title: Switch
+description: 'Immediate On/Off settings control — scroll-safe, explicit value text.'
+---
+
+## Previews
+
+### `switch/basic`
+
+![Basic](/component-previews/switch-basic.svg)
+
+### `switch/loading`
+
+![Loading](/component-previews/switch-loading.svg)
+
+### `switch/states`
+
+![States](/component-previews/switch-states.svg)
+
+### `switch/compact`
+
+![Compact](/component-previews/switch-compact.svg)
+
+### `switch/narrow`
+
+![Narrow](/component-previews/switch-narrow.svg)
+
+### `switch/unicode`
+
+![Unicode](/component-previews/switch-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{Switch, SwitchState, SwitchOutcome};
+
+let mut state = SwitchState::new(false);
+state.set_focused(true);
+Switch::new("dark", "Dark mode", &system)
+    .description("Follow system appearance")
+    .paint(area, buf, &mut state);
+
+// Scroll-safe: Down arms, Up-in-region commits
+```
+
+## Contract
+
+| Concern | Rule |
+|---------|------|
+| Value text | `[ON ]` / `[OFF]` by default (no color-only) |
+| Settings row | Label left · track right |
+| Compact | Track left · label right |
+| Space/Enter | Toggle when focused |
+| Pointer | Down arm · Up-in-region toggle (scroll-safe) |
+| Loading / RO / disabled | No activate |
+| Invalid | Danger chrome |
+
+## Appropriate vs not
+
+| Need | Control |
+|------|---------|
+| Settings preference | **Switch** |
+| Form checked item | Checkbox |
+| Toolbar sticky tool | Toggle |
+| Exclusive options | RadioGroup |
+
+## Migration
+
+See `migrations/0134-v0.13.0-switch.md`.

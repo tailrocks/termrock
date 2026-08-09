@@ -42,7 +42,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 6 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.91s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.25s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -22243,6 +22243,56 @@ pub unsafe fn termrock::widgets::SwitchOutcome<Id>::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::SwitchOutcome<Id>
 pub fn termrock::widgets::SwitchOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SwitchOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::SwitchRecipe
+pub termrock::widgets::SwitchRecipe::Compact
+pub termrock::widgets::SwitchRecipe::SettingsRow
+impl termrock::widgets::SwitchRecipe
+pub const fn termrock::widgets::SwitchRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SwitchRecipe
+pub fn termrock::widgets::SwitchRecipe::clone(&self) -> termrock::widgets::SwitchRecipe
+impl core::cmp::Eq for termrock::widgets::SwitchRecipe
+impl core::cmp::PartialEq for termrock::widgets::SwitchRecipe
+pub fn termrock::widgets::SwitchRecipe::eq(&self, &termrock::widgets::SwitchRecipe) -> bool
+impl core::default::Default for termrock::widgets::SwitchRecipe
+pub fn termrock::widgets::SwitchRecipe::default() -> termrock::widgets::SwitchRecipe
+impl core::fmt::Debug for termrock::widgets::SwitchRecipe
+pub fn termrock::widgets::SwitchRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SwitchRecipe
+pub fn termrock::widgets::SwitchRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SwitchRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::SwitchRecipe
+impl core::marker::Freeze for termrock::widgets::SwitchRecipe
+impl core::marker::Send for termrock::widgets::SwitchRecipe
+impl core::marker::Sync for termrock::widgets::SwitchRecipe
+impl core::marker::Unpin for termrock::widgets::SwitchRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::SwitchRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SwitchRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SwitchRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SwitchRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SwitchRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SwitchRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::SwitchRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SwitchRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::SwitchRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::SwitchRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SwitchRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SwitchRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SwitchRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SwitchRecipe where T: core::clone::Clone
+pub type termrock::widgets::SwitchRecipe::Owned = T
+pub fn termrock::widgets::SwitchRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::SwitchRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SwitchRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SwitchRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SwitchRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::SwitchRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SwitchRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::SwitchRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SwitchRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SwitchRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SwitchRecipe
+pub fn termrock::widgets::SwitchRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SwitchRecipe
 #[non_exhaustive] pub enum termrock::widgets::TableOutcome<RowId, ColumnId>
 pub termrock::widgets::TableOutcome::Activated(RowId)
 pub termrock::widgets::TableOutcome::Cancelled
@@ -37172,14 +37222,32 @@ impl<T> either::into_either::IntoEither for termrock::widgets::SurfaceParts
 pub struct termrock::widgets::Switch<'a, Id>
 pub termrock::widgets::Switch::id: Id
 impl<'a, Id> termrock::widgets::Switch<'a, Id>
+pub const fn termrock::widgets::Switch<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Switch<'a, Id>::compact(self) -> Self
+pub const fn termrock::widgets::Switch<'a, Id>::description(self, &'a str) -> Self
+pub fn termrock::widgets::Switch<'a, Id>::handle_key(&self, &mut termrock::widgets::SwitchState, termrock::input::KeyEvent) -> termrock::widgets::SwitchOutcome<Id> where Id: core::clone::Clone
+pub fn termrock::widgets::Switch<'a, Id>::handle_key_result(&self, &mut termrock::widgets::SwitchState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::SwitchOutcome<Id>> where Id: core::clone::Clone
+pub fn termrock::widgets::Switch<'a, Id>::handle_mouse(&self, &mut termrock::widgets::SwitchState, termrock::input::MouseEvent) -> termrock::widgets::SwitchOutcome<Id> where Id: core::clone::Clone
 pub const fn termrock::widgets::Switch<'a, Id>::new(Id, &'a str, &'a termrock::style::DesignSystem) -> Self
-impl<Id> termrock::widgets::Switch<'_, Id>
-pub fn termrock::widgets::Switch<'_, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SwitchState)
+pub fn termrock::widgets::Switch<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SwitchState) -> termrock::widgets::SwitchParts
+pub fn termrock::widgets::Switch<'a, Id>::preferred_height(&self) -> u16
+pub const fn termrock::widgets::Switch<'a, Id>::recipe(self, termrock::widgets::SwitchRecipe) -> Self
+pub fn termrock::widgets::Switch<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, ratatui_core::layout::rect::Rect, &termrock::widgets::SwitchState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub fn termrock::widgets::Switch<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SwitchState)
+pub const fn termrock::widgets::Switch<'a, Id>::settings_row(self) -> Self
+pub const fn termrock::widgets::Switch<'a, Id>::show_value_text(self, bool) -> Self
+pub fn termrock::widgets::Switch<'a, Id>::track_width(&self, &termrock::widgets::SwitchState) -> u16
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Switch<'a, Id>
 pub fn termrock::widgets::Switch<'a, Id>::clone(&self) -> termrock::widgets::Switch<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Switch<'a, Id>
 pub fn termrock::widgets::Switch<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Switch<'a, Id>
+impl<Id: core::clone::Clone> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Switch<'_, Id>
+pub type &termrock::widgets::Switch<'_, Id>::State = termrock::widgets::SwitchState
+pub fn &termrock::widgets::Switch<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Switch<'_, Id>
+pub type termrock::widgets::Switch<'_, Id>::State = termrock::widgets::SwitchState
+pub fn termrock::widgets::Switch<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Switch<'a, Id> where Id: core::marker::Freeze
 impl<'a, Id> core::marker::Send for termrock::widgets::Switch<'a, Id> where Id: core::marker::Send
 impl<'a, Id> core::marker::Sync for termrock::widgets::Switch<'a, Id> where Id: core::marker::Sync
@@ -37210,15 +37278,76 @@ pub unsafe fn termrock::widgets::Switch<'a, Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Switch<'a, Id>
 pub fn termrock::widgets::Switch<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Switch<'a, Id>
+pub struct termrock::widgets::SwitchParts
+pub termrock::widgets::SwitchParts::description_area: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SwitchParts::label_area: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SwitchParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SwitchParts::track: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::SwitchParts
+pub fn termrock::widgets::SwitchParts::clone(&self) -> termrock::widgets::SwitchParts
+impl core::cmp::Eq for termrock::widgets::SwitchParts
+impl core::cmp::PartialEq for termrock::widgets::SwitchParts
+pub fn termrock::widgets::SwitchParts::eq(&self, &termrock::widgets::SwitchParts) -> bool
+impl core::default::Default for termrock::widgets::SwitchParts
+pub fn termrock::widgets::SwitchParts::default() -> termrock::widgets::SwitchParts
+impl core::fmt::Debug for termrock::widgets::SwitchParts
+pub fn termrock::widgets::SwitchParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SwitchParts
+impl core::marker::Freeze for termrock::widgets::SwitchParts
+impl core::marker::Send for termrock::widgets::SwitchParts
+impl core::marker::Sync for termrock::widgets::SwitchParts
+impl core::marker::Unpin for termrock::widgets::SwitchParts
+impl core::marker::UnsafeUnpin for termrock::widgets::SwitchParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SwitchParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SwitchParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SwitchParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SwitchParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SwitchParts where U: core::convert::From<T>
+pub fn termrock::widgets::SwitchParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SwitchParts where U: core::convert::Into<T>
+pub type termrock::widgets::SwitchParts::Error = core::convert::Infallible
+pub fn termrock::widgets::SwitchParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SwitchParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SwitchParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SwitchParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SwitchParts where T: core::clone::Clone
+pub type termrock::widgets::SwitchParts::Owned = T
+pub fn termrock::widgets::SwitchParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::SwitchParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SwitchParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SwitchParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SwitchParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SwitchParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SwitchParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SwitchParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SwitchParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SwitchParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SwitchParts
+pub fn termrock::widgets::SwitchParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SwitchParts
 pub struct termrock::widgets::SwitchState
+pub termrock::widgets::SwitchState::enabled: bool
+pub termrock::widgets::SwitchState::focused: bool
+pub termrock::widgets::SwitchState::hovered: bool
+pub termrock::widgets::SwitchState::invalid: bool
+pub termrock::widgets::SwitchState::loading: bool
+pub termrock::widgets::SwitchState::on: bool
+pub termrock::widgets::SwitchState::parts: core::option::Option<termrock::widgets::SwitchParts>
+pub termrock::widgets::SwitchState::read_only: bool
 impl termrock::widgets::SwitchState
+pub const fn termrock::widgets::SwitchState::can_activate(&self) -> bool
 pub fn termrock::widgets::SwitchState::handle_key<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &Id) -> termrock::widgets::SwitchOutcome<Id>
+pub fn termrock::widgets::SwitchState::handle_key_result<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &Id) -> termrock::interaction::EventResult<termrock::widgets::SwitchOutcome<Id>>
 pub fn termrock::widgets::SwitchState::handle_mouse<Id: core::clone::Clone>(&mut self, termrock::input::MouseEvent, &Id) -> termrock::widgets::SwitchOutcome<Id>
 pub const fn termrock::widgets::SwitchState::is_on(&self) -> bool
 pub const fn termrock::widgets::SwitchState::new(bool) -> Self
+pub const fn termrock::widgets::SwitchState::region(&self) -> core::option::Option<ratatui_core::layout::rect::Rect>
 pub const fn termrock::widgets::SwitchState::set_enabled(&mut self, bool)
 pub const fn termrock::widgets::SwitchState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::SwitchState::set_invalid(&mut self, bool)
+pub const fn termrock::widgets::SwitchState::set_loading(&mut self, bool)
 pub const fn termrock::widgets::SwitchState::set_on(&mut self, bool)
+pub const fn termrock::widgets::SwitchState::set_read_only(&mut self, bool)
 impl core::clone::Clone for termrock::widgets::SwitchState
 pub fn termrock::widgets::SwitchState::clone(&self) -> termrock::widgets::SwitchState
 impl core::cmp::Eq for termrock::widgets::SwitchState
@@ -37228,7 +37357,6 @@ impl core::default::Default for termrock::widgets::SwitchState
 pub fn termrock::widgets::SwitchState::default() -> termrock::widgets::SwitchState
 impl core::fmt::Debug for termrock::widgets::SwitchState
 pub fn termrock::widgets::SwitchState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::widgets::SwitchState
 impl core::marker::StructuralPartialEq for termrock::widgets::SwitchState
 impl core::marker::Freeze for termrock::widgets::SwitchState
 impl core::marker::Send for termrock::widgets::SwitchState

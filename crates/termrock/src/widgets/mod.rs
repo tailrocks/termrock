@@ -174,7 +174,7 @@ pub use controls::{
     ComboboxOutcome, ComboboxState, MultiSelect, MultiSelectOutcome, MultiSelectState, RadioGroup,
     RadioGroupOrientation, RadioGroupParts, RadioOption, RadioOptionParts, RadioOutcome,
     RadioSelectionPolicy, RadioState, Select, SelectOutcome, SelectState, Switch, SwitchOutcome,
-    SwitchState,
+    SwitchParts, SwitchRecipe, SwitchState,
 };
 pub use data_table::{DataTable, DataTableOutcome, DataTableState, DataTableToolbar};
 pub use data_view::bench as data_view_bench;

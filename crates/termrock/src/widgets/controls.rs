@@ -1635,49 +1635,111 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
 
 // ── Switch ──────────────────────────────────────────────────────────────────
 
-/// Switch outcome.
+/// Density / layout recipe for a [`Switch`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum SwitchRecipe {
+    /// Settings row: label (and optional description) with track on the trailing edge.
+    #[default]
+    SettingsRow,
+    /// Compact: track + label on one tight line (leading track).
+    Compact,
+}
+
+impl SwitchRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::SettingsRow => "settings-row",
+            Self::Compact => "compact",
+        }
+    }
+}
+
+/// Switch outcome (controlled: host applies `on`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SwitchOutcome<Id> {
     /// No change.
     Ignored,
-    /// On/off change.
+    /// On/off change request.
     ValueChanged {
-        /// Id.
+        /// Field id.
         id: Id,
-        /// On.
+        /// Next on state.
         on: bool,
     },
 }
 
-/// Switch state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Paint geometry for a switch.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct SwitchParts {
+    /// Full interactive root (label + track).
+    pub root: Rect,
+    /// Track / value face only.
+    pub track: Rect,
+    /// Label area when painted.
+    pub label_area: Option<Rect>,
+    /// Description area when painted.
+    pub description_area: Option<Rect>,
+}
+
+/// Switch state (interaction + projected on).
+///
+/// **Pointer law (scroll-safe):** left **Down** inside the hit arms the control;
+/// left **Up** inside the same hit toggles. Dragging out or scrolling away
+/// cancels without a change — prevents accidental toggles in scrollable
+/// settings lists.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SwitchState {
-    on: bool,
-    focused: bool,
-    enabled: bool,
+    /// Projected on/off.
+    pub on: bool,
+    /// Keyboard focus.
+    pub focused: bool,
+    /// Enabled.
+    pub enabled: bool,
+    /// Read-only: show value, no activate.
+    pub read_only: bool,
+    /// Loading: busy face, no activate.
+    pub loading: bool,
+    /// Validation / error chrome.
+    pub invalid: bool,
+    /// Pointer hover.
+    pub hovered: bool,
+    /// Armed by mouse Down inside hit (awaiting Up-in-region).
+    pointer_armed: bool,
+    /// Last paint parts.
+    pub parts: Option<SwitchParts>,
+    /// Hit root.
     region: Option<Rect>,
 }
 
 impl SwitchState {
-    /// Initial.
+    /// Initial on/off.
     #[must_use]
     pub const fn new(on: bool) -> Self {
         Self {
             on,
             focused: false,
             enabled: true,
+            read_only: false,
+            loading: false,
+            invalid: false,
+            hovered: false,
+            pointer_armed: false,
+            parts: None,
             region: None,
         }
     }
 
-    #[must_use]
     /// On.
+    #[must_use]
     pub const fn is_on(&self) -> bool {
         self.on
     }
 
-    /// Controlled.
+    /// Controlled set.
     pub const fn set_on(&mut self, on: bool) {
         self.on = on;
     }
@@ -1685,86 +1747,548 @@ impl SwitchState {
     /// Focus.
     pub const fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
+        if !focused {
+            self.pointer_armed = false;
+        }
     }
 
     /// Enabled.
     pub const fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
+        if !enabled {
+            self.pointer_armed = false;
+        }
     }
 
-    /// Toggle.
-    pub fn handle_key<Id: Clone>(&mut self, key: KeyEvent, id: &Id) -> SwitchOutcome<Id> {
-        if !self.enabled || !self.focused || key.kind != KeyEventKind::Press {
+    /// Read-only.
+    pub const fn set_read_only(&mut self, on: bool) {
+        self.read_only = on;
+        if on {
+            self.pointer_armed = false;
+        }
+    }
+
+    /// Loading / busy.
+    pub const fn set_loading(&mut self, on: bool) {
+        self.loading = on;
+        if on {
+            self.pointer_armed = false;
+        }
+    }
+
+    /// Invalid / error chrome.
+    pub const fn set_invalid(&mut self, on: bool) {
+        self.invalid = on;
+    }
+
+    /// Whether activate is allowed.
+    #[must_use]
+    pub const fn can_activate(&self) -> bool {
+        self.enabled && !self.read_only && !self.loading
+    }
+
+    /// Hit root.
+    #[must_use]
+    pub const fn region(&self) -> Option<Rect> {
+        self.region
+    }
+
+    fn apply_toggle<Id: Clone>(&mut self, id: &Id) -> SwitchOutcome<Id> {
+        if !self.can_activate() {
             return SwitchOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Enter | KeyCode::Char(' ') => {
-                self.on = !self.on;
-                SwitchOutcome::ValueChanged {
-                    id: id.clone(),
-                    on: self.on,
-                }
+        self.on = !self.on;
+        SwitchOutcome::ValueChanged {
+            id: id.clone(),
+            on: self.on,
+        }
+    }
+
+    /// Space / Enter toggle when focused and activatable.
+    pub fn handle_key<Id: Clone>(&mut self, key: KeyEvent, id: &Id) -> SwitchOutcome<Id> {
+        if !self.can_activate() || !self.focused || key.kind != KeyEventKind::Press {
+            return SwitchOutcome::Ignored;
+        }
+        if let Some(intent) = default_button_intent(key) {
+            if matches!(
+                intent,
+                UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle
+            ) {
+                return self.apply_toggle(id);
             }
+        }
+        match key.code {
+            KeyCode::Enter | KeyCode::Char(' ') => self.apply_toggle(id),
             _ => SwitchOutcome::Ignored,
         }
     }
 
-    /// Click.
+    /// Pointer: Down arms, Up-in-region toggles (scroll-safe).
     pub fn handle_mouse<Id: Clone>(&mut self, event: MouseEvent, id: &Id) -> SwitchOutcome<Id> {
-        if !self.enabled || event.kind != MouseEventKind::Down(MouseButton::Left) {
+        if !self.can_activate() {
+            // Still clear arm / hover when disabled
+            match event.kind {
+                MouseEventKind::Moved => {
+                    self.hovered = self.region.is_some_and(|r| r.contains(event.position));
+                }
+                MouseEventKind::Up(_) | MouseEventKind::Down(_) => {
+                    self.pointer_armed = false;
+                }
+                _ => {}
+            }
             return SwitchOutcome::Ignored;
         }
-        if self.region.is_some_and(|r| r.contains(event.position)) {
-            self.on = !self.on;
-            SwitchOutcome::ValueChanged {
-                id: id.clone(),
-                on: self.on,
+        let inside = self.region.is_some_and(|r| r.contains(event.position));
+        match event.kind {
+            MouseEventKind::Moved | MouseEventKind::Drag(_) => {
+                self.hovered = inside;
+                if self.pointer_armed && !inside {
+                    // Dragged out — cancel arm (scroll / miss)
+                    self.pointer_armed = false;
+                }
+                SwitchOutcome::Ignored
             }
-        } else {
-            SwitchOutcome::Ignored
+            MouseEventKind::Down(MouseButton::Left) => {
+                if inside {
+                    self.pointer_armed = true;
+                    self.focused = true;
+                } else {
+                    self.pointer_armed = false;
+                }
+                SwitchOutcome::Ignored
+            }
+            MouseEventKind::Up(MouseButton::Left) => {
+                if self.pointer_armed && inside {
+                    self.pointer_armed = false;
+                    self.focused = true;
+                    return self.apply_toggle(id);
+                }
+                self.pointer_armed = false;
+                SwitchOutcome::Ignored
+            }
+            // Wheel / other: never toggle
+            _ => {
+                self.pointer_armed = false;
+                SwitchOutcome::Ignored
+            }
+        }
+    }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result<Id: Clone>(
+        &mut self,
+        key: KeyEvent,
+        id: &Id,
+    ) -> EventResult<SwitchOutcome<Id>> {
+        match self.handle_key(key, id) {
+            SwitchOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
         }
     }
 }
 
-/// Switch widget.
+/// Immediate on/off settings control.
+///
+/// **vs [`Checkbox`](Checkbox).** Checkbox is a form field with tri-state and
+/// checked semantics (`[x]`). Switch is a settings preference with explicit
+/// On/Off text and track chrome.
+///
+/// **vs [`Toggle`](crate::widgets::Toggle).** Toggle is a sticky toolbar tool.
+/// Switch is a binary preference in settings rows.
+///
+/// **When not to use**
+/// - Form multi-select / terms acceptance → Checkbox
+/// - Toolbar formatting tools → Toggle / ToggleGroup
+/// - Exclusive multi-option → RadioGroup
+/// - Momentary action → Button
 #[derive(Debug, Clone, Copy)]
 pub struct Switch<'a, Id> {
     /// Stable identity.
     pub id: Id,
-    /// Label.
     label: &'a str,
-    tokens: &'a DesignSystem,
+    description: Option<&'a str>,
+    system: &'a DesignSystem,
+    recipe: SwitchRecipe,
+    /// Paint explicit ON/OFF (or On/Off) text in the track (default true).
+    show_value_text: bool,
+    colorless: bool,
 }
 
 impl<'a, Id> Switch<'a, Id> {
-    /// Id + label.
+    /// Id + label + design system.
     #[must_use]
-    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignSystem) -> Self {
-        Self { id, label, tokens }
+    pub const fn new(id: Id, label: &'a str, system: &'a DesignSystem) -> Self {
+        Self {
+            id,
+            label,
+            description: None,
+            system,
+            recipe: SwitchRecipe::SettingsRow,
+            show_value_text: true,
+            colorless: false,
+        }
     }
-}
 
-impl<Id> Switch<'_, Id> {
-    /// Paint switch.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SwitchState) {
+    /// Secondary help line (settings-row; dropped when height &lt; 2).
+    #[must_use]
+    pub const fn description(mut self, description: &'a str) -> Self {
+        self.description = Some(description);
+        self
+    }
+
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(mut self, recipe: SwitchRecipe) -> Self {
+        self.recipe = recipe;
+        self
+    }
+
+    /// Compact leading-track layout.
+    #[must_use]
+    pub const fn compact(mut self) -> Self {
+        self.recipe = SwitchRecipe::Compact;
+        self
+    }
+
+    /// Settings-row trailing track (default).
+    #[must_use]
+    pub const fn settings_row(mut self) -> Self {
+        self.recipe = SwitchRecipe::SettingsRow;
+        self
+    }
+
+    /// Show explicit On/Off text in the track (default true — avoids color-only meaning).
+    #[must_use]
+    pub const fn show_value_text(mut self, on: bool) -> Self {
+        self.show_value_text = on;
+        self
+    }
+
+    /// Force monochrome / ASCII track emphasis.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    /// Preferred height.
+    #[must_use]
+    pub fn preferred_height(&self) -> u16 {
+        if matches!(self.recipe, SwitchRecipe::SettingsRow)
+            && self.description.is_some_and(|d| !d.is_empty())
+        {
+            2
+        } else {
+            1
+        }
+    }
+
+    /// Preferred track width (cells).
+    #[must_use]
+    pub fn track_width(&self, state: &SwitchState) -> u16 {
+        if state.loading {
+            return 5;
+        }
+        if self.show_value_text {
+            5 // [ON ] / [OFF]
+        } else if self.mono() {
+            4 // [●=] style compressed
+        } else {
+            4
+        }
+    }
+
+    fn mono(&self) -> bool {
+        self.colorless
+            || self.system.glyphs.is_ascii()
+            || matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            )
+    }
+
+    fn track_face(&self, state: &SwitchState) -> String {
+        if state.loading {
+            let spin = self.system.glyphs.loading();
+            return format!("[{spin:^3}]");
+        }
+        if self.show_value_text || self.mono() {
+            // Explicit text — required for no-color and default ambiguity avoidance
+            return if state.on {
+                "[ON ]".to_string()
+            } else {
+                "[OFF]".to_string()
+            };
+        }
+        // Optional compact glyphs when value text disabled and not mono
+        if state.on {
+            "[●=]".to_string()
+        } else {
+            "[=●]".to_string()
+        }
+    }
+
+    fn track_style(&self, state: &SwitchState) -> ratatui_core::style::Style {
+        if !state.enabled {
+            return self.system.style(Role::TextDisabled);
+        }
+        if state.read_only {
+            return self.system.style(Role::TextMuted);
+        }
+        if state.loading {
+            return self.system.style(Role::TextMuted);
+        }
+        if state.invalid {
+            let mut s = self.system.style(Role::Danger);
+            if state.focused {
+                s = s.add_modifier(Modifier::UNDERLINED | Modifier::BOLD);
+            }
+            return s;
+        }
+        if state.focused {
+            let mut s = self.system.style(Role::Focus);
+            if state.on {
+                s = s.add_modifier(Modifier::BOLD);
+            }
+            return s;
+        }
+        if state.on {
+            let mut s = self.system.style(Role::Success);
+            s = s.add_modifier(Modifier::BOLD);
+            if self.mono() {
+                s = s.add_modifier(Modifier::REVERSED);
+            }
+            s
+        } else {
+            self.system.style(Role::TextMuted)
+        }
+    }
+
+    fn label_style(&self, state: &SwitchState) -> ratatui_core::style::Style {
+        if !state.enabled {
+            return self.system.style(Role::TextDisabled);
+        }
+        if state.read_only {
+            return self.system.style(Role::TextMuted);
+        }
+        if state.invalid {
+            return self.system.style(Role::Danger);
+        }
+        if state.focused {
+            return self
+                .system
+                .style(Role::Focus)
+                .add_modifier(Modifier::UNDERLINED);
+        }
+        if state.hovered {
+            return self
+                .system
+                .style(Role::Text)
+                .add_modifier(Modifier::UNDERLINED);
+        }
+        self.system.style(Role::Text)
+    }
+
+    /// Paint switch. Prefer this over [`Self::render`].
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SwitchState) -> SwitchParts {
         state.region = None;
+        state.parts = None;
+        if area.is_empty() {
+            return SwitchParts::default();
+        }
+
+        let face = self.track_face(state);
+        let track_w = (display_cols(&face) as u16)
+            .max(self.track_width(state))
+            .min(area.width.max(1));
+        let track_style = self.track_style(state);
+        let label_style = self.label_style(state);
+
+        let (track, label_area, description_area, root) = match self.recipe {
+            SwitchRecipe::Compact => {
+                // [ON ] Label
+                let track = Rect::new(area.x, area.y, track_w, 1.min(area.height));
+                let face_t = take_display_cols(&face, usize::from(track_w));
+                buffer.set_stringn(
+                    track.x,
+                    track.y,
+                    &face_t,
+                    usize::from(track_w),
+                    track_style,
+                );
+                let mut label_area = None;
+                let lx = area.x.saturating_add(track_w).saturating_add(1);
+                if lx < area.right() && !self.label.is_empty() {
+                    let lw = area.right().saturating_sub(lx);
+                    let text = take_display_cols(self.label, usize::from(lw));
+                    buffer.set_stringn(lx, area.y, &text, usize::from(lw), label_style);
+                    let used = display_cols(&text).min(usize::from(lw)) as u16;
+                    label_area = Some(Rect::new(lx, area.y, used, 1));
+                }
+                let content_w = track_w
+                    .saturating_add(if label_area.is_some() { 1 } else { 0 })
+                    .saturating_add(label_area.map(|r| r.width).unwrap_or(0));
+                let root = Rect::new(area.x, area.y, content_w.min(area.width).max(1), 1.min(area.height));
+                (track, label_area, None, root)
+            }
+            SwitchRecipe::SettingsRow => {
+                // Label .......... [ON ]
+                //   description
+                let track_x = area.right().saturating_sub(track_w);
+                let track = Rect::new(track_x.max(area.x), area.y, track_w.min(area.width), 1.min(area.height));
+                let face_t = take_display_cols(&face, usize::from(track.width));
+                buffer.set_stringn(
+                    track.x,
+                    track.y,
+                    &face_t,
+                    usize::from(track.width),
+                    track_style,
+                );
+                let mut label_area = None;
+                let label_max = track.x.saturating_sub(area.x).saturating_sub(1);
+                if label_max > 0 && !self.label.is_empty() {
+                    let text = take_display_cols(self.label, usize::from(label_max));
+                    buffer.set_stringn(
+                        area.x,
+                        area.y,
+                        &text,
+                        usize::from(label_max),
+                        label_style,
+                    );
+                    let used = display_cols(&text).min(usize::from(label_max)) as u16;
+                    label_area = Some(Rect::new(area.x, area.y, used, 1));
+                }
+                let mut description_area = None;
+                if area.height >= 2
+                    && area.width >= 12
+                    && let Some(desc) = self.description
+                    && !desc.is_empty()
+                {
+                    let dy = area.y.saturating_add(1);
+                    let dw = area.width.saturating_sub(1);
+                    let text = take_display_cols(desc, usize::from(dw));
+                    let dstyle = if !state.enabled {
+                        self.system.style(Role::TextDisabled)
+                    } else if state.invalid {
+                        self.system.style(Role::Danger)
+                    } else {
+                        self.system.style(Role::TextMuted)
+                    };
+                    buffer.set_stringn(area.x.saturating_add(1), dy, &text, usize::from(dw), dstyle);
+                    description_area = Some(Rect::new(
+                        area.x.saturating_add(1),
+                        dy,
+                        display_cols(&text).min(usize::from(dw)) as u16,
+                        1,
+                    ));
+                }
+                let root_h = if description_area.is_some() {
+                    2.min(area.height)
+                } else {
+                    1.min(area.height)
+                };
+                // Full row is hit target in settings lists (label + track)
+                let root = Rect::new(area.x, area.y, area.width, root_h);
+                (track, label_area, description_area, root)
+            }
+        };
+
+        state.region = Some(root);
+        let parts = SwitchParts {
+            root,
+            track,
+            label_area,
+            description_area,
+        };
+        state.parts = Some(parts.clone());
+        parts
+    }
+
+    /// Paint + StatefulWidget path.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SwitchState) {
+        let _ = self.paint(area, buffer, state);
+    }
+
+    /// Keys via widget.
+    pub fn handle_key(&self, state: &mut SwitchState, key: KeyEvent) -> SwitchOutcome<Id>
+    where
+        Id: Clone,
+    {
+        state.handle_key(key, &self.id)
+    }
+
+    /// Mouse via widget (Down arm / Up-in-region).
+    pub fn handle_mouse(&self, state: &mut SwitchState, event: MouseEvent) -> SwitchOutcome<Id>
+    where
+        Id: Clone,
+    {
+        state.handle_mouse(event, &self.id)
+    }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut SwitchState,
+        key: KeyEvent,
+    ) -> EventResult<SwitchOutcome<Id>>
+    where
+        Id: Clone,
+    {
+        state.handle_key_result(key, &self.id)
+    }
+
+    /// Semantic registration.
+    pub fn register_semantic<Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        area: Rect,
+        state: &SwitchState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
         if area.is_empty() {
             return;
         }
-        let knob = if state.on { "[ON ]" } else { "[OFF]" };
-        let style = if !state.enabled {
-            self.tokens.style(Role::TextDisabled)
-        } else if state.focused {
-            self.tokens.style(Role::Focus)
+        let value = if state.loading {
+            "loading"
         } else if state.on {
-            self.tokens.style(Role::Success)
+            "on"
         } else {
-            self.tokens.style(Role::TextMuted)
+            "off"
         };
-        let line = format!("{knob} {}", self.label);
-        let text = take_display_cols(&line, usize::from(area.width));
-        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
-        state.region = Some(Rect::new(area.x, area.y, area.width.min(16), 1));
+        let _ = scene.register(
+            SemanticNode::control(self.id.clone(), area)
+                .role(SemanticRole::Control)
+                .label(self.label)
+                .description(value)
+                .focusable(state.can_activate())
+                .disabled(!state.enabled)
+                .state(SemanticState {
+                    selected: state.on,
+                    checked: state.on,
+                    busy: state.loading,
+                    invalid: state.invalid,
+                    pressed: state.pointer_armed,
+                    ..Default::default()
+                }),
+        );
+    }
+}
+
+impl<Id: Clone> StatefulWidget for Switch<'_, Id> {
+    type State = SwitchState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        let _ = self.paint(area, buffer, state);
+    }
+}
+
+impl<Id: Clone> StatefulWidget for &Switch<'_, Id> {
+    type State = SwitchState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        let _ = self.paint(area, buffer, state);
     }
 }
 
@@ -2563,6 +3087,167 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &"s"),
             SwitchOutcome::ValueChanged { id: "s", on: true }
         ));
+        assert!(state.is_on());
+    }
+
+    #[test]
+    fn switch_loading_and_read_only_block() {
+        let mut state = SwitchState::new(false);
+        state.set_focused(true);
+        state.set_loading(true);
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE), &"s"),
+            SwitchOutcome::Ignored
+        ));
+        state.set_loading(false);
+        state.set_read_only(true);
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE), &"s"),
+            SwitchOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn switch_pointer_up_in_region_toggles() {
+        let system = DesignSystem::default();
+        let sw = Switch::new("dark", "Dark mode", &system);
+        let mut state = SwitchState::new(false);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
+        let parts = sw.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
+        let pos = Position {
+            x: parts.track.x,
+            y: parts.track.y,
+        };
+        // Down only arms
+        let out = sw.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: pos,
+                modifiers: KeyModifiers::NONE,
+            },
+        );
+        assert!(matches!(out, SwitchOutcome::Ignored));
+        assert!(!state.is_on());
+        // Up in region toggles
+        let out = sw.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Up(MouseButton::Left),
+                position: pos,
+                modifiers: KeyModifiers::NONE,
+            },
+        );
+        assert!(matches!(
+            out,
+            SwitchOutcome::ValueChanged { id: "dark", on: true }
+        ));
+    }
+
+    #[test]
+    fn switch_pointer_drag_out_cancels() {
+        let system = DesignSystem::default();
+        let sw = Switch::new("s", "Sync", &system);
+        let mut state = SwitchState::new(false);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
+        let parts = sw.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
+        let inside = Position {
+            x: parts.root.x,
+            y: parts.root.y,
+        };
+        let outside = Position {
+            x: parts.root.x.saturating_add(parts.root.width).saturating_add(2),
+            y: parts.root.y,
+        };
+        let _ = sw.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: inside,
+                modifiers: KeyModifiers::NONE,
+            },
+        );
+        let _ = sw.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                position: outside,
+                modifiers: KeyModifiers::NONE,
+            },
+        );
+        let out = sw.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Up(MouseButton::Left),
+                position: outside,
+                modifiers: KeyModifiers::NONE,
+            },
+        );
+        assert!(matches!(out, SwitchOutcome::Ignored));
+        assert!(!state.is_on());
+    }
+
+    #[test]
+    fn switch_settings_row_and_on_off_text() {
+        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
+        let sw = Switch::new("n", "Notifications", &system)
+            .description("Push when idle")
+            .colorless(true);
+        let mut state = SwitchState::new(true);
+        state.set_focused(true);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 2));
+        let parts = sw.paint(Rect::new(0, 0, 40, 2), &mut buf, &mut state);
+        assert!(parts.label_area.is_some());
+        assert!(parts.description_area.is_some());
+        // Track at trailing edge shows ON
+        let tx = parts.track.x;
+        assert_eq!(
+            buf.cell((tx, 0))
+                .map(|c| c.symbol().to_string())
+                .as_deref(),
+            Some("[")
+        );
+    }
+
+    #[test]
+    fn switch_compact_recipe() {
+        let system = DesignSystem::default();
+        let sw = Switch::new("c", "Compact", &system).compact();
+        let mut state = SwitchState::new(false);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 24, 1));
+        let parts = sw.paint(Rect::new(0, 0, 24, 1), &mut buf, &mut state);
+        assert_eq!(parts.track.x, 0);
+        assert!(parts.label_area.is_some());
+    }
+
+    #[test]
+    fn switch_loading_face() {
+        let system = DesignSystem::default();
+        let sw = Switch::new("l", "Loading", &system).compact();
+        let mut state = SwitchState::new(false);
+        state.set_loading(true);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
+        let _ = sw.paint(Rect::new(0, 0, 20, 1), &mut buf, &mut state);
+        assert_eq!(
+            buf.cell((0, 0)).map(|c| c.symbol().to_string()).as_deref(),
+            Some("[")
+        );
+    }
+
+    #[test]
+    fn switch_semantic_and_hot_path() {
+        let system = DesignSystem::default();
+        let sw = Switch::new("h", "Hot", &system).settings_row();
+        let mut state = SwitchState::new(true);
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 36, 1);
+        let mut buf = Buffer::empty(area);
+        for _ in 0..400 {
+            let _ = sw.paint(area, &mut buf, &mut state);
+        }
+        let mut scene = SemanticScene::<&str, ()>::default();
+        sw.register_semantic(&mut scene, area, &state);
+        assert!(scene.len() >= 1);
     }
 
     #[test]

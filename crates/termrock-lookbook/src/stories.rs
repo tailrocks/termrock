@@ -2375,6 +2375,42 @@ pub(crate) fn stories() -> Vec<Story> {
             checkbox_list_story,
         ),
         Story::new(
+            "switch/basic",
+            "Switch basic",
+            "Switch",
+            "Settings-row On/Off with explicit value text.",
+            44,
+            3,
+            switch_basic_story,
+        ),
+        Story::new(
+            "switch/loading",
+            "Switch loading",
+            "Switch",
+            "Busy track; activation blocked.",
+            40,
+            2,
+            switch_loading_story,
+        ),
+        Story::new(
+            "switch/states",
+            "Switch states",
+            "Switch",
+            "Off, on, disabled, read-only, invalid.",
+            44,
+            7,
+            switch_states_story,
+        ),
+        Story::new(
+            "switch/compact",
+            "Switch compact",
+            "Switch",
+            "Leading track + label density.",
+            36,
+            2,
+            switch_compact_story,
+        ),
+        Story::new(
             "radio-group/basic",
             "RadioGroup basic",
             "RadioGroup",
@@ -3580,6 +3616,24 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             6,
             radio_group_unicode_story,
+        ),
+        Story::new(
+            "switch/narrow",
+            "Narrow Switch",
+            "Switch",
+            "Settings row at 22 cols; keep track.",
+            22,
+            2,
+            switch_basic_story,
+        ),
+        Story::new(
+            "switch/unicode",
+            "Unicode Switch",
+            "Switch",
+            "CJK settings label.",
+            36,
+            3,
+            switch_unicode_story,
         ),
         Story::new(
             "choice-dialog/narrow",
@@ -9618,11 +9672,89 @@ fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         &mut cb,
     );
     let mut sw = SwitchState::new(false);
-    Switch::new("dark", "Dark mode", &tokens).render(
+    sw.set_focused(false);
+    let _ = Switch::new("dark", "Dark mode", &tokens).paint(
         Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
         frame.buffer_mut(),
         &mut sw,
     );
+}
+
+fn switch_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut off = SwitchState::new(false);
+    let mut on = SwitchState::new(true);
+    on.set_focused(true);
+    let h = area.height.max(1);
+    let row0 = Rect::new(area.x, area.y, area.width, 1.min(h));
+    let _ = Switch::new("dark", "Dark mode", system)
+        .description("Follow system appearance")
+        .paint(row0, frame.buffer_mut(), &mut off);
+    if area.height >= 3 {
+        let row1 = Rect::new(area.x, area.y.saturating_add(2), area.width, 1);
+        let _ = Switch::new("sync", "Background sync", system).paint(
+            row1,
+            frame.buffer_mut(),
+            &mut on,
+        );
+    } else if area.height >= 2 {
+        let row1 = Rect::new(area.x, area.y.saturating_add(1), area.width, 1);
+        let _ = Switch::new("sync", "Background sync", system).paint(
+            row1,
+            frame.buffer_mut(),
+            &mut on,
+        );
+    }
+}
+
+fn switch_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SwitchState::new(true);
+    state.set_loading(true);
+    state.set_focused(true);
+    let _ = Switch::new("cloud", "Cloud sync", system)
+        .compact()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn switch_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let rows: [(&str, bool, bool, bool, bool, bool); 5] = [
+        ("Off", false, true, false, false, false),
+        ("On focused", true, true, false, false, true),
+        ("Disabled", true, false, false, false, false),
+        ("Read-only", true, true, true, false, false),
+        ("Invalid", false, true, false, true, false),
+    ];
+    for (i, (label, on, enabled, ro, invalid, focused)) in rows.iter().enumerate() {
+        let y = area.y.saturating_add(u16::try_from(i).unwrap_or(0));
+        if y >= area.bottom() {
+            break;
+        }
+        let mut st = SwitchState::new(*on);
+        st.set_enabled(*enabled);
+        st.set_read_only(*ro);
+        st.set_invalid(*invalid);
+        st.set_focused(*focused);
+        let _ = Switch::new(*label, *label, system).paint(
+            Rect::new(area.x, y, area.width, 1),
+            frame.buffer_mut(),
+            &mut st,
+        );
+    }
+}
+
+fn switch_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SwitchState::new(true);
+    state.set_focused(true);
+    let _ = Switch::new("wrap", "Soft wrap", system)
+        .compact()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn switch_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SwitchState::new(true);
+    state.set_focused(true);
+    let _ = Switch::new("dark", "ダークモード", system)
+        .description("システムに従う")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn checkbox_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -11432,7 +11564,7 @@ fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             &mut cb,
         );
     let mut sw = SwitchState::new(false);
-    Switch::new("dark", "暗色モード", &tokens).render(
+    let _ = Switch::new("dark", "暗色モード", &tokens).paint(
         Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
         frame.buffer_mut(),
         &mut sw,
