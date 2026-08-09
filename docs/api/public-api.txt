@@ -18636,6 +18636,208 @@ pub unsafe fn termrock::widgets::ToolStatus::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ToolStatus
 pub fn termrock::widgets::ToolStatus::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ToolStatus
+#[non_exhaustive] pub enum termrock::widgets::ToolbarItemKind
+pub termrock::widgets::ToolbarItemKind::Action
+pub termrock::widgets::ToolbarItemKind::Label
+pub termrock::widgets::ToolbarItemKind::Separator
+pub termrock::widgets::ToolbarItemKind::Toggle
+pub termrock::widgets::ToolbarItemKind::Toggle::pressed: bool
+impl core::clone::Clone for termrock::widgets::ToolbarItemKind
+pub fn termrock::widgets::ToolbarItemKind::clone(&self) -> termrock::widgets::ToolbarItemKind
+impl core::cmp::Eq for termrock::widgets::ToolbarItemKind
+impl core::cmp::PartialEq for termrock::widgets::ToolbarItemKind
+pub fn termrock::widgets::ToolbarItemKind::eq(&self, &termrock::widgets::ToolbarItemKind) -> bool
+impl core::default::Default for termrock::widgets::ToolbarItemKind
+pub fn termrock::widgets::ToolbarItemKind::default() -> termrock::widgets::ToolbarItemKind
+impl core::fmt::Debug for termrock::widgets::ToolbarItemKind
+pub fn termrock::widgets::ToolbarItemKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToolbarItemKind
+pub fn termrock::widgets::ToolbarItemKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToolbarItemKind
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolbarItemKind
+impl core::marker::Freeze for termrock::widgets::ToolbarItemKind
+impl core::marker::Send for termrock::widgets::ToolbarItemKind
+impl core::marker::Sync for termrock::widgets::ToolbarItemKind
+impl core::marker::Unpin for termrock::widgets::ToolbarItemKind
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolbarItemKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolbarItemKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolbarItemKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolbarItemKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarItemKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolbarItemKind where U: core::convert::From<T>
+pub fn termrock::widgets::ToolbarItemKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolbarItemKind where U: core::convert::Into<T>
+pub type termrock::widgets::ToolbarItemKind::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolbarItemKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolbarItemKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolbarItemKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolbarItemKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolbarItemKind where T: core::clone::Clone
+pub type termrock::widgets::ToolbarItemKind::Owned = T
+pub fn termrock::widgets::ToolbarItemKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolbarItemKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolbarItemKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarItemKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolbarItemKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarItemKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolbarItemKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarItemKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolbarItemKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolbarItemKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolbarItemKind
+pub fn termrock::widgets::ToolbarItemKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolbarItemKind
+#[non_exhaustive] pub enum termrock::widgets::ToolbarOrientation
+pub termrock::widgets::ToolbarOrientation::Horizontal
+pub termrock::widgets::ToolbarOrientation::Vertical
+impl termrock::widgets::ToolbarOrientation
+pub const fn termrock::widgets::ToolbarOrientation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToolbarOrientation
+pub fn termrock::widgets::ToolbarOrientation::clone(&self) -> termrock::widgets::ToolbarOrientation
+impl core::cmp::Eq for termrock::widgets::ToolbarOrientation
+impl core::cmp::PartialEq for termrock::widgets::ToolbarOrientation
+pub fn termrock::widgets::ToolbarOrientation::eq(&self, &termrock::widgets::ToolbarOrientation) -> bool
+impl core::default::Default for termrock::widgets::ToolbarOrientation
+pub fn termrock::widgets::ToolbarOrientation::default() -> termrock::widgets::ToolbarOrientation
+impl core::fmt::Debug for termrock::widgets::ToolbarOrientation
+pub fn termrock::widgets::ToolbarOrientation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToolbarOrientation
+pub fn termrock::widgets::ToolbarOrientation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToolbarOrientation
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolbarOrientation
+impl core::marker::Freeze for termrock::widgets::ToolbarOrientation
+impl core::marker::Send for termrock::widgets::ToolbarOrientation
+impl core::marker::Sync for termrock::widgets::ToolbarOrientation
+impl core::marker::Unpin for termrock::widgets::ToolbarOrientation
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolbarOrientation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolbarOrientation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolbarOrientation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolbarOrientation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarOrientation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolbarOrientation where U: core::convert::From<T>
+pub fn termrock::widgets::ToolbarOrientation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolbarOrientation where U: core::convert::Into<T>
+pub type termrock::widgets::ToolbarOrientation::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolbarOrientation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolbarOrientation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolbarOrientation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolbarOrientation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolbarOrientation where T: core::clone::Clone
+pub type termrock::widgets::ToolbarOrientation::Owned = T
+pub fn termrock::widgets::ToolbarOrientation::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolbarOrientation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolbarOrientation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarOrientation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolbarOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarOrientation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolbarOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarOrientation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolbarOrientation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolbarOrientation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolbarOrientation
+pub fn termrock::widgets::ToolbarOrientation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolbarOrientation
+#[non_exhaustive] pub enum termrock::widgets::ToolbarOutcome<Id>
+pub termrock::widgets::ToolbarOutcome::Activated(Id)
+pub termrock::widgets::ToolbarOutcome::CursorMoved
+pub termrock::widgets::ToolbarOutcome::CursorMoved::from: core::option::Option<Id>
+pub termrock::widgets::ToolbarOutcome::CursorMoved::to: core::option::Option<Id>
+pub termrock::widgets::ToolbarOutcome::Ignored
+pub termrock::widgets::ToolbarOutcome::OverflowClosed
+pub termrock::widgets::ToolbarOutcome::OverflowOpened
+pub termrock::widgets::ToolbarOutcome::Toggled
+pub termrock::widgets::ToolbarOutcome::Toggled::id: Id
+pub termrock::widgets::ToolbarOutcome::Toggled::pressed: bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToolbarOutcome<Id>
+pub fn termrock::widgets::ToolbarOutcome<Id>::clone(&self) -> termrock::widgets::ToolbarOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ToolbarOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ToolbarOutcome<Id>
+pub fn termrock::widgets::ToolbarOutcome<Id>::eq(&self, &termrock::widgets::ToolbarOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ToolbarOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToolbarOutcome<Id>
+pub fn termrock::widgets::ToolbarOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ToolbarOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ToolbarOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ToolbarOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ToolbarOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ToolbarOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolbarOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolbarOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolbarOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolbarOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ToolbarOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolbarOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ToolbarOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolbarOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolbarOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolbarOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolbarOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolbarOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::ToolbarOutcome<Id>::Owned = T
+pub fn termrock::widgets::ToolbarOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolbarOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolbarOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolbarOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolbarOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolbarOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolbarOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolbarOutcome<Id>
+pub fn termrock::widgets::ToolbarOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolbarOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::ToolbarVariant
+pub termrock::widgets::ToolbarVariant::Compact
+pub termrock::widgets::ToolbarVariant::Default
+impl termrock::widgets::ToolbarVariant
+pub const fn termrock::widgets::ToolbarVariant::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToolbarVariant
+pub fn termrock::widgets::ToolbarVariant::clone(&self) -> termrock::widgets::ToolbarVariant
+impl core::cmp::Eq for termrock::widgets::ToolbarVariant
+impl core::cmp::PartialEq for termrock::widgets::ToolbarVariant
+pub fn termrock::widgets::ToolbarVariant::eq(&self, &termrock::widgets::ToolbarVariant) -> bool
+impl core::default::Default for termrock::widgets::ToolbarVariant
+pub fn termrock::widgets::ToolbarVariant::default() -> termrock::widgets::ToolbarVariant
+impl core::fmt::Debug for termrock::widgets::ToolbarVariant
+pub fn termrock::widgets::ToolbarVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToolbarVariant
+pub fn termrock::widgets::ToolbarVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToolbarVariant
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolbarVariant
+impl core::marker::Freeze for termrock::widgets::ToolbarVariant
+impl core::marker::Send for termrock::widgets::ToolbarVariant
+impl core::marker::Sync for termrock::widgets::ToolbarVariant
+impl core::marker::Unpin for termrock::widgets::ToolbarVariant
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolbarVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolbarVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolbarVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolbarVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolbarVariant where U: core::convert::From<T>
+pub fn termrock::widgets::ToolbarVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolbarVariant where U: core::convert::Into<T>
+pub type termrock::widgets::ToolbarVariant::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolbarVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolbarVariant where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolbarVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolbarVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolbarVariant where T: core::clone::Clone
+pub type termrock::widgets::ToolbarVariant::Owned = T
+pub fn termrock::widgets::ToolbarVariant::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolbarVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolbarVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolbarVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolbarVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolbarVariant where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolbarVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolbarVariant
+pub fn termrock::widgets::ToolbarVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolbarVariant
 #[non_exhaustive] pub enum termrock::widgets::TranscriptKind
 pub termrock::widgets::TranscriptKind::Approval
 pub termrock::widgets::TranscriptKind::Assistant
@@ -29347,6 +29549,229 @@ pub unsafe fn termrock::widgets::ToolCard<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ToolCard<'a>
 pub fn termrock::widgets::ToolCard<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ToolCard<'a>
+pub struct termrock::widgets::Toolbar<'a, Id>
+impl<'a, Id> termrock::widgets::Toolbar<'a, Id>
+pub const fn termrock::widgets::Toolbar<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Toolbar<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Toolbar<'a, Id>::compact(self) -> Self
+pub const fn termrock::widgets::Toolbar<'a, Id>::new(&'a [termrock::widgets::ToolbarItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Toolbar<'a, Id>::orientation(self, termrock::widgets::ToolbarOrientation) -> Self
+pub fn termrock::widgets::Toolbar<'a, Id>::overflow_id(self, Id) -> Self
+pub const fn termrock::widgets::Toolbar<'a, Id>::variant(self, termrock::widgets::ToolbarVariant) -> Self
+pub const fn termrock::widgets::Toolbar<'a, Id>::vertical(self) -> Self
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Toolbar<'_, Id>
+pub fn termrock::widgets::Toolbar<'_, Id>::handle_intent(&self, &mut termrock::widgets::ToolbarState<Id>, termrock::context::ContextUiIntent, ratatui_core::layout::rect::Rect) -> termrock::widgets::ToolbarOutcome<Id>
+pub fn termrock::widgets::Toolbar<'_, Id>::handle_key(&self, &mut termrock::widgets::ToolbarState<Id>, termrock::input::KeyEvent, ratatui_core::layout::rect::Rect) -> termrock::widgets::ToolbarOutcome<Id>
+pub fn termrock::widgets::Toolbar<'_, Id>::handle_key_result(&self, &mut termrock::widgets::ToolbarState<Id>, termrock::input::KeyEvent, ratatui_core::layout::rect::Rect) -> termrock::interaction::EventResult<termrock::widgets::ToolbarOutcome<Id>>
+pub fn termrock::widgets::Toolbar<'_, Id>::handle_mouse(&self, &mut termrock::widgets::ToolbarState<Id>, termrock::input::MouseEvent) -> termrock::widgets::ToolbarOutcome<Id>
+pub fn termrock::widgets::Toolbar<'_, Id>::plan(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::ToolbarPlan
+pub fn termrock::widgets::Toolbar<'_, Id>::register_semantic(&self, &mut termrock::interaction::SemanticScene<Id, ()>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::ToolbarState<Id>) where Id: core::fmt::Display
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Toolbar<'a, Id>
+pub fn termrock::widgets::Toolbar<'a, Id>::clone(&self) -> termrock::widgets::Toolbar<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Toolbar<'a, Id>
+pub fn termrock::widgets::Toolbar<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Toolbar<'_, Id>
+pub type &termrock::widgets::Toolbar<'_, Id>::State = termrock::widgets::ToolbarState<Id>
+pub fn &termrock::widgets::Toolbar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Toolbar<'_, Id>
+pub type termrock::widgets::Toolbar<'_, Id>::State = termrock::widgets::ToolbarState<Id>
+pub fn termrock::widgets::Toolbar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::Toolbar<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::Toolbar<'a, Id> where Id: core::marker::Send + core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::Toolbar<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::Toolbar<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::Toolbar<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Toolbar<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Toolbar<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::Toolbar<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::Toolbar<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Toolbar<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::Toolbar<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::Toolbar<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Toolbar<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Toolbar<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Toolbar<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Toolbar<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::Toolbar<'a, Id>::Owned = T
+pub fn termrock::widgets::Toolbar<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Toolbar<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Toolbar<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Toolbar<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Toolbar<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Toolbar<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Toolbar<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Toolbar<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Toolbar<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Toolbar<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Toolbar<'a, Id>
+pub fn termrock::widgets::Toolbar<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Toolbar<'a, Id>
+pub struct termrock::widgets::ToolbarItem<'a, Id>
+pub termrock::widgets::ToolbarItem::command: core::option::Option<&'a str>
+pub termrock::widgets::ToolbarItem::enabled: bool
+pub termrock::widgets::ToolbarItem::hint: core::option::Option<&'a str>
+pub termrock::widgets::ToolbarItem::icon: core::option::Option<&'a str>
+pub termrock::widgets::ToolbarItem::id: Id
+pub termrock::widgets::ToolbarItem::intent: core::option::Option<termrock::context::ContextUiIntent>
+pub termrock::widgets::ToolbarItem::kind: termrock::widgets::ToolbarItemKind
+pub termrock::widgets::ToolbarItem::label: &'a str
+pub termrock::widgets::ToolbarItem::priority: u8
+impl<'a, Id> termrock::widgets::ToolbarItem<'a, Id>
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::action(Id, &'a str) -> Self
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::command(self, &'a str) -> Self
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::hint(self, &'a str) -> Self
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::icon(self, &'a str) -> Self
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::intent(self, termrock::context::ContextUiIntent) -> Self
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::is_interactive(&self) -> bool
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::label_item(Id, &'a str) -> Self
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::priority(self, u8) -> Self
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::separator(Id) -> Self
+pub const fn termrock::widgets::ToolbarItem<'a, Id>::toggle(Id, &'a str, bool) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToolbarItem<'a, Id>
+pub fn termrock::widgets::ToolbarItem<'a, Id>::clone(&self) -> termrock::widgets::ToolbarItem<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ToolbarItem<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ToolbarItem<'a, Id>
+pub fn termrock::widgets::ToolbarItem<'a, Id>::eq(&self, &termrock::widgets::ToolbarItem<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ToolbarItem<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToolbarItem<'a, Id>
+pub fn termrock::widgets::ToolbarItem<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::ToolbarItem<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::ToolbarItem<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::ToolbarItem<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::ToolbarItem<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::ToolbarItem<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::ToolbarItem<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolbarItem<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolbarItem<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolbarItem<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarItem<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolbarItem<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ToolbarItem<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolbarItem<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ToolbarItem<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolbarItem<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolbarItem<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolbarItem<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolbarItem<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolbarItem<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::ToolbarItem<'a, Id>::Owned = T
+pub fn termrock::widgets::ToolbarItem<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolbarItem<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolbarItem<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarItem<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolbarItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarItem<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolbarItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarItem<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolbarItem<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolbarItem<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolbarItem<'a, Id>
+pub fn termrock::widgets::ToolbarItem<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolbarItem<'a, Id>
+pub struct termrock::widgets::ToolbarPlan
+pub termrock::widgets::ToolbarPlan::has_overflow: bool
+pub termrock::widgets::ToolbarPlan::overflow: alloc::vec::Vec<usize>
+pub termrock::widgets::ToolbarPlan::visible: alloc::vec::Vec<usize>
+impl core::clone::Clone for termrock::widgets::ToolbarPlan
+pub fn termrock::widgets::ToolbarPlan::clone(&self) -> termrock::widgets::ToolbarPlan
+impl core::cmp::Eq for termrock::widgets::ToolbarPlan
+impl core::cmp::PartialEq for termrock::widgets::ToolbarPlan
+pub fn termrock::widgets::ToolbarPlan::eq(&self, &termrock::widgets::ToolbarPlan) -> bool
+impl core::default::Default for termrock::widgets::ToolbarPlan
+pub fn termrock::widgets::ToolbarPlan::default() -> termrock::widgets::ToolbarPlan
+impl core::fmt::Debug for termrock::widgets::ToolbarPlan
+pub fn termrock::widgets::ToolbarPlan::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolbarPlan
+impl core::marker::Freeze for termrock::widgets::ToolbarPlan
+impl core::marker::Send for termrock::widgets::ToolbarPlan
+impl core::marker::Sync for termrock::widgets::ToolbarPlan
+impl core::marker::Unpin for termrock::widgets::ToolbarPlan
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolbarPlan
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolbarPlan
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolbarPlan
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolbarPlan where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarPlan::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolbarPlan where U: core::convert::From<T>
+pub fn termrock::widgets::ToolbarPlan::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolbarPlan where U: core::convert::Into<T>
+pub type termrock::widgets::ToolbarPlan::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolbarPlan::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolbarPlan where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolbarPlan::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolbarPlan::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolbarPlan where T: core::clone::Clone
+pub type termrock::widgets::ToolbarPlan::Owned = T
+pub fn termrock::widgets::ToolbarPlan::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolbarPlan::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolbarPlan where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarPlan::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolbarPlan where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarPlan::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolbarPlan where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarPlan::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolbarPlan where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolbarPlan::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolbarPlan
+pub fn termrock::widgets::ToolbarPlan::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolbarPlan
+pub struct termrock::widgets::ToolbarState<Id>
+pub termrock::widgets::ToolbarState::overflow_indices: alloc::vec::Vec<usize>
+pub termrock::widgets::ToolbarState::overflow_open: bool
+pub termrock::widgets::ToolbarState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
+pub termrock::widgets::ToolbarState::roving: termrock::interaction::RovingFocusGroup<Id>
+pub termrock::widgets::ToolbarState::surface_focused: bool
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ToolbarState<Id>
+pub fn termrock::widgets::ToolbarState<Id>::set_cursor(&mut self, core::option::Option<Id>)
+impl<Id> termrock::widgets::ToolbarState<Id>
+pub const fn termrock::widgets::ToolbarState<Id>::cursor(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::ToolbarState<Id>::new() -> Self
+pub const fn termrock::widgets::ToolbarState<Id>::set_surface_focused(&mut self, bool)
+impl<Id> termrock::widgets::ToolbarState<Id>
+pub fn termrock::widgets::ToolbarState<Id>::horizontal() -> Self
+pub fn termrock::widgets::ToolbarState<Id>::vertical() -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToolbarState<Id>
+pub fn termrock::widgets::ToolbarState<Id>::clone(&self) -> termrock::widgets::ToolbarState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ToolbarState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ToolbarState<Id>
+pub fn termrock::widgets::ToolbarState<Id>::eq(&self, &termrock::widgets::ToolbarState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ToolbarState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToolbarState<Id>
+pub fn termrock::widgets::ToolbarState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::ToolbarState<Id>
+pub fn termrock::widgets::ToolbarState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::ToolbarState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ToolbarState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ToolbarState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ToolbarState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ToolbarState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolbarState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolbarState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolbarState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolbarState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ToolbarState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolbarState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ToolbarState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolbarState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolbarState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolbarState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolbarState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolbarState<Id> where T: core::clone::Clone
+pub type termrock::widgets::ToolbarState<Id>::Owned = T
+pub fn termrock::widgets::ToolbarState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolbarState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolbarState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolbarState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolbarState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolbarState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolbarState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolbarState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolbarState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolbarState<Id>
+pub fn termrock::widgets::ToolbarState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolbarState<Id>
 pub struct termrock::widgets::Tooltip<'a>
 impl termrock::widgets::Tooltip<'_>
 pub fn termrock::widgets::Tooltip<'_>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::TooltipState)

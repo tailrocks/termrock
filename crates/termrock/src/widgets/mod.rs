@@ -14,6 +14,7 @@ mod composed_row;
 mod content;
 mod section;
 mod separator;
+mod toolbar;
 mod controls;
 mod data_table;
 mod data_view;
@@ -157,6 +158,10 @@ pub use primitives::{
 };
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
+};
+pub use toolbar::{
+    Toolbar, ToolbarItem, ToolbarItemKind, ToolbarOrientation, ToolbarOutcome, ToolbarPlan,
+    ToolbarState, ToolbarVariant,
 };
 pub use progress::{Progress, ProgressKind};
 pub use prompt_composer::{

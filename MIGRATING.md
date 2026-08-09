@@ -122,6 +122,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0106 | `v0.13.0` | [Center premium](migrations/0106-v0.13.0-center-premium.md) |
 | 0107 | `v0.13.0` | [Section](migrations/0107-v0.13.0-section.md) |
 | 0108 | `v0.13.0` | [Separator](migrations/0108-v0.13.0-separator.md) |
+| 0109 | `v0.13.0` | [Toolbar](migrations/0109-v0.13.0-toolbar.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

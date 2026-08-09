@@ -591,6 +591,42 @@ pub(crate) fn stories() -> Vec<Story> {
             action_bar,
         ),
         Story::new(
+            "toolbar/basic",
+            "Toolbar basic",
+            "Toolbar",
+            "Roving-focus strip with actions, separator, toggle, hints.",
+            64,
+            1,
+            toolbar_basic_story,
+        ),
+        Story::new(
+            "toolbar/overflow",
+            "Toolbar overflow",
+            "Toolbar",
+            "Low-priority items move to overflow chip.",
+            28,
+            1,
+            toolbar_overflow_story,
+        ),
+        Story::new(
+            "toolbar/vertical",
+            "Toolbar vertical",
+            "Toolbar",
+            "Compact vertical orientation.",
+            12,
+            8,
+            toolbar_vertical_story,
+        ),
+        Story::new(
+            "toolbar/compact",
+            "Toolbar compact icons",
+            "Toolbar",
+            "Compact variant prefers icons.",
+            40,
+            1,
+            toolbar_compact_story,
+        ),
+        Story::new(
             "tabs/status",
             "Tabs",
             "Tabs",
@@ -4517,6 +4553,76 @@ fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let pane = LogPane::new(system).title("Frozen build log");
     state.scroll_to_oldest();
     frame.render_stateful_widget(&pane, area, &mut state);
+}
+
+fn toolbar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
+    let items = [
+        ToolbarItem::action("save", "Save").hint("C-s").priority(90),
+        ToolbarItem::action("open", "Open").priority(50),
+        ToolbarItem::separator("s1"),
+        ToolbarItem::toggle("wrap", "Wrap", true).priority(40),
+        ToolbarItem::action("find", "Find").priority(30),
+    ];
+    let mut state = ToolbarState::horizontal();
+    state.set_surface_focused(true);
+    state.set_cursor(Some("save"));
+    frame.render_stateful_widget(
+        &Toolbar::new(&items, system).overflow_id("more"),
+        area,
+        &mut state,
+    );
+}
+
+fn toolbar_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
+    let items = [
+        ToolbarItem::action("save", "Save").priority(90),
+        ToolbarItem::action("open", "Open").priority(40),
+        ToolbarItem::action("find", "Find").priority(20),
+        ToolbarItem::action("help", "Help").priority(10),
+        ToolbarItem::action("prefs", "Prefs").priority(5),
+    ];
+    let mut state = ToolbarState::horizontal();
+    state.set_surface_focused(true);
+    frame.render_stateful_widget(
+        &Toolbar::new(&items, system).overflow_id("more"),
+        area,
+        &mut state,
+    );
+}
+
+fn toolbar_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
+    let items = [
+        ToolbarItem::action("a", "Cut"),
+        ToolbarItem::action("b", "Copy"),
+        ToolbarItem::action("c", "Paste"),
+    ];
+    let mut state = ToolbarState::vertical();
+    state.set_surface_focused(true);
+    state.set_cursor(Some("a"));
+    frame.render_stateful_widget(
+        &Toolbar::new(&items, system).vertical().compact(),
+        area,
+        &mut state,
+    );
+}
+
+fn toolbar_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
+    let items = [
+        ToolbarItem::action("save", "Save").icon("💾").priority(90),
+        ToolbarItem::action("open", "Open").icon("📂").priority(50),
+        ToolbarItem::action("find", "Find").icon("🔍").priority(30),
+    ];
+    let mut state = ToolbarState::horizontal();
+    state.set_surface_focused(true);
+    frame.render_stateful_widget(
+        &Toolbar::new(&items, system).compact().overflow_id("more"),
+        area,
+        &mut state,
+    );
 }
 
 fn action_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
