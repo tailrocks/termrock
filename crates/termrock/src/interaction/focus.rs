@@ -259,7 +259,14 @@ impl<Id: Clone + Eq, ScopeId: Clone + Eq> FocusRing<Id, ScopeId> {
         &self.scopes.last().expect("root focus scope must exist").id
     }
 
-    fn push_scope(&mut self, scope: ScopeId) {
+    /// Number of focus scopes including the permanent root.
+    #[must_use]
+    pub fn scope_depth(&self) -> usize {
+        self.scopes.len()
+    }
+
+    /// Pushes a nested focus scope, remembering the opener for restore.
+    pub fn push_scope(&mut self, scope: ScopeId) {
         let active = self.active_scope().clone();
         let pending_restore_index = self.pending_restore_index.take();
         let restore_index = self
@@ -279,13 +286,18 @@ impl<Id: Clone + Eq, ScopeId: Clone + Eq> FocusRing<Id, ScopeId> {
         });
     }
 
-    fn pop_scope(&mut self) {
+    /// Pops the top focus scope and restores the opener when present.
+    ///
+    /// Root scope is never popped. Returns the focus outcome of restoration.
+    pub fn pop_scope(&mut self) -> FocusOutcome<Id> {
         if self.scopes.len() == 1 {
-            return;
+            return FocusOutcome::Unchanged;
         }
+        let before = self.focused.clone();
         let frame = self.scopes.pop().expect("checked non-root scope");
         self.focused = frame.restore;
         self.pending_restore_index = frame.restore_index;
+        self.outcome(before)
     }
 
     fn eligible_ids(&self) -> Vec<Id> {

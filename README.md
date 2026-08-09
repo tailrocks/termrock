@@ -4,12 +4,12 @@ Product-neutral Ratatui components, interaction foundations, styles, a
 lookbook, and generated component documentation for building terminal
 applications quickly.
 
-TermRock takes conceptual inspiration from
-[shadcn/ui](https://ui.shadcn.com/docs) and its
-[open component repository](https://github.com/shadcn-ui/ui): open and
-inspectable implementation, composable primitives, strong defaults, and a
-coherent source of reusable UI capability. It adapts those ideas to Rust,
-Ratatui, and terminal interaction rather than reproducing a React API.
+TermRock is a **hybrid terminal design system**: a stable interaction kernel
+(session lifecycle, focus, overlays, semantic intents, design tokens), product-
+neutral widgets, and composition patterns—inspired by the open, inspectable
+source model of [shadcn/ui](https://ui.shadcn.com/docs), adapted to Rust,
+Ratatui, and terminal constraints. See
+[`docs/design/architecture-foundation.md`](docs/design/architecture-foundation.md).
 
 Reusable visual and interaction behavior belongs here. Applications keep only
 their domain state and wording, effects, process policy, secrets, executor
@@ -21,7 +21,12 @@ pin exact revisions and adapt to deliberate breaking changes using
 The repository is in its bootstrap extraction period. Consumers pin exact Git
 revisions; crates.io publication is not part of the initial migration.
 
-The supported baseline is Rust 1.95 on Linux and macOS with truecolor terminals in the Ghostty class. Optional requests cover OSC 8 hyperlinks, OSC 22 pointer shapes, and OSC 52 clipboard writes. TermRock intentionally has no reduced-color or `NO_COLOR` degradation path.
+The **design** baseline is Rust 1.95 on Linux and macOS with truecolor terminals
+in the Ghostty class. Optional requests cover OSC 8 hyperlinks, OSC 22 pointer
+shapes, and OSC 52 clipboard writes. **Runtime progressive enhancement** is
+supported via `ColorCapability` (including `NO_COLOR` → monochrome),
+`Appearance` detection, `GlyphSet::Ascii`, and `Motion` reduction—not
+truecolor-only forever.
 
 ```toml
 termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "FULL_COMMIT_SHA" }

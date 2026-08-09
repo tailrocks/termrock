@@ -6,8 +6,10 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::{HitRegion, Outcome},
+    input::{KeyEvent, KeyEventKind},
+    interaction::{
+        HitRegion, NavigationMove, Outcome, PageMove, UiIntent, default_list_intent,
+    },
     scroll::max_offset,
     style::{Role, Theme},
 };
@@ -181,21 +183,31 @@ impl<Id> ListState<Id> {
 
 impl<Id: Clone + PartialEq> ListState<Id> {
     /// Routes navigation, checking, activation, and cancellation keys.
+    ///
+    /// Keys are mapped through [`default_list_intent`]; prefer
+    /// [`Self::handle_intent`] when the application owns keymaps.
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
         }
-        match key.code {
-            KeyCode::Up | KeyCode::Char('k' | 'K') => self.select_relative(rows, -1),
-            KeyCode::Down | KeyCode::Char('j' | 'J') => self.select_relative(rows, 1),
-            KeyCode::Home => self.select_edge(rows, false),
-            KeyCode::End => self.select_edge(rows, true),
-            KeyCode::PageUp => self.select_page(rows, -1),
-            KeyCode::PageDown => self.select_page(rows, 1),
-            KeyCode::Enter => self.activate(rows),
-            KeyCode::Char(' ') => self.toggle_selected(rows),
-            KeyCode::Esc => Outcome::Cancelled,
-            _ => Outcome::Ignored,
+        match default_list_intent(key) {
+            Some(intent) => self.handle_intent(rows, intent),
+            None => Outcome::Ignored,
+        }
+    }
+
+    /// Applies a semantic intent to this list.
+    pub fn handle_intent(&mut self, rows: &[ListRow<'_, Id>], intent: UiIntent) -> Outcome<Id> {
+        match intent {
+            UiIntent::Move(NavigationMove::Previous) => self.select_relative(rows, -1),
+            UiIntent::Move(NavigationMove::Next) => self.select_relative(rows, 1),
+            UiIntent::Move(NavigationMove::First) => self.select_edge(rows, false),
+            UiIntent::Move(NavigationMove::Last) => self.select_edge(rows, true),
+            UiIntent::Page(PageMove::Backward) => self.select_page(rows, -1),
+            UiIntent::Page(PageMove::Forward) => self.select_page(rows, 1),
+            UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self.activate(rows),
+            UiIntent::Toggle => self.toggle_selected(rows),
+            UiIntent::Cancel | UiIntent::Close => Outcome::Cancelled,
         }
     }
 
@@ -630,7 +642,27 @@ fn selectable_indices<Id>(rows: &[ListRow<'_, Id>]) -> Vec<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyCode, KeyModifiers};
+    use crate::interaction::{NavigationMove, UiIntent};
+
+    #[test]
+    fn handle_intent_moves_and_activates_without_raw_keys() {
+        let rows = rows();
+        let mut state = ListState::new(Some("first"));
+        assert_eq!(
+            state.handle_intent(&rows, UiIntent::Move(NavigationMove::Next)),
+            Outcome::Changed
+        );
+        assert_eq!(state.selected(), Some(&"second"));
+        assert_eq!(
+            state.handle_intent(&rows, UiIntent::Activate),
+            Outcome::Activated("second")
+        );
+        assert_eq!(
+            state.handle_intent(&rows, UiIntent::Cancel),
+            Outcome::Cancelled
+        );
+    }
 
     fn rows() -> [ListRow<'static, &'static str>; 4] {
         [

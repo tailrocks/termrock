@@ -2,13 +2,19 @@
 
 mod esc_cascade;
 mod focus;
+mod intent;
 mod modal;
 mod overlay;
+mod overlay_controller;
+mod scene;
 
 pub use esc_cascade::{EscCascade, EscLayer, EscOutcome};
 pub use focus::{FocusOutcome, FocusRing, FocusTarget};
+pub use intent::{NavigationMove, PageMove, UiIntent, default_list_intent};
 pub use modal::{ModalClickResult, ModalStack, classify_click, render_backdrop};
 pub use overlay::{OverlayHost, OverlayId, OverlayKind, OverlayLayer};
+pub use overlay_controller::{OverlayController, OverlayEscResult};
+pub use scene::{SemanticElement, SemanticRole, SemanticScene};
 
 use ratatui_core::layout::{Position, Rect};
 

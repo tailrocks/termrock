@@ -19,7 +19,11 @@ pub mod widgets;
 #[cfg(feature = "crossterm")]
 pub mod crossterm;
 
+pub use interaction::{
+    NavigationMove, OverlayController, OverlayEscResult, PageMove, SemanticElement, SemanticRole,
+    SemanticScene, UiIntent, default_list_intent,
+};
 pub use style::{
-    Appearance, AppearanceThemeMap, ColorCapability, Density, Motion, Theme,
-    theme_for_appearance,
+    Appearance, AppearanceThemeMap, ColorCapability, Density, DesignTokens, GlyphSet, Motion,
+    SelectionChrome, SpacingScale, Theme, theme_for_appearance,
 };
