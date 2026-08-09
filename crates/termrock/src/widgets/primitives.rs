@@ -10,6 +10,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
+    style::Modifier,
     widgets::{StatefulWidget, Widget},
 };
 
@@ -17,10 +18,9 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    interaction::HitRegion,
-
+    interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::FrameTick,
-    style::{DesignSystem, Motion, Role},
+    style::{DesignSystem, Glyph, Motion, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -278,39 +278,91 @@ impl ActivationState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum ButtonVariant {
-    /// Strong recommended action (Accent).
+    /// Strong recommended action (Accent + weight).
     Primary,
-    /// Default secondary action.
+    /// Default secondary action (pad + border role when focused).
     #[default]
     Secondary,
-    /// Quiet / ghost (minimal chrome).
+    /// Quiet / ghost (minimal chrome; focus underline).
     Quiet,
-    /// Outline (bracket + role border).
+    /// Outline (border role + pad; brackets only secondary ASCII cue).
     Outline,
     /// Destructive (Danger); must not be unsafe default focus.
     Destructive,
-    /// Link-like (underline / Link role).
+    /// Link-like (always underlined; never brackets).
     Link,
     /// Success-affirming action.
     Success,
-    /// Command / palette-style action.
+    /// Command / palette-style action (prefix cue + outline weight).
     Command,
+}
+
+impl ButtonVariant {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Primary => "primary",
+            Self::Secondary => "secondary",
+            Self::Quiet => "quiet",
+            Self::Outline => "outline",
+            Self::Destructive => "destructive",
+            Self::Link => "link",
+            Self::Success => "success",
+            Self::Command => "command",
+        }
+    }
 }
 
 /// Horizontal density of button chrome.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum ButtonSize {
-    /// Tighter pad.
+    /// Tighter pad (toolbar / dense dialogs).
     Compact,
     /// Default pad.
     #[default]
     Normal,
 }
 
+impl ButtonSize {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Normal => "normal",
+        }
+    }
+
+    const fn pad_cols(self) -> usize {
+        match self {
+            Self::Compact => 1,
+            Self::Normal => 2,
+        }
+    }
+}
+
+/// Painted button anatomy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct ButtonParts {
+    /// Full hit target.
+    pub root: Rect,
+    /// Label / body band.
+    pub label: Rect,
+}
+
 /// Canonical primary action control.
 ///
+/// **Activation law** (shared [`ActivationState`]):
+/// - Enter/Submit/Toggle → activate on **Press** (Repeat ignored).
+/// - Space → arm on Press, activate on **Release** (hold-repeat does not multi-fire).
+/// - Pointer Left → arm on Down, activate on **Up** inside region.
+/// - Disabled / loading / no `accepts_input` → never activate.
+/// - Pending confirmation → first Activate yields `ConfirmRequired`.
+///
 /// Outcomes are pure ([`ActivationOutcome`]); effects stay consumer-owned.
+/// Affordance is **role + weight + underline/fill cues**, not brackets alone.
 #[derive(Debug, Clone, Copy)]
 pub struct Button<'a> {
     label: &'a str,
@@ -351,12 +403,68 @@ impl<'a> Button<'a> {
         self
     }
 
-    /// Emphasize as primary (compat helper).
+    /// Primary (compat: `primary(true)`).
     #[must_use]
     pub const fn primary(mut self, primary: bool) -> Self {
         if primary {
             self.variant = ButtonVariant::Primary;
         }
+        self
+    }
+
+    /// Fluent Primary.
+    #[must_use]
+    pub const fn as_primary(mut self) -> Self {
+        self.variant = ButtonVariant::Primary;
+        self
+    }
+
+    /// Fluent Secondary.
+    #[must_use]
+    pub const fn as_secondary(mut self) -> Self {
+        self.variant = ButtonVariant::Secondary;
+        self
+    }
+
+    /// Fluent Quiet.
+    #[must_use]
+    pub const fn as_quiet(mut self) -> Self {
+        self.variant = ButtonVariant::Quiet;
+        self
+    }
+
+    /// Fluent Outline.
+    #[must_use]
+    pub const fn as_outline(mut self) -> Self {
+        self.variant = ButtonVariant::Outline;
+        self
+    }
+
+    /// Fluent Destructive.
+    #[must_use]
+    pub const fn as_destructive(mut self) -> Self {
+        self.variant = ButtonVariant::Destructive;
+        self
+    }
+
+    /// Fluent Link.
+    #[must_use]
+    pub const fn as_link(mut self) -> Self {
+        self.variant = ButtonVariant::Link;
+        self
+    }
+
+    /// Fluent Success.
+    #[must_use]
+    pub const fn as_success(mut self) -> Self {
+        self.variant = ButtonVariant::Success;
+        self
+    }
+
+    /// Fluent Command.
+    #[must_use]
+    pub const fn as_command(mut self) -> Self {
+        self.variant = ButtonVariant::Command;
         self
     }
 
@@ -367,14 +475,21 @@ impl<'a> Button<'a> {
         self
     }
 
-    /// Leading glyph (dropped before label on narrow).
+    /// Compact density.
+    #[must_use]
+    pub const fn compact(mut self) -> Self {
+        self.size = ButtonSize::Compact;
+        self
+    }
+
+    /// Leading glyph string (dropped before label on narrow).
     #[must_use]
     pub const fn leading(mut self, glyph: &'a str) -> Self {
         self.leading = Some(glyph);
         self
     }
 
-    /// Trailing glyph (dropped first on narrow).
+    /// Trailing glyph string (dropped first on narrow).
     #[must_use]
     pub const fn trailing(mut self, glyph: &'a str) -> Self {
         self.trailing = Some(glyph);
@@ -395,14 +510,14 @@ impl<'a> Button<'a> {
         self
     }
 
-    /// ASCII chrome (brackets, loading `...`).
+    /// ASCII chrome / loading fallback.
     #[must_use]
     pub const fn ascii(mut self, ascii: bool) -> Self {
         self.ascii = ascii;
         self
     }
 
-    /// Reduced-color paint.
+    /// Reduced-color paint (force non-color cues).
     #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
@@ -427,13 +542,10 @@ impl<'a> Button<'a> {
         }
     }
 
-    /// Preferred width in cells (label + chrome).
+    /// Preferred width in cells (label + chrome + glyphs).
     #[must_use]
     pub fn preferred_width(&self) -> u16 {
-        let pad = match self.size {
-            ButtonSize::Compact => 2usize,
-            ButtonSize::Normal => 4,
-        };
+        let pad = self.size.pad_cols().saturating_mul(2);
         let mut w = display_cols(self.label).saturating_add(pad);
         if let Some(g) = self.leading {
             w = w.saturating_add(display_cols(g).saturating_add(1));
@@ -441,7 +553,14 @@ impl<'a> Button<'a> {
         if let Some(g) = self.trailing {
             w = w.saturating_add(display_cols(g).saturating_add(1));
         }
-        w.min(u16::MAX as usize) as u16
+        // Variant prefix/suffix reserve (not sole affordance).
+        w = match self.variant {
+            ButtonVariant::Command => w.saturating_add(2),
+            ButtonVariant::Outline => w.saturating_add(2),
+            ButtonVariant::Destructive => w.saturating_add(1),
+            _ => w,
+        };
+        u16::try_from(w.min(usize::from(u16::MAX))).unwrap_or(u16::MAX)
     }
 
     fn base_role(&self) -> Role {
@@ -453,6 +572,16 @@ impl<'a> Button<'a> {
             ButtonVariant::Secondary | ButtonVariant::Quiet | ButtonVariant::Outline => Role::Text,
         }
     }
+
+    fn mono(&self) -> bool {
+        self.colorless
+            || self.ascii
+            || matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            )
+            || self.system.glyphs.is_ascii()
+    }
 }
 
 /// Stateful paint for [`Button`].
@@ -462,6 +591,8 @@ pub struct ButtonState {
     pub activation: ActivationState,
     /// Last painted hit region.
     pub region: Option<Rect>,
+    /// Pointer hover (host updates via [`Self::handle_mouse`]).
+    pub hovered: bool,
 }
 
 impl ButtonState {
@@ -471,6 +602,7 @@ impl ButtonState {
         Self {
             activation: ActivationState::new(),
             region: None,
+            hovered: false,
         }
     }
 
@@ -484,52 +616,111 @@ impl ButtonState {
         self.activation.handle_intent(intent)
     }
 
-    /// Mouse routing against last paint.
+    /// Mouse: hover tracking + arm/activate against last paint.
     pub fn handle_mouse(&mut self, event: MouseEvent) -> ActivationOutcome {
+        if let Some(area) = self.region {
+            match event.kind {
+                MouseEventKind::Moved | MouseEventKind::Drag(_) => {
+                    self.hovered = area.contains(event.position);
+                }
+                MouseEventKind::Down(MouseButton::Left) => {
+                    self.hovered = area.contains(event.position);
+                }
+                MouseEventKind::Up(_) => {}
+                _ => {}
+            }
+        }
         self.activation.handle_mouse(event, self.region)
+    }
+
+    /// EventResult key path.
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<ActivationOutcome> {
+        self.activation.handle_key_result(key)
     }
 }
 
 impl Button<'_> {
-    /// Paint button and update hit region on state.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ButtonState) {
+    /// Paint button and update hit region on state. Returns anatomy.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ButtonState) -> ButtonParts {
         state.region = None;
         if area.is_empty() {
-            return;
+            return ButtonParts::default();
         }
         // Icon-only without a11y name: refuse silent activation paint (dim + !).
         let a11y_ok = !self.label.is_empty() || self.accessible_label.is_some();
         let theme = self.system;
         let loading = state.activation.is_loading();
         let disabled = !state.activation.is_enabled();
-        let surface = state.activation.accepts_input() && !disabled;
+        let surface = state.activation.accepts_input() && !disabled && !loading;
         let armed = state.activation.is_armed() || state.activation.is_confirm_armed();
+        let hovered = state.hovered && surface;
+        let mono = self.mono();
 
-        let style = if !a11y_ok {
+        let mut style = if !a11y_ok {
             theme.style(Role::Danger)
         } else if disabled {
             theme.style(Role::ActionDisabled)
         } else if loading {
-            // Loading distinct from disabled: muted strong, not ActionDisabled alone.
-            if self.colorless {
+            // Loading distinct from disabled: Info / muted, not ActionDisabled alone.
+            if mono {
                 theme.style(Role::TextMuted)
             } else {
                 theme.style(Role::Info)
             }
         } else if surface && armed {
             theme.style(Role::ActionFocused)
+        } else if surface && hovered {
+            match self.variant {
+                ButtonVariant::Link => theme.style(Role::LinkHover),
+                _ => theme.style(Role::ActionFocused),
+            }
         } else if surface {
             theme.style(Role::ActionFocused)
-        } else if self.colorless {
+        } else if mono {
             match self.variant {
-                ButtonVariant::Primary | ButtonVariant::Destructive | ButtonVariant::Success => {
-                    theme.style(Role::TextStrong)
-                }
+                ButtonVariant::Primary
+                | ButtonVariant::Destructive
+                | ButtonVariant::Success
+                | ButtonVariant::Command => theme.style(Role::TextStrong),
+                ButtonVariant::Link => theme.style(Role::Text),
                 _ => theme.style(Role::Text),
             }
         } else {
             theme.style(self.base_role())
         };
+        style.bg = None;
+
+        // Non-color / structural affordance (never brackets alone).
+        match self.variant {
+            ButtonVariant::Primary | ButtonVariant::Success | ButtonVariant::Command => {
+                style = style.add_modifier(Modifier::BOLD);
+            }
+            ButtonVariant::Link => {
+                style = style.add_modifier(Modifier::UNDERLINED);
+            }
+            ButtonVariant::Outline => {
+                if surface {
+                    style = style.add_modifier(Modifier::UNDERLINED);
+                }
+            }
+            ButtonVariant::Destructive => {
+                style = style.add_modifier(Modifier::BOLD);
+                if mono {
+                    style = style.add_modifier(Modifier::UNDERLINED);
+                }
+            }
+            ButtonVariant::Quiet | ButtonVariant::Secondary => {
+                if surface {
+                    style = style.add_modifier(Modifier::UNDERLINED);
+                }
+            }
+        }
+        if armed {
+            style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
+        }
 
         let narrow = area.width < 12;
         let tiny = area.width < 6;
@@ -537,26 +728,44 @@ impl Button<'_> {
         let show_leading =
             self.leading.is_some() && !tiny && (area.width >= 10 || self.label.is_empty());
 
-        let load_g = if self.ascii { "..." } else { "…" };
+        let load_g = if mono || self.ascii {
+            "..."
+        } else {
+            theme.glyphs.resolve(Glyph::Loading).text
+        };
         let mut body = String::new();
         if loading {
             body.push_str(load_g);
-            body.push(' ');
+            if !self.label.is_empty() {
+                body.push(' ');
+            }
         } else if show_leading {
             if let Some(g) = self.leading {
                 body.push_str(g);
                 body.push(' ');
             }
         }
+        // Variant-specific non-bracket cues (prefix is secondary to role/weight).
+        if !loading {
+            match self.variant {
+                ButtonVariant::Command if !tiny => {
+                    body.push(if mono { '>' } else { '›' });
+                    body.push(' ');
+                }
+                ButtonVariant::Destructive if mono && !tiny => {
+                    body.push('!');
+                    body.push(' ');
+                }
+                _ => {}
+            }
+        }
         if tiny && !self.label.is_empty() {
-            // Prefer start of label.
             body.push_str(self.label);
         } else if self.label.is_empty() {
-            // Icon-only: show leading or a11y mark.
             if let Some(g) = self.leading {
                 body.push_str(g);
             } else if !a11y_ok {
-                body.push_str(if self.ascii { "[!]" } else { "⚠" });
+                body.push_str(if mono { "!" } else { "⚠" });
             }
         } else {
             body.push_str(self.label);
@@ -568,37 +777,95 @@ impl Button<'_> {
             }
         }
         if state.activation.is_confirm_armed() {
-            body.push_str(if self.ascii { " ?" } else { " ?" });
+            body.push_str(" ?");
         }
 
-        let (open, close) = match self.variant {
-            ButtonVariant::Outline | ButtonVariant::Command if self.ascii || self.colorless => {
-                ("[", "]")
+        // Pad: whitespace before chrome (Glow-like), not bracket-only identity.
+        let pad = self.size.pad_cols();
+        let pad_s = " ".repeat(pad);
+        let label = match self.variant {
+            ButtonVariant::Link | ButtonVariant::Quiet => {
+                if pad == 0 {
+                    body
+                } else {
+                    format!("{pad_s}{body}")
+                }
             }
-            ButtonVariant::Outline | ButtonVariant::Command => ("[ ", " ]"),
-            ButtonVariant::Link => ("", ""),
-            ButtonVariant::Quiet => (" ", " "),
-            ButtonVariant::Destructive if self.colorless || self.ascii => ("!", " "),
-            _ => (" ", " "),
+            ButtonVariant::Outline if mono => {
+                // Brackets only as ASCII secondary chrome alongside underline.
+                format!("{pad_s}[{body}]")
+            }
+            _ => format!("{pad_s}{body}{pad_s}"),
         };
-        // Affordance is role + pad + optional outline — not brackets alone.
-        let label = format!("{open}{body}{close}");
         let paint_w = if self.full_width {
             area.width
         } else {
             area.width.min(self.preferred_width().max(3))
         };
         let text = take_display_cols(&label, usize::from(paint_w));
+        // Full-width: left-align body (forms); remaining cells keep style for hit.
         buffer.set_stringn(area.x, area.y, &text, usize::from(paint_w), style);
-        // Link underline cue via trailing underscore when focused and colorless.
-        if matches!(self.variant, ButtonVariant::Link) && surface && self.colorless && paint_w > 1 {
-            let y = area.y;
-            let x = area.x.saturating_add(1);
-            if x < area.right() {
-                buffer[(x, y)].set_style(theme.style(Role::TextStrong));
+        if self.full_width && paint_w < area.width {
+            // Extend hit fill with dim surface
+            let fill_style = if surface {
+                theme.style(Role::ActionFocused)
+            } else {
+                style
+            };
+            for x in area.x.saturating_add(paint_w)..area.x.saturating_add(area.width) {
+                buffer[(x, area.y)].set_style(fill_style);
             }
         }
-        state.region = Some(Rect::new(area.x, area.y, paint_w, 1));
+        let root = Rect {
+            x: area.x,
+            y: area.y,
+            width: if self.full_width {
+                area.width
+            } else {
+                paint_w
+            },
+            height: 1.min(area.height),
+        };
+        state.region = Some(root);
+        ButtonParts {
+            root,
+            label: root,
+        }
+    }
+
+    /// Paint (compat name).
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ButtonState) {
+        let _ = self.paint(area, buffer, state);
+    }
+
+    /// Semantic registration.
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &ButtonState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let name = self.a11y_name();
+        let _ = scene.register(
+            SemanticNode::control(id, state.region.unwrap_or(area))
+                .role(SemanticRole::Button)
+                .label(if name.is_empty() { "button" } else { name })
+                .description(self.variant.id())
+                .focusable(state.activation.accepts_input() && state.activation.is_enabled())
+                .state(SemanticState {
+                    selected: state.activation.accepts_input(),
+                    pressed: state.activation.is_armed(),
+                    busy: state.activation.is_loading(),
+                    ..Default::default()
+                }),
+        );
     }
 }
 
@@ -885,7 +1152,7 @@ mod tests {
         let area = Rect::new(0, 0, 20, 1);
         let mut buffer = Buffer::empty(area);
         Button::new("Save", &system)
-            .variant(ButtonVariant::Primary)
+            .as_primary()
             .leading("✓")
             .render(area, &mut buffer, &mut state);
         assert!(state.region.is_some());
@@ -898,6 +1165,80 @@ mod tests {
         let mut tbuf = Buffer::empty(tiny);
         Button::new("SaveChanges", &system).render(tiny, &mut tbuf, &mut state);
         assert!(state.region.is_some());
+    }
+
+    #[test]
+    fn all_variants_paint_without_panic() {
+        let system = DesignSystem::default();
+        let mut state = ButtonState::new();
+        state.activation.set_accepts_input(true);
+        let area = Rect::new(0, 0, 16, 1);
+        for v in [
+            ButtonVariant::Primary,
+            ButtonVariant::Secondary,
+            ButtonVariant::Quiet,
+            ButtonVariant::Outline,
+            ButtonVariant::Destructive,
+            ButtonVariant::Link,
+            ButtonVariant::Success,
+            ButtonVariant::Command,
+        ] {
+            let mut buf = Buffer::empty(area);
+            Button::new("Act", &system)
+                .variant(v)
+                .paint(area, &mut buf, &mut state);
+            assert!(state.region.is_some(), "{}", v.id());
+        }
+    }
+
+    #[test]
+    fn link_variant_not_bracket_only() {
+        let system = DesignSystem::default().no_color();
+        let mut state = ButtonState::new();
+        state.activation.set_accepts_input(true);
+        let area = Rect::new(0, 0, 12, 1);
+        let mut buf = Buffer::empty(area);
+        Button::new("docs", &system)
+            .as_link()
+            .colorless(true)
+            .paint(area, &mut buf, &mut state);
+        let text: String = (0..12)
+            .map(|x| buf[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(text.contains("docs"), "{text}");
+        assert!(!text.trim_start().starts_with('['), "{text}");
+    }
+
+    #[test]
+    fn mouse_up_outside_does_not_activate() {
+        let mut state = ButtonState::new();
+        state.activation.set_accepts_input(true);
+        state.region = Some(Rect::new(0, 0, 8, 1));
+        let down = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(1, 0),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
+        let up = MouseEvent {
+            kind: MouseEventKind::Up(MouseButton::Left),
+            position: Position::new(20, 0),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert_eq!(state.handle_mouse(up), ActivationOutcome::Ignored);
+    }
+
+    #[test]
+    fn full_width_expands_hit() {
+        let system = DesignSystem::default();
+        let mut state = ButtonState::new();
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buf = Buffer::empty(area);
+        let parts = Button::new("OK", &system)
+            .full_width(true)
+            .paint(area, &mut buf, &mut state);
+        assert_eq!(parts.root.width, 40);
+        assert_eq!(state.region.map(|r| r.width), Some(40));
     }
 
     #[test]

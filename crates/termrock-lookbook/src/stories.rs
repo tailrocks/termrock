@@ -2155,6 +2155,51 @@ pub(crate) fn stories() -> Vec<Story> {
             button_icon_story,
         ),
         Story::new(
+            "button/dialog",
+            "Button dialog actions",
+            "Button",
+            "Cancel (secondary) + Save (primary); destructive not default.",
+            48,
+            3,
+            button_dialog_story,
+        ),
+        Story::new(
+            "button/form",
+            "Button form full-width",
+            "Button",
+            "Full-width primary submit for form footers.",
+            40,
+            3,
+            button_form_story,
+        ),
+        Story::new(
+            "button/inline",
+            "Button inline link",
+            "Button",
+            "Link-like inline action among prose.",
+            48,
+            3,
+            button_inline_story,
+        ),
+        Story::new(
+            "button/pending",
+            "Button pending confirm",
+            "Button",
+            "Destructive awaiting second Activate (?).",
+            28,
+            3,
+            button_pending_story,
+        ),
+        Story::new(
+            "button/no-color",
+            "Button no-color",
+            "Button",
+            "Weight/underline affordance without color fill.",
+            40,
+            4,
+            button_no_color_story,
+        ),
+        Story::new(
             "checkbox/switch",
             "Checkbox and Switch",
             "Checkbox",
@@ -8968,6 +9013,87 @@ fn button_icon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         frame.buffer_mut(),
         &mut state,
     );
+}
+
+fn button_dialog_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ButtonVariant;
+    let chunks = Layout::horizontal([
+        Constraint::Length(12),
+        Constraint::Length(1),
+        Constraint::Length(12),
+        Constraint::Length(1),
+        Constraint::Length(14),
+    ])
+    .split(area);
+    let mut cancel = ButtonState::new();
+    cancel.activation.set_accepts_input(true);
+    Button::new("Cancel", system)
+        .as_secondary()
+        .render(chunks[0], frame.buffer_mut(), &mut cancel);
+    let mut save = ButtonState::new();
+    save.activation.set_accepts_input(true);
+    Button::new("Save", system)
+        .as_primary()
+        .leading("✓")
+        .render(chunks[2], frame.buffer_mut(), &mut save);
+    let mut del = ButtonState::new();
+    // Destructive never default-focused
+    del.activation.set_accepts_input(false);
+    Button::new("Delete", system)
+        .variant(ButtonVariant::Destructive)
+        .render(chunks[4], frame.buffer_mut(), &mut del);
+}
+
+fn button_form_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = ButtonState::new();
+    state.activation.set_accepts_input(true);
+    Button::new("Create workspace", system)
+        .as_primary()
+        .full_width(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn button_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use ratatui::widgets::Paragraph;
+    let chunks = Layout::horizontal([Constraint::Length(18), Constraint::Min(8)]).split(area);
+    frame.render_widget(Paragraph::new("See also "), chunks[0]);
+    let mut state = ButtonState::new();
+    state.activation.set_accepts_input(true);
+    Button::new("documentation", system)
+        .as_link()
+        .render(chunks[1], frame.buffer_mut(), &mut state);
+}
+
+fn button_pending_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = ButtonState::new();
+    state.activation.set_accepts_input(true);
+    state.activation.set_pending_confirmation(true);
+    // Simulate first activate
+    let _ = state.handle_intent(termrock::interaction::UiIntent::Activate);
+    Button::new("Delete", system)
+        .as_destructive()
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn button_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ButtonVariant;
+    let system = system.clone().no_color();
+    let chunks = Layout::vertical([Constraint::Length(1); 3]).split(area);
+    for (i, (v, label)) in [
+        (ButtonVariant::Primary, "Primary"),
+        (ButtonVariant::Outline, "Outline"),
+        (ButtonVariant::Link, "Link action"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mut state = ButtonState::new();
+        state.activation.set_accepts_input(true);
+        Button::new(label, &system)
+            .variant(v)
+            .colorless(true)
+            .render(chunks[i], frame.buffer_mut(), &mut state);
+    }
 }
 
 fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

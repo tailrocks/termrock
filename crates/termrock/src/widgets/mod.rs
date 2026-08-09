@@ -220,8 +220,8 @@ pub use picker::{
     open_picker_overlay, place_picker,
 };
 pub use primitives::{
-    ActivationOutcome, ActivationState, Button, ButtonSize, ButtonState, ButtonVariant, IconButton,
-    IconButtonState, Spinner, button_hit,
+    ActivationOutcome, ActivationState, Button, ButtonParts, ButtonSize, ButtonState, ButtonVariant,
+    IconButton, IconButtonState, Spinner, button_hit,
 };
 pub use tag_chip::{
     Chip, ChipOutcome, ChipState, Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts,
