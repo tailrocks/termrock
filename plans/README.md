@@ -14,6 +14,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/component-anatomy-spec.md`](../docs/design/component-anatomy-spec.md) | Component anatomy/behavior/state catalog |
 | [`docs/design/component-prompt-library.md`](../docs/design/component-prompt-library.md) | **164 agent prompts** (global contract + per-component tasks) |
 | [`docs/design/source-owned-registry.md`](../docs/design/source-owned-registry.md) | **Source-owned registry + CLI architecture** (shadcn-class distribution) |
+| [`docs/design/termrock-studio.md`](../docs/design/termrock-studio.md) | **TermRock Studio** (Storybook/DevTools-class lookbook evolution) |
 
 ### Using the component prompt library
 
