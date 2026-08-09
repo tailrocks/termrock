@@ -1,3 +1,42 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling libc v0.2.189
+   Compiling thiserror v2.0.20
+    Checking either v1.17.0
+   Compiling instability v0.3.13
+    Checking lru v0.18.2
+   Compiling serde_core v1.0.229
+   Compiling serde v1.0.229
+    Checking line-clipping v0.3.8
+    Checking base64 v0.23.1
+    Checking time v0.3.55
+    Checking itertools v0.14.0
+    Checking unicode-truncate v2.0.1
+   Compiling syn v3.0.3
+   Compiling syn v2.0.119
+   Compiling strum_macros v0.28.0
+   Compiling derive_more-impl v2.1.1
+    Checking errno v0.3.14
+    Checking parking_lot_core v0.9.12
+    Checking mio v1.2.2
+    Checking derive_more v2.1.1
+    Checking signal-hook-registry v1.4.8
+    Checking rustix v1.1.4
+    Checking parking_lot v0.12.5
+    Checking signal-hook v0.3.18
+    Checking signal-hook-mio v0.2.5
+   Compiling darling_core v0.24.0
+    Checking strum v0.28.0
+   Compiling thiserror-impl v2.0.20
+   Compiling serde_derive v1.0.229
+    Checking crossterm v0.29.0
+   Compiling darling_macro v0.24.0
+   Compiling darling v0.24.0
+    Checking kasuari v0.4.12
+    Checking ratatui-core v0.1.2
+    Checking tui-scrollbar v0.2.7
+    Checking ratatui-widgets v0.3.2
+    Checking ratatui-crossterm v0.1.2
  Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
 warning: unresolved link to `Theme`
    --> crates/termrock/src/widgets/prompt_composer.rs:537:39
@@ -9,7 +48,7 @@ warning: unresolved link to `Theme`
     = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
 
 warning: `termrock` (lib doc) generated 1 warning
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.60s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.95s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -2863,6 +2902,7 @@ pub unsafe fn termrock::interaction::SemanticElement<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::interaction::SemanticElement<Id>
 pub fn termrock::interaction::SemanticElement<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticElement<Id>
+pub fn termrock::interaction::default_form_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -9277,8 +9317,8 @@ pub fn termrock::widgets::EditField::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::EditField
 #[non_exhaustive] pub enum termrock::widgets::FormOutcome<Id>
 pub termrock::widgets::FormOutcome::Activated(Id)
-pub termrock::widgets::FormOutcome::FocusChanged(Id)
 pub termrock::widgets::FormOutcome::Ignored
+pub termrock::widgets::FormOutcome::Scrolled
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormOutcome<Id>::clone(&self) -> termrock::widgets::FormOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FormOutcome<Id>
@@ -15453,6 +15493,7 @@ pub fn termrock::widgets::FilterSpec::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FilterSpec
 pub struct termrock::widgets::Form<'a, Id>
 impl<'a, Id> termrock::widgets::Form<'a, Id>
+pub const fn termrock::widgets::Form<'a, Id>::focused_field(self, core::option::Option<&'a Id>) -> Self
 pub const fn termrock::widgets::Form<'a, Id>::new(&'a [termrock::widgets::FormSection<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Form<'a, Id>
 pub fn termrock::widgets::Form<'a, Id>::clone(&self) -> termrock::widgets::Form<'a, Id>
@@ -15628,22 +15669,25 @@ pub fn termrock::widgets::FormSection<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormSection<'a, Id>
 pub struct termrock::widgets::FormState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::FormState<Id>
-pub fn termrock::widgets::FormState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::FormOutcome<Id>
-pub fn termrock::widgets::FormState<Id>::handle_key(&mut self, &[termrock::widgets::FormSection<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormState<Id>::click(&mut self, ratatui_core::layout::position::Position, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormState<Id>::handle_intent(&mut self, &[termrock::widgets::FormSection<'_, Id>], termrock::interaction::UiIntent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormState<Id>::handle_key(&mut self, &[termrock::widgets::FormSection<'_, Id>], termrock::input::KeyEvent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormState<Id>::hit_id(&self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 pub fn termrock::widgets::FormState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id> termrock::widgets::FormState<Id>
+pub const fn termrock::widgets::FormState<Id>::accepts_input(&self) -> bool
 pub const fn termrock::widgets::FormState<Id>::column_count(&self) -> u8
 pub const fn termrock::widgets::FormState<Id>::content_height(&self) -> usize
+pub fn termrock::widgets::FormState<Id>::ensure_visible(&mut self, core::option::Option<Id>)
 pub fn termrock::widgets::FormState<Id>::field_regions(&self) -> &[termrock::widgets::FormFieldRegion<Id>]
-pub fn termrock::widgets::FormState<Id>::focus(&mut self, core::option::Option<Id>)
-pub const fn termrock::widgets::FormState<Id>::focused(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::FormState<Id>::hovered(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::FormState<Id>::is_active(&self) -> bool
-pub const fn termrock::widgets::FormState<Id>::new(core::option::Option<Id>) -> Self
+pub const fn termrock::widgets::FormState<Id>::new() -> Self
 pub const fn termrock::widgets::FormState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::FormState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
 pub fn termrock::widgets::FormState<Id>::scroll_by(&mut self, isize, usize) -> bool
 pub fn termrock::widgets::FormState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position) -> bool
+pub const fn termrock::widgets::FormState<Id>::set_accepts_input(&mut self, bool)
 pub const fn termrock::widgets::FormState<Id>::set_active(&mut self, bool)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormState<Id>
 pub fn termrock::widgets::FormState<Id>::clone(&self) -> termrock::widgets::FormState<Id>

@@ -80,6 +80,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0064 | `v0.13.0` | [Transcript sole stream](migrations/0064-v0.13.0-transcript-sole-stream.md) |
 | 0065 | `v0.13.0` | [OverlayStack sole authority](migrations/0065-v0.13.0-overlay-stack-sole.md) |
 | 0066 | `v0.13.0` | [Lookbook HostFrame](migrations/0066-v0.13.0-lookbook-host-frame.md) |
+| 0067 | `v0.13.0` | [Form scene-owned field focus](migrations/0067-v0.13.0-form-scene-focus.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -11,8 +11,9 @@ mod scene;
 // Overlay authority is OverlayStack only (Break D / M4). ModalStack is crate-private.
 pub(crate) use focus::{FocusOutcome, FocusRing, FocusTarget};
 pub use intent::{
-    NavigationMove, PageMove, UiIntent, default_list_intent, default_permission_intent,
-    default_table_intent, default_transcript_intent, default_tree_intent,
+    NavigationMove, PageMove, UiIntent, default_form_intent, default_list_intent,
+    default_permission_intent, default_table_intent, default_transcript_intent,
+    default_tree_intent,
 };
 pub use keymap_bridge::dispatch_keymap_action;
 pub(crate) use modal::ModalStack;

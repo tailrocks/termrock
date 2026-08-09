@@ -139,6 +139,24 @@ pub fn default_transcript_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for [`crate::widgets::Form`] (activate + page scroll only).
+///
+/// **Field cycle (Tab / Up / Down) is host / scene owned** — not mapped here.
+#[must_use]
+pub fn default_form_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let is_press = key.kind == KeyEventKind::Press;
+    match key.code {
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::PermissionPrompt`] navigation.
 ///
 /// Covers Activate / Cancel / Move / Expand-Collapse details. Product chords

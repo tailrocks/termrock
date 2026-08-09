@@ -442,13 +442,16 @@ impl PointerTarget for TreeInteractor {
 
 pub(crate) struct FormInteractor {
     state: FormState<&'static str>,
+    /// Host-owned field focus (scene stand-in for the story shell).
+    focused: Option<&'static str>,
     theme: RolePalette,
 }
 
 impl FormInteractor {
     pub(crate) fn new() -> Self {
         Self {
-            state: FormState::new(Some("name")),
+            state: FormState::new(),
+            focused: Some("name"),
             theme: RolePalette::default(),
         }
     }
@@ -463,8 +466,12 @@ impl StoryInteraction for FormInteractor {
             title: ratatui::text::Line::from("General"),
             fields: &fields,
         }];
+        if let Some(id) = self.focused {
+            self.state.ensure_visible(Some(id));
+        }
         frame.render_stateful_widget(
-            &Form::new(&sections, &DesignSystem::from_palette(self.theme.clone())),
+            &Form::new(&sections, &DesignSystem::from_palette(self.theme.clone()))
+                .focused_field(self.focused.as_ref()),
             area,
             &mut self.state,
         );
@@ -476,7 +483,36 @@ impl StoryInteraction for FormInteractor {
             title: ratatui::text::Line::from("General"),
             fields: &fields,
         }];
-        !matches!(self.state.handle_key(&sections, key), FormOutcome::Ignored)
+        // Host/scene field cycle stand-in: Tab moves focus id, then form activates only.
+        use termrock::input::{KeyCode, KeyEventKind};
+        if key.kind != KeyEventKind::Release
+            && matches!(
+                key.code,
+                KeyCode::Tab | KeyCode::BackTab | KeyCode::Down | KeyCode::Up
+            )
+        {
+            let enabled: Vec<_> = fields.iter().filter(|f| f.enabled).map(|f| f.id).collect();
+            if enabled.is_empty() {
+                return false;
+            }
+            let forward = matches!(key.code, KeyCode::Tab | KeyCode::Down);
+            let idx = self
+                .focused
+                .and_then(|id| enabled.iter().position(|e| *e == id))
+                .unwrap_or(0);
+            let next = if forward {
+                (idx + 1) % enabled.len()
+            } else {
+                idx.checked_sub(1).unwrap_or(enabled.len() - 1)
+            };
+            self.focused = Some(enabled[next]);
+            self.state.ensure_visible(self.focused);
+            return true;
+        }
+        !matches!(
+            self.state.handle_key(&sections, key, self.focused.as_ref()),
+            FormOutcome::Ignored
+        )
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
@@ -495,8 +531,22 @@ impl PointerTarget for FormInteractor {
         self.state.hovered() != before.as_ref()
     }
     fn click_at(&mut self, position: Position) -> bool {
-        self.state.scroll_to_position(position)
-            || !matches!(self.state.click(position), FormOutcome::Ignored)
+        if self.state.scroll_to_position(position) {
+            return true;
+        }
+        // Host: scene.focus on hit, then activate if already focused.
+        if let Some(&id) = self.state.hit_id(position) {
+            if self.focused == Some(id) {
+                return !matches!(
+                    self.state.click(position, self.focused.as_ref()),
+                    FormOutcome::Ignored
+                );
+            }
+            self.focused = Some(id);
+            self.state.ensure_visible(Some(id));
+            return true;
+        }
+        false
     }
     fn drag_to(&mut self, position: Position) -> bool {
         self.state.scroll_to_position(position)

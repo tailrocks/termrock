@@ -1,3 +1,14 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! Responsive multi-field form surface.
+//!
+//! **Focus law (Break F):** field focus is **host / [`InteractionScene`] owned**.
+//! Pass the focused field id into [`Form::focused_field`] for paint. Tab/arrow
+//! field cycling is **not** handled here — register fields on the scene and use
+//! `handle_key_tab_esc` / `focus_move`. This widget only activates, scrolls, and
+//! paints.
+
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -8,11 +19,10 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::HitRegion,
+    interaction::{HitRegion, NavigationMove, PageMove, UiIntent},
     layout::ResponsiveSurface,
     scroll::max_offset,
-    style::DesignSystem,
-    style::{Role, RolePalette},
+    style::{DesignSystem, Role},
 };
 
 const FIELD_HEIGHT: usize = 4;
@@ -20,9 +30,9 @@ const SECTION_HEADER_HEIGHT: usize = 2;
 const COLUMN_GAP: u16 = 2;
 const MIN_COLUMN_WIDTH: u16 = 30;
 
+/// A stable form field with label, value, and validation metadata.
 #[derive(Debug, Clone)]
 #[non_exhaustive]
-/// A stable form field with label, value, and validation metadata.
 pub struct FormField<'a, Id> {
     /// Stable identity used for selection and activation.
     pub id: Id,
@@ -41,8 +51,8 @@ pub struct FormField<'a, Id> {
 }
 
 impl<'a, Id> FormField<'a, Id> {
-    #[must_use]
     /// Creates a field with no help text and valid initial state.
+    #[must_use]
     pub const fn new(id: Id, label: Line<'a>, value: Line<'a>) -> Self {
         Self {
             id,
@@ -55,37 +65,37 @@ impl<'a, Id> FormField<'a, Id> {
         }
     }
 
-    #[must_use]
     /// Sets supplemental help text.
+    #[must_use]
     pub fn help(mut self, help: Line<'a>) -> Self {
         self.help = Some(help);
         self
     }
 
-    #[must_use]
     /// Sets validation error text.
+    #[must_use]
     pub fn error(mut self, error: Line<'a>) -> Self {
         self.error = Some(error);
         self
     }
 
-    #[must_use]
     /// Marks the field as required or optional.
+    #[must_use]
     pub const fn required(mut self, required: bool) -> Self {
         self.required = required;
         self
     }
 
-    #[must_use]
     /// Sets whether this item can receive interaction.
+    #[must_use]
     pub const fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 }
 
-#[derive(Debug, Clone)]
 /// A labeled group of form fields.
+#[derive(Debug, Clone)]
 pub struct FormSection<'a, Id> {
     /// Caller-visible title.
     pub title: Line<'a>,
@@ -93,20 +103,20 @@ pub struct FormSection<'a, Id> {
     pub fields: &'a [FormField<'a, Id>],
 }
 
+/// Semantic results produced by form interaction (no field-focus authority).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
-/// Semantic results produced by form interaction.
 pub enum FormOutcome<Id> {
     /// The event produced no form-state change.
     Ignored,
-    /// Keyboard or pointer navigation focused this field identity.
-    FocusChanged(Id),
-    /// The identified enabled field requested activation.
+    /// The identified enabled field requested activation (Enter / re-click).
     Activated(Id),
+    /// Viewport scrolled.
+    Scrolled,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
 /// Painted hit geometry for one form field.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FormFieldRegion<Id> {
     /// Stable identity used for selection and activation.
     pub id: Id,
@@ -120,17 +130,18 @@ pub struct FormFieldRegion<Id> {
     pub supporting: Option<Rect>,
 }
 
+/// Runtime state for [`Form`] — scroll, hover, hit geometry; **not** field focus.
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Runtime state for `Form`.
 pub struct FormState<Id> {
-    focused: Option<Id>,
     hovered: Option<Id>,
-    active: bool,
+    /// Whether the form surface accepts keyboard/pointer activate (host gate).
+    accepts_input: bool,
     offset: usize,
     viewport_height: usize,
     content_height: usize,
     column_count: u8,
-    follow_focus: bool,
+    /// When set, next paint scrolls this id into view (host sets after scene focus).
+    ensure_visible: Option<Id>,
     regions: Vec<HitRegion<Id>>,
     field_regions: Vec<FormFieldRegion<Id>>,
     scrollbar_region: Option<Rect>,
@@ -138,96 +149,89 @@ pub struct FormState<Id> {
 
 impl<Id> Default for FormState<Id> {
     fn default() -> Self {
-        Self {
-            focused: None,
-            hovered: None,
-            active: false,
-            offset: 0,
-            viewport_height: 0,
-            content_height: 0,
-            column_count: 1,
-            follow_focus: false,
-            regions: Vec::new(),
-            field_regions: Vec::new(),
-            scrollbar_region: None,
-        }
+        Self::new()
     }
 }
 
 impl<Id> FormState<Id> {
+    /// Creates form state at the top of the viewport (inactive until host enables).
     #[must_use]
-    /// Creates form state at the top of the viewport with optional initial focus.
-    pub const fn new(focused: Option<Id>) -> Self {
+    pub const fn new() -> Self {
         Self {
-            focused,
             hovered: None,
-            active: true,
+            accepts_input: true,
             offset: 0,
             viewport_height: 0,
             content_height: 0,
             column_count: 1,
-            follow_focus: true,
+            ensure_visible: None,
             regions: Vec::new(),
             field_regions: Vec::new(),
             scrollbar_region: None,
         }
     }
 
-    #[must_use]
-    /// Returns the stable identity of the focused field.
-    pub const fn focused(&self) -> Option<&Id> {
-        self.focused.as_ref()
-    }
-
-    #[must_use]
     /// Returns the stable identity currently under the pointer.
+    #[must_use]
     pub const fn hovered(&self) -> Option<&Id> {
         self.hovered.as_ref()
     }
 
+    /// Whether the form currently accepts interaction.
     #[must_use]
-    /// Returns whether the form currently accepts interaction.
-    pub const fn is_active(&self) -> bool {
-        self.active
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
     }
 
-    /// Enables or disables form keyboard and pointer interaction.
+    /// Enables or disables form keyboard and pointer interaction (whole surface).
+    pub const fn set_accepts_input(&mut self, accepts: bool) {
+        self.accepts_input = accepts;
+    }
+
+    /// Deprecated alias for [`Self::set_accepts_input`].
+    #[deprecated(note = "use set_accepts_input")]
     pub const fn set_active(&mut self, active: bool) {
-        self.active = active;
+        self.accepts_input = active;
     }
 
-    /// Moves focus to the supplied stable identity when it is enabled.
-    pub fn focus(&mut self, focused: Option<Id>) {
-        self.focused = focused;
-        self.follow_focus = true;
-    }
-
+    /// Deprecated alias for [`Self::accepts_input`].
+    #[deprecated(note = "use accepts_input")]
     #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Ask the next paint to scroll `id` into view (after host scene focus change).
+    pub fn ensure_visible(&mut self, id: Option<Id>) {
+        self.ensure_visible = id;
+    }
+
     /// Returns the zero-based top row of the form viewport.
+    #[must_use]
     pub const fn offset(&self) -> usize {
         self.offset
     }
 
-    #[must_use]
     /// Returns the number of columns selected by responsive layout.
+    #[must_use]
     pub const fn column_count(&self) -> u8 {
         self.column_count
     }
 
-    #[must_use]
     /// Returns the rendered content height in terminal rows.
+    #[must_use]
     pub const fn content_height(&self) -> usize {
         self.content_height
     }
 
-    #[must_use]
     /// Returns the hit regions produced by the most recent render.
+    #[must_use]
     pub fn regions(&self) -> &[HitRegion<Id>] {
         &self.regions
     }
 
-    #[must_use]
     /// Returns field hit regions produced by the most recent render.
+    #[must_use]
     pub fn field_regions(&self) -> &[FormFieldRegion<Id>] {
         &self.field_regions
     }
@@ -243,7 +247,6 @@ impl<Id> FormState<Id> {
                 .saturating_add(delta.unsigned_abs())
                 .min(maximum)
         };
-        self.follow_focus = false;
         before != self.offset
     }
 
@@ -261,34 +264,74 @@ impl<Id> FormState<Id> {
             area.height,
             usize::from(position.y.saturating_sub(area.y)),
         );
-        self.follow_focus = false;
         true
     }
 }
 
 impl<Id: Clone + PartialEq> FormState<Id> {
-    /// Routes canonical focus-navigation and activation keys across enabled fields.
+    /// Routes activation and scroll keys. **Does not move field focus.**
+    ///
+    /// `focused_field` is the host scene focus id (or `None` if form does not own input).
     pub fn handle_key(
         &mut self,
         sections: &[FormSection<'_, Id>],
         key: KeyEvent,
+        focused_field: Option<&Id>,
     ) -> FormOutcome<Id> {
-        if !self.active || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.kind == KeyEventKind::Release {
             return FormOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Tab | KeyCode::Down => self.move_focus(sections, true),
-            KeyCode::BackTab | KeyCode::Up => self.move_focus(sections, false),
-            KeyCode::Home => self.focus_boundary(sections, false),
-            KeyCode::End => self.focus_boundary(sections, true),
-            KeyCode::Enter => sections
-                .iter()
-                .flat_map(|section| section.fields)
-                .find(|field| field.enabled && self.focused.as_ref() == Some(&field.id))
-                .map_or(FormOutcome::Ignored, |field| {
-                    FormOutcome::Activated(field.id.clone())
-                }),
-            _ => FormOutcome::Ignored,
+        if let Some(intent) = crate::interaction::default_form_intent(key) {
+            return self.handle_intent(sections, intent, focused_field);
+        }
+        FormOutcome::Ignored
+    }
+
+    /// Semantic intent routing (activate + page scroll only).
+    pub fn handle_intent(
+        &mut self,
+        sections: &[FormSection<'_, Id>],
+        intent: UiIntent,
+        focused_field: Option<&Id>,
+    ) -> FormOutcome<Id> {
+        if !self.accepts_input {
+            return FormOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Activate | UiIntent::Submit => {
+                let Some(id) = focused_field else {
+                    return FormOutcome::Ignored;
+                };
+                sections
+                    .iter()
+                    .flat_map(|section| section.fields)
+                    .find(|field| field.enabled && &field.id == id)
+                    .map_or(FormOutcome::Ignored, |field| {
+                        FormOutcome::Activated(field.id.clone())
+                    })
+            }
+            UiIntent::Page(PageMove::Forward) => {
+                if self.scroll_by(self.viewport_height.max(1) as isize, self.content_height) {
+                    FormOutcome::Scrolled
+                } else {
+                    FormOutcome::Ignored
+                }
+            }
+            UiIntent::Page(PageMove::Backward) => {
+                if self.scroll_by(-(self.viewport_height.max(1) as isize), self.content_height) {
+                    FormOutcome::Scrolled
+                } else {
+                    FormOutcome::Ignored
+                }
+            }
+            // Field cycle is host/scene owned.
+            UiIntent::Move(_)
+            | UiIntent::Toggle
+            | UiIntent::Open
+            | UiIntent::Close
+            | UiIntent::Cancel
+            | UiIntent::Expand
+            | UiIntent::Collapse => FormOutcome::Ignored,
         }
     }
 
@@ -302,8 +345,13 @@ impl<Id: Clone + PartialEq> FormState<Id> {
         self.hovered.as_ref()
     }
 
-    /// Maps a pointer position to the semantic outcome of the painted hit region.
-    pub fn click(&mut self, position: Position) -> FormOutcome<Id> {
+    /// Activate if the hit field is already the host-focused field; else `Ignored`.
+    ///
+    /// Host must call `scene.focus(hit_id)` when this returns `Ignored` for a hit.
+    pub fn click(&mut self, position: Position, focused_field: Option<&Id>) -> FormOutcome<Id> {
+        if !self.accepts_input {
+            return FormOutcome::Ignored;
+        }
         let Some(id) = self
             .regions
             .iter()
@@ -312,87 +360,49 @@ impl<Id: Clone + PartialEq> FormState<Id> {
         else {
             return FormOutcome::Ignored;
         };
-        if self.focused.as_ref() == Some(&id) {
+        if focused_field == Some(&id) {
             FormOutcome::Activated(id)
         } else {
-            self.focused = Some(id.clone());
-            self.follow_focus = true;
-            FormOutcome::FocusChanged(id)
-        }
-    }
-
-    fn move_focus(&mut self, sections: &[FormSection<'_, Id>], forward: bool) -> FormOutcome<Id> {
-        let enabled_count = sections
-            .iter()
-            .flat_map(|section| section.fields)
-            .filter(|field| field.enabled)
-            .count();
-        if enabled_count == 0 {
-            return FormOutcome::Ignored;
-        }
-        let current = sections
-            .iter()
-            .flat_map(|section| section.fields)
-            .filter(|field| field.enabled)
-            .position(|field| self.focused.as_ref() == Some(&field.id));
-        let target = match (current, forward) {
-            (Some(index), true) => index.saturating_add(1) % enabled_count,
-            (Some(index), false) => index.checked_sub(1).unwrap_or(enabled_count - 1),
-            (None, true) => 0,
-            (None, false) => enabled_count - 1,
-        };
-        self.focus_enabled_index(sections, target)
-    }
-
-    fn focus_boundary(
-        &mut self,
-        sections: &[FormSection<'_, Id>],
-        from_end: bool,
-    ) -> FormOutcome<Id> {
-        let count = sections
-            .iter()
-            .flat_map(|section| section.fields)
-            .filter(|field| field.enabled)
-            .count();
-        if count == 0 {
+            // Do not steal focus authority — host focuses via scene.
             FormOutcome::Ignored
-        } else {
-            self.focus_enabled_index(sections, if from_end { count - 1 } else { 0 })
         }
     }
 
-    fn focus_enabled_index(
-        &mut self,
-        sections: &[FormSection<'_, Id>],
-        target: usize,
-    ) -> FormOutcome<Id> {
-        let Some(id) = sections
+    /// Hit-test helper: field id under position (for host scene.focus).
+    #[must_use]
+    pub fn hit_id(&self, position: Position) -> Option<&Id> {
+        self.regions
             .iter()
-            .flat_map(|section| section.fields)
-            .filter(|field| field.enabled)
-            .nth(target)
-            .map(|field| field.id.clone())
-        else {
-            return FormOutcome::Ignored;
-        };
-        self.focused = Some(id.clone());
-        self.follow_focus = true;
-        FormOutcome::FocusChanged(id)
+            .find(|region| region.area.contains(position))
+            .map(|region| &region.id)
     }
 }
 
-#[derive(Debug, Clone, Copy)]
 /// A responsive, navigable form assembled from borrowed sections.
+#[derive(Debug, Clone, Copy)]
 pub struct Form<'a, Id> {
     sections: &'a [FormSection<'a, Id>],
     system: &'a DesignSystem,
+    /// Host scene focus id for field chrome (not stored in state).
+    focused_field: Option<&'a Id>,
 }
 
 impl<'a, Id> Form<'a, Id> {
+    /// Creates a form over the supplied sections and design system.
     #[must_use]
-    /// Creates a form over the supplied sections and theme.
     pub const fn new(sections: &'a [FormSection<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self { sections, system }
+        Self {
+            sections,
+            system,
+            focused_field: None,
+        }
+    }
+
+    /// Sets the host-owned focused field id for paint (typically `scene.focused()`).
+    #[must_use]
+    pub const fn focused_field(mut self, id: Option<&'a Id>) -> Self {
+        self.focused_field = id;
+        self
     }
 }
 
@@ -425,8 +435,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         state.column_count = columns;
         state.content_height = content_height;
 
-        if state.follow_focus
-            && let Some((top, bottom)) = focused_bounds(self.sections, columns, &state.focused)
+        if let Some(ref id) = state.ensure_visible
+            && let Some((top, bottom)) = field_bounds(self.sections, columns, id)
         {
             if top < state.offset {
                 state.offset = top;
@@ -434,7 +444,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 state.offset = bottom.saturating_sub(state.viewport_height);
             }
         }
-        state.follow_focus = false;
+        state.ensure_visible = None;
         state.offset = state
             .offset
             .min(max_offset(content_height, state.viewport_height));
@@ -472,6 +482,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                         .saturating_mul(column_width.saturating_add(COLUMN_GAP)),
                 );
                 let field_area = Rect::new(x, content_area.y, column_width, 3);
+                let is_focused =
+                    state.accepts_input && self.focused_field.is_some_and(|id| id == &field.id);
                 paint_field(
                     buffer,
                     content_area,
@@ -480,7 +492,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                     field_area,
                     field,
                     self.system,
-                    state.active && state.focused.as_ref() == Some(&field.id),
+                    is_focused,
                     state.hovered.as_ref() == Some(&field.id),
                 );
                 let visible = visible_rect(
@@ -564,7 +576,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for Form<'_, Id> {
 }
 
 fn columns_for(width: u16) -> u8 {
-    // Responsive policy + hard cell floor: two columns only when both allow it.
     let policy_cols = ResponsiveSurface::Form.form_columns(width);
     let fits = width
         >= MIN_COLUMN_WIDTH
@@ -587,19 +598,15 @@ fn dimensions<Id>(sections: &[FormSection<'_, Id>], width: u16) -> (u8, usize) {
     (columns, height)
 }
 
-fn focused_bounds<Id: PartialEq>(
+fn field_bounds<Id: PartialEq>(
     sections: &[FormSection<'_, Id>],
     columns: u8,
-    focused: &Option<Id>,
+    focused: &Id,
 ) -> Option<(usize, usize)> {
     let mut content_y = 0usize;
     for section in sections {
         content_y = content_y.saturating_add(SECTION_HEADER_HEIGHT);
-        if let Some(index) = section
-            .fields
-            .iter()
-            .position(|field| focused.as_ref() == Some(&field.id))
-        {
+        if let Some(index) = section.fields.iter().position(|field| &field.id == focused) {
             let top = content_y.saturating_add(index / usize::from(columns) * FIELD_HEIGHT);
             return Some((top, top.saturating_add(FIELD_HEIGHT.saturating_sub(1))));
         }
@@ -642,6 +649,16 @@ fn paint_field<Id>(
     if focused {
         label_style = label_style.add_modifier(Modifier::BOLD);
         value_style = value_style.patch(system.style(Role::Focus));
+        // Non-color focus cue: leading glyph on value row.
+        paint_string(
+            buffer,
+            viewport,
+            offset,
+            content_y.saturating_add(1),
+            field_area.x,
+            "›",
+            system.style(Role::Focus),
+        );
     } else if hovered && field.enabled {
         label_style = label_style.add_modifier(Modifier::UNDERLINED);
     }
@@ -651,73 +668,48 @@ fn paint_field<Id>(
             .add_modifier(Modifier::DIM);
     }
 
-    let required_width = u16::from(field.required && field_area.width > 0);
-    paint_line_at(
-        buffer,
-        viewport,
-        offset,
-        content_y,
-        field_area.x,
-        field_area.width.saturating_sub(required_width),
-        &field.label,
-        label_style,
-    );
-    if field.required && field_area.width > 0 {
-        paint_text_at(
-            buffer,
-            viewport,
-            offset,
-            content_y,
-            field_area.right().saturating_sub(1),
-            1,
-            "*",
-            system.style(Role::Accent).add_modifier(Modifier::BOLD),
-        );
+    let mut label = field.label.clone();
+    if field.required {
+        label.push_span(" *");
     }
-    let disabled_width = u16::from(!field.enabled && field_area.width > 0);
+    if !field.enabled {
+        label.push_span(" ⊘");
+    }
+    paint_line(buffer, viewport, offset, content_y, &label, label_style);
+    let value_x = if focused {
+        field_area.x.saturating_add(2)
+    } else {
+        field_area.x
+    };
+    let value_width = field_area.width.saturating_sub(if focused { 2 } else { 0 });
     paint_line_at(
         buffer,
         viewport,
         offset,
         content_y.saturating_add(1),
-        field_area.x,
-        field_area.width.saturating_sub(disabled_width),
+        value_x,
+        value_width,
         &field.value,
         value_style,
     );
-    if !field.enabled && field_area.width > 0 {
-        paint_text_at(
-            buffer,
-            viewport,
-            offset,
-            content_y.saturating_add(1),
-            field_area.right().saturating_sub(1),
-            1,
-            "⊘",
-            value_style,
-        );
-    }
-    if let Some(error) = &field.error {
-        paint_line_at(
-            buffer,
-            viewport,
-            offset,
-            content_y.saturating_add(2),
-            field_area.x,
-            field_area.width,
-            error,
-            system.style(Role::Danger),
-        );
-    } else if let Some(help) = &field.help {
-        paint_line_at(
+    let supporting = field
+        .error
+        .as_ref()
+        .or(field.help.as_ref())
+        .map(|line| (line, field.error.is_some()));
+    if let Some((line, is_error)) = supporting {
+        let style = if is_error {
+            system.style(Role::Danger)
+        } else {
+            system.style(Role::TextMuted)
+        };
+        paint_line(
             buffer,
             viewport,
             offset,
             content_y.saturating_add(2),
-            field_area.x,
-            field_area.width,
-            help,
-            system.style(Role::TextMuted),
+            line,
+            style,
         );
     }
 }
@@ -759,27 +751,29 @@ fn paint_line_at(
     let Some(y) = visible_y(viewport, offset, content_y) else {
         return;
     };
+    if width == 0 {
+        return;
+    }
     buffer.set_line(x, y, line, width);
     buffer.set_style(Rect::new(x, y, width, 1), style);
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "clipped text painting is explicit"
-)]
-fn paint_text_at(
+fn paint_string(
     buffer: &mut Buffer,
     viewport: Rect,
     offset: usize,
     content_y: usize,
     x: u16,
-    width: u16,
     text: &str,
     style: Style,
 ) {
     let Some(y) = visible_y(viewport, offset, content_y) else {
         return;
     };
+    let width = viewport.right().saturating_sub(x);
+    if width == 0 {
+        return;
+    }
     buffer.set_stringn(x, y, text, usize::from(width), style);
 }
 
@@ -803,19 +797,79 @@ fn visible_rect(
     x: u16,
     width: u16,
 ) -> Option<Rect> {
-    let content_bottom = content_y.saturating_add(height);
-    let viewport_bottom = offset.saturating_add(usize::from(viewport.height));
-    let visible_top = content_y.max(offset);
-    let visible_bottom = content_bottom.min(viewport_bottom);
-    if visible_top >= visible_bottom || width == 0 {
+    let visible_start = offset;
+    let visible_end = offset.saturating_add(usize::from(viewport.height));
+    let top = content_y.max(visible_start);
+    let bottom = content_y.saturating_add(height).min(visible_end);
+    if top >= bottom || width == 0 {
         return None;
     }
-    Some(Rect::new(
-        x,
-        viewport
-            .y
-            .saturating_add(u16::try_from(visible_top.saturating_sub(offset)).unwrap_or(u16::MAX)),
-        width,
-        u16::try_from(visible_bottom.saturating_sub(visible_top)).unwrap_or(u16::MAX),
-    ))
+    let y = viewport
+        .y
+        .saturating_add(u16::try_from(top.saturating_sub(offset)).unwrap_or(u16::MAX));
+    let h = u16::try_from(bottom.saturating_sub(top)).unwrap_or(0);
+    if h == 0 {
+        None
+    } else {
+        Some(Rect::new(x, y, width, h))
+    }
+}
+
+#[cfg(test)]
+mod unit_tests {
+    use super::*;
+    use crate::input::KeyModifiers;
+    use crate::interaction::default_form_intent;
+
+    #[test]
+    fn tab_does_not_change_focus_authority() {
+        let fields = [FormField::new("a", Line::from("A"), Line::from("1"))];
+        let sections = [FormSection {
+            title: Line::from("S"),
+            fields: &fields,
+        }];
+        let mut state = FormState::new();
+        let out = state.handle_key(
+            &sections,
+            KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE),
+            Some(&"a"),
+        );
+        assert_eq!(out, FormOutcome::Ignored);
+    }
+
+    #[test]
+    fn enter_activates_host_focused_field() {
+        let fields = [
+            FormField::new("a", Line::from("A"), Line::from("1")),
+            FormField::new("b", Line::from("B"), Line::from("2")),
+        ];
+        let sections = [FormSection {
+            title: Line::from("S"),
+            fields: &fields,
+        }];
+        let mut state = FormState::new();
+        let out = state.handle_key(
+            &sections,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            Some(&"b"),
+        );
+        assert_eq!(out, FormOutcome::Activated("b"));
+    }
+
+    #[test]
+    fn default_form_intent_has_no_y_grant_and_maps_activate() {
+        assert_eq!(
+            default_form_intent(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            Some(UiIntent::Activate)
+        );
+        assert_eq!(
+            default_form_intent(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE)),
+            None
+        );
+        // Move is host/scene — not form intent.
+        assert_eq!(
+            default_form_intent(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            None
+        );
+    }
 }

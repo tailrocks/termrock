@@ -2708,8 +2708,12 @@ fn form(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         title: Line::from("General"),
         fields: &fields,
     }];
-    let mut state = FormState::new(Some("name"));
-    frame.render_stateful_widget(&Form::new(&sections, system), area, &mut state);
+    let mut state = FormState::new();
+    frame.render_stateful_widget(
+        &Form::new(&sections, system).focused_field(Some(&"name")),
+        area,
+        &mut state,
+    );
 }
 
 pub(crate) fn render_split_pane(

@@ -12,6 +12,7 @@
     "agent-workbench",
     "transcript",
     "overlay-stack",
-    "host-frame"
+    "host-frame",
+    "form"
   ]
 }

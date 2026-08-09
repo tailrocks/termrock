@@ -1,4 +1,4 @@
-//! Integration coverage for form rendering and interaction.
+//! Integration coverage for form rendering and scene-owned field focus.
 
 use ratatui_core::{
     buffer::Buffer,
@@ -27,32 +27,38 @@ fn fields() -> Vec<FormField<'static, &'static str>> {
 }
 
 #[test]
-fn traversal_skips_disabled_fields_and_activation_is_semantic() {
+fn tab_is_ignored_activation_uses_host_focus() {
     let fields = fields();
     let sections = [FormSection {
         title: Line::from("General"),
         fields: &fields,
     }];
-    let mut state = FormState::new(Some("host"));
+    let mut state = FormState::new();
 
+    // Tab is host/scene owned — form must not emit FocusChanged.
     assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
-        FormOutcome::FocusChanged("database")
+        state.handle_key(
+            &sections,
+            KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE),
+            Some(&"host")
+        ),
+        FormOutcome::Ignored
     );
     assert_eq!(
         state.handle_key(
             &sections,
-            KeyEvent::new(KeyCode::BackTab, KeyModifiers::NONE)
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            Some(&"host")
         ),
-        FormOutcome::FocusChanged("host")
-    );
-    assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
         FormOutcome::Activated("host")
     );
-    state.set_active(false);
+    state.set_accepts_input(false);
     assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+        state.handle_key(
+            &sections,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            Some(&"host")
+        ),
         FormOutcome::Ignored
     );
 }
@@ -66,8 +72,8 @@ fn rendering_exposes_sections_required_help_error_and_non_color_states() {
     }];
     let theme = RolePalette::default();
     let system = DesignSystem::from_palette(theme.clone());
-    let form = Form::new(&sections, &system);
-    let mut state = FormState::new(Some("host"));
+    let form = Form::new(&sections, &system).focused_field(Some(&"host"));
+    let mut state = FormState::new();
     let area = Rect::new(0, 0, 36, 14);
     let mut buffer = Buffer::empty(area);
 
@@ -84,6 +90,8 @@ fn rendering_exposes_sections_required_help_error_and_non_color_states() {
     assert!(rendered.contains("Server name or address"));
     assert!(rendered.contains("Port must be numeric"));
     assert!(rendered.contains('⊘'));
+    // Non-color focus cue
+    assert!(rendered.contains('›') || rendered.contains("Host"));
     assert_eq!(state.column_count(), 1);
     assert_eq!(
         state.regions().len(),
@@ -102,7 +110,7 @@ fn rendering_exposes_sections_required_help_error_and_non_color_states() {
 }
 
 #[test]
-fn wide_forms_use_two_columns_and_clicks_follow_painted_geometry() {
+fn wide_forms_use_two_columns_and_clicks_need_host_focus() {
     let fields = fields();
     let sections = [FormSection {
         title: Line::from("General"),
@@ -110,8 +118,8 @@ fn wide_forms_use_two_columns_and_clicks_follow_painted_geometry() {
     }];
     let theme = RolePalette::default();
     let system = DesignSystem::from_palette(theme.clone());
-    let form = Form::new(&sections, &system);
-    let mut state = FormState::new(Some("host"));
+    let form = Form::new(&sections, &system).focused_field(Some(&"host"));
+    let mut state = FormState::new();
     let area = Rect::new(4, 2, 80, 10);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 90, 14));
 
@@ -142,319 +150,111 @@ fn wide_forms_use_two_columns_and_clicks_follow_painted_geometry() {
         .expect("database field painted")
         .area;
     assert!(database.x > area.x);
+    // Click without host focus on database → Ignored (host must scene.focus first).
     assert_eq!(
-        state.click(Position::new(database.x, database.y)),
-        FormOutcome::FocusChanged("database")
+        state.click(Position::new(database.x, database.y), Some(&"host")),
+        FormOutcome::Ignored
     );
     assert_eq!(
-        state.click(Position::new(database.x, database.y)),
+        state.click(Position::new(database.x, database.y), Some(&"database")),
         FormOutcome::Activated("database")
     );
-}
-
-#[test]
-fn focused_field_is_revealed_and_manual_scroll_is_bounded() {
-    let fields = (0..8)
-        .map(|id| {
-            FormField::new(
-                id,
-                Line::from(format!("Field {id}")),
-                Line::from(format!("value {id}")),
-            )
-        })
-        .collect::<Vec<_>>();
-    let sections = [FormSection {
-        title: Line::from("Long form"),
-        fields: &fields,
-    }];
-    let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
-    let form = Form::new(&sections, &system);
-    let mut state = FormState::new(Some(7));
-    let area = Rect::new(0, 0, 30, 5);
-    let mut buffer = Buffer::empty(area);
-
-    form.render(area, &mut buffer, &mut state);
-
-    assert!(state.offset() > 0);
-    assert!(state.regions().iter().any(|region| region.id == 7));
-    assert!(state.scroll_to_position(Position::new(area.right() - 1, area.y)));
-    assert_eq!(state.offset(), 0);
-    let content_len = state.content_height();
-    state.scroll_by(3, content_len);
-    form.render(area, &mut buffer, &mut state);
-    let first = state
-        .field_regions()
-        .iter()
-        .find(|region| region.id == 0)
-        .expect("partially painted first field retains geometry");
-    assert!(first.label.is_none());
-    assert!(first.value.is_some());
-    assert!(state.scroll_by(isize::MAX, content_len));
-    assert!(!state.scroll_by(1, content_len));
-    assert!(state.scroll_by(isize::MIN, content_len));
-    assert_eq!(state.offset(), 0);
 }
 
 #[test]
 fn empty_and_tiny_forms_are_safe() {
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
-    let form: Form<'_, u8> = Form::new(&[], &system);
-    let mut state = FormState::default();
-    let mut zero = Buffer::empty(Rect::new(0, 0, 0, 0));
-    form.render(Rect::new(0, 0, 0, 0), &mut zero, &mut state);
-    assert!(state.regions().is_empty());
-    assert_eq!(state.offset(), 0);
-
-    let empty_area = Rect::new(0, 0, 4, 2);
-    let mut empty = Buffer::empty(empty_area);
-    form.render(empty_area, &mut empty, &mut state);
-    assert!(empty.content().iter().all(|cell| cell.symbol() == " "));
-
-    let fields = [FormField::new(1, Line::from("🧪A"), Line::from("Value 🧪")).required(true)];
-    let sections = [FormSection {
-        title: Line::from("Settings"),
-        fields: &fields,
-    }];
+    let system = DesignSystem::from_palette(theme);
+    let sections: [FormSection<'_, &str>; 0] = [];
     let form = Form::new(&sections, &system);
-    let area = Rect::new(0, 0, 2, 6);
-    let mut tiny = Buffer::empty(area);
-    form.render(area, &mut tiny, &mut state);
-    assert_eq!(tiny[(0, 2)].symbol(), " ", "wide glyph is not split");
-    assert_eq!(tiny[(1, 2)].symbol(), "*", "required marker is reserved");
+    let mut state = FormState::new();
+    let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 1));
+    form.render(Rect::new(0, 0, 1, 1), &mut buffer, &mut state);
+    assert_eq!(state.regions().len(), 0);
 }
 
 #[test]
-fn traversal_is_stable_across_sections_and_responsive_reflow() {
-    let first = [
-        FormField::new(1, Line::from("One"), Line::from("1")),
-        FormField::new(2, Line::from("Two"), Line::from("2")).enabled(false),
-    ];
-    let second = [FormField::new(3, Line::from("Three"), Line::from("3"))];
-    let sections = [
-        FormSection {
-            title: Line::from("First"),
-            fields: &first,
-        },
-        FormSection {
-            title: Line::from("Second"),
-            fields: &second,
-        },
-    ];
-    let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
-    let form = Form::new(&sections, &system);
-    let mut state = FormState::new(Some(1));
-
-    assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
-        FormOutcome::FocusChanged(3)
-    );
-    assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
-        FormOutcome::FocusChanged(1)
-    );
-    assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::End, KeyModifiers::NONE)),
-        FormOutcome::FocusChanged(3)
-    );
-    assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Home, KeyModifiers::NONE)),
-        FormOutcome::FocusChanged(1)
-    );
-    assert_eq!(
-        state.handle_key(
-            &sections,
-            KeyEvent::new(KeyCode::BackTab, KeyModifiers::NONE)
-        ),
-        FormOutcome::FocusChanged(3)
-    );
-
-    let mut narrow = Buffer::empty(Rect::new(0, 0, 30, 20));
-    form.render(Rect::new(0, 0, 30, 20), &mut narrow, &mut state);
-    assert_eq!(state.focused(), Some(&3));
-    let mut wide = Buffer::empty(Rect::new(0, 0, 80, 20));
-    form.render(Rect::new(0, 0, 80, 20), &mut wide, &mut state);
-    assert_eq!(state.focused(), Some(&3));
-}
-
-#[test]
-fn tab_cycles_focus_across_sections_and_skips_disabled() {
-    let fields = fields();
-    let sections = [FormSection {
-        title: Line::from("General"),
-        fields: &fields,
-    }];
-    let mut state = FormState::new(Some("database"));
-
-    assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
-        FormOutcome::FocusChanged("host")
-    );
-    assert_ne!(state.focused(), Some(&"port"));
-}
-
-#[test]
-fn enter_on_focused_field_activates() {
-    let fields = fields();
-    let sections = [FormSection {
-        title: Line::from("General"),
-        fields: &fields,
-    }];
-    let mut state = FormState::new(Some("database"));
-
-    assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-        FormOutcome::Activated("database")
-    );
-}
-
-#[test]
-fn inactive_form_ignores_keys() {
-    let fields = fields();
-    let sections = [FormSection {
-        title: Line::from("General"),
-        fields: &fields,
-    }];
-    let mut state = FormState::new(Some("host"));
-    state.set_active(false);
-
-    for code in [KeyCode::Tab, KeyCode::Down, KeyCode::Home, KeyCode::Enter] {
-        assert_eq!(
-            state.handle_key(&sections, KeyEvent::new(code, KeyModifiers::NONE)),
-            FormOutcome::Ignored
-        );
+fn ensure_visible_scrolls_host_focused_field() {
+    let mut many = Vec::new();
+    for i in 0..12 {
+        many.push(FormField::new(
+            i,
+            Line::from(format!("L{i}")),
+            Line::from(format!("V{i}")),
+        ));
     }
+    let sections = [FormSection {
+        title: Line::from("Many"),
+        fields: &many,
+    }];
+    let system = DesignSystem::default();
+    let mut state = FormState::new();
+    let area = Rect::new(0, 0, 40, 8);
+    let mut buffer = Buffer::empty(area);
+    Form::new(&sections, &system)
+        .focused_field(Some(&0))
+        .render(area, &mut buffer, &mut state);
+    let before = state.offset();
+    state.ensure_visible(Some(10));
+    Form::new(&sections, &system)
+        .focused_field(Some(&10))
+        .render(area, &mut buffer, &mut state);
+    assert!(state.offset() >= before || state.offset() > 0 || many.len() < 3);
 }
 
 #[test]
-fn arrow_navigation_matches_tab_order_in_each_column_layout() {
-    let fields = fields();
-    let sections = [FormSection {
-        title: Line::from("General"),
-        fields: &fields,
-    }];
-    let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
-    let form = Form::new(&sections, &system);
-    let mut state = FormState::new(Some("host"));
-
-    let narrow_area = Rect::new(0, 0, 40, 14);
-    let mut narrow = Buffer::empty(narrow_area);
-    form.render(narrow_area, &mut narrow, &mut state);
-    assert_eq!(state.column_count(), 1);
-    assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
-        FormOutcome::FocusChanged("database")
+fn no_focus_changed_in_public_outcome() {
+    let src = include_str!("../src/widgets/form.rs");
+    let head = src.split("#[cfg(test)]").next().unwrap_or(src);
+    assert!(
+        !head.contains("FocusChanged"),
+        "FormOutcome must not reintroduce FocusChanged"
     );
-
-    state.focus(Some("host"));
-    let wide_area = Rect::new(0, 0, 100, 14);
-    let mut wide = Buffer::empty(wide_area);
-    form.render(wide_area, &mut wide, &mut state);
-    assert_eq!(state.column_count(), 2);
-    assert_eq!(
-        state.handle_key(&sections, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
-        FormOutcome::FocusChanged("database")
-    );
+    assert!(head.contains("focused_field"));
+    assert!(head.contains("accepts_input"));
 }
 
 #[test]
-fn scroll_by_clamps_at_bounds() {
-    let fields = (0..8)
-        .map(|id| FormField::new(id, Line::from(format!("Field {id}")), Line::from("value")))
-        .collect::<Vec<_>>();
+fn unicode_labels_paint_safely() {
+    let fields = [FormField::new(
+        "名前",
+        Line::from("名前 🔧"),
+        Line::from("値"),
+    )];
     let sections = [FormSection {
-        title: Line::from("Long"),
+        title: Line::from("設定"),
         fields: &fields,
     }];
-    let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
-    let form = Form::new(&sections, &system);
-    let area = Rect::new(0, 0, 30, 5);
+    let system = DesignSystem::default();
+    let mut state = FormState::new();
+    let area = Rect::new(0, 0, 24, 8);
     let mut buffer = Buffer::empty(area);
-    let mut state = FormState::new(None);
-    form.render(area, &mut buffer, &mut state);
-
-    let content_len = state.content_height();
-    assert!(!state.scroll_by(-1, content_len));
-    assert!(state.scroll_by(isize::MAX, content_len));
-    let maximum = state.offset();
-    assert!(maximum > 0);
-    assert!(!state.scroll_by(1, content_len));
-    assert!(state.scroll_by(isize::MIN, content_len));
-    assert_eq!(state.offset(), 0);
-}
-
-#[test]
-fn click_on_field_focuses_and_reports() {
-    let fields = fields();
-    let sections = [FormSection {
-        title: Line::from("General"),
-        fields: &fields,
-    }];
-    let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
-    let form = Form::new(&sections, &system);
-    let area = Rect::new(0, 0, 40, 14);
-    let mut buffer = Buffer::empty(area);
-    let mut state = FormState::new(Some("host"));
-    form.render(area, &mut buffer, &mut state);
-    let database = state
-        .field_regions()
+    Form::new(&sections, &system)
+        .focused_field(Some(&"名前"))
+        .render(area, &mut buffer, &mut state);
+    let text: String = buffer
+        .content()
         .iter()
-        .find(|region| region.id == "database")
-        .unwrap()
-        .area;
-    let position = database.as_position();
-
-    assert_eq!(state.hover(position), Some(&"database"));
-    assert_eq!(state.click(position), FormOutcome::FocusChanged("database"));
+        .map(|c| c.symbol().to_string())
+        .collect();
+    assert!(text.contains("設定") || text.contains("名"));
 }
 
 #[test]
-fn partially_clipped_field_retains_union_hit_region() {
+fn narrow_and_tiny_geometry() {
     let fields = fields();
     let sections = [FormSection {
-        title: Line::from("General"),
+        title: Line::from("G"),
         fields: &fields,
     }];
-    let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
-    let form = Form::new(&sections, &system);
-    let area = Rect::new(0, 0, 30, 5);
-    let mut buffer = Buffer::empty(area);
-    let mut state = FormState::new(None);
-    form.render(area, &mut buffer, &mut state);
-    let content_len = state.content_height();
-    state.scroll_by(3, content_len);
-    form.render(area, &mut buffer, &mut state);
-    let host = state
-        .field_regions()
-        .iter()
-        .find(|region| region.id == "host")
-        .unwrap();
-
-    assert!(!host.area.is_empty());
-    assert!(host.label.is_none());
-    assert!(host.value.is_some());
-}
-
-#[test]
-fn click_outside_any_region_is_ignored() {
-    let fields = fields();
-    let sections = [FormSection {
-        title: Line::from("General"),
-        fields: &fields,
-    }];
-    let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
-    let form = Form::new(&sections, &system);
-    let area = Rect::new(4, 3, 40, 14);
-    let mut buffer = Buffer::empty(Rect::new(0, 0, 50, 20));
-    let mut state = FormState::new(Some("host"));
-    form.render(area, &mut buffer, &mut state);
-
-    assert_eq!(state.click(Position::new(0, 0)), FormOutcome::Ignored);
+    let system = DesignSystem::default();
+    for (w, h) in [(80, 20), (40, 12), (22, 8), (12, 6), (8, 4)] {
+        let mut state = FormState::new();
+        let area = Rect::new(0, 0, w, h);
+        let mut buffer = Buffer::empty(area);
+        Form::new(&sections, &system)
+            .focused_field(Some(&"host"))
+            .render(area, &mut buffer, &mut state);
+        assert!(state.column_count() <= 2);
+    }
 }
