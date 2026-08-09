@@ -2309,6 +2309,51 @@ pub(crate) fn stories() -> Vec<Story> {
             heading_compact_story,
         ),
         Story::new(
+            "label/basic",
+            "Label basic",
+            "Label",
+            "Required label with help description.",
+            40,
+            3,
+            label_basic_story,
+        ),
+        Story::new(
+            "label/states",
+            "Label states",
+            "Label",
+            "Required, optional, disabled, invalid, warning.",
+            44,
+            6,
+            label_states_story,
+        ),
+        Story::new(
+            "label/layouts",
+            "Label layouts",
+            "Label",
+            "Stacked vs compact caption recipes.",
+            40,
+            5,
+            label_layouts_story,
+        ),
+        Story::new(
+            "label/narrow",
+            "Label narrow",
+            "Label",
+            "Description contracts before the label.",
+            20,
+            3,
+            label_narrow_story,
+        ),
+        Story::new(
+            "description/kinds",
+            "Description kinds",
+            "Description",
+            "Help, error, warning, meta descriptions.",
+            40,
+            5,
+            description_kinds_story,
+        ),
+        Story::new(
             "kbd/basic",
             "Kbd",
             "Kbd",
@@ -8626,6 +8671,88 @@ fn heading_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         .h3()
         .compact()
         .paint(chunks[2], frame.buffer_mut());
+}
+
+fn label_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::FieldCaption;
+    let _ = FieldCaption::<&str>::new("Display name", system)
+        .for_id("name")
+        .required()
+        .help("Shown in the session list")
+        .paint(area, frame.buffer_mut());
+}
+
+fn label_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{FieldCaption, Label};
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let _ = Label::<()>::new("Required", system)
+        .required()
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = Label::<()>::new("Optional", system)
+        .optional()
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = Label::<()>::new("Disabled", system)
+        .disabled()
+        .paint(chunks[2], frame.buffer_mut());
+    let _ = FieldCaption::<()>::new("Invalid", system)
+        .error("must be unique")
+        .paint(chunks[3], frame.buffer_mut());
+    let _ = Label::<()>::new("Warning", system)
+        .warning()
+        .paint(chunks[4], frame.buffer_mut());
+}
+
+fn label_layouts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::FieldCaption;
+    let chunks = Layout::vertical([Constraint::Length(2), Constraint::Length(1), Constraint::Min(1)])
+        .split(area);
+    let _ = FieldCaption::<()>::new("Stacked", system)
+        .help("description under label")
+        .stacked()
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = FieldCaption::<()>::new("Compact", system)
+        .help("dropped in compact")
+        .compact()
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = FieldCaption::<()>::new("Inline", system)
+        .required()
+        .inline()
+        .paint(chunks[2], frame.buffer_mut());
+}
+
+fn label_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::FieldCaption;
+    // width 20 < DROP_DESCRIPTION_WIDTH (28) → description contracts
+    let _ = FieldCaption::<()>::new("Endpoint", system)
+        .required()
+        .help("this help should contract away")
+        .paint(area, frame.buffer_mut());
+}
+
+fn description_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Description;
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let _ = Description::<()>::new("Help: use a stable hostname", system)
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = Description::<()>::error("Error: value is required", system)
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = Description::<()>::warning("Warning: deprecated flag", system)
+        .paint(chunks[2], frame.buffer_mut());
+    let _ = Description::<()>::meta("Meta: last synced 2m ago", system)
+        .paint(chunks[3], frame.buffer_mut());
 }
 
 fn kbd_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

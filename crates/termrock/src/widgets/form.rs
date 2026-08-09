@@ -635,7 +635,7 @@ fn field_bounds<Id: PartialEq>(
     clippy::too_many_arguments,
     reason = "paint projection keeps Form public API small"
 )]
-fn paint_field<Id>(
+fn paint_field<Id: Clone>(
     buffer: &mut Buffer,
     viewport: Rect,
     offset: usize,
@@ -646,18 +646,14 @@ fn paint_field<Id>(
     focused: bool,
     hovered: bool,
 ) {
-    let mut label_style = if field.enabled {
-        system.style(Role::Text)
-    } else {
-        system.style(Role::TextDisabled).add_modifier(Modifier::DIM)
-    };
+    use crate::widgets::label::{Description, Label, LabelTone, line_plain};
+
     let mut value_style = if field.error.is_some() {
         system.style(Role::InputInvalid)
     } else {
         system.style(Role::Input)
     };
     if focused {
-        label_style = label_style.add_modifier(Modifier::BOLD);
         value_style = value_style.patch(system.style(Role::Focus));
         // Non-color focus cue: leading glyph on value row.
         paint_string(
@@ -669,8 +665,6 @@ fn paint_field<Id>(
             "›",
             system.style(Role::Focus),
         );
-    } else if hovered && field.enabled {
-        label_style = label_style.add_modifier(Modifier::UNDERLINED);
     }
     if !field.enabled {
         value_style = value_style
@@ -678,14 +672,33 @@ fn paint_field<Id>(
             .add_modifier(Modifier::DIM);
     }
 
-    let mut label = field.label.clone();
+    // Label via Label primitive (required/optional/disabled/invalid/focus marks).
+    let label_plain = line_plain(&field.label);
+    let mut label = Label::new(&label_plain, system).for_id(field.id.clone());
     if field.required {
-        label.push_span(" *");
+        label = label.required();
     }
     if !field.enabled {
-        label.push_span(" ⊘");
+        label = label.disabled();
+    } else if field.error.is_some() {
+        label = label.invalid();
+    } else if focused {
+        label = label.focused();
+    } else if hovered {
+        label = label.tone(LabelTone::Default); // hover underline applied below
     }
-    paint_line(buffer, viewport, offset, content_y, &label, label_style);
+    let label_row = visible_rect(viewport, offset, content_y, 1, field_area.x, field_area.width);
+    if let Some(row) = label_row {
+        let _ = label.paint(row, buffer);
+        if hovered && field.enabled && !focused {
+            // Non-color hover cue: underline the painted label row.
+            for x in row.x..row.right() {
+                let cell = &mut buffer[(x, row.y)];
+                cell.set_style(cell.style().add_modifier(Modifier::UNDERLINED));
+            }
+        }
+    }
+
     let value_x = if focused {
         field_area.x.saturating_add(2)
     } else {
@@ -702,25 +715,28 @@ fn paint_field<Id>(
         &field.value,
         value_style,
     );
-    let supporting = field
-        .error
-        .as_ref()
-        .or(field.help.as_ref())
-        .map(|line| (line, field.error.is_some()));
-    if let Some((line, is_error)) = supporting {
-        let style = if is_error {
-            system.style(Role::Danger)
-        } else {
-            system.style(Role::TextMuted)
-        };
-        paint_line(
-            buffer,
-            viewport,
-            offset,
-            content_y.saturating_add(2),
-            line,
-            style,
-        );
+
+    // Supporting description contracts before the label (Label::DROP_DESCRIPTION_WIDTH).
+    let supporting_y = content_y.saturating_add(2);
+    if let Some(row) = visible_rect(
+        viewport,
+        offset,
+        supporting_y,
+        1,
+        field_area.x,
+        field_area.width,
+    ) {
+        if let Some(err) = field.error.as_ref() {
+            let plain = line_plain(err);
+            let _ = Description::error(&plain, system)
+                .for_id(field.id.clone())
+                .paint(row, buffer);
+        } else if let Some(help) = field.help.as_ref() {
+            let plain = line_plain(help);
+            let _ = Description::new(&plain, system)
+                .for_id(field.id.clone())
+                .paint(row, buffer);
+        }
     }
 }
 

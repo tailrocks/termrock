@@ -87,10 +87,26 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "Description": {
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "focus": "not-applicable",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "DetailTable": {
     "keyboard": "covered",
     "mouse": "covered",
     "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
+  "Label": {
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "focus": "not-applicable",
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"

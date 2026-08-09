@@ -1,0 +1,44 @@
+---
+title: Description
+description: 'Help, error, warning, and meta supporting text under labels and controls.'
+---
+
+## Previews
+
+### `description/kinds`
+
+![Kinds](/component-previews/description-kinds.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::Description;
+
+Description::new("Help text", &system).for_id("name").paint(area, buf);
+Description::error("must be unique", &system).paint(area, buf);
+Description::warning("deprecated", &system).paint(area, buf);
+Description::meta("synced 2m ago", &system).paint(area, buf);
+```
+
+## Kinds
+
+| Kind | Role |
+|------|------|
+| Help | TextMuted |
+| Error | Danger |
+| Warning | Warning |
+| Meta | TextMuted |
+
+## Contraction
+
+When the paint width is under `DROP_DESCRIPTION_WIDTH` (28), the description
+band has zero height (`contracted: true`). Prefer pairing with [`Label`](./label)
+via `FieldCaption` so labels survive first.
+
+## Semantic scene
+
+`register_semantic` records `help for {id}` / `error for {id}` style descriptions.
+
+## Migration
+
+See `migrations/0116-v0.13.0-label-description.md`.
