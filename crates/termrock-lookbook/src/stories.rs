@@ -745,6 +745,15 @@ pub(crate) fn stories() -> Vec<Story> {
             focus_graph_workbench_story,
         ),
         Story::new(
+            "roving-focus/group",
+            "RovingFocusGroup",
+            "RovingFocusGroup",
+            "Active descendant skips disabled; typeahead; vertical orientation.",
+            40,
+            8,
+            roving_focus_group_story,
+        ),
+        Story::new(
             "capability/color-ladder",
             "Capability color ladder",
             "DesignInspector",
@@ -4045,6 +4054,50 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 
+
+
+fn roving_focus_group_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{RovingEntry, RovingFocusGroup, RovingOrientation};
+    use termrock::widgets::{Panel, PanelChrome};
+
+    let entries = vec![
+        RovingEntry::new("a", "Alpha"),
+        RovingEntry::new("b", "Beta").enabled(false),
+        RovingEntry::new("c", "Gamma"),
+        RovingEntry::new("d", "Delta"),
+    ];
+    let mut g = RovingFocusGroup::new().orientation(RovingOrientation::Vertical);
+    let _ = g.reconcile(&entries);
+    let _ = g.move_next(&entries); // a -> c (skip b)
+    let active = g.active().copied().unwrap_or("—");
+    frame.render_widget(
+        Panel::new(system)
+            .title("RovingFocusGroup")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let mut y = area.y.saturating_add(1);
+    for e in &entries {
+        if y >= area.bottom() {
+            break;
+        }
+        let mark = if Some(&e.id) == g.active() { "›" } else { " " };
+        let dis = if e.enabled { "" } else { " (disabled)" };
+        let line = format!("{mark} {}{dis}", e.label);
+        frame.render_widget(
+            Paragraph::new(line),
+            Rect::new(area.x.saturating_add(1), y, area.width.saturating_sub(2), 1),
+        );
+        y = y.saturating_add(1);
+    }
+    if y < area.bottom() {
+        frame.render_widget(
+            Paragraph::new(format!("active={active}  hints: ↑↓ Home/End typeahead")),
+            Rect::new(area.x.saturating_add(1), y, area.width.saturating_sub(2), 1),
+        );
+    }
+    let _ = system;
+}
 
 fn focus_graph_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{

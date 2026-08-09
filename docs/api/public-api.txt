@@ -2360,6 +2360,102 @@ pub unsafe fn termrock::interaction::Redraw::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::Redraw
 pub fn termrock::interaction::Redraw::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::Redraw
+#[non_exhaustive] pub enum termrock::interaction::RovingOrientation
+pub termrock::interaction::RovingOrientation::Both
+pub termrock::interaction::RovingOrientation::Horizontal
+pub termrock::interaction::RovingOrientation::Vertical
+impl core::clone::Clone for termrock::interaction::RovingOrientation
+pub fn termrock::interaction::RovingOrientation::clone(&self) -> termrock::interaction::RovingOrientation
+impl core::cmp::Eq for termrock::interaction::RovingOrientation
+impl core::cmp::PartialEq for termrock::interaction::RovingOrientation
+pub fn termrock::interaction::RovingOrientation::eq(&self, &termrock::interaction::RovingOrientation) -> bool
+impl core::default::Default for termrock::interaction::RovingOrientation
+pub fn termrock::interaction::RovingOrientation::default() -> termrock::interaction::RovingOrientation
+impl core::fmt::Debug for termrock::interaction::RovingOrientation
+pub fn termrock::interaction::RovingOrientation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::RovingOrientation
+pub fn termrock::interaction::RovingOrientation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::RovingOrientation
+impl core::marker::StructuralPartialEq for termrock::interaction::RovingOrientation
+impl core::marker::Freeze for termrock::interaction::RovingOrientation
+impl core::marker::Send for termrock::interaction::RovingOrientation
+impl core::marker::Sync for termrock::interaction::RovingOrientation
+impl core::marker::Unpin for termrock::interaction::RovingOrientation
+impl core::marker::UnsafeUnpin for termrock::interaction::RovingOrientation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::RovingOrientation
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::RovingOrientation
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::RovingOrientation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::RovingOrientation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::RovingOrientation where U: core::convert::From<T>
+pub fn termrock::interaction::RovingOrientation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::RovingOrientation where U: core::convert::Into<T>
+pub type termrock::interaction::RovingOrientation::Error = core::convert::Infallible
+pub fn termrock::interaction::RovingOrientation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::RovingOrientation where U: core::convert::TryFrom<T>
+pub type termrock::interaction::RovingOrientation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::RovingOrientation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::RovingOrientation where T: core::clone::Clone
+pub type termrock::interaction::RovingOrientation::Owned = T
+pub fn termrock::interaction::RovingOrientation::clone_into(&self, &mut T)
+pub fn termrock::interaction::RovingOrientation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::RovingOrientation where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::RovingOrientation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::RovingOrientation where T: ?core::marker::Sized
+pub fn termrock::interaction::RovingOrientation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::RovingOrientation where T: ?core::marker::Sized
+pub fn termrock::interaction::RovingOrientation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::RovingOrientation where T: core::clone::Clone
+pub unsafe fn termrock::interaction::RovingOrientation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::RovingOrientation
+pub fn termrock::interaction::RovingOrientation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::RovingOrientation
+#[non_exhaustive] pub enum termrock::interaction::RovingOutcome<Id>
+pub termrock::interaction::RovingOutcome::ActiveChanged
+pub termrock::interaction::RovingOutcome::ActiveChanged::from: core::option::Option<Id>
+pub termrock::interaction::RovingOutcome::ActiveChanged::to: core::option::Option<Id>
+pub termrock::interaction::RovingOutcome::Ignored
+impl<Id: core::cmp::PartialEq> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingOutcome<Id>::changed(&self) -> bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingOutcome<Id>::clone(&self) -> termrock::interaction::RovingOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::RovingOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingOutcome<Id>::eq(&self, &termrock::interaction::RovingOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::RovingOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::interaction::RovingOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::interaction::RovingOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::interaction::RovingOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::interaction::RovingOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::interaction::RovingOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::RovingOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::RovingOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::RovingOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::RovingOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::RovingOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::interaction::RovingOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::RovingOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::interaction::RovingOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::interaction::RovingOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::RovingOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::RovingOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::RovingOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::RovingOutcome<Id> where T: core::clone::Clone
+pub type termrock::interaction::RovingOutcome<Id>::Owned = T
+pub fn termrock::interaction::RovingOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::interaction::RovingOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::RovingOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::RovingOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::RovingOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::RovingOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::RovingOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::RovingOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::RovingOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::RovingOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::RovingOutcome<Id>
 #[non_exhaustive] pub enum termrock::interaction::SceneError
 pub termrock::interaction::SceneError::DuplicateElement
 pub termrock::interaction::SceneError::DuplicateLayer
@@ -3527,6 +3623,118 @@ pub unsafe fn termrock::interaction::OverlayStack<FocusId>::clone_to_uninit(&sel
 impl<T> core::convert::From<T> for termrock::interaction::OverlayStack<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::OverlayStack<FocusId>
+pub struct termrock::interaction::RovingEntry<Id>
+pub termrock::interaction::RovingEntry::enabled: bool
+pub termrock::interaction::RovingEntry::id: Id
+pub termrock::interaction::RovingEntry::label: alloc::string::String
+impl<Id> termrock::interaction::RovingEntry<Id>
+pub fn termrock::interaction::RovingEntry<Id>::enabled(self, bool) -> Self
+pub fn termrock::interaction::RovingEntry<Id>::new(Id, impl core::convert::Into<alloc::string::String>) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::RovingEntry<Id>
+pub fn termrock::interaction::RovingEntry<Id>::clone(&self) -> termrock::interaction::RovingEntry<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::RovingEntry<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::RovingEntry<Id>
+pub fn termrock::interaction::RovingEntry<Id>::eq(&self, &termrock::interaction::RovingEntry<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::RovingEntry<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::RovingEntry<Id>
+pub fn termrock::interaction::RovingEntry<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::interaction::RovingEntry<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::interaction::RovingEntry<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::interaction::RovingEntry<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::interaction::RovingEntry<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::interaction::RovingEntry<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::RovingEntry<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::RovingEntry<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::RovingEntry<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::RovingEntry<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::RovingEntry<Id> where U: core::convert::From<T>
+pub fn termrock::interaction::RovingEntry<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::RovingEntry<Id> where U: core::convert::Into<T>
+pub type termrock::interaction::RovingEntry<Id>::Error = core::convert::Infallible
+pub fn termrock::interaction::RovingEntry<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::RovingEntry<Id> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::RovingEntry<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::RovingEntry<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::RovingEntry<Id> where T: core::clone::Clone
+pub type termrock::interaction::RovingEntry<Id>::Owned = T
+pub fn termrock::interaction::RovingEntry<Id>::clone_into(&self, &mut T)
+pub fn termrock::interaction::RovingEntry<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::RovingEntry<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::RovingEntry<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::RovingEntry<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::RovingEntry<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::RovingEntry<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::RovingEntry<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::RovingEntry<Id> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::RovingEntry<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::RovingEntry<Id>
+pub fn termrock::interaction::RovingEntry<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::RovingEntry<Id>
+pub struct termrock::interaction::RovingFocusGroup<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::interaction::RovingFocusGroup<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::entries_from_parts(&[Id], &[bool], &[&str]) -> alloc::vec::Vec<termrock::interaction::RovingEntry<Id>>
+pub fn termrock::interaction::RovingFocusGroup<Id>::handle_intent(&mut self, termrock::interaction::UiIntent, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::move_by(&mut self, &[termrock::interaction::RovingEntry<Id>], isize) -> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::move_first(&mut self, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::move_last(&mut self, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::move_next(&mut self, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::move_previous(&mut self, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::reconcile(&mut self, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::register_semantic(&self, &mut termrock::interaction::SemanticScene<Id>, &Id, &[termrock::interaction::RovingEntry<Id>], &[ratatui_core::layout::rect::Rect]) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display
+pub fn termrock::interaction::RovingFocusGroup<Id>::set_active(&mut self, core::option::Option<Id>)
+pub fn termrock::interaction::RovingFocusGroup<Id>::typeahead_char(&mut self, char, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
+impl<Id> termrock::interaction::RovingFocusGroup<Id>
+pub const fn termrock::interaction::RovingFocusGroup<Id>::active(&self) -> core::option::Option<&Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::clear_typeahead(&mut self)
+pub const fn termrock::interaction::RovingFocusGroup<Id>::new() -> Self
+pub const fn termrock::interaction::RovingFocusGroup<Id>::orientation(self, termrock::interaction::RovingOrientation) -> Self
+pub const fn termrock::interaction::RovingFocusGroup<Id>::orientation_mode(&self) -> termrock::interaction::RovingOrientation
+pub fn termrock::interaction::RovingFocusGroup<Id>::typeahead_buffer(&self) -> &str
+pub const fn termrock::interaction::RovingFocusGroup<Id>::wrap(self, bool) -> Self
+pub const fn termrock::interaction::RovingFocusGroup<Id>::wraps(&self) -> bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::RovingFocusGroup<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::clone(&self) -> termrock::interaction::RovingFocusGroup<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::RovingFocusGroup<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::RovingFocusGroup<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::eq(&self, &termrock::interaction::RovingFocusGroup<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::RovingFocusGroup<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::RovingFocusGroup<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::interaction::RovingFocusGroup<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::interaction::RovingFocusGroup<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::interaction::RovingFocusGroup<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::interaction::RovingFocusGroup<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::interaction::RovingFocusGroup<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::interaction::RovingFocusGroup<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::RovingFocusGroup<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::RovingFocusGroup<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::RovingFocusGroup<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::RovingFocusGroup<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::RovingFocusGroup<Id> where U: core::convert::From<T>
+pub fn termrock::interaction::RovingFocusGroup<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::RovingFocusGroup<Id> where U: core::convert::Into<T>
+pub type termrock::interaction::RovingFocusGroup<Id>::Error = core::convert::Infallible
+pub fn termrock::interaction::RovingFocusGroup<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::RovingFocusGroup<Id> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::RovingFocusGroup<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::RovingFocusGroup<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::RovingFocusGroup<Id> where T: core::clone::Clone
+pub type termrock::interaction::RovingFocusGroup<Id>::Owned = T
+pub fn termrock::interaction::RovingFocusGroup<Id>::clone_into(&self, &mut T)
+pub fn termrock::interaction::RovingFocusGroup<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::RovingFocusGroup<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::RovingFocusGroup<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::RovingFocusGroup<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::RovingFocusGroup<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::RovingFocusGroup<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::RovingFocusGroup<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::RovingFocusGroup<Id> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::RovingFocusGroup<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::RovingFocusGroup<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::RovingFocusGroup<Id>
 pub struct termrock::interaction::SemanticNode<Id, Action>
 pub termrock::interaction::SemanticNode::actions: alloc::vec::Vec<Action>
 pub termrock::interaction::SemanticNode::area: ratatui_core::layout::rect::Rect
@@ -3834,6 +4042,9 @@ pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termr
 pub fn termrock::interaction::from_consumed_flag<M, FocusId>(bool, core::option::Option<M>) -> termrock::interaction::EventResult<M, FocusId>
 pub fn termrock::interaction::place_overlay(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> ratatui_core::layout::rect::Rect
 pub fn termrock::interaction::render_backdrop(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect)
+pub fn termrock::interaction::roving_hint_keymap(termrock::interaction::RovingOrientation) -> termrock::keymap::Keymap<&'static str>
+pub fn termrock::interaction::roving_hint_keymap_horizontal() -> termrock::keymap::Keymap<&'static str>
+pub fn termrock::interaction::roving_hint_keymap_vertical() -> termrock::keymap::Keymap<&'static str>
 pub type termrock::interaction::SemanticElement<Id, Action> = termrock::interaction::SemanticNode<Id, Action>
 pub mod termrock::keymap
 pub mod termrock::keymap::glyph
@@ -18355,13 +18566,13 @@ pub fn termrock::widgets::MenuItem<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MenuItem<Id>
 pub struct termrock::widgets::MenuState
 impl termrock::widgets::MenuState
-pub const fn termrock::widgets::MenuState::cursor_index(self) -> usize
-pub const fn termrock::widgets::MenuState::focus_index(self) -> usize
+pub fn termrock::widgets::MenuState::cursor_index(&self) -> usize
+pub fn termrock::widgets::MenuState::focus_index(&self) -> usize
 pub fn termrock::widgets::MenuState::handle_intent<Id: core::clone::Clone>(&mut self, termrock::interaction::UiIntent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
 pub fn termrock::widgets::MenuState::handle_key<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
 pub fn termrock::widgets::MenuState::handle_mouse<Id: core::clone::Clone>(&mut self, termrock::input::MouseEvent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
-pub const fn termrock::widgets::MenuState::is_open(self) -> bool
-pub const fn termrock::widgets::MenuState::new() -> Self
+pub const fn termrock::widgets::MenuState::is_open(&self) -> bool
+pub fn termrock::widgets::MenuState::new() -> Self
 pub fn termrock::widgets::MenuState::set_accepts_input(&mut self, bool)
 impl core::clone::Clone for termrock::widgets::MenuState
 pub fn termrock::widgets::MenuState::clone(&self) -> termrock::widgets::MenuState
@@ -18369,10 +18580,9 @@ impl core::cmp::Eq for termrock::widgets::MenuState
 impl core::cmp::PartialEq for termrock::widgets::MenuState
 pub fn termrock::widgets::MenuState::eq(&self, &termrock::widgets::MenuState) -> bool
 impl core::default::Default for termrock::widgets::MenuState
-pub fn termrock::widgets::MenuState::default() -> termrock::widgets::MenuState
+pub fn termrock::widgets::MenuState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::MenuState
 pub fn termrock::widgets::MenuState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::widgets::MenuState
 impl core::marker::StructuralPartialEq for termrock::widgets::MenuState
 impl core::marker::Freeze for termrock::widgets::MenuState
 impl core::marker::Send for termrock::widgets::MenuState
@@ -20412,6 +20622,8 @@ pub fn termrock::widgets::RadioGroup<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RadioGroup<'a, Id>
 pub struct termrock::widgets::RadioState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::RadioState<Id>
+pub const fn termrock::widgets::RadioState<Id>::active(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::RadioState<Id>::handle_intent(&mut self, termrock::interaction::UiIntent, &[Id]) -> termrock::widgets::RadioOutcome<Id>
 pub fn termrock::widgets::RadioState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[Id]) -> termrock::widgets::RadioOutcome<Id> where Id: core::clone::Clone
 pub fn termrock::widgets::RadioState<Id>::new(core::option::Option<Id>) -> Self
 pub fn termrock::widgets::RadioState<Id>::selected(&self) -> core::option::Option<&Id>

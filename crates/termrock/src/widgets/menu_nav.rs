@@ -105,9 +105,10 @@ pub enum MenuOutcome<Id> {
 }
 
 /// Menu state (roving cursor within the open menu).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MenuState {
-    cursor_index: usize,
+    /// Index-based roving group (menu rows; virtualized windows use visible indices).
+    roving: crate::interaction::RovingFocusGroup<usize>,
     open: bool,
     /// Host grants input (overlay/scene focused).
     accepts_input: bool,
@@ -117,12 +118,19 @@ pub struct MenuState {
     painted_rows: u16,
 }
 
+impl Default for MenuState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MenuState {
     /// Open menu, cursor on first enabled item after first paint/key.
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            cursor_index: 0,
+            roving: crate::interaction::RovingFocusGroup::new()
+                .orientation(crate::interaction::RovingOrientation::Vertical),
             open: true,
             accepts_input: true,
             origin: (0, 0),
@@ -132,20 +140,20 @@ impl MenuState {
 
     /// Cursor index.
     #[must_use]
-    pub const fn cursor_index(self) -> usize {
-        self.cursor_index
+    pub fn cursor_index(&self) -> usize {
+        self.roving.active().copied().unwrap_or(0)
     }
 
     /// Deprecated name for [`Self::cursor_index`].
     #[deprecated(note = "use cursor_index")]
     #[must_use]
-    pub const fn focus_index(self) -> usize {
-        self.cursor_index
+    pub fn focus_index(&self) -> usize {
+        self.cursor_index()
     }
 
     /// Whether the menu is open.
     #[must_use]
-    pub const fn is_open(self) -> bool {
+    pub const fn is_open(&self) -> bool {
         self.open
     }
 
@@ -154,29 +162,21 @@ impl MenuState {
         self.accepts_input = accepts;
     }
 
-    fn next_enabled<Id>(items: &[MenuItem<Id>], from: usize, dir: isize) -> usize {
-        if items.is_empty() {
-            return 0;
-        }
-        let mut i = from as isize;
-        for _ in 0..items.len() {
-            i = (i + dir).rem_euclid(items.len() as isize);
-            if items[i as usize].enabled {
-                return i as usize;
-            }
-        }
-        from
+    fn entries<Id>(items: &[MenuItem<Id>]) -> Vec<crate::interaction::RovingEntry<usize>> {
+        items
+            .iter()
+            .enumerate()
+            .map(|(i, it)| crate::interaction::RovingEntry {
+                id: i,
+                enabled: it.enabled,
+                label: it.label.clone(),
+            })
+            .collect()
     }
 
     fn ensure_cursor_enabled<Id>(&mut self, items: &[MenuItem<Id>]) {
-        if items.is_empty() {
-            self.cursor_index = 0;
-            return;
-        }
-        self.cursor_index = self.cursor_index.min(items.len() - 1);
-        if !items[self.cursor_index].enabled {
-            self.cursor_index = Self::next_enabled(items, self.cursor_index, 1);
-        }
+        let entries = Self::entries(items);
+        let _ = self.roving.reconcile(&entries);
     }
 
     /// Keyboard navigation.
@@ -212,29 +212,28 @@ impl MenuState {
             return MenuOutcome::Ignored;
         }
         self.ensure_cursor_enabled(items);
+        let entries = Self::entries(items);
         match intent {
-            UiIntent::Move(NavigationMove::Next) => {
-                self.cursor_index = Self::next_enabled(items, self.cursor_index, 1);
-                MenuOutcome::CursorMoved
-            }
-            UiIntent::Move(NavigationMove::Previous) => {
-                self.cursor_index = Self::next_enabled(items, self.cursor_index, -1);
-                MenuOutcome::CursorMoved
-            }
-            UiIntent::Move(NavigationMove::First) => {
-                if let Some(i) = items.iter().position(|it| it.enabled) {
-                    self.cursor_index = i;
+            UiIntent::Move(
+                NavigationMove::Next
+                | NavigationMove::Previous
+                | NavigationMove::First
+                | NavigationMove::Last
+                | NavigationMove::Up
+                | NavigationMove::Down
+                | NavigationMove::Left
+                | NavigationMove::Right,
+            ) => {
+                let out = self.roving.handle_intent(intent, &entries);
+                if out.changed() {
+                    MenuOutcome::CursorMoved
+                } else {
+                    MenuOutcome::Ignored
                 }
-                MenuOutcome::CursorMoved
-            }
-            UiIntent::Move(NavigationMove::Last) => {
-                if let Some(i) = items.iter().rposition(|it| it.enabled) {
-                    self.cursor_index = i;
-                }
-                MenuOutcome::CursorMoved
             }
             UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
-                let item = &items[self.cursor_index.min(items.len() - 1)];
+                let idx = self.cursor_index().min(items.len() - 1);
+                let item = &items[idx];
                 if item.enabled {
                     MenuOutcome::Activated(item.id.clone())
                 } else {
@@ -273,10 +272,10 @@ impl MenuState {
                         if !item.enabled {
                             return MenuOutcome::Ignored;
                         }
-                        if self.cursor_index == i {
+                        if self.cursor_index() == i {
                             return MenuOutcome::Activated(item.id.clone());
                         }
-                        self.cursor_index = i;
+                        self.roving.set_active(Some(i));
                         return MenuOutcome::CursorMoved;
                     }
                     y = y.saturating_add(1);
@@ -284,12 +283,20 @@ impl MenuState {
                 MenuOutcome::Ignored
             }
             MouseEventKind::ScrollDown => {
-                self.cursor_index = Self::next_enabled(items, self.cursor_index, 1);
-                MenuOutcome::CursorMoved
+                let entries = Self::entries(items);
+                if self.roving.move_next(&entries).changed() {
+                    MenuOutcome::CursorMoved
+                } else {
+                    MenuOutcome::Ignored
+                }
             }
             MouseEventKind::ScrollUp => {
-                self.cursor_index = Self::next_enabled(items, self.cursor_index, -1);
-                MenuOutcome::CursorMoved
+                let entries = Self::entries(items);
+                if self.roving.move_previous(&entries).changed() {
+                    MenuOutcome::CursorMoved
+                } else {
+                    MenuOutcome::Ignored
+                }
             }
             _ => MenuOutcome::Ignored,
         }
@@ -373,7 +380,7 @@ impl<'a, Id> Menu<'a, Id> {
                     break;
                 }
             }
-            let cursor = state.cursor_index == i;
+            let cursor = state.cursor_index() == i;
             let style = if self.colorless {
                 if !item.enabled {
                     self.system.style(Role::TextMuted)
@@ -599,7 +606,7 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
                 break;
             }
             let selected = state.selected.as_ref() == Some(&item.id);
-            let cursor = state.cursor_index == i;
+            let cursor = state.cursor_index() == i;
             let style = if !item.enabled {
                 self.system.style(Role::TextDisabled)
             } else if selected {

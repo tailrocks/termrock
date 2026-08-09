@@ -183,11 +183,11 @@ pub enum RadioOutcome<Id> {
     Selected(Id),
 }
 
-/// Radio group state: selected option + focus index.
+/// Radio group state: selected value + roving active descendant.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RadioState<Id> {
     selected: Option<Id>,
-    focus_index: usize,
+    roving: crate::interaction::RovingFocusGroup<Id>,
     enabled: bool,
     regions: Vec<Rect>,
 }
@@ -196,9 +196,14 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
     /// Empty selection.
     #[must_use]
     pub fn new(selected: Option<Id>) -> Self {
+        let mut roving = crate::interaction::RovingFocusGroup::new()
+            .orientation(crate::interaction::RovingOrientation::Vertical);
+        if let Some(id) = selected.clone() {
+            roving.set_active(Some(id));
+        }
         Self {
             selected,
-            focus_index: 0,
+            roving,
             enabled: true,
             regions: Vec::new(),
         }
@@ -210,12 +215,32 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         self.selected.as_ref()
     }
 
-    /// Controlled select.
-    pub fn set_selected(&mut self, selected: Option<Id>) {
-        self.selected = selected;
+    /// Active descendant (roving cursor); may differ from selected until Activate.
+    #[must_use]
+    pub const fn active(&self) -> Option<&Id> {
+        self.roving.active()
     }
 
-    /// Arrow/tab roving + space/enter select.
+    /// Controlled select (also moves roving active when `Some`).
+    pub fn set_selected(&mut self, selected: Option<Id>) {
+        self.selected = selected.clone();
+        if selected.is_some() {
+            self.roving.set_active(selected);
+        }
+    }
+
+    fn entries_plain(options: &[Id]) -> Vec<crate::interaction::RovingEntry<Id>> {
+        options
+            .iter()
+            .map(|id| crate::interaction::RovingEntry {
+                id: id.clone(),
+                enabled: true,
+                label: String::new(),
+            })
+            .collect()
+    }
+
+    /// Arrow/Home/End roving + Space/Enter select (via intents where applicable).
     pub fn handle_key(&mut self, key: KeyEvent, options: &[Id]) -> RadioOutcome<Id>
     where
         Id: Clone,
@@ -223,28 +248,64 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         if !self.enabled || options.is_empty() || key.kind == KeyEventKind::Release {
             return RadioOutcome::Ignored;
         }
+        let entries = Self::entries_plain(options);
+        let _ = self.roving.reconcile(&entries);
         let is_press = key.kind == KeyEventKind::Press;
-        match key.code {
-            KeyCode::Down | KeyCode::Right | KeyCode::Tab
-                if !key.modifiers.contains(KeyModifiers::SHIFT) =>
-            {
-                self.focus_index = (self.focus_index + 1) % options.len();
-                RadioOutcome::Ignored
-            }
-            KeyCode::Up | KeyCode::Left | KeyCode::BackTab => {
-                self.focus_index = self.focus_index.checked_sub(1).unwrap_or(options.len() - 1);
-                RadioOutcome::Ignored
-            }
-            KeyCode::Tab if key.modifiers.contains(KeyModifiers::SHIFT) => {
-                self.focus_index = self.focus_index.checked_sub(1).unwrap_or(options.len() - 1);
-                RadioOutcome::Ignored
-            }
-            KeyCode::Enter | KeyCode::Char(' ') if is_press => {
-                let id = options[self.focus_index].clone();
+        // Activate without raw multi-match when possible.
+        if is_press
+            && key.modifiers.is_empty()
+            && matches!(key.code, KeyCode::Enter | KeyCode::Char(' '))
+        {
+            if let Some(id) = self.roving.active().cloned() {
                 self.selected = Some(id.clone());
-                RadioOutcome::Selected(id)
+                return RadioOutcome::Selected(id);
             }
-            _ => RadioOutcome::Ignored,
+            return RadioOutcome::Ignored;
+        }
+        // Tab moves roving inside group (host may instead use FocusGraph — both ok for radio).
+        if matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
+            || (matches!(key.code, KeyCode::Tab)
+                && key.modifiers.contains(KeyModifiers::SHIFT))
+        {
+            let reverse = matches!(key.code, KeyCode::BackTab)
+                || key.modifiers.contains(KeyModifiers::SHIFT);
+            if reverse {
+                let _ = self.roving.move_previous(&entries);
+            } else {
+                let _ = self.roving.move_next(&entries);
+            }
+            return RadioOutcome::Ignored;
+        }
+        let _ = self.roving.handle_key(key, &entries);
+        RadioOutcome::Ignored
+    }
+
+    /// Intent path for roving (Activate still on handle_key / host).
+    pub fn handle_intent(
+        &mut self,
+        intent: crate::interaction::UiIntent,
+        options: &[Id],
+    ) -> RadioOutcome<Id> {
+        if !self.enabled || options.is_empty() {
+            return RadioOutcome::Ignored;
+        }
+        let entries = Self::entries_plain(options);
+        let _ = self.roving.reconcile(&entries);
+        match intent {
+            crate::interaction::UiIntent::Activate
+            | crate::interaction::UiIntent::Submit
+            | crate::interaction::UiIntent::Toggle => {
+                if let Some(id) = self.roving.active().cloned() {
+                    self.selected = Some(id.clone());
+                    RadioOutcome::Selected(id)
+                } else {
+                    RadioOutcome::Ignored
+                }
+            }
+            other => {
+                let _ = self.roving.handle_intent(other, &entries);
+                RadioOutcome::Ignored
+            }
         }
     }
 }
@@ -273,12 +334,12 @@ impl<'a, Id> RadioGroup<'a, Id> {
             return;
         }
         let mut y = area.y;
-        for (i, (id, label)) in self.options.iter().enumerate() {
+        for (id, label) in self.options.iter() {
             if y >= area.bottom() {
                 break;
             }
             let selected = state.selected.as_ref() == Some(id);
-            let focused = state.focus_index == i;
+            let focused = state.active() == Some(id);
             let mark = if selected { "(•)" } else { "( )" };
             let style = if focused {
                 self.tokens.style(Role::Focus)
@@ -878,9 +939,9 @@ mod tests {
     #[test]
     fn radio_roving_and_select() {
         let opts = ["a", "b", "c"];
-        let mut state = RadioState::new(None);
+        let mut state = RadioState::new(Some("a"));
         let _ = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &opts);
-        assert_eq!(state.focus_index, 1);
+        assert_eq!(state.active(), Some(&"b"));
         let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &opts);
         assert_eq!(out, RadioOutcome::Selected("b"));
     }
