@@ -2201,6 +2201,51 @@ pub(crate) fn stories() -> Vec<Story> {
             menu_story,
         ),
         Story::new(
+            "tag/removable",
+            "Tag removable",
+            "Tag",
+            "Removable attachment tag with body/remove part focus.",
+            36,
+            2,
+            tag_removable_story,
+        ),
+        Story::new(
+            "chip/filter",
+            "Chip filter",
+            "Chip",
+            "Selectable filter chips with selection marks.",
+            48,
+            3,
+            chip_filter_story,
+        ),
+        Story::new(
+            "chip/error-loading",
+            "Chip error and loading",
+            "Chip",
+            "Error and loading chip status.",
+            40,
+            3,
+            chip_status_story,
+        ),
+        Story::new(
+            "token-strip/wrap",
+            "Token strip wrap",
+            "TokenStrip",
+            "Wrap layout for filters and paste chips.",
+            36,
+            4,
+            token_strip_wrap_story,
+        ),
+        Story::new(
+            "token-strip/overflow",
+            "Token strip overflow",
+            "TokenStrip",
+            "+N overflow summary when max_visible exceeded.",
+            40,
+            2,
+            token_strip_overflow_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -8582,6 +8627,82 @@ fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
         &mut state,
     );
+}
+
+fn tag_removable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Tag, TagState};
+    let chunks = Layout::horizontal([Constraint::Length(18), Constraint::Min(12)]).split(area);
+    let tag = Tag::removable_tag("f1", "paste-body.txt", system);
+    let mut st = TagState::new();
+    st.set_focused(true);
+    st.set_part(termrock::widgets::TokenPart::Remove);
+    let _ = tag.paint(chunks[0], frame.buffer_mut(), &mut st);
+    let tag2 = Tag::new("s", "static-entity", system);
+    let mut st2 = TagState::new();
+    let _ = tag2.paint(chunks[1], frame.buffer_mut(), &mut st2);
+}
+
+fn chip_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Chip, ChipState};
+    let chunks = Layout::horizontal([
+        Constraint::Length(14),
+        Constraint::Length(14),
+        Constraint::Min(12),
+    ])
+    .split(area);
+    let mut a = ChipState::new(true);
+    a.set_focused(true);
+    let _ = Chip::new("rust", "rust", system).paint(chunks[0], frame.buffer_mut(), &mut a);
+    let mut b = ChipState::new(false);
+    let _ = Chip::new("go", "go", system).paint(chunks[1], frame.buffer_mut(), &mut b);
+    let mut c = ChipState::new(false);
+    let _ = Chip::new("ts", "typescript", system)
+        .removable(true)
+        .paint(chunks[2], frame.buffer_mut(), &mut c);
+}
+
+fn chip_status_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Chip, ChipState};
+    let chunks = Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).split(area);
+    let mut e = ChipState::new(false);
+    let _ = Chip::new("err", "invalid path", system)
+        .error()
+        .removable(true)
+        .paint(chunks[0], frame.buffer_mut(), &mut e);
+    let mut l = ChipState::new(false);
+    let _ = Chip::new("load", "uploading…", system)
+        .loading()
+        .paint(chunks[1], frame.buffer_mut(), &mut l);
+}
+
+fn token_strip_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{TokenItem, TokenStrip, TokenStripState};
+    let items = [
+        TokenItem::chip("a", "rust").selected(true),
+        TokenItem::chip("b", "filters"),
+        TokenItem::tag("c", "paste-1").removable(true),
+        TokenItem::tag("d", "file.rs").removable(true),
+        TokenItem::chip("e", "experimental"),
+    ];
+    let strip = TokenStrip::new(&items, system).wrap();
+    let mut state = TokenStripState::new();
+    state.set_surface_focused(true);
+    state.set_cursor(Some("c"));
+    strip.paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn token_strip_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{TokenItem, TokenStrip, TokenStripState};
+    let items = [
+        TokenItem::chip("1", "one"),
+        TokenItem::chip("2", "two"),
+        TokenItem::chip("3", "three"),
+        TokenItem::chip("4", "four"),
+        TokenItem::chip("5", "five"),
+    ];
+    let strip = TokenStrip::new(&items, system).max_visible(3);
+    let mut state = TokenStripState::new();
+    strip.paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

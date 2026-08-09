@@ -18,6 +18,7 @@ mod section;
 mod badge;
 mod icon;
 mod label;
+mod tag_chip;
 mod text;
 mod separator;
 mod toolbar;
@@ -180,9 +181,12 @@ pub use picker::{
     open_picker_overlay, place_picker,
 };
 pub use primitives::{
-    ActivationOutcome, ActivationState, Button, ButtonSize, ButtonState, ButtonVariant, Chip,
-    ChipOutcome, ChipState, IconButton, IconButtonState, Kbd, Spinner, Tag, TagOutcome, TagState,
-    button_hit,
+    ActivationOutcome, ActivationState, Button, ButtonSize, ButtonState, ButtonVariant, IconButton,
+    IconButtonState, Kbd, Spinner, button_hit,
+};
+pub use tag_chip::{
+    Chip, ChipOutcome, ChipState, Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts,
+    TokenStatus, TokenStrip, TokenStripLayout, TokenStripOutcome, TokenStripState, remove_label,
 };
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,

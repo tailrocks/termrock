@@ -693,249 +693,7 @@ impl IconButton<'_> {
 }
 
 // ── Badge / Tag / Chip ──────────────────────────────────────────────────────
-// Badge lives in `widgets/badge.rs` (variants, count, interactive, fill policy).
-
-/// Removable tag outcome.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum TagOutcome<Id> {
-    /// No change.
-    Ignored,
-    /// Removal requested for stable id.
-    Remove(Id),
-}
-
-/// Removable tag with stable id.
-#[derive(Debug, Clone, Copy)]
-pub struct Tag<'a, Id> {
-    /// Stable identity.
-    pub id: Id,
-    /// Label.
-    label: &'a str,
-    tokens: &'a DesignSystem,
-    removable: bool,
-}
-
-impl<'a, Id: Clone> Tag<'a, Id> {
-    /// Tag projection.
-    #[must_use]
-    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignSystem) -> Self {
-        Self {
-            id,
-            label,
-            tokens,
-            removable: true,
-        }
-    }
-
-    /// Whether Backspace/Delete or × activates remove.
-    #[must_use]
-    pub const fn removable(mut self, removable: bool) -> Self {
-        self.removable = removable;
-        self
-    }
-}
-
-/// Tag interaction state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct TagState {
-    /// Focused for keyboard remove.
-    pub focused: bool,
-    /// Hit region of remove affordance.
-    pub remove_region: Option<Rect>,
-    /// Whole tag region.
-    pub region: Option<Rect>,
-}
-
-impl TagState {
-    /// Keyboard: Delete/Backspace removes when focused.
-    pub fn handle_key<Id: Clone>(
-        &mut self,
-        key: KeyEvent,
-        id: &Id,
-        removable: bool,
-    ) -> TagOutcome<Id> {
-        if !self.focused || !removable || key.kind != KeyEventKind::Press {
-            return TagOutcome::Ignored;
-        }
-        match key.code {
-            KeyCode::Delete | KeyCode::Backspace => TagOutcome::Remove(id.clone()),
-            _ => TagOutcome::Ignored,
-        }
-    }
-
-    /// Mouse: click remove region.
-    pub fn handle_mouse<Id: Clone>(
-        &mut self,
-        event: MouseEvent,
-        id: &Id,
-        removable: bool,
-    ) -> TagOutcome<Id> {
-        if !removable || event.kind != MouseEventKind::Down(MouseButton::Left) {
-            return TagOutcome::Ignored;
-        }
-        if self
-            .remove_region
-            .is_some_and(|r| r.contains(event.position))
-        {
-            TagOutcome::Remove(id.clone())
-        } else {
-            TagOutcome::Ignored
-        }
-    }
-}
-
-impl<Id: Clone> Tag<'_, Id> {
-    /// Paint tag.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TagState) {
-        state.region = None;
-        state.remove_region = None;
-        if area.is_empty() {
-            return;
-        }
-        let style = if state.focused {
-            self.tokens.style(Role::Selection)
-        } else {
-            self.tokens.style(Role::TextMuted)
-        };
-        let body = if self.removable {
-            format!(" {} × ", self.label)
-        } else {
-            format!(" {} ", self.label)
-        };
-        let text = take_display_cols(&body, usize::from(area.width));
-        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
-        let w = display_cols(&text).min(usize::from(area.width)) as u16;
-        state.region = Some(Rect::new(area.x, area.y, w, 1));
-        if self.removable && w >= 2 {
-            state.remove_region = Some(Rect::new(area.x + w.saturating_sub(2), area.y, 1, 1));
-        }
-    }
-}
-
-/// Toggle chip outcome.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum ChipOutcome<Id> {
-    /// No change.
-    Ignored,
-    /// Toggled to selected.
-    Selected(Id),
-    /// Toggled to unselected.
-    Unselected(Id),
-}
-
-/// Toggleable filter chip.
-#[derive(Debug, Clone, Copy)]
-pub struct Chip<'a, Id> {
-    /// Stable identity.
-    pub id: Id,
-    /// Label.
-    label: &'a str,
-    tokens: &'a DesignSystem,
-}
-
-impl<'a, Id> Chip<'a, Id> {
-    /// Chip projection.
-    #[must_use]
-    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignSystem) -> Self {
-        Self { id, label, tokens }
-    }
-}
-
-/// Chip selection state (controlled value owned by consumer via set/get).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct ChipState {
-    selected: bool,
-    focused: bool,
-    region: Option<Rect>,
-}
-
-impl ChipState {
-    /// Creates state with selection.
-    #[must_use]
-    pub const fn new(selected: bool) -> Self {
-        Self {
-            selected,
-            focused: false,
-            region: None,
-        }
-    }
-
-    #[must_use]
-    /// Selected.
-    pub const fn is_selected(&self) -> bool {
-        self.selected
-    }
-
-    /// Controlled set.
-    pub const fn set_selected(&mut self, selected: bool) {
-        self.selected = selected;
-    }
-
-    /// Focus for keyboard toggle.
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
-    }
-
-    /// Toggle via Space/Enter when focused.
-    pub fn handle_key<Id: Clone>(&mut self, key: KeyEvent, id: &Id) -> ChipOutcome<Id> {
-        if !self.focused || key.kind != KeyEventKind::Press {
-            return ChipOutcome::Ignored;
-        }
-        match key.code {
-            KeyCode::Enter | KeyCode::Char(' ') => {
-                self.selected = !self.selected;
-                if self.selected {
-                    ChipOutcome::Selected(id.clone())
-                } else {
-                    ChipOutcome::Unselected(id.clone())
-                }
-            }
-            _ => ChipOutcome::Ignored,
-        }
-    }
-
-    /// Click toggles.
-    pub fn handle_mouse<Id: Clone>(&mut self, event: MouseEvent, id: &Id) -> ChipOutcome<Id> {
-        if event.kind != MouseEventKind::Down(MouseButton::Left) {
-            return ChipOutcome::Ignored;
-        }
-        if self.region.is_some_and(|r| r.contains(event.position)) {
-            self.selected = !self.selected;
-            if self.selected {
-                ChipOutcome::Selected(id.clone())
-            } else {
-                ChipOutcome::Unselected(id.clone())
-            }
-        } else {
-            ChipOutcome::Ignored
-        }
-    }
-}
-
-impl<Id> Chip<'_, Id> {
-    /// Paint chip.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ChipState) {
-        state.region = None;
-        if area.is_empty() {
-            return;
-        }
-        let mark = if state.selected { "●" } else { "○" };
-        let body = format!("{mark} {}", self.label);
-        let style = if state.selected {
-            self.tokens.style(Role::Selection)
-        } else if state.focused {
-            self.tokens.style(Role::Focus)
-        } else {
-            self.tokens.style(Role::Text)
-        };
-        let text = take_display_cols(&body, usize::from(area.width));
-        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
-        let w = display_cols(&text).min(usize::from(area.width)) as u16;
-        state.region = Some(Rect::new(area.x, area.y, w, 1));
-    }
-}
+// Badge: `widgets/badge.rs`. Tag / Chip / TokenStrip: `widgets/tag_chip.rs`.
 
 // ── Kbd / Separator / Spinner ───────────────────────────────────────────────
 
@@ -1218,28 +976,31 @@ mod tests {
 
     #[test]
     fn chip_toggle_space() {
+        use crate::widgets::{Chip, ChipOutcome, ChipState};
+        let system = DesignSystem::default();
+        let chip = Chip::new("f1", "rust", &system);
         let mut state = ChipState::new(false);
         state.set_focused(true);
-        let id = "f1";
         assert!(matches!(
-            state.handle_key(press(KeyCode::Char(' ')), &id),
+            chip.handle_key(&mut state, press(KeyCode::Char(' '))),
             ChipOutcome::Selected("f1")
         ));
         assert!(state.is_selected());
         assert!(matches!(
-            state.handle_key(press(KeyCode::Char(' ')), &id),
+            chip.handle_key(&mut state, press(KeyCode::Char(' '))),
             ChipOutcome::Unselected("f1")
         ));
     }
 
     #[test]
     fn tag_remove_on_delete() {
-        let mut state = TagState {
-            focused: true,
-            ..Default::default()
-        };
+        use crate::widgets::{Tag, TagOutcome, TagState};
+        let system = DesignSystem::default();
+        let tag = Tag::removable_tag("t", "file", &system);
+        let mut state = TagState::new();
+        state.set_focused(true);
         assert!(matches!(
-            state.handle_key(press(KeyCode::Delete), &"t", true),
+            tag.handle_key(&mut state, press(KeyCode::Delete)),
             TagOutcome::Remove("t")
         ));
     }

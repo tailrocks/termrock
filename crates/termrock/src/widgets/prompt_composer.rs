@@ -1702,15 +1702,10 @@ impl StatefulWidget for &PromptComposer<'_> {
             Widget::render(&panel, area, buffer);
         }
 
-        // Chips
+        // Chips — shared Tag paint (removable paste/file tokens).
         for (i, (id, rect)) in layout.chip_hits.iter().enumerate() {
             if let Some(chip) = state.chips.iter().find(|c| c.id == *id) {
-                let focused = state.chip_cursor == Some(i);
-                let style = if focused {
-                    self.system.style(Role::Selection)
-                } else {
-                    self.system.style(Role::Elevated)
-                };
+                use crate::widgets::{Tag, TagState};
                 let mark = match chip.kind {
                     ChipKind::File => {
                         if state.ascii_fallback {
@@ -1729,9 +1724,11 @@ impl StatefulWidget for &PromptComposer<'_> {
                     ChipKind::Media => "M",
                     ChipKind::Other => "·",
                 };
-                let label = format!(" {mark} {} ×", chip.label);
-                let clipped = take_display_cols(&label, usize::from(rect.width));
-                buffer.set_stringn(rect.x, rect.y, &clipped, usize::from(rect.width), style);
+                let label = format!("{mark} {}", chip.label);
+                let tag = Tag::removable_tag(id.as_str(), label.as_str(), self.system);
+                let mut ts = TagState::new();
+                ts.set_focused(state.chip_cursor == Some(i));
+                let _ = tag.paint(*rect, buffer, &mut ts);
             }
         }
 

@@ -1,0 +1,40 @@
+---
+title: Tag
+description: 'Static or removable compact tokens for entities, attachments, and paste chips.'
+---
+
+## Previews
+
+### `tag/removable`
+
+![Removable tag](/component-previews/tag-removable.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{Tag, TagState, TokenPart, remove_label};
+
+let tag = Tag::removable_tag("p1", "paste.txt", &system);
+let mut state = TagState::new();
+state.set_focused(true);
+// Right → focus remove; Enter/Delete → remove
+tag.paint(area, buf, &mut state);
+
+assert_eq!(remove_label("paste.txt"), "remove paste.txt");
+```
+
+## Focus
+
+| Part | Keys |
+|------|------|
+| Body | Enter activates |
+| Remove | Enter / Delete removes |
+| Body ↔ Remove | Left / Right (not Tab) |
+
+## Status
+
+`.error()` · `.loading()` · `.disabled(true)`
+
+## Migration
+
+See `migrations/0119-v0.13.0-tag-chip.md`.

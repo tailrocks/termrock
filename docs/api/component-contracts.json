@@ -582,5 +582,29 @@
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"
+  },
+  "Tag": {
+    "keyboard": "partial",
+    "mouse": "partial",
+    "focus": "partial",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
+  "Chip": {
+    "keyboard": "partial",
+    "mouse": "partial",
+    "focus": "partial",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
+  "TokenStrip": {
+    "keyboard": "partial",
+    "mouse": "partial",
+    "focus": "partial",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
   }
 }
