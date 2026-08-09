@@ -17,17 +17,21 @@ use termrock::{
     scroll::DialogScroll,
     style::Role,
     widgets::{
-        Action, ActionBar, ActionBarState, Anchor, Backdrop, CellAlignment, ChoiceDialog,
-        ChoiceDialogState, Column, ColumnWidth, CompletionCandidate, CompletionMenu,
-        CompletionMenuSize, CompletionMenuState, DetailCapability, DetailRow, DetailTable,
-        DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Form, FormField,
-        FormSection, FormState, GridCell, GridColumn, GridRow, Hint, HintBar, List, ListRow,
-        ListState, LogPane, LogPaneState, MessageDialog, Panel, PanelEmphasis, Picker, PickerState,
-        Progress, ProgressKind, RowRole, Severity, SortDirection, SplitDirection, SplitPane,
-        SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Tab, Table, TableRow,
-        TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
-        TextInputState, Toast, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
-        VirtualGrid, VirtualGridState,
+        Action, ActionBar, ActionBarState, Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk,
+        Backdrop, Banner, BarDatum, BarSeries, CellAlignment, ChoiceDialog, ChoiceDialogState,
+        CodeBlock, Column, ColumnWidth, CommandPalette, CommandPaletteState, CompletionCandidate,
+        CompletionMenu, CompletionMenuSize, CompletionMenuState, DetailCapability, DetailRow,
+        DetailTable, DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, EmptyState,
+        ErrorView, Form, FormField, FormSection, FormState, GridCell, GridColumn, GridRow, Hint,
+        HintBar, JumpOverlay, JumpTarget, List, ListRow, ListState, LoadingView, LogPane,
+        LogPaneState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MessageDialog, MeterSegment,
+        Panel, PanelEmphasis, Picker, PickerState, Progress, ProgressKind, PromptBox,
+        PromptBoxState, RowRole, SegmentedMeter, Severity, Skeleton, SortDirection, Sparkline,
+        SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState,
+        StatusSlot, StreamItem, StreamItemKind, StreamView, Tab, Table, TableRow, TableState, Tabs,
+        TabsState, TextArea, TextAreaState, TextCursor, TextInput, TextInputState, ThinkingBlock,
+        Timeline, TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Tree, TreeNode,
+        TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
     },
 };
 
@@ -618,6 +622,177 @@ pub(crate) fn stories() -> Vec<Story> {
             30,
             6,
             detail_table_unicode,
+        ),
+        Story::new(
+            "empty-state/basic",
+            "Empty state",
+            "EmptyState",
+            "Centered empty surface with non-color glyph.",
+            36,
+            5,
+            empty_state,
+        ),
+        Story::new(
+            "loading-view/basic",
+            "Loading view",
+            "LoadingView",
+            "Centered loading label with spinner frame.",
+            36,
+            3,
+            loading_view,
+        ),
+        Story::new(
+            "error-view/basic",
+            "Error view",
+            "ErrorView",
+            "Centered failure surface with danger glyph.",
+            36,
+            5,
+            error_view,
+        ),
+        Story::new(
+            "banner/basic",
+            "Banner",
+            "Banner",
+            "Single-line severity banner.",
+            40,
+            1,
+            banner,
+        ),
+        Story::new(
+            "skeleton/basic",
+            "Skeleton",
+            "Skeleton",
+            "Placeholder loading lines.",
+            32,
+            4,
+            skeleton,
+        ),
+        Story::new(
+            "jump-overlay/basic",
+            "Jump overlay",
+            "JumpOverlay",
+            "Letter badges over target regions.",
+            40,
+            6,
+            jump_overlay,
+        ),
+        Story::new(
+            "command-palette/basic",
+            "Command palette",
+            "CommandPalette",
+            "Filterable command list in focused chrome.",
+            42,
+            10,
+            command_palette,
+        ),
+        Story::new(
+            "code-block/basic",
+            "Code block",
+            "CodeBlock",
+            "Source listing with line numbers.",
+            40,
+            5,
+            code_block,
+        ),
+        Story::new(
+            "markdown-view/basic",
+            "Markdown view",
+            "MarkdownView",
+            "Projected markdown blocks.",
+            40,
+            6,
+            markdown_view,
+        ),
+        Story::new(
+            "sparkline/basic",
+            "Sparkline",
+            "Sparkline",
+            "One-row density chart.",
+            32,
+            1,
+            sparkline,
+        ),
+        Story::new(
+            "bar-series/basic",
+            "Bar series",
+            "BarSeries",
+            "Labeled horizontal bars.",
+            36,
+            3,
+            bar_series,
+        ),
+        Story::new(
+            "segmented-meter/basic",
+            "Segmented meter",
+            "SegmentedMeter",
+            "Proportional stacked meter.",
+            36,
+            1,
+            segmented_meter,
+        ),
+        Story::new(
+            "token-meter/basic",
+            "Token meter",
+            "TokenMeter",
+            "Usage meter with threshold roles.",
+            36,
+            1,
+            token_meter,
+        ),
+        Story::new(
+            "thinking-block/basic",
+            "Thinking block",
+            "ThinkingBlock",
+            "Collapsible reasoning chrome.",
+            40,
+            3,
+            thinking_block,
+        ),
+        Story::new(
+            "tool-card/basic",
+            "Tool card",
+            "ToolCard",
+            "Streaming tool invocation card.",
+            44,
+            4,
+            tool_card,
+        ),
+        Story::new(
+            "approval-card/basic",
+            "Approval card",
+            "ApprovalCard",
+            "Permission card with decision row.",
+            48,
+            6,
+            approval_card,
+        ),
+        Story::new(
+            "stream-view/basic",
+            "Stream view",
+            "StreamView",
+            "Conversation stream items.",
+            48,
+            6,
+            stream_view,
+        ),
+        Story::new(
+            "timeline/basic",
+            "Timeline",
+            "Timeline",
+            "Activity timeline events.",
+            40,
+            4,
+            timeline,
+        ),
+        Story::new(
+            "prompt-box/basic",
+            "Prompt box",
+            "PromptBox",
+            "Agent prompt editor chrome.",
+            48,
+            5,
+            prompt_box,
         ),
     ]
 }
@@ -1615,4 +1790,244 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         area,
         &mut state,
     );
+}
+
+fn empty_state(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        EmptyState::new("No results", theme).detail("Try another query"),
+        area,
+    );
+}
+
+fn loading_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(LoadingView::new("Loading…", "⠋", theme), area);
+}
+
+fn error_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        ErrorView::new("Request failed", theme).detail("Timed out"),
+        area,
+    );
+}
+
+fn banner(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(Banner::new("Deployed successfully", Severity::Success, theme), area);
+}
+
+fn skeleton(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(Skeleton::new(4, theme), area);
+}
+
+fn jump_overlay(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        Panel::new(theme).title("Jump targets").emphasis(PanelEmphasis::Normal),
+        area,
+    );
+    let targets = [
+        JumpTarget {
+            id: "files",
+            area: Rect::new(area.x.saturating_add(2), area.y.saturating_add(1), 12, 1),
+            badge: 'f',
+        },
+        JumpTarget {
+            id: "main",
+            area: Rect::new(area.x.saturating_add(2), area.y.saturating_add(3), 12, 1),
+            badge: 'm',
+        },
+    ];
+    frame.render_widget(JumpOverlay::new(&targets, theme), area);
+}
+
+fn command_palette(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let rows = [
+        ListRow {
+            id: "theme",
+            label: Line::from("Toggle theme"),
+            trailing: None,
+            enabled: true,
+            role: RowRole::Item,
+        },
+        ListRow {
+            id: "quit",
+            label: Line::from("Quit"),
+            trailing: None,
+            enabled: true,
+            role: RowRole::Item,
+        },
+    ];
+    let mut state = CommandPaletteState::new(Some("theme"));
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &rows, theme),
+        area,
+        &mut state,
+    );
+}
+
+fn code_block(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let lines = ["fn main() {", "    println!(\"hi\");", "}"];
+    frame.render_widget(
+        CodeBlock::new(&lines, theme)
+            .language("rust")
+            .line_numbers(true),
+        area,
+    );
+}
+
+fn markdown_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let blocks = [
+        MarkdownBlock {
+            kind: MarkdownBlockKind::Heading,
+            text: "Plan",
+        },
+        MarkdownBlock {
+            kind: MarkdownBlockKind::ListItem,
+            text: "Implement widgets",
+        },
+        MarkdownBlock {
+            kind: MarkdownBlockKind::Paragraph,
+            text: "Ship the PR.",
+        },
+        MarkdownBlock {
+            kind: MarkdownBlockKind::Code,
+            text: "cargo test -p termrock",
+        },
+    ];
+    frame.render_widget(MarkdownView::new(&blocks, theme), area);
+}
+
+fn sparkline(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let samples = [0.1, 0.3, 0.2, 0.7, 0.9, 0.5, 0.8, 0.4];
+    frame.render_widget(Sparkline::new(&samples, theme), area);
+}
+
+fn bar_series(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let bars = [
+        BarDatum {
+            label: "cpu",
+            fraction: 0.72,
+        },
+        BarDatum {
+            label: "mem",
+            fraction: 0.41,
+        },
+        BarDatum {
+            label: "disk",
+            fraction: 0.88,
+        },
+    ];
+    frame.render_widget(BarSeries::new(&bars, theme), area);
+}
+
+fn segmented_meter(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let segments = [
+        MeterSegment {
+            label: "used",
+            weight: 3.0,
+            role: Role::Success,
+        },
+        MeterSegment {
+            label: "cache",
+            weight: 1.0,
+            role: Role::Info,
+        },
+        MeterSegment {
+            label: "free",
+            weight: 2.0,
+            role: Role::TextDisabled,
+        },
+    ];
+    frame.render_widget(SegmentedMeter::new(&segments, theme), area);
+}
+
+fn token_meter(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(TokenMeter::new(128_000, 200_000, theme), area);
+}
+
+fn thinking_block(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        ThinkingBlock::new("Planning edits", theme)
+            .frame("·")
+            .expanded(true)
+            .body("Inspect contracts, then implement."),
+        area,
+    );
+}
+
+fn tool_card(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        ToolCard::new("shell", "cargo test -p termrock", ToolStatus::Running, theme)
+            .expanded(true)
+            .detail("running suite…"),
+        area,
+    );
+}
+
+fn approval_card(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = ApprovalCardState::new();
+    frame.render_stateful_widget(
+        &ApprovalCard::new(
+            "Permission",
+            "Run cargo publish?",
+            ApprovalRisk::High,
+            theme,
+        ),
+        area,
+        &mut state,
+    );
+}
+
+fn stream_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let items = [
+        StreamItem {
+            id: "u1",
+            kind: StreamItemKind::User,
+            text: "Add stream widgets",
+            folded: false,
+        },
+        StreamItem {
+            id: "a1",
+            kind: StreamItemKind::Assistant,
+            text: "Implementing agent kit…",
+            folded: false,
+        },
+        StreamItem {
+            id: "t1",
+            kind: StreamItemKind::Tool,
+            text: "shell · cargo test",
+            folded: false,
+        },
+        StreamItem {
+            id: "th1",
+            kind: StreamItemKind::Thinking,
+            text: "Check catalog gates",
+            folded: true,
+        },
+    ];
+    frame.render_widget(StreamView::new(&items, theme), area);
+}
+
+fn timeline(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let events = [
+        TimelineEvent {
+            when: "12:01",
+            text: "Started",
+            active: false,
+        },
+        TimelineEvent {
+            when: "12:02",
+            text: "Running tests",
+            active: true,
+        },
+        TimelineEvent {
+            when: "12:03",
+            text: "Open PR",
+            active: false,
+        },
+    ];
+    frame.render_widget(Timeline::new(&events, theme), area);
+}
+
+fn prompt_box(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = PromptBoxState::new();
+    frame.render_stateful_widget(&PromptBox::new(theme).placeholder("Message…"), area, &mut state);
 }

@@ -1,11 +1,15 @@
 //! Responsive layout specifications and caller-defined bottom slots.
 
 mod dialog;
+mod work_surface;
 
 use ratatui_core::layout::Rect;
 
 pub use crate::interaction::HitRegion;
 pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
+pub use work_surface::{
+    RegionId, RegionLayout, RegionSize, RegionSpec, SurfaceAxis, WorkSurface,
+};
 
 /// Center a fixed-size rectangle inside `area`, leaving a one-cell margin
 /// where the terminal has room for it.

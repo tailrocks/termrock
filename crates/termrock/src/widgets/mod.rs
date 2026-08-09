@@ -3,6 +3,10 @@
 pub use crate::interaction::Outcome;
 
 mod action_bar;
+mod agent;
+mod charts;
+mod code_block;
+mod command_palette;
 mod completion_menu;
 mod detail_table;
 mod dialog;
@@ -10,8 +14,10 @@ mod diff;
 mod edit_core;
 mod form;
 mod hint_bar;
+mod jump_overlay;
 mod list;
 mod log_pane;
+mod markdown;
 mod panel;
 mod picker;
 mod progress;
@@ -24,10 +30,19 @@ mod text_area;
 mod text_input;
 mod toast;
 mod tree;
+mod view_state;
 mod viewport;
 mod virtual_grid;
 
 pub use action_bar::{Action, ActionBar, ActionBarState};
+pub use agent::{
+    ApprovalCard, ApprovalCardState, ApprovalDecision, ApprovalRisk, PromptBox, PromptBoxOutcome,
+    PromptBoxState, StreamItem, StreamItemKind, StreamView, ThinkingBlock, Timeline,
+    TimelineEvent, TokenMeter, ToolCard, ToolStatus,
+};
+pub use charts::{BarDatum, BarSeries, MeterSegment, SegmentedMeter, Sparkline};
+pub use code_block::{CodeBlock, PlainSyntax, SyntaxHighlighter};
+pub use command_palette::{CommandPalette, CommandPaletteOutcome, CommandPaletteState};
 pub use completion_menu::{
     CompletionCandidate, CompletionMenu, CompletionMenuOutcome, CompletionMenuSize,
     CompletionMenuState, place_completion_menu,
@@ -41,8 +56,10 @@ pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormS
 pub use hint_bar::{
     Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
 };
+pub use jump_overlay::{JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges};
 pub use list::{List, ListRow, ListState, RowRole};
 pub use log_pane::{LogPane, LogPaneState};
+pub use markdown::{MarkdownBlock, MarkdownBlockKind, MarkdownView, project_plain_lines};
 pub use panel::{Panel, PanelEmphasis};
 pub use picker::{Picker, PickerOutcome, PickerState};
 pub use progress::{Progress, ProgressKind};
@@ -63,6 +80,7 @@ pub use text_input::{
 };
 pub use toast::{Anchor, Severity, Toast, ToastLifetime, ToastState};
 pub use tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState};
+pub use view_state::{Banner, EmptyState, ErrorView, LoadingView, Skeleton};
 pub use viewport::Viewport;
 pub use virtual_grid::{
     GridCell, GridCellRegion, GridColumn, GridColumnWidth, GridHeaderRegion, GridRow, VirtualGrid,

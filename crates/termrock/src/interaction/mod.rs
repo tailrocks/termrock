@@ -1,10 +1,14 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
+mod esc_cascade;
 mod focus;
 mod modal;
+mod overlay;
 
+pub use esc_cascade::{EscCascade, EscLayer, EscOutcome};
 pub use focus::{FocusOutcome, FocusRing, FocusTarget};
 pub use modal::{ModalClickResult, ModalStack, classify_click, render_backdrop};
+pub use overlay::{OverlayHost, OverlayId, OverlayKind, OverlayLayer};
 
 use ratatui_core::layout::{Position, Rect};
 

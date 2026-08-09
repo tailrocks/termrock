@@ -9,8 +9,10 @@
 
 use ratatui_core::style::{Color, Modifier, Style};
 
+mod density;
 mod palette;
 
+pub use density::{Density, Motion};
 pub use palette::Rgb;
 use palette::{
     BORDER_GRAY as BORDER_GRAY_RGB, CYAN as CYAN_RGB, DANGER_RED as DANGER_RED_RGB,
