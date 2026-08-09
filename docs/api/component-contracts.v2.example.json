@@ -1,0 +1,145 @@
+{
+  "schema": 2,
+  "version": "0.12.0-draft",
+  "components": [
+    {
+      "schema": 2,
+      "component": "ApprovalCard",
+      "module": "termrock::widgets::ApprovalCard",
+      "kind": "interactive",
+      "complete": false,
+      "axes": {
+        "visual_states": {
+          "status": "covered",
+          "evidence": {
+            "stories": ["approval-card/basic"],
+            "snapshots": ["docs/public/component-previews/approval-card-basic.svg"]
+          }
+        },
+        "keyboard": {
+          "status": "covered",
+          "evidence": {
+            "tests": ["agent::tests::approval_default_enter_confirms_deny_never_allow"],
+            "stories": ["approval-card/basic"]
+          }
+        },
+        "mouse": {
+          "status": "covered",
+          "evidence": {
+            "tests": ["agent::tests::approval_selected_visible_at_every_non_empty_width"]
+          }
+        },
+        "focus": {
+          "status": "covered",
+          "evidence": {
+            "notes": "selection is the focus affordance; default Deny"
+          }
+        },
+        "disabled": {
+          "status": "not_applicable",
+          "reason": "decisions are enabled/disabled via available set, not global disabled"
+        },
+        "loading": {
+          "status": "not_applicable",
+          "reason": "synchronous decision chrome"
+        },
+        "error": {
+          "status": "not_applicable",
+          "reason": "no intrinsic error panel"
+        },
+        "empty": {
+          "status": "not_applicable",
+          "reason": "always has decision set"
+        },
+        "overlay": {
+          "status": "caller_owned",
+          "reason": "host places card in OverlayStack"
+        },
+        "escape": {
+          "status": "covered",
+          "evidence": {
+            "tests": ["agent::tests::approval_escape_is_cancelled_not_deny"]
+          }
+        },
+        "responsive": {
+          "status": "covered",
+          "evidence": {
+            "stories": ["approval-card/narrow"],
+            "snapshots": ["docs/public/component-previews/approval-card-narrow.svg"]
+          }
+        },
+        "tiny_terminal": {
+          "status": "covered",
+          "evidence": {
+            "stories": ["approval-card/tiny"],
+            "snapshots": ["docs/public/component-previews/approval-card-tiny.svg"]
+          }
+        },
+        "unicode": {
+          "status": "covered",
+          "evidence": {
+            "stories": ["approval-card/unicode"]
+          }
+        },
+        "cjk": {
+          "status": "partial",
+          "reason": "unicode story present; dedicated CJK matrix pending",
+          "evidence": { "stories": ["approval-card/unicode"] }
+        },
+        "combining": {
+          "status": "missing",
+          "reason": "no combining-character story"
+        },
+        "emoji": {
+          "status": "partial",
+          "reason": "risk glyphs; emoji labels not matrixed",
+          "evidence": { "stories": ["approval-card/basic"] }
+        },
+        "ascii_fallback": {
+          "status": "partial",
+          "reason": "labels Once/Session/Deny are ASCII; risk glyph story pending",
+          "evidence": { "notes": "decision labels ASCII" }
+        },
+        "no_color": {
+          "status": "covered",
+          "evidence": {
+            "notes": "decision labels + default Deny selection not color-alone"
+          }
+        },
+        "color_ladder": {
+          "status": "partial",
+          "reason": "truecolor default; capability matrix pending",
+          "evidence": { "stories": ["approval-card/basic"] }
+        },
+        "streaming": {
+          "status": "not_applicable",
+          "reason": "static decision UI"
+        },
+        "large_data": {
+          "status": "not_applicable",
+          "reason": "fixed decision set"
+        },
+        "resize": {
+          "status": "covered",
+          "evidence": {
+            "tests": ["agent::tests::approval_selected_visible_at_every_non_empty_width"]
+          }
+        },
+        "panic_safety": {
+          "status": "covered",
+          "evidence": {
+            "tests": ["agent::tests::approval_selected_visible_at_every_non_empty_width"]
+          }
+        }
+      },
+      "lints": {
+        "color_only_state": "pass",
+        "invisible_keyboard_focus": "pass",
+        "mouse_without_keyboard": "pass",
+        "hardcoded_key_handling": "waived",
+        "missing_ascii_fallback": "pass",
+        "zero_area_panic": "pass"
+      }
+    }
+  ]
+}

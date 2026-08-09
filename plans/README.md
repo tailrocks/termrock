@@ -19,6 +19,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/prompt-composer.md`](../docs/design/prompt-composer.md) | **PromptComposer** flagship agent input surface |
 | [`docs/design/permission-trust.md`](../docs/design/permission-trust.md) | **Permission & trust** surface (queue, provenance, stale safety) |
 | [`docs/design/data-presentation.md`](../docs/design/data-presentation.md) | **Data presentation** (DataTable, virtualization kits, 1M-row targets) |
+| [`docs/design/component-quality-standard.md`](../docs/design/component-quality-standard.md) | **Component quality standard** (contracts, lints, CI evidence) |
 
 ### Using the component prompt library
 

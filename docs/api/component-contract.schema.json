@@ -1,0 +1,250 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://termrock.dev/schemas/component-contract.schema.json",
+  "title": "TermRock component quality contract",
+  "description": "Machine-readable quality contract for a public TermRock widget. Schema version 2 expands the legacy six-axis map.",
+  "oneOf": [
+    { "$ref": "#/$defs/contractV1Document" },
+    { "$ref": "#/$defs/contractV2Document" }
+  ],
+  "$defs": {
+    "statusV1": {
+      "type": "string",
+      "enum": ["covered", "caller-owned", "not-applicable"]
+    },
+    "statusV2": {
+      "type": "string",
+      "enum": ["covered", "partial", "caller_owned", "not_applicable", "missing"]
+    },
+    "lintStatus": {
+      "type": "string",
+      "enum": ["pass", "fail", "waived", "not_run"]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stories": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Lookbook/Studio story ids"
+        },
+        "tests": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Rust test paths or filter strings"
+        },
+        "snapshots": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "SVG/buffer/scene snapshot paths relative to repo root"
+        },
+        "recordings": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "benches": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "axisCell": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "$ref": "#/$defs/statusV2" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "reason": {
+          "type": "string",
+          "description": "Required when status is not_applicable, caller_owned, missing, or partial"
+        },
+        "waiver": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ticket": { "type": "string" },
+            "expires": { "type": "string", "format": "date" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": ["not_applicable", "caller_owned", "missing", "partial"]
+              }
+            }
+          },
+          "then": { "required": ["reason"] }
+        },
+        {
+          "if": {
+            "properties": { "status": { "const": "covered" } }
+          },
+          "then": {
+            "required": ["evidence"],
+            "properties": {
+              "evidence": {
+                "type": "object",
+                "anyOf": [
+                  { "required": ["stories"] },
+                  { "required": ["tests"] },
+                  { "required": ["snapshots"] },
+                  { "required": ["recordings"] },
+                  { "required": ["benches"] }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "axesObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "visual_states",
+        "keyboard",
+        "mouse",
+        "focus",
+        "disabled",
+        "loading",
+        "error",
+        "empty",
+        "overlay",
+        "escape",
+        "responsive",
+        "tiny_terminal",
+        "unicode",
+        "cjk",
+        "combining",
+        "emoji",
+        "ascii_fallback",
+        "no_color",
+        "color_ladder",
+        "streaming",
+        "large_data",
+        "resize",
+        "panic_safety"
+      ],
+      "properties": {
+        "visual_states": { "$ref": "#/$defs/axisCell" },
+        "keyboard": { "$ref": "#/$defs/axisCell" },
+        "mouse": { "$ref": "#/$defs/axisCell" },
+        "focus": { "$ref": "#/$defs/axisCell" },
+        "disabled": { "$ref": "#/$defs/axisCell" },
+        "loading": { "$ref": "#/$defs/axisCell" },
+        "error": { "$ref": "#/$defs/axisCell" },
+        "empty": { "$ref": "#/$defs/axisCell" },
+        "overlay": { "$ref": "#/$defs/axisCell" },
+        "escape": { "$ref": "#/$defs/axisCell" },
+        "responsive": { "$ref": "#/$defs/axisCell" },
+        "tiny_terminal": { "$ref": "#/$defs/axisCell" },
+        "unicode": { "$ref": "#/$defs/axisCell" },
+        "cjk": { "$ref": "#/$defs/axisCell" },
+        "combining": { "$ref": "#/$defs/axisCell" },
+        "emoji": { "$ref": "#/$defs/axisCell" },
+        "ascii_fallback": { "$ref": "#/$defs/axisCell" },
+        "no_color": { "$ref": "#/$defs/axisCell" },
+        "color_ladder": { "$ref": "#/$defs/axisCell" },
+        "streaming": { "$ref": "#/$defs/axisCell" },
+        "large_data": { "$ref": "#/$defs/axisCell" },
+        "resize": { "$ref": "#/$defs/axisCell" },
+        "panic_safety": { "$ref": "#/$defs/axisCell" }
+      }
+    },
+    "lintsObject": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/lintStatus" },
+      "properties": {
+        "color_only_state": { "$ref": "#/$defs/lintStatus" },
+        "invisible_keyboard_focus": { "$ref": "#/$defs/lintStatus" },
+        "primary_clipped_before_secondary": { "$ref": "#/$defs/lintStatus" },
+        "interactive_without_semantic_role": { "$ref": "#/$defs/lintStatus" },
+        "mouse_without_keyboard": { "$ref": "#/$defs/lintStatus" },
+        "unpredictable_overlay_dismiss": { "$ref": "#/$defs/lintStatus" },
+        "hardcoded_key_handling": { "$ref": "#/$defs/lintStatus" },
+        "missing_ascii_fallback": { "$ref": "#/$defs/lintStatus" },
+        "focus_selection_indistinguishable": { "$ref": "#/$defs/lintStatus" },
+        "idle_animation_redraw": { "$ref": "#/$defs/lintStatus" },
+        "zero_area_panic": { "$ref": "#/$defs/lintStatus" },
+        "missing_contract_evidence": { "$ref": "#/$defs/lintStatus" },
+        "stale_contract_component": { "$ref": "#/$defs/lintStatus" }
+      }
+    },
+    "contractV1Entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "keyboard",
+        "mouse",
+        "focus",
+        "nonColor",
+        "unicode",
+        "narrowTerminal"
+      ],
+      "properties": {
+        "keyboard": { "$ref": "#/$defs/statusV1" },
+        "mouse": { "$ref": "#/$defs/statusV1" },
+        "focus": { "$ref": "#/$defs/statusV1" },
+        "nonColor": { "$ref": "#/$defs/statusV1" },
+        "unicode": { "$ref": "#/$defs/statusV1" },
+        "narrowTerminal": { "$ref": "#/$defs/statusV1" }
+      }
+    },
+    "contractV1Document": {
+      "type": "object",
+      "description": "Legacy map of component name → six-axis review (no schema field).",
+      "additionalProperties": { "$ref": "#/$defs/contractV1Entry" },
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Za-z0-9_]*$"
+      }
+    },
+    "contractV2Component": {
+      "type": "object",
+      "required": ["schema", "component", "kind", "complete", "axes"],
+      "additionalProperties": false,
+      "properties": {
+        "schema": { "const": 2 },
+        "component": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9_]*$"
+        },
+        "module": { "type": "string" },
+        "kind": {
+          "type": "string",
+          "enum": ["interactive", "static", "overlay", "container", "pattern"]
+        },
+        "complete": {
+          "type": "boolean",
+          "description": "true only when no axis is missing/partial without waiver"
+        },
+        "axes": { "$ref": "#/$defs/axesObject" },
+        "lints": { "$ref": "#/$defs/lintsObject" },
+        "owners": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "contractV2Document": {
+      "type": "object",
+      "required": ["schema", "components"],
+      "additionalProperties": false,
+      "properties": {
+        "schema": { "const": 2 },
+        "version": { "type": "string" },
+        "components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/contractV2Component" },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}

@@ -61,6 +61,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0045 | `v0.12.0` | [Flagship PromptComposer](migrations/0045-v0.12.0-prompt-composer.md) |
 | 0046 | `v0.12.0` | [Permission and trust surface](migrations/0046-v0.12.0-permission-trust.md) |
 | 0047 | `v0.12.0` | [Data presentation foundation](migrations/0047-v0.12.0-data-presentation.md) |
+| 0048 | `v0.12.0` | [Component quality standard](migrations/0048-v0.12.0-component-quality-standard.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
