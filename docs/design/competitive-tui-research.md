@@ -13,9 +13,14 @@ Most TUI “ecosystems” are either:
 
 1. **Immediate-mode widget kits** (Ratatui, FTXUI-ish) — fast, flexible, weak product UX contracts, or  
 2. **App frameworks** (Bubble Tea, Textual, Ink) — strong architecture/docs, weaker terminal-native depth (focus law, unicode, virtualization, agent trust), or  
-3. **Hero applications** (lazygit, k9s, btop, yazi) — exceptional *product* interaction that is rarely extracted as reusable design systems.
+3. **Hero applications** (lazygit, k9s, btop, yazi) — exceptional *product* interaction that is rarely extracted as reusable design systems, or  
+4. **Agent OS products** (Grok Build, Amp, OpenCode, Crush, Claude Code) — durable sessions, trust dials, tool/plan visibility; UI is a *projection* of a runtime, still almost never a reusable design system.
 
 **TermRock’s open gap is not “more widgets.”** It is being the **shadcn of the terminal**: open, owned, contract-tested components with studio-grade evidence, agent-native trust/input, and performance/capability ladders — while staying product-neutral.
+
+**2026 research refresh (this doc §9–12):** Grok Build as primary agent TUI grammar; Amp for thread/mode/MCP-as-panel; OpenCode for plan/multi-session/client-server; hero-app DNA from awesome-tuis; multi-lang port map; think-big breaking roadmap.
+
+**Full experience research (concepts + packs + roadmap):** [`experience-research-2026.md`](./experience-research-2026.md).
 
 ---
 
@@ -405,24 +410,221 @@ Charm/Textual win on docs; Ratatui wins on control.
 
 ---
 
-## 9. References (non-exhaustive)
+## 9. Deep dive: agent-era TUIs (2025–2026)
 
-- Ratatui / awesome-ratatui  
-- Charm: Bubble Tea, Bubbles, Lip Gloss, Huh, Gum, Glow  
-- Textualize/Textual  
-- Ink (vadimdemedes/ink)  
-- Cursive, FTXUI, ImTui, ncurses/notcurses  
-- prompt_toolkit, Rich  
-- Apps: lazygit, GitUI, k9s, btop, yazi, zellij, posting, television, visidata, ATAC  
-- Agent TUIs: Claude Code, Codex CLI, OpenCode, Amp, Grok Build–class experiences  
+These products set the *feel* bar for “another level” terminal UX. TermRock
+extracts **interaction grammar**, never product brands or provider policy.
 
-*(Analysis is architectural/product; no proprietary source reuse.)*
+### 9.1 Grok Build (xAI / SpaceXAI) — primary design reference
+
+**What people praise**
+
+- Fullscreen, mouse-interactive TUI (not a thin REPL)
+- Plan Mode + native subagent view + inline diff / plan review
+- Theme system with live preview (`/theme`), OS auto appearance, quantize-safe defaults
+- Dual input modes: Simple (letter → composer) vs Vim (scrollback as a text object)
+- Block fold/expand, turn navigation, raw markdown toggle, sticky manual folds
+- Minimal mode: terminal-native palette (no theme chrome) for SSH/mux survival
+- Extensibility surface: skills, plugins, hooks, MCP, ACP — UI projects agent OS, not model
+
+**Interaction grammar to own in TermRock**
+
+| Pattern | TermRock home |
+|---------|---------------|
+| Transcript as **variable-height block list** with fold/raw | `Transcript` + scroll policy |
+| Composer always south; letter-to-focus in Simple mode | `PromptComposer` + scene intents |
+| Overlay cascade: slash menu, @ picker, plan review, permissions | `OverlayStack` law |
+| Theme picker with **live stage preview** | Studio + `ThemePicker` block |
+| Capability/minimal ladder | `CapabilitySet` + DesignSystem quantize |
+| Plan → approve → execute as **layers**, not modes baked into paint | Permission + PlanReview components |
+| Subagent / background task rail | Agent block (source-owned) |
+| Diff review as first-class surface | `DiffView` + review blocks |
+
+**Do not copy:** product slash vocabulary, model routing, sandbox policy, branding.
+
+### 9.2 Amp (Sourcegraph / ampcode.com)
+
+**Positioning:** frontier coding agent with dual IDE + CLI; often cited as
+“leader-class” agent UX among power users.
+
+**What elevates the experience (product signals)**
+
+- **Thread model** as first-class object (share, resume, team visibility)
+- **Modes** as explicit product dials (`smart` / free / etc.) — UI shows *which brain*, not only which model
+- **Tab completion / next-action engine** — anticipatory chrome beyond chat
+- **MCP configuration panel** in-product (setup is UX, not config folklore)
+- **Headless + streaming JSON** for automation; TUI is a projection of the same runtime
+- Ghostty-class terminal recommended for fidelity (truecolor, modern VT)
+
+**Patterns for TermRock**
+
+| Pattern | Why rare | TermRock implication |
+|---------|----------|----------------------|
+| **Thread/session as navigable object** | Most TUIs are one infinite log | Session picker + timeline blocks (source-owned) |
+| **Mode badge always visible** | Users lose autonomy state | Status chip recipe + composer mode strip |
+| **Config surfaces as panels** | Agents bury MCP/tools in YAML | Settings tree / form block; not product YAML |
+| **Same event stream → TUI or headless** | Dual codepaths rot | Widgets consume async *projections*, no SDK |
+| **Anticipatory completion** | Only chat complete | CompletionMenu protocol shared with @ and / |
+
+**Avoid:** ads-as-product, Sourcegraph branding, tool allowlists in core.
+
+### 9.3 OpenCode (SST / anomalyco)
+
+**Praise:** Bubble Tea polish, multi-session, Plan vs Build modes, model
+agnostic (75+ providers), client/server so SSH drop ≠ lost agent, share links.
+
+**Extract**
+
+- **Plan mode as read-only chrome** with full action list before writes  
+- **Multi-session** side-by-side or switcher (session rail)  
+- **Server-backed session** → UI reconnect pattern (consumer owns transport)  
+- Theme + keybind docs as *product* (Charm culture of delight)
+
+### 9.4 Charm Crush + Claude Code + Codex class
+
+| Product | Design DNA | Steal | Avoid |
+|---------|------------|-------|-------|
+| **Crush** | Glamour-first Lip Gloss identity; screenshot magnetic | Aesthetic token recipes; markdown glamour bar | Pretty over trust defaults |
+| **Claude Code** | Dense tool stream; permission prompts; “app in terminal” | Permission interrupt UX; tool card density | Provider lock-in chrome |
+| **Codex CLI** | Autonomy ladder (suggest → auto) | Visible autonomy dial | Unsafe auto defaults in kit |
+| **Warp agent shell** | Terminal-as-product + vertical tabs | Workspace tabs pattern | Closed terminal dependency |
+
+### 9.5 Agent UX consensus (2026)
+
+Across Amp, Grok Build, OpenCode, Claude Code, Crush — the *rare* bar is:
+
+1. **Composer never dies** under overlays, streaming, or queue  
+2. **Trust is visible** (mode, risk, pending permission)  
+3. **Work is inspectable** (tools, diffs, plans, subagents)  
+4. **Session is durable** (resume, share, multi)  
+5. **Terminal is modern** (mouse, truecolor, image optional) without requiring it  
+
+TermRock already designs for 1–3 in kernel/components; 4–5 need blocks + capability stories to *feel* inevitable.
 
 ---
 
-## 10. Decision summary
+## 10. Hero app DNA (awesome-tuis / awesometui / community consensus)
+
+Sources: [rothgar/awesome-tuis](https://github.com/rothgar/awesome-tuis),
+[awesometui.com](https://awesometui.com), terminal-apps.dev, HN/Reddit/Medium
+“best TUI” roundups (lazygit, btop, yazi, k9s, posting, etc.).
+
+### 10.1 Why these feel “award-level”
+
+Not awards committees — **community consensus rarity**: people screenshot them,
+replace GUIs with them, and recommend them unprompted.
+
+| Cluster | Exemplars | DNA | TermRock extract |
+|---------|-----------|-----|------------------|
+| **Muscle-memory multipane** | lazygit, GitUI, lazydocker | Fixed regions, one focus, contextual hints | WorkSurface + HintBar + workspace tree |
+| **Live ops tables** | k9s, ctop, dtop | Stream + filter + drill | DataTable + Tree + log dual-pane blocks |
+| **Density art** | btop, bottom, nvtop | Every cell earns keep; graphs as language | Metrics components + density tokens |
+| **Async fluid FM** | yazi, superfile, nnn, lf | Never-block UI; preview protocol; media | PreviewHost + image surface + skeletons |
+| **IDE-in-terminal** | posting, harlequin, rainfrog, ATAC | Jump mode, $EDITOR, syntax, collections | JumpOverlay, CodeBlock, form density |
+| **Glamour single-job** | fzf, gum, huh, glow | Zero waste; instant loop; shareable aesthetic | Picker protocol; theme photography bar |
+| **Mux modernity** | zellij | Layout-as-product; discoverable modes | Responsive workspace + mode ribbon |
+| **Data sheets** | visidata | Cell-native nav on huge data | Cell/range selection on DataTable |
+| **GitHub flow** | gh-dash | Rich PR/issue without browser | Review list + detail split block |
+| **HTTP Postman-class** | posting | Jump letters; request/response panes | Form + editor + split block |
+
+### 10.2 Cross-app laws of “incredible” TUI feel
+
+1. **Spatial memory** — layout stable across sessions (lazygit, k9s).  
+2. **One keyboard owner** — never ambiguous Esc/focus (Grok Build, posting).  
+3. **Hints where action is** — not a separate man page (lazygit, huh).  
+4. **Speed as honesty** — async + virtualization or it *feels* broken (yazi, visidata).  
+5. **Screenshot identity** — default theme worth sharing (btop, Crush, phosphor).  
+6. **Degrade with dignity** — mono/NO_COLOR/narrow still usable (Grok minimal).  
+7. **Power under the chrome** — escape hatch to raw tool (lazygit command log).  
+
+---
+
+## 11. Multi-language library patterns (port to Rust/Ratatui)
+
+| Stack | Language | Steal for TermRock | Reject |
+|-------|----------|--------------------|--------|
+| **Bubble Tea + Bubbles + Lip Gloss + Huh** | Go | TEA purity of outcomes; form kits; adaptive style; brand of “glam” *as optional recipe* | Framework monopoly; Charm-only look |
+| **Gum** | Go | Scriptable interactive primitives → CLI install path | One-shot only distribution |
+| **Textual** | Python | CSS-ish token iteration; gallery; hot reload Studio | Full browser DOM/CSS cascade |
+| **Ink + Yoga** | TS | Composition, Storybook culture, Static append logs | VDOM as cell truth |
+| **prompt_toolkit + Rich** | Python | Line-edit excellence; presentation density | Pretty-print without interaction law |
+| **Cursive** | Rust | Dialog/focus expectations from “real” toolkits | Second retained-mode ecosystem |
+| **FTXUI / ImTui** | C++ | Immediate-mode discipline | ImGui debug aesthetic as product default |
+| **Notcurses** | C | Media/capability ambition | Low-level as public API |
+| **tui-realm** | Rust | Component lifecycle ideas | Parallel framework fork |
+| **iocraft** | Rust | Declarative React-like experiments | Competing paint model vs Ratatui |
+| **tachyonfx / ratatui-image / tui-textarea** | Rust | Effects, images, editors as *optional* deps or ports | Widget soup without contracts |
+| **yeehaw** | Rust | Batteries-included wrapper lessons | Opaque magic over Ratatui |
+
+**Port rule:** ideas become **tokens, intents, blocks, Studio evidence** — not new paint engines.
+
+---
+
+## 12. Think-big roadmap (breaking preferred)
+
+Quality > compatibility. Pre-1.0 redesign (`pre-1.0-api-redesign.md`) is the
+API knife; this section is the **experience ambition**.
+
+### 12.1 Category definition
+
+**Win condition:** *“Built with TermRock”* = same flex as *“uses shadcn/ui”* —
+for any serious TUI (agent, ops, data, IDE-lite), not only Tailrocks apps.
+
+### 12.2 Pillars (do these, not random widgets)
+
+| Pillar | Breakthrough | Breaking moves OK |
+|--------|--------------|-------------------|
+| **1. One authority** | Kill dual stacks: scene-only focus, DesignSystem-only paint, one DataTable path, one composer, one permission card | Dual public APIs die in one milestone |
+| **2. Source-owned shadcn path** | `termrock add` / blocks / digests / dirty-safe update as first-class DX | Patterns leave crate → registry |
+| **3. Studio = Storybook + DevTools** | Live tokens, capability matrix, scene inspector, contract gates, record/replay | Private lookbook hooks forbidden |
+| **4. Agent OS as blocks** | Workbench, plan review, task rail, session switcher, autonomy dial — domain-neutral | No provider SDK in crate |
+| **5. Data OS** | 1M-row virtual table, cell selection, stream coalesce, contraction priorities | Quad grids → one model |
+| **6. Density language** | Metrics tiles, sparklines, heat — btop-class *as optional recipe* | Phosphor remains default, not only identity |
+| **7. Motion + media ladder** | FrameTick micro-motion; image protocols behind capability | Reduced-motion always correct |
+| **8. Handbook gravity** | When/why docs + installable examples + Fumadocs previews = truth | Docs lag = ship fail |
+
+### 12.3 Experience concepts to invent (not parity)
+
+1. **InteractionScene as terminal DevTools protocol** — external tools can attach (debug, a11y).  
+2. **Contract scores on every public component** — Studio shows PASS/FAIL axes; CI fails red.  
+3. **Block marketplace without npm entropy** — git-pinned registry digests, three-way merge.  
+4. **“Composer continuity” as a named guarantee** — tests prove draft/queue survive overlay takeover.  
+5. **Permission provenance chain** — risk + egress + stale queue as *library law*.  
+6. **Responsive grammar as layout algebra** — ViewportClass + ContractionStage everywhere, not ad-hoc.  
+7. **Theme photography set** — 5 themes that quantize + screenshot; phosphor default stays.  
+8. **Jump alphabet layer** — posting-class letter targets for dense UIs.  
+9. **Activity trail** — lazygit-style “what did the UI just do” strip for agents/ops.  
+10. **Headless + TUI twin** — same projections for CI snapshots and live UI.
+
+### 12.4 Explicit non-goals
+
+- Becoming a terminal emulator or multiplexer  
+- Shipping models, secrets, or allow-all agents  
+- Compatibility shims for inferior dual APIs  
+- Full CSS layout engine  
+- Product-branded widgets (Amp/Claude/Grok chrome clones)
+
+---
+
+## 13. References (non-exhaustive)
+
+- [rothgar/awesome-tuis](https://github.com/rothgar/awesome-tuis), [awesometui.com](https://awesometui.com), terminal-apps.dev, Terminal Trove  
+- Ratatui / awesome-ratatui; ratatui-image, tui-textarea, tachyonfx  
+- Charm: Bubble Tea, Bubbles, Lip Gloss, Huh, Gum, Glow, Crush  
+- Textualize/Textual; Ink; Cursive; FTXUI; ImTui; notcurses; prompt_toolkit; Rich; iocraft  
+- Apps: lazygit, GitUI, k9s, lazydocker, btop, yazi, superfile, zellij, posting, harlequin, rainfrog, television, visidata, gh-dash, ATAC  
+- Agent TUIs: Grok Build (xAI), Amp (ampcode.com), OpenCode, Claude Code, Codex CLI, Crush  
+- Internal SoTs: `shadcn-tui-direction.md`, `termrock-agent.md`, `termrock-studio.md`, `pre-1.0-api-redesign.md`
+
+*(Architectural/product analysis only; no proprietary source reuse.)*
+
+---
+
+## 14. Decision summary
 
 1. Competitors split into **paint kits**, **app frameworks**, and **hero apps**.  
-2. TermRock should own the **missing middle**: design system + interaction law + agent/data quality.  
-3. Steal **patterns**, never brands or product domains.  
-4. Ten exceed-opportunities are mostly **already designed** — winning is **execution and enforcement**, not more research.
+2. Agent era added a fourth: **agent OS products** (Amp, Grok Build, OpenCode) — UI as projection of durable runtime.  
+3. TermRock owns the **missing middle**: design system + interaction law + agent/data quality + source-owned blocks.  
+4. Steal **patterns**, never brands or product domains.  
+5. Ten exceed-opportunities remain valid; agent deep dive adds **session durability, mode visibility, config-as-panel, composer continuity**.  
+6. Pre-1.0 dual-kill + Studio + registry execution > more research.
