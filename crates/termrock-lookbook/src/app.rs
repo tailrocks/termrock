@@ -16,7 +16,7 @@ use termrock::{
         Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
         MouseEventKind,
     },
-    interaction::{FocusOutcome, FocusTarget, ModalStack, Outcome, render_backdrop},
+    interaction::{ModalStack, Outcome, render_backdrop},
     keymap::KeyChord,
     layout::centered_rect,
     patterns::{StudioShellLayout, layout_studio_shell},
@@ -32,7 +32,7 @@ use termrock::{
 
 use crate::{
     PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction,
-    focus::{FocusId, FocusRing, FocusScope},
+    focus::{FocusId, FocusOutcome, FocusRing, FocusScope, FocusTarget},
     interactors::StoryInteraction,
     stories::gallery_stories,
 };
@@ -422,8 +422,12 @@ impl Lookbook {
             })
             .collect::<Vec<_>>();
         let mut state = ComponentListState::new(Some(self.knob_selected));
-        state.set_focused(self.focus.is_focused(&FocusId::Controls));
-        frame.render_stateful_widget(&ComponentList::new(&rows, &tokens), list_area, &mut state);
+        let focused = self.focus.is_focused(&FocusId::Controls);
+        frame.render_stateful_widget(
+            &ComponentList::new(&rows, &tokens).focused(focused),
+            list_area,
+            &mut state,
+        );
         self.interactor
             .render_knob_editor(self.knob_selected, frame, editor_area);
     }
@@ -805,7 +809,7 @@ mod tests {
         render_app(&mut app, tick);
         assert!(!matches!(
             app.focus.request_focus(FocusId::Preview),
-            termrock::interaction::FocusOutcome::Ignored
+            FocusOutcome::Ignored
         ));
 
         assert_eq!(
@@ -833,7 +837,7 @@ mod tests {
         render_app(&mut app, tick);
         assert!(!matches!(
             app.focus.request_focus(FocusId::Controls),
-            termrock::interaction::FocusOutcome::Ignored
+            FocusOutcome::Ignored
         ));
 
         let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
@@ -853,7 +857,7 @@ mod tests {
         render_app(&mut app, tick);
         assert!(!matches!(
             app.focus.request_focus(FocusId::Preview),
-            termrock::interaction::FocusOutcome::Ignored
+            FocusOutcome::Ignored
         ));
 
         let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
@@ -878,7 +882,7 @@ mod tests {
         render_app(&mut app, action_tick);
         assert!(!matches!(
             app.focus.request_focus(FocusId::Controls),
-            termrock::interaction::FocusOutcome::Ignored
+            FocusOutcome::Ignored
         ));
 
         app.handle_knob_key(
@@ -898,7 +902,7 @@ mod tests {
         render_app(&mut app, tick);
         assert!(!matches!(
             app.focus.request_focus(FocusId::Preview),
-            termrock::interaction::FocusOutcome::Ignored
+            FocusOutcome::Ignored
         ));
 
         app.open_focus_modal();
@@ -920,7 +924,7 @@ mod tests {
         render_app(&mut app, tick);
         assert!(!matches!(
             app.focus.request_focus(FocusId::Preview),
-            termrock::interaction::FocusOutcome::Ignored
+            FocusOutcome::Ignored
         ));
         app.open_focus_modal();
         render_app(&mut app, tick);

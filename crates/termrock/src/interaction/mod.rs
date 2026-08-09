@@ -10,10 +10,10 @@ mod overlay_controller;
 mod overlay_stack;
 mod scene;
 
-// FocusRing remains for lookbook until fully migrated onto InteractionScene.
+// FocusRing is crate-private (pre-1.0 M3 / Break C0). Hosts use InteractionScene.
 // EscCascade / OverlayController / OverlayHost are crate-private; use
 // InteractionScene + OverlayStack as the public authorities.
-pub use focus::{FocusOutcome, FocusRing, FocusTarget};
+pub(crate) use focus::{FocusOutcome, FocusRing, FocusTarget};
 pub use intent::{
     NavigationMove, PageMove, UiIntent, default_list_intent, default_table_intent,
     default_tree_intent,
@@ -26,8 +26,9 @@ pub use overlay_stack::{
 };
 pub use scene::{
     InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
-    LayerKind, SceneError, SemanticElement, SemanticRole, SemanticScene,
+    LayerKind, SceneError, SemanticElement, SemanticRole,
 };
+pub(crate) use scene::SemanticScene;
 
 use ratatui_core::layout::{Position, Rect};
 

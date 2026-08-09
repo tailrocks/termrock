@@ -556,6 +556,7 @@ mod tests {
         let lines: [&str; 0] = [];
         let blocks: [TranscriptBlock<'_, u32>; 0] = [];
         let mut state = TranscriptState::new();
+        state.set_focused(true);
         let t = Transcript::new(&blocks, &system);
         let mut terminal = Terminal::new(TestBackend::new(0, 0)).unwrap();
         terminal
@@ -628,6 +629,7 @@ mod tests {
             TranscriptBlock::new(2, TranscriptKind::Assistant, &b),
         ];
         let mut state = TranscriptState::new();
+        state.set_focused(true);
         state.set_follow(false);
         state.first_display_row = 2; // first line of block 2
         let mut terminal = Terminal::new(TestBackend::new(30, 3)).unwrap();

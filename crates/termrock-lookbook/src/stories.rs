@@ -2925,7 +2925,6 @@ pub(crate) fn render_split_pane(
 
 fn split_pane(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = SplitPaneState::new(SplitRatio::from_percent(38));
-    state.set_focused(true);
     render_split_pane(frame, area, &mut state, system);
 }
 
@@ -3536,7 +3535,6 @@ fn render_virtual_grid(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem,
     ];
     let grid = VirtualGrid::new(&columns, &rows, system).total_rows(total_rows);
     let mut state = VirtualGridState::new();
-    state.set_focused(true);
     frame.render_stateful_widget(&grid, area, &mut state);
 }
 
@@ -3680,7 +3678,6 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, varian
             3
         },
     ));
-    state.set_focused(true);
     frame.render_stateful_widget(&Table::new(&columns, visible, &tokens), area, &mut state);
 }
 
@@ -3720,7 +3717,6 @@ fn text_area_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn text_area_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let text = "zero\none\ntwo\nthree\nfour\nfive: deliberately wide content beyond the viewport";
     let mut state = TextAreaState::new(text);
-    state.set_focused(true);
     state.set_cursor(TextCursor {
         line: 5,
         byte: text.lines().last().unwrap().len(),
@@ -3736,7 +3732,6 @@ fn render_text_area(
     placeholder: Option<&str>,
 ) {
     let mut state = TextAreaState::new(text);
-    state.set_focused(true);
     let mut widget = TextArea::new(system).title(title);
     if let Some(placeholder) = placeholder {
         widget = widget.placeholder(placeholder);
@@ -4580,7 +4575,7 @@ fn image_surface(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn button_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-    state.activation.set_focused(true);
+   state.activation.set_focused(true);
     Button::new("Save", &tokens)
         .primary(true)
         .render(area, frame.buffer_mut(), &mut state);
@@ -4589,7 +4584,6 @@ fn button_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut cb = CheckboxState::new(true);
-    cb.set_focused(true);
     Checkbox::new("enable", "Enable", &tokens).render(
         Rect::new(area.x, area.y, area.width, 1),
         frame.buffer_mut(),
@@ -5053,8 +5047,8 @@ fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
+   state.activation.set_focused(true);
     state.activation.set_enabled(false);
-    state.activation.set_focused(true);
     frame.render_stateful_widget(
         &Button::new("Save", &tokens).primary(true),
         area,
@@ -5065,15 +5059,15 @@ fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 fn button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
+   state.activation.set_focused(true);
     state.activation.set_loading(true);
-    state.activation.set_focused(true);
     frame.render_stateful_widget(&Button::new("Save", &tokens), area, &mut state);
 }
 
 fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-    state.activation.set_focused(true);
+   state.activation.set_focused(true);
     frame.render_stateful_widget(
         &Button::new("保存 ✨", &tokens).primary(true),
         area,
@@ -5085,7 +5079,6 @@ fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let tokens = system.clone().density(Density::default());
     let mut state = CheckboxState::new(true);
     state.set_enabled(false);
-    state.set_focused(true);
     frame.render_stateful_widget(
         &Checkbox::new("enable", "Enable", &tokens),
         area,
@@ -5096,7 +5089,6 @@ fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut cb = CheckboxState::new(true);
-    cb.set_focused(true);
     Checkbox::new("jp", "有効化 🇯🇵", &tokens).render(
         Rect::new(area.x, area.y, area.width, 1),
         frame.buffer_mut(),

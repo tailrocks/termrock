@@ -1207,7 +1207,7 @@ mod tests {
         );
         for case in cases {
             let mut state = TextAreaState::new(case.text);
-            state.set_focused(true);
+        state.set_focused(true);
             assert!(state.set_cursor(case.cursor), "{} cursor", case.name);
             let outcome = state.handle_key(KeyEvent::new(case.key, KeyModifiers::NONE));
             assert_eq!(
@@ -1228,6 +1228,7 @@ mod tests {
     #[test]
     fn multi_line_deltas_and_ranges_restore_without_document_snapshots() {
         let mut state = TextAreaState::new("alpha\nbeta\ngamma");
+        state.set_focused(true);
         assert_eq!(
             state.extract_range(c(0, 2), c(2, 2)).as_deref(),
             Some("pha\nbeta\nga")
@@ -1268,6 +1269,7 @@ mod tests {
         let theme = RolePalette::default();
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut state = TextAreaState::new("wide content beyond viewport\none\ntwo\nthree\nfour");
+        state.set_focused(true);
         assert!(state.set_cursor(c(0, 0)));
         let area = Rect::new(2, 3, 14, 6);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 12));
@@ -1303,8 +1305,8 @@ mod tests {
     #[test]
     fn measurement_invalidates_only_on_edits_and_tiny_control_input_is_safe() {
         let mut state = TextAreaState::new("ab");
-        assert_eq!(state.max_width, 2);
         state.set_focused(true);
+        assert_eq!(state.max_width, 2);
         assert_eq!(state.insert_text("\u{7}東京"), TextAreaOutcome::Changed);
         assert_eq!(state.text(), "ab東京");
         assert_eq!(state.max_width, 6);

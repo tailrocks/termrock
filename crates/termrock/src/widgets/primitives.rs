@@ -837,6 +837,7 @@ mod tests {
     #[test]
     fn button_mouse_down_up_activates() {
         let mut state = ButtonState::new();
+        state.activation.set_focused(true);
         state.activation.set_enabled(true);
         state.region = Some(Rect::new(0, 0, 8, 1));
         let down = MouseEvent {

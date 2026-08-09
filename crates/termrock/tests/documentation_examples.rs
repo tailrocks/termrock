@@ -240,7 +240,6 @@ fn handbook_prompt_composer_example() {
         PromptComposerOutcome::Submit { ref text, .. } if text == "ship it"
     ));
     state.set_text("keep");
-    state.set_focused(false);
     assert_eq!(state.text(), "keep");
 }
 

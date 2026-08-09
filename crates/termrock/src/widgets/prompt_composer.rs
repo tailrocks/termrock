@@ -436,7 +436,6 @@ impl PromptComposerState {
     #[must_use]
     pub fn new() -> Self {
         let mut editor = TextAreaState::default();
-        editor.set_focused(true);
         Self {
             editor,
             undo: Vec::new(),
@@ -490,7 +489,6 @@ impl PromptComposerState {
     /// Sets keyboard focus without clearing draft.
     pub fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
-        self.editor.set_focused(focused);
     }
 
     /// Agent busy flag.
@@ -1084,7 +1082,6 @@ impl PromptComposerState {
                 }
             }
             if editor_area.contains(mouse.position) {
-                self.set_focused(true);
                 if !mouse.modifiers.contains(KeyModifiers::SHIFT) {
                     self.select_anchor = None;
                 } else if self.select_anchor.is_none() {
@@ -1814,16 +1811,17 @@ mod tests {
     #[test]
     fn draft_survives_blur_for_overlay_takeover() {
         let mut state = PromptComposerState::new();
-        state.set_text("keep me");
-        state.set_focused(false); // permission / plan / palette
-        assert_eq!(state.text(), "keep me");
         state.set_focused(true);
+        state.set_text("keep me");
+        // permission / plan / palette
+        assert_eq!(state.text(), "keep me");
         assert_eq!(state.text(), "keep me");
     }
 
     #[test]
     fn empty_submit_validates() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         let out = state.handle_key(press(KeyCode::Enter));
         assert!(matches!(
             out,
@@ -1834,6 +1832,7 @@ mod tests {
     #[test]
     fn submit_returns_text_and_clears() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("hello agent");
         let out = state.handle_key(press(KeyCode::Enter));
         assert!(matches!(
@@ -1846,6 +1845,7 @@ mod tests {
     #[test]
     fn busy_enqueues_instead_of_submit() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_busy(true);
         state.set_text("later");
         let out = state.handle_key(press(KeyCode::Enter));
@@ -1856,6 +1856,7 @@ mod tests {
     #[test]
     fn disconnected_blocks_submit() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_connection(ComposerConnection::Disconnected);
         state.set_text("x");
         let out = state.handle_key(press(KeyCode::Enter));
@@ -1868,6 +1869,7 @@ mod tests {
     #[test]
     fn large_paste_becomes_chip() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         let big = "a".repeat(LARGE_PASTE_THRESHOLD);
         let out = state.handle_paste(&big);
         assert_eq!(out, PromptComposerOutcome::Changed);
@@ -1879,6 +1881,7 @@ mod tests {
     #[test]
     fn slash_detects_completion() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("/pl");
         // cursor at end after set_text
         let q = detect_completion(&state.text(), state.editor.cursor());
@@ -1908,6 +1911,7 @@ mod tests {
     #[test]
     fn undo_redo_restores_text() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("one");
         state.insert_text(" two");
         assert_eq!(state.text(), "one two");
@@ -1921,6 +1925,7 @@ mod tests {
     #[test]
     fn alt_enter_inserts_newline_when_submit_on_enter() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("a");
         let key = KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT);
         let out = state.handle_key(key);
@@ -1931,6 +1936,7 @@ mod tests {
     #[test]
     fn history_up_recalls_submit() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("first");
         let _ = state.handle_key(press(KeyCode::Enter));
         state.set_text("draft");
@@ -1943,6 +1949,7 @@ mod tests {
     #[test]
     fn apply_completion_replaces_trigger_span() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("/plan");
         state.completion = CompletionQuery {
             kind: CompletionKind::Slash,
@@ -1959,6 +1966,7 @@ mod tests {
     #[test]
     fn preferred_rows_contract_with_presentation() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_presentation(ComposerPresentation::Compact);
         assert!(state.preferred_editor_rows(10) <= 2);
         state.set_presentation(ComposerPresentation::Expanded);
@@ -1997,6 +2005,7 @@ mod tests {
     #[test]
     fn large_paste_stores_payload() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         let big = "b".repeat(LARGE_PASTE_THRESHOLD);
         let _ = state.handle_paste(&big);
         assert_eq!(state.chips()[0].payload.as_deref(), Some(big.as_str()));
@@ -2005,6 +2014,7 @@ mod tests {
     #[test]
     fn selection_delete_and_typeover() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("abcdef");
         state.select_anchor = Some(TextCursor { line: 0, byte: 1 });
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 4 }));
@@ -2020,6 +2030,7 @@ mod tests {
     #[test]
     fn select_all_and_copy_outcome() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("hello");
         state.select_all();
         assert!(state.has_selection());
@@ -2033,6 +2044,7 @@ mod tests {
     #[test]
     fn busy_ctrl_c_interrupts_ctrl_u_cancels() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_busy(true);
         state.set_text("keep");
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
@@ -2045,6 +2057,7 @@ mod tests {
     #[test]
     fn disabled_ignores_keys() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_connection(ComposerConnection::Disabled);
         state.set_text("x");
         assert_eq!(
@@ -2056,6 +2069,7 @@ mod tests {
     #[test]
     fn external_editor_applies_text() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("old");
         let out = state.apply_external_editor_text("from $EDITOR");
         assert!(matches!(out, PromptComposerOutcome::Changed));
@@ -2065,6 +2079,7 @@ mod tests {
     #[test]
     fn contract_for_narrow_width() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_presentation(ComposerPresentation::Expanded);
         let out = state.contract_for_width(36);
         assert!(matches!(
@@ -2077,6 +2092,7 @@ mod tests {
     #[test]
     fn fullscreen_request_and_esc_exit() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         assert!(matches!(
             state.request_fullscreen(),
             PromptComposerOutcome::FullscreenRequested
@@ -2090,6 +2106,7 @@ mod tests {
     #[test]
     fn queue_fifo_pop_and_remove() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_busy(true);
         state.set_text("a");
         let _ = state.handle_key(press(KeyCode::Enter));
@@ -2106,18 +2123,18 @@ mod tests {
     #[test]
     fn draft_survives_busy_and_connection_flip() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("draft under overlays");
-        state.set_focused(false);
         state.set_busy(true);
         state.set_connection(ComposerConnection::Disconnected);
         state.set_connection(ComposerConnection::Ready);
-        state.set_focused(true);
         assert_eq!(state.text(), "draft under overlays");
     }
 
     #[test]
     fn commit_completion_emits_committed() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("/pl");
         state.completion = CompletionQuery {
             kind: CompletionKind::Slash,
@@ -2140,6 +2157,7 @@ mod tests {
     #[test]
     fn colorless_forces_ascii() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_colorless(true);
         assert!(state.is_colorless());
         assert!(state.ascii_fallback);
@@ -2148,6 +2166,7 @@ mod tests {
     #[test]
     fn mode_model_status_hits() {
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_mode(Some(ModeIndicator {
             label: "PLAN".into(),
             warning: false,
@@ -2182,6 +2201,7 @@ mod tests {
             Density::Comfortable,
         );
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_text("hello world");
         state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));

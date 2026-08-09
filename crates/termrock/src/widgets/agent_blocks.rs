@@ -750,11 +750,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &TaskRail<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         let panel = Panel::new(self.tokens)
             .title(self.title)
-            .emphasis(if state.is_focused() {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
+            .emphasis(PanelChrome::Focused); // host supplies focus via List::focused; panel chrome follows scene
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
         if !inner.is_empty() {

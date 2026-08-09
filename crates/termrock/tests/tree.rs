@@ -273,30 +273,26 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
 }
 
 #[test]
-fn focus_gates_input_and_preserves_non_color_selection_cues() {
+fn host_focus_chrome_preserves_non_color_selection_cues() {
+    // Key gating is host-owned; paint focus is List/Tree::focused(bool).
     let tokens = DesignSystem::default();
     let rows = nodes();
-    let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some("root"));
-    state.set_focused(false);
-    assert_eq!(
-        state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
-        TreeOutcome::Ignored
-    );
     let area = Rect::new(0, 0, 18, 3);
     let mut buffer = Buffer::empty(area);
-    tree.render(area, &mut buffer, &mut state);
+    Tree::new(&rows, &tokens)
+        .focused(false)
+        .render(area, &mut buffer, &mut state);
     assert!(
         buffer[(3, 0)]
             .modifier
             .contains(ratatui_core::style::Modifier::UNDERLINED),
         "unfocused selection remains visible without color"
     );
-
-    state.set_focused(true);
-    assert!(state.is_focused());
     state.hover(Position::new(4, 2));
-    tree.render(area, &mut buffer, &mut state);
+    Tree::new(&rows, &tokens)
+        .focused(true)
+        .render(area, &mut buffer, &mut state);
     assert!(
         buffer[(3, 0)]
             .modifier

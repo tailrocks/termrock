@@ -1011,7 +1011,6 @@ impl PromptBoxState {
     #[must_use]
     pub fn new() -> Self {
         let mut editor = TextAreaState::default();
-        editor.set_focused(true);
         Self {
             editor,
             focused: true,
@@ -1033,7 +1032,6 @@ impl PromptBoxState {
     /// Sets focus.
     pub fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
-        self.editor.set_focused(focused);
     }
 
     /// Handles a key. Enter submits when modifiers are empty and draft non-empty;
@@ -1206,7 +1204,6 @@ mod tests {
             PromptBoxOutcome::Ignored
         );
         state.editor = TextAreaState::new("hello");
-        state.editor.set_focused(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             PromptBoxOutcome::Submitted

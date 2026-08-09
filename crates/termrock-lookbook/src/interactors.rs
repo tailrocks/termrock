@@ -822,7 +822,6 @@ pub(crate) struct TableInteractor {
 impl TableInteractor {
     pub(crate) fn new() -> Self {
         let mut state = TableState::new(Some("r1"));
-        state.set_focused(true);
         Self {
             state,
             theme: RolePalette::default(),
@@ -1170,6 +1169,7 @@ impl PromptComposerInteractor {
         let theme = RolePalette::default();
         let tokens = DesignSystem::new(theme.clone(), Density::Comfortable);
         let mut state = PromptComposerState::new();
+        state.set_focused(true);
         state.set_placeholder("Ask anything…");
         state.set_mode(Some(ModeIndicator {
             label: "EDIT".into(),

@@ -400,7 +400,6 @@ pub fn render_agent_workbench(
                 let inner = panel.inner(pane.area);
                 Widget::render(&panel, pane.area, buffer);
                 if !inner.is_empty() {
-                    state.task_list.set_focused(is_focused);
                     StatefulWidget::render(
                         &List::new(tasks, tokens),
                         inner,
@@ -458,7 +457,6 @@ pub fn render_agent_workbench(
     if let Some(flow) = question
         && let Some(modal) = question_rect
     {
-        state.question.set_focused(true);
         StatefulWidget::render(flow, modal, buffer, &mut state.question);
     }
 }

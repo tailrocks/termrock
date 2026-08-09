@@ -190,7 +190,6 @@ impl<'a, Id> ListRow<'a, Id> {
 pub struct ListState<Id> {
     selected: Option<Id>,
     hovered: Option<Id>,
-    focused: bool,
     offset: usize,
     viewport_height: usize,
     regions: Vec<HitRegion<Id>>,
@@ -205,7 +204,6 @@ impl<Id> Default for ListState<Id> {
         Self {
             selected: None,
             hovered: None,
-            focused: false,
             offset: 0,
             viewport_height: 0,
             regions: Vec::new(),
@@ -224,7 +222,6 @@ impl<Id> ListState<Id> {
         Self {
             selected,
             hovered: None,
-            focused: true,
             offset: 0,
             viewport_height: 0,
             regions: Vec::new(),
@@ -263,16 +260,7 @@ impl<Id> ListState<Id> {
         self.hovered.as_ref()
     }
 
-    #[must_use]
-    /// Returns whether the list owns keyboard focus.
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
 
-    /// Updates whether the list owns keyboard focus.
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
-    }
 
     #[must_use]
     /// Returns the first visible row index.
@@ -597,6 +585,8 @@ impl ListState<usize> {
 /// assert_eq!(state.selected(), Some(&"b"));
 /// ```
 pub struct List<'a, Id> {
+    /// Host-supplied: surface owns keyboard focus this frame.
+    focused: bool,
     rows: &'a [ListRow<'a, Id>],
     tokens: &'a DesignSystem,
     empty_message: Option<Line<'a>>,
@@ -607,6 +597,7 @@ impl<'a, Id> List<'a, Id> {
     /// Creates a list over borrowed rows; paint uses design-token recipes.
     pub const fn new(rows: &'a [ListRow<'a, Id>], tokens: &'a DesignSystem) -> Self {
         Self {
+            focused: true,
             rows,
             tokens,
             empty_message: None,
@@ -617,6 +608,13 @@ impl<'a, Id> List<'a, Id> {
     #[must_use]
     pub const fn from_system(rows: &'a [ListRow<'a, Id>], system: &'a DesignSystem) -> Self {
         Self::new(rows, system)
+    }
+
+    /// Whether this surface owns keyboard focus this frame (host / scene).
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
     }
 
     /// Message painted when `rows` is empty (consumer-owned copy).
@@ -697,7 +695,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 .is_some_and(|selection| selection.is_checked(&row.id));
             let recipe = self.tokens.resolve_list_row(ListRowVisualState {
                 selected,
-                focused: state.focused && selected,
+                focused: self.focused && selected,
                 hovered,
                 enabled: row.enabled,
                 loading: row.loading,
@@ -1267,17 +1265,14 @@ mod tests {
 
         assert_eq!(state.selected(), Some(&"first"));
         assert_eq!(state.hovered(), None);
-        assert!(state.is_focused());
         assert_eq!(state.offset(), 0);
         assert!(state.regions().is_empty());
 
         state.select(Some("second"));
-        state.set_focused(false);
         state.enable_multi_select();
         assert!(state.selection_mut().unwrap().toggle(&"second"));
 
         assert_eq!(state.selected(), Some(&"second"));
-        assert!(!state.is_focused());
         assert_eq!(state.selection().unwrap().checked(), ["second"]);
     }
 
@@ -1349,26 +1344,6 @@ mod tests {
         assert!(text.contains("Build"), "{text:?}");
     }
 
-    #[test]
-    fn focused_selection_sets_underline_modifier_on_primary() {
-        let rows = [ListRow::item("a", Line::from("Alpha"))];
-        let tokens = DesignSystem::default().selection(crate::style::SelectionChrome::Gutter);
-        let mut state = ListState::new(Some("a"));
-        state.set_focused(true);
-        let area = Rect::new(0, 0, 20, 1);
-        let mut buffer = Buffer::empty(area);
-        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        // Primary starts after 2-cell gutter.
-        let style = buffer[(2, 0)].style();
-        assert!(
-            style.add_modifier.contains(Modifier::UNDERLINED)
-                || style
-                    .sub_modifier
-                    .contains(Modifier::UNDERLINED)
-                || style.add_modifier.contains(Modifier::UNDERLINED),
-            "focus-visible underline expected on primary"
-        );
-    }
 
     #[test]
     fn fluent_row_builder_and_from_system() {

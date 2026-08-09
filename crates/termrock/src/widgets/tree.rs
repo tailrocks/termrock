@@ -197,7 +197,6 @@ pub enum TreeOutcome<Id> {
 pub struct TreeState<Id> {
     selected: Option<Id>,
     hovered: Option<Id>,
-    focused: bool,
     offset: usize,
     viewport_height: usize,
     follow_selection: bool,
@@ -213,7 +212,6 @@ impl<Id> Default for TreeState<Id> {
         Self {
             selected: None,
             hovered: None,
-            focused: false,
             offset: 0,
             viewport_height: 0,
             follow_selection: false,
@@ -233,7 +231,6 @@ impl<Id> TreeState<Id> {
         Self {
             selected,
             hovered: None,
-            focused: true,
             offset: 0,
             viewport_height: 0,
             follow_selection: true,
@@ -244,6 +241,7 @@ impl<Id> TreeState<Id> {
             scrollbar_region: None,
         }
     }
+
 
     #[must_use]
     /// Returns the currently selected stable identity.
@@ -257,16 +255,7 @@ impl<Id> TreeState<Id> {
         self.hovered.as_ref()
     }
 
-    #[must_use]
-    /// Returns whether the tree owns keyboard focus.
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
 
-    /// Updates whether the tree accepts keyboard interaction.
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
-    }
 
     #[must_use]
     /// Returns the zero-based first visible node index.
@@ -356,10 +345,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         nodes: &[TreeNode<'_, Id>],
         intent: crate::interaction::UiIntent,
     ) -> TreeOutcome<Id> {
-        if !self.focused {
-            return TreeOutcome::Ignored;
-        }
-        use crate::interaction::{NavigationMove, PageMove, UiIntent};
+                use crate::interaction::{NavigationMove, PageMove, UiIntent};
         match intent {
             UiIntent::Move(NavigationMove::Previous) => self.move_selection(nodes, -1),
             UiIntent::Move(NavigationMove::Next) => self.move_selection(nodes, 1),
@@ -567,6 +553,8 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 /// Consumer owns the flattened projection and expansion policy. Tree owns
 /// selection, scroll, hover, multi-check, hit geometry, and typed outcomes.
 pub struct Tree<'a, Id> {
+    /// Host-supplied: surface owns keyboard focus this frame.
+    focused: bool,
     nodes: &'a [TreeNode<'a, Id>],
     tokens: &'a DesignSystem,
     empty_message: Option<&'a str>,
@@ -577,10 +565,18 @@ impl<'a, Id> Tree<'a, Id> {
     /// Creates a tree over borrowed flattened nodes and mutable tree state.
     pub const fn new(nodes: &'a [TreeNode<'a, Id>], tokens: &'a DesignSystem) -> Self {
         Self {
+            focused: true,
             nodes,
             tokens,
             empty_message: None,
         }
+    }
+
+    /// Whether this surface owns keyboard focus this frame (host / scene).
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
     }
 
     /// Preferred paint root from [`DesignSystem`].
@@ -671,7 +667,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             let loading = matches!(node.status, TreeNodeStatus::Loading);
             let recipe = self.tokens.resolve_list_row(ListRowVisualState {
                 selected,
-                focused: state.focused && selected,
+                focused: self.focused && selected,
                 hovered,
                 enabled: node.enabled,
                 loading,
@@ -689,7 +685,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             }
             if selected && node.enabled {
                 style = recipe.label;
-                if state.focused {
+                if self.focused {
                     style = style.add_modifier(Modifier::BOLD);
                     if recipe.show_focus_underline {
                         style = style.add_modifier(Modifier::UNDERLINED);

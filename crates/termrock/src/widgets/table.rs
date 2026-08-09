@@ -139,6 +139,7 @@ impl<'a, Id> TableRow<'a, Id> {
         }
     }
 
+
     /// Projects identity anatomy for narrow / status chrome.
     #[must_use]
     pub fn composed(&self) -> super::ComposedRow<'a, ()>
@@ -235,7 +236,6 @@ pub struct TableState<RowId, ColumnId> {
     hovered: Option<RowId>,
     hovered_column: Option<ColumnId>,
     pointer: Option<Position>,
-    focused: bool,
     offset: usize,
     viewport_rows: usize,
     previous_index: Option<usize>,
@@ -263,7 +263,6 @@ impl<RowId, ColumnId> Default for TableState<RowId, ColumnId> {
             hovered: None,
             hovered_column: None,
             pointer: None,
-            focused: false,
             offset: 0,
             viewport_rows: 0,
             previous_index: None,
@@ -294,15 +293,9 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
     }
 
     /// Sets whether this table owns keyboard focus.
-    pub fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
-    }
 
     /// Returns whether this table owns keyboard focus.
     #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
 
     /// Returns the selected row identity.
     #[must_use]
@@ -369,7 +362,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         rows: &[TableRow<'_, RowId>],
         key: KeyEvent,
     ) -> TableOutcome<RowId, ColumnId> {
-        if !self.focused || key.kind == KeyEventKind::Release || !key.modifiers.is_empty() {
+        if key.kind == KeyEventKind::Release || !key.modifiers.is_empty() {
             return TableOutcome::Ignored;
         }
         let Some(intent) = crate::interaction::default_table_intent(key) else {
@@ -387,10 +380,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         rows: &[TableRow<'_, RowId>],
         intent: crate::interaction::UiIntent,
     ) -> TableOutcome<RowId, ColumnId> {
-        if !self.focused {
-            return TableOutcome::Ignored;
-        }
-        use crate::interaction::{NavigationMove, PageMove, UiIntent};
+                use crate::interaction::{NavigationMove, PageMove, UiIntent};
         match intent {
             UiIntent::Move(NavigationMove::Previous) => self.move_by(rows, -1, true),
             UiIntent::Move(NavigationMove::Next) => self.move_by(rows, 1, true),
@@ -591,6 +581,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
 /// Borrowed columnar table renderer.
 #[derive(Debug, Clone, Copy)]
 pub struct Table<'a, RowId, ColumnId> {
+    focused: bool,
     columns: &'a [Column<'a, ColumnId>],
     rows: &'a [TableRow<'a, RowId>],
     tokens: &'a crate::style::DesignSystem,
@@ -606,11 +597,19 @@ impl<'a, RowId, ColumnId> Table<'a, RowId, ColumnId> {
         tokens: &'a crate::style::DesignSystem,
     ) -> Self {
         Self {
+            focused: true,
             columns,
             rows,
             tokens,
             column_gap: 2,
         }
+    }
+
+    /// Whether this surface owns keyboard focus this frame (host / scene).
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
     }
 
     /// Overrides the blank gap between visible columns.
@@ -1235,7 +1234,6 @@ mod tests {
         let cells = cells();
         let rows = rows(&cells);
         let mut state = TableState::new(Some(1));
-        state.set_focused(true);
         let area = Rect::new(0, 0, 30, 4);
         let mut buffer = Buffer::empty(area);
         (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
@@ -1272,11 +1270,7 @@ mod tests {
         let rows = rows(&cells);
         let mut state = TableState::<u8, &str>::new(Some(1));
         state.viewport_rows = 2;
-        assert_eq!(
-            state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
-            TableOutcome::Ignored
-        );
-        state.set_focused(true);
+        // Host gates focus; table handlers always apply when dispatched.
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
             TableOutcome::Selected(3)

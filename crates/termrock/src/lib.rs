@@ -46,6 +46,34 @@ mod root_export_policy {
 }
 
 #[cfg(test)]
+mod focus_authority_policy {
+    /// Break C0 / migration 0062: FocusRing must not be public.
+    #[test]
+    fn focus_ring_is_not_publicly_reexported() {
+        let interaction = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/interaction/mod.rs"
+        ));
+        assert!(
+            !interaction.contains("pub use focus::{FocusOutcome, FocusRing, FocusTarget}"),
+            "FocusRing must not be a public re-export (use InteractionScene)"
+        );
+        assert!(
+            interaction.contains("pub use scene::{")
+                && interaction.contains("InteractionScene"),
+            "InteractionScene remains public"
+        );
+        assert!(
+            !interaction.lines().any(|l| {
+                let t = l.trim();
+                t.starts_with("pub use scene::{") && t.contains("SemanticScene")
+            }),
+            "SemanticScene must not ride public scene re-export"
+        );
+    }
+}
+
+#[cfg(test)]
 mod paint_authority_policy {
     /// Break B / migration 0061: dual paint types must not re-enter public style API.
     #[test]

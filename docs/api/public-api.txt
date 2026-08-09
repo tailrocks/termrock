@@ -1553,52 +1553,6 @@ pub unsafe fn termrock::interaction::BackdropPolicy::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::interaction::BackdropPolicy
 pub fn termrock::interaction::BackdropPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::BackdropPolicy
-pub enum termrock::interaction::FocusOutcome<Id>
-pub termrock::interaction::FocusOutcome::Changed
-pub termrock::interaction::FocusOutcome::Changed::from: core::option::Option<Id>
-pub termrock::interaction::FocusOutcome::Changed::to: core::option::Option<Id>
-pub termrock::interaction::FocusOutcome::Ignored
-pub termrock::interaction::FocusOutcome::Unchanged
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::FocusOutcome<Id>
-pub fn termrock::interaction::FocusOutcome<Id>::clone(&self) -> termrock::interaction::FocusOutcome<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::FocusOutcome<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::FocusOutcome<Id>
-pub fn termrock::interaction::FocusOutcome<Id>::eq(&self, &termrock::interaction::FocusOutcome<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::FocusOutcome<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::FocusOutcome<Id>
-pub fn termrock::interaction::FocusOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::interaction::FocusOutcome<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::interaction::FocusOutcome<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::interaction::FocusOutcome<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::interaction::FocusOutcome<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::interaction::FocusOutcome<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::FocusOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::FocusOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::FocusOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::FocusOutcome<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::FocusOutcome<Id> where U: core::convert::From<T>
-pub fn termrock::interaction::FocusOutcome<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::FocusOutcome<Id> where U: core::convert::Into<T>
-pub type termrock::interaction::FocusOutcome<Id>::Error = core::convert::Infallible
-pub fn termrock::interaction::FocusOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::FocusOutcome<Id> where U: core::convert::TryFrom<T>
-pub type termrock::interaction::FocusOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::FocusOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::FocusOutcome<Id> where T: core::clone::Clone
-pub type termrock::interaction::FocusOutcome<Id>::Owned = T
-pub fn termrock::interaction::FocusOutcome<Id>::clone_into(&self, &mut T)
-pub fn termrock::interaction::FocusOutcome<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::FocusOutcome<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::FocusOutcome<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::FocusOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::interaction::FocusOutcome<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::FocusOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::interaction::FocusOutcome<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::FocusOutcome<Id> where T: core::clone::Clone
-pub unsafe fn termrock::interaction::FocusOutcome<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::FocusOutcome<Id>
-pub fn termrock::interaction::FocusOutcome<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::FocusOutcome<Id>
 #[non_exhaustive] pub enum termrock::interaction::InteractionOutcome<Id, LayerId, Action>
 pub termrock::interaction::InteractionOutcome::Action
 pub termrock::interaction::InteractionOutcome::Action::action: Action
@@ -2293,113 +2247,6 @@ pub unsafe fn termrock::interaction::UiIntent::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::UiIntent
 pub fn termrock::interaction::UiIntent::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::UiIntent
-pub struct termrock::interaction::FocusRing<Id, ScopeId>
-impl<Id: core::clone::Clone + core::cmp::Eq, ScopeId: core::clone::Clone + core::cmp::Eq> termrock::interaction::FocusRing<Id, ScopeId>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::active_scope(&self) -> &ScopeId
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::attach_region(&mut self, &ScopeId, &Id, ratatui_core::layout::rect::Rect) -> bool
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::begin_frame(&mut self)
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::clear_modals<M>(&mut self, &mut termrock::interaction::ModalStack<M>)
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::focus_at(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::FocusOutcome<Id>
-pub const fn termrock::interaction::FocusRing<Id, ScopeId>::focused(&self) -> core::option::Option<&Id>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::interaction::FocusOutcome<Id>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::is_focused(&self, &Id) -> bool
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::new(ScopeId, core::option::Option<Id>) -> Self
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::open_modal<M>(&mut self, &mut termrock::interaction::ModalStack<M>, M, ScopeId)
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::open_submodal<M>(&mut self, &mut termrock::interaction::ModalStack<M>, M, ScopeId)
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::panel_emphasis_for(&self, &Id) -> termrock::style::PanelChrome
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::pop_modal<M>(&mut self, &mut termrock::interaction::ModalStack<M>)
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::pop_scope(&mut self) -> termrock::interaction::FocusOutcome<Id>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::push_scope(&mut self, ScopeId)
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::reconcile(&mut self) -> termrock::interaction::FocusOutcome<Id>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::register(&mut self, termrock::interaction::FocusTarget<Id, ScopeId>)
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::register_order(&mut self, ScopeId, impl core::iter::traits::collect::IntoIterator<Item = (Id, core::option::Option<ratatui_core::layout::rect::Rect>, bool)>)
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::request_focus(&mut self, Id) -> termrock::interaction::FocusOutcome<Id>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::scope_depth(&self) -> usize
-impl<Id: core::clone::Clone, ScopeId: core::clone::Clone> core::clone::Clone for termrock::interaction::FocusRing<Id, ScopeId>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::clone(&self) -> termrock::interaction::FocusRing<Id, ScopeId>
-impl<Id: core::cmp::Eq, ScopeId: core::cmp::Eq> core::cmp::Eq for termrock::interaction::FocusRing<Id, ScopeId>
-impl<Id: core::cmp::PartialEq, ScopeId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::FocusRing<Id, ScopeId>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::eq(&self, &termrock::interaction::FocusRing<Id, ScopeId>) -> bool
-impl<Id: core::cmp::PartialEq, ScopeId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::FocusRing<Id, ScopeId>
-impl<Id: core::fmt::Debug, ScopeId: core::fmt::Debug> core::fmt::Debug for termrock::interaction::FocusRing<Id, ScopeId>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id, ScopeId> core::marker::Freeze for termrock::interaction::FocusRing<Id, ScopeId> where Id: core::marker::Freeze
-impl<Id, ScopeId> core::marker::Send for termrock::interaction::FocusRing<Id, ScopeId> where Id: core::marker::Send, ScopeId: core::marker::Send
-impl<Id, ScopeId> core::marker::Sync for termrock::interaction::FocusRing<Id, ScopeId> where Id: core::marker::Sync, ScopeId: core::marker::Sync
-impl<Id, ScopeId> core::marker::Unpin for termrock::interaction::FocusRing<Id, ScopeId> where Id: core::marker::Unpin, ScopeId: core::marker::Unpin
-impl<Id, ScopeId> core::marker::UnsafeUnpin for termrock::interaction::FocusRing<Id, ScopeId> where Id: core::marker::UnsafeUnpin
-impl<Id, ScopeId> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::FocusRing<Id, ScopeId> where Id: core::panic::unwind_safe::RefUnwindSafe, ScopeId: core::panic::unwind_safe::RefUnwindSafe
-impl<Id, ScopeId> core::panic::unwind_safe::UnwindSafe for termrock::interaction::FocusRing<Id, ScopeId> where Id: core::panic::unwind_safe::UnwindSafe, ScopeId: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::FocusRing<Id, ScopeId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::FocusRing<Id, ScopeId> where U: core::convert::From<T>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::FocusRing<Id, ScopeId> where U: core::convert::Into<T>
-pub type termrock::interaction::FocusRing<Id, ScopeId>::Error = core::convert::Infallible
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::FocusRing<Id, ScopeId> where U: core::convert::TryFrom<T>
-pub type termrock::interaction::FocusRing<Id, ScopeId>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::FocusRing<Id, ScopeId> where T: core::clone::Clone
-pub type termrock::interaction::FocusRing<Id, ScopeId>::Owned = T
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::clone_into(&self, &mut T)
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::FocusRing<Id, ScopeId> where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::FocusRing<Id, ScopeId> where T: ?core::marker::Sized
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::FocusRing<Id, ScopeId> where T: ?core::marker::Sized
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::FocusRing<Id, ScopeId> where T: core::clone::Clone
-pub unsafe fn termrock::interaction::FocusRing<Id, ScopeId>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::FocusRing<Id, ScopeId>
-pub fn termrock::interaction::FocusRing<Id, ScopeId>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::FocusRing<Id, ScopeId>
-pub struct termrock::interaction::FocusTarget<Id, ScopeId>
-pub termrock::interaction::FocusTarget::area: core::option::Option<ratatui_core::layout::rect::Rect>
-pub termrock::interaction::FocusTarget::enabled: bool
-pub termrock::interaction::FocusTarget::id: Id
-pub termrock::interaction::FocusTarget::scope: ScopeId
-impl<Id: core::clone::Clone, ScopeId: core::clone::Clone> core::clone::Clone for termrock::interaction::FocusTarget<Id, ScopeId>
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::clone(&self) -> termrock::interaction::FocusTarget<Id, ScopeId>
-impl<Id: core::cmp::Eq, ScopeId: core::cmp::Eq> core::cmp::Eq for termrock::interaction::FocusTarget<Id, ScopeId>
-impl<Id: core::cmp::PartialEq, ScopeId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::FocusTarget<Id, ScopeId>
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::eq(&self, &termrock::interaction::FocusTarget<Id, ScopeId>) -> bool
-impl<Id: core::cmp::PartialEq, ScopeId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::FocusTarget<Id, ScopeId>
-impl<Id: core::fmt::Debug, ScopeId: core::fmt::Debug> core::fmt::Debug for termrock::interaction::FocusTarget<Id, ScopeId>
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id, ScopeId> core::marker::Freeze for termrock::interaction::FocusTarget<Id, ScopeId> where Id: core::marker::Freeze, ScopeId: core::marker::Freeze
-impl<Id, ScopeId> core::marker::Send for termrock::interaction::FocusTarget<Id, ScopeId> where Id: core::marker::Send, ScopeId: core::marker::Send
-impl<Id, ScopeId> core::marker::Sync for termrock::interaction::FocusTarget<Id, ScopeId> where Id: core::marker::Sync, ScopeId: core::marker::Sync
-impl<Id, ScopeId> core::marker::Unpin for termrock::interaction::FocusTarget<Id, ScopeId> where Id: core::marker::Unpin, ScopeId: core::marker::Unpin
-impl<Id, ScopeId> core::marker::UnsafeUnpin for termrock::interaction::FocusTarget<Id, ScopeId> where Id: core::marker::UnsafeUnpin, ScopeId: core::marker::UnsafeUnpin
-impl<Id, ScopeId> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::FocusTarget<Id, ScopeId> where Id: core::panic::unwind_safe::RefUnwindSafe, ScopeId: core::panic::unwind_safe::RefUnwindSafe
-impl<Id, ScopeId> core::panic::unwind_safe::UnwindSafe for termrock::interaction::FocusTarget<Id, ScopeId> where Id: core::panic::unwind_safe::UnwindSafe, ScopeId: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::FocusTarget<Id, ScopeId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::FocusTarget<Id, ScopeId> where U: core::convert::From<T>
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::FocusTarget<Id, ScopeId> where U: core::convert::Into<T>
-pub type termrock::interaction::FocusTarget<Id, ScopeId>::Error = core::convert::Infallible
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::FocusTarget<Id, ScopeId> where U: core::convert::TryFrom<T>
-pub type termrock::interaction::FocusTarget<Id, ScopeId>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::FocusTarget<Id, ScopeId> where T: core::clone::Clone
-pub type termrock::interaction::FocusTarget<Id, ScopeId>::Owned = T
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::clone_into(&self, &mut T)
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::FocusTarget<Id, ScopeId> where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::FocusTarget<Id, ScopeId> where T: ?core::marker::Sized
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::FocusTarget<Id, ScopeId> where T: ?core::marker::Sized
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::FocusTarget<Id, ScopeId> where T: core::clone::Clone
-pub unsafe fn termrock::interaction::FocusTarget<Id, ScopeId>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::FocusTarget<Id, ScopeId>
-pub fn termrock::interaction::FocusTarget<Id, ScopeId>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::FocusTarget<Id, ScopeId>
 pub struct termrock::interaction::HitRegion<Id>
 pub termrock::interaction::HitRegion::area: ratatui_core::layout::rect::Rect
 pub termrock::interaction::HitRegion::id: Id
@@ -3103,57 +2950,6 @@ pub unsafe fn termrock::interaction::SemanticElement<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::interaction::SemanticElement<Id>
 pub fn termrock::interaction::SemanticElement<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticElement<Id>
-pub struct termrock::interaction::SemanticScene<Id>
-impl<Id> termrock::interaction::SemanticScene<Id>
-pub fn termrock::interaction::SemanticScene<Id>::begin_frame(&mut self)
-pub fn termrock::interaction::SemanticScene<Id>::elements(&self) -> &[termrock::interaction::SemanticElement<Id>]
-pub fn termrock::interaction::SemanticScene<Id>::focus_order(&self) -> alloc::vec::Vec<&Id>
-pub fn termrock::interaction::SemanticScene<Id>::get(&self, &Id) -> core::option::Option<&termrock::interaction::SemanticElement<Id>> where Id: core::cmp::PartialEq
-pub fn termrock::interaction::SemanticScene<Id>::hit_test(&self, ratatui_core::layout::position::Position) -> core::option::Option<&termrock::interaction::SemanticElement<Id>>
-pub const fn termrock::interaction::SemanticScene<Id>::new() -> Self
-pub fn termrock::interaction::SemanticScene<Id>::register(&mut self, termrock::interaction::SemanticElement<Id>) where Id: core::cmp::PartialEq
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::SemanticScene<Id>
-pub fn termrock::interaction::SemanticScene<Id>::clone(&self) -> termrock::interaction::SemanticScene<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::SemanticScene<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::SemanticScene<Id>
-pub fn termrock::interaction::SemanticScene<Id>::eq(&self, &termrock::interaction::SemanticScene<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::SemanticScene<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::SemanticScene<Id>
-pub fn termrock::interaction::SemanticScene<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::default::Default for termrock::interaction::SemanticScene<Id>
-pub fn termrock::interaction::SemanticScene<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::interaction::SemanticScene<Id>
-impl<Id> core::marker::Send for termrock::interaction::SemanticScene<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::interaction::SemanticScene<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::interaction::SemanticScene<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::interaction::SemanticScene<Id>
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SemanticScene<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::SemanticScene<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SemanticScene<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::SemanticScene<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::SemanticScene<Id> where U: core::convert::From<T>
-pub fn termrock::interaction::SemanticScene<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SemanticScene<Id> where U: core::convert::Into<T>
-pub type termrock::interaction::SemanticScene<Id>::Error = core::convert::Infallible
-pub fn termrock::interaction::SemanticScene<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::SemanticScene<Id> where U: core::convert::TryFrom<T>
-pub type termrock::interaction::SemanticScene<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::SemanticScene<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::SemanticScene<Id> where T: core::clone::Clone
-pub type termrock::interaction::SemanticScene<Id>::Owned = T
-pub fn termrock::interaction::SemanticScene<Id>::clone_into(&self, &mut T)
-pub fn termrock::interaction::SemanticScene<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::SemanticScene<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::SemanticScene<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::SemanticScene<Id> where T: ?core::marker::Sized
-pub fn termrock::interaction::SemanticScene<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SemanticScene<Id> where T: ?core::marker::Sized
-pub fn termrock::interaction::SemanticScene<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::SemanticScene<Id> where T: core::clone::Clone
-pub unsafe fn termrock::interaction::SemanticScene<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::SemanticScene<Id>
-pub fn termrock::interaction::SemanticScene<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::SemanticScene<Id>
 pub fn termrock::interaction::classify_click(ratatui_core::layout::rect::Rect, u16, u16) -> termrock::interaction::ModalClickResult
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -17161,6 +16957,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::Kbd<'a>
 pub struct termrock::widgets::List<'a, Id>
 impl<'a, Id> termrock::widgets::List<'a, Id>
 pub fn termrock::widgets::List<'a, Id>::empty_message(self, ratatui_core::text::line::Line<'a>) -> Self
+pub const fn termrock::widgets::List<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::List<'a, Id>::from_system(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::List<'a, Id>::new(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::List<'a, Id>::theme(&self) -> &termrock::style::RolePalette
@@ -17281,7 +17078,6 @@ pub const fn termrock::widgets::ListState<Id>::click_policy(&self) -> termrock::
 pub fn termrock::widgets::ListState<Id>::disable_multi_select(&mut self)
 pub fn termrock::widgets::ListState<Id>::enable_multi_select(&mut self)
 pub const fn termrock::widgets::ListState<Id>::hovered(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::ListState<Id>::is_focused(&self) -> bool
 pub const fn termrock::widgets::ListState<Id>::new(core::option::Option<Id>) -> Self
 pub const fn termrock::widgets::ListState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::ListState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
@@ -17292,7 +17088,6 @@ pub const fn termrock::widgets::ListState<Id>::selected(&self) -> core::option::
 pub const fn termrock::widgets::ListState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
 pub fn termrock::widgets::ListState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
 pub const fn termrock::widgets::ListState<Id>::set_click_policy(&mut self, termrock::widgets::ListClickPolicy)
-pub const fn termrock::widgets::ListState<Id>::set_focused(&mut self, bool)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::clone(&self) -> termrock::widgets::ListState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ListState<Id>
@@ -21655,6 +21450,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TabCell<'a>
 pub struct termrock::widgets::Table<'a, RowId, ColumnId>
 impl<'a, RowId, ColumnId> termrock::widgets::Table<'a, RowId, ColumnId>
 pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::column_gap(self, u16) -> Self
+pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::focused(self, bool) -> Self
 pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::new(&'a [termrock::widgets::Column<'a, ColumnId>], &'a [termrock::widgets::TableRow<'a, RowId>], &'a termrock::style::DesignSystem) -> Self
 impl<'a, RowId: core::clone::Clone, ColumnId: core::clone::Clone> core::clone::Clone for termrock::widgets::Table<'a, RowId, ColumnId>
 pub fn termrock::widgets::Table<'a, RowId, ColumnId>::clone(&self) -> termrock::widgets::Table<'a, RowId, ColumnId>
@@ -21851,13 +21647,11 @@ pub fn termrock::widgets::TableState<RowId, ColumnId>::handle_mouse(&mut self, t
 pub fn termrock::widgets::TableState<RowId, ColumnId>::hover(&mut self, ratatui_core::layout::position::Position) -> bool
 pub const fn termrock::widgets::TableState<RowId, ColumnId>::hovered(&self) -> core::option::Option<&RowId>
 pub const fn termrock::widgets::TableState<RowId, ColumnId>::hovered_column(&self) -> core::option::Option<&ColumnId>
-pub const fn termrock::widgets::TableState<RowId, ColumnId>::is_focused(&self) -> bool
 pub fn termrock::widgets::TableState<RowId, ColumnId>::new(core::option::Option<RowId>) -> Self
 pub const fn termrock::widgets::TableState<RowId, ColumnId>::offset(&self) -> usize
 pub fn termrock::widgets::TableState<RowId, ColumnId>::reconcile(&mut self, &[termrock::widgets::TableRow<'_, RowId>])
 pub fn termrock::widgets::TableState<RowId, ColumnId>::scroll_by(&mut self, isize, usize) -> bool
 pub const fn termrock::widgets::TableState<RowId, ColumnId>::selected(&self) -> core::option::Option<&RowId>
-pub fn termrock::widgets::TableState<RowId, ColumnId>::set_focused(&mut self, bool)
 impl<RowId, ColumnId> core::default::Default for termrock::widgets::TableState<RowId, ColumnId>
 pub fn termrock::widgets::TableState<RowId, ColumnId>::default() -> Self
 impl<RowId: core::clone::Clone, ColumnId: core::clone::Clone> core::clone::Clone for termrock::widgets::TableState<RowId, ColumnId>
@@ -23135,6 +22929,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TranscriptState<I
 pub struct termrock::widgets::Tree<'a, Id>
 impl<'a, Id> termrock::widgets::Tree<'a, Id>
 pub const fn termrock::widgets::Tree<'a, Id>::empty_message(self, &'a str) -> Self
+pub const fn termrock::widgets::Tree<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::from_system(&'a [termrock::widgets::TreeNode<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::new(&'a [termrock::widgets::TreeNode<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::tokens(&self) -> &termrock::style::DesignSystem
@@ -23250,7 +23045,6 @@ impl<Id> termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::disable_multi_select(&mut self)
 pub fn termrock::widgets::TreeState<Id>::enable_multi_select(&mut self)
 pub const fn termrock::widgets::TreeState<Id>::hovered(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::TreeState<Id>::is_focused(&self) -> bool
 pub const fn termrock::widgets::TreeState<Id>::new(core::option::Option<Id>) -> Self
 pub const fn termrock::widgets::TreeState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::TreeState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
@@ -23260,7 +23054,6 @@ pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<
 pub const fn termrock::widgets::TreeState<Id>::selected(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::TreeState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
 pub fn termrock::widgets::TreeState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
-pub const fn termrock::widgets::TreeState<Id>::set_focused(&mut self, bool)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::clone(&self) -> termrock::widgets::TreeState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TreeState<Id>
@@ -23353,6 +23146,7 @@ pub fn termrock::widgets::Viewport<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Viewport<'a>
 pub struct termrock::widgets::VirtualGrid<'a, RowId, ColId>
 impl<'a, RowId, ColId> termrock::widgets::VirtualGrid<'a, RowId, ColId>
+pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::focused(self, bool) -> Self
 pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::gutter(self, bool) -> Self
 pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::header(self, bool) -> Self
 pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::new(&'a [termrock::widgets::GridColumn<'a, ColId>], &'a [termrock::widgets::GridRow<'a, RowId>], &'a termrock::style::DesignSystem) -> Self
@@ -23405,10 +23199,8 @@ pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::cursor_col(&self
 pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::cursor_row(&self) -> u64
 pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::first_col(&self) -> usize
 pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::first_row(&self) -> u64
-pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::is_focused(&self) -> bool
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::new() -> Self
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_column_widths(&mut self, alloc::vec::Vec<u16>)
-pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_focused(&mut self, bool)
 impl<RowId: core::clone::Clone + core::cmp::Eq, ColId: core::clone::Clone + core::cmp::Eq> termrock::widgets::VirtualGridState<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_intent(&mut self, termrock::interaction::UiIntent, bool, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>

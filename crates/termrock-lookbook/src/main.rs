@@ -5,6 +5,7 @@
 
 mod app;
 mod focus;
+mod host_focus;
 mod interactors;
 mod json;
 mod knobs;

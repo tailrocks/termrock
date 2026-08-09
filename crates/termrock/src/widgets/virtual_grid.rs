@@ -136,6 +136,7 @@ impl<'a, RowId> GridRow<'a, RowId> {
         }
     }
 
+
     /// Disables interaction.
     #[must_use]
     pub const fn enabled(mut self, enabled: bool) -> Self {
@@ -225,7 +226,6 @@ pub struct VirtualGridState<RowId, ColId> {
     first_row: u64,
     first_col: usize,
     column_widths: Vec<u16>,
-    focused: bool,
     body_rows: u16,
     body_cols_visible: usize,
     total_rows: Option<u64>,
@@ -247,7 +247,6 @@ impl<RowId, ColId> Default for VirtualGridState<RowId, ColId> {
             first_row: 0,
             first_col: 0,
             column_widths: Vec::new(),
-            focused: false,
             body_rows: 0,
             body_cols_visible: 0,
             total_rows: None,
@@ -268,15 +267,9 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     }
 
     /// Sets keyboard focus ownership.
-    pub fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
-    }
 
     /// Returns whether this grid owns keyboard focus.
     #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
 
     /// Absolute cursor row.
     #[must_use]
@@ -443,7 +436,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         columns: &[GridColumn<'_, ColId>],
         rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
-        if !self.focused || event.kind == KeyEventKind::Release {
+        if event.kind == KeyEventKind::Release {
             return VirtualGridOutcome::Ignored;
         }
         let extend = event.modifiers.contains(KeyModifiers::SHIFT);
@@ -546,10 +539,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         columns: &[GridColumn<'_, ColId>],
         rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
-        if !self.focused {
-            return VirtualGridOutcome::Ignored;
-        }
-        use crate::interaction::{NavigationMove, PageMove, UiIntent};
+                use crate::interaction::{NavigationMove, PageMove, UiIntent};
         match intent {
             UiIntent::Move(NavigationMove::Previous) => {
                 self.move_cursor(-1, 0, extend, columns, rows)
@@ -838,6 +828,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
 /// Borrowed virtualized grid widget.
 #[derive(Debug, Clone)]
 pub struct VirtualGrid<'a, RowId, ColId> {
+    focused: bool,
     columns: &'a [GridColumn<'a, ColId>],
     rows: &'a [GridRow<'a, RowId>],
     /// Known total row count, or `None` for unknown/unbounded.
@@ -856,6 +847,7 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
         system: &'a DesignSystem,
     ) -> Self {
         Self {
+            focused: true,
             columns,
             rows,
             total_rows: None,
@@ -863,6 +855,13 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
             show_gutter: true,
             show_header: true,
         }
+    }
+
+    /// Whether this surface owns keyboard focus this frame (host / scene).
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
     }
 
     /// Declares a known total row count (unknown totals omit this).
@@ -946,7 +945,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
 
         let header_style = self.system.style(Role::TextMuted);
         let cell_style = self.system.style(Role::Text);
-        let cursor_style = if state.focused {
+        let cursor_style = if self.focused {
             self.system.style(Role::Accent)
         } else {
             self.system.style(Role::Text)
@@ -1104,7 +1103,6 @@ mod tests {
         let rows = [GridRow::new(0, 0, &cell_store)];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(100);
         let mut state = VirtualGridState::new();
-        state.set_focused(true);
         let mut terminal = Terminal::new(TestBackend::new(40, 8)).unwrap();
         terminal
             .draw(|frame| {
@@ -1142,7 +1140,6 @@ mod tests {
         let columns = columns();
         let rows: [GridRow<'_, u64>; 0] = [];
         let mut state = VirtualGridState::<u64, &str>::new();
-        state.set_focused(true);
         state.total_rows = Some(50);
         state.total_cols = columns.len();
         state.body_rows = 10;
@@ -1174,7 +1171,6 @@ mod tests {
         let rows = [GridRow::new(10, 0, &cell0), GridRow::new(11, 1, &cell1)];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(2);
         let mut state = VirtualGridState::new();
-        state.set_focused(true);
         let mut terminal = Terminal::new(TestBackend::new(40, 6)).unwrap();
         terminal
             .draw(|frame| {
@@ -1245,20 +1241,6 @@ mod tests {
             .unwrap();
     }
 
-    #[test]
-    fn unfocused_keys_are_ignored() {
-        let columns = columns();
-        let rows: [GridRow<'_, u64>; 0] = [];
-        let mut state = VirtualGridState::<u64, &str>::new();
-        state.total_cols = 3;
-        state.total_rows = Some(10);
-        let outcome = state.handle_key(
-            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-            &columns,
-            &rows,
-        );
-        assert_eq!(outcome, VirtualGridOutcome::Ignored);
-    }
 
     #[test]
     fn zero_total_has_no_body_hits_and_enter_ignored() {
@@ -1268,7 +1250,6 @@ mod tests {
         let rows: [GridRow<'_, u64>; 0] = [];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(0);
         let mut state = VirtualGridState::new();
-        state.set_focused(true);
         let mut terminal = Terminal::new(TestBackend::new(40, 10)).unwrap();
         terminal
             .draw(|frame| {
@@ -1328,7 +1309,6 @@ mod tests {
         ];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(3);
         let mut state = VirtualGridState::new();
-        state.set_focused(true);
         let mut terminal = Terminal::new(TestBackend::new(40, 8)).unwrap();
         terminal
             .draw(|frame| {
@@ -1395,7 +1375,6 @@ mod tests {
         ];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(5);
         let mut state = VirtualGridState::new();
-        state.set_focused(true);
         state.anchor = Some((0, 0));
         state.cursor_row = 2;
         state.cursor_col = 1;
@@ -1418,7 +1397,6 @@ mod tests {
         let shared = cells("x", "y", "z");
         let rows = [GridRow::new(99, 0, &shared)];
         let mut state = VirtualGridState::<u64, &str>::new();
-        state.set_focused(true);
         state.total_rows = Some(5);
         state.total_cols = columns.len();
         state.body_rows = 5;

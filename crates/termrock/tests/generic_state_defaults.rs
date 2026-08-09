@@ -24,11 +24,7 @@ fn list_state_ownership_accessors_do_not_constrain_consumer_ids() {
     let mut state = ListState::new(Some(UnconstrainedId));
 
     assert!(state.selected().is_some());
-    assert!(state.is_focused());
-    state.set_focused(false);
     state.enable_multi_select();
-
-    assert!(!state.is_focused());
     assert!(state.selection().is_some());
     assert_eq!(state.offset(), 0);
     assert!(state.regions().is_empty());
