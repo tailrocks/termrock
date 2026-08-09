@@ -835,6 +835,15 @@ pub(crate) fn stories() -> Vec<Story> {
             capability_profiles_story,
         ),
         Story::new(
+            "motion/presence-spinner",
+            "FrameClock presence + spinner",
+            "FrameClock",
+            "Motion::Full vs Off spinner; toast presence TTL; no idle redraw demand.",
+            48,
+            10,
+            motion_presence_story,
+        ),
+        Story::new(
             "overlay/nested-escape",
             "Nested overlays",
             "OverlayStack",
@@ -4746,6 +4755,58 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     focus_graph: &[],
     };
     frame.render_widget(DesignInspector::new(snap, &mono), area);
+}
+
+fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use std::time::{Duration, Instant};
+    use termrock::runtime::{FrameClock, FrameTick, Presence, spinner_demand};
+    use termrock::style::Motion;
+    use termrock::widgets::{Panel, PanelChrome, Spinner};
+
+    frame.render_widget(
+        Panel::new(system)
+            .title("FrameClock · Presence · Motion")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    let start = Instant::now();
+    let mut clock = FrameClock::from_start(start);
+    let tick = clock.tick_at(start + Duration::from_millis(560));
+    let spin_full = Spinner::new(system).frame_glyph(tick, Motion::Full);
+    let spin_off = Spinner::new(system).frame_glyph(tick, Motion::Off);
+    let mut toast = Presence::toast(Duration::from_secs(2));
+    toast.request_show(FrameTick::manual(start, Duration::ZERO, Duration::ZERO));
+    let demand = spinner_demand(tick, Motion::Full, true);
+    let idle = spinner_demand(tick, Motion::Full, false);
+    let lines = [
+        format!("spinner Full={spin_full} Off={spin_off}"),
+        format!(
+            "toast visible={} focusable={}",
+            toast.is_visible(),
+            toast.is_focusable()
+        ),
+        format!(
+            "demand active={} idle={}",
+            demand.needs_redraw, idle.needs_redraw
+        ),
+    ];
+    let mut y = inner.y;
+    for line in lines {
+        frame.buffer_mut().set_stringn(
+            inner.x,
+            y,
+            &line,
+            usize::from(inner.width),
+            system.style(termrock::style::Role::Text),
+        );
+        y = y.saturating_add(1);
+    }
 }
 
 fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

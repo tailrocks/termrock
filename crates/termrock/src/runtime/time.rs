@@ -1,6 +1,10 @@
 use std::time::{Duration, Instant};
 
 /// Immutable monotonic time sampled once for one application frame.
+///
+/// Hosts inject time via [`FrameTick::manual`] / [`FrameClock::tick_at`] for
+/// tests, Studio replay, and deterministic snapshots. Never sample clocks
+/// inside widgets during paint — pass the frame tick from the runner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FrameTick {
     now: Instant,
@@ -32,35 +36,53 @@ impl FrameTick {
     pub const fn delta(self) -> Duration {
         self.delta
     }
+
+    /// Elapsed as whole milliseconds (saturating).
+    #[must_use]
+    pub fn elapsed_ms(self) -> u64 {
+        self.elapsed.as_millis() as u64
+    }
+
+    /// Delta as whole milliseconds (saturating).
+    #[must_use]
+    pub fn delta_ms(self) -> u64 {
+        self.delta.as_millis() as u64
+    }
 }
 
-#[cfg(any(feature = "crossterm", test))]
-#[derive(Debug)]
-pub(crate) struct FrameClock {
+/// Samples monotonic time once per frame for the application loop.
+///
+/// Public for hosts that run their own loop (or Studio record/replay). Prefer
+/// [`FrameTick::manual`] in pure unit tests.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FrameClock {
     started_at: Instant,
     previous_at: Instant,
 }
 
-#[cfg(any(feature = "crossterm", test))]
 impl FrameClock {
-    #[cfg(feature = "crossterm")]
-    pub(crate) fn start() -> Self {
+    /// Start sampling from wall clock.
+    #[must_use]
+    pub fn start() -> Self {
         Self::from_start(Instant::now())
     }
 
-    pub(crate) const fn from_start(now: Instant) -> Self {
+    /// Start from an injected instant (tests / replay).
+    #[must_use]
+    pub const fn from_start(now: Instant) -> Self {
         Self {
             started_at: now,
             previous_at: now,
         }
     }
 
-    #[cfg(feature = "crossterm")]
-    pub(crate) fn tick(&mut self) -> FrameTick {
+    /// Sample wall clock.
+    pub fn tick(&mut self) -> FrameTick {
         self.tick_at(Instant::now())
     }
 
-    pub(crate) fn tick_at(&mut self, now: Instant) -> FrameTick {
+    /// Sample at `now` (monotonic clamp if clock steps backward).
+    pub fn tick_at(&mut self, now: Instant) -> FrameTick {
         let now = now.max(self.previous_at);
         let tick = FrameTick::manual(
             now,
@@ -69,6 +91,12 @@ impl FrameClock {
         );
         self.previous_at = now;
         tick
+    }
+
+    /// Runner start instant.
+    #[must_use]
+    pub const fn started_at(&self) -> Instant {
+        self.started_at
     }
 }
 

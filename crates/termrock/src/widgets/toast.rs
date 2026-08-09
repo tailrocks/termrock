@@ -21,47 +21,68 @@ pub enum ToastLifetime {
 }
 
 /// Visibility and expiry state for a transient notification.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+///
+/// Backed by [`crate::runtime::Presence`] so TTL, deadlines, and focus rules
+/// share one motion primitive (toasts are never focusable).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ToastState {
-    shown_at: Option<Instant>,
+    presence: crate::runtime::Presence,
     lifetime: ToastLifetime,
+}
+
+impl Default for ToastState {
+    fn default() -> Self {
+        Self::new(ToastLifetime::Persistent)
+    }
 }
 
 impl ToastState {
     /// Creates hidden toast state with an explicit lifetime policy.
     pub const fn new(lifetime: ToastLifetime) -> Self {
+        let presence = match lifetime {
+            ToastLifetime::Persistent => crate::runtime::Presence::persistent(),
+            ToastLifetime::ExpiresAfter(ttl) => crate::runtime::Presence::toast(ttl),
+        };
         Self {
-            shown_at: None,
+            presence,
             lifetime,
         }
     }
 
     /// Makes the toast visible starting at this frame.
     pub fn show(&mut self, tick: FrameTick) {
-        self.shown_at = Some(tick.now());
+        self.presence.request_show(tick);
     }
 
     /// Hides the toast immediately.
     pub const fn dismiss(&mut self) {
-        self.shown_at = None;
+        self.presence.force_hide();
+    }
+
+    /// Advance TTL (call once per frame when shown).
+    pub fn advance(&mut self, tick: FrameTick) {
+        let _ = self
+            .presence
+            .advance(tick, crate::style::Motion::Off);
     }
 
     /// Returns whether the toast is visible at this frame.
     pub fn is_visible(&self, tick: FrameTick) -> bool {
-        self.shown_at.is_some_and(|shown_at| match self.lifetime {
-            ToastLifetime::Persistent => true,
-            ToastLifetime::ExpiresAfter(ttl) => {
-                tick.now().saturating_duration_since(shown_at) < ttl
-            }
-        })
+        // Lazily apply TTL without requiring host to call advance.
+        let mut copy = *self;
+        copy.advance(tick);
+        copy.presence.is_visible()
     }
 
     /// Returns the expiration deadline, or `None` when hidden or persistent.
     pub fn next_deadline(&self) -> Option<Instant> {
-        match (self.shown_at, self.lifetime) {
-            (Some(shown_at), ToastLifetime::ExpiresAfter(ttl)) => shown_at.checked_add(ttl),
-            _ => None,
-        }
+        self.presence.next_deadline()
+    }
+
+    /// Toasts never take focus.
+    #[must_use]
+    pub const fn is_focusable(self) -> bool {
+        false
     }
 }
 

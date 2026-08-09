@@ -1120,16 +1120,16 @@ impl<'a> Spinner<'a> {
     /// Frame glyph for tick + motion policy.
     #[must_use]
     pub fn frame_glyph(&self, tick: FrameTick, motion: Motion) -> &'static str {
-        if !motion.animate_spinners() {
-            return if self.ascii { "o" } else { "●" };
-        }
         let frames: &[&str] = if self.ascii {
             &["|", "/", "-", "\\"]
         } else {
             &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         };
-        let step = (tick.elapsed().as_millis() / 80) as usize;
-        frames[step % frames.len()]
+        if !motion.animate_spinners() {
+            return if self.ascii { "o" } else { "●" };
+        }
+        let step = tick.spinner_step(frames.len(), 80, motion);
+        frames[step]
     }
 
     /// Paint spinner at `area`.

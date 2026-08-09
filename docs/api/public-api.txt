@@ -37,7 +37,7 @@ warning: unresolved link to `Theme`
     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
 
 warning: `termrock` (lib doc) generated 5 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.71s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.64s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -8737,12 +8737,218 @@ pub fn termrock::perf::check_max_rows_touched(&str, u32) -> core::result::Result
 pub fn termrock::perf::check_zero_alloc_steady(&str, usize, usize) -> core::result::Result<(), alloc::string::String>
 pub const fn termrock::perf::pause_follow_on_user_scroll(termrock::perf::FollowMode) -> termrock::perf::FollowMode
 pub mod termrock::runtime
+#[non_exhaustive] pub enum termrock::runtime::PresenceChange
+pub termrock::runtime::PresenceChange::BecameHidden
+pub termrock::runtime::PresenceChange::BecameVisible
+pub termrock::runtime::PresenceChange::None
+impl core::clone::Clone for termrock::runtime::PresenceChange
+pub fn termrock::runtime::PresenceChange::clone(&self) -> termrock::runtime::PresenceChange
+impl core::cmp::Eq for termrock::runtime::PresenceChange
+impl core::cmp::PartialEq for termrock::runtime::PresenceChange
+pub fn termrock::runtime::PresenceChange::eq(&self, &termrock::runtime::PresenceChange) -> bool
+impl core::default::Default for termrock::runtime::PresenceChange
+pub fn termrock::runtime::PresenceChange::default() -> termrock::runtime::PresenceChange
+impl core::fmt::Debug for termrock::runtime::PresenceChange
+pub fn termrock::runtime::PresenceChange::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::runtime::PresenceChange
+pub fn termrock::runtime::PresenceChange::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::runtime::PresenceChange
+impl core::marker::StructuralPartialEq for termrock::runtime::PresenceChange
+impl core::marker::Freeze for termrock::runtime::PresenceChange
+impl core::marker::Send for termrock::runtime::PresenceChange
+impl core::marker::Sync for termrock::runtime::PresenceChange
+impl core::marker::Unpin for termrock::runtime::PresenceChange
+impl core::marker::UnsafeUnpin for termrock::runtime::PresenceChange
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::PresenceChange
+impl core::panic::unwind_safe::UnwindSafe for termrock::runtime::PresenceChange
+impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::PresenceChange where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::runtime::PresenceChange::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::runtime::PresenceChange where U: core::convert::From<T>
+pub fn termrock::runtime::PresenceChange::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::runtime::PresenceChange where U: core::convert::Into<T>
+pub type termrock::runtime::PresenceChange::Error = core::convert::Infallible
+pub fn termrock::runtime::PresenceChange::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::runtime::PresenceChange where U: core::convert::TryFrom<T>
+pub type termrock::runtime::PresenceChange::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::runtime::PresenceChange::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::runtime::PresenceChange where T: core::clone::Clone
+pub type termrock::runtime::PresenceChange::Owned = T
+pub fn termrock::runtime::PresenceChange::clone_into(&self, &mut T)
+pub fn termrock::runtime::PresenceChange::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::runtime::PresenceChange where T: 'static + ?core::marker::Sized
+pub fn termrock::runtime::PresenceChange::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::runtime::PresenceChange where T: ?core::marker::Sized
+pub fn termrock::runtime::PresenceChange::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::runtime::PresenceChange where T: ?core::marker::Sized
+pub fn termrock::runtime::PresenceChange::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::runtime::PresenceChange where T: core::clone::Clone
+pub unsafe fn termrock::runtime::PresenceChange::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::runtime::PresenceChange
+pub fn termrock::runtime::PresenceChange::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::runtime::PresenceChange
+#[non_exhaustive] pub enum termrock::runtime::PresencePhase
+pub termrock::runtime::PresencePhase::Exiting
+pub termrock::runtime::PresencePhase::Exiting::since: std::time::Instant
+pub termrock::runtime::PresencePhase::Hidden
+pub termrock::runtime::PresencePhase::Pending
+pub termrock::runtime::PresencePhase::Pending::since: std::time::Instant
+pub termrock::runtime::PresencePhase::Visible
+pub termrock::runtime::PresencePhase::Visible::since: std::time::Instant
+impl core::clone::Clone for termrock::runtime::PresencePhase
+pub fn termrock::runtime::PresencePhase::clone(&self) -> termrock::runtime::PresencePhase
+impl core::cmp::Eq for termrock::runtime::PresencePhase
+impl core::cmp::PartialEq for termrock::runtime::PresencePhase
+pub fn termrock::runtime::PresencePhase::eq(&self, &termrock::runtime::PresencePhase) -> bool
+impl core::default::Default for termrock::runtime::PresencePhase
+pub fn termrock::runtime::PresencePhase::default() -> termrock::runtime::PresencePhase
+impl core::fmt::Debug for termrock::runtime::PresencePhase
+pub fn termrock::runtime::PresencePhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::runtime::PresencePhase
+pub fn termrock::runtime::PresencePhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::runtime::PresencePhase
+impl core::marker::StructuralPartialEq for termrock::runtime::PresencePhase
+impl core::marker::Freeze for termrock::runtime::PresencePhase
+impl core::marker::Send for termrock::runtime::PresencePhase
+impl core::marker::Sync for termrock::runtime::PresencePhase
+impl core::marker::Unpin for termrock::runtime::PresencePhase
+impl core::marker::UnsafeUnpin for termrock::runtime::PresencePhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::PresencePhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::runtime::PresencePhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::PresencePhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::runtime::PresencePhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::runtime::PresencePhase where U: core::convert::From<T>
+pub fn termrock::runtime::PresencePhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::runtime::PresencePhase where U: core::convert::Into<T>
+pub type termrock::runtime::PresencePhase::Error = core::convert::Infallible
+pub fn termrock::runtime::PresencePhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::runtime::PresencePhase where U: core::convert::TryFrom<T>
+pub type termrock::runtime::PresencePhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::runtime::PresencePhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::runtime::PresencePhase where T: core::clone::Clone
+pub type termrock::runtime::PresencePhase::Owned = T
+pub fn termrock::runtime::PresencePhase::clone_into(&self, &mut T)
+pub fn termrock::runtime::PresencePhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::runtime::PresencePhase where T: 'static + ?core::marker::Sized
+pub fn termrock::runtime::PresencePhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::runtime::PresencePhase where T: ?core::marker::Sized
+pub fn termrock::runtime::PresencePhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::runtime::PresencePhase where T: ?core::marker::Sized
+pub fn termrock::runtime::PresencePhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::runtime::PresencePhase where T: core::clone::Clone
+pub unsafe fn termrock::runtime::PresencePhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::runtime::PresencePhase
+pub fn termrock::runtime::PresencePhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::runtime::PresencePhase
+pub struct termrock::runtime::AnimationDemand
+pub termrock::runtime::AnimationDemand::needs_redraw: bool
+pub termrock::runtime::AnimationDemand::next_deadline: core::option::Option<std::time::Instant>
+impl termrock::runtime::AnimationDemand
+pub const fn termrock::runtime::AnimationDemand::idle() -> Self
+pub fn termrock::runtime::AnimationDemand::merge(self, Self) -> Self
+impl core::clone::Clone for termrock::runtime::AnimationDemand
+pub fn termrock::runtime::AnimationDemand::clone(&self) -> termrock::runtime::AnimationDemand
+impl core::cmp::Eq for termrock::runtime::AnimationDemand
+impl core::cmp::PartialEq for termrock::runtime::AnimationDemand
+pub fn termrock::runtime::AnimationDemand::eq(&self, &termrock::runtime::AnimationDemand) -> bool
+impl core::default::Default for termrock::runtime::AnimationDemand
+pub fn termrock::runtime::AnimationDemand::default() -> termrock::runtime::AnimationDemand
+impl core::fmt::Debug for termrock::runtime::AnimationDemand
+pub fn termrock::runtime::AnimationDemand::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::runtime::AnimationDemand
+pub fn termrock::runtime::AnimationDemand::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::runtime::AnimationDemand
+impl core::marker::StructuralPartialEq for termrock::runtime::AnimationDemand
+impl core::marker::Freeze for termrock::runtime::AnimationDemand
+impl core::marker::Send for termrock::runtime::AnimationDemand
+impl core::marker::Sync for termrock::runtime::AnimationDemand
+impl core::marker::Unpin for termrock::runtime::AnimationDemand
+impl core::marker::UnsafeUnpin for termrock::runtime::AnimationDemand
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::AnimationDemand
+impl core::panic::unwind_safe::UnwindSafe for termrock::runtime::AnimationDemand
+impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::AnimationDemand where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::runtime::AnimationDemand::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::runtime::AnimationDemand where U: core::convert::From<T>
+pub fn termrock::runtime::AnimationDemand::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::runtime::AnimationDemand where U: core::convert::Into<T>
+pub type termrock::runtime::AnimationDemand::Error = core::convert::Infallible
+pub fn termrock::runtime::AnimationDemand::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::runtime::AnimationDemand where U: core::convert::TryFrom<T>
+pub type termrock::runtime::AnimationDemand::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::runtime::AnimationDemand::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::runtime::AnimationDemand where T: core::clone::Clone
+pub type termrock::runtime::AnimationDemand::Owned = T
+pub fn termrock::runtime::AnimationDemand::clone_into(&self, &mut T)
+pub fn termrock::runtime::AnimationDemand::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::runtime::AnimationDemand where T: 'static + ?core::marker::Sized
+pub fn termrock::runtime::AnimationDemand::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::runtime::AnimationDemand where T: ?core::marker::Sized
+pub fn termrock::runtime::AnimationDemand::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::runtime::AnimationDemand where T: ?core::marker::Sized
+pub fn termrock::runtime::AnimationDemand::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::runtime::AnimationDemand where T: core::clone::Clone
+pub unsafe fn termrock::runtime::AnimationDemand::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::runtime::AnimationDemand
+pub fn termrock::runtime::AnimationDemand::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::runtime::AnimationDemand
+pub struct termrock::runtime::FrameClock
+impl termrock::runtime::FrameClock
+pub const fn termrock::runtime::FrameClock::from_start(std::time::Instant) -> Self
+pub fn termrock::runtime::FrameClock::start() -> Self
+pub const fn termrock::runtime::FrameClock::started_at(&self) -> std::time::Instant
+pub fn termrock::runtime::FrameClock::tick(&mut self) -> termrock::runtime::FrameTick
+pub fn termrock::runtime::FrameClock::tick_at(&mut self, std::time::Instant) -> termrock::runtime::FrameTick
+impl core::clone::Clone for termrock::runtime::FrameClock
+pub fn termrock::runtime::FrameClock::clone(&self) -> termrock::runtime::FrameClock
+impl core::cmp::Eq for termrock::runtime::FrameClock
+impl core::cmp::PartialEq for termrock::runtime::FrameClock
+pub fn termrock::runtime::FrameClock::eq(&self, &termrock::runtime::FrameClock) -> bool
+impl core::fmt::Debug for termrock::runtime::FrameClock
+pub fn termrock::runtime::FrameClock::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::runtime::FrameClock
+impl core::marker::Freeze for termrock::runtime::FrameClock
+impl core::marker::Send for termrock::runtime::FrameClock
+impl core::marker::Sync for termrock::runtime::FrameClock
+impl core::marker::Unpin for termrock::runtime::FrameClock
+impl core::marker::UnsafeUnpin for termrock::runtime::FrameClock
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::FrameClock
+impl core::panic::unwind_safe::UnwindSafe for termrock::runtime::FrameClock
+impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::FrameClock where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::runtime::FrameClock::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::runtime::FrameClock where U: core::convert::From<T>
+pub fn termrock::runtime::FrameClock::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::runtime::FrameClock where U: core::convert::Into<T>
+pub type termrock::runtime::FrameClock::Error = core::convert::Infallible
+pub fn termrock::runtime::FrameClock::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::runtime::FrameClock where U: core::convert::TryFrom<T>
+pub type termrock::runtime::FrameClock::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::runtime::FrameClock::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::runtime::FrameClock where T: core::clone::Clone
+pub type termrock::runtime::FrameClock::Owned = T
+pub fn termrock::runtime::FrameClock::clone_into(&self, &mut T)
+pub fn termrock::runtime::FrameClock::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::runtime::FrameClock where T: 'static + ?core::marker::Sized
+pub fn termrock::runtime::FrameClock::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::runtime::FrameClock where T: ?core::marker::Sized
+pub fn termrock::runtime::FrameClock::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::runtime::FrameClock where T: ?core::marker::Sized
+pub fn termrock::runtime::FrameClock::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::runtime::FrameClock where T: core::clone::Clone
+pub unsafe fn termrock::runtime::FrameClock::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::runtime::FrameClock
+pub fn termrock::runtime::FrameClock::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::runtime::FrameClock
 pub struct termrock::runtime::FrameTick
 impl termrock::runtime::FrameTick
 pub const fn termrock::runtime::FrameTick::delta(self) -> core::time::Duration
+pub fn termrock::runtime::FrameTick::delta_ms(self) -> u64
 pub const fn termrock::runtime::FrameTick::elapsed(self) -> core::time::Duration
+pub fn termrock::runtime::FrameTick::elapsed_ms(self) -> u64
 pub const fn termrock::runtime::FrameTick::manual(std::time::Instant, core::time::Duration, core::time::Duration) -> Self
 pub const fn termrock::runtime::FrameTick::now(self) -> std::time::Instant
+impl termrock::runtime::FrameTick
+pub fn termrock::runtime::FrameTick::phase_ms(self, u64) -> u64
+pub fn termrock::runtime::FrameTick::pulse_fraction(self, u64, termrock::style::Motion) -> f64
+pub fn termrock::runtime::FrameTick::spinner_step(self, usize, u64, termrock::style::Motion) -> usize
 impl core::clone::Clone for termrock::runtime::FrameTick
 pub fn termrock::runtime::FrameTick::clone(&self) -> termrock::runtime::FrameTick
 impl core::cmp::Eq for termrock::runtime::FrameTick
@@ -8784,6 +8990,66 @@ pub unsafe fn termrock::runtime::FrameTick::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::runtime::FrameTick
 pub fn termrock::runtime::FrameTick::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::runtime::FrameTick
+pub struct termrock::runtime::Presence
+impl termrock::runtime::Presence
+pub fn termrock::runtime::Presence::advance(&mut self, termrock::runtime::FrameTick, termrock::style::Motion) -> termrock::runtime::PresenceChange
+pub fn termrock::runtime::Presence::demand(self) -> termrock::runtime::AnimationDemand
+pub const fn termrock::runtime::Presence::force_hide(&mut self)
+pub const fn termrock::runtime::Presence::immediate() -> Self
+pub const fn termrock::runtime::Presence::is_focusable(self) -> bool
+pub const fn termrock::runtime::Presence::is_visible(self) -> bool
+pub fn termrock::runtime::Presence::next_deadline(self) -> core::option::Option<std::time::Instant>
+pub const fn termrock::runtime::Presence::persistent() -> Self
+pub const fn termrock::runtime::Presence::phase(self) -> termrock::runtime::PresencePhase
+pub fn termrock::runtime::Presence::request_hide(&mut self, termrock::runtime::FrameTick, termrock::style::Motion)
+pub fn termrock::runtime::Presence::request_show(&mut self, termrock::runtime::FrameTick)
+pub const fn termrock::runtime::Presence::toast(core::time::Duration) -> Self
+pub const fn termrock::runtime::Presence::tooltip(core::time::Duration) -> Self
+impl core::clone::Clone for termrock::runtime::Presence
+pub fn termrock::runtime::Presence::clone(&self) -> termrock::runtime::Presence
+impl core::cmp::Eq for termrock::runtime::Presence
+impl core::cmp::PartialEq for termrock::runtime::Presence
+pub fn termrock::runtime::Presence::eq(&self, &termrock::runtime::Presence) -> bool
+impl core::default::Default for termrock::runtime::Presence
+pub fn termrock::runtime::Presence::default() -> Self
+impl core::fmt::Debug for termrock::runtime::Presence
+pub fn termrock::runtime::Presence::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::runtime::Presence
+pub fn termrock::runtime::Presence::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::runtime::Presence
+impl core::marker::StructuralPartialEq for termrock::runtime::Presence
+impl core::marker::Freeze for termrock::runtime::Presence
+impl core::marker::Send for termrock::runtime::Presence
+impl core::marker::Sync for termrock::runtime::Presence
+impl core::marker::Unpin for termrock::runtime::Presence
+impl core::marker::UnsafeUnpin for termrock::runtime::Presence
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::Presence
+impl core::panic::unwind_safe::UnwindSafe for termrock::runtime::Presence
+impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::Presence where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::runtime::Presence::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::runtime::Presence where U: core::convert::From<T>
+pub fn termrock::runtime::Presence::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::runtime::Presence where U: core::convert::Into<T>
+pub type termrock::runtime::Presence::Error = core::convert::Infallible
+pub fn termrock::runtime::Presence::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::runtime::Presence where U: core::convert::TryFrom<T>
+pub type termrock::runtime::Presence::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::runtime::Presence::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::runtime::Presence where T: core::clone::Clone
+pub type termrock::runtime::Presence::Owned = T
+pub fn termrock::runtime::Presence::clone_into(&self, &mut T)
+pub fn termrock::runtime::Presence::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::runtime::Presence where T: 'static + ?core::marker::Sized
+pub fn termrock::runtime::Presence::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::runtime::Presence where T: ?core::marker::Sized
+pub fn termrock::runtime::Presence::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::runtime::Presence where T: ?core::marker::Sized
+pub fn termrock::runtime::Presence::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::runtime::Presence where T: core::clone::Clone
+pub unsafe fn termrock::runtime::Presence::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::runtime::Presence
+pub fn termrock::runtime::Presence::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::runtime::Presence
 pub struct termrock::runtime::RunOptions
 pub termrock::runtime::RunOptions::poll_timeout: core::time::Duration
 pub termrock::runtime::RunOptions::session: termrock::crossterm::SessionOptions
@@ -8830,7 +9096,12 @@ pub unsafe fn termrock::runtime::RunOptions::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::runtime::RunOptions
 pub fn termrock::runtime::RunOptions::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::runtime::RunOptions
+pub fn termrock::runtime::earliest_deadline(impl core::iter::traits::collect::IntoIterator<Item = core::option::Option<std::time::Instant>>) -> core::option::Option<std::time::Instant>
+pub fn termrock::runtime::min_deadline(core::option::Option<std::time::Instant>, core::option::Option<std::time::Instant>) -> core::option::Option<std::time::Instant>
+pub fn termrock::runtime::pulse_fraction(termrock::runtime::FrameTick, u64, termrock::style::Motion) -> f64
 pub fn termrock::runtime::run<Model>(&mut Model, termrock::runtime::RunOptions, impl core::ops::function::FnMut(&mut Model, &mut ratatui_core::terminal::frame::Frame<'_>, termrock::runtime::FrameTick), impl core::ops::function::FnMut(&mut Model, termrock::input::Event, termrock::runtime::FrameTick) -> core::ops::control_flow::ControlFlow<()>, impl core::ops::function::FnMut(&Model) -> core::option::Option<std::time::Instant>) -> core::io::error::Result<()>
+pub fn termrock::runtime::spinner_demand(termrock::runtime::FrameTick, termrock::style::Motion, bool) -> termrock::runtime::AnimationDemand
+pub fn termrock::runtime::spinner_step(termrock::runtime::FrameTick, usize, u64, termrock::style::Motion) -> usize
 pub mod termrock::scroll
 pub enum termrock::scroll::ScrollAxis
 pub termrock::scroll::ScrollAxis::Horizontal
@@ -13673,6 +13944,8 @@ pub termrock::widgets::ProgressKind::Determinate
 pub termrock::widgets::ProgressKind::Determinate::fraction: f64
 pub termrock::widgets::ProgressKind::Indeterminate
 pub termrock::widgets::ProgressKind::Indeterminate::tick: u64
+impl termrock::widgets::ProgressKind
+pub fn termrock::widgets::ProgressKind::indeterminate_from(termrock::runtime::FrameTick, termrock::style::Motion) -> Self
 impl core::clone::Clone for termrock::widgets::ProgressKind
 pub fn termrock::widgets::ProgressKind::clone(&self) -> termrock::widgets::ProgressKind
 impl core::cmp::PartialEq for termrock::widgets::ProgressKind
@@ -25206,7 +25479,9 @@ pub fn termrock::widgets::Toast<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Toast<'a>
 pub struct termrock::widgets::ToastState
 impl termrock::widgets::ToastState
+pub fn termrock::widgets::ToastState::advance(&mut self, termrock::runtime::FrameTick)
 pub const fn termrock::widgets::ToastState::dismiss(&mut self)
+pub const fn termrock::widgets::ToastState::is_focusable(self) -> bool
 pub fn termrock::widgets::ToastState::is_visible(&self, termrock::runtime::FrameTick) -> bool
 pub const fn termrock::widgets::ToastState::new(termrock::widgets::ToastLifetime) -> Self
 pub fn termrock::widgets::ToastState::next_deadline(&self) -> core::option::Option<std::time::Instant>
@@ -25217,7 +25492,7 @@ impl core::cmp::Eq for termrock::widgets::ToastState
 impl core::cmp::PartialEq for termrock::widgets::ToastState
 pub fn termrock::widgets::ToastState::eq(&self, &termrock::widgets::ToastState) -> bool
 impl core::default::Default for termrock::widgets::ToastState
-pub fn termrock::widgets::ToastState::default() -> termrock::widgets::ToastState
+pub fn termrock::widgets::ToastState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::ToastState
 pub fn termrock::widgets::ToastState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for termrock::widgets::ToastState
@@ -25383,16 +25658,19 @@ pub fn termrock::widgets::Tooltip<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Tooltip<'a>
 pub struct termrock::widgets::TooltipState
 impl termrock::widgets::TooltipState
+pub fn termrock::widgets::TooltipState::advance(&mut self, termrock::runtime::FrameTick, bool, termrock::style::Motion)
 pub const fn termrock::widgets::TooltipState::is_visible(self) -> bool
 pub const fn termrock::widgets::TooltipState::new() -> Self
+pub fn termrock::widgets::TooltipState::next_deadline(self) -> core::option::Option<std::time::Instant>
 pub fn termrock::widgets::TooltipState::tick_hover(&mut self, u64, bool)
+pub const fn termrock::widgets::TooltipState::with_delay(core::time::Duration) -> Self
 impl core::clone::Clone for termrock::widgets::TooltipState
 pub fn termrock::widgets::TooltipState::clone(&self) -> termrock::widgets::TooltipState
 impl core::cmp::Eq for termrock::widgets::TooltipState
 impl core::cmp::PartialEq for termrock::widgets::TooltipState
 pub fn termrock::widgets::TooltipState::eq(&self, &termrock::widgets::TooltipState) -> bool
 impl core::default::Default for termrock::widgets::TooltipState
-pub fn termrock::widgets::TooltipState::default() -> termrock::widgets::TooltipState
+pub fn termrock::widgets::TooltipState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::TooltipState
 pub fn termrock::widgets::TooltipState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for termrock::widgets::TooltipState

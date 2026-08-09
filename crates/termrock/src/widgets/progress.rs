@@ -1,7 +1,8 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, Role, RolePalette},
+    runtime::FrameTick,
+    style::{DesignSystem, Motion, Role, RolePalette},
     text::display_cols,
 };
 
@@ -23,6 +24,15 @@ pub enum ProgressKind {
         /// Caller-owned deterministic animation tick.
         tick: u64,
     },
+}
+
+impl ProgressKind {
+    /// Indeterminate frame from [`FrameTick`] + [`Motion`] (deterministic).
+    #[must_use]
+    pub fn indeterminate_from(tick: FrameTick, motion: Motion) -> Self {
+        let step = tick.spinner_step(DEFAULT_PROGRESS_FRAMES.len(), 80, motion) as u64;
+        Self::Indeterminate { tick: step }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

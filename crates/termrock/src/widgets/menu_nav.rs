@@ -976,13 +976,22 @@ impl Widget for &Popover<'_> {
     }
 }
 
-/// Tooltip delay state (FrameTick driven by consumer).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Tooltip delay state ([`crate::runtime::Presence`] + FrameTick).
+///
+/// Not focusable until visible; cancelled hover clears presence immediately.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TooltipState {
-    visible: bool,
-    /// Accumulated ms hovering (consumer advances).
-    hover_ms: u64,
-    delay_ms: u64,
+    presence: crate::runtime::Presence,
+    hovering: bool,
+    /// Synthetic origin for [`Self::tick_hover`] (legacy hosts).
+    synth_origin: Option<std::time::Instant>,
+    synth_elapsed_ms: u64,
+}
+
+impl Default for TooltipState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TooltipState {
@@ -990,29 +999,85 @@ impl TooltipState {
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            visible: false,
-            hover_ms: 0,
-            delay_ms: 400,
+            presence: crate::runtime::Presence::tooltip(std::time::Duration::from_millis(400)),
+            hovering: false,
+            synth_origin: None,
+            synth_elapsed_ms: 0,
+        }
+    }
+
+    /// Custom show delay.
+    #[must_use]
+    pub const fn with_delay(delay: std::time::Duration) -> Self {
+        Self {
+            presence: crate::runtime::Presence::tooltip(delay),
+            hovering: false,
+            synth_origin: None,
+            synth_elapsed_ms: 0,
         }
     }
 
     /// Advance hover clock; shows after delay.
+    ///
+    /// Prefer [`Self::advance`] with a real [`crate::runtime::FrameTick`].
     pub fn tick_hover(&mut self, delta_ms: u64, hovering: bool) {
+        use crate::runtime::FrameTick;
+        use crate::style::Motion;
+        use std::time::{Duration, Instant};
         if !hovering {
-            self.hover_ms = 0;
-            self.visible = false;
+            self.hovering = false;
+            self.synth_origin = None;
+            self.synth_elapsed_ms = 0;
+            self.presence.force_hide();
             return;
         }
-        self.hover_ms = self.hover_ms.saturating_add(delta_ms);
-        if self.hover_ms >= self.delay_ms {
-            self.visible = true;
+        let origin = *self.synth_origin.get_or_insert_with(Instant::now);
+        if !self.hovering {
+            self.hovering = true;
+            self.synth_elapsed_ms = 0;
+            let tick = FrameTick::manual(origin, Duration::ZERO, Duration::ZERO);
+            self.presence.request_show(tick);
         }
+        self.synth_elapsed_ms = self.synth_elapsed_ms.saturating_add(delta_ms);
+        let tick = FrameTick::manual(
+            origin + Duration::from_millis(self.synth_elapsed_ms),
+            Duration::from_millis(self.synth_elapsed_ms),
+            Duration::from_millis(delta_ms),
+        );
+        let _ = self.presence.advance(tick, Motion::Full);
+    }
+
+    /// FrameTick-driven advance (canonical).
+    pub fn advance(
+        &mut self,
+        tick: crate::runtime::FrameTick,
+        hovering: bool,
+        motion: crate::style::Motion,
+    ) {
+        if !hovering {
+            self.hovering = false;
+            self.synth_origin = None;
+            self.synth_elapsed_ms = 0;
+            self.presence.force_hide();
+            return;
+        }
+        if !self.hovering {
+            self.hovering = true;
+            self.presence.request_show(tick);
+        }
+        let _ = self.presence.advance(tick, motion);
     }
 
     #[must_use]
-    /// Visible.
+    /// Visible (painted). Not focusable — tooltips never steal focus.
     pub const fn is_visible(self) -> bool {
-        self.visible
+        self.presence.is_visible()
+    }
+
+    /// Presence deadline for host poll (None if hidden).
+    #[must_use]
+    pub fn next_deadline(self) -> Option<std::time::Instant> {
+        self.presence.next_deadline()
     }
 }
 
@@ -1034,7 +1099,7 @@ impl<'a> Tooltip<'a> {
 impl Tooltip<'_> {
     /// Paint when visible (never steals focus).
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &TooltipState) {
-        if !state.visible || area.is_empty() {
+        if !state.is_visible() || area.is_empty() {
             return;
         }
         let text = take_display_cols(self.text, usize::from(area.width));
