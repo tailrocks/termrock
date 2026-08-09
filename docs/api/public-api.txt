@@ -4579,6 +4579,55 @@ pub unsafe fn termrock::AppearanceThemeMap::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::AppearanceThemeMap
 pub fn termrock::AppearanceThemeMap::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::AppearanceThemeMap
+pub struct termrock::style::DesignSystem
+pub termrock::style::DesignSystem::tokens: termrock::DesignTokens
+impl termrock::DesignSystem
+pub fn termrock::DesignSystem::list_row_recipe(&self, bool, bool, bool) -> termrock::style::ListRowRecipe
+pub fn termrock::DesignSystem::new(termrock::style::Theme, termrock::Density) -> Self
+pub fn termrock::DesignSystem::phosphor() -> Self
+pub const fn termrock::DesignSystem::theme(&self) -> &termrock::style::Theme
+impl core::clone::Clone for termrock::DesignSystem
+pub fn termrock::DesignSystem::clone(&self) -> termrock::DesignSystem
+impl core::cmp::Eq for termrock::DesignSystem
+impl core::cmp::PartialEq for termrock::DesignSystem
+pub fn termrock::DesignSystem::eq(&self, &termrock::DesignSystem) -> bool
+impl core::default::Default for termrock::DesignSystem
+pub fn termrock::DesignSystem::default() -> Self
+impl core::fmt::Debug for termrock::DesignSystem
+pub fn termrock::DesignSystem::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::DesignSystem
+impl core::marker::Freeze for termrock::DesignSystem
+impl core::marker::Send for termrock::DesignSystem
+impl core::marker::Sync for termrock::DesignSystem
+impl core::marker::Unpin for termrock::DesignSystem
+impl core::marker::UnsafeUnpin for termrock::DesignSystem
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::DesignSystem
+impl core::panic::unwind_safe::UnwindSafe for termrock::DesignSystem
+impl<Q, K> equivalent::Equivalent<K> for termrock::DesignSystem where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::DesignSystem::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::DesignSystem where U: core::convert::From<T>
+pub fn termrock::DesignSystem::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::DesignSystem where U: core::convert::Into<T>
+pub type termrock::DesignSystem::Error = core::convert::Infallible
+pub fn termrock::DesignSystem::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::DesignSystem where U: core::convert::TryFrom<T>
+pub type termrock::DesignSystem::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::DesignSystem::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::DesignSystem where T: core::clone::Clone
+pub type termrock::DesignSystem::Owned = T
+pub fn termrock::DesignSystem::clone_into(&self, &mut T)
+pub fn termrock::DesignSystem::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::DesignSystem where T: 'static + ?core::marker::Sized
+pub fn termrock::DesignSystem::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::DesignSystem where T: ?core::marker::Sized
+pub fn termrock::DesignSystem::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::DesignSystem where T: ?core::marker::Sized
+pub fn termrock::DesignSystem::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::DesignSystem where T: core::clone::Clone
+pub unsafe fn termrock::DesignSystem::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::DesignSystem
+pub fn termrock::DesignSystem::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::DesignSystem
 pub struct termrock::style::DesignTokens
 pub termrock::style::DesignTokens::density: termrock::Density
 pub termrock::style::DesignTokens::glyphs: termrock::GlyphSet
@@ -4587,6 +4636,7 @@ pub termrock::style::DesignTokens::selection: termrock::SelectionChrome
 pub termrock::style::DesignTokens::spacing: termrock::SpacingScale
 pub termrock::style::DesignTokens::theme: termrock::style::Theme
 impl termrock::DesignTokens
+pub fn termrock::DesignTokens::design_system(self) -> termrock::DesignSystem
 pub const fn termrock::DesignTokens::glyphs(self, termrock::GlyphSet) -> Self
 pub fn termrock::DesignTokens::list_row_recipe(&self, bool, bool, bool) -> termrock::style::ListRowRecipe
 pub const fn termrock::DesignTokens::motion(self, termrock::Motion) -> Self
@@ -8978,6 +9028,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::JumpTarget<Id>
 pub struct termrock::widgets::List<'a, Id>
 impl<'a, Id> termrock::widgets::List<'a, Id>
 pub const fn termrock::widgets::List<'a, Id>::new(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::Theme) -> Self
+pub const fn termrock::widgets::List<'a, Id>::tokens(self, &'a termrock::DesignTokens) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::List<'a, Id>
 pub fn termrock::widgets::List<'a, Id>::clone(&self) -> termrock::widgets::List<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::List<'a, Id>
@@ -12788,6 +12839,55 @@ pub unsafe fn termrock::AppearanceThemeMap::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::AppearanceThemeMap
 pub fn termrock::AppearanceThemeMap::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::AppearanceThemeMap
+pub struct termrock::DesignSystem
+pub termrock::DesignSystem::tokens: termrock::DesignTokens
+impl termrock::DesignSystem
+pub fn termrock::DesignSystem::list_row_recipe(&self, bool, bool, bool) -> termrock::style::ListRowRecipe
+pub fn termrock::DesignSystem::new(termrock::style::Theme, termrock::Density) -> Self
+pub fn termrock::DesignSystem::phosphor() -> Self
+pub const fn termrock::DesignSystem::theme(&self) -> &termrock::style::Theme
+impl core::clone::Clone for termrock::DesignSystem
+pub fn termrock::DesignSystem::clone(&self) -> termrock::DesignSystem
+impl core::cmp::Eq for termrock::DesignSystem
+impl core::cmp::PartialEq for termrock::DesignSystem
+pub fn termrock::DesignSystem::eq(&self, &termrock::DesignSystem) -> bool
+impl core::default::Default for termrock::DesignSystem
+pub fn termrock::DesignSystem::default() -> Self
+impl core::fmt::Debug for termrock::DesignSystem
+pub fn termrock::DesignSystem::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::DesignSystem
+impl core::marker::Freeze for termrock::DesignSystem
+impl core::marker::Send for termrock::DesignSystem
+impl core::marker::Sync for termrock::DesignSystem
+impl core::marker::Unpin for termrock::DesignSystem
+impl core::marker::UnsafeUnpin for termrock::DesignSystem
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::DesignSystem
+impl core::panic::unwind_safe::UnwindSafe for termrock::DesignSystem
+impl<Q, K> equivalent::Equivalent<K> for termrock::DesignSystem where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::DesignSystem::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::DesignSystem where U: core::convert::From<T>
+pub fn termrock::DesignSystem::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::DesignSystem where U: core::convert::Into<T>
+pub type termrock::DesignSystem::Error = core::convert::Infallible
+pub fn termrock::DesignSystem::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::DesignSystem where U: core::convert::TryFrom<T>
+pub type termrock::DesignSystem::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::DesignSystem::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::DesignSystem where T: core::clone::Clone
+pub type termrock::DesignSystem::Owned = T
+pub fn termrock::DesignSystem::clone_into(&self, &mut T)
+pub fn termrock::DesignSystem::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::DesignSystem where T: 'static + ?core::marker::Sized
+pub fn termrock::DesignSystem::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::DesignSystem where T: ?core::marker::Sized
+pub fn termrock::DesignSystem::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::DesignSystem where T: ?core::marker::Sized
+pub fn termrock::DesignSystem::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::DesignSystem where T: core::clone::Clone
+pub unsafe fn termrock::DesignSystem::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::DesignSystem
+pub fn termrock::DesignSystem::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::DesignSystem
 pub struct termrock::DesignTokens
 pub termrock::DesignTokens::density: termrock::Density
 pub termrock::DesignTokens::glyphs: termrock::GlyphSet
@@ -12796,6 +12896,7 @@ pub termrock::DesignTokens::selection: termrock::SelectionChrome
 pub termrock::DesignTokens::spacing: termrock::SpacingScale
 pub termrock::DesignTokens::theme: termrock::style::Theme
 impl termrock::DesignTokens
+pub fn termrock::DesignTokens::design_system(self) -> termrock::DesignSystem
 pub const fn termrock::DesignTokens::glyphs(self, termrock::GlyphSet) -> Self
 pub fn termrock::DesignTokens::list_row_recipe(&self, bool, bool, bool) -> termrock::style::ListRowRecipe
 pub const fn termrock::DesignTokens::motion(self, termrock::Motion) -> Self

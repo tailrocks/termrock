@@ -438,13 +438,25 @@ impl ListState<usize> {
 pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
     theme: &'a Theme,
+    tokens: Option<&'a crate::style::DesignTokens>,
 }
 
 impl<'a, Id> List<'a, Id> {
     #[must_use]
     /// Creates a list over borrowed rows and mutable list state.
     pub const fn new(rows: &'a [ListRow<'a, Id>], theme: &'a Theme) -> Self {
-        Self { rows, theme }
+        Self {
+            rows,
+            theme,
+            tokens: None,
+        }
+    }
+
+    /// Paints rows through design-token recipes (quiet selection / bright focus).
+    #[must_use]
+    pub const fn tokens(mut self, tokens: &'a crate::style::DesignTokens) -> Self {
+        self.tokens = Some(tokens);
+        self
     }
 }
 
@@ -504,7 +516,12 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 .selection
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&row.id));
-            let style = if !row.enabled {
+            let recipe = self.tokens.map(|tokens| {
+                tokens.list_row_recipe(selected, state.focused && selected, row.enabled)
+            });
+            let style = if let Some(recipe) = recipe {
+                recipe.label
+            } else if !row.enabled {
                 self.theme.style(Role::TextDisabled)
             } else if selected && state.focused {
                 self.theme.style(Role::Selection)
@@ -515,10 +532,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             } else {
                 self.theme.style(Role::Text)
             };
-            buffer.set_style(rect, style);
+            let fill_row = recipe.is_none_or(|recipe| recipe.use_fill)
+                || (recipe.is_none() && selected && state.focused);
+            if fill_row {
+                buffer.set_style(rect, style);
+            }
             let trailing_x = rect.right().saturating_sub(trailing_width);
             if row.role == RowRole::Separator {
-                buffer.set_stringn(rect.x, rect.y, "─", usize::from(rect.width), style);
+                let rule = self
+                    .tokens
+                    .map(|tokens| tokens.glyphs.rule())
+                    .unwrap_or("─");
+                buffer.set_stringn(rect.x, rect.y, rule, usize::from(rect.width), style);
                 if rect.width > 2 {
                     let label_x = rect
                         .x
@@ -532,8 +557,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     );
                 }
             } else {
-                let marker = if selected { "▸ " } else { "  " };
-                buffer.set_stringn(rect.x, rect.y, marker, usize::from(rect.width), style);
+                // Selection cue: design-token gutter when present, else legacy ▸.
+                if let Some(recipe) = recipe {
+                    if let Some((glyph, gstyle)) = recipe.gutter {
+                        buffer.set_stringn(rect.x, rect.y, glyph, 1, gstyle);
+                        buffer.set_stringn(rect.x.saturating_add(1), rect.y, " ", 1, style);
+                    } else {
+                        buffer.set_stringn(rect.x, rect.y, "  ", 2, style);
+                    }
+                } else {
+                    let marker = if selected { "▸ " } else { "  " };
+                    buffer.set_stringn(rect.x, rect.y, marker, usize::from(rect.width), style);
+                }
                 let check_x = rect.x.saturating_add(2);
                 render_check_cell(buffer, state, row, rect, check_x, checked, style);
                 if rect.width > 2 {

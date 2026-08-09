@@ -29,7 +29,9 @@ use palette::{
     WARNING_YELLOW as WARNING_YELLOW_RGB, WHITE as WHITE_RGB,
 };
 pub use quantize::{ColorCapability, quantize_color, quantize_theme, rgb_to_xterm256};
-pub use tokens::{DesignTokens, GlyphSet, ListRowRecipe, SelectionChrome, SpacingScale};
+pub use tokens::{
+    DesignSystem, DesignTokens, GlyphSet, ListRowRecipe, SelectionChrome, SpacingScale,
+};
 
 #[must_use]
 /// Converts this palette color into Ratatui color space.

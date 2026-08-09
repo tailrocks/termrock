@@ -155,6 +155,12 @@ impl DesignTokens {
         self
     }
 
+    /// Quiet-canvas / bright-intent design system alias (same token bundle).
+    #[must_use]
+    pub fn design_system(self) -> DesignSystem {
+        DesignSystem { tokens: self }
+    }
+
     /// Resolves styles for a **list row** chrome recipe (one vertical slice).
     #[must_use]
     pub fn list_row_recipe(&self, selected: bool, focused: bool, enabled: bool) -> ListRowRecipe {
@@ -189,6 +195,53 @@ impl DesignTokens {
             show_focus_underline: focused && selected,
             focus: self.theme.style(Role::Focus),
         }
+    }
+}
+
+/// Token-driven design system surface (quiet canvas, bright intent).
+///
+/// Wraps [`DesignTokens`] as the preferred public name from the terminal design
+/// system spec. Prefer constructing via [`DesignTokens::design_system`] or
+/// [`DesignSystem::phosphor`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DesignSystem {
+    /// Underlying tokens.
+    pub tokens: DesignTokens,
+}
+
+impl Default for DesignSystem {
+    fn default() -> Self {
+        Self::phosphor()
+    }
+}
+
+impl DesignSystem {
+    /// Default phosphor Obsidian tokens.
+    #[must_use]
+    pub fn phosphor() -> Self {
+        Self {
+            tokens: DesignTokens::default().selection(SelectionChrome::Gutter),
+        }
+    }
+
+    /// Builds from an existing theme + density.
+    #[must_use]
+    pub fn new(theme: Theme, density: Density) -> Self {
+        Self {
+            tokens: DesignTokens::new(theme, density).selection(SelectionChrome::Gutter),
+        }
+    }
+
+    /// List row recipe (quiet selection via gutter by default).
+    #[must_use]
+    pub fn list_row_recipe(&self, selected: bool, focused: bool, enabled: bool) -> ListRowRecipe {
+        self.tokens.list_row_recipe(selected, focused, enabled)
+    }
+
+    /// Theme borrow.
+    #[must_use]
+    pub const fn theme(&self) -> &Theme {
+        &self.tokens.theme
     }
 }
 

@@ -25,6 +25,6 @@ pub use interaction::{
     UiIntent, default_list_intent, dispatch_keymap_action,
 };
 pub use style::{
-    Appearance, AppearanceThemeMap, ColorCapability, Density, DesignTokens, GlyphSet, Motion,
-    SelectionChrome, SpacingScale, Theme, theme_for_appearance,
+    Appearance, AppearanceThemeMap, ColorCapability, Density, DesignSystem, DesignTokens, GlyphSet,
+    Motion, SelectionChrome, SpacingScale, Theme, theme_for_appearance,
 };
