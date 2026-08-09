@@ -21,6 +21,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/data-presentation.md`](../docs/design/data-presentation.md) | **Data presentation** (DataTable, virtualization kits, 1M-row targets) |
 | [`docs/design/component-quality-standard.md`](../docs/design/component-quality-standard.md) | **Component quality standard** (contracts, lints, CI evidence) |
 | [`docs/design/streaming-performance.md`](../docs/design/streaming-performance.md) | **Streaming / large-data performance** (budgets, coalesce, follow) |
+| [`docs/design/terminal-capability-architecture.md`](../docs/design/terminal-capability-architecture.md) | **Terminal capabilities** (profiles, doctor, graceful degrade) |
 
 ### Using the component prompt library
 

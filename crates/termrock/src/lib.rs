@@ -4,6 +4,7 @@
 //! Entry point: [`Theme`] — shared TUI theme tokens.
 
 pub mod ansi_text;
+pub mod capability;
 pub mod input;
 pub mod interaction;
 pub mod keymap;
@@ -32,6 +33,12 @@ pub use layout::{
     AdaptiveAnatomy, AnatomyPart, ContentPriority, ContractionStage, OverflowBehavior,
     ResponsiveSurface, SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER,
     contract_parts, essential_survives,
+};
+pub use capability::{
+    CapabilityKind, CapabilityOverrides, CapabilityProfile, CapabilitySet, CapabilitySource,
+    DetectionReport, DoctorFinding, DoctorReport, DoctorSeverity, EffectiveCapabilities, EnvHints,
+    FallbackPolicy, SessionFlags, build_doctor_report, detect_environment, fallback_policies,
+    format_doctor_text, resolve_capabilities,
 };
 pub use perf::{
     BackpressureSignal, BudgetKind, ComponentBudget, DirtyFlags, FollowMode, NewContentIndicator,
