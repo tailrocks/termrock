@@ -103,7 +103,8 @@ pub use detail_table::{
 };
 pub use dialog::{
     Backdrop, ChoiceDialog, ChoiceDialogState, DIALOG_OVERLAY_ID, Dialog, DialogSize,
-    MessageDialog, dismiss_dialog_overlay, open_alert_dialog_overlay, open_dialog_overlay,
+    DialogVariant, MessageDialog, dismiss_dialog_overlay, open_alert_dialog_overlay,
+    open_dialog_overlay,
     place_dialog,
 };
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
@@ -113,15 +114,18 @@ pub use hint_bar::{
 };
 pub use image_surface::{ImageMeta, ImageProtocol, ImageSurface, protocol_emission_hint};
 pub use jump_overlay::{
-    JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges,
+    JUMP_OVERLAY_ID, JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges,
+    dismiss_jump_overlay, open_jump_overlay,
 };
 pub use list::{List, ListClickPolicy, ListRow, ListState, RowRole};
 pub use log_pane::{LogPane, LogPaneState};
 pub use markdown::{MarkdownBlock, MarkdownBlockKind, MarkdownView, project_plain_lines};
 pub use menu_nav::{
-    BreadcrumbItem, Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, ContextMenu, Drawer,
-    DrawerOutcome, DrawerState, Menu, MenuItem, MenuOutcome, MenuState, Popover, Sidebar,
-    SidebarItem, SidebarOutcome, SidebarState, Tooltip, TooltipState,
+    BreadcrumbItem, Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, ContextMenu,
+    DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuItem, MenuOutcome, MenuState,
+    POPOVER_OVERLAY_ID, Popover, Sidebar, SidebarItem, SidebarOutcome, SidebarState,
+    TOOLTIP_OVERLAY_ID, Tooltip, TooltipState, dismiss_drawer_overlay, open_drawer_overlay,
+    open_popover_overlay, open_tooltip_overlay, place_drawer, place_popover, place_tooltip,
 };
 pub use panel::{Panel, PanelEmphasis, PanelSlots};
 pub use permission::{

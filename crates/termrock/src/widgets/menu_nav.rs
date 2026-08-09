@@ -11,10 +11,20 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
+    interaction::{
+        OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
+        OverlayStack, place_overlay,
+    },
     style::{DesignTokens, Role},
     text::{display_cols, take_display_cols},
 };
+
+/// Default overlay id for drawers opened via helpers.
+pub const DRAWER_OVERLAY_ID: &str = "termrock.drawer";
+/// Default overlay id for popovers.
+pub const POPOVER_OVERLAY_ID: &str = "termrock.popover";
+/// Default overlay id for tooltips.
+pub const TOOLTIP_OVERLAY_ID: &str = "termrock.tooltip";
 
 // ── Menu ────────────────────────────────────────────────────────────────────
 
@@ -542,26 +552,109 @@ impl DrawerState {
         id: &'static str,
     ) -> OverlayOutcome<F> {
         self.open = true;
-        stack.open(
+        open_drawer_overlay(
+            stack,
             bounds,
-            OverlaySpec {
-                id: OverlayId::from_static(id),
-                kind: OverlayKind::Drawer,
-                parent: None,
-                anchor: None,
-                size: OverlaySize {
-                    width: 32,
-                    height: bounds.height,
-                    min_width: 16,
-                    min_height: 3,
-                    max_width: 48,
-                    max_height: 0,
-                },
-                opener_focus: None,
-                policy: None,
+            id,
+            OverlaySize {
+                width: 32,
+                height: bounds.height.max(3),
+                min_width: 16,
+                min_height: 3,
+                max_width: 48,
+                max_height: 0,
             },
+            None,
         )
     }
+}
+
+/// Places a drawer using [`OverlayKind::Drawer`] policy.
+#[must_use]
+pub fn place_drawer(bounds: Rect, size: OverlaySize) -> Rect {
+    if bounds.is_empty() {
+        return Rect::default();
+    }
+    place_overlay(
+        bounds,
+        None,
+        size,
+        OverlayPolicy::for_kind(OverlayKind::Drawer),
+    )
+}
+
+/// Opens (or replaces) a drawer overlay.
+pub fn open_drawer_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    id: impl Into<OverlayId>,
+    size: OverlaySize,
+    opener_focus: Option<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.open(bounds, OverlaySpec::drawer(id, size, opener_focus))
+}
+
+/// Dismisses the default drawer overlay when present.
+pub fn dismiss_drawer_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.dismiss(&OverlayId::from_static(DRAWER_OVERLAY_ID))
+}
+
+/// Places a popover under `anchor` (flip/clamp via stack policy).
+#[must_use]
+pub fn place_popover(bounds: Rect, anchor: Rect, size: OverlaySize) -> Rect {
+    if bounds.is_empty() || size.width == 0 || size.height == 0 {
+        return Rect::default();
+    }
+    place_overlay(
+        bounds,
+        Some(anchor),
+        size,
+        OverlayPolicy::for_kind(OverlayKind::Popover),
+    )
+}
+
+/// Opens an anchored popover on the stack.
+pub fn open_popover_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    anchor: Rect,
+    size: OverlaySize,
+    opener_focus: Option<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.open(
+        bounds,
+        OverlaySpec::popover(POPOVER_OVERLAY_ID, anchor, size, opener_focus),
+    )
+}
+
+/// Places a tooltip above `anchor` (may hide on tiny terminals).
+#[must_use]
+pub fn place_tooltip(bounds: Rect, anchor: Rect, size: OverlaySize) -> Rect {
+    if bounds.is_empty() || size.width == 0 || size.height == 0 {
+        return Rect::default();
+    }
+    place_overlay(
+        bounds,
+        Some(anchor),
+        size,
+        OverlayPolicy::for_kind(OverlayKind::Tooltip),
+    )
+}
+
+/// Opens a tooltip overlay (no input ownership; outside-click dismissible).
+pub fn open_tooltip_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    anchor: Rect,
+    size: OverlaySize,
+    opener_focus: Option<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.open(
+        bounds,
+        OverlaySpec::tooltip(TOOLTIP_OVERLAY_ID, anchor, size, opener_focus),
+    )
 }
 
 /// Drawer chrome (edge panel).
@@ -765,6 +858,63 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             DrawerOutcome::Closed
         ));
+    }
+
+    #[test]
+    fn drawer_popover_tooltip_open_on_overlay_stack() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<&'static str>::new();
+        let drawer = open_drawer_overlay(
+            &mut stack,
+            bounds,
+            DRAWER_OVERLAY_ID,
+            OverlaySize {
+                width: 28,
+                height: 24,
+                min_width: 12,
+                min_height: 3,
+                max_width: 40,
+                max_height: 0,
+            },
+            Some("sidebar"),
+        );
+        assert!(matches!(drawer, OverlayOutcome::Opened { .. }));
+        assert_eq!(stack.top().unwrap().kind, OverlayKind::Drawer);
+        assert_eq!(
+            stack.handle_escape(),
+            OverlayOutcome::Dismissed {
+                id: OverlayId::from_static(DRAWER_OVERLAY_ID),
+                focus: Some("sidebar"),
+            }
+        );
+
+        let anchor = Rect::new(10, 10, 8, 1);
+        let pop = open_popover_overlay(
+            &mut stack,
+            bounds,
+            anchor,
+            OverlaySize::menu(24, 6),
+            Some("trigger"),
+        );
+        assert!(matches!(pop, OverlayOutcome::Opened { .. }));
+        assert_eq!(stack.top().unwrap().kind, OverlayKind::Popover);
+        let placed = place_popover(bounds, anchor, OverlaySize::menu(24, 6));
+        assert_eq!(stack.top().unwrap().rect, placed);
+        assert!(matches!(
+            stack.handle_outside_click(ratatui_core::layout::Position::new(0, 0)),
+            OverlayOutcome::Dismissed { .. }
+        ));
+
+        let tip = open_tooltip_overlay(
+            &mut stack,
+            bounds,
+            anchor,
+            OverlaySize::menu(16, 1),
+            None,
+        );
+        assert!(matches!(tip, OverlayOutcome::Opened { .. }));
+        assert_eq!(stack.top().unwrap().kind, OverlayKind::Tooltip);
+        assert!(!stack.top_owns_input());
     }
 
     #[test]

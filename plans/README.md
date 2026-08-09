@@ -12,6 +12,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/terminal-design-system.md`](../docs/design/terminal-design-system.md) | Full token + recipe system (DesignSystem) |
 | [`docs/design/phosphor-obsidian-visual-direction.md`](../docs/design/phosphor-obsidian-visual-direction.md) | Visual audit + Phosphor Obsidian paint direction |
 | [`docs/design/semantic-interaction-architecture.md`](../docs/design/semantic-interaction-architecture.md) | UiIntent / KeymapStack / FocusGraph architecture |
+| [`docs/design/overlay-stack.md`](../docs/design/overlay-stack.md) | Unified OverlayStack placement and Esc law |
 | [`docs/design/product-audit.md`](../docs/design/product-audit.md) | Product/architecture audit |
 | [`docs/design/component-anatomy-spec.md`](../docs/design/component-anatomy-spec.md) | Component anatomy/behavior/state catalog |
 | [`docs/design/component-prompt-library.md`](../docs/design/component-prompt-library.md) | **164 agent prompts** (global contract + per-component tasks) |

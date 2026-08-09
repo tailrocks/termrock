@@ -14,6 +14,9 @@ use ratatui::{
 };
 use termrock::{
     Density, Theme,
+    interaction::{
+        OverlayKind, OverlaySize, OverlaySpec, OverlayStack, place_overlay, OverlayPolicy,
+    },
     scroll::DialogScroll,
     style::ColorCapability,
     style::DesignTokens,
@@ -598,6 +601,51 @@ pub(crate) fn stories() -> Vec<Story> {
             design_inspector,
         )
         .with_interactor(design_inspector_interactor),
+        Story::new(
+            "overlay/nested-escape",
+            "Nested overlays",
+            "OverlayStack",
+            "Parent dialog + child menu; Esc peels one layer.",
+            48,
+            14,
+            overlay_nested,
+        ),
+        Story::new(
+            "overlay/edge-placement",
+            "Overlay edges",
+            "OverlayStack",
+            "Menus near top/bottom/left/right clamp and flip.",
+            50,
+            16,
+            overlay_edges,
+        ),
+        Story::new(
+            "overlay/tiny",
+            "Tiny overlay fallback",
+            "OverlayStack",
+            "Dialog promotes fullscreen; tooltip hides.",
+            28,
+            8,
+            overlay_tiny,
+        ),
+        Story::new(
+            "overlay/queued-dialogs",
+            "Queued dialogs",
+            "OverlayStack",
+            "Multiple dialogs stacked; top owns Esc.",
+            44,
+            12,
+            overlay_queued,
+        ),
+        Story::new(
+            "overlay/fullscreen-promote",
+            "Fullscreen promote",
+            "OverlayStack",
+            "Popover promoted to fullscreen bounds.",
+            40,
+            12,
+            overlay_fullscreen_promote,
+        ),
         Story::new(
             "dialog/message",
             "Message dialog",
@@ -3410,15 +3458,164 @@ fn design_inspector(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(DesignInspector::new(snap, theme), area);
 }
 
+fn overlay_nested(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut stack = OverlayStack::<()>::new();
+    let _ = stack.open(
+        area,
+        OverlaySpec::dialog("parent", OverlaySize::dialog(36, 10), None),
+    );
+    let parent = stack.top().unwrap().rect;
+    let anchor = Rect::new(parent.x.saturating_add(2), parent.y.saturating_add(4), 6, 1);
+    let _ = stack.open(
+        area,
+        OverlaySpec::menu("child", anchor, OverlaySize::menu(18, 4), None).with_parent("parent"),
+    );
+    paint_stack_rects(frame, area, &stack, &tokens, theme);
+    frame.render_widget(
+        Paragraph::new(Line::from("Esc peels child then parent")),
+        Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
+    );
+}
+
+fn overlay_edges(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let size = OverlaySize::menu(14, 3);
+    let policy = OverlayPolicy::for_kind(OverlayKind::Menu);
+    let anchors = [
+        Rect::new(area.x, area.y, 4, 1),
+        Rect::new(area.right().saturating_sub(6), area.y, 4, 1),
+        Rect::new(area.x, area.bottom().saturating_sub(2), 4, 1),
+        Rect::new(area.right().saturating_sub(6), area.bottom().saturating_sub(2), 4, 1),
+    ];
+    for (i, anchor) in anchors.iter().enumerate() {
+        let r = place_overlay(area, Some(*anchor), size, policy);
+        frame.render_widget(
+            Panel::new(&tokens)
+                .title(match i {
+                    0 => "TL",
+                    1 => "TR",
+                    2 => "BL",
+                    _ => "BR",
+                })
+                .emphasis(PanelEmphasis::Normal),
+            r,
+        );
+    }
+}
+
+fn overlay_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::Compact);
+    let mut stack = OverlayStack::<()>::new();
+    let _ = stack.open(
+        area,
+        OverlaySpec::dialog("d", OverlaySize::dialog(48, 12), None),
+    );
+    let dialog_rect = stack.top().map(|e| e.rect).unwrap_or(area);
+    frame.render_widget(
+        Dialog::new("Tiny", Line::from("fullscreen promote").into(), &tokens)
+            .emphasis(PanelEmphasis::Focused),
+        dialog_rect,
+    );
+    let tip = place_overlay(
+        area,
+        Some(Rect::new(area.x, area.y, 2, 1)),
+        OverlaySize::menu(20, 1),
+        OverlayPolicy::for_kind(OverlayKind::Tooltip),
+    );
+    let note = if tip.width == 0 {
+        "tooltip hidden"
+    } else {
+        "tooltip shown"
+    };
+    frame.render_widget(
+        Paragraph::new(Line::from(note)),
+        Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
+    );
+}
+
+fn overlay_queued(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut stack = OverlayStack::<()>::new();
+    let _ = stack.open(
+        area,
+        OverlaySpec::dialog("d1", OverlaySize::dialog(30, 6), None),
+    );
+    let _ = stack.open(
+        area,
+        OverlaySpec::dialog("d2", OverlaySize::dialog(28, 6), None),
+    );
+    paint_stack_rects(frame, area, &stack, &tokens, theme);
+    frame.render_widget(
+        Paragraph::new(Line::from(format!("depth={} top owns Esc", stack.entries().len()))),
+        Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
+    );
+}
+
+fn overlay_fullscreen_promote(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut stack = OverlayStack::<()>::new();
+    let _ = stack.open(
+        area,
+        OverlaySpec::popover(
+            "pop",
+            Rect::new(area.x.saturating_add(2), area.y.saturating_add(2), 4, 1),
+            OverlaySize::menu(20, 5),
+            None,
+        ),
+    );
+    let _ = stack.promote_top_fullscreen(area);
+    if let Some(top) = stack.top() {
+        frame.render_widget(
+            Panel::new(&tokens)
+                .title("promoted")
+                .emphasis(PanelEmphasis::Focused),
+            top.rect,
+        );
+    }
+}
+
+fn paint_stack_rects(
+    frame: &mut Frame<'_>,
+    _area: Rect,
+    stack: &OverlayStack<()>,
+    tokens: &DesignTokens,
+    _theme: &Theme,
+) {
+    for (i, entry) in stack.entries().iter().enumerate() {
+        if entry.rect.width == 0 || entry.rect.height == 0 {
+            continue;
+        }
+        let title = match entry.kind {
+            OverlayKind::Dialog => "dialog",
+            OverlayKind::Menu => "menu",
+            OverlayKind::Popover => "popover",
+            _ => "layer",
+        };
+        frame.render_widget(
+            Panel::new(tokens)
+                .title(title)
+                .emphasis(if i + 1 == stack.entries().len() {
+                    PanelEmphasis::Focused
+                } else {
+                    PanelEmphasis::Normal
+                }),
+            entry.rect,
+        );
+    }
+}
+
 fn dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     frame.render_widget(
         Dialog::new(
             "Notice",
             Line::from("The operation completed.").into(),
-            theme,
+            &tokens,
         )
         .style(Style::new())
-        .emphasis(termrock::widgets::PanelEmphasis::Focused),
+        .emphasis(termrock::widgets::PanelEmphasis::Focused)
+        .footer_hint("esc dismiss"),
         area,
     );
 }
@@ -3451,13 +3648,14 @@ pub(crate) fn render_choice_dialog(
     state: &mut ChoiceDialogState<&'static str>,
     theme: &Theme,
 ) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let actions = choice_actions();
     frame.render_stateful_widget(
         &ChoiceDialog::new(
             Dialog::new(
                 "Choose",
                 Line::from("Continue with this operation?").into(),
-                theme,
+                &tokens,
             )
             .style(Style::new())
             .emphasis(termrock::widgets::PanelEmphasis::Focused),
@@ -3470,6 +3668,7 @@ pub(crate) fn render_choice_dialog(
 }
 
 fn message_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
     let details = [
         DetailRow {
             id: "state",
@@ -3496,7 +3695,7 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             Dialog::new(
                 "Result",
                 Line::from("The operation completed.").into(),
-                theme,
+                &tokens,
             )
             .style(Style::new())
             .emphasis(termrock::widgets::PanelEmphasis::Focused),

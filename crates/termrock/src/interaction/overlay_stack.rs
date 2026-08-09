@@ -483,6 +483,102 @@ impl<FocusId> OverlaySpec<FocusId> {
         }
     }
 
+    /// Tooltip above an anchor (no input ownership).
+    #[must_use]
+    pub fn tooltip(
+        id: impl Into<OverlayId>,
+        anchor: Rect,
+        size: OverlaySize,
+        opener_focus: Option<FocusId>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            kind: OverlayKind::Tooltip,
+            parent: None,
+            anchor: Some(anchor),
+            size,
+            opener_focus,
+            policy: None,
+        }
+    }
+
+    /// Anchored popover (dismissible, light focus).
+    #[must_use]
+    pub fn popover(
+        id: impl Into<OverlayId>,
+        anchor: Rect,
+        size: OverlaySize,
+        opener_focus: Option<FocusId>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            kind: OverlayKind::Popover,
+            parent: None,
+            anchor: Some(anchor),
+            size,
+            opener_focus,
+            policy: None,
+        }
+    }
+
+    /// Select / combobox popup under a trigger.
+    #[must_use]
+    pub fn select(
+        id: impl Into<OverlayId>,
+        anchor: Rect,
+        size: OverlaySize,
+        opener_focus: Option<FocusId>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            kind: OverlayKind::Select,
+            parent: None,
+            anchor: Some(anchor),
+            size,
+            opener_focus,
+            policy: None,
+        }
+    }
+
+    /// Edge drawer (default end/right).
+    #[must_use]
+    pub fn drawer(
+        id: impl Into<OverlayId>,
+        size: OverlaySize,
+        opener_focus: Option<FocusId>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            kind: OverlayKind::Drawer,
+            parent: None,
+            anchor: None,
+            size,
+            opener_focus,
+            policy: None,
+        }
+    }
+
+    /// Fullscreen viewer / semantic zoom.
+    #[must_use]
+    pub fn fullscreen(id: impl Into<OverlayId>, opener_focus: Option<FocusId>) -> Self {
+        Self {
+            id: id.into(),
+            kind: OverlayKind::Fullscreen,
+            parent: None,
+            anchor: None,
+            size: OverlaySize {
+                width: 0,
+                height: 0,
+                min_width: 1,
+                min_height: 1,
+                max_width: 0,
+                max_height: 0,
+            },
+            opener_focus,
+            policy: None,
+        }
+    }
+
     /// Nested child under an open parent.
     #[must_use]
     pub fn with_parent(mut self, parent: impl Into<OverlayId>) -> Self {
@@ -1633,6 +1729,33 @@ mod tests {
             },
         );
         assert_eq!(stack.top().unwrap().rect, bounds);
+    }
+
+    #[test]
+    fn story_spec_constructors_for_all_kinds() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let anchor = Rect::new(20, 10, 4, 1);
+        let mut stack = OverlayStack::<()>::new();
+        let size = OverlaySize::menu(20, 5);
+        let specs: [OverlaySpec<()>; 11] = [
+            OverlaySpec::tooltip("t", anchor, size, None),
+            OverlaySpec::popover("p", anchor, size, None),
+            OverlaySpec::menu("m", anchor, size, None),
+            OverlaySpec::context_menu("c", anchor, size, None),
+            OverlaySpec::completion("cmp", anchor, size, None),
+            OverlaySpec::select("s", anchor, size, None),
+            OverlaySpec::dialog("d", OverlaySize::dialog(40, 10), None),
+            OverlaySpec::alert_dialog("a", OverlaySize::dialog(40, 10), None),
+            OverlaySpec::drawer("dr", size, None),
+            OverlaySpec::command_palette("cp", size, None),
+            OverlaySpec::fullscreen("fs", None),
+        ];
+        for mut spec in specs {
+            let _ = OverlayPolicy::for_kind(spec.kind);
+            spec.id = OverlayId(format!("{:?}", spec.kind));
+            let _ = stack.open(bounds, spec);
+        }
+        assert!(!stack.is_empty());
     }
 
     #[test]

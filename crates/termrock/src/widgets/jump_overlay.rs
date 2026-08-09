@@ -11,9 +11,47 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::HitRegion,
+    interaction::{
+        HitRegion, OverlayId, OverlayOutcome, OverlaySpec, OverlayStack,
+    },
     style::{Role, Theme},
 };
+
+/// Default overlay id for jump mode (fullscreen-class, owns input).
+pub const JUMP_OVERLAY_ID: &str = "termrock.jump";
+
+/// Opens jump mode as a fullscreen overlay layer (owns input; Esc dismissible).
+pub fn open_jump_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    opener_focus: Option<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.open(
+        bounds,
+        OverlaySpec::fullscreen(JUMP_OVERLAY_ID, opener_focus).with_policy(
+            crate::interaction::OverlayPolicy {
+                // Jump mode: Esc dismisses jump only (one layer).
+                esc: crate::interaction::LayerDismissPolicy::Dismissible,
+                outside: crate::interaction::LayerDismissPolicy::Dismissible,
+                owns_input: true,
+                focus_trap: true,
+                wheel_captures: true,
+                backdrop: crate::interaction::BackdropPolicy::None,
+                prefer: crate::interaction::PlacementPrefer::Fullscreen,
+                cover_anchor: true,
+                narrow_fallback: crate::interaction::NarrowFallback::Fullscreen,
+                narrow_cols: 0,
+            },
+        ),
+    )
+}
+
+/// Dismisses the default jump overlay when present.
+pub fn dismiss_jump_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.dismiss(&OverlayId::from_static(JUMP_OVERLAY_ID))
+}
 
 /// One jump target with a letter badge.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -51,7 +89,7 @@ impl JumpOverlayState {
         Self { open: false }
     }
 
-    /// Opens jump mode.
+    /// Opens jump mode (local flag; prefer [`open_jump_overlay`] with a stack).
     pub const fn open(&mut self) {
         self.open = true;
     }
@@ -59,6 +97,29 @@ impl JumpOverlayState {
     /// Closes jump mode.
     pub const fn close(&mut self) {
         self.open = false;
+    }
+
+    /// Opens jump mode and registers a fullscreen-class layer on the overlay stack.
+    ///
+    /// Esc is dismissible on this layer (one conceptual peel). Pair paint of
+    /// [`JumpOverlay`] with `stack.top()` rect when open.
+    pub fn open_on_stack<FocusId: Clone>(
+        &mut self,
+        stack: &mut OverlayStack<FocusId>,
+        bounds: Rect,
+        opener_focus: Option<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        self.open = true;
+        open_jump_overlay(stack, bounds, opener_focus)
+    }
+
+    /// Closes jump mode and dismisses the stack entry when present.
+    pub fn close_on_stack<FocusId: Clone>(
+        &mut self,
+        stack: &mut OverlayStack<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        self.open = false;
+        dismiss_jump_overlay(stack)
     }
 
     /// Whether jump mode is active.
@@ -208,5 +269,28 @@ mod tests {
         let badges = assign_jump_badges(&regions);
         assert_eq!(badges[0].badge, 'a');
         assert_eq!(badges[1].badge, 'b');
+    }
+
+    #[test]
+    fn jump_opens_fullscreen_layer_and_esc_restores_opener() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<&'static str>::new();
+        let mut state = JumpOverlayState::new();
+        let out = state.open_on_stack(&mut stack, bounds, Some("main.list"));
+        assert!(matches!(out, OverlayOutcome::Opened { .. }));
+        assert!(state.is_open());
+        assert!(stack.top_owns_input());
+        assert_eq!(stack.top().unwrap().rect, bounds);
+        assert_eq!(
+            stack.handle_escape(),
+            OverlayOutcome::Dismissed {
+                id: OverlayId::from_static(JUMP_OVERLAY_ID),
+                focus: Some("main.list"),
+            }
+        );
+        // App mirrors stack dismiss into local jump state.
+        state.close();
+        assert!(!state.is_open());
+        assert!(stack.is_empty());
     }
 }
