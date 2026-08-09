@@ -29,20 +29,21 @@ use termrock::{
         ErrorView, Form, FormField, FormSection, FormState, FormWizardState, GridCell, GridColumn,
         GridRow, Heading, HeadingLevel, Hint, HintBar, ImageMeta, ImageProtocol, ImageSurface,
         InspectorField, JumpOverlay, JumpTarget, Kbd, List, ListRow, ListState, LoadingView,
-        LogPane, LogPaneState, MarkdownBlock, MarkdownBlockKind, MarkdownView, Menu, MenuItem,
-        MenuState, MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
-        Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
-        PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
-        PlanReviewState, PlanStep, Popover, Progress, ProgressKind, PromptComposer,
-        PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep,
-        RowRole, SegmentedMeter, SeparatorLine, SessionItem, SessionPicker, Severity, Skeleton,
-        SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
-        StatusBarState, StatusSlot, Surface, SurfaceElevation, Switch, SwitchState, Tab, Table,
-        TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
-        TextInput, TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
-        TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
-        TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
-        Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
+        LogLevel, LogLine, LogPane, LogPaneState, LogStream, LogStreamState, MarkdownBlock,
+        MarkdownBlockKind, MarkdownView, Menu, MenuItem, MenuState, MessageDialog, MeterSegment,
+        ModeRibbon, ObjectInspector, ObjectInspectorState, Panel, PanelChrome,
+        PermissionActionKind, PermissionPrompt, PermissionPromptState, PermissionProvenance,
+        PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview, PlanReviewState,
+        PlanStep, Popover, Progress, ProgressKind, PromptComposer, PromptComposerState,
+        QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep, RowRole, SegmentedMeter,
+        SeparatorLine, SessionItem, SessionPicker, Severity, Skeleton, SortDirection, Sparkline,
+        SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState,
+        StatusSlot, Surface, SurfaceElevation, Switch, SwitchState, Tab, Table, TableRow,
+        TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor, TextInput,
+        TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline, TimelineEvent,
+        Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock, TranscriptKind,
+        TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
+        VirtualGrid, VirtualGridState, WorkbenchMode,
     },
 };
 
@@ -440,6 +441,51 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             5,
             object_inspector_ascii,
+        ),
+        Story::new(
+            "log-stream/follow",
+            "Log stream follow",
+            "LogStream",
+            "Tail-follow chip with structured levels.",
+            48,
+            8,
+            log_stream_follow,
+        ),
+        Story::new(
+            "log-stream/structured",
+            "Log stream structured",
+            "LogStream",
+            "Pinned scroll + multi-level projection.",
+            48,
+            8,
+            log_stream_structured,
+        ),
+        Story::new(
+            "log-stream/empty",
+            "Log stream empty",
+            "LogStream",
+            "Empty-log non-color mark.",
+            32,
+            3,
+            log_stream_empty,
+        ),
+        Story::new(
+            "log-stream/narrow",
+            "Log stream narrow",
+            "LogStream",
+            "Narrow log geometry (22 cols).",
+            22,
+            6,
+            log_stream_follow,
+        ),
+        Story::new(
+            "log-stream/ascii",
+            "Log stream ASCII",
+            "LogStream",
+            "ASCII level letters and follow chip.",
+            40,
+            6,
+            log_stream_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -3390,6 +3436,84 @@ fn object_inspector_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     ];
     let mut state = ObjectInspectorState::new();
     ObjectInspector::new(&fields, system)
+        .ascii(true)
+        .colorless(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn log_stream_sample_lines() -> [LogLine<'static>; 8] {
+    [
+        LogLine {
+            id: "1",
+            level: LogLevel::Info,
+            text: "scheduler start",
+        },
+        LogLine {
+            id: "2",
+            level: LogLevel::Debug,
+            text: "load config 東京",
+        },
+        LogLine {
+            id: "3",
+            level: LogLevel::Warn,
+            text: "retry connect",
+        },
+        LogLine {
+            id: "4",
+            level: LogLevel::Error,
+            text: "upstream timeout",
+        },
+        LogLine {
+            id: "5",
+            level: LogLevel::Info,
+            text: "recovered",
+        },
+        LogLine {
+            id: "6",
+            level: LogLevel::Trace,
+            text: "tick 1",
+        },
+        LogLine {
+            id: "7",
+            level: LogLevel::Info,
+            text: "ready 🧪",
+        },
+        LogLine {
+            id: "8",
+            level: LogLevel::Info,
+            text: "serving :8080",
+        },
+    ]
+}
+
+fn log_stream_follow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let lines = log_stream_sample_lines();
+    let mut state = LogStreamState::new();
+    state.on_append(lines.len() as u16, area.height.saturating_sub(1));
+    LogStream::new(&lines, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn log_stream_structured(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let lines = log_stream_sample_lines();
+    let mut state = LogStreamState::new();
+    state.on_append(lines.len() as u16, area.height.saturating_sub(1));
+    let _ = state.handle_key(termrock::input::KeyEvent::new(
+        termrock::input::KeyCode::Home,
+        termrock::input::KeyModifiers::NONE,
+    ));
+    LogStream::new(&lines, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn log_stream_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = LogStreamState::new();
+    LogStream::new(&[], system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn log_stream_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let lines = log_stream_sample_lines();
+    let mut state = LogStreamState::new();
+    state.on_append(lines.len() as u16, area.height.saturating_sub(1));
+    LogStream::new(&lines, system)
         .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);

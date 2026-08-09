@@ -1566,28 +1566,28 @@ Every component below uses sections **1–24**:
 ## LogStream
 
 1. **Purpose:** Append-only log with follow (LogPane evolution).  
-2. **Anatomy:** `root` · `line[]` · `scrollbar` · `follow_chip` · `level_glyph`  
-3. **Public properties:** lines (bounded history projection), `design`  
-4. **State:** offset, follow bool.  
-5. **Variants:** `plain` · `structured` (level roles).  
-6. **Sizes/density:** line 1.  
-7. **Visual states:** following · pinned historical.  
-8. **Interaction states:** scroll · toggle follow.  
-9. **Keyboard:** page/arrows; optional `f` follow.  
-10. **Mouse:** wheel breaks follow; click chip.  
-11. **Focus:** focusable scroll surface.  
-12. **Disabled:** N/A.  
-13. **Loading/async:** append O(1) path; auto-scroll if follow.  
-14. **Error:** error-level lines tone.  
-15. **Narrow:** drop timestamp meta first.  
-16. **Tiny:** last line only.  
-17. **Unicode:** grapheme safe lines.  
-18. **Colorless:** level prefix `E`/`W`/`I`.  
+2. **Anatomy:** `root` · `line[]` · `follow_chip` · `level_glyph` · empty mark  
+3. **Public properties:** lines projection, `system`, `focused`, `ascii`, `colorless`  
+4. **State:** offset, follow, `accepts_input`; host owns history buffer.  
+5. **Variants:** structured levels (Trace…Error).  
+6. **Sizes/density:** one row per line; chip reserves last row when height ≥ 2.  
+7. **Visual states:** following · pinned · unfocused surface mute.  
+8. **Interaction states:** scroll · toggle follow · chip activate.  
+9. **Keyboard:** j/k arrows page Home/End; `f`/Space toggle (`default_log_stream_intent`).  
+10. **Mouse:** wheel scrolls + detaches; click chip re-follows.  
+11. **Focus:** scene owns surface; stream owns scroll/follow.  
+12. **Disabled:** `accepts_input = false`.  
+13. **Loading/async:** `on_append` O(1) rejoin when following.  
+14. **Error:** error-level Danger / colorless strong.  
+15. **Narrow:** glyph + text.  
+16. **Tiny:** text only (no glyph).  
+17. **Unicode/ASCII:** glyphs `i!x` vs `IWE`; chip `↓`/`v`.  
+18. **Colorless:** strong warn/error; muted trace/debug.  
 19. **Composition:** OpsDashboard; ToolCallCard expanded log.  
-20. **Outcomes:** `Scrolled` · `FollowChanged`  
-21. **Stories:** `log-stream/follow`, `log-stream/structured`  
-22. **Snapshots:** levels.  
-23. **Interaction tests:** append keeps follow; manual scroll clears follow.  
+20. **Outcomes:** `Scrolled` · `Follow` · `Detach` · `Ignored`  
+21. **Stories:** `log-stream/{follow,structured,empty,narrow,ascii}`  
+22. **Snapshots:** levels, chip, empty, narrow.  
+23. **Interaction tests:** append keeps follow; scroll detaches; chip/f re-follow.  
 24. **Perf:** O(visible lines); append must not repaint full history buffers.
 
 ## Timeline

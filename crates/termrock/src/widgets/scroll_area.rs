@@ -75,9 +75,10 @@ impl ScrollAreaState {
         self.offset_x
     }
 
-    /// Set vertical offset (clamped). Used by cursor-follow painters.
+    /// Set vertical offset (clamped). Clears follow-tail (manual position).
     pub fn set_offset_y(&mut self, y: u16) {
         self.offset_y = y;
+        self.follow_tail = false;
         self.clamp();
     }
 

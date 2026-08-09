@@ -2855,6 +2855,7 @@ pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEven
 pub fn termrock::interaction::default_form_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_inspector_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
+pub fn termrock::interaction::default_log_stream_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_menu_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -9815,6 +9816,8 @@ pub termrock::widgets::LogLevel::Error
 pub termrock::widgets::LogLevel::Info
 pub termrock::widgets::LogLevel::Trace
 pub termrock::widgets::LogLevel::Warn
+impl termrock::widgets::LogLevel
+pub const fn termrock::widgets::LogLevel::glyph(self, bool) -> &'static str
 impl core::clone::Clone for termrock::widgets::LogLevel
 pub fn termrock::widgets::LogLevel::clone(&self) -> termrock::widgets::LogLevel
 impl core::cmp::Eq for termrock::widgets::LogLevel
@@ -9864,6 +9867,8 @@ impl<T> either::into_either::IntoEither for termrock::widgets::LogLevel
 pub termrock::widgets::LogStreamOutcome::Detach
 pub termrock::widgets::LogStreamOutcome::Follow
 pub termrock::widgets::LogStreamOutcome::Ignored
+pub termrock::widgets::LogStreamOutcome::Scrolled
+pub termrock::widgets::LogStreamOutcome::Scrolled::offset: u16
 impl core::clone::Clone for termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamOutcome::clone(&self) -> termrock::widgets::LogStreamOutcome
 impl core::cmp::Eq for termrock::widgets::LogStreamOutcome
@@ -16906,8 +16911,11 @@ pub fn termrock::widgets::LogPaneState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LogPaneState
 pub struct termrock::widgets::LogStream<'a>
 impl<'a> termrock::widgets::LogStream<'a>
+pub const fn termrock::widgets::LogStream<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::LogStream<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::LogStream<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::LogStream<'a>::new(&'a [termrock::widgets::LogLine<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::LogStream<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::LogStreamState)
+pub fn termrock::widgets::LogStream<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::LogStreamState)
 impl<'a> core::clone::Clone for termrock::widgets::LogStream<'a>
 pub fn termrock::widgets::LogStream<'a>::clone(&self) -> termrock::widgets::LogStream<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::LogStream<'a>
@@ -16945,11 +16953,16 @@ pub fn termrock::widgets::LogStream<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LogStream<'a>
 pub struct termrock::widgets::LogStreamState
 impl termrock::widgets::LogStreamState
+pub const fn termrock::widgets::LogStreamState::accepts_input(&self) -> bool
+pub fn termrock::widgets::LogStreamState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::LogStreamOutcome
+pub fn termrock::widgets::LogStreamState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::LogStreamOutcome
 pub const fn termrock::widgets::LogStreamState::is_following(&self) -> bool
 pub fn termrock::widgets::LogStreamState::new() -> Self
 pub const fn termrock::widgets::LogStreamState::offset(&self) -> u16
 pub fn termrock::widgets::LogStreamState::on_append(&mut self, u16, u16)
+pub fn termrock::widgets::LogStreamState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::LogStreamState::set_following(&mut self, bool)
 impl core::clone::Clone for termrock::widgets::LogStreamState
 pub fn termrock::widgets::LogStreamState::clone(&self) -> termrock::widgets::LogStreamState
 impl core::cmp::Eq for termrock::widgets::LogStreamState

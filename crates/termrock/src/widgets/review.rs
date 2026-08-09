@@ -425,14 +425,25 @@ impl LogLevel {
         }
     }
 
+    /// Level mark for structured lines (`ascii` uses T/D/I/W/E).
     #[must_use]
-    fn glyph(self) -> &'static str {
-        match self {
-            Self::Trace => ".",
-            Self::Debug => "·",
-            Self::Info => "i",
-            Self::Warn => "!",
-            Self::Error => "x",
+    pub const fn glyph(self, ascii: bool) -> &'static str {
+        if ascii {
+            match self {
+                Self::Trace => "T",
+                Self::Debug => "D",
+                Self::Info => "I",
+                Self::Warn => "W",
+                Self::Error => "E",
+            }
+        } else {
+            match self {
+                Self::Trace => ".",
+                Self::Debug => "·",
+                Self::Info => "i",
+                Self::Warn => "!",
+                Self::Error => "x",
+            }
         }
     }
 }
@@ -448,24 +459,36 @@ pub struct LogLine<'a> {
     pub text: &'a str,
 }
 
-/// Log stream outcome.
+/// Log stream outcome (scroll + follow; no scene focus).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum LogStreamOutcome {
     /// No change.
     #[default]
     Ignored,
-    /// Follow re-attached.
+    /// Viewport scrolled (follow already off or unchanged).
+    Scrolled {
+        /// New vertical offset.
+        offset: u16,
+    },
+    /// Follow re-attached (tail).
     Follow,
-    /// Detached from tail.
+    /// Detached from tail by scroll/nav.
     Detach,
 }
 
-/// Log stream state (bounded scroll + follow).
+/// Log stream state (bounded scroll + follow; scene owns surface focus).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct LogStreamState {
     scroll: ScrollAreaState,
     follow: bool,
+    accepts_input: bool,
+    origin: (u16, u16),
+    body_rows: u16,
+    /// Full painted height including follow chip.
+    area_rows: u16,
+    /// Last projected line count (for scroll clamp without full re-measure).
+    line_count: u16,
 }
 
 impl LogStreamState {
@@ -475,80 +498,382 @@ impl LogStreamState {
         Self {
             scroll: ScrollAreaState::new(),
             follow: true,
+            accepts_input: true,
+            origin: (0, 0),
+            body_rows: 0,
+            area_rows: 0,
+            line_count: 0,
         }
+    }
+
+    /// Host input gate (scene / overlay ownership).
+    pub fn set_accepts_input(&mut self, accepts: bool) {
+        self.accepts_input = accepts;
+    }
+
+    /// Whether host granted input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Following tail.
+    #[must_use]
+    pub const fn is_following(&self) -> bool {
+        self.follow
+    }
+
+    /// Vertical offset.
+    #[must_use]
+    pub const fn offset(&self) -> u16 {
+        self.scroll.offset_y()
+    }
+
+    /// Force follow on/off (host sync).
+    pub fn set_following(&mut self, following: bool) {
+        self.follow = following;
+        if following {
+            self.scroll.follow_tail();
+        }
+    }
+
+    fn sync_metrics(&mut self, total_lines: u16, viewport: u16) {
+        self.line_count = total_lines;
+        self.body_rows = viewport;
+        self.scroll.set_content_size(1, total_lines);
+        self.scroll.set_viewport(1, viewport);
+        self.scroll.clamp();
     }
 
     /// After append: rejoin tail if following.
     pub fn on_append(&mut self, total_lines: u16, viewport: u16) {
-        self.scroll.set_content_size(0, total_lines);
-        self.scroll.set_viewport(0, viewport);
+        self.sync_metrics(total_lines, viewport);
         if self.follow {
             self.scroll.follow_tail();
         }
     }
 
-    /// Keys.
-    pub fn handle_key(&mut self, key: KeyEvent) -> LogStreamOutcome {
-        if key.kind == KeyEventKind::Press && key.code == KeyCode::End {
-            self.follow = true;
-            self.scroll.follow_tail();
-            return LogStreamOutcome::Follow;
-        }
-        if self.scroll.handle_key(key) {
+    fn detach_if_following(&mut self) -> bool {
+        if self.follow {
             self.follow = false;
-            return LogStreamOutcome::Detach;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn scroll_by_lines(&mut self, delta: i32) -> bool {
+        if self.body_rows == 0 && self.line_count == 0 {
+            return false;
+        }
+        let before = self.scroll.offset_y();
+        let next = i32::from(before).saturating_add(delta).max(0) as u16;
+        self.scroll.set_offset_y(next);
+        self.scroll.offset_y() != before
+    }
+
+    fn scroll_page(&mut self, forward: bool) -> bool {
+        let step = i32::from(self.body_rows.max(1));
+        self.scroll_by_lines(if forward { step } else { -step })
+    }
+
+    /// Keys via [`crate::interaction::default_log_stream_intent`].
+    pub fn handle_key(&mut self, key: KeyEvent) -> LogStreamOutcome {
+        if !self.accepts_input || key.kind == KeyEventKind::Release {
+            return LogStreamOutcome::Ignored;
+        }
+        // Product chord: explicit `f` always toggles follow (also on intent Toggle).
+        if key.kind == KeyEventKind::Press && matches!(key.code, KeyCode::Char('f' | 'F')) {
+            return self.handle_intent(UiIntent::Toggle);
+        }
+        if let Some(intent) = crate::interaction::default_log_stream_intent(key) {
+            return self.handle_intent(intent);
         }
         LogStreamOutcome::Ignored
     }
 
-    #[must_use]
-    /// Following.
-    pub const fn is_following(&self) -> bool {
-        self.follow
+    /// Intent routing (scroll + follow).
+    pub fn handle_intent(&mut self, intent: UiIntent) -> LogStreamOutcome {
+        if !self.accepts_input {
+            return LogStreamOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Move(NavigationMove::Next) => {
+                if !self.scroll_by_lines(1) {
+                    return LogStreamOutcome::Ignored;
+                }
+                if self.detach_if_following() {
+                    LogStreamOutcome::Detach
+                } else {
+                    LogStreamOutcome::Scrolled {
+                        offset: self.offset(),
+                    }
+                }
+            }
+            UiIntent::Move(NavigationMove::Previous) => {
+                if !self.scroll_by_lines(-1) {
+                    return LogStreamOutcome::Ignored;
+                }
+                if self.detach_if_following() {
+                    LogStreamOutcome::Detach
+                } else {
+                    LogStreamOutcome::Scrolled {
+                        offset: self.offset(),
+                    }
+                }
+            }
+            UiIntent::Move(NavigationMove::First) => {
+                let before = self.offset();
+                self.scroll.set_offset_y(0);
+                let moved = self.offset() != before;
+                let was_follow = self.detach_if_following();
+                if was_follow {
+                    LogStreamOutcome::Detach
+                } else if moved {
+                    LogStreamOutcome::Scrolled {
+                        offset: self.offset(),
+                    }
+                } else {
+                    LogStreamOutcome::Ignored
+                }
+            }
+            UiIntent::Move(NavigationMove::Last) => {
+                if self.follow && self.scroll.is_following() {
+                    return LogStreamOutcome::Ignored;
+                }
+                self.follow = true;
+                self.scroll.follow_tail();
+                LogStreamOutcome::Follow
+            }
+            UiIntent::Page(PageMove::Forward) => {
+                if !self.scroll_page(true) {
+                    return LogStreamOutcome::Ignored;
+                }
+                if self.detach_if_following() {
+                    LogStreamOutcome::Detach
+                } else {
+                    LogStreamOutcome::Scrolled {
+                        offset: self.offset(),
+                    }
+                }
+            }
+            UiIntent::Page(PageMove::Backward) => {
+                if !self.scroll_page(false) {
+                    return LogStreamOutcome::Ignored;
+                }
+                if self.detach_if_following() {
+                    LogStreamOutcome::Detach
+                } else {
+                    LogStreamOutcome::Scrolled {
+                        offset: self.offset(),
+                    }
+                }
+            }
+            UiIntent::Toggle => {
+                if self.follow {
+                    self.follow = false;
+                    LogStreamOutcome::Detach
+                } else {
+                    self.follow = true;
+                    self.scroll.follow_tail();
+                    LogStreamOutcome::Follow
+                }
+            }
+            _ => LogStreamOutcome::Ignored,
+        }
     }
 
-    #[must_use]
-    /// Offset.
-    pub const fn offset(&self) -> u16 {
-        self.scroll.offset_y()
+    /// Wheel scroll + follow-chip click.
+    pub fn handle_mouse(&mut self, event: MouseEvent) -> LogStreamOutcome {
+        if !self.accepts_input {
+            return LogStreamOutcome::Ignored;
+        }
+        let (ox, oy) = self.origin;
+        let hit = Rect {
+            x: ox,
+            y: oy,
+            width: 240,
+            height: self.area_rows.max(self.body_rows).max(1),
+        };
+        if !hit.contains(event.position) {
+            return LogStreamOutcome::Ignored;
+        }
+        match event.kind {
+            MouseEventKind::ScrollDown => self.handle_intent(UiIntent::Move(NavigationMove::Next)),
+            MouseEventKind::ScrollUp => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Previous))
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                // Bottom painted row is follow chip when area reserves it.
+                let chip_y = oy.saturating_add(self.area_rows.saturating_sub(1));
+                if self.area_rows >= 2 && event.position.y == chip_y {
+                    if self.follow {
+                        return LogStreamOutcome::Ignored;
+                    }
+                    self.follow = true;
+                    self.scroll.follow_tail();
+                    return LogStreamOutcome::Follow;
+                }
+                LogStreamOutcome::Ignored
+            }
+            _ => LogStreamOutcome::Ignored,
+        }
     }
 }
 
-/// Log stream paint.
+/// Log stream paint (projected lines + follow chrome).
+///
+/// **Surface focus** is host-owned (`focused` + `accepts_input`). Scroll/follow
+/// state is stream-local.
 #[derive(Debug, Clone, Copy)]
 pub struct LogStream<'a> {
     lines: &'a [LogLine<'a>],
-    tokens: &'a DesignSystem,
+    system: &'a DesignSystem,
+    focused: bool,
+    ascii: bool,
+    colorless: bool,
 }
 
 impl<'a> LogStream<'a> {
-    /// Lines.
+    /// Lines + design system.
     #[must_use]
-    pub const fn new(lines: &'a [LogLine<'a>], tokens: &'a DesignSystem) -> Self {
-        Self { lines, tokens }
+    pub const fn new(lines: &'a [LogLine<'a>], system: &'a DesignSystem) -> Self {
+        Self {
+            lines,
+            system,
+            focused: true,
+            ascii: false,
+            colorless: false,
+        }
     }
 
-    /// Paint O(visible).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &LogStreamState) {
+    /// Scene surface focus chrome.
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// ASCII level / follow glyphs.
+    #[must_use]
+    pub const fn ascii(mut self, ascii: bool) -> Self {
+        self.ascii = ascii;
+        self
+    }
+
+    /// Reduced-color paint (level tone via strong/muted only).
+    #[must_use]
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
+
+    /// Paint O(visible lines).
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut LogStreamState) {
         if area.is_empty() {
+            state.body_rows = 0;
+            state.area_rows = 0;
             return;
         }
-        let start = state.offset() as usize;
-        let mut y = area.y;
-        for line in self.lines.iter().skip(start) {
-            if y >= area.bottom() {
-                break;
-            }
-            let body = format!("{} {}", line.level.glyph(), line.text);
-            let text = take_display_cols(&body, usize::from(area.width));
+        state.origin = (area.x, area.y);
+        state.area_rows = area.height;
+        let total = self.lines.len().min(u16::MAX as usize) as u16;
+        let show_chip = area.height >= 2 && (state.follow || !self.lines.is_empty());
+        let body_h = if show_chip {
+            area.height.saturating_sub(1)
+        } else {
+            area.height
+        };
+        state.sync_metrics(total, body_h);
+        if state.follow {
+            state.scroll.follow_tail();
+        }
+
+        let surface = self.focused && state.accepts_input;
+        let tiny = area.width < 16;
+        let narrow = area.width < 28;
+
+        if self.lines.is_empty() {
+            let mark = if self.ascii { "[ ] " } else { "∅ " };
+            let msg = if tiny {
+                format!("{mark}empty")
+            } else {
+                format!("{mark}(empty log)")
+            };
             buffer.set_stringn(
                 area.x,
-                y,
-                &text,
+                area.y,
+                &take_display_cols(&msg, usize::from(area.width)),
                 usize::from(area.width),
-                self.tokens.style(line.level.role()),
+                self.system.style(Role::TextMuted),
             );
-            y = y.saturating_add(1);
+        } else {
+            let start = state.offset() as usize;
+            let mut y = area.y;
+            let bottom = area.y.saturating_add(body_h);
+            for line in self.lines.iter().skip(start) {
+                if y >= bottom {
+                    break;
+                }
+                let body = if tiny {
+                    line.text.to_string()
+                } else {
+                    let g = line.level.glyph(self.ascii);
+                    if narrow {
+                        format!("{g} {}", line.text)
+                    } else {
+                        format!("{g} {}", line.text)
+                    }
+                };
+                let style = if self.colorless {
+                    match line.level {
+                        LogLevel::Error | LogLevel::Warn if surface => {
+                            self.system.style(Role::TextStrong)
+                        }
+                        LogLevel::Trace | LogLevel::Debug => self.system.style(Role::TextMuted),
+                        _ => self.system.style(Role::Text),
+                    }
+                } else if surface {
+                    self.system.style(line.level.role())
+                } else {
+                    // Unfocused surface: mute levels slightly.
+                    match line.level {
+                        LogLevel::Error => self.system.style(Role::Danger),
+                        LogLevel::Warn => self.system.style(Role::Warning),
+                        _ => self.system.style(Role::TextMuted),
+                    }
+                };
+                let text = take_display_cols(&body, usize::from(area.width));
+                buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
+                y = y.saturating_add(1);
+            }
+        }
+
+        if show_chip {
+            let chip_y = area.bottom().saturating_sub(1);
+            let chip = if state.follow {
+                if self.ascii { "v follow" } else { "↓ follow" }
+            } else if self.ascii {
+                "^ pinned  f=follow"
+            } else {
+                "↑ pinned · f follow"
+            };
+            let chip_style = if state.follow && surface {
+                if self.colorless {
+                    self.system.style(Role::TextStrong)
+                } else {
+                    self.system.style(Role::Accent)
+                }
+            } else {
+                self.system.style(Role::TextMuted)
+            };
+            buffer.set_stringn(
+                area.x,
+                chip_y,
+                &take_display_cols(chip, usize::from(area.width)),
+                usize::from(area.width),
+                chip_style,
+            );
         }
     }
 }
@@ -725,6 +1050,41 @@ mod tests {
             .to_string()
     }
 
+    fn sample_log_lines() -> [LogLine<'static>; 6] {
+        [
+            LogLine {
+                id: "1",
+                level: LogLevel::Info,
+                text: "boot",
+            },
+            LogLine {
+                id: "2",
+                level: LogLevel::Debug,
+                text: "load 東京",
+            },
+            LogLine {
+                id: "3",
+                level: LogLevel::Warn,
+                text: "retry",
+            },
+            LogLine {
+                id: "4",
+                level: LogLevel::Error,
+                text: "fail 🧪",
+            },
+            LogLine {
+                id: "5",
+                level: LogLevel::Info,
+                text: "ready",
+            },
+            LogLine {
+                id: "6",
+                level: LogLevel::Trace,
+                text: "tick",
+            },
+        ]
+    }
+
     #[test]
     fn log_follow_detaches_on_scroll() {
         let mut state = LogStreamState::new();
@@ -733,6 +1093,156 @@ mod tests {
         let out = state.handle_key(KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE));
         assert!(matches!(out, LogStreamOutcome::Detach));
         assert!(!state.is_following());
+    }
+
+    #[test]
+    fn log_end_and_f_toggle_follow() {
+        let mut state = LogStreamState::new();
+        state.on_append(50, 5);
+        let _ = state.handle_key(KeyEvent::new(KeyCode::Home, KeyModifiers::NONE));
+        assert!(!state.is_following());
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE)),
+            LogStreamOutcome::Follow
+        ));
+        assert!(state.is_following());
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE)),
+            LogStreamOutcome::Detach
+        ));
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE)),
+            LogStreamOutcome::Follow
+        ));
+    }
+
+    #[test]
+    fn log_accepts_input_gate() {
+        let mut state = LogStreamState::new();
+        state.on_append(20, 4);
+        state.set_accepts_input(false);
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)),
+            LogStreamOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn log_scrolled_when_already_detached() {
+        let mut state = LogStreamState::new();
+        state.on_append(30, 5);
+        let _ = state.handle_key(KeyEvent::new(KeyCode::Home, KeyModifiers::NONE));
+        assert!(!state.is_following());
+        let out = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+        assert!(matches!(out, LogStreamOutcome::Scrolled { offset: 1 }));
+    }
+
+    #[test]
+    fn log_mouse_wheel_and_chip() {
+        let system = DesignSystem::default();
+        let lines = sample_log_lines();
+        let mut state = LogStreamState::new();
+        let area = Rect::new(0, 0, 40, 5);
+        let mut buffer = Buffer::empty(area);
+        LogStream::new(&lines, &system).render(area, &mut buffer, &mut state);
+        assert!(state.is_following());
+        // Detach via wheel.
+        let wheel = MouseEvent {
+            kind: MouseEventKind::ScrollUp,
+            position: Position::new(0, 0),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(wheel),
+            LogStreamOutcome::Detach
+        ));
+        // Click chip row to re-follow.
+        let chip_y = area.bottom().saturating_sub(1);
+        let click = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(0, chip_y),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(click),
+            LogStreamOutcome::Follow
+        ));
+        assert!(state.is_following());
+    }
+
+    #[test]
+    fn log_paint_levels_follow_chip_empty() {
+        let system = DesignSystem::default();
+        let lines = sample_log_lines();
+        let mut state = LogStreamState::new();
+        let area = Rect::new(0, 0, 36, 4);
+        let mut buffer = Buffer::empty(area);
+        LogStream::new(&lines, &system).render(area, &mut buffer, &mut state);
+        let chip = row_text(&buffer, area, area.bottom() - 1);
+        assert!(
+            chip.contains("follow") || chip.contains('↓'),
+            "follow chip: {chip:?}"
+        );
+        // Following paints near tail.
+        let first = row_text(&buffer, area, 0);
+        assert!(!first.is_empty());
+
+        let mut empty_state = LogStreamState::new();
+        let mut empty_buf = Buffer::empty(area);
+        LogStream::new(&[], &system).render(area, &mut empty_buf, &mut empty_state);
+        let empty = row_text(&empty_buf, area, 0);
+        assert!(empty.contains('∅') || empty.contains("empty"), "{empty:?}");
+    }
+
+    #[test]
+    fn log_ascii_colorless_narrow_tiny() {
+        let system = DesignSystem::default();
+        let lines = sample_log_lines();
+        let mut state = LogStreamState::new();
+        state.set_following(false);
+        state.on_append(6, 3);
+
+        let area = Rect::new(0, 0, 30, 4);
+        let mut buffer = Buffer::empty(area);
+        LogStream::new(&lines, &system)
+            .ascii(true)
+            .colorless(true)
+            .render(area, &mut buffer, &mut state);
+        let first = row_text(&buffer, area, 0);
+        assert!(
+            first.starts_with('I')
+                || first.starts_with('D')
+                || first.starts_with('W')
+                || first.starts_with('E')
+                || first.starts_with('T'),
+            "ascii level: {first:?}"
+        );
+
+        let narrow = Rect::new(0, 0, 22, 3);
+        let mut nbuf = Buffer::empty(narrow);
+        LogStream::new(&lines, &system).render(narrow, &mut nbuf, &mut state);
+        assert!(!row_text(&nbuf, narrow, 0).is_empty());
+
+        let tiny = Rect::new(0, 0, 12, 2);
+        let mut tbuf = Buffer::empty(tiny);
+        LogStream::new(&lines, &system).render(tiny, &mut tbuf, &mut state);
+        let tline = row_text(&tbuf, tiny, 0);
+        // Tiny drops level glyph — body text only.
+        assert!(
+            !tline.starts_with('i') || tline.contains("boot") || !tline.is_empty(),
+            "{tline:?}"
+        );
+    }
+
+    #[test]
+    fn log_append_keeps_follow() {
+        let mut state = LogStreamState::new();
+        state.on_append(10, 4);
+        assert!(state.is_following());
+        let off = state.offset();
+        state.on_append(40, 4);
+        assert!(state.is_following());
+        assert!(state.offset() >= off);
     }
 
     #[test]

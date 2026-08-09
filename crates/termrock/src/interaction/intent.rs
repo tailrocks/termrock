@@ -210,6 +210,32 @@ pub fn default_inspector_intent(key: KeyEvent) -> Option<UiIntent> {
     })
 }
 
+/// Default intent map for [`crate::widgets::LogStream`] scroll + follow.
+///
+/// - Arrows / j/k / page / Home → scroll (host maps to Detach/Scrolled)
+/// - End → [`NavigationMove::Last`] (re-follow tail)
+/// - Space → [`UiIntent::Toggle`] follow
+/// - `f` is a product chord on [`LogStreamState::handle_key`] (also Toggle)
+///
+/// Esc / Enter are not mapped — host owns dismiss and line activate if any.
+#[must_use]
+pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let is_press = key.kind == KeyEventKind::Press;
+    match key.code {
+        KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+        KeyCode::Char(' ') if is_press => Some(UiIntent::Toggle),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::Form`] (activate + page scroll only).
 ///
 /// **Field cycle (Tab / Up / Down) is host / scene owned** — not mapped here.
@@ -313,6 +339,26 @@ mod tests {
         );
         assert_eq!(
             default_inspector_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            None
+        );
+    }
+
+    #[test]
+    fn default_log_stream_intent_maps_scroll_and_toggle() {
+        assert_eq!(
+            default_log_stream_intent(KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)),
+            Some(UiIntent::Page(PageMove::Backward))
+        );
+        assert_eq!(
+            default_log_stream_intent(KeyEvent::new(KeyCode::End, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::Last))
+        );
+        assert_eq!(
+            default_log_stream_intent(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
+            Some(UiIntent::Toggle)
+        );
+        assert_eq!(
+            default_log_stream_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             None
         );
     }

@@ -1,0 +1,77 @@
+---
+title: LogStream
+description: Append-only projected log with follow/detach and scene-owned surface focus.
+---
+
+# LogStream
+
+O(visible) paint over a **consumer-owned** line projection. TermRock owns scroll
+offset, follow/detach chrome, and level recipes — not the history buffer.
+
+## When to use / when not
+
+| Use LogStream | Prefer |
+|---------------|--------|
+| Live/tail logs in a panel | — |
+| Bounded host buffer + project slice | LogPane (owns history) |
+| Chat/agent turns | [Transcript](/docs/handbook/transcript) |
+| Selectable list of events | List / Timeline |
+
+## Outcomes
+
+- `Ignored`
+- `Scrolled { offset }` — moved while already pinned
+- `Detach` — left the tail
+- `Follow` — re-attached to tail
+
+## Focus law
+
+| Concern | Owner |
+|---------|--------|
+| Surface focus | Host / InteractionScene |
+| Scroll + follow | `LogStreamState` |
+| Line buffer | Consumer |
+
+## Non-color
+
+- Levels: `i`/`!`/`x` or ASCII `I`/`W`/`E`
+- Follow chip: `↓ follow` / `v follow`
+- Pinned chip: `↑ pinned · f follow`
+- Empty: `∅` / `[ ]`
+
+## Intents
+
+`default_log_stream_intent` — j/k, arrows, Home/End, page, Space toggle.
+Product chord `f` also toggles follow on `handle_key`.
+
+## Responsive
+
+| Width | Layout |
+|-------|--------|
+| ≥ 16 | level glyph + text |
+| &lt; 16 | text only |
+| height ≥ 2 | follow/pinned chip on last row |
+
+## Basic example
+
+```rust
+use termrock::{
+    style::DesignSystem,
+    widgets::{LogLevel, LogLine, LogStream, LogStreamState},
+};
+
+let system = DesignSystem::default();
+let lines = [LogLine {
+    id: "1",
+    level: LogLevel::Info,
+    text: "ready",
+}];
+let mut state = LogStreamState::new();
+state.on_append(1, 8);
+// LogStream::new(&lines, &system).focused(true).render(area, buf, &mut state);
+let _ = (system, lines, state);
+```
+
+## Related
+
+LogPane · OpsDashboard · migration `0071` · design `log-stream-premium.md`
