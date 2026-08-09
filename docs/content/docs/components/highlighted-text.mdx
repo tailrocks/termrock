@@ -1,0 +1,49 @@
+---
+title: HighlightedText
+description: 'Match-aware text for search, fuzzy finders, and palettes.'
+---
+
+## Previews
+
+### `highlighted-text/basic`
+
+![Basic](/component-previews/highlighted-text-basic.svg)
+
+### `highlighted-text/selected`
+
+![Selected](/component-previews/highlighted-text-selected.svg)
+
+### `highlighted-text/no-color`
+
+![No color](/component-previews/highlighted-text-no-color.svg)
+
+### `highlighted-text/overlap`
+
+![Overlap](/component-previews/highlighted-text-overlap.svg)
+
+### `highlighted-text/narrow`
+
+![Narrow](/component-previews/highlighted-text-narrow.svg)
+
+### `highlighted-text/unicode`
+
+![Unicode](/component-previews/highlighted-text-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{HighlightedText, MatchTruncate, substring_ranges};
+
+let ranges = substring_ranges(path, query);
+HighlightedText::prepared(path, ranges.as_slice(), &system)
+    .truncate(MatchTruncate::KeepFirstMatch)
+    .paint(area, buf);
+```
+
+## MatchRanges
+
+Build offline when the query changes; pass prepared slices into paint every frame.
+
+## Migration
+
+See `migrations/0127-v0.13.0-highlighted-text.md`.

@@ -17468,6 +17468,57 @@ pub unsafe fn termrock::widgets::HeadingRecipe::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HeadingRecipe
 pub fn termrock::widgets::HeadingRecipe::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HeadingRecipe
+#[non_exhaustive] pub enum termrock::widgets::HighlightVisual
+pub termrock::widgets::HighlightVisual::Inactive
+pub termrock::widgets::HighlightVisual::Normal
+pub termrock::widgets::HighlightVisual::Selected
+impl termrock::widgets::HighlightVisual
+pub const fn termrock::widgets::HighlightVisual::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::HighlightVisual
+pub fn termrock::widgets::HighlightVisual::clone(&self) -> termrock::widgets::HighlightVisual
+impl core::cmp::Eq for termrock::widgets::HighlightVisual
+impl core::cmp::PartialEq for termrock::widgets::HighlightVisual
+pub fn termrock::widgets::HighlightVisual::eq(&self, &termrock::widgets::HighlightVisual) -> bool
+impl core::default::Default for termrock::widgets::HighlightVisual
+pub fn termrock::widgets::HighlightVisual::default() -> termrock::widgets::HighlightVisual
+impl core::fmt::Debug for termrock::widgets::HighlightVisual
+pub fn termrock::widgets::HighlightVisual::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::HighlightVisual
+pub fn termrock::widgets::HighlightVisual::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::HighlightVisual
+impl core::marker::StructuralPartialEq for termrock::widgets::HighlightVisual
+impl core::marker::Freeze for termrock::widgets::HighlightVisual
+impl core::marker::Send for termrock::widgets::HighlightVisual
+impl core::marker::Sync for termrock::widgets::HighlightVisual
+impl core::marker::Unpin for termrock::widgets::HighlightVisual
+impl core::marker::UnsafeUnpin for termrock::widgets::HighlightVisual
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HighlightVisual
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HighlightVisual
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HighlightVisual where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HighlightVisual::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HighlightVisual where U: core::convert::From<T>
+pub fn termrock::widgets::HighlightVisual::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HighlightVisual where U: core::convert::Into<T>
+pub type termrock::widgets::HighlightVisual::Error = core::convert::Infallible
+pub fn termrock::widgets::HighlightVisual::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HighlightVisual where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HighlightVisual::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HighlightVisual::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HighlightVisual where T: core::clone::Clone
+pub type termrock::widgets::HighlightVisual::Owned = T
+pub fn termrock::widgets::HighlightVisual::clone_into(&self, &mut T)
+pub fn termrock::widgets::HighlightVisual::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HighlightVisual where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HighlightVisual::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HighlightVisual where T: ?core::marker::Sized
+pub fn termrock::widgets::HighlightVisual::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HighlightVisual where T: ?core::marker::Sized
+pub fn termrock::widgets::HighlightVisual::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HighlightVisual where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HighlightVisual::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HighlightVisual
+pub fn termrock::widgets::HighlightVisual::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HighlightVisual
 pub enum termrock::widgets::HintSpan<'a>
 pub termrock::widgets::HintSpan::Dyn(alloc::string::String)
 pub termrock::widgets::HintSpan::DynKey(alloc::string::String)
@@ -18666,6 +18717,111 @@ pub unsafe fn termrock::widgets::MarkdownOutcome::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::MarkdownOutcome
 pub fn termrock::widgets::MarkdownOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MarkdownOutcome
+#[non_exhaustive] pub enum termrock::widgets::MatchKind
+pub termrock::widgets::MatchKind::Annotation
+pub termrock::widgets::MatchKind::Focused
+pub termrock::widgets::MatchKind::Match
+pub termrock::widgets::MatchKind::Soft
+impl termrock::widgets::MatchKind
+pub const fn termrock::widgets::MatchKind::id(self) -> &'static str
+pub const fn termrock::widgets::MatchKind::priority(self) -> u8
+impl core::clone::Clone for termrock::widgets::MatchKind
+pub fn termrock::widgets::MatchKind::clone(&self) -> termrock::widgets::MatchKind
+impl core::cmp::Eq for termrock::widgets::MatchKind
+impl core::cmp::PartialEq for termrock::widgets::MatchKind
+pub fn termrock::widgets::MatchKind::eq(&self, &termrock::widgets::MatchKind) -> bool
+impl core::default::Default for termrock::widgets::MatchKind
+pub fn termrock::widgets::MatchKind::default() -> termrock::widgets::MatchKind
+impl core::fmt::Debug for termrock::widgets::MatchKind
+pub fn termrock::widgets::MatchKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MatchKind
+pub fn termrock::widgets::MatchKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MatchKind
+impl core::marker::StructuralPartialEq for termrock::widgets::MatchKind
+impl core::marker::Freeze for termrock::widgets::MatchKind
+impl core::marker::Send for termrock::widgets::MatchKind
+impl core::marker::Sync for termrock::widgets::MatchKind
+impl core::marker::Unpin for termrock::widgets::MatchKind
+impl core::marker::UnsafeUnpin for termrock::widgets::MatchKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MatchKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MatchKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MatchKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MatchKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MatchKind where U: core::convert::From<T>
+pub fn termrock::widgets::MatchKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MatchKind where U: core::convert::Into<T>
+pub type termrock::widgets::MatchKind::Error = core::convert::Infallible
+pub fn termrock::widgets::MatchKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MatchKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MatchKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MatchKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MatchKind where T: core::clone::Clone
+pub type termrock::widgets::MatchKind::Owned = T
+pub fn termrock::widgets::MatchKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::MatchKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MatchKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MatchKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MatchKind where T: ?core::marker::Sized
+pub fn termrock::widgets::MatchKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MatchKind where T: ?core::marker::Sized
+pub fn termrock::widgets::MatchKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MatchKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MatchKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MatchKind
+pub fn termrock::widgets::MatchKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MatchKind
+#[non_exhaustive] pub enum termrock::widgets::MatchTruncate
+pub termrock::widgets::MatchTruncate::End
+pub termrock::widgets::MatchTruncate::KeepFirstMatch
+pub termrock::widgets::MatchTruncate::KeepFocusedMatch
+pub termrock::widgets::MatchTruncate::Middle
+impl termrock::widgets::MatchTruncate
+pub const fn termrock::widgets::MatchTruncate::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::MatchTruncate
+pub fn termrock::widgets::MatchTruncate::clone(&self) -> termrock::widgets::MatchTruncate
+impl core::cmp::Eq for termrock::widgets::MatchTruncate
+impl core::cmp::PartialEq for termrock::widgets::MatchTruncate
+pub fn termrock::widgets::MatchTruncate::eq(&self, &termrock::widgets::MatchTruncate) -> bool
+impl core::default::Default for termrock::widgets::MatchTruncate
+pub fn termrock::widgets::MatchTruncate::default() -> termrock::widgets::MatchTruncate
+impl core::fmt::Debug for termrock::widgets::MatchTruncate
+pub fn termrock::widgets::MatchTruncate::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MatchTruncate
+pub fn termrock::widgets::MatchTruncate::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MatchTruncate
+impl core::marker::StructuralPartialEq for termrock::widgets::MatchTruncate
+impl core::marker::Freeze for termrock::widgets::MatchTruncate
+impl core::marker::Send for termrock::widgets::MatchTruncate
+impl core::marker::Sync for termrock::widgets::MatchTruncate
+impl core::marker::Unpin for termrock::widgets::MatchTruncate
+impl core::marker::UnsafeUnpin for termrock::widgets::MatchTruncate
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MatchTruncate
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MatchTruncate
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MatchTruncate where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MatchTruncate::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MatchTruncate where U: core::convert::From<T>
+pub fn termrock::widgets::MatchTruncate::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MatchTruncate where U: core::convert::Into<T>
+pub type termrock::widgets::MatchTruncate::Error = core::convert::Infallible
+pub fn termrock::widgets::MatchTruncate::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MatchTruncate where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MatchTruncate::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MatchTruncate::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MatchTruncate where T: core::clone::Clone
+pub type termrock::widgets::MatchTruncate::Owned = T
+pub fn termrock::widgets::MatchTruncate::clone_into(&self, &mut T)
+pub fn termrock::widgets::MatchTruncate::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MatchTruncate where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MatchTruncate::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MatchTruncate where T: ?core::marker::Sized
+pub fn termrock::widgets::MatchTruncate::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MatchTruncate where T: ?core::marker::Sized
+pub fn termrock::widgets::MatchTruncate::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MatchTruncate where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MatchTruncate::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MatchTruncate
+pub fn termrock::widgets::MatchTruncate::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MatchTruncate
 #[non_exhaustive] pub enum termrock::widgets::MenuOutcome<Id>
 pub termrock::widgets::MenuOutcome::Activated(Id)
 pub termrock::widgets::MenuOutcome::Closed
@@ -25994,9 +26150,11 @@ pub termrock::widgets::CompletionCandidate::enabled: bool
 pub termrock::widgets::CompletionCandidate::id: Id
 pub termrock::widgets::CompletionCandidate::kind: core::option::Option<&'a str>
 pub termrock::widgets::CompletionCandidate::label: &'a str
+pub termrock::widgets::CompletionCandidate::match_ranges: core::option::Option<&'a [termrock::widgets::MatchRange]>
 impl<'a, Id> termrock::widgets::CompletionCandidate<'a, Id>
 pub const fn termrock::widgets::CompletionCandidate<'a, Id>::enabled(self, bool) -> Self
 pub const fn termrock::widgets::CompletionCandidate<'a, Id>::kind(self, &'a str) -> Self
+pub const fn termrock::widgets::CompletionCandidate<'a, Id>::matches(self, &'a [termrock::widgets::MatchRange]) -> Self
 pub const fn termrock::widgets::CompletionCandidate<'a, Id>::new(Id, &'a str) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CompletionCandidate<'a, Id>
 pub fn termrock::widgets::CompletionCandidate<'a, Id>::clone(&self) -> termrock::widgets::CompletionCandidate<'a, Id>
@@ -28503,6 +28661,105 @@ pub unsafe fn termrock::widgets::HeadingParts::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HeadingParts
 pub fn termrock::widgets::HeadingParts::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HeadingParts
+pub struct termrock::widgets::HighlightedText<'a>
+impl<'a> termrock::widgets::HighlightedText<'a>
+pub const fn termrock::widgets::HighlightedText<'a>::base_role(self, termrock::style::Role) -> Self
+pub const fn termrock::widgets::HighlightedText<'a>::focused_index(self, core::option::Option<usize>) -> Self
+pub const fn termrock::widgets::HighlightedText<'a>::new(&'a str, &'a [termrock::widgets::MatchRange], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::HighlightedText<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> termrock::widgets::HighlightedTextParts
+pub const fn termrock::widgets::HighlightedText<'a>::plain(&self) -> &'a str
+pub fn termrock::widgets::HighlightedText<'a>::prepare_ranges(&self) -> termrock::widgets::MatchRanges
+pub const fn termrock::widgets::HighlightedText<'a>::prepared(&'a str, &'a [termrock::widgets::MatchRange], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::HighlightedText<'a>::selected(self) -> Self
+pub const fn termrock::widgets::HighlightedText<'a>::source(&self) -> &'a str
+pub fn termrock::widgets::HighlightedText<'a>::to_spans(&self) -> alloc::vec::Vec<termrock::widgets::TextSpan<'a>>
+pub const fn termrock::widgets::HighlightedText<'a>::truncate(self, termrock::widgets::MatchTruncate) -> Self
+pub fn termrock::widgets::HighlightedText<'a>::visible_window(&self, u16) -> (alloc::string::String, alloc::vec::Vec<termrock::widgets::MatchRange>, termrock::widgets::MatchRange)
+pub const fn termrock::widgets::HighlightedText<'a>::visual(self, termrock::widgets::HighlightVisual) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::HighlightedText<'_>
+pub fn &termrock::widgets::HighlightedText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::HighlightedText<'_>
+pub fn termrock::widgets::HighlightedText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::HighlightedText<'a>
+pub fn termrock::widgets::HighlightedText<'a>::clone(&self) -> termrock::widgets::HighlightedText<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::HighlightedText<'a>
+pub fn termrock::widgets::HighlightedText<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::HighlightedText<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::HighlightedText<'a>
+impl<'a> core::marker::Send for termrock::widgets::HighlightedText<'a>
+impl<'a> core::marker::Sync for termrock::widgets::HighlightedText<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::HighlightedText<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::HighlightedText<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HighlightedText<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::HighlightedText<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::HighlightedText<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::HighlightedText<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HighlightedText<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::HighlightedText<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::HighlightedText<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HighlightedText<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HighlightedText<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HighlightedText<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HighlightedText<'a> where T: core::clone::Clone
+pub type termrock::widgets::HighlightedText<'a>::Owned = T
+pub fn termrock::widgets::HighlightedText<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::HighlightedText<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HighlightedText<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HighlightedText<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HighlightedText<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HighlightedText<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HighlightedText<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HighlightedText<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HighlightedText<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HighlightedText<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HighlightedText<'a>
+pub fn termrock::widgets::HighlightedText<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HighlightedText<'a>
+pub struct termrock::widgets::HighlightedTextParts
+pub termrock::widgets::HighlightedTextParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::HighlightedTextParts::source_len: usize
+pub termrock::widgets::HighlightedTextParts::truncated: bool
+pub termrock::widgets::HighlightedTextParts::visible: termrock::widgets::MatchRange
+impl core::clone::Clone for termrock::widgets::HighlightedTextParts
+pub fn termrock::widgets::HighlightedTextParts::clone(&self) -> termrock::widgets::HighlightedTextParts
+impl core::cmp::Eq for termrock::widgets::HighlightedTextParts
+impl core::cmp::PartialEq for termrock::widgets::HighlightedTextParts
+pub fn termrock::widgets::HighlightedTextParts::eq(&self, &termrock::widgets::HighlightedTextParts) -> bool
+impl core::fmt::Debug for termrock::widgets::HighlightedTextParts
+pub fn termrock::widgets::HighlightedTextParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::HighlightedTextParts
+impl core::marker::Freeze for termrock::widgets::HighlightedTextParts
+impl core::marker::Send for termrock::widgets::HighlightedTextParts
+impl core::marker::Sync for termrock::widgets::HighlightedTextParts
+impl core::marker::Unpin for termrock::widgets::HighlightedTextParts
+impl core::marker::UnsafeUnpin for termrock::widgets::HighlightedTextParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HighlightedTextParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HighlightedTextParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HighlightedTextParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HighlightedTextParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HighlightedTextParts where U: core::convert::From<T>
+pub fn termrock::widgets::HighlightedTextParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HighlightedTextParts where U: core::convert::Into<T>
+pub type termrock::widgets::HighlightedTextParts::Error = core::convert::Infallible
+pub fn termrock::widgets::HighlightedTextParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HighlightedTextParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HighlightedTextParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HighlightedTextParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HighlightedTextParts where T: core::clone::Clone
+pub type termrock::widgets::HighlightedTextParts::Owned = T
+pub fn termrock::widgets::HighlightedTextParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::HighlightedTextParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HighlightedTextParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HighlightedTextParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HighlightedTextParts where T: ?core::marker::Sized
+pub fn termrock::widgets::HighlightedTextParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HighlightedTextParts where T: ?core::marker::Sized
+pub fn termrock::widgets::HighlightedTextParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HighlightedTextParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HighlightedTextParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HighlightedTextParts
+pub fn termrock::widgets::HighlightedTextParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HighlightedTextParts
 pub struct termrock::widgets::Hint<'a>
 pub termrock::widgets::Hint::chord: &'a str
 pub termrock::widgets::Hint::label: &'a str
@@ -30514,6 +30771,122 @@ pub unsafe fn termrock::widgets::MarkdownViewState::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::MarkdownViewState
 pub fn termrock::widgets::MarkdownViewState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MarkdownViewState
+pub struct termrock::widgets::MatchRange
+pub termrock::widgets::MatchRange::end: usize
+pub termrock::widgets::MatchRange::kind: termrock::widgets::MatchKind
+pub termrock::widgets::MatchRange::start: usize
+impl termrock::widgets::MatchRange
+pub fn termrock::widgets::MatchRange::clamp_to(self, &str) -> Self
+pub const fn termrock::widgets::MatchRange::focused(usize, usize) -> Self
+pub const fn termrock::widgets::MatchRange::is_empty(self) -> bool
+pub const fn termrock::widgets::MatchRange::len(self) -> usize
+pub const fn termrock::widgets::MatchRange::new(usize, usize) -> Self
+pub fn termrock::widgets::MatchRange::slice<'a>(self, &'a str) -> &'a str
+pub fn termrock::widgets::MatchRange::snap_graphemes(self, &str) -> Self
+pub const fn termrock::widgets::MatchRange::soft(usize, usize) -> Self
+pub const fn termrock::widgets::MatchRange::with_kind(usize, usize, termrock::widgets::MatchKind) -> Self
+impl core::clone::Clone for termrock::widgets::MatchRange
+pub fn termrock::widgets::MatchRange::clone(&self) -> termrock::widgets::MatchRange
+impl core::cmp::Eq for termrock::widgets::MatchRange
+impl core::cmp::PartialEq for termrock::widgets::MatchRange
+pub fn termrock::widgets::MatchRange::eq(&self, &termrock::widgets::MatchRange) -> bool
+impl core::fmt::Debug for termrock::widgets::MatchRange
+pub fn termrock::widgets::MatchRange::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MatchRange
+pub fn termrock::widgets::MatchRange::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::iter::traits::collect::FromIterator<termrock::widgets::MatchRange> for termrock::widgets::MatchRanges
+pub fn termrock::widgets::MatchRanges::from_iter<T: core::iter::traits::collect::IntoIterator<Item = termrock::widgets::MatchRange>>(T) -> Self
+impl core::marker::Copy for termrock::widgets::MatchRange
+impl core::marker::StructuralPartialEq for termrock::widgets::MatchRange
+impl core::marker::Freeze for termrock::widgets::MatchRange
+impl core::marker::Send for termrock::widgets::MatchRange
+impl core::marker::Sync for termrock::widgets::MatchRange
+impl core::marker::Unpin for termrock::widgets::MatchRange
+impl core::marker::UnsafeUnpin for termrock::widgets::MatchRange
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MatchRange
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MatchRange
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MatchRange where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MatchRange::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MatchRange where U: core::convert::From<T>
+pub fn termrock::widgets::MatchRange::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MatchRange where U: core::convert::Into<T>
+pub type termrock::widgets::MatchRange::Error = core::convert::Infallible
+pub fn termrock::widgets::MatchRange::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MatchRange where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MatchRange::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MatchRange::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MatchRange where T: core::clone::Clone
+pub type termrock::widgets::MatchRange::Owned = T
+pub fn termrock::widgets::MatchRange::clone_into(&self, &mut T)
+pub fn termrock::widgets::MatchRange::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MatchRange where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MatchRange::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MatchRange where T: ?core::marker::Sized
+pub fn termrock::widgets::MatchRange::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MatchRange where T: ?core::marker::Sized
+pub fn termrock::widgets::MatchRange::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MatchRange where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MatchRange::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MatchRange
+pub fn termrock::widgets::MatchRange::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MatchRange
+pub struct termrock::widgets::MatchRanges
+impl termrock::widgets::MatchRanges
+pub fn termrock::widgets::MatchRanges::as_slice(&self) -> &[termrock::widgets::MatchRange]
+pub fn termrock::widgets::MatchRanges::covering(&self, usize) -> alloc::vec::Vec<usize>
+pub fn termrock::widgets::MatchRanges::from_ranges(impl core::iter::traits::collect::IntoIterator<Item = termrock::widgets::MatchRange>) -> Self
+pub fn termrock::widgets::MatchRanges::is_empty(&self) -> bool
+pub fn termrock::widgets::MatchRanges::len(&self) -> usize
+pub const fn termrock::widgets::MatchRanges::new() -> Self
+pub fn termrock::widgets::MatchRanges::normalized(self, &str) -> Self
+pub fn termrock::widgets::MatchRanges::prepare(self, &str) -> Self
+pub fn termrock::widgets::MatchRanges::push(&mut self, termrock::widgets::MatchRange)
+pub fn termrock::widgets::MatchRanges::resolve_overlaps(self, &str) -> Self
+pub fn termrock::widgets::MatchRanges::single(termrock::widgets::MatchRange) -> Self
+impl core::clone::Clone for termrock::widgets::MatchRanges
+pub fn termrock::widgets::MatchRanges::clone(&self) -> termrock::widgets::MatchRanges
+impl core::cmp::Eq for termrock::widgets::MatchRanges
+impl core::cmp::PartialEq for termrock::widgets::MatchRanges
+pub fn termrock::widgets::MatchRanges::eq(&self, &termrock::widgets::MatchRanges) -> bool
+impl core::default::Default for termrock::widgets::MatchRanges
+pub fn termrock::widgets::MatchRanges::default() -> termrock::widgets::MatchRanges
+impl core::fmt::Debug for termrock::widgets::MatchRanges
+pub fn termrock::widgets::MatchRanges::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::iter::traits::collect::FromIterator<termrock::widgets::MatchRange> for termrock::widgets::MatchRanges
+pub fn termrock::widgets::MatchRanges::from_iter<T: core::iter::traits::collect::IntoIterator<Item = termrock::widgets::MatchRange>>(T) -> Self
+impl core::marker::StructuralPartialEq for termrock::widgets::MatchRanges
+impl core::marker::Freeze for termrock::widgets::MatchRanges
+impl core::marker::Send for termrock::widgets::MatchRanges
+impl core::marker::Sync for termrock::widgets::MatchRanges
+impl core::marker::Unpin for termrock::widgets::MatchRanges
+impl core::marker::UnsafeUnpin for termrock::widgets::MatchRanges
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MatchRanges
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MatchRanges
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MatchRanges where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MatchRanges::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MatchRanges where U: core::convert::From<T>
+pub fn termrock::widgets::MatchRanges::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MatchRanges where U: core::convert::Into<T>
+pub type termrock::widgets::MatchRanges::Error = core::convert::Infallible
+pub fn termrock::widgets::MatchRanges::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MatchRanges where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MatchRanges::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MatchRanges::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MatchRanges where T: core::clone::Clone
+pub type termrock::widgets::MatchRanges::Owned = T
+pub fn termrock::widgets::MatchRanges::clone_into(&self, &mut T)
+pub fn termrock::widgets::MatchRanges::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MatchRanges where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MatchRanges::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MatchRanges where T: ?core::marker::Sized
+pub fn termrock::widgets::MatchRanges::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MatchRanges where T: ?core::marker::Sized
+pub fn termrock::widgets::MatchRanges::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MatchRanges where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MatchRanges::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MatchRanges
+pub fn termrock::widgets::MatchRanges::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MatchRanges
 pub struct termrock::widgets::Menu<'a, Id>
 impl<'a, Id> termrock::widgets::Menu<'a, Id>
 pub const fn termrock::widgets::Menu<'a, Id>::ascii(self, bool) -> Self
@@ -38541,6 +38914,7 @@ pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::ve
 pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
 pub fn termrock::widgets::line_plain(&ratatui_core::text::line::Line<'_>) -> alloc::string::String
 pub fn termrock::widgets::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
+pub fn termrock::widgets::match_range_from_display_cols(&str, usize, usize, termrock::widgets::MatchKind) -> termrock::widgets::MatchRange
 pub fn termrock::widgets::open_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -38572,6 +38946,8 @@ pub fn termrock::widgets::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::widgets::strip_str(&str) -> alloc::string::String
 pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub fn termrock::widgets::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::widgets::substring_ranges(&str, &str) -> termrock::widgets::MatchRanges
+pub fn termrock::widgets::substring_ranges_ignore_ascii_case(&str, &str) -> termrock::widgets::MatchRanges
 pub fn termrock::widgets::syntax_role_style(&termrock::style::DesignSystem, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::widgets::system_from_preset_id(&str) -> core::option::Option<termrock::style::DesignSystem>
 pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>

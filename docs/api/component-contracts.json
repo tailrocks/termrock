@@ -662,5 +662,13 @@
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"
+  },
+  "HighlightedText": {
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "focus": "not-applicable",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
   }
 }

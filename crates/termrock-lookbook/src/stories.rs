@@ -32,9 +32,10 @@ use termrock::{
         DetailTableState, Dialog, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
         DiffState, DiffView, Drawer, EmptyState, ErrorView, Form, FormField, FormSection,
         FormState, FormWizardState, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
-        HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface, InspectorField,
-        JumpOverlay, JumpTarget, Kbd, KeyValueList, KeyValueListState, KvEntry, KvLayout, KvStatus,
-        Link, LinkState, List, PresenceStatus,
+        HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
+        InspectorField, JumpOverlay, JumpTarget, Kbd, KeyValueList, KeyValueListState, KvEntry,
+        KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
+        MatchTruncate, PresenceStatus,
         ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
         LogPaneState,
         LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
@@ -2550,6 +2551,42 @@ pub(crate) fn stories() -> Vec<Story> {
             identity_thread_story,
         ),
         Story::new(
+            "highlighted-text/basic",
+            "HighlightedText matches",
+            "HighlightedText",
+            "Substring matches with keep-first truncation.",
+            40,
+            4,
+            highlighted_text_basic_story,
+        ),
+        Story::new(
+            "highlighted-text/selected",
+            "HighlightedText selected",
+            "HighlightedText",
+            "Selected row visual with focused match.",
+            40,
+            2,
+            highlighted_text_selected_story,
+        ),
+        Story::new(
+            "highlighted-text/no-color",
+            "HighlightedText no-color",
+            "HighlightedText",
+            "Monochrome match emphasis (underline/bold).",
+            40,
+            2,
+            highlighted_text_no_color_story,
+        ),
+        Story::new(
+            "highlighted-text/overlap",
+            "HighlightedText overlaps",
+            "HighlightedText",
+            "Overlapping soft/match/focused ranges.",
+            36,
+            2,
+            highlighted_text_overlap_story,
+        ),
+        Story::new(
             "label/basic",
             "Label basic",
             "Label",
@@ -3521,6 +3558,24 @@ pub(crate) fn stories() -> Vec<Story> {
             12,
             2,
             avatar_glyph_unicode_story,
+        ),
+        Story::new(
+            "highlighted-text/narrow",
+            "Narrow HighlightedText",
+            "HighlightedText",
+            "Match-preserving truncate at 16 cols.",
+            16,
+            2,
+            highlighted_text_basic_story,
+        ),
+        Story::new(
+            "highlighted-text/unicode",
+            "Unicode HighlightedText",
+            "HighlightedText",
+            "Grapheme-safe matches on CJK/emoji.",
+            32,
+            2,
+            highlighted_text_unicode_story,
         ),
         Story::new(
             "identity/narrow",
@@ -9650,6 +9705,82 @@ fn avatar_glyph_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 fn avatar_glyph_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let _ = AvatarGlyph::new("文档 用户", system)
         .size(AvatarSize::Normal)
+        .paint(area, frame.buffer_mut());
+}
+
+fn highlighted_text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{MatchRanges, substring_ranges};
+    let lines = [
+        "src/widgets/command_palette.rs",
+        "crates/termrock/src/widgets/picker.rs",
+        "docs/design/component-prompt-library.md",
+    ];
+    let chunks = Layout::vertical([Constraint::Length(1); 3]).split(area);
+    for (i, src) in lines.iter().enumerate() {
+        let ranges = substring_ranges(src, "pal");
+        if ranges.is_empty() {
+            let ranges = substring_ranges(src, "widget");
+            let _ = HighlightedText::prepared(src, ranges.as_slice(), system)
+                .truncate(MatchTruncate::KeepFirstMatch)
+                .paint(chunks[i], frame.buffer_mut());
+        } else {
+            let _ = HighlightedText::prepared(src, ranges.as_slice(), system)
+                .truncate(MatchTruncate::KeepFirstMatch)
+                .paint(chunks[i], frame.buffer_mut());
+        }
+        let _ = MatchRanges::new();
+    }
+}
+
+fn highlighted_text_selected_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{MatchKind, MatchRange, substring_ranges};
+    let src = "Open Command Palette";
+    let mut ranges = substring_ranges(src, "Pal");
+    // Mark first range focused if present
+    let slice = ranges.as_slice();
+    let owned: Vec<MatchRange> = if let Some(r) = slice.first() {
+        let mut v = vec![MatchRange::focused(r.start, r.end)];
+        v.extend(slice.iter().skip(1).copied());
+        v
+    } else {
+        slice.to_vec()
+    };
+    let prep = MatchRanges::from_ranges(owned).prepare(src);
+    let _ = HighlightedText::prepared(src, prep.as_slice(), system)
+        .selected()
+        .paint(area, frame.buffer_mut());
+    let _ = MatchKind::Match;
+}
+
+fn highlighted_text_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::substring_ranges;
+    let system = system.clone().no_color();
+    let src = "fuzzy_find_path";
+    let ranges = substring_ranges(src, "find");
+    let _ = HighlightedText::prepared(src, ranges.as_slice(), &system)
+        .paint(area, frame.buffer_mut());
+}
+
+fn highlighted_text_overlap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{MatchKind, MatchRange, MatchRanges};
+    let src = "abcdefghi";
+    let prep = MatchRanges::from_ranges([
+        MatchRange::soft(0, 6),
+        MatchRange::new(2, 8),
+        MatchRange::focused(4, 5),
+    ])
+    .prepare(src);
+    let _ = HighlightedText::prepared(src, prep.as_slice(), system)
+        .paint(area, frame.buffer_mut());
+    let _ = MatchKind::Soft;
+}
+
+fn highlighted_text_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::substring_ranges;
+    let src = "文档/组件/palette.md";
+    let ranges = substring_ranges(src, "palette");
+    let _ = HighlightedText::prepared(src, ranges.as_slice(), system)
+        .truncate(MatchTruncate::KeepFirstMatch)
         .paint(area, frame.buffer_mut());
 }
 

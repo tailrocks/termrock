@@ -33,6 +33,9 @@ pub struct CompletionCandidate<'a, Id> {
     pub kind: Option<&'a str>,
     /// Whether this candidate accepts selection and commit.
     pub enabled: bool,
+    /// Optional precomputed match ranges into [`Self::label`] (fuzzy/search).
+    /// Host owns scoring; paint uses [`crate::widgets::HighlightedText`].
+    pub match_ranges: Option<&'a [crate::widgets::MatchRange]>,
 }
 
 impl<'a, Id> CompletionCandidate<'a, Id> {
@@ -44,6 +47,7 @@ impl<'a, Id> CompletionCandidate<'a, Id> {
             label,
             kind: None,
             enabled: true,
+            match_ranges: None,
         }
     }
 
@@ -58,6 +62,13 @@ impl<'a, Id> CompletionCandidate<'a, Id> {
     #[must_use]
     pub const fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    /// Attach match ranges for highlighted label paint.
+    #[must_use]
+    pub const fn matches(mut self, ranges: &'a [crate::widgets::MatchRange]) -> Self {
+        self.match_ranges = Some(ranges);
         self
     }
 }
@@ -623,8 +634,29 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
             let label_budget = usize::from(menu.width)
                 .saturating_sub(2)
                 .saturating_sub(kind_budget);
-            let label = take_display_cols(candidate.label, label_budget);
-            buffer.set_stringn(menu.x.saturating_add(1), y, label, label_budget, style);
+            let label_area = Rect::new(
+                menu.x.saturating_add(1),
+                y,
+                u16::try_from(label_budget).unwrap_or(0),
+                1,
+            );
+            if let Some(ranges) = candidate.match_ranges {
+                use crate::widgets::{HighlightVisual, HighlightedText, MatchTruncate};
+                let visual = if selected {
+                    HighlightVisual::Selected
+                } else if !candidate.enabled {
+                    HighlightVisual::Inactive
+                } else {
+                    HighlightVisual::Normal
+                };
+                let _ = HighlightedText::new(candidate.label, ranges, self.system)
+                    .visual(visual)
+                    .truncate(MatchTruncate::KeepFirstMatch)
+                    .paint(label_area, buffer);
+            } else {
+                let label = take_display_cols(candidate.label, label_budget);
+                buffer.set_stringn(menu.x.saturating_add(1), y, label, label_budget, style);
+            }
             if let Some(kind) = candidate.kind {
                 let kind_text = take_display_cols(kind, kind_cols.min(usize::from(menu.width) / 2));
                 let kind_x = menu

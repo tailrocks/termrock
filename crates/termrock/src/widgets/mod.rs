@@ -21,6 +21,7 @@ mod accordion;
 mod collapsible;
 mod section;
 mod badge;
+mod highlighted_text;
 mod icon;
 mod identity;
 mod label;
@@ -123,6 +124,11 @@ pub use key_value_list::{
 pub use link::{
     ActionLink, ActionLinkOutcome, DestinationDisplay, Link, LinkDestination, LinkOutcome,
     LinkParts, LinkState, LinkVariant,
+};
+pub use highlighted_text::{
+    HighlightVisual, HighlightedText, HighlightedTextParts, MatchKind, MatchRange, MatchRanges,
+    MatchTruncate, match_range_from_display_cols, substring_ranges,
+    substring_ranges_ignore_ascii_case,
 };
 pub use icon::{Icon, IconParts};
 pub use identity::{
