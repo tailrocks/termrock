@@ -202,7 +202,7 @@ impl<Id: Clone + Eq, ScopeId: Clone + Eq> FocusRing<Id, ScopeId> {
     /// Opens a root modal and pushes its matching focus scope atomically.
     pub fn open_modal<M>(&mut self, modals: &mut ModalStack<M>, modal: M, scope: ScopeId) {
         while self.scopes.len() > 1 {
-            self.pop_scope();
+            let _ = self.pop_scope();
         }
         modals.open(modal);
         self.push_scope(scope);

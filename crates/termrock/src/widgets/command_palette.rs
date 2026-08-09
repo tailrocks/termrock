@@ -15,9 +15,7 @@ use ratatui_core::{
 use crate::{
     input::KeyEvent,
     style::Theme,
-    widgets::{
-        ListRow, Panel, PanelEmphasis, Picker, PickerOutcome, PickerState, TextInputState,
-    },
+    widgets::{ListRow, Panel, PanelEmphasis, Picker, PickerOutcome, PickerState, TextInputState},
 };
 
 /// Semantic palette outcomes (mirrors picker with palette naming).
@@ -108,7 +106,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for CommandPalette<'_, Id> {
     type State = CommandPaletteState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 

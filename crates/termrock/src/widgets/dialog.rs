@@ -258,7 +258,7 @@ impl Widget for &Dialog<'_> {
 
 impl Widget for Dialog<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -425,7 +425,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for ChoiceDialog<'_, Id> {
     type State = ChoiceDialogState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 
@@ -507,6 +507,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for MessageDialog<'_, Id> {
     type State = DetailTableState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }

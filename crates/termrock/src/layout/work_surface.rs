@@ -125,7 +125,9 @@ impl WorkSurface {
         for region in &self.regions {
             match region.size {
                 RegionSize::Fixed(n) => fixed = fixed.saturating_add(n),
-                RegionSize::Weight(w) => weight_sum = weight_sum.saturating_add(u32::from(w.max(1))),
+                RegionSize::Weight(w) => {
+                    weight_sum = weight_sum.saturating_add(u32::from(w.max(1)))
+                }
                 RegionSize::Collapsed => {}
             }
         }
@@ -142,7 +144,8 @@ impl WorkSurface {
                     if index + 1 == self.regions.len() || remaining_weight == 0 {
                         remaining_flex
                     } else {
-                        let share = (u32::from(remaining_flex) * w / remaining_weight.max(1)) as u16;
+                        let share =
+                            (u32::from(remaining_flex) * w / remaining_weight.max(1)) as u16;
                         remaining_weight = remaining_weight.saturating_sub(w);
                         remaining_flex = remaining_flex.saturating_sub(share);
                         share
@@ -188,22 +191,20 @@ mod tests {
 
     #[test]
     fn vertical_fixed_and_weight_fill_height() {
-        let surface = WorkSurface::new()
-            .density(Density::Dashboard)
-            .regions([
-                RegionSpec {
-                    id: RegionId::from_static("header"),
-                    size: RegionSize::Fixed(2),
-                },
-                RegionSpec {
-                    id: RegionId::from_static("body"),
-                    size: RegionSize::Weight(1),
-                },
-                RegionSpec {
-                    id: RegionId::from_static("footer"),
-                    size: RegionSize::Fixed(1),
-                },
-            ]);
+        let surface = WorkSurface::new().density(Density::Dashboard).regions([
+            RegionSpec {
+                id: RegionId::from_static("header"),
+                size: RegionSize::Fixed(2),
+            },
+            RegionSpec {
+                id: RegionId::from_static("body"),
+                size: RegionSize::Weight(1),
+            },
+            RegionSpec {
+                id: RegionId::from_static("footer"),
+                size: RegionSize::Fixed(1),
+            },
+        ]);
         let layout = surface.layout(Rect::new(0, 0, 40, 20));
         assert_eq!(layout[0].area, Rect::new(0, 0, 40, 2));
         assert_eq!(layout[1].area, Rect::new(0, 2, 40, 17));
@@ -212,18 +213,16 @@ mod tests {
 
     #[test]
     fn collapsed_region_is_zero_sized() {
-        let surface = WorkSurface::new()
-            .density(Density::Dashboard)
-            .regions([
-                RegionSpec {
-                    id: RegionId::from_static("side"),
-                    size: RegionSize::Collapsed,
-                },
-                RegionSpec {
-                    id: RegionId::from_static("main"),
-                    size: RegionSize::Weight(1),
-                },
-            ]);
+        let surface = WorkSurface::new().density(Density::Dashboard).regions([
+            RegionSpec {
+                id: RegionId::from_static("side"),
+                size: RegionSize::Collapsed,
+            },
+            RegionSpec {
+                id: RegionId::from_static("main"),
+                size: RegionSize::Weight(1),
+            },
+        ]);
         let layout = surface.layout(Rect::new(0, 0, 10, 10));
         assert_eq!(layout[0].area.height, 0);
         assert_eq!(layout[1].area.height, 10);

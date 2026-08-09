@@ -81,11 +81,10 @@ impl<Id> SemanticScene<Id> {
     /// First enabled focusable element containing `position`.
     #[must_use]
     pub fn hit_test(&self, position: Position) -> Option<&SemanticElement<Id>> {
-        self.elements.iter().rev().find(|element| {
-            element.enabled
-                && element.focusable
-                && element.area.contains(position)
-        })
+        self.elements
+            .iter()
+            .rev()
+            .find(|element| element.enabled && element.focusable && element.area.contains(position))
     }
 
     /// Focusable enabled ids in registration order.

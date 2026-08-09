@@ -7,11 +7,7 @@
 //! markdown parsing if they need CommonMark fidelity — this widget accepts an
 //! already-projected block list so parsing stays optional and dependency-free.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::{Role, Theme},
@@ -117,8 +113,12 @@ impl Widget for &MarkdownView<'_> {
 }
 
 impl Widget for MarkdownView<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -143,9 +143,7 @@ pub fn project_plain_lines(text: &str) -> Vec<MarkdownBlock<'_>> {
             let text = match kind {
                 MarkdownBlockKind::Heading => line.trim_start_matches('#').trim(),
                 MarkdownBlockKind::Quote => line.trim_start_matches('>').trim(),
-                MarkdownBlockKind::ListItem => line
-                    .trim_start_matches(['-', '*'])
-                    .trim_start(),
+                MarkdownBlockKind::ListItem => line.trim_start_matches(['-', '*']).trim_start(),
                 _ => line,
             };
             MarkdownBlock { kind, text }
@@ -177,7 +175,9 @@ mod tests {
         }];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 1));
         MarkdownView::new(&blocks, &theme).render(Rect::new(0, 0, 20, 1), &mut buffer);
-        let row: String = (0..20).map(|x| buffer[(x, 0)].symbol().to_owned()).collect();
+        let row: String = (0..20)
+            .map(|x| buffer[(x, 0)].symbol().to_owned())
+            .collect();
         assert!(row.contains("Hello"));
     }
 }

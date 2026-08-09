@@ -7,7 +7,11 @@ const BRIEF: &str = include_str!("../../../docs/design/shadcn-tui-direction.md")
 
 #[test]
 fn direction_brief_is_substantial_prose() {
-    assert!(BRIEF.len() > 8_000, "brief too short ({} bytes)", BRIEF.len());
+    assert!(
+        BRIEF.len() > 8_000,
+        "brief too short ({} bytes)",
+        BRIEF.len()
+    );
     assert!(BRIEF.lines().count() > 100);
 }
 

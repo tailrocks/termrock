@@ -83,8 +83,12 @@ impl Widget for &TokenMeter<'_> {
 }
 
 impl Widget for TokenMeter<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -164,8 +168,12 @@ impl Widget for &ThinkingBlock<'_> {
 }
 
 impl Widget for ThinkingBlock<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -227,7 +235,12 @@ pub struct ToolCard<'a> {
 impl<'a> ToolCard<'a> {
     /// Creates a tool card.
     #[must_use]
-    pub const fn new(name: &'a str, summary: &'a str, status: ToolStatus, theme: &'a Theme) -> Self {
+    pub const fn new(
+        name: &'a str,
+        summary: &'a str,
+        status: ToolStatus,
+        theme: &'a Theme,
+    ) -> Self {
         Self {
             name,
             summary,
@@ -268,12 +281,7 @@ impl Widget for &ToolCard<'_> {
         if inner.is_empty() {
             return;
         }
-        let header = format!(
-            "{} {} — {}",
-            self.status.glyph(),
-            self.name,
-            self.summary
-        );
+        let header = format!("{} {} — {}", self.status.glyph(), self.name, self.summary);
         let clipped = take_display_cols(&header, usize::from(inner.width));
         buffer.set_stringn(
             inner.x,
@@ -282,26 +290,29 @@ impl Widget for &ToolCard<'_> {
             usize::from(inner.width),
             self.theme.style(self.status.role()),
         );
-        if self.expanded {
-            if let Some(detail) = self.detail {
-                if inner.height > 1 {
-                    let body = take_display_cols(detail, usize::from(inner.width));
-                    buffer.set_stringn(
-                        inner.x,
-                        inner.y.saturating_add(1),
-                        &body,
-                        usize::from(inner.width),
-                        self.theme.style(Role::TextMuted),
-                    );
-                }
-            }
+        if self.expanded
+            && let Some(detail) = self.detail
+            && inner.height > 1
+        {
+            let body = take_display_cols(detail, usize::from(inner.width));
+            buffer.set_stringn(
+                inner.x,
+                inner.y.saturating_add(1),
+                &body,
+                usize::from(inner.width),
+                self.theme.style(Role::TextMuted),
+            );
         }
     }
 }
 
 impl Widget for ToolCard<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -412,7 +423,12 @@ pub struct ApprovalCard<'a> {
 impl<'a> ApprovalCard<'a> {
     /// Creates an approval card.
     #[must_use]
-    pub const fn new(title: &'a str, detail: &'a str, risk: ApprovalRisk, theme: &'a Theme) -> Self {
+    pub const fn new(
+        title: &'a str,
+        detail: &'a str,
+        risk: ApprovalRisk,
+        theme: &'a Theme,
+    ) -> Self {
         Self {
             title,
             detail,
@@ -443,7 +459,7 @@ impl StatefulWidget for &ApprovalCard<'_> {
         buffer.set_stringn(
             inner.x,
             inner.y,
-            &take_display_cols(&header, usize::from(inner.width)),
+            take_display_cols(&header, usize::from(inner.width)),
             usize::from(inner.width),
             self.theme.style(self.risk.role()),
         );
@@ -479,7 +495,7 @@ impl StatefulWidget for ApprovalCard<'_> {
     type State = ApprovalCardState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 
@@ -563,7 +579,7 @@ impl<Id> Widget for &StreamView<'_, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y.saturating_add(row),
-                &take_display_cols(&line, usize::from(area.width)),
+                take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
                 self.theme.style(role),
             );
@@ -573,7 +589,7 @@ impl<Id> Widget for &StreamView<'_, Id> {
 
 impl<Id> Widget for StreamView<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -610,7 +626,12 @@ impl Widget for &Timeline<'_> {
         if area.is_empty() {
             return;
         }
-        for (row, event) in self.events.iter().enumerate().take(usize::from(area.height)) {
+        for (row, event) in self
+            .events
+            .iter()
+            .enumerate()
+            .take(usize::from(area.height))
+        {
             let y = area.y.saturating_add(row as u16);
             let bullet = if event.active { "●" } else { "○" };
             let line = format!("{bullet} {}  {}", event.when, event.text);
@@ -622,7 +643,7 @@ impl Widget for &Timeline<'_> {
             buffer.set_stringn(
                 area.x,
                 y,
-                &take_display_cols(&line, usize::from(area.width)),
+                take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
                 self.theme.style(role),
             );
@@ -631,8 +652,12 @@ impl Widget for &Timeline<'_> {
 }
 
 impl Widget for Timeline<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -766,7 +791,7 @@ impl StatefulWidget for PromptBox<'_> {
     type State = PromptBoxState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 

@@ -57,17 +57,12 @@ impl Appearance {
                 }
             }
         }
-        if let Ok(fgbg) = std::env::var("COLORFGBG") {
-            if let Some(bg) = fgbg.split(';').next_back() {
-                if let Ok(index) = bg.parse::<u8>() {
-                    // Common convention: 0–7 dark backgrounds, 8–15 light-ish.
-                    return if index <= 7 {
-                        Self::Dark
-                    } else {
-                        Self::Light
-                    };
-                }
-            }
+        if let Ok(fgbg) = std::env::var("COLORFGBG")
+            && let Some(bg) = fgbg.split(';').next_back()
+            && let Ok(index) = bg.parse::<u8>()
+        {
+            // Common convention: 0–7 dark backgrounds, 8–15 light-ish.
+            return if index <= 7 { Self::Dark } else { Self::Light };
         }
         #[cfg(target_os = "macos")]
         {

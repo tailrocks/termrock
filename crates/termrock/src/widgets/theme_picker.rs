@@ -175,7 +175,12 @@ impl StatefulWidget for &ThemePicker<'_> {
         if inner.is_empty() {
             return;
         }
-        for (index, preset) in self.presets.iter().enumerate().take(usize::from(inner.height)) {
+        for (index, preset) in self
+            .presets
+            .iter()
+            .enumerate()
+            .take(usize::from(inner.height))
+        {
             let y = inner.y.saturating_add(index as u16);
             let selected = index == state.selected;
             let marker = if selected { "›" } else { " " };
@@ -193,7 +198,7 @@ impl StatefulWidget for &ThemePicker<'_> {
             buffer.set_stringn(
                 inner.x,
                 y,
-                &take_display_cols(&line, usize::from(inner.width)),
+                take_display_cols(&line, usize::from(inner.width)),
                 usize::from(inner.width),
                 self.paint_theme.style(role),
             );
@@ -205,7 +210,7 @@ impl StatefulWidget for ThemePicker<'_> {
     type State = ThemePickerState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 

@@ -79,7 +79,7 @@ impl StatefulWidget for DiffView<'_> {
     type State = DiffState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 

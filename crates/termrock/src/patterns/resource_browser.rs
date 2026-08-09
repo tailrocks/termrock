@@ -76,7 +76,12 @@ pub fn layout_resource_browser(area: Rect, config: ResourceBrowserLayout) -> Res
         id: RegionId::from_static("detail"),
         size: RegionSize::Weight(1),
     });
-    if config.preview_width > 0 && body.width > config.rail_width.saturating_add(config.preview_width).saturating_add(4)
+    if config.preview_width > 0
+        && body.width
+            > config
+                .rail_width
+                .saturating_add(config.preview_width)
+                .saturating_add(4)
     {
         specs.push(RegionSpec {
             id: RegionId::from_static("preview"),
@@ -104,10 +109,8 @@ mod tests {
 
     #[test]
     fn resource_browser_optional_preview() {
-        let with_preview = layout_resource_browser(
-            Rect::new(0, 0, 120, 40),
-            ResourceBrowserLayout::default(),
-        );
+        let with_preview =
+            layout_resource_browser(Rect::new(0, 0, 120, 40), ResourceBrowserLayout::default());
         assert!(with_preview.preview.is_some());
         let no_preview = layout_resource_browser(
             Rect::new(0, 0, 120, 40),

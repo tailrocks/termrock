@@ -7,11 +7,7 @@
 //! placeholder; this widget paints a product-neutral frame and optional
 //! protocol escape emission hooks for Kitty/Sixel-class terminals.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::{Role, Theme},
@@ -121,7 +117,7 @@ impl Widget for &ImageSurface<'_> {
         buffer.set_stringn(
             inner.x,
             inner.y,
-            &take_display_cols(&line1, usize::from(inner.width)),
+            take_display_cols(&line1, usize::from(inner.width)),
             usize::from(inner.width),
             self.theme.style(Role::TextMuted),
         );
@@ -129,7 +125,7 @@ impl Widget for &ImageSurface<'_> {
             buffer.set_stringn(
                 inner.x,
                 inner.y.saturating_add(1),
-                &take_display_cols(&line2, usize::from(inner.width)),
+                take_display_cols(&line2, usize::from(inner.width)),
                 usize::from(inner.width),
                 self.theme.style(Role::TextDisabled),
             );
@@ -151,8 +147,12 @@ impl Widget for &ImageSurface<'_> {
 }
 
 impl Widget for ImageSurface<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

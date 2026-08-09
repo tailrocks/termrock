@@ -3,12 +3,7 @@
 
 //! Code block rendering with pluggable syntax styling.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Style,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget};
 
 use crate::{
     style::{Role, Theme},
@@ -94,19 +89,19 @@ impl<H: SyntaxHighlighter> Widget for &CodeBlock<'_, H> {
         }
         let mut y = area.y;
         let mut content_top = area.y;
-        if let Some(language) = self.language {
-            if area.height >= 2 {
-                let header = take_display_cols(language, usize::from(area.width));
-                buffer.set_stringn(
-                    area.x,
-                    y,
-                    &header,
-                    usize::from(area.width),
-                    self.theme.style(Role::TextMuted),
-                );
-                y = y.saturating_add(1);
-                content_top = y;
-            }
+        if let Some(language) = self.language
+            && area.height >= 2
+        {
+            let header = take_display_cols(language, usize::from(area.width));
+            buffer.set_stringn(
+                area.x,
+                y,
+                &header,
+                usize::from(area.width),
+                self.theme.style(Role::TextMuted),
+            );
+            y = y.saturating_add(1);
+            content_top = y;
         }
         let body_height = area.bottom().saturating_sub(content_top);
         if body_height == 0 {
@@ -127,7 +122,11 @@ impl<H: SyntaxHighlighter> Widget for &CodeBlock<'_, H> {
             };
             let paint_y = content_top.saturating_add(row);
             if self.show_line_numbers && gutter > 0 {
-                let number = format!("{:>width$}", line_index + 1, width = usize::from(gutter) - 1);
+                let number = format!(
+                    "{:>width$}",
+                    line_index + 1,
+                    width = usize::from(gutter) - 1
+                );
                 buffer.set_stringn(
                     area.x,
                     paint_y,
@@ -147,9 +146,12 @@ impl<H: SyntaxHighlighter> Widget for &CodeBlock<'_, H> {
                 }
                 let remaining = usize::from(text_width.saturating_sub(col));
                 let clipped = take_display_cols(segment, remaining);
-                let width = u16::try_from(clipped.chars().count().max(
-                    unicode_width::UnicodeWidthStr::width(clipped.as_str()),
-                ))
+                let width = u16::try_from(
+                    clipped
+                        .chars()
+                        .count()
+                        .max(unicode_width::UnicodeWidthStr::width(clipped.as_str())),
+                )
                 .unwrap_or(text_width);
                 let used = u16::try_from(unicode_width::UnicodeWidthStr::width(clipped.as_str()))
                     .unwrap_or(0)
@@ -174,7 +176,7 @@ impl<H: SyntaxHighlighter> Widget for &CodeBlock<'_, H> {
 
 impl<H: SyntaxHighlighter> Widget for CodeBlock<'_, H> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -191,9 +193,13 @@ mod tests {
             .line_numbers(true)
             .language("rust")
             .render(Rect::new(0, 0, 30, 3), &mut buffer);
-        let header: String = (0..30).map(|x| buffer[(x, 0)].symbol().to_owned()).collect();
+        let header: String = (0..30)
+            .map(|x| buffer[(x, 0)].symbol().to_owned())
+            .collect();
         assert!(header.contains("rust"));
-        let body: String = (0..30).map(|x| buffer[(x, 1)].symbol().to_owned()).collect();
+        let body: String = (0..30)
+            .map(|x| buffer[(x, 1)].symbol().to_owned())
+            .collect();
         assert!(body.contains('1'));
         assert!(body.contains("fn"));
     }

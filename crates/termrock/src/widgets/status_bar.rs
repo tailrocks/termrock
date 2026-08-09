@@ -282,7 +282,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for StatusBar<'_, Id> {
     type State = StatusBarState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 

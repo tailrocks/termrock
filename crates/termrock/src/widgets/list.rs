@@ -7,9 +7,7 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyEvent, KeyEventKind},
-    interaction::{
-        HitRegion, NavigationMove, Outcome, PageMove, UiIntent, default_list_intent,
-    },
+    interaction::{HitRegion, NavigationMove, Outcome, PageMove, UiIntent, default_list_intent},
     scroll::max_offset,
     style::{Role, Theme},
 };
@@ -628,7 +626,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for List<'_, Id> {
     type State = ListState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 

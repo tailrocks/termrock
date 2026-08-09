@@ -101,10 +101,7 @@ impl OverlayHost {
 
     /// Dismisses the topmost Esc-dismissible layer.
     pub fn dismiss_top_esc(&mut self) -> Option<OverlayLayer> {
-        let index = self
-            .layers
-            .iter()
-            .rposition(|layer| layer.dismiss_on_esc)?;
+        let index = self.layers.iter().rposition(|layer| layer.dismiss_on_esc)?;
         Some(self.layers.remove(index))
     }
 

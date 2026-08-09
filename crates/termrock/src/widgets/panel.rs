@@ -91,6 +91,6 @@ impl Widget for &Panel<'_> {
 
 impl Widget for Panel<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }

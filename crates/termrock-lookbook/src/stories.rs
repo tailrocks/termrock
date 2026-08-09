@@ -18,22 +18,21 @@ use termrock::{
     style::Role,
     widgets::{
         Action, ActionBar, ActionBarState, Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk,
-        Backdrop, Banner, BarDatum, BarSeries, CellAlignment, ChoiceDialog, ChoiceDialogState,
-        CodeBlock, Column, ColumnWidth, CommandPalette, CommandPaletteState, CompletionCandidate,
-        CompletionMenu, CompletionMenuSize, CompletionMenuState, DetailCapability, DetailRow,
-        DetailTable, DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, EmptyState,
-        ErrorView, Form, FormField, FormSection, FormState, GridCell, GridColumn, GridRow, Hint,
-        HintBar, JumpOverlay, JumpTarget, List, ListRow, ListState, LoadingView, LogPane,
-        LogPaneState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MessageDialog, MeterSegment,
-        Panel, PanelEmphasis, Picker, PickerState, Progress, ProgressKind, PromptBox,
-        PromptBoxState, RowRole, SegmentedMeter, Severity, Skeleton, SortDirection, Sparkline,
-        SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState,
-        StatusSlot, StreamItem, StreamItemKind, StreamView, Tab, Table, TableRow, TableState, Tabs,
-        TabsState, TextArea, TextAreaState, TextCursor, TextInput, TextInputState, ThinkingBlock,
-        Timeline, TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Tree, TreeNode,
-        TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
-        BUILTIN_THEME_PRESETS, ImageMeta, ImageProtocol, ImageSurface, ThemePicker,
-        ThemePickerState,
+        BUILTIN_THEME_PRESETS, Backdrop, Banner, BarDatum, BarSeries, CellAlignment, ChoiceDialog,
+        ChoiceDialogState, CodeBlock, Column, ColumnWidth, CommandPalette, CommandPaletteState,
+        CompletionCandidate, CompletionMenu, CompletionMenuSize, CompletionMenuState,
+        DetailCapability, DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine,
+        DiffState, DiffView, EmptyState, ErrorView, Form, FormField, FormSection, FormState,
+        GridCell, GridColumn, GridRow, Hint, HintBar, ImageMeta, ImageProtocol, ImageSurface,
+        JumpOverlay, JumpTarget, List, ListRow, ListState, LoadingView, LogPane, LogPaneState,
+        MarkdownBlock, MarkdownBlockKind, MarkdownView, MessageDialog, MeterSegment, Panel,
+        PanelEmphasis, Picker, PickerState, Progress, ProgressKind, PromptBox, PromptBoxState,
+        RowRole, SegmentedMeter, Severity, Skeleton, SortDirection, Sparkline, SplitDirection,
+        SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, StreamItem,
+        StreamItemKind, StreamView, Tab, Table, TableRow, TableState, Tabs, TabsState, TextArea,
+        TextAreaState, TextCursor, TextInput, TextInputState, ThemePicker, ThemePickerState,
+        ThinkingBlock, Timeline, TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Tree,
+        TreeNode, TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
     },
 };
 
@@ -1831,7 +1830,10 @@ fn error_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn banner(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    frame.render_widget(Banner::new("Deployed successfully", Severity::Success, theme), area);
+    frame.render_widget(
+        Banner::new("Deployed successfully", Severity::Success, theme),
+        area,
+    );
 }
 
 fn skeleton(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -1840,7 +1842,9 @@ fn skeleton(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 
 fn jump_overlay(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(
-        Panel::new(theme).title("Jump targets").emphasis(PanelEmphasis::Normal),
+        Panel::new(theme)
+            .title("Jump targets")
+            .emphasis(PanelEmphasis::Normal),
         area,
     );
     let targets = [
@@ -1975,9 +1979,14 @@ fn thinking_block(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 
 fn tool_card(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(
-        ToolCard::new("shell", "cargo test -p termrock", ToolStatus::Running, theme)
-            .expanded(true)
-            .detail("running suite…"),
+        ToolCard::new(
+            "shell",
+            "cargo test -p termrock",
+            ToolStatus::Running,
+            theme,
+        )
+        .expanded(true)
+        .detail("running suite…"),
         area,
     );
 }
@@ -2049,7 +2058,11 @@ fn timeline(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 
 fn prompt_box(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = PromptBoxState::new();
-    frame.render_stateful_widget(&PromptBox::new(theme).placeholder("Message…"), area, &mut state);
+    frame.render_stateful_widget(
+        &PromptBox::new(theme).placeholder("Message…"),
+        area,
+        &mut state,
+    );
 }
 
 fn theme_picker(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {

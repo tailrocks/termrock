@@ -39,8 +39,8 @@ mod virtual_grid;
 pub use action_bar::{Action, ActionBar, ActionBarState};
 pub use agent::{
     ApprovalCard, ApprovalCardState, ApprovalDecision, ApprovalRisk, PromptBox, PromptBoxOutcome,
-    PromptBoxState, StreamItem, StreamItemKind, StreamView, ThinkingBlock, Timeline,
-    TimelineEvent, TokenMeter, ToolCard, ToolStatus,
+    PromptBoxState, StreamItem, StreamItemKind, StreamView, ThinkingBlock, Timeline, TimelineEvent,
+    TokenMeter, ToolCard, ToolStatus,
 };
 pub use charts::{BarDatum, BarSeries, MeterSegment, SegmentedMeter, Sparkline};
 pub use code_block::{CodeBlock, PlainSyntax, SyntaxHighlighter};
@@ -59,7 +59,9 @@ pub use hint_bar::{
     Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
 };
 pub use image_surface::{ImageMeta, ImageProtocol, ImageSurface, protocol_emission_hint};
-pub use jump_overlay::{JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges};
+pub use jump_overlay::{
+    JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges,
+};
 pub use list::{List, ListRow, ListState, RowRole};
 pub use log_pane::{LogPane, LogPaneState};
 pub use markdown::{MarkdownBlock, MarkdownBlockKind, MarkdownView, project_plain_lines};

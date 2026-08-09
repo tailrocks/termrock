@@ -83,7 +83,9 @@ impl JumpOverlayState {
             }
             KeyCode::Char(ch) => {
                 let needle = ch.to_ascii_lowercase();
-                if let Some(target) = targets.iter().find(|t| t.badge.to_ascii_lowercase() == needle)
+                if let Some(target) = targets
+                    .iter()
+                    .find(|t| t.badge.to_ascii_lowercase() == needle)
                 {
                     self.open = false;
                     JumpOutcome::Activated(target.id.clone())
@@ -158,20 +160,14 @@ impl<Id> Widget for &JumpOverlay<'_, Id> {
             }
             let label = format!("[{}]", target.badge);
             let max = usize::from(target.area.width);
-            buffer.set_stringn(
-                target.area.x,
-                target.area.y,
-                &label,
-                max,
-                style,
-            );
+            buffer.set_stringn(target.area.x, target.area.y, &label, max, style);
         }
     }
 }
 
 impl<Id> Widget for JumpOverlay<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

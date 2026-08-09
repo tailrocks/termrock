@@ -3,11 +3,7 @@
 
 //! Density chart primitives (sparkline, bar series, segmented meter).
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::{Role, Theme},
@@ -45,8 +41,8 @@ impl Widget for &Sparkline<'_> {
             } else {
                 0.0
             };
-            let glyph_index =
-                ((fraction * (SPARK_GLYPHS.len() - 1) as f64).round() as usize).min(SPARK_GLYPHS.len() - 1);
+            let glyph_index = ((fraction * (SPARK_GLYPHS.len() - 1) as f64).round() as usize)
+                .min(SPARK_GLYPHS.len() - 1);
             let glyph = SPARK_GLYPHS[glyph_index].to_string();
             buffer.set_stringn(
                 area.x.saturating_add(col as u16),
@@ -60,8 +56,12 @@ impl Widget for &Sparkline<'_> {
 }
 
 impl Widget for Sparkline<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -116,8 +116,12 @@ impl Widget for &BarSeries<'_> {
                     self.theme.style(Role::TextMuted),
                 );
             }
-            let track_x = area.x.saturating_add(u16::try_from(label_width).unwrap_or(0));
-            let track_w = area.width.saturating_sub(u16::try_from(label_width).unwrap_or(0));
+            let track_x = area
+                .x
+                .saturating_add(u16::try_from(label_width).unwrap_or(0));
+            let track_w = area
+                .width
+                .saturating_sub(u16::try_from(label_width).unwrap_or(0));
             if track_w == 0 {
                 continue;
             }
@@ -150,8 +154,12 @@ impl Widget for &BarSeries<'_> {
 }
 
 impl Widget for BarSeries<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -206,7 +214,8 @@ impl Widget for &SegmentedMeter<'_> {
             } else {
                 0.0
             };
-            let mut width = ((f64::from(area.width) * weight / total).round() as u16).min(remaining);
+            let mut width =
+                ((f64::from(area.width) * weight / total).round() as u16).min(remaining);
             if index + 1 == self.segments.len() {
                 width = remaining;
             }
@@ -214,7 +223,13 @@ impl Widget for &SegmentedMeter<'_> {
                 continue;
             }
             let fill = "█".repeat(usize::from(width));
-            buffer.set_stringn(x, area.y, &fill, usize::from(width), self.theme.style(segment.role));
+            buffer.set_stringn(
+                x,
+                area.y,
+                &fill,
+                usize::from(width),
+                self.theme.style(segment.role),
+            );
             x = x.saturating_add(width);
             remaining = remaining.saturating_sub(width);
         }
@@ -222,8 +237,12 @@ impl Widget for &SegmentedMeter<'_> {
 }
 
 impl Widget for SegmentedMeter<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

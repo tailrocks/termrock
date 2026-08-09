@@ -3,11 +3,7 @@
 
 //! Empty, loading, error, and banner feedback views.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::{Role, Theme},
@@ -62,15 +58,25 @@ impl Widget for &EmptyState<'_> {
         if let Some(detail) = self.detail {
             y = y.saturating_add(1);
             if y < area.bottom() {
-                paint_centered_line(area, buffer, y, detail, self.theme.style(Role::TextDisabled));
+                paint_centered_line(
+                    area,
+                    buffer,
+                    y,
+                    detail,
+                    self.theme.style(Role::TextDisabled),
+                );
             }
         }
     }
 }
 
 impl Widget for EmptyState<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -110,8 +116,12 @@ impl Widget for &LoadingView<'_> {
 }
 
 impl Widget for LoadingView<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -160,8 +170,12 @@ impl Widget for &ErrorView<'_> {
 }
 
 impl Widget for ErrorView<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -209,8 +223,12 @@ impl Widget for &Banner<'_> {
 }
 
 impl Widget for Banner<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -239,7 +257,9 @@ impl Widget for &Skeleton<'_> {
         for row in 0..rows {
             let y = area.y.saturating_add(row);
             let indent = if row % 2 == 0 { 0 } else { 2u16 };
-            let width = bar_width.saturating_sub(indent).min(area.width.saturating_sub(indent));
+            let width = bar_width
+                .saturating_sub(indent)
+                .min(area.width.saturating_sub(indent));
             if width == 0 {
                 continue;
             }
@@ -257,8 +277,12 @@ impl Widget for &Skeleton<'_> {
 }
 
 impl Widget for Skeleton<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
