@@ -1,22 +1,3 @@
- Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
-warning: unresolved link to `DataTableState::handle_key`
-   --> crates/termrock/src/interaction/intent.rs:164:7
-    |
-164 | /// [`DataTableState::handle_key`].
-    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
-    |
-    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
-
-warning: unresolved link to `Theme`
-   --> crates/termrock/src/widgets/prompt_composer.rs:537:39
-    |
-537 |     /// pass a monochrome-quantized [`Theme`]).
-    |                                       ^^^^^ no item named `Theme` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: `termrock` (lib doc) generated 2 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.61s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -2872,6 +2853,7 @@ pub fn termrock::interaction::SemanticElement<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticElement<Id>
 pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_form_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
+pub fn termrock::interaction::default_inspector_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_menu_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -10112,9 +10094,10 @@ impl<T> either::into_either::IntoEither for termrock::widgets::MultiSelectOutcom
 #[non_exhaustive] pub enum termrock::widgets::ObjectInspectorOutcome
 pub termrock::widgets::ObjectInspectorOutcome::Activate
 pub termrock::widgets::ObjectInspectorOutcome::Activate::index: usize
-pub termrock::widgets::ObjectInspectorOutcome::FocusChanged
-pub termrock::widgets::ObjectInspectorOutcome::FocusChanged::index: usize
+pub termrock::widgets::ObjectInspectorOutcome::CursorMoved
+pub termrock::widgets::ObjectInspectorOutcome::CursorMoved::index: usize
 pub termrock::widgets::ObjectInspectorOutcome::Ignored
+pub termrock::widgets::ObjectInspectorOutcome::Scrolled
 impl core::clone::Clone for termrock::widgets::ObjectInspectorOutcome
 pub fn termrock::widgets::ObjectInspectorOutcome::clone(&self) -> termrock::widgets::ObjectInspectorOutcome
 impl core::cmp::Eq for termrock::widgets::ObjectInspectorOutcome
@@ -17604,8 +17587,11 @@ pub fn termrock::widgets::MultiSelectState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MultiSelectState<Id>
 pub struct termrock::widgets::ObjectInspector<'a>
 impl<'a> termrock::widgets::ObjectInspector<'a>
+pub const fn termrock::widgets::ObjectInspector<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ObjectInspector<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::ObjectInspector<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::ObjectInspector<'a>::new(&'a [termrock::widgets::InspectorField<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::ObjectInspector<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::ObjectInspectorState)
+pub fn termrock::widgets::ObjectInspector<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ObjectInspectorState)
 impl<'a> core::clone::Clone for termrock::widgets::ObjectInspector<'a>
 pub fn termrock::widgets::ObjectInspector<'a>::clone(&self) -> termrock::widgets::ObjectInspector<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::ObjectInspector<'a>
@@ -17643,8 +17629,16 @@ pub fn termrock::widgets::ObjectInspector<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ObjectInspector<'a>
 pub struct termrock::widgets::ObjectInspectorState
 impl termrock::widgets::ObjectInspectorState
+pub const fn termrock::widgets::ObjectInspectorState::accepts_input(&self) -> bool
+pub const fn termrock::widgets::ObjectInspectorState::cursor(&self) -> usize
+pub const fn termrock::widgets::ObjectInspectorState::focus(&self) -> usize
+pub fn termrock::widgets::ObjectInspectorState::handle_intent(&mut self, termrock::interaction::UiIntent, usize) -> termrock::widgets::ObjectInspectorOutcome
 pub fn termrock::widgets::ObjectInspectorState::handle_key(&mut self, termrock::input::KeyEvent, usize) -> termrock::widgets::ObjectInspectorOutcome
+pub fn termrock::widgets::ObjectInspectorState::handle_mouse(&mut self, termrock::input::MouseEvent, usize) -> termrock::widgets::ObjectInspectorOutcome
 pub fn termrock::widgets::ObjectInspectorState::new() -> Self
+pub fn termrock::widgets::ObjectInspectorState::offset_y(&self) -> u16
+pub fn termrock::widgets::ObjectInspectorState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::ObjectInspectorState::set_cursor(&mut self, usize)
 impl core::clone::Clone for termrock::widgets::ObjectInspectorState
 pub fn termrock::widgets::ObjectInspectorState::clone(&self) -> termrock::widgets::ObjectInspectorState
 impl core::cmp::Eq for termrock::widgets::ObjectInspectorState
@@ -19375,6 +19369,7 @@ pub const fn termrock::widgets::ScrollAreaState::new() -> Self
 pub const fn termrock::widgets::ScrollAreaState::offset_x(&self) -> u16
 pub const fn termrock::widgets::ScrollAreaState::offset_y(&self) -> u16
 pub const fn termrock::widgets::ScrollAreaState::set_content_size(&mut self, u16, u16)
+pub fn termrock::widgets::ScrollAreaState::set_offset_y(&mut self, u16)
 pub const fn termrock::widgets::ScrollAreaState::set_viewport(&mut self, u16, u16)
 impl core::clone::Clone for termrock::widgets::ScrollAreaState
 pub fn termrock::widgets::ScrollAreaState::clone(&self) -> termrock::widgets::ScrollAreaState

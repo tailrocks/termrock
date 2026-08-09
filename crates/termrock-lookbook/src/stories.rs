@@ -28,20 +28,21 @@ use termrock::{
         DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Drawer, EmptyState,
         ErrorView, Form, FormField, FormSection, FormState, FormWizardState, GridCell, GridColumn,
         GridRow, Heading, HeadingLevel, Hint, HintBar, ImageMeta, ImageProtocol, ImageSurface,
-        JumpOverlay, JumpTarget, Kbd, List, ListRow, ListState, LoadingView, LogPane, LogPaneState,
-        MarkdownBlock, MarkdownBlockKind, MarkdownView, Menu, MenuItem, MenuState, MessageDialog,
-        MeterSegment, ModeRibbon, Panel, PanelChrome, PermissionActionKind, PermissionPrompt,
-        PermissionPromptState, PermissionProvenance, PermissionRequest, PermissionRisk, Picker,
-        PickerState, PlanReview, PlanReviewState, PlanStep, Popover, Progress, ProgressKind,
-        PromptComposer, PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption,
-        QuestionStep, RowRole, SegmentedMeter, SeparatorLine, SessionItem, SessionPicker, Severity,
-        Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio,
-        StatusBar, StatusBarState, StatusSlot, Surface, SurfaceElevation, Switch, SwitchState, Tab,
-        Table, TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState,
-        TextCursor, TextInput, TextInputState, ThemePicker, ThemePickerState, ThinkingBlock,
-        Timeline, TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript,
-        TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus,
-        TreeState, Validation, Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
+        InspectorField, JumpOverlay, JumpTarget, Kbd, List, ListRow, ListState, LoadingView,
+        LogPane, LogPaneState, MarkdownBlock, MarkdownBlockKind, MarkdownView, Menu, MenuItem,
+        MenuState, MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
+        Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
+        PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
+        PlanReviewState, PlanStep, Popover, Progress, ProgressKind, PromptComposer,
+        PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep,
+        RowRole, SegmentedMeter, SeparatorLine, SessionItem, SessionPicker, Severity, Skeleton,
+        SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
+        StatusBarState, StatusSlot, Surface, SurfaceElevation, Switch, SwitchState, Tab, Table,
+        TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
+        TextInput, TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
+        TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
+        TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
+        Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
     },
 };
 
@@ -394,6 +395,51 @@ pub(crate) fn stories() -> Vec<Story> {
             54,
             5,
             detail_table,
+        ),
+        Story::new(
+            "object-inspector/flat",
+            "Object inspector flat",
+            "ObjectInspector",
+            "Flat key/value fields with list-local cursor gutter.",
+            48,
+            6,
+            object_inspector_flat,
+        ),
+        Story::new(
+            "object-inspector/nested",
+            "Object inspector nested",
+            "ObjectInspector",
+            "Nested depth pad + cursor on a child field.",
+            48,
+            8,
+            object_inspector_nested,
+        ),
+        Story::new(
+            "object-inspector/empty",
+            "Object inspector empty",
+            "ObjectInspector",
+            "Empty-object non-color mark.",
+            32,
+            3,
+            object_inspector_empty,
+        ),
+        Story::new(
+            "object-inspector/narrow",
+            "Object inspector narrow",
+            "ObjectInspector",
+            "Narrow key=value geometry (22 cols).",
+            22,
+            5,
+            object_inspector_flat,
+        ),
+        Story::new(
+            "object-inspector/ascii",
+            "Object inspector ASCII",
+            "ObjectInspector",
+            "ASCII cursor and empty glyphs.",
+            40,
+            5,
+            object_inspector_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -3261,6 +3307,92 @@ fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         area,
         &mut state,
     );
+}
+
+fn object_inspector_flat(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let fields = [
+        InspectorField {
+            key: "id",
+            value: "pod-7f3a",
+            depth: 0,
+        },
+        InspectorField {
+            key: "name",
+            value: "api-gateway",
+            depth: 0,
+        },
+        InspectorField {
+            key: "status",
+            value: "Running",
+            depth: 0,
+        },
+        InspectorField {
+            key: "restarts",
+            value: "0",
+            depth: 0,
+        },
+    ];
+    let mut state = ObjectInspectorState::new();
+    state.set_cursor(1);
+    ObjectInspector::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn object_inspector_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let fields = [
+        InspectorField {
+            key: "spec",
+            value: "{…}",
+            depth: 0,
+        },
+        InspectorField {
+            key: "containers",
+            value: "[1]",
+            depth: 1,
+        },
+        InspectorField {
+            key: "image",
+            value: "ghcr.io/app:1.2",
+            depth: 2,
+        },
+        InspectorField {
+            key: "ports",
+            value: "8080/TCP",
+            depth: 2,
+        },
+        InspectorField {
+            key: "地域",
+            value: "東京 🇯🇵",
+            depth: 1,
+        },
+    ];
+    let mut state = ObjectInspectorState::new();
+    state.set_cursor(2);
+    ObjectInspector::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn object_inspector_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = ObjectInspectorState::new();
+    ObjectInspector::new(&[], system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn object_inspector_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let fields = [
+        InspectorField {
+            key: "id",
+            value: "42",
+            depth: 0,
+        },
+        InspectorField {
+            key: "kind",
+            value: "blob",
+            depth: 0,
+        },
+    ];
+    let mut state = ObjectInspectorState::new();
+    ObjectInspector::new(&fields, system)
+        .ascii(true)
+        .colorless(true)
+        .render(area, frame.buffer_mut(), &mut state);
 }
 
 #[derive(Clone, Copy)]

@@ -197,6 +197,19 @@ pub fn default_data_table_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for [`crate::widgets::ObjectInspector`] field navigation.
+///
+/// Same shape as list nav (j/k, arrows, Home/End, page, Enter/Space activate).
+/// Expand/collapse of nested paths stays consumer-owned projection.
+#[must_use]
+pub fn default_inspector_intent(key: KeyEvent) -> Option<UiIntent> {
+    default_list_intent(key).and_then(|intent| match intent {
+        // Inspector does not cancel itself — host owns Esc / overlay dismiss.
+        UiIntent::Cancel => None,
+        other => Some(other),
+    })
+}
+
 /// Default intent map for [`crate::widgets::Form`] (activate + page scroll only).
 ///
 /// **Field cycle (Tab / Up / Down) is host / scene owned** — not mapped here.
@@ -285,6 +298,22 @@ mod tests {
         assert_eq!(
             default_transcript_intent(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
             Some(UiIntent::Toggle)
+        );
+    }
+
+    #[test]
+    fn default_inspector_intent_maps_nav_not_cancel() {
+        assert_eq!(
+            default_inspector_intent(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::Next))
+        );
+        assert_eq!(
+            default_inspector_intent(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            Some(UiIntent::Activate)
+        );
+        assert_eq!(
+            default_inspector_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            None
         );
     }
 

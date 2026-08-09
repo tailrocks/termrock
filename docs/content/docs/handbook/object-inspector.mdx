@@ -1,0 +1,75 @@
+---
+title: ObjectInspector
+description: Key/value field projection with list-local cursor and scene-owned surface focus.
+---
+
+# ObjectInspector
+
+Inspect flat or nested object fields. **Cursor** is list-local;
+**scene focus** is host-owned.
+
+## When to use / when not
+
+| Use ObjectInspector | Prefer |
+|---------------------|--------|
+| Key/value detail for one resource | — |
+| Nested depth via projected indent | Tree (hierarchy nav) |
+| Multi-column grids | [DataTable](/docs/handbook/data-table) |
+| Label/value form edit | [Form](/docs/handbook/form) |
+
+## Outcomes
+
+- `Ignored`
+- `CursorMoved { index }`
+- `Activate { index }` — consumer copies/opens/links
+- `Scrolled` — reserved scroll path
+
+## Focus law
+
+| Concern | Owner |
+|---------|--------|
+| Surface focus | Host / OverlayStack / InteractionScene |
+| Field cursor | `ObjectInspectorState::cursor` |
+| Paint | `ObjectInspector::focused` + cursor gutter |
+
+## Non-color
+
+- Cursor (focused surface): `›` / `>`
+- Cursor (unfocused surface): `·` / `.`
+- Empty: `∅` / `[ ]`
+
+## Intents
+
+`default_inspector_intent` — j/k, arrows, Home/End, Page, Enter, Space.
+Esc is **not** mapped (host owns cancel / dismiss).
+
+## Responsive
+
+| Width | Layout |
+|-------|--------|
+| ≥ 28 | `key: value` with depth pad |
+| 16–27 | `key=value` compact |
+| &lt; 16 | cursor shows value; others key |
+
+## Basic example
+
+```rust
+use termrock::{
+    style::DesignSystem,
+    widgets::{InspectorField, ObjectInspector, ObjectInspectorState},
+};
+
+let system = DesignSystem::default();
+let fields = [
+    InspectorField { key: "id", value: "42", depth: 0 },
+    InspectorField { key: "name", value: "alpha", depth: 0 },
+];
+let mut state = ObjectInspectorState::new();
+// paint:
+// ObjectInspector::new(&fields, &system).focused(true).render(area, buf, &mut state);
+let _ = (system, fields, state);
+```
+
+## Related
+
+DetailTable · DataTable · migration `0070` · design `object-inspector-cursor.md`

@@ -1539,28 +1539,28 @@ Every component below uses sections **1–24**:
 ## ObjectInspector
 
 1. **Purpose:** Key/value and nested object inspection (DetailTable evolution).  
-2. **Anatomy:** `root` · `row` · `key` · `value` · `action` · `disclosure`  
-3. **Public properties:** fields projection, capabilities (copy/link), `design`  
-4. **State:** selected field; expanded nested paths.  
-5. **Variants:** `flat` · `nested`  
-6. **Sizes/density:** key column min width tokens.  
-7. **Visual states:** selected row; action hover.  
-8. **Interaction states:** select · activate action · expand nested.  
-9. **Keyboard:** up/down; Enter action; Left/Right expand.  
-10. **Mouse:** click row/action.  
-11. **Focus:** inspector focus + row cursor.  
-12. **Disabled:** actions per capability.  
-13. **Loading:** skeleton fields.  
-14. **Error:** field error tone.  
-15. **Narrow:** stack key above value.  
-16. **Tiny:** selected key=value one line.  
-17. **Unicode/ASCII:** disclosure `▾`/`▸` vs `v`/`>`; keys grapheme-safe.  
-18. **Colorless:** keys bold; selected reverse; disclosure always present.  
-19. **Composition:** ResourceBrowser east; ToolCallCard detail.  
-20. **Outcomes:** `Selected` · `Action(Id)` · `Copied` request · `ToggledExpand`  
-21. **Stories:** `object-inspector/flat`, `object-inspector/nested`  
-22. **Snapshots:** nested expand.  
-23. **Interaction tests:** capability-gated actions.  
+2. **Anatomy:** `root` · `row` · `key` · `value` · cursor gutter · empty mark  
+3. **Public properties:** fields projection, `system`, `focused`, `ascii`, `colorless`  
+4. **State:** field cursor + scroll; `accepts_input` host gate. Nested expand is projection.  
+5. **Variants:** `flat` · `nested` (via `depth`)  
+6. **Sizes/density:** responsive key/value line recipes.  
+7. **Visual states:** cursor row (surface-focused vs unfocused marks).  
+8. **Interaction states:** cursor move · activate · wheel · click.  
+9. **Keyboard:** j/k arrows Home/End page; Enter/Space activate (`default_inspector_intent`).  
+10. **Mouse:** click row → cursor; second click → activate; wheel moves cursor.  
+11. **Focus:** scene owns surface; inspector owns field cursor.  
+12. **Disabled:** `accepts_input = false` ignores keys/mouse.  
+13. **Loading:** host projects skeleton fields.  
+14. **Error:** host projects error value tones.  
+15. **Narrow:** `key=value` compact.  
+16. **Tiny:** cursor shows value; others key.  
+17. **Unicode/ASCII:** cursor `›`/`>`; empty `∅`/`[ ]`; keys grapheme-safe.  
+18. **Colorless:** cursor uses TextStrong; empty mark always present.  
+19. **Composition:** ResourceBrowser east; OpsDashboard detail; ToolCallCard.  
+20. **Outcomes:** `CursorMoved` · `Activate { index }` · `Scrolled` · `Ignored`  
+21. **Stories:** `object-inspector/{flat,nested,empty,narrow,ascii}`  
+22. **Snapshots:** cursor gutter, empty, narrow, cursor-follow.  
+23. **Interaction tests:** intent, accepts_input, mouse, page, home/end.  
 24. **Perf:** O(visible fields).
 
 ## LogStream

@@ -83,6 +83,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0067 | `v0.13.0` | [Form scene-owned field focus](migrations/0067-v0.13.0-form-scene-focus.md) |
 | 0068 | `v0.13.0` | [DataTable cursor vs scene focus](migrations/0068-v0.13.0-data-table-cursor.md) |
 | 0069 | `v0.13.0` | [Menu/Sidebar cursor](migrations/0069-v0.13.0-menu-cursor.md) |
+| 0070 | `v0.13.0` | [ObjectInspector cursor vs scene focus](migrations/0070-v0.13.0-object-inspector-cursor.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

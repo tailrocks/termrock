@@ -75,6 +75,12 @@ impl ScrollAreaState {
         self.offset_x
     }
 
+    /// Set vertical offset (clamped). Used by cursor-follow painters.
+    pub fn set_offset_y(&mut self, y: u16) {
+        self.offset_y = y;
+        self.clamp();
+    }
+
     /// Clamp offsets to content.
     pub fn clamp(&mut self) {
         let max_y = max_offset(self.content_h as usize, self.viewport_h as usize) as u16;

@@ -5,22 +5,25 @@ description: Shadcn-depth TermRock component documentation — purpose, ownershi
 
 # Component handbook
 
-These pages follow the component documentation standard in the repo at
-`docs/design/component-documentation-standard.md`.
+These pages follow the binding standard at
+`docs/design/component-documentation-standard.md` (shadcn/ui-class structure:
+purpose → install → examples → anatomy → ownership → interaction → a11y →
+composition → mistakes → perf → testing).
 
 They go beyond the thin inventory pages under **Components** (generated from the
 public API). Use the handbook when you need **when/why**, full anatomy,
 outcomes, and a small application sketch.
 
-| Page | Status |
-|------|--------|
-| [Button](/docs/handbook/button) | Pattern via `Action` / `ActionBar` (first-class `Button` planned) |
-| [List](/docs/handbook/list) | Stable public widget |
-| [DataTable](/docs/handbook/data-table) | `Table` + `data_view` kits; full DataTable in progress |
-| [Dialog](/docs/handbook/dialog) | `Dialog` / `ChoiceDialog` / overlay helpers |
-| [Command palette](/docs/handbook/command-palette) | Public widget + overlay stack |
-| [Prompt composer](/docs/handbook/prompt-composer) | Flagship agent input |
-| [Permission prompt](/docs/handbook/permission-prompt) | Trust surface + queue |
+| Page | Use when |
+|------|----------|
+| [Button](/docs/handbook/button) | Single activatable control or toolbar actions |
+| [List](/docs/handbook/list) | Stable-ID vertical collections |
+| [DataTable](/docs/handbook/data-table) | Virtualized / multi-column data |
+| [Dialog](/docs/handbook/dialog) | Modal confirmations and messages |
+| [Command palette](/docs/handbook/command-palette) | Fuzzy jump across commands |
+| [Prompt composer](/docs/handbook/prompt-composer) | Agent-style multi-line input |
+| [Permission prompt](/docs/handbook/permission-prompt) | Trust gates with provenance and risk |
+| [ObjectInspector](/docs/handbook/object-inspector) | Key/value field projection + cursor |
 
-All fenced Rust examples that claim to compile are mirrored in
-`crates/termrock/tests/documentation_examples.rs` and must stay green in CI.
+**CI:** fenced examples that claim to compile are mirrored in
+`crates/termrock/tests/documentation_examples.rs` and must stay green.

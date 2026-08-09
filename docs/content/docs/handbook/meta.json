@@ -14,6 +14,7 @@
     "overlay-stack",
     "host-frame",
     "form",
-    "menu"
+    "menu",
+    "object-inspector"
   ]
 }\n
