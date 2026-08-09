@@ -45,6 +45,8 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0029 | `v0.12.0` | [Experience layer](migrations/0029-v0.12.0-experience-layer.md) |
 | 0030 | `v0.12.0` | [Theme system and patterns](migrations/0030-v0.12.0-theme-system-and-patterns.md) |
 | 0031 | `v0.12.0` | [Foundation kernel](migrations/0031-v0.12.0-foundation-kernel.md) |
+| 0032 | `v0.12.0` | [Fail-safe ApprovalCard interaction](migrations/0032-v0.12.0-fail-safe-approval-card.md) |
+| 0033 | `v0.12.0` | [VirtualGrid resident projection contract](migrations/0033-v0.12.0-virtual-grid-resident-projection.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

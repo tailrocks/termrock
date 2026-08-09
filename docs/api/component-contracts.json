@@ -9,11 +9,11 @@
   },
   "ApprovalCard": {
     "keyboard": "covered",
-    "mouse": "caller-owned",
+    "mouse": "covered",
     "focus": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered",
+    "narrowTerminal": "covered"
   },
   "Backdrop": {
     "keyboard": "not-applicable",

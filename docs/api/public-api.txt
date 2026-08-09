@@ -1,5 +1,3 @@
- Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.01s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -4700,12 +4698,63 @@ pub unsafe fn termrock::widgets::Anchor::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Anchor
 pub fn termrock::widgets::Anchor::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Anchor
+#[non_exhaustive] pub enum termrock::widgets::ApprovalCardOutcome
+pub termrock::widgets::ApprovalCardOutcome::Cancelled
+pub termrock::widgets::ApprovalCardOutcome::Confirmed(termrock::widgets::ApprovalDecision)
+pub termrock::widgets::ApprovalCardOutcome::Ignored
+pub termrock::widgets::ApprovalCardOutcome::SelectionChanged
+impl core::clone::Clone for termrock::widgets::ApprovalCardOutcome
+pub fn termrock::widgets::ApprovalCardOutcome::clone(&self) -> termrock::widgets::ApprovalCardOutcome
+impl core::cmp::Eq for termrock::widgets::ApprovalCardOutcome
+impl core::cmp::PartialEq for termrock::widgets::ApprovalCardOutcome
+pub fn termrock::widgets::ApprovalCardOutcome::eq(&self, &termrock::widgets::ApprovalCardOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ApprovalCardOutcome
+pub fn termrock::widgets::ApprovalCardOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ApprovalCardOutcome
+pub fn termrock::widgets::ApprovalCardOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ApprovalCardOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::ApprovalCardOutcome
+impl core::marker::Freeze for termrock::widgets::ApprovalCardOutcome
+impl core::marker::Send for termrock::widgets::ApprovalCardOutcome
+impl core::marker::Sync for termrock::widgets::ApprovalCardOutcome
+impl core::marker::Unpin for termrock::widgets::ApprovalCardOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ApprovalCardOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ApprovalCardOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ApprovalCardOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ApprovalCardOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ApprovalCardOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ApprovalCardOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ApprovalCardOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ApprovalCardOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ApprovalCardOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ApprovalCardOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ApprovalCardOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ApprovalCardOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ApprovalCardOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ApprovalCardOutcome where T: core::clone::Clone
+pub type termrock::widgets::ApprovalCardOutcome::Owned = T
+pub fn termrock::widgets::ApprovalCardOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ApprovalCardOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ApprovalCardOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ApprovalCardOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ApprovalCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ApprovalCardOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ApprovalCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ApprovalCardOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ApprovalCardOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ApprovalCardOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ApprovalCardOutcome
+pub fn termrock::widgets::ApprovalCardOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ApprovalCardOutcome
 #[non_exhaustive] pub enum termrock::widgets::ApprovalDecision
 pub termrock::widgets::ApprovalDecision::AllowOnce
 pub termrock::widgets::ApprovalDecision::AllowSession
 pub termrock::widgets::ApprovalDecision::Always
 pub termrock::widgets::ApprovalDecision::Defer
 pub termrock::widgets::ApprovalDecision::Deny
+impl termrock::widgets::ApprovalDecision
+pub const termrock::widgets::ApprovalDecision::ALL: [Self; 5]
+pub const fn termrock::widgets::ApprovalDecision::label(self) -> &'static str
 impl core::clone::Clone for termrock::widgets::ApprovalDecision
 pub fn termrock::widgets::ApprovalDecision::clone(&self) -> termrock::widgets::ApprovalDecision
 impl core::cmp::Eq for termrock::widgets::ApprovalDecision
@@ -6690,20 +6739,23 @@ impl<T> core::convert::From<T> for termrock::widgets::ApprovalCard<'a>
 pub fn termrock::widgets::ApprovalCard<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ApprovalCard<'a>
 pub struct termrock::widgets::ApprovalCardState
-pub termrock::widgets::ApprovalCardState::selected: usize
+pub termrock::widgets::ApprovalCardState::decision_regions: alloc::vec::Vec<termrock::widgets::ApprovalDecisionRegion>
 impl termrock::widgets::ApprovalCardState
-pub fn termrock::widgets::ApprovalCardState::handle_key(&mut self, termrock::input::KeyEvent) -> core::option::Option<termrock::widgets::ApprovalDecision>
-pub const fn termrock::widgets::ApprovalCardState::new() -> Self
+pub fn termrock::widgets::ApprovalCardState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::ApprovalCardOutcome
+pub fn termrock::widgets::ApprovalCardState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::ApprovalCardOutcome
+pub fn termrock::widgets::ApprovalCardState::new() -> Self
+pub const fn termrock::widgets::ApprovalCardState::selected(&self) -> termrock::widgets::ApprovalDecision
+pub fn termrock::widgets::ApprovalCardState::set_selected(&mut self, termrock::widgets::ApprovalDecision)
+pub fn termrock::widgets::ApprovalCardState::with_selected(termrock::widgets::ApprovalDecision) -> Self
 impl core::clone::Clone for termrock::widgets::ApprovalCardState
 pub fn termrock::widgets::ApprovalCardState::clone(&self) -> termrock::widgets::ApprovalCardState
 impl core::cmp::Eq for termrock::widgets::ApprovalCardState
 impl core::cmp::PartialEq for termrock::widgets::ApprovalCardState
 pub fn termrock::widgets::ApprovalCardState::eq(&self, &termrock::widgets::ApprovalCardState) -> bool
 impl core::default::Default for termrock::widgets::ApprovalCardState
-pub fn termrock::widgets::ApprovalCardState::default() -> termrock::widgets::ApprovalCardState
+pub fn termrock::widgets::ApprovalCardState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::ApprovalCardState
 pub fn termrock::widgets::ApprovalCardState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::widgets::ApprovalCardState
 impl core::marker::StructuralPartialEq for termrock::widgets::ApprovalCardState
 impl core::marker::Freeze for termrock::widgets::ApprovalCardState
 impl core::marker::Send for termrock::widgets::ApprovalCardState
@@ -6737,6 +6789,50 @@ pub unsafe fn termrock::widgets::ApprovalCardState::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::ApprovalCardState
 pub fn termrock::widgets::ApprovalCardState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ApprovalCardState
+pub struct termrock::widgets::ApprovalDecisionRegion
+pub termrock::widgets::ApprovalDecisionRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::ApprovalDecisionRegion::decision: termrock::widgets::ApprovalDecision
+impl core::clone::Clone for termrock::widgets::ApprovalDecisionRegion
+pub fn termrock::widgets::ApprovalDecisionRegion::clone(&self) -> termrock::widgets::ApprovalDecisionRegion
+impl core::cmp::Eq for termrock::widgets::ApprovalDecisionRegion
+impl core::cmp::PartialEq for termrock::widgets::ApprovalDecisionRegion
+pub fn termrock::widgets::ApprovalDecisionRegion::eq(&self, &termrock::widgets::ApprovalDecisionRegion) -> bool
+impl core::fmt::Debug for termrock::widgets::ApprovalDecisionRegion
+pub fn termrock::widgets::ApprovalDecisionRegion::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::ApprovalDecisionRegion
+impl core::marker::StructuralPartialEq for termrock::widgets::ApprovalDecisionRegion
+impl core::marker::Freeze for termrock::widgets::ApprovalDecisionRegion
+impl core::marker::Send for termrock::widgets::ApprovalDecisionRegion
+impl core::marker::Sync for termrock::widgets::ApprovalDecisionRegion
+impl core::marker::Unpin for termrock::widgets::ApprovalDecisionRegion
+impl core::marker::UnsafeUnpin for termrock::widgets::ApprovalDecisionRegion
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ApprovalDecisionRegion
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ApprovalDecisionRegion
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ApprovalDecisionRegion where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ApprovalDecisionRegion::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ApprovalDecisionRegion where U: core::convert::From<T>
+pub fn termrock::widgets::ApprovalDecisionRegion::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ApprovalDecisionRegion where U: core::convert::Into<T>
+pub type termrock::widgets::ApprovalDecisionRegion::Error = core::convert::Infallible
+pub fn termrock::widgets::ApprovalDecisionRegion::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ApprovalDecisionRegion where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ApprovalDecisionRegion::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ApprovalDecisionRegion::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ApprovalDecisionRegion where T: core::clone::Clone
+pub type termrock::widgets::ApprovalDecisionRegion::Owned = T
+pub fn termrock::widgets::ApprovalDecisionRegion::clone_into(&self, &mut T)
+pub fn termrock::widgets::ApprovalDecisionRegion::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ApprovalDecisionRegion where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ApprovalDecisionRegion::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ApprovalDecisionRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::ApprovalDecisionRegion::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ApprovalDecisionRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::ApprovalDecisionRegion::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ApprovalDecisionRegion where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ApprovalDecisionRegion::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ApprovalDecisionRegion
+pub fn termrock::widgets::ApprovalDecisionRegion::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ApprovalDecisionRegion
 pub struct termrock::widgets::Backdrop
 impl termrock::widgets::Backdrop
 pub fn termrock::widgets::Backdrop::new() -> Self
@@ -11327,8 +11423,8 @@ pub fn termrock::widgets::VirtualGridState<RowId, ColId>::new() -> Self
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_column_widths(&mut self, alloc::vec::Vec<u16>)
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_focused(&mut self, bool)
 impl<RowId: core::clone::Clone + core::cmp::Eq, ColId: core::clone::Clone + core::cmp::Eq> termrock::widgets::VirtualGridState<RowId, ColId>
-pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::GridColumn<'_, ColId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
-pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::GridColumn<'_, ColId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
 impl<RowId, ColId> core::default::Default for termrock::widgets::VirtualGridState<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::default() -> Self
 impl<RowId: core::clone::Clone, ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::VirtualGridState<RowId, ColId>

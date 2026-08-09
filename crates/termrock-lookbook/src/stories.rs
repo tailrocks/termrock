@@ -763,10 +763,37 @@ pub(crate) fn stories() -> Vec<Story> {
             "approval-card/basic",
             "Approval card",
             "ApprovalCard",
-            "Permission card with decision row.",
+            "Permission card with safe Deny default.",
             48,
             6,
             approval_card,
+        ),
+        Story::new(
+            "approval-card/narrow",
+            "Approval card narrow",
+            "ApprovalCard",
+            "Selected decision remains visible at narrow widths.",
+            24,
+            6,
+            approval_card,
+        ),
+        Story::new(
+            "approval-card/tiny",
+            "Approval card tiny",
+            "ApprovalCard",
+            "Selected-only fallback with non-color nav cue.",
+            18,
+            4,
+            approval_card,
+        ),
+        Story::new(
+            "approval-card/unicode",
+            "Approval card Unicode",
+            "ApprovalCard",
+            "CJK and emoji permission copy remains cell-safe.",
+            40,
+            6,
+            approval_card_unicode,
         ),
         Story::new(
             "stream-view/basic",
@@ -2000,6 +2027,15 @@ fn approval_card(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             ApprovalRisk::High,
             theme,
         ),
+        area,
+        &mut state,
+    );
+}
+
+fn approval_card_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = ApprovalCardState::new();
+    frame.render_stateful_widget(
+        &ApprovalCard::new("権限 🔐", "本番へ公開しますか？", ApprovalRisk::High, theme),
         area,
         &mut state,
     );

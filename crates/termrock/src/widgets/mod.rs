@@ -38,9 +38,9 @@ mod virtual_grid;
 
 pub use action_bar::{Action, ActionBar, ActionBarState};
 pub use agent::{
-    ApprovalCard, ApprovalCardState, ApprovalDecision, ApprovalRisk, PromptBox, PromptBoxOutcome,
-    PromptBoxState, StreamItem, StreamItemKind, StreamView, ThinkingBlock, Timeline, TimelineEvent,
-    TokenMeter, ToolCard, ToolStatus,
+    ApprovalCard, ApprovalCardOutcome, ApprovalCardState, ApprovalDecision, ApprovalDecisionRegion,
+    ApprovalRisk, PromptBox, PromptBoxOutcome, PromptBoxState, StreamItem, StreamItemKind,
+    StreamView, ThinkingBlock, Timeline, TimelineEvent, TokenMeter, ToolCard, ToolStatus,
 };
 pub use charts::{BarDatum, BarSeries, MeterSegment, SegmentedMeter, Sparkline};
 pub use code_block::{CodeBlock, PlainSyntax, SyntaxHighlighter};

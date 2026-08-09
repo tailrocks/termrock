@@ -10,7 +10,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{Role, Theme},
     text::{display_cols, take_display_cols},
     widgets::{Panel, PanelEmphasis, TextArea, TextAreaOutcome, TextAreaState},
@@ -318,7 +320,7 @@ impl Widget for ToolCard<'_> {
 
 // ── Approval card ───────────────────────────────────────────────────────────
 
-/// Semantic permission outcome.
+/// Semantic permission decision (message only — never executes policy).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ApprovalDecision {
@@ -332,6 +334,36 @@ pub enum ApprovalDecision {
     Deny,
     /// Defer / ask later.
     Defer,
+}
+
+impl ApprovalDecision {
+    /// Canonical navigation/render order for every decision.
+    pub const ALL: [Self; 5] = [
+        Self::AllowOnce,
+        Self::AllowSession,
+        Self::Always,
+        Self::Deny,
+        Self::Defer,
+    ];
+
+    /// Short chrome label.
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::AllowOnce => "Once",
+            Self::AllowSession => "Session",
+            Self::Always => "Always",
+            Self::Deny => "Deny",
+            Self::Defer => "Defer",
+        }
+    }
+
+    fn index(self) -> usize {
+        Self::ALL
+            .iter()
+            .position(|&decision| decision == self)
+            .unwrap_or(3)
+    }
 }
 
 /// Risk tier for approval chrome.
@@ -368,45 +400,150 @@ impl ApprovalRisk {
     }
 }
 
-/// Focused option index inside an approval card.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Typed result of approval interaction (no side effects).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum ApprovalCardOutcome {
+    /// Input did not apply.
+    Ignored,
+    /// Selected decision changed.
+    SelectionChanged,
+    /// User confirmed a decision (consumer applies policy).
+    Confirmed(ApprovalDecision),
+    /// User cancelled without confirming (Esc). Not a Deny decision.
+    Cancelled,
+}
+
+/// Painted hit region for one decision control.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ApprovalDecisionRegion {
+    /// Decision identity.
+    pub decision: ApprovalDecision,
+    /// Exact painted rectangle.
+    pub area: Rect,
+}
+
+/// Fail-safe approval interaction state.
+///
+/// Default selection is [`ApprovalDecision::Deny`]. Untouched Enter never
+/// approves.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ApprovalCardState {
-    /// Index into the fixed decision row.
-    pub selected: usize,
+    selected: ApprovalDecision,
+    /// Exact decision hit regions from the latest render.
+    pub decision_regions: Vec<ApprovalDecisionRegion>,
+}
+
+impl Default for ApprovalCardState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ApprovalCardState {
-    /// Creates state focused on Allow once.
+    /// Creates state with the safe default selection (`Deny`).
     #[must_use]
-    pub const fn new() -> Self {
-        Self { selected: 0 }
+    pub fn new() -> Self {
+        Self {
+            selected: ApprovalDecision::Deny,
+            decision_regions: Vec::new(),
+        }
+    }
+
+    /// Creates state with an explicit initial selection.
+    #[must_use]
+    pub fn with_selected(selected: ApprovalDecision) -> Self {
+        Self {
+            selected,
+            decision_regions: Vec::new(),
+        }
+    }
+
+    /// Currently selected decision.
+    #[must_use]
+    pub const fn selected(&self) -> ApprovalDecision {
+        self.selected
+    }
+
+    /// Sets the selected decision.
+    pub fn set_selected(&mut self, selected: ApprovalDecision) {
+        self.selected = selected;
+    }
+
+    fn move_selection(&mut self, delta: isize) -> ApprovalCardOutcome {
+        let len = ApprovalDecision::ALL.len() as isize;
+        let next = (self.selected.index() as isize + delta).rem_euclid(len) as usize;
+        let next = ApprovalDecision::ALL[next];
+        if next == self.selected {
+            return ApprovalCardOutcome::Ignored;
+        }
+        self.selected = next;
+        ApprovalCardOutcome::SelectionChanged
     }
 
     /// Handles keyboard navigation and confirmation.
-    pub fn handle_key(&mut self, key: KeyEvent) -> Option<ApprovalDecision> {
-        if key.kind != KeyEventKind::Press {
-            return None;
+    ///
+    /// Navigation accepts Press and Repeat. Confirmation and shortcuts are
+    /// Press-only so held Enter cannot multi-fire.
+    pub fn handle_key(&mut self, key: KeyEvent) -> ApprovalCardOutcome {
+        match key.kind {
+            KeyEventKind::Press | KeyEventKind::Repeat => {}
+            KeyEventKind::Release => return ApprovalCardOutcome::Ignored,
         }
-        const OPTIONS: [ApprovalDecision; 5] = [
-            ApprovalDecision::AllowOnce,
-            ApprovalDecision::AllowSession,
-            ApprovalDecision::Always,
-            ApprovalDecision::Deny,
-            ApprovalDecision::Defer,
-        ];
+        let is_press = key.kind == KeyEventKind::Press;
         match key.code {
-            KeyCode::Left | KeyCode::Up => {
-                self.selected = self.selected.saturating_sub(1);
-                None
+            KeyCode::Left | KeyCode::Up => self.move_selection(-1),
+            KeyCode::Right | KeyCode::Down => self.move_selection(1),
+            KeyCode::Tab if key.modifiers.contains(KeyModifiers::SHIFT) => self.move_selection(-1),
+            KeyCode::Tab => self.move_selection(1),
+            KeyCode::BackTab => self.move_selection(-1),
+            KeyCode::Enter if is_press => ApprovalCardOutcome::Confirmed(self.selected),
+            KeyCode::Enter => ApprovalCardOutcome::Ignored,
+            KeyCode::Esc if is_press => ApprovalCardOutcome::Cancelled,
+            KeyCode::Esc => ApprovalCardOutcome::Ignored,
+            KeyCode::Char('n' | 'N') if is_press => {
+                ApprovalCardOutcome::Confirmed(ApprovalDecision::Deny)
             }
-            KeyCode::Right | KeyCode::Down | KeyCode::Tab => {
-                self.selected = (self.selected + 1).min(OPTIONS.len() - 1);
-                None
+            KeyCode::Char('y' | 'Y') if is_press => {
+                ApprovalCardOutcome::Confirmed(ApprovalDecision::AllowOnce)
             }
-            KeyCode::Enter => Some(OPTIONS[self.selected.min(OPTIONS.len() - 1)]),
-            KeyCode::Esc | KeyCode::Char('n' | 'N') => Some(ApprovalDecision::Deny),
-            KeyCode::Char('y' | 'Y') => Some(ApprovalDecision::AllowOnce),
-            _ => None,
+            _ => ApprovalCardOutcome::Ignored,
+        }
+    }
+
+    /// Handles pointer input against the latest decision hit regions.
+    ///
+    /// A left-button Down on a decision selects it and confirms once.
+    pub fn handle_mouse(&mut self, event: MouseEvent) -> ApprovalCardOutcome {
+        match event.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                let Some(region) = self
+                    .decision_regions
+                    .iter()
+                    .find(|region| region.area.contains(event.position))
+                    .copied()
+                else {
+                    return ApprovalCardOutcome::Ignored;
+                };
+                self.selected = region.decision;
+                ApprovalCardOutcome::Confirmed(region.decision)
+            }
+            MouseEventKind::Moved => {
+                let Some(region) = self
+                    .decision_regions
+                    .iter()
+                    .find(|region| region.area.contains(event.position))
+                    .copied()
+                else {
+                    return ApprovalCardOutcome::Ignored;
+                };
+                if region.decision == self.selected {
+                    return ApprovalCardOutcome::Ignored;
+                }
+                self.selected = region.decision;
+                ApprovalCardOutcome::SelectionChanged
+            }
+            _ => ApprovalCardOutcome::Ignored,
         }
     }
 }
@@ -438,10 +575,20 @@ impl<'a> ApprovalCard<'a> {
     }
 }
 
+fn decision_chip(decision: ApprovalDecision, selected: bool) -> String {
+    let label = decision.label();
+    if selected {
+        format!("[{label}]")
+    } else {
+        format!(" {label} ")
+    }
+}
+
 impl StatefulWidget for &ApprovalCard<'_> {
     type State = ApprovalCardState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        state.decision_regions.clear();
         if area.is_empty() {
             return;
         }
@@ -463,32 +610,148 @@ impl StatefulWidget for &ApprovalCard<'_> {
             usize::from(inner.width),
             self.theme.style(self.risk.role()),
         );
+
+        // Tiny height: selected decision + non-color nav cue on one row.
         if inner.height < 3 {
+            if inner.height >= 2 {
+                paint_selected_only_fallback(self.theme, inner, state, buffer);
+            }
             return;
         }
-        let options = ["Once", "Session", "Always", "Deny", "Defer"];
-        let mut x = inner.x;
-        let y = inner.bottom().saturating_sub(1);
-        for (index, label) in options.iter().enumerate() {
-            let selected = index == state.selected;
-            let text = if selected {
-                format!("[{label}]")
-            } else {
-                format!(" {label} ")
-            };
-            let width = display_cols(&text) as u16;
-            if x.saturating_add(width) > inner.right() {
-                break;
+
+        let chips: Vec<(ApprovalDecision, String)> = ApprovalDecision::ALL
+            .iter()
+            .copied()
+            .map(|decision| {
+                (
+                    decision,
+                    decision_chip(decision, decision == state.selected),
+                )
+            })
+            .collect();
+        let total_width: u16 = chips
+            .iter()
+            .map(|(_, text)| display_cols(text) as u16)
+            .sum::<u16>()
+            .saturating_add((chips.len().saturating_sub(1) as u16).saturating_mul(1));
+
+        if total_width <= inner.width {
+            // Wide: single horizontal row.
+            let y = inner.bottom().saturating_sub(1);
+            let mut x = inner.x;
+            for (decision, text) in &chips {
+                let width = display_cols(text) as u16;
+                if x.saturating_add(width) > inner.right() {
+                    break;
+                }
+                let style = if *decision == state.selected {
+                    self.theme.style(Role::ActionFocused)
+                } else {
+                    self.theme.style(Role::TextMuted)
+                };
+                buffer.set_stringn(x, y, text, usize::from(width), style);
+                state.decision_regions.push(ApprovalDecisionRegion {
+                    decision: *decision,
+                    area: Rect {
+                        x,
+                        y,
+                        width,
+                        height: 1,
+                    },
+                });
+                x = x.saturating_add(width.saturating_add(1));
             }
-            let style = if selected {
+            return;
+        }
+
+        // Medium: wrap decisions across available body rows (keep order).
+        let body_top = inner.y.saturating_add(1);
+        let body_bottom = inner.bottom();
+        if body_top >= body_bottom {
+            paint_selected_only_fallback(self.theme, inner, state, buffer);
+            return;
+        }
+        let mut y = body_top;
+        let mut x = inner.x;
+        let mut painted_any = false;
+        for (decision, text) in &chips {
+            let width = (display_cols(text) as u16).max(1);
+            if x > inner.x && x.saturating_add(width) > inner.right() {
+                y = y.saturating_add(1);
+                x = inner.x;
+                if y >= body_bottom {
+                    break;
+                }
+            }
+            if width > inner.width {
+                // Can't fit this chip at all on this width — selected-only.
+                state.decision_regions.clear();
+                paint_selected_only_fallback(self.theme, inner, state, buffer);
+                return;
+            }
+            let style = if *decision == state.selected {
                 self.theme.style(Role::ActionFocused)
             } else {
                 self.theme.style(Role::TextMuted)
             };
-            buffer.set_stringn(x, y, &text, usize::from(width), style);
+            buffer.set_stringn(x, y, text, usize::from(width), style);
+            state.decision_regions.push(ApprovalDecisionRegion {
+                decision: *decision,
+                area: Rect {
+                    x,
+                    y,
+                    width,
+                    height: 1,
+                },
+            });
+            painted_any = true;
             x = x.saturating_add(width.saturating_add(1));
         }
+
+        // If selected is missing from painted regions, force selected-only.
+        let selected_visible = state
+            .decision_regions
+            .iter()
+            .any(|region| region.decision == state.selected);
+        if !painted_any || !selected_visible {
+            state.decision_regions.clear();
+            paint_selected_only_fallback(self.theme, inner, state, buffer);
+        }
     }
+}
+
+fn paint_selected_only_fallback(
+    theme: &Theme,
+    inner: Rect,
+    state: &mut ApprovalCardState,
+    buffer: &mut Buffer,
+) {
+    let y = if inner.height >= 2 {
+        inner.bottom().saturating_sub(1)
+    } else {
+        inner.y
+    };
+    // Non-color nav cue: ‹ [Deny] ›
+    let core = decision_chip(state.selected, true);
+    let text = format!("‹ {core} ›");
+    let clipped = take_display_cols(&text, usize::from(inner.width));
+    let width = (display_cols(&clipped) as u16).min(inner.width);
+    buffer.set_stringn(
+        inner.x,
+        y,
+        &clipped,
+        usize::from(width),
+        theme.style(Role::ActionFocused),
+    );
+    state.decision_regions.push(ApprovalDecisionRegion {
+        decision: state.selected,
+        area: Rect {
+            x: inner.x,
+            y,
+            width: width.max(1),
+            height: 1,
+        },
+    });
 }
 
 impl StatefulWidget for ApprovalCard<'_> {
@@ -808,15 +1071,103 @@ mod tests {
     }
 
     #[test]
-    fn approval_enter_emits_selected_decision() {
+    fn approval_default_enter_confirms_deny_never_allow() {
         let mut state = ApprovalCardState::new();
-        let key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        assert_eq!(state.handle_key(key), Some(ApprovalDecision::AllowOnce));
-        state.selected = 3;
+        assert_eq!(state.selected(), ApprovalDecision::Deny);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            Some(ApprovalDecision::Deny)
+            ApprovalCardOutcome::Confirmed(ApprovalDecision::Deny)
         );
+        assert_ne!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            ApprovalCardOutcome::Confirmed(ApprovalDecision::AllowOnce)
+        );
+    }
+
+    #[test]
+    fn approval_escape_is_cancelled_not_deny() {
+        let mut state = ApprovalCardState::new();
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            ApprovalCardOutcome::Cancelled
+        );
+    }
+
+    #[test]
+    fn approval_tab_and_backtab_wrap_full_decision_set() {
+        let mut state = ApprovalCardState::new();
+        assert_eq!(state.selected(), ApprovalDecision::Deny);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            ApprovalCardOutcome::SelectionChanged
+        );
+        assert_eq!(state.selected(), ApprovalDecision::Defer);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            ApprovalCardOutcome::SelectionChanged
+        );
+        assert_eq!(state.selected(), ApprovalDecision::AllowOnce);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::BackTab, KeyModifiers::NONE)),
+            ApprovalCardOutcome::SelectionChanged
+        );
+        assert_eq!(state.selected(), ApprovalDecision::Defer);
+    }
+
+    #[test]
+    fn approval_enter_repeat_does_not_confirm() {
+        let mut state = ApprovalCardState::with_selected(ApprovalDecision::AllowOnce);
+        let mut key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        key.kind = KeyEventKind::Repeat;
+        assert_eq!(state.handle_key(key), ApprovalCardOutcome::Ignored);
+    }
+
+    #[test]
+    fn approval_y_n_shortcuts_are_explicit_confirms() {
+        let mut state = ApprovalCardState::new();
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE)),
+            ApprovalCardOutcome::Confirmed(ApprovalDecision::AllowOnce)
+        );
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE)),
+            ApprovalCardOutcome::Confirmed(ApprovalDecision::Deny)
+        );
+    }
+
+    #[test]
+    fn approval_selected_visible_at_every_non_empty_width() {
+        use ratatui_core::{backend::TestBackend, terminal::Terminal};
+
+        let theme = Theme::default();
+        let card = ApprovalCard::new("Permission", "Run tool?", ApprovalRisk::High, &theme);
+        for width in 0u16..=48 {
+            let mut state = ApprovalCardState::new();
+            let height = 6u16;
+            let mut terminal = Terminal::new(TestBackend::new(width.max(1), height)).unwrap();
+            let area = Rect::new(0, 0, width, height);
+            terminal
+                .draw(|frame| {
+                    frame.render_stateful_widget(&card, area, &mut state);
+                })
+                .unwrap();
+            if width == 0 {
+                assert!(state.decision_regions.is_empty());
+                continue;
+            }
+            // Selected must be published as a hit region whenever anything painted.
+            if !state.decision_regions.is_empty() {
+                assert!(
+                    state
+                        .decision_regions
+                        .iter()
+                        .any(|region| region.decision == state.selected()),
+                    "width {width}: selected {:?} missing from {:?}",
+                    state.selected(),
+                    state.decision_regions
+                );
+            }
+        }
     }
 
     #[test]

@@ -345,14 +345,18 @@ let _vertical_offset = state.scroll_y;`,
   },
 
   ApprovalCard: {
-    description: 'A blocking permission card with risk tiers and semantic decisions.',
+    description: 'Fail-safe permission card with default Deny and typed outcomes (no side effects).',
     primaryStory: 'approval-card/basic',
-    usage: `use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ApprovalCard, ApprovalCardState, ApprovalRisk}};
+    usage: `use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ApprovalCard, ApprovalCardOutcome, ApprovalCardState, ApprovalRisk}};
 
 let theme = Theme::default();
 let card = ApprovalCard::new("Permission", "Run cargo publish?", ApprovalRisk::High, &theme);
-let mut state = ApprovalCardState::new();
-let decision = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
+let mut state = ApprovalCardState::new(); // selected = Deny
+match state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)) {
+    ApprovalCardOutcome::Confirmed(decision) => { let _ = decision; }
+    ApprovalCardOutcome::Cancelled => {}
+    _ => {}
+}`,
   },
   Banner: {
     description: 'A single-line severity banner with non-color glyphs.',
