@@ -8,12 +8,13 @@ use ratatui_core::{
 
 use crate::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind},
-    scroll::DialogScroll,
     style::{Density, DesignSystem, Role, RolePalette},
     text::{display_cols, display_cols_slice_into},
 };
 
-use super::{Panel, PanelChrome, edit_core};
+use super::{
+    Panel, PanelChrome, ScrollArea, ScrollAreaState, ScrollBarVisibility, ScrollChain, edit_core,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum TextEditDelta {
@@ -87,7 +88,8 @@ pub struct TextAreaState {
     lines: Vec<String>,
     cursor: TextCursor,
     goal_column: Option<usize>,
-    scroll: DialogScroll,
+    /// Dual-axis viewport via canonical [`ScrollAreaState`] (native-feel input box).
+    scroll: ScrollAreaState,
     accepts_input: bool,
     read_only: bool,
     viewport_width: usize,
@@ -113,7 +115,10 @@ impl TextAreaState {
             lines: parse_lines(text.as_ref()),
             cursor: TextCursor::default(),
             goal_column: None,
-            scroll: DialogScroll::new(),
+            scroll: ScrollAreaState::new()
+                .axes(true, true)
+                .chain(ScrollChain::Capture)
+                .wheel_steps(3, 4),
             accepts_input: false,
             read_only: false,
             viewport_width: 0,
@@ -136,7 +141,10 @@ impl TextAreaState {
         self.cursor.line = self.lines.len() - 1;
         self.cursor.byte = self.lines[self.cursor.line].len();
         self.goal_column = None;
-        self.scroll = DialogScroll::new();
+        self.scroll = ScrollAreaState::new()
+            .axes(true, true)
+            .chain(ScrollChain::Capture)
+            .wheel_steps(3, 4);
         self.measure();
     }
 
@@ -297,23 +305,20 @@ impl TextAreaState {
         self.accepts_input
     }
 
-    /// Returns two-axis viewport state.
+    /// Two-axis viewport ([`ScrollAreaState`] — same engine as lists/logs).
     #[must_use]
-    pub const fn scroll(&self) -> &DialogScroll {
+    pub const fn scroll(&self) -> &ScrollAreaState {
         &self.scroll
     }
 
-    /// Applies a bounded two-axis viewport delta.
+    /// Mutable scroll (hosts may overscan / chain when nested).
+    pub fn scroll_mut(&mut self) -> &mut ScrollAreaState {
+        &mut self.scroll
+    }
+
+    /// Applies a bounded two-axis viewport delta (y then x; native editor wheel).
     pub fn scroll_by(&mut self, delta_x: isize, delta_y: isize) -> bool {
-        let before = (self.scroll.scroll_x, self.scroll.scroll_y);
-        let delta_x =
-            i16::try_from(delta_x).unwrap_or(if delta_x < 0 { i16::MIN } else { i16::MAX });
-        let delta_y =
-            i16::try_from(delta_y).unwrap_or(if delta_y < 0 { i16::MIN } else { i16::MAX });
-        self.scroll.scroll_x = self.scroll.scroll_x.saturating_add_signed(delta_x);
-        self.scroll.scroll_y = self.scroll.scroll_y.saturating_add_signed(delta_y);
-        self.clamp_scroll();
-        before != (self.scroll.scroll_x, self.scroll.scroll_y)
+        self.scroll.scroll_by(delta_y, delta_x).is_scrolled()
     }
 
     /// Maps a pointer on either painted scrollbar track to its content offset.
@@ -322,29 +327,31 @@ impl TextAreaState {
             .vertical_scrollbar
             .filter(|area| area.contains(position))
         {
-            let before = self.scroll.scroll_y;
-            self.scroll.scroll_y = u16::try_from(crate::scroll::offset_for_track_position(
+            let before = self.scroll.offset_y();
+            let y = u16::try_from(crate::scroll::offset_for_track_position(
                 self.lines.len(),
                 self.viewport_height,
                 area.height,
                 usize::from(position.y.saturating_sub(area.y)),
             ))
             .unwrap_or(u16::MAX);
-            return before != self.scroll.scroll_y;
+            self.scroll.set_offset_y_quiet(y);
+            return before != self.scroll.offset_y();
         }
         if let Some(area) = self
             .horizontal_scrollbar
             .filter(|area| area.contains(position))
         {
-            let before = self.scroll.scroll_x;
-            self.scroll.scroll_x = u16::try_from(crate::scroll::offset_for_track_position(
+            let before = self.scroll.offset_x();
+            let x = u16::try_from(crate::scroll::offset_for_track_position(
                 self.max_width,
                 self.viewport_width,
                 area.width,
                 usize::from(position.x.saturating_sub(area.x)),
             ))
             .unwrap_or(u16::MAX);
-            return before != self.scroll.scroll_x;
+            self.scroll.set_offset_x(x);
+            return before != self.scroll.offset_x();
         }
         false
     }
@@ -508,15 +515,19 @@ impl TextAreaState {
                 }
             }
             Event::Mouse(mouse) if self.accepts_input && self.body.contains(mouse.position) => {
-                let changed = match mouse.kind {
-                    MouseEventKind::ScrollUp => self.scroll_by(0, -1),
-                    MouseEventKind::ScrollDown => self.scroll_by(0, 1),
-                    _ => false,
-                };
-                if changed {
-                    TextAreaOutcome::Scrolled
-                } else {
-                    TextAreaOutcome::Ignored
+                // Wheel uses ScrollArea (multi-line steps) so input feels like a native editor.
+                match mouse.kind {
+                    MouseEventKind::ScrollUp
+                    | MouseEventKind::ScrollDown
+                    | MouseEventKind::ScrollLeft
+                    | MouseEventKind::ScrollRight => {
+                        if self.scroll.handle_mouse(mouse).is_scrolled() {
+                            TextAreaOutcome::Scrolled
+                        } else {
+                            TextAreaOutcome::Ignored
+                        }
+                    }
+                    _ => TextAreaOutcome::Ignored,
                 }
             }
             _ => TextAreaOutcome::Ignored,
@@ -754,32 +765,45 @@ impl TextAreaState {
             .unwrap_or(0);
         self.clamp_scroll();
     }
-    fn clamp_scroll(&mut self) {
-        self.scroll.clamp(
-            self.lines.len(),
-            self.viewport_height,
-            self.max_width,
-            self.viewport_width,
-        );
+    fn sync_scroll_metrics(&mut self) {
+        let h = u16::try_from(self.lines.len().min(usize::from(u16::MAX))).unwrap_or(u16::MAX);
+        let w = u16::try_from(self.max_width.min(usize::from(u16::MAX))).unwrap_or(u16::MAX);
+        let vh = u16::try_from(self.viewport_height.min(usize::from(u16::MAX))).unwrap_or(1);
+        let vw = u16::try_from(self.viewport_width.min(usize::from(u16::MAX))).unwrap_or(1);
+        // Quiet content size so stream-like growth does not pause "follow" (N/A here).
+        self.scroll.set_content_size(w, h);
+        self.scroll.set_viewport(vw, vh.max(1));
     }
+
+    fn clamp_scroll(&mut self) {
+        self.sync_scroll_metrics();
+        self.scroll.clamp();
+    }
+
+    /// Keep caret in view like a native multiline editor (no accidental follow-pause).
     fn reveal(&mut self) {
+        self.sync_scroll_metrics();
         if self.viewport_height > 0 {
-            let y = usize::from(self.scroll.scroll_y);
+            let y = usize::from(self.scroll.offset_y());
             if self.cursor.line < y {
-                self.scroll.scroll_y = u16::try_from(self.cursor.line).unwrap_or(u16::MAX);
+                self.scroll
+                    .set_offset_y_quiet(u16::try_from(self.cursor.line).unwrap_or(u16::MAX));
             } else if self.cursor.line >= y + self.viewport_height {
-                self.scroll.scroll_y =
-                    u16::try_from(self.cursor.line + 1 - self.viewport_height).unwrap_or(u16::MAX);
+                self.scroll.set_offset_y_quiet(
+                    u16::try_from(self.cursor.line + 1 - self.viewport_height).unwrap_or(u16::MAX),
+                );
             }
         }
         let col = display_cols(&self.lines[self.cursor.line][..self.cursor.byte]);
-        let x = usize::from(self.scroll.scroll_x);
+        let x = usize::from(self.scroll.offset_x());
         if col < x {
-            self.scroll.scroll_x = u16::try_from(col).unwrap_or(u16::MAX);
+            self.scroll
+                .set_offset_x(u16::try_from(col).unwrap_or(u16::MAX));
         } else if self.viewport_width > 0 && col >= x + self.viewport_width {
-            self.scroll.scroll_x = u16::try_from(col + 1 - self.viewport_width).unwrap_or(u16::MAX);
+            self.scroll
+                .set_offset_x(u16::try_from(col + 1 - self.viewport_width).unwrap_or(u16::MAX));
         }
-        self.clamp_scroll();
+        self.scroll.clamp();
     }
 }
 
@@ -866,16 +890,17 @@ impl StatefulWidget for &TextArea<'_> {
         state.horizontal_scrollbar = None;
         state.viewport_width = usize::from(body.width);
         state.viewport_height = usize::from(body.height);
+        state.sync_scroll_metrics();
         state.reveal();
         if body.is_empty() {
             return;
         }
-        let first = usize::from(state.scroll.scroll_y);
+        let first = usize::from(state.scroll.offset_y());
         let last = (first + state.viewport_height).min(state.lines.len());
         for (painted, line) in state.lines[first..last].iter().enumerate() {
             display_cols_slice_into(
                 line,
-                usize::from(state.scroll.scroll_x),
+                usize::from(state.scroll.offset_x()),
                 state.viewport_width,
                 &mut state.scratch,
             );
@@ -899,7 +924,7 @@ impl StatefulWidget for &TextArea<'_> {
         }
         if state.accepts_input && state.cursor.line >= first && state.cursor.line < last {
             let col = display_cols(&state.lines[state.cursor.line][..state.cursor.byte])
-                .saturating_sub(usize::from(state.scroll.scroll_x));
+                .saturating_sub(usize::from(state.scroll.offset_x()));
             let x = body
                 .x
                 .saturating_add(u16::try_from(col).unwrap_or(u16::MAX))
@@ -912,49 +937,16 @@ impl StatefulWidget for &TextArea<'_> {
             };
             buffer.set_style(Rect::new(x, y, 1, 1), caret);
         }
-        if show_vertical && inner.width > 0 {
-            let track = Rect::new(body.right(), inner.y, 1, body.height);
-            state.vertical_scrollbar = Some(track);
-            for y in track.top()..track.bottom() {
-                let track_g = if self.ascii { "|" } else { "░" };
-                buffer.set_string(track.x, y, track_g, self.system.style(Role::ScrollTrack));
+        // Canonical scrollbar chrome (same glyphs/roles as ScrollArea surfaces).
+        if show_vertical || show_horizontal {
+            let sa = ScrollArea::new(self.system).bar(ScrollBarVisibility::Auto);
+            sa.render_bars(inner, buffer, &state.scroll);
+            if show_vertical && inner.width > 0 {
+                state.vertical_scrollbar = Some(Rect::new(body.right(), inner.y, 1, body.height));
             }
-            if let Some(thumb) = crate::scroll::full_cell_thumb(
-                state.lines.len(),
-                state.viewport_height,
-                track.height,
-                usize::from(state.scroll.scroll_y),
-            ) {
-                for y in thumb.start..thumb.start.saturating_add(thumb.len) {
-                    buffer.set_string(
-                        track.x,
-                        track.y + y,
-                        "█",
-                        self.system.style(Role::ScrollThumb),
-                    );
-                }
-            }
-        }
-        if show_horizontal && inner.height > 0 {
-            let track = Rect::new(inner.x, body.bottom(), body.width, 1);
-            state.horizontal_scrollbar = Some(track);
-            for x in track.left()..track.right() {
-                buffer.set_string(x, track.y, "░", self.system.style(Role::ScrollTrack));
-            }
-            if let Some(thumb) = crate::scroll::full_cell_thumb(
-                state.max_width,
-                state.viewport_width,
-                track.width,
-                usize::from(state.scroll.scroll_x),
-            ) {
-                for x in thumb.start..thumb.start.saturating_add(thumb.len) {
-                    buffer.set_string(
-                        track.x + x,
-                        track.y,
-                        "█",
-                        self.system.style(Role::ScrollThumb),
-                    );
-                }
+            if show_horizontal && inner.height > 0 {
+                state.horizontal_scrollbar =
+                    Some(Rect::new(inner.x, body.bottom(), body.width, 1));
             }
         }
     }
@@ -1375,6 +1367,32 @@ mod tests {
     }
 
     #[test]
+    fn tall_document_scroll_keeps_caret_visible_like_native_editor() {
+        // Grok Build / Amp-style: multi-line draft taller than viewport; arrow
+        // and page keep caret in view without allocating full paint.
+        let mut lines = String::new();
+        for i in 0..40 {
+            lines.push_str(&format!("line {i:02} draft body\n"));
+        }
+        let mut state = TextAreaState::new(lines);
+        state.set_accepts_input(true);
+        state.viewport_width = 24;
+        state.viewport_height = 6;
+        state.sync_scroll_metrics();
+        assert!(state.set_cursor(TextCursor {
+            line: 30,
+            byte: 0
+        }));
+        state.reveal();
+        let y = state.scroll.offset_y() as usize;
+        assert!(y <= 30);
+        assert!(y + 6 > 30, "caret line must sit in viewport");
+        // Wheel down via ScrollArea steps
+        assert!(state.scroll_by(0, 3));
+        assert!(state.scroll.offset_y() > y as u16);
+    }
+
+    #[test]
     fn scrollbars_stay_inside_panel_and_own_press_drag_geometry() {
         let theme = RolePalette::default();
         let system = crate::style::DesignSystem::from_palette(theme.clone());
@@ -1393,7 +1411,7 @@ mod tests {
             modifiers: KeyModifiers::NONE,
         }));
         assert_eq!(outcome, TextAreaOutcome::Changed);
-        assert!(state.scroll.scroll_y > 0);
+        assert!(state.scroll.offset_y() > 0);
         assert_eq!(
             state.handle_event(Event::Mouse(crate::input::MouseEvent {
                 kind: MouseEventKind::Drag(MouseButton::Left),

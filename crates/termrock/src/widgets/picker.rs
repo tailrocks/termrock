@@ -6,12 +6,85 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::Outcome,
+    interaction::{
+        Outcome, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack, place_overlay,
+    },
     style::{DesignSystem, Role},
     text::take_display_cols,
 };
 
 use super::{List, ListRow, ListState, RowRole, TextInput, TextInputOutcome, TextInputState};
+
+/// Default overlay id for a select/picker popup on an [`OverlayStack`].
+pub const PICKER_OVERLAY_ID: &str = "termrock.picker";
+
+/// Preferred picker popup size before clamp.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PickerSize {
+    /// Preferred width in cells.
+    pub width: u16,
+    /// Preferred height in rows.
+    pub height: u16,
+}
+
+impl Default for PickerSize {
+    fn default() -> Self {
+        Self {
+            width: 36,
+            height: 12,
+        }
+    }
+}
+
+impl From<PickerSize> for OverlaySize {
+    fn from(value: PickerSize) -> Self {
+        Self {
+            width: value.width,
+            height: value.height,
+            min_width: 16,
+            min_height: 4,
+            max_width: 0,
+            max_height: 0,
+        }
+    }
+}
+
+/// Place a picker/select popup under `anchor` (Select kind policy).
+#[must_use]
+pub fn place_picker(bounds: Rect, anchor: Rect, preferred: PickerSize) -> Rect {
+    place_overlay(
+        bounds,
+        Some(anchor),
+        OverlaySize::from(preferred),
+        crate::interaction::OverlayPolicy::for_kind(crate::interaction::OverlayKind::Select),
+    )
+}
+
+/// Open a select-kind picker popup on the overlay stack.
+pub fn open_picker_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    anchor: Rect,
+    preferred: PickerSize,
+    opener_focus: Option<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.open(
+        bounds,
+        OverlaySpec::select(
+            PICKER_OVERLAY_ID,
+            anchor,
+            OverlaySize::from(preferred),
+            opener_focus,
+        ),
+    )
+}
+
+/// Dismiss the default picker overlay id.
+pub fn dismiss_picker_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.dismiss(&OverlayId::from_static(PICKER_OVERLAY_ID))
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -636,5 +709,31 @@ mod tests {
         assert_eq!(state.list().hovered(), Some(&"alpha"));
         (&Picker::new(&filtered, &tokens)).render(Rect::new(0, 0, 20, 4), &mut buffer, &mut state);
         assert_eq!(state.list().hovered(), None);
+    }
+
+    #[test]
+    fn picker_overlay_helpers_open_and_dismiss() {
+        use crate::interaction::OverlayKind;
+        let bounds = Rect::new(0, 0, 80, 24);
+        let anchor = Rect::new(10, 5, 8, 1);
+        let mut stack = crate::interaction::OverlayStack::<&'static str>::new();
+        let out = open_picker_overlay(
+            &mut stack,
+            bounds,
+            anchor,
+            PickerSize::default(),
+            Some("trigger"),
+        );
+        assert!(matches!(out, OverlayOutcome::Opened { .. }));
+        assert_eq!(stack.top().unwrap().kind, OverlayKind::Select);
+        let placed = place_picker(bounds, anchor, PickerSize::default());
+        assert_eq!(stack.top().unwrap().rect, placed);
+        assert!(matches!(
+            dismiss_picker_overlay(&mut stack),
+            OverlayOutcome::Dismissed {
+                focus: Some("trigger"),
+                ..
+            }
+        ));
     }
 }

@@ -856,7 +856,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "overlay/queued-dialogs",
             "Queued dialogs",
             "OverlayStack",
-            "Multiple dialogs stacked; top owns Esc.",
+            "OpenMode::Queue: deferred dialog waits behind blocking top.",
             44,
             12,
             overlay_queued,
@@ -4803,21 +4803,26 @@ fn overlay_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn overlay_queued(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::OpenMode;
     let tokens = system.clone().density(Density::default());
     let mut stack = OverlayStack::<()>::new();
-    let _ = stack.open(
+    let _ = stack.open_with(
         area,
         OverlaySpec::dialog("d1", OverlaySize::dialog(30, 6), None),
+        OpenMode::Queue,
     );
-    let _ = stack.open(
+    let _ = stack.open_with(
         area,
         OverlaySpec::dialog("d2", OverlaySize::dialog(28, 6), None),
+        OpenMode::Queue,
     );
+    // Only d1 open; d2 waits in queue until d1 dismisses.
     paint_stack_rects(frame, area, &stack, &tokens, system);
     frame.render_widget(
         Paragraph::new(Line::from(format!(
-            "depth={} top owns Esc",
-            stack.entries().len()
+            "open={} queue={} (Esc peels one)",
+            stack.entries().len(),
+            stack.queue_len()
         ))),
         Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
     );

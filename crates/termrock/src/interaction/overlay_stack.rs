@@ -617,6 +617,59 @@ pub struct OverlayEntry<FocusId = ()> {
     pub fullscreen_promoted: bool,
 }
 
+/// How [`OverlayStack::open_with`] schedules a new overlay.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum OpenMode {
+    /// Always push on the z-stack (default; current behavior).
+    #[default]
+    Stack,
+    /// If a blocking modal is already top, enqueue; else open immediately.
+    Queue,
+    /// Replace an existing entry with the same id; otherwise open.
+    Replace,
+}
+
+/// Diagnostics from placement resolution (tests / Studio / host debugging).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct PlacementResult {
+    /// Final rectangle (empty when hidden).
+    pub rect: Rect,
+    /// Prefer below/above flipped due to collision or shortfall.
+    pub flipped_vertical: bool,
+    /// Prefer start/end flipped due to horizontal shortfall.
+    pub flipped_horizontal: bool,
+    /// Clamped into bounds.
+    pub clamped: bool,
+    /// Promoted to fullscreen by narrow fallback or kind.
+    pub fullscreen_promoted: bool,
+    /// Hidden by narrow fallback.
+    pub hidden: bool,
+}
+
+/// Pointer hit relative to the open stack (host routing).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum PointerRoute {
+    /// No overlays open.
+    Empty,
+    /// Hits the top overlay body.
+    Top {
+        /// Index in [`OverlayStack::entries`] (always last).
+        index: usize,
+    },
+    /// Outside the top rect (may dismiss or trap per policy).
+    OutsideTop {
+        /// Top entry index.
+        index: usize,
+    },
+    /// Hits a lower overlay under a transparent top (rare; top usually covers).
+    Lower {
+        /// Hit entry index.
+        index: usize,
+    },
+}
+
 /// Result of a stack mutation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -630,9 +683,16 @@ pub enum OverlayOutcome<FocusId = ()> {
         /// Rect.
         rect: Rect,
     },
-    /// Exactly one layer dismissed.
+    /// Modal request deferred until the blocking top dismisses.
+    Queued {
+        /// Spec id.
+        id: OverlayId,
+        /// Queue position (0 = next to open).
+        position: usize,
+    },
+    /// Exactly one layer dismissed (plus transitive descendants).
     Dismissed {
-        /// Removed id.
+        /// Removed id (the requested root of the dismiss).
         id: OverlayId,
         /// Focus to restore.
         focus: Option<FocusId>,
@@ -641,10 +701,54 @@ pub enum OverlayOutcome<FocusId = ()> {
     UnhandledEscape,
 }
 
-/// Z-ordered overlay host with placement and single-layer Esc law.
+impl<FocusId> OverlayOutcome<FocusId> {
+    /// Layer was opened (not queued).
+    #[must_use]
+    pub const fn is_opened(&self) -> bool {
+        matches!(self, Self::Opened { .. })
+    }
+
+    /// Layer was dismissed.
+    #[must_use]
+    pub const fn is_dismissed(&self) -> bool {
+        matches!(self, Self::Dismissed { .. })
+    }
+
+    /// Opener focus if dismissed.
+    #[must_use]
+    pub fn restored_focus(&self) -> Option<&FocusId> {
+        match self {
+            Self::Dismissed { focus, .. } => focus.as_ref(),
+            _ => None,
+        }
+    }
+}
+
+/// Whether this kind blocks [`OpenMode::Queue`] peers until dismissed.
+#[must_use]
+pub const fn kind_blocks_queue(kind: OverlayKind) -> bool {
+    matches!(
+        kind,
+        OverlayKind::Dialog
+            | OverlayKind::AlertDialog
+            | OverlayKind::CommandPalette
+            | OverlayKind::Fullscreen
+            | OverlayKind::Drawer
+    )
+}
+
+/// Z-ordered overlay host with placement, modal queue, and single-layer Esc law.
+///
+/// **Laws**
+/// 1. Escape closes exactly one conceptual layer (top); traps protect layers beneath.
+/// 2. Nested children are removed **transitively** when a parent dismisses.
+/// 3. [`OpenMode::Queue`] defers blocking modals behind an existing blocking top.
+/// 4. Placement flips/clamps deterministically; narrow fallback is policy-driven.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OverlayStack<FocusId = ()> {
     entries: Vec<OverlayEntry<FocusId>>,
+    /// Deferred modal specs (FIFO); drained after a blocking top dismisses.
+    queue: Vec<OverlaySpec<FocusId>>,
     /// Last known screen bounds for reflow on resize.
     bounds: Rect,
 }
@@ -661,8 +765,21 @@ impl<FocusId> OverlayStack<FocusId> {
     pub const fn new() -> Self {
         Self {
             entries: Vec::new(),
+            queue: Vec::new(),
             bounds: Rect::new(0, 0, 0, 0),
         }
+    }
+
+    /// Pending modal queue (FIFO).
+    #[must_use]
+    pub fn queue(&self) -> &[OverlaySpec<FocusId>] {
+        &self.queue
+    }
+
+    /// Number of deferred opens.
+    #[must_use]
+    pub fn queue_len(&self) -> usize {
+        self.queue.len()
     }
 
     /// Bottom → top entries.
@@ -734,24 +851,101 @@ impl<FocusId> OverlayStack<FocusId> {
             .unwrap_or(BackdropPolicy::None)
     }
 
-    /// Clears every overlay.
+    /// Clears every overlay and the modal queue.
     pub fn clear(&mut self) {
         self.entries.clear();
+        self.queue.clear();
+    }
+
+    /// Route a pointer position for host input (before widget handlers).
+    #[must_use]
+    pub fn route_pointer(&self, position: Position) -> PointerRoute {
+        if self.entries.is_empty() {
+            return PointerRoute::Empty;
+        }
+        let top_i = self.entries.len() - 1;
+        if self.entries[top_i].rect.contains(position) {
+            return PointerRoute::Top { index: top_i };
+        }
+        // Lower hits (for translucent tops / tooltips that do not own input).
+        for (index, entry) in self.entries.iter().enumerate().rev().skip(1) {
+            if entry.rect.contains(position) {
+                return PointerRoute::Lower { index };
+            }
+        }
+        PointerRoute::OutsideTop { index: top_i }
+    }
+
+    /// Whether the top layer traps Tab/focus.
+    #[must_use]
+    pub fn top_focus_trap(&self) -> bool {
+        self.entries.last().is_some_and(|e| e.policy.focus_trap)
     }
 }
 
 impl<FocusId: Clone> OverlayStack<FocusId> {
-    /// Opens or replaces an overlay and resolves geometry inside `bounds`.
+    /// Opens or replaces an overlay ([`OpenMode::Stack`]).
     pub fn open(&mut self, bounds: Rect, spec: OverlaySpec<FocusId>) -> OverlayOutcome<FocusId> {
+        self.open_with(bounds, spec, OpenMode::Stack)
+    }
+
+    /// Open with explicit scheduling strategy.
+    pub fn open_with(
+        &mut self,
+        bounds: Rect,
+        spec: OverlaySpec<FocusId>,
+        mode: OpenMode,
+    ) -> OverlayOutcome<FocusId> {
         self.bounds = bounds;
+        match mode {
+            OpenMode::Replace => {
+                if self.contains(&spec.id) {
+                    let _ = self.dismiss(&spec.id);
+                }
+                self.push_entry(bounds, spec)
+            }
+            OpenMode::Queue => {
+                let top_blocks = self
+                    .entries
+                    .last()
+                    .is_some_and(|e| kind_blocks_queue(e.kind));
+                if top_blocks && kind_blocks_queue(spec.kind) {
+                    let id = spec.id.clone();
+                    // De-dupe same id in queue.
+                    self.queue.retain(|s| s.id != id);
+                    self.queue.push(spec);
+                    let position = self.queue.len().saturating_sub(1);
+                    OverlayOutcome::Queued { id, position }
+                } else {
+                    self.push_entry(bounds, spec)
+                }
+            }
+            OpenMode::Stack => self.push_entry(bounds, spec),
+        }
+    }
+
+    /// Enqueue a modal (alias of [`OpenMode::Queue`]).
+    pub fn enqueue(
+        &mut self,
+        bounds: Rect,
+        spec: OverlaySpec<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        self.open_with(bounds, spec, OpenMode::Queue)
+    }
+
+    fn push_entry(
+        &mut self,
+        bounds: Rect,
+        spec: OverlaySpec<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
         let policy = spec
             .policy
             .unwrap_or_else(|| OverlayPolicy::for_kind(spec.kind));
-        let (rect, fullscreen_promoted) =
+        let placement =
             resolve_placement(bounds, spec.anchor, spec.size, policy, spec.kind);
         let id = spec.id.clone();
+        // Replace same id if re-opened via Stack.
         self.entries.retain(|e| e.id != spec.id);
-        // Nested: if parent missing, still allow (caller responsibility).
         self.entries.push(OverlayEntry {
             id: spec.id,
             kind: spec.kind,
@@ -759,11 +953,58 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             policy,
             size: spec.size,
             anchor: spec.anchor,
-            rect,
+            rect: placement.rect,
             opener_focus: spec.opener_focus,
-            fullscreen_promoted,
+            fullscreen_promoted: placement.fullscreen_promoted,
         });
-        OverlayOutcome::Opened { id, rect }
+        OverlayOutcome::Opened {
+            id,
+            rect: placement.rect,
+        }
+    }
+
+    /// After a dismiss, open the next queued modal if the top is no longer blocking.
+    pub fn drain_queue(&mut self) -> Option<OverlayOutcome<FocusId>> {
+        if self.queue.is_empty() {
+            return None;
+        }
+        let top_blocks = self
+            .entries
+            .last()
+            .is_some_and(|e| kind_blocks_queue(e.kind));
+        if top_blocks {
+            return None;
+        }
+        let spec = self.queue.remove(0);
+        Some(self.push_entry(self.bounds, spec))
+    }
+
+    /// Drain until queue empty or a blocking top remains.
+    pub fn drain_queue_all(&mut self) -> Vec<OverlayOutcome<FocusId>> {
+        let mut out = Vec::new();
+        while let Some(o) = self.drain_queue() {
+            out.push(o);
+            if matches!(
+                self.entries.last().map(|e| e.kind),
+                Some(k) if kind_blocks_queue(k)
+            ) {
+                break;
+            }
+        }
+        out
+    }
+
+    fn dismiss_root(&mut self, root_id: &OverlayId) -> OverlayOutcome<FocusId> {
+        let Some(index) = self.entries.iter().position(|e| &e.id == root_id) else {
+            return OverlayOutcome::Ignored;
+        };
+        let focus = self.entries[index].opener_focus.clone();
+        let id = self.entries[index].id.clone();
+        let doomed = collect_descendants(&self.entries, root_id);
+        self.entries.retain(|e| !doomed.iter().any(|d| d == &e.id));
+        let out = OverlayOutcome::Dismissed { id, focus };
+        let _ = self.drain_queue();
+        out
     }
 
     /// Promotes the top overlay to fullscreen within bounds.
@@ -779,6 +1020,39 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         OverlayOutcome::Opened { id, rect: bounds }
     }
 
+    /// Clears fullscreen promotion and reflows preferred placement.
+    pub fn demote_top_fullscreen(&mut self, bounds: Rect) -> OverlayOutcome<FocusId> {
+        self.bounds = bounds;
+        let Some(top) = self.entries.last_mut() else {
+            return OverlayOutcome::Ignored;
+        };
+        if !top.fullscreen_promoted
+            && !matches!(top.kind, OverlayKind::Fullscreen)
+        {
+            return OverlayOutcome::Ignored;
+        }
+        // Explicit Fullscreen kind cannot demote.
+        if matches!(top.kind, OverlayKind::Fullscreen) {
+            top.rect = bounds;
+            let id = top.id.clone();
+            return OverlayOutcome::Opened { id, rect: bounds };
+        }
+        top.fullscreen_promoted = false;
+        // Restore kind default prefer if we had forced Fullscreen.
+        if matches!(top.policy.prefer, PlacementPrefer::Fullscreen) {
+            top.policy.prefer = OverlayPolicy::for_kind(top.kind).prefer;
+        }
+        let placement =
+            resolve_placement(bounds, top.anchor, top.size, top.policy, top.kind);
+        top.rect = placement.rect;
+        top.fullscreen_promoted = placement.fullscreen_promoted;
+        let id = top.id.clone();
+        OverlayOutcome::Opened {
+            id,
+            rect: placement.rect,
+        }
+    }
+
     /// Reflows all geometries after resize (keeps stack order and open set).
     pub fn reflow(&mut self, bounds: Rect) {
         self.bounds = bounds;
@@ -789,10 +1063,11 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
                 entry.rect = bounds;
                 continue;
             }
-            let (rect, promoted) =
+            let placement =
                 resolve_placement(bounds, entry.anchor, entry.size, entry.policy, entry.kind);
-            entry.rect = rect;
-            entry.fullscreen_promoted = promoted || entry.fullscreen_promoted;
+            entry.rect = placement.rect;
+            entry.fullscreen_promoted =
+                placement.fullscreen_promoted || entry.fullscreen_promoted;
         }
     }
 
@@ -805,52 +1080,43 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             LayerDismissPolicy::Trap => OverlayOutcome::Ignored,
             LayerDismissPolicy::Ignore => OverlayOutcome::UnhandledEscape,
             LayerDismissPolicy::Dismissible => {
-                let removed = self.entries.pop().expect("top");
-                // Nested dismissal: also drop descendants of removed id.
-                self.entries
-                    .retain(|e| e.parent.as_ref() != Some(&removed.id));
-                OverlayOutcome::Dismissed {
-                    id: removed.id,
-                    focus: removed.opener_focus,
-                }
+                let id = top.id.clone();
+                self.dismiss_root(&id)
             }
         }
     }
 
     /// Outside-click: dismiss top when policy allows and position is outside rect.
     pub fn handle_outside_click(&mut self, position: Position) -> OverlayOutcome<FocusId> {
-        let Some(top) = self.entries.last() else {
-            return OverlayOutcome::Ignored;
-        };
-        if top.rect.contains(position) {
-            return OverlayOutcome::Ignored;
-        }
-        match top.policy.outside {
-            LayerDismissPolicy::Trap | LayerDismissPolicy::Ignore => OverlayOutcome::Ignored,
-            LayerDismissPolicy::Dismissible => {
-                let removed = self.entries.pop().expect("top");
-                self.entries
-                    .retain(|e| e.parent.as_ref() != Some(&removed.id));
-                OverlayOutcome::Dismissed {
-                    id: removed.id,
-                    focus: removed.opener_focus,
+        match self.route_pointer(position) {
+            PointerRoute::Empty | PointerRoute::Top { .. } | PointerRoute::Lower { .. } => {
+                OverlayOutcome::Ignored
+            }
+            PointerRoute::OutsideTop { .. } => {
+                let Some(top) = self.entries.last() else {
+                    return OverlayOutcome::Ignored;
+                };
+                match top.policy.outside {
+                    LayerDismissPolicy::Trap | LayerDismissPolicy::Ignore => {
+                        OverlayOutcome::Ignored
+                    }
+                    LayerDismissPolicy::Dismissible => {
+                        let id = top.id.clone();
+                        self.dismiss_root(&id)
+                    }
                 }
             }
         }
     }
 
-    /// Removes an overlay by id (and its descendants).
+    /// Unified pointer entry: outside-click policy or hit top.
+    pub fn handle_pointer(&mut self, position: Position) -> OverlayOutcome<FocusId> {
+        self.handle_outside_click(position)
+    }
+
+    /// Removes an overlay by id (and its transitive descendants).
     pub fn dismiss(&mut self, id: &OverlayId) -> OverlayOutcome<FocusId> {
-        let Some(index) = self.entries.iter().position(|e| &e.id == id) else {
-            return OverlayOutcome::Ignored;
-        };
-        let removed = self.entries.remove(index);
-        self.entries
-            .retain(|e| e.parent.as_ref() != Some(&removed.id));
-        OverlayOutcome::Dismissed {
-            id: removed.id,
-            focus: removed.opener_focus,
-        }
+        self.dismiss_root(id)
     }
 
     /// Pushes matching layers onto an [`InteractionScene`] (does not clear root).
@@ -900,7 +1166,40 @@ pub fn place_overlay(
     size: OverlaySize,
     policy: OverlayPolicy,
 ) -> Rect {
-    resolve_placement(bounds, anchor, size, policy, OverlayKind::Custom).0
+    resolve_placement(bounds, anchor, size, policy, OverlayKind::Custom).rect
+}
+
+/// Placement with flip/clamp/promotion diagnostics.
+#[must_use]
+pub fn place_overlay_detailed(
+    bounds: Rect,
+    anchor: Option<Rect>,
+    size: OverlaySize,
+    policy: OverlayPolicy,
+) -> PlacementResult {
+    resolve_placement(bounds, anchor, size, policy, OverlayKind::Custom)
+}
+
+/// Transitive descendant ids including `root`.
+fn collect_descendants<FocusId>(
+    entries: &[OverlayEntry<FocusId>],
+    root: &OverlayId,
+) -> Vec<OverlayId> {
+    let mut doomed = vec![root.clone()];
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for e in entries {
+            if let Some(p) = &e.parent
+                && doomed.iter().any(|d| d == p)
+                && !doomed.iter().any(|d| d == &e.id)
+            {
+                doomed.push(e.id.clone());
+                changed = true;
+            }
+        }
+    }
+    doomed
 }
 
 fn resolve_placement(
@@ -909,23 +1208,33 @@ fn resolve_placement(
     size: OverlaySize,
     policy: OverlayPolicy,
     kind: OverlayKind,
-) -> (Rect, bool) {
+) -> PlacementResult {
     if bounds.is_empty() {
-        return (Rect::default(), false);
+        return PlacementResult {
+            rect: Rect::default(),
+            hidden: true,
+            ..PlacementResult::default()
+        };
     }
 
-    let mut fullscreen_promoted = false;
+    let mut result = PlacementResult::default();
     let mut prefer = policy.prefer;
     let narrow = bounds.width <= policy.narrow_cols && policy.narrow_cols > 0;
     if narrow {
         match policy.narrow_fallback {
-            NarrowFallback::Hide => return (Rect::default(), false),
+            NarrowFallback::Hide => {
+                return PlacementResult {
+                    rect: Rect::default(),
+                    hidden: true,
+                    ..PlacementResult::default()
+                };
+            }
             NarrowFallback::Center => prefer = PlacementPrefer::Center,
             NarrowFallback::Fullscreen => {
                 prefer = PlacementPrefer::Fullscreen;
-                fullscreen_promoted = true;
+                result.fullscreen_promoted = true;
             }
-            NarrowFallback::Clamp => {}
+            NarrowFallback::Clamp => result.clamped = true,
         }
     }
 
@@ -937,28 +1246,35 @@ fn resolve_placement(
     if size.max_height > 0 {
         height = height.min(size.max_height);
     }
+    if width > bounds.width || height > bounds.height {
+        result.clamped = true;
+    }
     width = width.min(bounds.width).max(1);
     height = height.min(bounds.height).max(1);
 
     // Kind-specific size bias for drawers/fullscreen.
     if matches!(kind, OverlayKind::Fullscreen) || matches!(prefer, PlacementPrefer::Fullscreen) {
-        return (bounds, true);
+        result.rect = bounds;
+        result.fullscreen_promoted = true;
+        return result;
     }
     if matches!(prefer, PlacementPrefer::DrawerStart) {
         let w = width
             .min(bounds.width / 2)
             .max(size.min_width.min(bounds.width));
-        return (Rect::new(bounds.x, bounds.y, w, bounds.height), false);
+        result.rect = Rect::new(bounds.x, bounds.y, w, bounds.height);
+        return result;
     }
     if matches!(prefer, PlacementPrefer::DrawerEnd) {
         let w = width
             .min(bounds.width / 2)
             .max(size.min_width.min(bounds.width));
         let x = bounds.x.saturating_add(bounds.width.saturating_sub(w));
-        return (Rect::new(x, bounds.y, w, bounds.height), false);
+        result.rect = Rect::new(x, bounds.y, w, bounds.height);
+        return result;
     }
 
-    let rect = match prefer {
+    let (rect, flip_v, flip_h, clamped) = match prefer {
         PlacementPrefer::Center => {
             let x = bounds
                 .x
@@ -966,11 +1282,18 @@ fn resolve_placement(
             let y = bounds
                 .y
                 .saturating_add(bounds.height.saturating_sub(height) / 2);
-            Rect::new(x, y, width, height)
+            (Rect::new(x, y, width, height), false, false, false)
         }
         PlacementPrefer::AtOrigin => {
             let origin = anchor.unwrap_or(Rect::new(bounds.x, bounds.y, 1, 1));
-            clamp_rect(Rect::new(origin.x, origin.y, width, height), bounds)
+            let raw = Rect::new(origin.x, origin.y, width, height);
+            let clamped_r = clamp_rect(raw, bounds);
+            (
+                clamped_r,
+                false,
+                false,
+                clamped_r.x != raw.x || clamped_r.y != raw.y,
+            )
         }
         PlacementPrefer::BelowStart | PlacementPrefer::AboveStart | PlacementPrefer::EndAligned => {
             let anchor = anchor.unwrap_or(Rect::new(
@@ -982,10 +1305,14 @@ fn resolve_placement(
             place_anchored(bounds, anchor, width, height, prefer, policy.cover_anchor)
         }
         PlacementPrefer::Fullscreen | PlacementPrefer::DrawerStart | PlacementPrefer::DrawerEnd => {
-            bounds
+            (bounds, false, false, false)
         }
     };
-    (rect, fullscreen_promoted)
+    result.rect = rect;
+    result.flipped_vertical = flip_v;
+    result.flipped_horizontal = flip_h;
+    result.clamped = result.clamped || clamped;
+    result
 }
 
 fn clamp_rect(rect: Rect, bounds: Rect) -> Rect {
@@ -1003,6 +1330,7 @@ fn clamp_rect(rect: Rect, bounds: Rect) -> Rect {
     Rect::new(x, y, width, height)
 }
 
+/// Returns `(rect, flipped_vertical, flipped_horizontal, clamped)`.
 fn place_anchored(
     bounds: Rect,
     anchor: Rect,
@@ -1010,9 +1338,9 @@ fn place_anchored(
     height: u16,
     prefer: PlacementPrefer,
     cover_anchor: bool,
-) -> Rect {
+) -> (Rect, bool, bool, bool) {
     if bounds.is_empty() {
-        return Rect::default();
+        return (Rect::default(), false, false, false);
     }
     let width = width.min(bounds.width).max(1);
     let height = height.min(bounds.height).max(1);
@@ -1028,10 +1356,12 @@ fn place_anchored(
         prefer,
         PlacementPrefer::BelowStart | PlacementPrefer::EndAligned
     );
+    let mut flipped_v = false;
     let y = if prefer_below {
         if space_below >= height {
             below_y
         } else if space_above >= height {
+            flipped_v = true;
             anchor.y.saturating_sub(height)
         } else if space_below >= space_above {
             below_y.min(
@@ -1046,21 +1376,31 @@ fn place_anchored(
     } else if space_above >= height {
         anchor.y.saturating_sub(height)
     } else if space_below >= height {
+        flipped_v = true;
         below_y
     } else {
         bounds.y
     };
 
     let right_limit = bounds.x.saturating_add(bounds.width);
-    let x = if matches!(prefer, PlacementPrefer::EndAligned) {
+    let mut flipped_h = false;
+    let preferred_x = if matches!(prefer, PlacementPrefer::EndAligned) {
         right_limit.saturating_sub(width).max(bounds.x)
-    } else if anchor.x.saturating_add(width) <= right_limit {
-        anchor.x.max(bounds.x)
     } else {
+        anchor.x.max(bounds.x)
+    };
+    let x = if matches!(prefer, PlacementPrefer::EndAligned) {
+        preferred_x
+    } else if anchor.x.saturating_add(width) <= right_limit {
+        preferred_x
+    } else {
+        flipped_h = true;
         right_limit.saturating_sub(width).max(bounds.x)
     };
 
-    let mut rect = clamp_rect(Rect::new(x, y, width, height), bounds);
+    let raw = Rect::new(x, y, width, height);
+    let mut rect = clamp_rect(raw, bounds);
+    let mut clamped = rect.x != raw.x || rect.y != raw.y;
 
     if !cover_anchor && rect_intersects(rect, anchor) {
         if anchor.y > bounds.y {
@@ -1074,7 +1414,7 @@ fn place_anchored(
                 bounds,
             );
             if !rect_intersects(flipped, anchor) {
-                return flipped;
+                return (flipped, true, flipped_h, clamped);
             }
         }
         let pushed = clamp_rect(
@@ -1092,12 +1432,12 @@ fn place_anchored(
             bounds,
         );
         if !rect_intersects(pushed, anchor) {
-            return pushed;
+            return (pushed, flipped_v, flipped_h, true);
         }
+        clamped = true;
     }
-    // Final edge clamp already applied.
     let _ = &mut rect;
-    rect
+    (rect, flipped_v, flipped_h, clamped)
 }
 
 fn rect_intersects(a: Rect, b: Rect) -> bool {
@@ -1327,6 +1667,91 @@ mod tests {
         assert_eq!(stack.entries().len(), 2);
         let _ = stack.dismiss(&OverlayId::from_static("parent"));
         assert!(stack.is_empty());
+    }
+
+    #[test]
+    fn nested_dismiss_is_transitive() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<()>::new();
+        stack.open(
+            bounds,
+            OverlaySpec::dialog("root", OverlaySize::dialog(40, 10), None),
+        );
+        stack.open(
+            bounds,
+            OverlaySpec::menu("mid", Rect::new(10, 10, 1, 1), OverlaySize::menu(12, 4), None)
+                .with_parent("root"),
+        );
+        stack.open(
+            bounds,
+            OverlaySpec::menu("leaf", Rect::new(12, 12, 1, 1), OverlaySize::menu(10, 3), None)
+                .with_parent("mid"),
+        );
+        assert_eq!(stack.entries().len(), 3);
+        let _ = stack.dismiss(&OverlayId::from_static("root"));
+        assert!(stack.is_empty(), "grandchildren must dismiss with root");
+    }
+
+    #[test]
+    fn modal_queue_defers_until_top_dismisses() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<&'static str>::new();
+        let _ = stack.open_with(
+            bounds,
+            OverlaySpec::dialog("a", OverlaySize::dialog(30, 8), Some("fa")),
+            OpenMode::Queue,
+        );
+        assert!(stack.top().unwrap().id.as_str() == "a");
+        let queued = stack.open_with(
+            bounds,
+            OverlaySpec::dialog("b", OverlaySize::dialog(30, 8), Some("fb")),
+            OpenMode::Queue,
+        );
+        assert!(matches!(
+            queued,
+            OverlayOutcome::Queued {
+                id: OverlayId(ref s),
+                position: 0
+            } if s == "b"
+        ));
+        assert_eq!(stack.queue_len(), 1);
+        assert_eq!(stack.entries().len(), 1);
+        let _ = stack.handle_escape();
+        assert_eq!(stack.top().map(|t| t.id.as_str()), Some("b"));
+        assert_eq!(stack.queue_len(), 0);
+        match stack.handle_escape() {
+            OverlayOutcome::Dismissed {
+                focus: Some("fb"), ..
+            } => {}
+            other => panic!("expected fb restore, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn pointer_route_and_placement_detailed() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<()>::new();
+        stack.open(
+            bounds,
+            OverlaySpec::menu("m", Rect::new(10, 10, 1, 1), OverlaySize::menu(20, 6), None),
+        );
+        let rect = stack.top().unwrap().rect;
+        assert!(matches!(
+            stack.route_pointer(Position::new(rect.x, rect.y)),
+            PointerRoute::Top { .. }
+        ));
+        assert!(matches!(
+            stack.route_pointer(Position::new(0, 0)),
+            PointerRoute::OutsideTop { .. }
+        ));
+        let detailed = place_overlay_detailed(
+            bounds,
+            Some(Rect::new(5, 18, 1, 1)),
+            OverlaySize::menu(12, 6),
+            OverlayPolicy::for_kind(OverlayKind::Menu),
+        );
+        assert!(!detailed.rect.is_empty());
+        assert!(detailed.flipped_vertical || detailed.rect.y + detailed.rect.height <= 20);
     }
 
     #[test]

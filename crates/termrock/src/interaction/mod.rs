@@ -45,8 +45,9 @@ pub(crate) use modal::ModalStack;
 /// Paint a dim/occlude wash when [`OverlayStack::backdrop_policy`] requests it.
 pub use modal::render_backdrop;
 pub use overlay_stack::{
-    BackdropPolicy, NarrowFallback, OverlayEntry, OverlayId, OverlayKind, OverlayOutcome,
-    OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, place_overlay,
+    BackdropPolicy, NarrowFallback, OpenMode, OverlayEntry, OverlayId, OverlayKind, OverlayOutcome,
+    OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, PlacementResult,
+    PointerRoute, kind_blocks_queue, place_overlay, place_overlay_detailed,
 };
 pub use scene::{
     InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,

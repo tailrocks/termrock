@@ -1633,8 +1633,8 @@ fn paint_editor_selection(
         return;
     }
     let (start, end) = order_text_cursors(anchor, cur);
-    let scroll_y = usize::from(state.editor.scroll().scroll_y);
-    let scroll_x = usize::from(state.editor.scroll().scroll_x);
+    let scroll_y = usize::from(state.editor.scroll().offset_y());
+    let scroll_x = usize::from(state.editor.scroll().offset_x());
     let lines: Vec<&str> = state.editor.lines().collect();
     for line_idx in start.line..=end.line {
         if line_idx < scroll_y {

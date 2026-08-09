@@ -133,7 +133,10 @@ pub use permission::{
     PermissionQueue, PermissionRequest, PermissionRisk, PermissionScope, PermissionTarget,
     PriorGrant, ProvenanceHop, StalePermission, StaleReason,
 };
-pub use picker::{Picker, PickerOutcome, PickerState};
+pub use picker::{
+    PICKER_OVERLAY_ID, Picker, PickerOutcome, PickerSize, PickerState, dismiss_picker_overlay,
+    open_picker_overlay, place_picker,
+};
 pub use primitives::{
     ActivationOutcome, ActivationState, Badge, Button, ButtonSize, ButtonState, ButtonVariant,
     Chip, ChipOutcome, ChipState, IconButton, IconButtonState, Kbd, Separator, SeparatorLine,
