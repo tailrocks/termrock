@@ -7,8 +7,6 @@ use crate::{
     widgets::PanelChrome,
 };
 
-use super::ModalStack;
-
 /// One focusable identity registered for the current frame.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FocusTarget<Id, ScopeId> {
@@ -199,33 +197,31 @@ impl<Id: Clone + Eq, ScopeId: Clone + Eq> FocusRing<Id, ScopeId> {
         self.outcome(before)
     }
 
-    /// Opens a root modal and pushes its matching focus scope atomically.
-    pub fn open_modal<M>(&mut self, modals: &mut ModalStack<M>, modal: M, scope: ScopeId) {
+    /// Pushes a modal focus scope (host owns [`crate::interaction::OverlayStack`]).
+    ///
+    /// Replaces the dual `ModalStack` coupling: overlays register on OverlayStack;
+    /// this ring only owns focus scope nesting.
+    pub fn push_modal_scope(&mut self, scope: ScopeId) {
         while self.scopes.len() > 1 {
             let _ = self.pop_scope();
         }
-        modals.open(modal);
         self.push_scope(scope);
     }
 
-    /// Opens a child modal and pushes its matching focus scope atomically.
-    pub fn open_submodal<M>(&mut self, modals: &mut ModalStack<M>, child: M, scope: ScopeId) {
-        modals.open_sub(child);
+    /// Pushes a nested modal/child focus scope without collapsing parents.
+    pub fn push_nested_scope(&mut self, scope: ScopeId) {
         self.push_scope(scope);
     }
 
-    /// Pops the current modal and restores its parent scope focus atomically.
-    pub fn pop_modal<M>(&mut self, modals: &mut ModalStack<M>) {
-        if !modals.is_open() {
-            return;
+    /// Pops one non-root focus scope (one Esc peel of focus nesting).
+    pub fn pop_modal_scope(&mut self) {
+        if self.scopes.len() > 1 {
+            let _ = self.pop_scope();
         }
-        modals.pop();
-        let _ = self.pop_scope();
     }
 
-    /// Clears the full modal chain and restores the root opener atomically.
-    pub fn clear_modals<M>(&mut self, modals: &mut ModalStack<M>) {
-        modals.clear_chain();
+    /// Clears all modal/child scopes back to root opener focus.
+    pub fn clear_modal_scopes(&mut self) {
         while self.scopes.len() > 1 {
             let _ = self.pop_scope();
         }
@@ -430,8 +426,7 @@ mod tests {
         assert!(ring.attach_region(&Scope::Root, &Id::First, Rect::new(0, 0, 2, 2)));
         assert_eq!(ring.focus_at(Position::new(0, 0)), FocusOutcome::Unchanged);
 
-        let mut modals = ModalStack::new();
-        ring.open_modal(&mut modals, "modal", Scope::Modal);
+        ring.push_modal_scope(Scope::Modal);
         ring.begin_frame();
         assert_eq!(ring.reconcile(), FocusOutcome::Unchanged);
         assert_eq!(ring.handle_key(key(KeyCode::Tab)), FocusOutcome::Unchanged);
@@ -441,9 +436,8 @@ mod tests {
     #[test]
     fn modal_lifecycle_traps_skips_disabled_and_restores_nested_openers() {
         let mut ring = FocusRing::new(Scope::Root, Some(Id::Second));
-        let mut modals = ModalStack::new();
         root(&mut ring, true);
-        ring.open_modal(&mut modals, "parent", Scope::Modal);
+        ring.push_modal_scope(Scope::Modal);
         ring.begin_frame();
         ring.register_order(
             Scope::Modal,
@@ -458,25 +452,22 @@ mod tests {
         let _ = ring.handle_key(key(KeyCode::Tab));
         assert_eq!(ring.focused(), Some(&Id::ModalLast));
 
-        ring.open_submodal(&mut modals, "child", Scope::Child);
+        ring.push_nested_scope(Scope::Child);
         ring.begin_frame();
         ring.register_order(Scope::Child, [(Id::Child, None, true)]);
         let _ = ring.reconcile();
-        assert_eq!(modals.depth(), 2);
         assert_eq!(ring.focused(), Some(&Id::Child));
-        ring.pop_modal(&mut modals);
+        ring.pop_modal_scope();
         assert_eq!(ring.focused(), Some(&Id::ModalLast));
-        ring.clear_modals(&mut modals);
+        ring.clear_modal_scopes();
         assert_eq!(ring.focused(), Some(&Id::Second));
-        assert!(!modals.is_open());
     }
 
     #[test]
     fn removed_root_opener_restores_nearest_survivor() {
         let mut ring = FocusRing::new(Scope::Root, Some(Id::Third));
-        let mut modals = ModalStack::new();
         root(&mut ring, true);
-        ring.open_modal(&mut modals, "modal", Scope::Modal);
+        ring.push_modal_scope(Scope::Modal);
         ring.begin_frame();
         ring.register_order(
             Scope::Root,
@@ -484,7 +475,7 @@ mod tests {
         );
         ring.register_order(Scope::Modal, [(Id::ModalFirst, None, true)]);
         let _ = ring.reconcile();
-        ring.pop_modal(&mut modals);
+        ring.pop_modal_scope();
         let _ = ring.reconcile();
         assert_eq!(ring.focused(), Some(&Id::Second));
     }
@@ -492,9 +483,8 @@ mod tests {
     #[test]
     fn immediate_modal_reopen_does_not_leak_parent_restore_index_into_child() {
         let mut ring = FocusRing::new(Scope::Root, Some(Id::Second));
-        let mut modals = ModalStack::new();
         root(&mut ring, true);
-        ring.open_modal(&mut modals, "first", Scope::Modal);
+        ring.push_modal_scope(Scope::Modal);
         ring.begin_frame();
         ring.register_order(
             Scope::Root,
@@ -509,9 +499,9 @@ mod tests {
             [(Id::ModalFirst, None, true), (Id::ModalLast, None, true)],
         );
         let _ = ring.reconcile();
-        ring.pop_modal(&mut modals);
+        ring.pop_modal_scope();
 
-        ring.open_modal(&mut modals, "replacement", Scope::Modal);
+        ring.push_modal_scope(Scope::Modal);
         ring.begin_frame();
         ring.register_order(
             Scope::Modal,

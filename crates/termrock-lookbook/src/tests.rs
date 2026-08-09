@@ -270,3 +270,18 @@ fn no_dual_agent_chrome_stories() {
         );
     }
 }
+
+#[test]
+fn no_modal_stack_in_lookbook_sources() {
+    let app = include_str!("app.rs");
+    let host = include_str!("host_focus.rs");
+    assert!(!app.contains("ModalStack"), "app must use OverlayStack");
+    assert!(
+        !host.contains("ModalStack"),
+        "host_focus must not import ModalStack"
+    );
+    assert!(
+        app.contains("OverlayStack"),
+        "app must dogfood OverlayStack"
+    );
+}

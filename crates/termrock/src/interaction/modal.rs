@@ -1,15 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Modal input/lifecycle helper — backdrop, click-outside-dismiss, one-bright-border.
+//! Crate-private modal helpers (Break D).
 //!
-//! Any surface that hosts a modal dialog uses this helper to:
-//! 1. Render the full-screen opaque backdrop before drawing the modal.
-//! 2. Determine whether a mouse click dismisses the modal (click outside) or
-//!    is swallowed (click inside with no interactive target).
-//!
-//! This centralises the three behaviors that previously had to be
-//! re-implemented by each consuming surface.
+//! Domain-neutral overlay z-order / Esc / outside-click live on
+//! [`crate::interaction::OverlayStack`]. This module keeps:
+//! - [`render_backdrop`] — paint helper when stack requests a wash
+//! - [`ModalStack`] — crate-private legacy container (not public API)
 
 use ratatui_core::layout::Rect;
 use ratatui_core::terminal::Frame;
@@ -22,7 +19,7 @@ use crate::widgets::Backdrop;
 /// active modal into `parents`. `pop` restores exactly one parent, while
 /// `clear_chain` closes the whole flow after a terminal commit/cancel.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ModalStack<M> {
+pub(crate) struct ModalStack<M> {
     current: Option<M>,
     parents: Vec<M>,
 }
@@ -115,7 +112,7 @@ pub fn render_backdrop(frame: &mut Frame<'_>, full_area: Rect) {
 
 /// Classify a mouse click relative to an open modal rect.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ModalClickResult {
+pub(crate) enum ModalClickResult {
     /// Click was outside the modal rect — dismiss the modal (same as Esc).
     OutsideDismiss,
     /// Click was inside the modal rect on the given col/row — let the modal handle it.
@@ -128,7 +125,7 @@ pub enum ModalClickResult {
 /// - `OutsideDismiss` if the click is outside the modal (dismiss the modal).
 /// - `InsideHit` if inside (caller decides what to do within the modal).
 #[must_use]
-pub fn classify_click(modal_rect: Rect, col: u16, row: u16) -> ModalClickResult {
+pub(crate) fn classify_click(modal_rect: Rect, col: u16, row: u16) -> ModalClickResult {
     if modal_rect.contains(ratatui_core::layout::Position { x: col, y: row }) {
         ModalClickResult::InsideHit
     } else {

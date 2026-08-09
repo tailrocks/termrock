@@ -1,25 +1,23 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
-mod esc_cascade;
 mod focus;
 mod intent;
 mod keymap_bridge;
 mod modal;
-mod overlay;
-mod overlay_controller;
 mod overlay_stack;
 mod scene;
 
 // FocusRing is crate-private (pre-1.0 M3 / Break C0). Hosts use InteractionScene.
-// EscCascade / OverlayController / OverlayHost are crate-private; use
-// InteractionScene + OverlayStack as the public authorities.
+// Overlay authority is OverlayStack only (Break D / M4). ModalStack is crate-private.
 pub(crate) use focus::{FocusOutcome, FocusRing, FocusTarget};
 pub use intent::{
     NavigationMove, PageMove, UiIntent, default_list_intent, default_permission_intent,
     default_table_intent, default_transcript_intent, default_tree_intent,
 };
 pub use keymap_bridge::dispatch_keymap_action;
-pub use modal::{ModalClickResult, ModalStack, classify_click, render_backdrop};
+pub(crate) use modal::ModalStack;
+/// Paint a dim/occlude wash when [`OverlayStack::backdrop_policy`] requests it.
+pub use modal::render_backdrop;
 pub use overlay_stack::{
     BackdropPolicy, NarrowFallback, OverlayEntry, OverlayId, OverlayKind, OverlayOutcome,
     OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, place_overlay,

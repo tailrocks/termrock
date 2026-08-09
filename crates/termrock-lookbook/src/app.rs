@@ -16,7 +16,9 @@ use termrock::{
         Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
         MouseEventKind,
     },
-    interaction::{ModalStack, Outcome, render_backdrop},
+    interaction::{
+        Outcome, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack, render_backdrop,
+    },
     keymap::KeyChord,
     layout::centered_rect,
     patterns::{StudioShellLayout, layout_studio_shell},
@@ -90,7 +92,12 @@ pub(crate) struct Lookbook {
     theme: RolePalette,
     knob_selected: usize,
     prototype_toast: ToastState,
-    modals: ModalStack<PrototypeModal>,
+    /// OverlayStack sole authority for lookbook floating UI (Break D).
+    overlays: OverlayStack<()>,
+    /// Domain state for the focus-trap prototype dialog.
+    prototype_modal: Option<PrototypeModal>,
+    /// Last frame bounds for overlay placement.
+    frame_bounds: Rect,
 }
 
 impl Lookbook {
@@ -113,7 +120,9 @@ impl Lookbook {
             theme,
             knob_selected: 0,
             prototype_toast: ToastState::new(ToastLifetime::ExpiresAfter(PROTOTYPE_TOAST_TTL)),
-            modals: ModalStack::new(),
+            overlays: OverlayStack::new(),
+            prototype_modal: None,
+            frame_bounds: Rect::default(),
         }
     }
 
@@ -170,7 +179,7 @@ impl Lookbook {
                 enabled: true,
             });
         }
-        if self.modals.is_open() {
+        if self.prototype_modal.is_some() {
             for action in prototype_modal_actions() {
                 self.focus.register(FocusTarget {
                     scope: FocusScope::Modal,
@@ -221,7 +230,7 @@ impl Lookbook {
                 frame.area(),
             );
         }
-        if self.modals.is_open() {
+        if self.prototype_modal.is_some() {
             self.render_focus_modal(frame, modal_area);
         }
     }
@@ -367,17 +376,17 @@ impl Lookbook {
             Some(FocusId::ModalContinue | FocusId::ModalDisabled | FocusId::ModalCancel) => "modal",
             None => "—",
         };
-        let layer = if self.modals.is_open() {
+        let layer = if self.prototype_modal.is_some() {
             "modal"
         } else {
             "root"
         };
-        let layers = if self.modals.is_open() {
+        let layers = if self.prototype_modal.is_some() {
             ["root", "modal"]
         } else {
             ["root", ""]
         };
-        let layers_slice: &[&str] = if self.modals.is_open() {
+        let layers_slice: &[&str] = if self.prototype_modal.is_some() {
             &layers
         } else {
             &layers[..1]
@@ -434,7 +443,7 @@ impl Lookbook {
     }
 
     fn render_hints(&self, frame: &mut Frame<'_>, area: Rect) {
-        if self.modals.is_open() {
+        if self.prototype_modal.is_some() {
             frame.render_widget(
                 Paragraph::new("Tab/Shift-Tab trapped   Enter choose   Esc close + restore"),
                 area,
@@ -473,7 +482,7 @@ impl Lookbook {
     }
 
     pub(crate) fn update_at(&mut self, event: Event, tick: FrameTick) -> ControlFlow<()> {
-        if self.modals.is_open() {
+        if self.prototype_modal.is_some() {
             match event {
                 Event::Key(key) if key.kind == KeyEventKind::Press => self.handle_modal_key(key),
                 Event::Mouse(mouse) => self.handle_modal_mouse(mouse),
@@ -695,12 +704,29 @@ impl Lookbook {
     }
 
     fn open_focus_modal(&mut self) {
-        self.focus
-            .open_modal(&mut self.modals, PrototypeModal::new(), FocusScope::Modal);
+        let bounds = if self.frame_bounds.width > 0 {
+            self.frame_bounds
+        } else {
+            Rect::new(0, 0, 80, 24)
+        };
+        let _ = self.overlays.open(
+            bounds,
+            OverlaySpec::dialog(
+                OverlayId::from_static("lookbook.focus_trap"),
+                OverlaySize::dialog(52, 9),
+                None,
+            ),
+        );
+        self.prototype_modal = Some(PrototypeModal::new());
+        self.focus.push_modal_scope(FocusScope::Modal);
     }
 
     fn close_focus_modal(&mut self) {
-        self.focus.pop_modal(&mut self.modals);
+        let _ = self
+            .overlays
+            .dismiss(&OverlayId::from_static("lookbook.focus_trap"));
+        self.prototype_modal = None;
+        self.focus.pop_modal_scope();
     }
 
     fn handle_modal_key(&mut self, key: KeyEvent) {
@@ -708,10 +734,20 @@ impl Lookbook {
             KeyCode::Tab | KeyCode::BackTab => {
                 let _ = self.focus.handle_key(key);
             }
-            KeyCode::Esc => self.close_focus_modal(),
+            KeyCode::Esc => match self.overlays.handle_escape() {
+                OverlayOutcome::Dismissed { .. } | OverlayOutcome::UnhandledEscape => {
+                    self.prototype_modal = None;
+                    self.focus.pop_modal_scope();
+                }
+                OverlayOutcome::Ignored => {
+                    // Trap policy — still allow host prototype cancel via domain Esc.
+                    self.close_focus_modal();
+                }
+                _ => self.close_focus_modal(),
+            },
             KeyCode::Enter => {
                 let actions = prototype_modal_actions();
-                let Some(modal) = self.modals.current_mut() else {
+                let Some(modal) = self.prototype_modal.as_mut() else {
                     return;
                 };
                 modal.state.focused = self.focus.focused().copied();
@@ -731,7 +767,16 @@ impl Lookbook {
             return;
         }
         let _ = self.focus.focus_at(mouse.position);
-        let Some(modal) = self.modals.current_mut() else {
+        // Outside-click dismiss via OverlayStack sole authority.
+        if matches!(
+            self.overlays.handle_outside_click(mouse.position),
+            OverlayOutcome::Dismissed { .. }
+        ) {
+            self.prototype_modal = None;
+            self.focus.pop_modal_scope();
+            return;
+        }
+        let Some(modal) = self.prototype_modal.as_mut() else {
             return;
         };
         modal.state.focused = self.focus.focused().copied();
@@ -741,9 +786,16 @@ impl Lookbook {
     }
 
     fn render_focus_modal(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        render_backdrop(frame, frame.area());
+        self.frame_bounds = frame.area();
+        self.overlays.reflow(frame.area());
+        // Stack-driven backdrop wash.
+        if self.overlays.backdrop_policy() != termrock::interaction::BackdropPolicy::None
+            || self.prototype_modal.is_some()
+        {
+            render_backdrop(frame, frame.area());
+        }
         let actions = prototype_modal_actions();
-        let Some(modal) = self.modals.current_mut() else {
+        let Some(modal) = self.prototype_modal.as_mut() else {
             return;
         };
         modal.state.focused = self.focus.focused().copied();
@@ -914,7 +966,7 @@ mod tests {
         assert_eq!(app.focus.focused(), Some(&FocusId::ModalCancel));
         app.handle_modal_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
 
-        assert!(!app.modals.is_open());
+        assert!(!app.prototype_modal.is_some());
         assert_eq!(app.focus.focused(), Some(&FocusId::Preview));
     }
 
@@ -938,12 +990,12 @@ mod tests {
             }),
             tick,
         );
-        assert!(app.modals.is_open());
+        assert!(app.prototype_modal.is_some());
         assert_eq!(app.focus.focused(), Some(&FocusId::ModalContinue));
 
         let cancel = app
-            .modals
-            .current()
+            .prototype_modal
+            .as_ref()
             .unwrap()
             .state
             .regions
@@ -960,7 +1012,7 @@ mod tests {
             tick,
         );
 
-        assert!(!app.modals.is_open());
+        assert!(!app.prototype_modal.is_some());
         assert_eq!(app.focus.focused(), Some(&FocusId::Preview));
     }
 }

@@ -10,6 +10,7 @@
     "prompt-composer",
     "permission-prompt",
     "agent-workbench",
-    "transcript"
+    "transcript",
+    "overlay-stack"
   ]
 }

@@ -102,3 +102,65 @@ mod paint_authority_policy {
         );
     }
 }
+
+#[cfg(test)]
+mod overlay_authority_policy {
+    #[test]
+    fn modal_stack_is_not_publicly_reexported() {
+        let interaction = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/interaction/mod.rs"
+        ));
+        assert!(
+            !interaction
+                .lines()
+                .any(|l| l.trim_start().starts_with("pub use modal::{") && l.contains("ModalStack")),
+            "ModalStack must not be a public re-export (use OverlayStack)"
+        );
+        assert!(
+            interaction.contains("pub use overlay_stack::{")
+                && interaction.contains("OverlayStack"),
+            "OverlayStack remains public"
+        );
+        // Dual private modules deleted
+        assert!(
+            !std::path::Path::new(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/src/interaction/overlay_controller.rs"
+            ))
+            .exists()
+        );
+        assert!(
+            !std::path::Path::new(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/src/interaction/esc_cascade.rs"
+            ))
+            .exists()
+        );
+    }
+
+    #[test]
+    fn permission_overlay_trap_esc_does_not_peel_grant_path() {
+        use crate::interaction::{
+            OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
+        };
+        use ratatui_core::layout::Rect;
+        let mut stack = OverlayStack::<&str>::new();
+        let bounds = Rect::new(0, 0, 80, 24);
+        let _ = stack.open(
+            bounds,
+            OverlaySpec {
+                id: OverlayId::from_static("termrock.permission"),
+                kind: OverlayKind::AlertDialog,
+                parent: None,
+                anchor: None,
+                size: OverlaySize::dialog(40, 12),
+                opener_focus: Some("prompt"),
+                policy: None,
+            },
+        );
+        // Alert traps Esc
+        assert!(matches!(stack.handle_escape(), OverlayOutcome::Ignored));
+        assert!(stack.contains(&OverlayId::from_static("termrock.permission")));
+    }
+}

@@ -9,7 +9,7 @@ warning: unresolved link to `Theme`
     = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
 
 warning: `termrock` (lib doc) generated 1 warning
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.68s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.60s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -1718,50 +1718,6 @@ pub unsafe fn termrock::interaction::LayerKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::LayerKind
 pub fn termrock::interaction::LayerKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::LayerKind
-pub enum termrock::interaction::ModalClickResult
-pub termrock::interaction::ModalClickResult::InsideHit
-pub termrock::interaction::ModalClickResult::OutsideDismiss
-impl core::clone::Clone for termrock::interaction::ModalClickResult
-pub fn termrock::interaction::ModalClickResult::clone(&self) -> termrock::interaction::ModalClickResult
-impl core::cmp::Eq for termrock::interaction::ModalClickResult
-impl core::cmp::PartialEq for termrock::interaction::ModalClickResult
-pub fn termrock::interaction::ModalClickResult::eq(&self, &termrock::interaction::ModalClickResult) -> bool
-impl core::fmt::Debug for termrock::interaction::ModalClickResult
-pub fn termrock::interaction::ModalClickResult::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::interaction::ModalClickResult
-impl core::marker::StructuralPartialEq for termrock::interaction::ModalClickResult
-impl core::marker::Freeze for termrock::interaction::ModalClickResult
-impl core::marker::Send for termrock::interaction::ModalClickResult
-impl core::marker::Sync for termrock::interaction::ModalClickResult
-impl core::marker::Unpin for termrock::interaction::ModalClickResult
-impl core::marker::UnsafeUnpin for termrock::interaction::ModalClickResult
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::ModalClickResult
-impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::ModalClickResult
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::ModalClickResult where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::ModalClickResult::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::ModalClickResult where U: core::convert::From<T>
-pub fn termrock::interaction::ModalClickResult::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::ModalClickResult where U: core::convert::Into<T>
-pub type termrock::interaction::ModalClickResult::Error = core::convert::Infallible
-pub fn termrock::interaction::ModalClickResult::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::ModalClickResult where U: core::convert::TryFrom<T>
-pub type termrock::interaction::ModalClickResult::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::ModalClickResult::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::ModalClickResult where T: core::clone::Clone
-pub type termrock::interaction::ModalClickResult::Owned = T
-pub fn termrock::interaction::ModalClickResult::clone_into(&self, &mut T)
-pub fn termrock::interaction::ModalClickResult::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::ModalClickResult where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::ModalClickResult::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::ModalClickResult where T: ?core::marker::Sized
-pub fn termrock::interaction::ModalClickResult::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::ModalClickResult where T: ?core::marker::Sized
-pub fn termrock::interaction::ModalClickResult::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::ModalClickResult where T: core::clone::Clone
-pub unsafe fn termrock::interaction::ModalClickResult::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::ModalClickResult
-pub fn termrock::interaction::ModalClickResult::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::ModalClickResult
 #[non_exhaustive] pub enum termrock::interaction::NarrowFallback
 pub termrock::interaction::NarrowFallback::Center
 pub termrock::interaction::NarrowFallback::Clamp
@@ -2517,61 +2473,6 @@ pub unsafe fn termrock::interaction::InteractionScene<Id, LayerId, Action>::clon
 impl<T> core::convert::From<T> for termrock::interaction::InteractionScene<Id, LayerId, Action>
 pub fn termrock::interaction::InteractionScene<Id, LayerId, Action>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::InteractionScene<Id, LayerId, Action>
-pub struct termrock::interaction::ModalStack<M>
-impl<M> termrock::interaction::ModalStack<M>
-pub fn termrock::interaction::ModalStack<M>::clear_chain(&mut self)
-pub const fn termrock::interaction::ModalStack<M>::current(&self) -> core::option::Option<&M>
-pub fn termrock::interaction::ModalStack<M>::current_mut(&mut self) -> core::option::Option<&mut M>
-pub fn termrock::interaction::ModalStack<M>::depth(&self) -> usize
-pub fn termrock::interaction::ModalStack<M>::has_parent(&self) -> bool
-pub const fn termrock::interaction::ModalStack<M>::is_open(&self) -> bool
-pub const fn termrock::interaction::ModalStack<M>::new() -> Self
-pub fn termrock::interaction::ModalStack<M>::open(&mut self, M)
-pub fn termrock::interaction::ModalStack<M>::open_sub(&mut self, M)
-pub fn termrock::interaction::ModalStack<M>::parents(&self) -> &[M]
-pub fn termrock::interaction::ModalStack<M>::pop(&mut self)
-impl<M: core::clone::Clone> core::clone::Clone for termrock::interaction::ModalStack<M>
-pub fn termrock::interaction::ModalStack<M>::clone(&self) -> termrock::interaction::ModalStack<M>
-impl<M: core::cmp::Eq> core::cmp::Eq for termrock::interaction::ModalStack<M>
-impl<M: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::ModalStack<M>
-pub fn termrock::interaction::ModalStack<M>::eq(&self, &termrock::interaction::ModalStack<M>) -> bool
-impl<M: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::ModalStack<M>
-impl<M: core::fmt::Debug> core::fmt::Debug for termrock::interaction::ModalStack<M>
-pub fn termrock::interaction::ModalStack<M>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<M> core::default::Default for termrock::interaction::ModalStack<M>
-pub fn termrock::interaction::ModalStack<M>::default() -> Self
-impl<M> core::marker::Freeze for termrock::interaction::ModalStack<M> where M: core::marker::Freeze
-impl<M> core::marker::Send for termrock::interaction::ModalStack<M> where M: core::marker::Send
-impl<M> core::marker::Sync for termrock::interaction::ModalStack<M> where M: core::marker::Sync
-impl<M> core::marker::Unpin for termrock::interaction::ModalStack<M> where M: core::marker::Unpin
-impl<M> core::marker::UnsafeUnpin for termrock::interaction::ModalStack<M> where M: core::marker::UnsafeUnpin
-impl<M> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::ModalStack<M> where M: core::panic::unwind_safe::RefUnwindSafe
-impl<M> core::panic::unwind_safe::UnwindSafe for termrock::interaction::ModalStack<M> where M: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::ModalStack<M> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::ModalStack<M>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::ModalStack<M> where U: core::convert::From<T>
-pub fn termrock::interaction::ModalStack<M>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::ModalStack<M> where U: core::convert::Into<T>
-pub type termrock::interaction::ModalStack<M>::Error = core::convert::Infallible
-pub fn termrock::interaction::ModalStack<M>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::ModalStack<M> where U: core::convert::TryFrom<T>
-pub type termrock::interaction::ModalStack<M>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::ModalStack<M>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::ModalStack<M> where T: core::clone::Clone
-pub type termrock::interaction::ModalStack<M>::Owned = T
-pub fn termrock::interaction::ModalStack<M>::clone_into(&self, &mut T)
-pub fn termrock::interaction::ModalStack<M>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::ModalStack<M> where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::ModalStack<M>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::ModalStack<M> where T: ?core::marker::Sized
-pub fn termrock::interaction::ModalStack<M>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::ModalStack<M> where T: ?core::marker::Sized
-pub fn termrock::interaction::ModalStack<M>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::ModalStack<M> where T: core::clone::Clone
-pub unsafe fn termrock::interaction::ModalStack<M>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::ModalStack<M>
-pub fn termrock::interaction::ModalStack<M>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::ModalStack<M>
 pub struct termrock::interaction::OverlayEntry<FocusId>
 pub termrock::interaction::OverlayEntry::anchor: core::option::Option<ratatui_core::layout::rect::Rect>
 pub termrock::interaction::OverlayEntry::fullscreen_promoted: bool
@@ -2962,7 +2863,6 @@ pub unsafe fn termrock::interaction::SemanticElement<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::interaction::SemanticElement<Id>
 pub fn termrock::interaction::SemanticElement<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticElement<Id>
-pub fn termrock::interaction::classify_click(ratatui_core::layout::rect::Rect, u16, u16) -> termrock::interaction::ModalClickResult
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
