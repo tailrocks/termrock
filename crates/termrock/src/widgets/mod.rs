@@ -132,7 +132,7 @@ pub use menu_nav::{
 };
 pub use card::{Card, CardParts};
 pub use panel::{
-    Panel, PanelBody, PanelOutcome, PanelParts, PanelSlots, PanelState, PanelVariant,
+    Panel, PanelAction, PanelBody, PanelOutcome, PanelParts, PanelSlots, PanelState, PanelVariant,
 };
 pub use permission::{
     DataMovement, EditField, ExecutionLocation, InitiatorKind, PERMISSION_OVERLAY_ID,

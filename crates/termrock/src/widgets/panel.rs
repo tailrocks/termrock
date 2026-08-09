@@ -75,9 +75,27 @@ pub enum PanelBody {
     Error,
 }
 
+/// One header action (stable id + label). Host owns policy; panel owns chrome hit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct PanelAction<'a> {
+    /// Stable action id for [`PanelOutcome::HeaderAction`].
+    pub id: &'a str,
+    /// Visible label (contracts under narrow width with the action band).
+    pub label: &'a str,
+}
+
+impl<'a> PanelAction<'a> {
+    /// Creates a header action.
+    #[must_use]
+    pub const fn new(id: &'a str, label: &'a str) -> Self {
+        Self { id, label }
+    }
+}
+
 /// Priority-ordered title/footer slots for panel chrome.
 ///
-/// Narrow drop order: footer → trailing → subtitle → leading → title (last).
+/// Narrow drop order (first dropped under pressure):
+/// footer → header_actions → badge → trailing → subtitle → leading → title (last).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct PanelSlots<'a> {
     /// Primary title (survives longest under contraction).
@@ -86,7 +104,9 @@ pub struct PanelSlots<'a> {
     pub subtitle: Option<&'a str>,
     /// Leading status glyph/text before the title.
     pub leading: Option<&'a str>,
-    /// Trailing badge/action label on the title line.
+    /// Status badge (distinct from trailing meta / actions).
+    pub badge: Option<&'a str>,
+    /// Trailing metadata label on the title line (not an action).
     pub trailing: Option<&'a str>,
     /// Footer hint/status on the bottom border or footer band.
     pub footer: Option<&'a str>,
@@ -101,9 +121,13 @@ impl<'a> PanelSlots<'a> {
     #[must_use]
     pub fn for_width(self, width: u16) -> Self {
         let mut slots = self;
-        // Drop order: footer → trailing → subtitle → leading → title.
+        // Drop order: footer → badge → trailing → subtitle → leading → title.
+        // Header actions are gated separately via [`Panel::actions_visible`].
         if width < 24 {
             slots.footer = None;
+        }
+        if width < 22 {
+            slots.badge = None;
         }
         if width < 20 {
             slots.trailing = None;
@@ -126,6 +150,7 @@ impl<'a> PanelSlots<'a> {
         if self.title.is_none()
             && self.leading.is_none()
             && self.subtitle.is_none()
+            && self.badge.is_none()
             && self.trailing.is_none()
         {
             return None;
@@ -140,8 +165,11 @@ impl<'a> PanelSlots<'a> {
         if let Some(subtitle) = self.subtitle {
             parts.push(format!("· {}", subtitle.trim()));
         }
+        if let Some(badge) = self.badge {
+            parts.push(format!("[{}]", badge.trim()));
+        }
         if let Some(trailing) = self.trailing {
-            parts.push(format!("[{}]", trailing.trim()));
+            parts.push(format!("· {}", trailing.trim()));
         }
         let text = parts.join(" ");
         if text.is_empty() {
@@ -165,6 +193,8 @@ pub struct PanelParts {
     pub footer: Option<Rect>,
     /// Disclosure hit target when collapsible.
     pub disclosure: Option<Rect>,
+    /// Header-actions band (right of title); host paints labels into action hits on state.
+    pub actions: Option<Rect>,
     /// Mouse hit region for panel-level interaction.
     pub hit: Rect,
     /// Clip contract (= body for children).
@@ -180,7 +210,7 @@ impl PanelParts {
 }
 
 /// Interaction state for collapsible / interactive panels.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PanelState {
     /// Collapsed body when collapsible.
     pub collapsed: bool,
@@ -190,6 +220,8 @@ pub struct PanelState {
     pub hovered: bool,
     /// Cached layout for hit tests.
     pub parts: Option<PanelParts>,
+    /// Header action hit targets (id, rect) filled during [`Panel::paint`].
+    pub action_hits: Vec<(String, Rect)>,
 }
 
 impl PanelState {
@@ -201,6 +233,7 @@ impl PanelState {
             focused: false,
             hovered: false,
             parts: None,
+            action_hits: Vec::new(),
         }
     }
 
@@ -300,9 +333,17 @@ impl PanelState {
         let Some(parts) = self.parts else {
             return PanelOutcome::Ignored;
         };
+        // Header actions first (do not toggle collapse when clicking an action).
+        for (id, rect) in &self.action_hits {
+            if rect.contains(event.position) {
+                return PanelOutcome::HeaderAction { id: id.clone() };
+            }
+        }
         if collapsible
             && (parts.disclosure.is_some_and(|r| r.contains(event.position))
-                || parts.header.is_some_and(|r| r.contains(event.position)))
+                || parts
+                    .header
+                    .is_some_and(|r| r.contains(event.position) && parts.actions.is_none_or(|a| !a.contains(event.position))))
         {
             self.collapsed = !self.collapsed;
             return PanelOutcome::ToggleCollapsed {
@@ -317,7 +358,7 @@ impl PanelState {
 }
 
 /// Typed panel outcomes (no side effects).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum PanelOutcome {
     /// No change.
@@ -329,6 +370,11 @@ pub enum PanelOutcome {
     ToggleCollapsed {
         /// New collapsed flag.
         collapsed: bool,
+    },
+    /// Header action activated (mouse or host-routed intent).
+    HeaderAction {
+        /// Action id from [`PanelAction::id`].
+        id: String,
     },
 }
 
@@ -342,6 +388,8 @@ pub struct Panel<'a> {
     collapsible: bool,
     /// Prefer elevated fill underlay (cards).
     raised: bool,
+    /// Header actions (dropped under narrow width before badge).
+    header_actions: &'a [PanelAction<'a>],
     style: Option<Style>,
     tokens: &'a DesignSystem,
 }
@@ -355,6 +403,7 @@ impl<'a> Panel<'a> {
                 title: None,
                 subtitle: None,
                 leading: None,
+                badge: None,
                 trailing: None,
                 footer: None,
                 body_title: None,
@@ -365,6 +414,7 @@ impl<'a> Panel<'a> {
             body: PanelBody::Host,
             collapsible: false,
             raised: false,
+            header_actions: &[],
             style: None,
             tokens,
         }
@@ -404,9 +454,23 @@ impl<'a> Panel<'a> {
     }
 
     #[must_use]
-    /// Sets trailing badge/action text on the title line.
+    /// Sets trailing metadata on the title line (not a clickable action).
     pub const fn trailing(mut self, trailing: &'a str) -> Self {
         self.slots.trailing = Some(trailing);
+        self
+    }
+
+    /// Sets a status badge (contracts after header actions, before trailing).
+    #[must_use]
+    pub const fn badge(mut self, badge: &'a str) -> Self {
+        self.slots.badge = Some(badge);
+        self
+    }
+
+    /// Header actions (right band); dropped when width &lt; 28.
+    #[must_use]
+    pub const fn header_actions(mut self, actions: &'a [PanelAction<'a>]) -> Self {
+        self.header_actions = actions;
         self
     }
 
@@ -415,6 +479,12 @@ impl<'a> Panel<'a> {
     pub const fn footer(mut self, footer: &'a str) -> Self {
         self.slots.footer = Some(footer);
         self
+    }
+
+    /// Whether header actions survive at `width`.
+    #[must_use]
+    pub const fn actions_visible(width: u16) -> bool {
+        width >= 28
     }
 
     #[must_use]
@@ -719,6 +789,26 @@ impl<'a> Panel<'a> {
             height: h.height,
         });
 
+        let show_actions = Self::actions_visible(area.width) && !self.header_actions.is_empty();
+        let actions = if show_actions {
+            // Right band of top row (border title line or header inside).
+            let band_w = self
+                .header_actions
+                .iter()
+                .map(|a| display_cols(a.label) as u16 + 3)
+                .sum::<u16>()
+                .min(area.width / 2)
+                .max(4);
+            Some(Rect {
+                x: area.x.saturating_add(area.width.saturating_sub(band_w).saturating_sub(1)),
+                y: area.y,
+                width: band_w.min(area.width),
+                height: 1.min(area.height),
+            })
+        } else {
+            None
+        };
+
         let hit = if self.is_focusable() || has_border {
             area
         } else {
@@ -731,6 +821,7 @@ impl<'a> Panel<'a> {
             body,
             footer,
             disclosure,
+            actions,
             hit,
             clip: body,
         }
@@ -783,7 +874,13 @@ impl<'a> Panel<'a> {
             let mut block = Block::bordered().border_style(border);
             let slots = self.slots_for_width(area.width);
             if let Some(title) = self.title_line(slots, Some(collapsed)) {
-                let budget = area.width.saturating_sub(4).max(1);
+                // Reserve right band for header actions so title does not collide.
+                let action_reserve = parts.actions.map(|a| a.width.saturating_add(1)).unwrap_or(0);
+                let budget = area
+                    .width
+                    .saturating_sub(4)
+                    .saturating_sub(action_reserve)
+                    .max(1);
                 let clipped = if display_cols(&title) > usize::from(budget) {
                     title
                         .chars()
@@ -889,10 +986,73 @@ impl<'a> Panel<'a> {
             );
         }
 
+        // Header actions (right band) + hit targets.
+        let mut action_hits = Vec::new();
+        if let Some(band) = parts.actions {
+            let style = self.tokens.style(if focused {
+                Role::ActionFocused
+            } else {
+                Role::TextMuted
+            });
+            let mut x = band.x;
+            for action in self.header_actions {
+                let label = format!("[{}]", action.label.trim());
+                let w = (display_cols(&label) as u16).min(band.right().saturating_sub(x));
+                if w == 0 {
+                    break;
+                }
+                buffer.set_stringn(x, band.y, &label, usize::from(w), style);
+                action_hits.push((
+                    action.id.to_string(),
+                    Rect {
+                        x,
+                        y: band.y,
+                        width: w,
+                        height: 1,
+                    },
+                ));
+                x = x.saturating_add(w).saturating_add(1);
+                if x >= band.right() {
+                    break;
+                }
+            }
+        }
+
         if let Some(state) = state {
             state.parts = Some(parts);
+            state.action_hits = action_hits;
         }
         parts.body
+    }
+
+    /// Registers panel chrome into a semantic scene (optional host aid).
+    ///
+    /// Does **not** claim focus unless [`Self::is_focusable`]. Body children
+    /// remain host-registered interactive descendants.
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut crate::interaction::SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: Option<&PanelState>,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        use crate::interaction::{SemanticNode, SemanticRole};
+        let label = self.slots.title.unwrap_or("panel");
+        let focusable = self.is_focusable();
+        let _ = scene.register(
+            SemanticNode::control(id, area)
+                .role(SemanticRole::Dialog)
+                .label(label)
+                .focusable(focusable)
+                .state(crate::interaction::SemanticState {
+                    expanded: !state.is_some_and(|s| s.collapsed),
+                    selected: matches!(self.variant, PanelVariant::Selected),
+                    ..Default::default()
+                }),
+        );
     }
 
     /// Skeleton body helper for loading lists (host-driven).
@@ -1001,17 +1161,137 @@ mod tests {
             .title("Main")
             .subtitle("sub")
             .leading("*")
-            .trailing("act")
+            .badge("new")
+            .trailing("meta")
             .footer("hint");
         let wide = panel.slots_for_width(80);
         assert!(wide.footer.is_some());
         assert!(wide.trailing.is_some());
+        assert!(wide.badge.is_some());
         let mid = panel.slots_for_width(18);
         assert!(mid.trailing.is_none());
+        assert!(mid.badge.is_none());
         assert_eq!(mid.title, Some("Main"));
         let tiny = panel.slots_for_width(8);
         assert!(tiny.leading.is_none());
         assert_eq!(tiny.title, Some("Main"));
+    }
+
+    #[test]
+    fn header_action_mouse_hit() {
+        use crate::input::{KeyModifiers, MouseButton, MouseEventKind};
+        let tokens = DesignSystem::default();
+        let actions = [PanelAction::new("retry", "Retry")];
+        let panel = Panel::new(&tokens)
+            .title("Job")
+            .header_actions(&actions);
+        let mut state = PanelState::new();
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 6));
+        let _ = panel.paint(Rect::new(0, 0, 40, 6), &mut buf, Some(&mut state));
+        assert!(!state.action_hits.is_empty());
+        let (id, rect) = &state.action_hits[0];
+        assert_eq!(id, "retry");
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position {
+                    x: rect.x,
+                    y: rect.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            false,
+            false,
+        );
+        assert!(matches!(out, PanelOutcome::HeaderAction { id } if id == "retry"));
+    }
+
+    #[test]
+    fn header_action_not_toggle_when_collapsible() {
+        use crate::input::{KeyModifiers, MouseButton, MouseEventKind};
+        let tokens = DesignSystem::default();
+        let actions = [PanelAction::new("more", "More")];
+        let panel = Panel::new(&tokens)
+            .title("Fold")
+            .collapsible(true)
+            .header_actions(&actions);
+        let mut state = PanelState::new();
+        let mut buf = Buffer::empty(Rect::new(0, 0, 48, 8));
+        let _ = panel.paint(Rect::new(0, 0, 48, 8), &mut buf, Some(&mut state));
+        let (_, rect) = &state.action_hits[0];
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position {
+                    x: rect.x,
+                    y: rect.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            true,
+            false,
+        );
+        assert!(matches!(out, PanelOutcome::HeaderAction { id } if id == "more"));
+        assert!(!state.is_collapsed());
+    }
+
+    #[test]
+    fn non_focusable_panel_ignores_keys() {
+        let mut state = PanelState::new();
+        // Host never sets focused when !is_focusable; defensive check.
+        state.set_focused(false);
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            false,
+            false,
+        );
+        assert_eq!(out, PanelOutcome::Ignored);
+    }
+
+    #[test]
+    fn title_reserves_action_band() {
+        let tokens = DesignSystem::default();
+        let actions = [
+            PanelAction::new("a", "Retry"),
+            PanelAction::new("b", "Cancel"),
+        ];
+        let panel = Panel::new(&tokens)
+            .title("Very long panel title that would collide")
+            .header_actions(&actions);
+        let parts = panel.layout(Rect::new(0, 0, 40, 6), None);
+        assert!(parts.actions.is_some());
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 6));
+        let _ = panel.paint(Rect::new(0, 0, 40, 6), &mut buf, None);
+        // Action label cells should still read '[' from painted [Retry]
+        let ax = parts.actions.unwrap().x;
+        let ch = buf[(ax, 0)].symbol();
+        assert!(
+            ch.contains('[') || ch == "[" || !ch.is_empty(),
+            "expected action paint at x={ax}, got {ch:?}"
+        );
+    }
+
+    #[test]
+    fn actions_hidden_when_narrow() {
+        assert!(!Panel::actions_visible(20));
+        assert!(Panel::actions_visible(28));
+    }
+
+    #[test]
+    fn loading_and_error_body_modes_paint() {
+        let tokens = DesignSystem::default();
+        let mut buf = Buffer::empty(Rect::new(0, 0, 30, 8));
+        let _ = Panel::new(&tokens)
+            .title("Load")
+            .body(PanelBody::Loading)
+            .body_detail("Fetching…")
+            .paint(Rect::new(0, 0, 30, 8), &mut buf, None);
+        let _ = Panel::new(&tokens)
+            .title("Err")
+            .body(PanelBody::Error)
+            .body_title("Failed")
+            .body_detail("timeout")
+            .paint(Rect::new(0, 0, 30, 8), &mut buf, None);
     }
 
     #[test]

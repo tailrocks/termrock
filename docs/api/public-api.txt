@@ -16269,6 +16269,8 @@ pub fn termrock::style::PanelChrome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::PanelChrome
 #[non_exhaustive] pub enum termrock::widgets::PanelOutcome
 pub termrock::widgets::PanelOutcome::Activated
+pub termrock::widgets::PanelOutcome::HeaderAction
+pub termrock::widgets::PanelOutcome::HeaderAction::id: alloc::string::String
 pub termrock::widgets::PanelOutcome::Ignored
 pub termrock::widgets::PanelOutcome::ToggleCollapsed
 pub termrock::widgets::PanelOutcome::ToggleCollapsed::collapsed: bool
@@ -16283,7 +16285,6 @@ impl core::fmt::Debug for termrock::widgets::PanelOutcome
 pub fn termrock::widgets::PanelOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for termrock::widgets::PanelOutcome
 pub fn termrock::widgets::PanelOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::PanelOutcome
 impl core::marker::StructuralPartialEq for termrock::widgets::PanelOutcome
 impl core::marker::Freeze for termrock::widgets::PanelOutcome
 impl core::marker::Send for termrock::widgets::PanelOutcome
@@ -19460,6 +19461,7 @@ pub fn termrock::widgets::Callout<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Callout<'a>
 pub struct termrock::widgets::Card<'a>
 impl<'a> termrock::widgets::Card<'a>
+pub const fn termrock::widgets::Card<'a>::badge(self, &'a str) -> Self
 pub const fn termrock::widgets::Card<'a>::body(self, termrock::widgets::PanelBody) -> Self
 pub const fn termrock::widgets::Card<'a>::body_detail(self, &'a str) -> Self
 pub const fn termrock::widgets::Card<'a>::body_title(self, &'a str) -> Self
@@ -19468,8 +19470,10 @@ pub const fn termrock::widgets::Card<'a>::collapsible(self, bool) -> Self
 pub const fn termrock::widgets::Card<'a>::description(self, &'a str) -> Self
 pub const fn termrock::widgets::Card<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
 pub const fn termrock::widgets::Card<'a>::footer(self, &'a str) -> Self
+pub const fn termrock::widgets::Card<'a>::header_actions(self, &'a [termrock::widgets::PanelAction<'a>]) -> Self
 pub fn termrock::widgets::Card<'a>::inner(&self, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::widgets::Card<'a>::interactive(self, bool) -> Self
+pub const fn termrock::widgets::Card<'a>::is_focusable(&self) -> bool
 pub fn termrock::widgets::Card<'a>::layout(&self, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::PanelState>) -> termrock::widgets::CardParts
 pub const fn termrock::widgets::Card<'a>::leading(self, &'a str) -> Self
 pub const fn termrock::widgets::Card<'a>::new(&'a termrock::style::DesignSystem) -> Self
@@ -24132,6 +24136,8 @@ pub fn termrock::widgets::OpsDashboardState<RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::OpsDashboardState<RowId, ColId>
 pub struct termrock::widgets::Panel<'a>
 impl<'a> termrock::widgets::Panel<'a>
+pub const fn termrock::widgets::Panel<'a>::actions_visible(u16) -> bool
+pub const fn termrock::widgets::Panel<'a>::badge(self, &'a str) -> Self
 pub fn termrock::widgets::Panel<'a>::block(&self) -> ratatui_widgets::block::Block<'a>
 pub fn termrock::widgets::Panel<'a>::block_for_width(&self, u16) -> ratatui_widgets::block::Block<'a>
 pub const fn termrock::widgets::Panel<'a>::body(self, termrock::widgets::PanelBody) -> Self
@@ -24143,6 +24149,7 @@ pub const fn termrock::widgets::Panel<'a>::emphasis(self, termrock::style::Panel
 pub const fn termrock::widgets::Panel<'a>::footer(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::from_tokens(&'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Panel<'a>::has_box_border(&self) -> bool
+pub const fn termrock::widgets::Panel<'a>::header_actions(self, &'a [termrock::widgets::PanelAction<'a>]) -> Self
 pub fn termrock::widgets::Panel<'a>::inner(&self, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::widgets::Panel<'a>::is_focusable(&self) -> bool
 pub fn termrock::widgets::Panel<'a>::layout(&self, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::PanelState>) -> termrock::widgets::PanelParts
@@ -24154,6 +24161,7 @@ pub const fn termrock::widgets::Panel<'a>::palette(&self) -> &termrock::style::R
 pub const fn termrock::widgets::Panel<'a>::quiet(&'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Panel<'a>::raised(self, bool) -> Self
 pub fn termrock::widgets::Panel<'a>::recipe(&self) -> termrock::style::PanelRecipe
+pub fn termrock::widgets::Panel<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::PanelState>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Panel<'a>::resolved_chrome(&self) -> termrock::style::PanelChrome
 pub const fn termrock::widgets::Panel<'a>::slots(self, termrock::widgets::PanelSlots<'a>) -> Self
 pub fn termrock::widgets::Panel<'a>::slots_for_width(&self, u16) -> termrock::widgets::PanelSlots<'a>
@@ -24201,7 +24209,56 @@ pub unsafe fn termrock::widgets::Panel<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Panel<'a>
+pub struct termrock::widgets::PanelAction<'a>
+pub termrock::widgets::PanelAction::id: &'a str
+pub termrock::widgets::PanelAction::label: &'a str
+impl<'a> termrock::widgets::PanelAction<'a>
+pub const fn termrock::widgets::PanelAction<'a>::new(&'a str, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::PanelAction<'a>
+pub fn termrock::widgets::PanelAction<'a>::clone(&self) -> termrock::widgets::PanelAction<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::PanelAction<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::PanelAction<'a>
+pub fn termrock::widgets::PanelAction<'a>::eq(&self, &termrock::widgets::PanelAction<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::PanelAction<'a>
+pub fn termrock::widgets::PanelAction<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::hash::Hash for termrock::widgets::PanelAction<'a>
+pub fn termrock::widgets::PanelAction<'a>::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl<'a> core::marker::Copy for termrock::widgets::PanelAction<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::PanelAction<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::PanelAction<'a>
+impl<'a> core::marker::Send for termrock::widgets::PanelAction<'a>
+impl<'a> core::marker::Sync for termrock::widgets::PanelAction<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::PanelAction<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::PanelAction<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PanelAction<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PanelAction<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PanelAction<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PanelAction<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PanelAction<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::PanelAction<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PanelAction<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::PanelAction<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::PanelAction<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PanelAction<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PanelAction<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PanelAction<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PanelAction<'a> where T: core::clone::Clone
+pub type termrock::widgets::PanelAction<'a>::Owned = T
+pub fn termrock::widgets::PanelAction<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PanelAction<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PanelAction<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PanelAction<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PanelAction<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelAction<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PanelAction<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelAction<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PanelAction<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PanelAction<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PanelAction<'a>
+pub fn termrock::widgets::PanelAction<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PanelAction<'a>
 pub struct termrock::widgets::PanelParts
+pub termrock::widgets::PanelParts::actions: core::option::Option<ratatui_core::layout::rect::Rect>
 pub termrock::widgets::PanelParts::body: ratatui_core::layout::rect::Rect
 pub termrock::widgets::PanelParts::clip: ratatui_core::layout::rect::Rect
 pub termrock::widgets::PanelParts::disclosure: core::option::Option<ratatui_core::layout::rect::Rect>
@@ -24257,6 +24314,7 @@ impl<T> core::convert::From<T> for termrock::widgets::PanelParts
 pub fn termrock::widgets::PanelParts::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PanelParts
 pub struct termrock::widgets::PanelSlots<'a>
+pub termrock::widgets::PanelSlots::badge: core::option::Option<&'a str>
 pub termrock::widgets::PanelSlots::body_detail: core::option::Option<&'a str>
 pub termrock::widgets::PanelSlots::body_title: core::option::Option<&'a str>
 pub termrock::widgets::PanelSlots::footer: core::option::Option<&'a str>
@@ -24311,6 +24369,7 @@ impl<T> core::convert::From<T> for termrock::widgets::PanelSlots<'a>
 pub fn termrock::widgets::PanelSlots<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PanelSlots<'a>
 pub struct termrock::widgets::PanelState
+pub termrock::widgets::PanelState::action_hits: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
 pub termrock::widgets::PanelState::collapsed: bool
 pub termrock::widgets::PanelState::focused: bool
 pub termrock::widgets::PanelState::hovered: bool
@@ -24333,7 +24392,6 @@ impl core::default::Default for termrock::widgets::PanelState
 pub fn termrock::widgets::PanelState::default() -> termrock::widgets::PanelState
 impl core::fmt::Debug for termrock::widgets::PanelState
 pub fn termrock::widgets::PanelState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::widgets::PanelState
 impl core::marker::StructuralPartialEq for termrock::widgets::PanelState
 impl core::marker::Freeze for termrock::widgets::PanelState
 impl core::marker::Send for termrock::widgets::PanelState

@@ -1,6 +1,6 @@
 ---
 title: Card
-description: 'Raised Panel composition with description band for metrics and tool cards.'
+description: 'Raised Panel composition with description band, badges, and header actions for metrics and tool cards.'
 ---
 
 ## Previews
@@ -13,6 +13,10 @@ description: 'Raised Panel composition with description band for metrics and too
 
 ![Tool-style card](/component-previews/card-tool.svg)
 
+### `card/dashboard`
+
+![Dashboard tiles](/component-previews/card-dashboard.svg)
+
 ## Anatomy
 
 `root` · `header` · `description` · `body` · `footer`  
@@ -21,12 +25,15 @@ Built on Panel + raised Surface — no nested box soup.
 ## Usage
 
 ```rust
-use termrock::{style::DesignSystem, widgets::Card};
+use termrock::{style::DesignSystem, widgets::{Card, PanelAction, PanelBody}};
 
 let system = DesignSystem::default();
+let actions = [PanelAction::new("open", "Open")];
 let body = Card::new(&system)
     .title("Latency")
+    .badge("live")
     .description("p99 last hour")
+    .header_actions(&actions)
     .footer("dashboard")
     .paint(area, buf, None);
 // paint children only inside `body`
@@ -34,10 +41,15 @@ let body = Card::new(&system)
 
 ## Composition
 
-- **ToolCard** paints via Card chrome
+- **ToolCard** paints via Card chrome (status leading + badge; body = tool output)
 - Dashboard metric tiles use Card + host body content
 - Prefer Card for elevated content; Panel for workspace chrome
+- Loading / empty / error: `Card::body(PanelBody::…)` same as Panel
+
+## Focus
+
+Same as Panel: only `interactive(true)` or `collapsible(true)` claims card-level focus.
 
 ## Migration
 
-See `migrations/0096-v0.13.0-panel-card.md`.
+See `migrations/0103-v0.13.0-panel-card-anatomy.md` (extends 0096).

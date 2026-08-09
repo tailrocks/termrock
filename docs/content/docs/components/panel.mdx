@@ -1,9 +1,9 @@
 ---
 title: Panel
-description: 'Composable container with variants, body modes, collapsible/interactive state; focus ≠ selection.'
+description: 'Composable container with variants, body modes, badges, header actions, collapsible/interactive state; focus ≠ selection.'
 ---
 
-{/* Hand-updated with redesign 0096. Prefer component-docs.ts when gen:components is healthy. */}
+{/* Hand-updated with redesign 0103. Prefer component-docs.ts when gen:components is healthy. */}
 
 ## Previews
 
@@ -19,6 +19,18 @@ description: 'Composable container with variants, body modes, collapsible/intera
 
 ![Empty body](/component-previews/panel-empty.svg)
 
+### `panel/loading`
+
+![Loading body](/component-previews/panel-loading.svg)
+
+### `panel/error`
+
+![Error body](/component-previews/panel-error.svg)
+
+### `panel/actions`
+
+![Header actions](/component-previews/panel-actions.svg)
+
 ### `panel/collapsible`
 
 ![Collapsible](/component-previews/panel-collapsible.svg)
@@ -29,7 +41,9 @@ description: 'Composable container with variants, body modes, collapsible/intera
 
 ## Anatomy
 
-`root` · `header` · `body` · `footer` · optional `disclosure`
+`root` · `header` · `body` · `footer` · optional `disclosure` · optional `actions`
+
+Slots on the title line: **leading** · **title** · **subtitle** · **badge** · **trailing** · **header_actions**.
 
 ## Variants
 
@@ -43,22 +57,49 @@ description: 'Composable container with variants, body modes, collapsible/intera
 
 Focus uses `PanelChrome::Focused` → `Role::BorderFocused` (never border weight).
 
+## Body modes
+
+| Mode | Use |
+|------|-----|
+| Host | Default — host paints children into `body` |
+| Loading | `LoadingView` + optional `body_detail` |
+| Empty | `EmptyState` + `body_title` / `body_detail` |
+| Error | `ErrorView` + `body_title` / `body_detail` |
+
+## Responsive drop order
+
+First dropped under pressure → last kept:
+
+footer → header_actions (&lt; 28 cols) → badge → trailing → subtitle → leading → title
+
 ## Usage
 
 ```rust
-use termrock::{style::{DesignSystem, PanelChrome}, widgets::{Panel, PanelBody, PanelVariant}};
+use termrock::{
+    style::{DesignSystem, PanelChrome},
+    widgets::{Panel, PanelAction, PanelBody, PanelState, PanelVariant},
+};
 
 let system = DesignSystem::default();
+let actions = [PanelAction::new("retry", "Retry")];
+let mut state = PanelState::new();
 let body = Panel::new(&system)
-    .title("Inbox")
+    .title("Build")
+    .subtitle("main")
+    .badge("failed")
+    .header_actions(&actions)
     .variant(PanelVariant::Bordered)
-    .emphasis(PanelChrome::Focused)
-    .body(PanelBody::Empty)
-    .body_title("No messages")
-    .paint(area, buf, None);
+    .body(PanelBody::Error)
+    .body_title("Failed")
+    .body_detail("timeout")
+    .paint(area, buf, Some(&mut state));
+// children only inside `body` when Host mode
 ```
 
 ## Keyboard (when focusable)
+
+Only **Interactive** or **collapsible** panels claim panel-level focus.
+Otherwise focus stays on real interactive descendants.
 
 | Intent | Keys (default maps) | Outcome |
 |--------|---------------------|---------|
@@ -66,9 +107,12 @@ let body = Panel::new(&system)
 | Toggle | Space | `ToggleCollapsed` |
 | Expand / Collapse | Right/Left (list map) | expand/collapse |
 
+Header actions are mouse hit-targets (`action_hits`); keyboard routing is host-owned.
+
 ## Mouse
 
-- Click header/disclosure → toggle collapse
+- Click header action → `HeaderAction { id }` (does not toggle collapse)
+- Click header/disclosure (collapsible) → toggle collapse
 - Click hit region (interactive) → Activate
 
 ## Common mistakes
@@ -76,7 +120,8 @@ let body = Panel::new(&system)
 - Using selected chrome as focus — keep focus on `BorderFocused`
 - Nesting Panels for padding — use Surface/padding, one Panel per region
 - Painting children outside `body` / `clip`
+- Focusing a static bordered panel that only wraps a list — focus the list
 
 ## Migration
 
-See `migrations/0096-v0.13.0-panel-card.md`.
+See `migrations/0103-v0.13.0-panel-card-anatomy.md` (extends 0096).

@@ -53,6 +53,7 @@ pub struct Card<'a> {
     title: Option<&'a str>,
     subtitle: Option<&'a str>,
     leading: Option<&'a str>,
+    badge: Option<&'a str>,
     trailing: Option<&'a str>,
     description: Option<&'a str>,
     footer: Option<&'a str>,
@@ -63,6 +64,7 @@ pub struct Card<'a> {
     body_detail: Option<&'a str>,
     collapsible: bool,
     interactive: bool,
+    header_actions: &'a [crate::widgets::panel::PanelAction<'a>],
 }
 
 impl<'a> Card<'a> {
@@ -74,6 +76,7 @@ impl<'a> Card<'a> {
             title: None,
             subtitle: None,
             leading: None,
+            badge: None,
             trailing: None,
             description: None,
             footer: None,
@@ -84,6 +87,7 @@ impl<'a> Card<'a> {
             body_detail: None,
             collapsible: false,
             interactive: false,
+            header_actions: &[],
         }
     }
 
@@ -108,10 +112,27 @@ impl<'a> Card<'a> {
         self
     }
 
-    /// Trailing badge / action label.
+    /// Trailing metadata label.
     #[must_use]
     pub const fn trailing(mut self, trailing: &'a str) -> Self {
         self.trailing = Some(trailing);
+        self
+    }
+
+    /// Status badge.
+    #[must_use]
+    pub const fn badge(mut self, badge: &'a str) -> Self {
+        self.badge = Some(badge);
+        self
+    }
+
+    /// Header actions.
+    #[must_use]
+    pub const fn header_actions(
+        mut self,
+        actions: &'a [crate::widgets::panel::PanelAction<'a>],
+    ) -> Self {
+        self.header_actions = actions;
         self
     }
 
@@ -188,6 +209,12 @@ impl<'a> Card<'a> {
         self
     }
 
+    /// Whether the card claims card-level keyboard focus.
+    #[must_use]
+    pub const fn is_focusable(&self) -> bool {
+        self.interactive || self.collapsible
+    }
+
     fn panel(&self) -> Panel<'a> {
         let mut p = Panel::new(self.system)
             .emphasis(self.emphasis)
@@ -198,7 +225,8 @@ impl<'a> Card<'a> {
             })
             .body(self.body)
             .collapsible(self.collapsible)
-            .raised(true);
+            .raised(true)
+            .header_actions(self.header_actions);
         if let Some(t) = self.title {
             p = p.title(t);
         }
@@ -207,6 +235,9 @@ impl<'a> Card<'a> {
         }
         if let Some(l) = self.leading {
             p = p.leading(l);
+        }
+        if let Some(b) = self.badge {
+            p = p.badge(b);
         }
         if let Some(tr) = self.trailing {
             p = p.trailing(tr);
@@ -301,6 +332,7 @@ impl Widget for Card<'_> {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::panel::PanelAction;
 
     #[test]
     fn card_description_carves_body() {
@@ -335,5 +367,42 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 28, 8));
         let body = card.paint(Rect::new(0, 0, 28, 8), &mut buf, None);
         assert!(body.width > 0);
+    }
+
+    #[test]
+    fn card_badge_and_actions_forward() {
+        let system = DesignSystem::default();
+        let actions = [PanelAction::new("open", "Open")];
+        let card = Card::new(&system)
+            .title("Metric")
+            .badge("live")
+            .header_actions(&actions)
+            .description("p99");
+        let mut state = PanelState::new();
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
+        let body = card.paint(Rect::new(0, 0, 40, 8), &mut buf, Some(&mut state));
+        assert!(body.width > 0);
+        assert!(!state.action_hits.is_empty());
+        assert_eq!(state.action_hits[0].0, "open");
+    }
+
+    #[test]
+    fn card_loading_body() {
+        let system = DesignSystem::default();
+        let card = Card::new(&system)
+            .title("Jobs")
+            .body(PanelBody::Loading)
+            .body_detail("Fetching");
+        let mut buf = Buffer::empty(Rect::new(0, 0, 28, 6));
+        let body = card.paint(Rect::new(0, 0, 28, 6), &mut buf, None);
+        assert!(body.height > 0);
+    }
+
+    #[test]
+    fn card_interactive_is_focusable_panel() {
+        let system = DesignSystem::default();
+        let card = Card::new(&system).title("Pick").interactive(true);
+        assert!(card.is_focusable());
+        assert!(!Card::new(&system).title("Static").is_focusable());
     }
 }

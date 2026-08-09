@@ -184,8 +184,16 @@
     "narrowTerminal": "covered"
   },
   "Panel": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
+  "Card": {
+    "keyboard": "covered",
+    "mouse": "covered",
     "focus": "covered",
     "nonColor": "covered",
     "unicode": "covered",

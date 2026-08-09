@@ -11,7 +11,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
-    widgets::{Panel, PanelChrome},
+    widgets::PanelChrome,
 };
 
 // ── Token meter ─────────────────────────────────────────────────────────────
@@ -270,9 +270,18 @@ impl Widget for &ToolCard<'_> {
             return;
         }
         use crate::widgets::Card;
+        let status_label = match self.status {
+            ToolStatus::Pending => "pending",
+            ToolStatus::Running => "run",
+            ToolStatus::Done => "done",
+            ToolStatus::Error => "err",
+            ToolStatus::Cancelled => "cancel",
+        };
+        // Chrome owns name / status badge / summary; body owns tool output only.
         let card = Card::new(self.system)
             .title(self.name)
             .leading(self.status.glyph())
+            .badge(status_label)
             .subtitle(self.summary)
             .emphasis(match self.status {
                 ToolStatus::Error => PanelChrome::Danger,
@@ -283,26 +292,26 @@ impl Widget for &ToolCard<'_> {
         if body.is_empty() {
             return;
         }
-        let header = format!("{} {} — {}", self.status.glyph(), self.name, self.summary);
-        let clipped = take_display_cols(&header, usize::from(body.width));
-        buffer.set_stringn(
-            body.x,
-            body.y,
-            &clipped,
-            usize::from(body.width),
-            self.system.style(self.status.role()),
-        );
-        if self.expanded
-            && let Some(detail) = self.detail
-            && body.height > 1
-        {
-            let line = take_display_cols(detail, usize::from(body.width));
+        if self.expanded {
+            if let Some(detail) = self.detail {
+                let line = take_display_cols(detail, usize::from(body.width));
+                buffer.set_stringn(
+                    body.x,
+                    body.y,
+                    &line,
+                    usize::from(body.width),
+                    self.system.style(Role::TextMuted),
+                );
+            }
+        } else {
+            // Collapsed: one muted status line (non-color status already in badge).
+            let line = take_display_cols(self.summary, usize::from(body.width));
             buffer.set_stringn(
                 body.x,
-                body.y.saturating_add(1),
+                body.y,
                 &line,
                 usize::from(body.width),
-                self.system.style(Role::TextMuted),
+                self.system.style(self.status.role()),
             );
         }
     }

@@ -414,10 +414,46 @@ pub(crate) fn stories() -> Vec<Story> {
             "card/tool",
             "Card tool example",
             "Card",
-            "Agent tool-style card (status leading + summary).",
+            "Agent tool-style card (status leading + badge + summary).",
             42,
             7,
             card_tool_story,
+        ),
+        Story::new(
+            "card/dashboard",
+            "Card dashboard tiles",
+            "Card",
+            "Dashboard metric cards in a compact grid.",
+            56,
+            12,
+            card_dashboard_story,
+        ),
+        Story::new(
+            "panel/loading",
+            "Panel loading body",
+            "Panel",
+            "Built-in loading body mode with detail copy.",
+            36,
+            8,
+            panel_loading_story,
+        ),
+        Story::new(
+            "panel/error",
+            "Panel error body",
+            "Panel",
+            "Built-in error body mode with non-color title.",
+            36,
+            8,
+            panel_error_story,
+        ),
+        Story::new(
+            "panel/actions",
+            "Panel header actions",
+            "Panel",
+            "Badge + header action band; actions drop under narrow width.",
+            48,
+            8,
+            panel_actions_story,
         ),
         Story::new(
             "action-bar/basic",
@@ -3778,6 +3814,7 @@ fn card_tool_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let body = Card::new(system)
         .title("shell")
         .leading(status.glyph())
+        .badge("run")
         .subtitle("cargo test")
         .emphasis(PanelChrome::Focused)
         .paint(area, frame.buffer_mut(), None);
@@ -3788,6 +3825,95 @@ fn card_tool_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             "running…",
             usize::from(body.width),
             system.style(status.role()),
+        );
+    }
+}
+
+fn card_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Inline, Stack};
+    use termrock::widgets::{Card, PanelVariant};
+
+    let rows = Stack::new().gap(1).layout(
+        area,
+        &[FlexSize::Weight(1), FlexSize::Weight(1)],
+    );
+    let top = rows.get(0).unwrap_or(area);
+    let bottom = rows.get(1).unwrap_or(area);
+    let top_cols = Inline::new()
+        .gap(1)
+        .layout(top, &[FlexSize::Weight(1), FlexSize::Weight(1)]);
+    let metrics = [
+        (top_cols.get(0).unwrap_or(top), "Latency", "42ms", "p99", "live"),
+        (top_cols.get(1).unwrap_or(top), "Errors", "0.2%", "5m", "ok"),
+        (bottom, "Throughput", "1.2k rps", "rolling", "hot"),
+    ];
+    for (rect, title, value, desc, badge) in metrics {
+        if rect.width < 8 || rect.height < 3 {
+            continue;
+        }
+        let body = Card::new(system)
+            .title(title)
+            .badge(badge)
+            .description(desc)
+            .variant(PanelVariant::Bordered)
+            .paint(rect, frame.buffer_mut(), None);
+        if body.width > 2 && body.height > 0 {
+            frame.buffer_mut().set_stringn(
+                body.x,
+                body.y,
+                value,
+                usize::from(body.width),
+                system.style(Role::TextStrong),
+            );
+        }
+    }
+}
+
+fn panel_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Panel, PanelBody};
+    let _ = Panel::new(system)
+        .title("Jobs")
+        .badge("sync")
+        .body(PanelBody::Loading)
+        .body_detail("Fetching queue…")
+        .paint(area, frame.buffer_mut(), None);
+}
+
+fn panel_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Panel, PanelBody, PanelAction};
+    let actions = [PanelAction::new("retry", "Retry")];
+    let _ = Panel::new(system)
+        .title("Deploy")
+        .leading("!")
+        .body(PanelBody::Error)
+        .body_title("Failed")
+        .body_detail("timeout after 30s")
+        .header_actions(&actions)
+        .emphasis(PanelChrome::Danger)
+        .paint(area, frame.buffer_mut(), None);
+}
+
+fn panel_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Panel, PanelAction, PanelBody};
+    let actions = [
+        PanelAction::new("retry", "Retry"),
+        PanelAction::new("logs", "Logs"),
+    ];
+    let body = Panel::new(system)
+        .title("Build")
+        .subtitle("main")
+        .badge("failed")
+        .header_actions(&actions)
+        .footer("esc close")
+        .body(PanelBody::Host)
+        .paint(area, frame.buffer_mut(), None);
+    if body.width > 2 && body.height > 0 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "error: link failed",
+            usize::from(body.width),
+            system.style(Role::Danger),
         );
     }
 }
