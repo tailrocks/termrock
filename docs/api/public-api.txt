@@ -42,7 +42,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 6 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.12s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.01s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -22556,6 +22556,407 @@ pub unsafe fn termrock::widgets::ToastLifetime::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ToastLifetime
 pub fn termrock::widgets::ToastLifetime::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ToastLifetime
+#[non_exhaustive] pub enum termrock::widgets::ToggleGroupOrientation
+pub termrock::widgets::ToggleGroupOrientation::Horizontal
+pub termrock::widgets::ToggleGroupOrientation::Vertical
+impl termrock::widgets::ToggleGroupOrientation
+pub const fn termrock::widgets::ToggleGroupOrientation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToggleGroupOrientation
+pub fn termrock::widgets::ToggleGroupOrientation::clone(&self) -> termrock::widgets::ToggleGroupOrientation
+impl core::cmp::Eq for termrock::widgets::ToggleGroupOrientation
+impl core::cmp::PartialEq for termrock::widgets::ToggleGroupOrientation
+pub fn termrock::widgets::ToggleGroupOrientation::eq(&self, &termrock::widgets::ToggleGroupOrientation) -> bool
+impl core::default::Default for termrock::widgets::ToggleGroupOrientation
+pub fn termrock::widgets::ToggleGroupOrientation::default() -> termrock::widgets::ToggleGroupOrientation
+impl core::fmt::Debug for termrock::widgets::ToggleGroupOrientation
+pub fn termrock::widgets::ToggleGroupOrientation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToggleGroupOrientation
+pub fn termrock::widgets::ToggleGroupOrientation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToggleGroupOrientation
+impl core::marker::StructuralPartialEq for termrock::widgets::ToggleGroupOrientation
+impl core::marker::Freeze for termrock::widgets::ToggleGroupOrientation
+impl core::marker::Send for termrock::widgets::ToggleGroupOrientation
+impl core::marker::Sync for termrock::widgets::ToggleGroupOrientation
+impl core::marker::Unpin for termrock::widgets::ToggleGroupOrientation
+impl core::marker::UnsafeUnpin for termrock::widgets::ToggleGroupOrientation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleGroupOrientation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleGroupOrientation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleGroupOrientation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupOrientation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleGroupOrientation where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleGroupOrientation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleGroupOrientation where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleGroupOrientation::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleGroupOrientation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleGroupOrientation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleGroupOrientation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleGroupOrientation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleGroupOrientation where T: core::clone::Clone
+pub type termrock::widgets::ToggleGroupOrientation::Owned = T
+pub fn termrock::widgets::ToggleGroupOrientation::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleGroupOrientation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleGroupOrientation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupOrientation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleGroupOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupOrientation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleGroupOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupOrientation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleGroupOrientation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleGroupOrientation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleGroupOrientation
+pub fn termrock::widgets::ToggleGroupOrientation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleGroupOrientation
+#[non_exhaustive] pub enum termrock::widgets::ToggleGroupOutcome<Id>
+pub termrock::widgets::ToggleGroupOutcome::CursorMoved
+pub termrock::widgets::ToggleGroupOutcome::CursorMoved::id: Id
+pub termrock::widgets::ToggleGroupOutcome::Ignored
+pub termrock::widgets::ToggleGroupOutcome::ItemChanged
+pub termrock::widgets::ToggleGroupOutcome::ItemChanged::id: Id
+pub termrock::widgets::ToggleGroupOutcome::ItemChanged::value: termrock::widgets::ToggleValue
+pub termrock::widgets::ToggleGroupOutcome::OverflowClosed
+pub termrock::widgets::ToggleGroupOutcome::OverflowOpened
+pub termrock::widgets::ToggleGroupOutcome::SelectionChanged
+pub termrock::widgets::ToggleGroupOutcome::SelectionChanged::id: core::option::Option<Id>
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroupOutcome<Id>
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::clone(&self) -> termrock::widgets::ToggleGroupOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ToggleGroupOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ToggleGroupOutcome<Id>
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::eq(&self, &termrock::widgets::ToggleGroupOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ToggleGroupOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToggleGroupOutcome<Id>
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ToggleGroupOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ToggleGroupOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ToggleGroupOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ToggleGroupOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ToggleGroupOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleGroupOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleGroupOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleGroupOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleGroupOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleGroupOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleGroupOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleGroupOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleGroupOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleGroupOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::ToggleGroupOutcome<Id>::Owned = T
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleGroupOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleGroupOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleGroupOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleGroupOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleGroupOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleGroupOutcome<Id>
+pub fn termrock::widgets::ToggleGroupOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleGroupOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::ToggleGroupRecipe
+pub termrock::widgets::ToggleGroupRecipe::Connected
+pub termrock::widgets::ToggleGroupRecipe::Separated
+impl termrock::widgets::ToggleGroupRecipe
+pub const fn termrock::widgets::ToggleGroupRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToggleGroupRecipe
+pub fn termrock::widgets::ToggleGroupRecipe::clone(&self) -> termrock::widgets::ToggleGroupRecipe
+impl core::cmp::Eq for termrock::widgets::ToggleGroupRecipe
+impl core::cmp::PartialEq for termrock::widgets::ToggleGroupRecipe
+pub fn termrock::widgets::ToggleGroupRecipe::eq(&self, &termrock::widgets::ToggleGroupRecipe) -> bool
+impl core::default::Default for termrock::widgets::ToggleGroupRecipe
+pub fn termrock::widgets::ToggleGroupRecipe::default() -> termrock::widgets::ToggleGroupRecipe
+impl core::fmt::Debug for termrock::widgets::ToggleGroupRecipe
+pub fn termrock::widgets::ToggleGroupRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToggleGroupRecipe
+pub fn termrock::widgets::ToggleGroupRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToggleGroupRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::ToggleGroupRecipe
+impl core::marker::Freeze for termrock::widgets::ToggleGroupRecipe
+impl core::marker::Send for termrock::widgets::ToggleGroupRecipe
+impl core::marker::Sync for termrock::widgets::ToggleGroupRecipe
+impl core::marker::Unpin for termrock::widgets::ToggleGroupRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::ToggleGroupRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleGroupRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleGroupRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleGroupRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleGroupRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleGroupRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleGroupRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleGroupRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleGroupRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleGroupRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleGroupRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleGroupRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleGroupRecipe where T: core::clone::Clone
+pub type termrock::widgets::ToggleGroupRecipe::Owned = T
+pub fn termrock::widgets::ToggleGroupRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleGroupRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleGroupRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleGroupRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleGroupRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleGroupRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleGroupRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleGroupRecipe
+pub fn termrock::widgets::ToggleGroupRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleGroupRecipe
+#[non_exhaustive] pub enum termrock::widgets::ToggleGroupType
+pub termrock::widgets::ToggleGroupType::Multiple
+pub termrock::widgets::ToggleGroupType::Single
+impl termrock::widgets::ToggleGroupType
+pub const fn termrock::widgets::ToggleGroupType::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToggleGroupType
+pub fn termrock::widgets::ToggleGroupType::clone(&self) -> termrock::widgets::ToggleGroupType
+impl core::cmp::Eq for termrock::widgets::ToggleGroupType
+impl core::cmp::PartialEq for termrock::widgets::ToggleGroupType
+pub fn termrock::widgets::ToggleGroupType::eq(&self, &termrock::widgets::ToggleGroupType) -> bool
+impl core::default::Default for termrock::widgets::ToggleGroupType
+pub fn termrock::widgets::ToggleGroupType::default() -> termrock::widgets::ToggleGroupType
+impl core::fmt::Debug for termrock::widgets::ToggleGroupType
+pub fn termrock::widgets::ToggleGroupType::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToggleGroupType
+pub fn termrock::widgets::ToggleGroupType::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToggleGroupType
+impl core::marker::StructuralPartialEq for termrock::widgets::ToggleGroupType
+impl core::marker::Freeze for termrock::widgets::ToggleGroupType
+impl core::marker::Send for termrock::widgets::ToggleGroupType
+impl core::marker::Sync for termrock::widgets::ToggleGroupType
+impl core::marker::Unpin for termrock::widgets::ToggleGroupType
+impl core::marker::UnsafeUnpin for termrock::widgets::ToggleGroupType
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleGroupType
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleGroupType
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleGroupType where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupType::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleGroupType where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleGroupType::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleGroupType where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleGroupType::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleGroupType::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleGroupType where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleGroupType::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleGroupType::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleGroupType where T: core::clone::Clone
+pub type termrock::widgets::ToggleGroupType::Owned = T
+pub fn termrock::widgets::ToggleGroupType::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleGroupType::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleGroupType where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupType::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleGroupType where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupType::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleGroupType where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupType::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleGroupType where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleGroupType::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleGroupType
+pub fn termrock::widgets::ToggleGroupType::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleGroupType
+#[non_exhaustive] pub enum termrock::widgets::ToggleOutcome
+pub termrock::widgets::ToggleOutcome::Ignored
+pub termrock::widgets::ToggleOutcome::ValueChanged
+pub termrock::widgets::ToggleOutcome::ValueChanged::value: termrock::widgets::ToggleValue
+impl core::clone::Clone for termrock::widgets::ToggleOutcome
+pub fn termrock::widgets::ToggleOutcome::clone(&self) -> termrock::widgets::ToggleOutcome
+impl core::cmp::Eq for termrock::widgets::ToggleOutcome
+impl core::cmp::PartialEq for termrock::widgets::ToggleOutcome
+pub fn termrock::widgets::ToggleOutcome::eq(&self, &termrock::widgets::ToggleOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ToggleOutcome
+pub fn termrock::widgets::ToggleOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToggleOutcome
+impl core::marker::Freeze for termrock::widgets::ToggleOutcome
+impl core::marker::Send for termrock::widgets::ToggleOutcome
+impl core::marker::Sync for termrock::widgets::ToggleOutcome
+impl core::marker::Unpin for termrock::widgets::ToggleOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ToggleOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleOutcome where T: core::clone::Clone
+pub type termrock::widgets::ToggleOutcome::Owned = T
+pub fn termrock::widgets::ToggleOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleOutcome
+pub fn termrock::widgets::ToggleOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleOutcome
+#[non_exhaustive] pub enum termrock::widgets::ToggleRecipe
+pub termrock::widgets::ToggleRecipe::Outline
+pub termrock::widgets::ToggleRecipe::Quiet
+pub termrock::widgets::ToggleRecipe::Solid
+impl termrock::widgets::ToggleRecipe
+pub const fn termrock::widgets::ToggleRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToggleRecipe
+pub fn termrock::widgets::ToggleRecipe::clone(&self) -> termrock::widgets::ToggleRecipe
+impl core::cmp::Eq for termrock::widgets::ToggleRecipe
+impl core::cmp::PartialEq for termrock::widgets::ToggleRecipe
+pub fn termrock::widgets::ToggleRecipe::eq(&self, &termrock::widgets::ToggleRecipe) -> bool
+impl core::default::Default for termrock::widgets::ToggleRecipe
+pub fn termrock::widgets::ToggleRecipe::default() -> termrock::widgets::ToggleRecipe
+impl core::fmt::Debug for termrock::widgets::ToggleRecipe
+pub fn termrock::widgets::ToggleRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToggleRecipe
+pub fn termrock::widgets::ToggleRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToggleRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::ToggleRecipe
+impl core::marker::Freeze for termrock::widgets::ToggleRecipe
+impl core::marker::Send for termrock::widgets::ToggleRecipe
+impl core::marker::Sync for termrock::widgets::ToggleRecipe
+impl core::marker::Unpin for termrock::widgets::ToggleRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::ToggleRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleRecipe where T: core::clone::Clone
+pub type termrock::widgets::ToggleRecipe::Owned = T
+pub fn termrock::widgets::ToggleRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleRecipe
+pub fn termrock::widgets::ToggleRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleRecipe
+#[non_exhaustive] pub enum termrock::widgets::ToggleSize
+pub termrock::widgets::ToggleSize::Compact
+pub termrock::widgets::ToggleSize::Default
+impl termrock::widgets::ToggleSize
+pub const fn termrock::widgets::ToggleSize::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToggleSize
+pub fn termrock::widgets::ToggleSize::clone(&self) -> termrock::widgets::ToggleSize
+impl core::cmp::Eq for termrock::widgets::ToggleSize
+impl core::cmp::PartialEq for termrock::widgets::ToggleSize
+pub fn termrock::widgets::ToggleSize::eq(&self, &termrock::widgets::ToggleSize) -> bool
+impl core::default::Default for termrock::widgets::ToggleSize
+pub fn termrock::widgets::ToggleSize::default() -> termrock::widgets::ToggleSize
+impl core::fmt::Debug for termrock::widgets::ToggleSize
+pub fn termrock::widgets::ToggleSize::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToggleSize
+pub fn termrock::widgets::ToggleSize::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToggleSize
+impl core::marker::StructuralPartialEq for termrock::widgets::ToggleSize
+impl core::marker::Freeze for termrock::widgets::ToggleSize
+impl core::marker::Send for termrock::widgets::ToggleSize
+impl core::marker::Sync for termrock::widgets::ToggleSize
+impl core::marker::Unpin for termrock::widgets::ToggleSize
+impl core::marker::UnsafeUnpin for termrock::widgets::ToggleSize
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleSize
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleSize
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleSize where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleSize::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleSize where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleSize::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleSize where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleSize::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleSize::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleSize where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleSize::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleSize::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleSize where T: core::clone::Clone
+pub type termrock::widgets::ToggleSize::Owned = T
+pub fn termrock::widgets::ToggleSize::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleSize::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleSize where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleSize::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleSize where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleSize::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleSize where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleSize::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleSize where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleSize::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleSize
+pub fn termrock::widgets::ToggleSize::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleSize
+#[non_exhaustive] pub enum termrock::widgets::ToggleValue
+pub termrock::widgets::ToggleValue::Indeterminate
+pub termrock::widgets::ToggleValue::Pressed
+pub termrock::widgets::ToggleValue::Unpressed
+impl termrock::widgets::ToggleValue
+pub const fn termrock::widgets::ToggleValue::activate(self) -> Self
+pub const fn termrock::widgets::ToggleValue::from_pressed(bool) -> Self
+pub const fn termrock::widgets::ToggleValue::id(self) -> &'static str
+pub const fn termrock::widgets::ToggleValue::is_indeterminate(self) -> bool
+pub const fn termrock::widgets::ToggleValue::is_pressed(self) -> bool
+impl core::clone::Clone for termrock::widgets::ToggleValue
+pub fn termrock::widgets::ToggleValue::clone(&self) -> termrock::widgets::ToggleValue
+impl core::cmp::Eq for termrock::widgets::ToggleValue
+impl core::cmp::PartialEq for termrock::widgets::ToggleValue
+pub fn termrock::widgets::ToggleValue::eq(&self, &termrock::widgets::ToggleValue) -> bool
+impl core::default::Default for termrock::widgets::ToggleValue
+pub fn termrock::widgets::ToggleValue::default() -> termrock::widgets::ToggleValue
+impl core::fmt::Debug for termrock::widgets::ToggleValue
+pub fn termrock::widgets::ToggleValue::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToggleValue
+pub fn termrock::widgets::ToggleValue::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToggleValue
+impl core::marker::StructuralPartialEq for termrock::widgets::ToggleValue
+impl core::marker::Freeze for termrock::widgets::ToggleValue
+impl core::marker::Send for termrock::widgets::ToggleValue
+impl core::marker::Sync for termrock::widgets::ToggleValue
+impl core::marker::Unpin for termrock::widgets::ToggleValue
+impl core::marker::UnsafeUnpin for termrock::widgets::ToggleValue
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleValue
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleValue
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleValue where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleValue::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleValue where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleValue::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleValue where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleValue::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleValue::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleValue where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleValue::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleValue::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleValue where T: core::clone::Clone
+pub type termrock::widgets::ToggleValue::Owned = T
+pub fn termrock::widgets::ToggleValue::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleValue::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleValue where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleValue::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleValue where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleValue::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleValue where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleValue::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleValue where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleValue::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleValue
+pub fn termrock::widgets::ToggleValue::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleValue
 #[non_exhaustive] pub enum termrock::widgets::TokenPart
 pub termrock::widgets::TokenPart::Body
 pub termrock::widgets::TokenPart::Remove
@@ -37938,6 +38339,415 @@ pub unsafe fn termrock::widgets::ToastState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ToastState
 pub fn termrock::widgets::ToastState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ToastState
+pub struct termrock::widgets::Toggle<'a>
+impl<'a> termrock::widgets::Toggle<'a>
+pub fn termrock::widgets::Toggle<'a>::a11y_name(&self) -> &'a str
+pub const fn termrock::widgets::Toggle<'a>::accessible_label(self, &'a str) -> Self
+pub const fn termrock::widgets::Toggle<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Toggle<'a>::compact(self) -> Self
+pub fn termrock::widgets::Toggle<'a>::handle_key(&self, &mut termrock::widgets::ToggleState, termrock::input::KeyEvent) -> termrock::widgets::ToggleOutcome
+pub fn termrock::widgets::Toggle<'a>::handle_key_result(&self, &mut termrock::widgets::ToggleState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::ToggleOutcome>
+pub fn termrock::widgets::Toggle<'a>::handle_mouse(&self, &mut termrock::widgets::ToggleState, termrock::input::MouseEvent) -> termrock::widgets::ToggleOutcome
+pub fn termrock::widgets::Toggle<'a>::has_accessible_label(&self) -> bool
+pub const fn termrock::widgets::Toggle<'a>::icon(self, &'a str) -> Self
+pub const fn termrock::widgets::Toggle<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Toggle<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToggleState) -> termrock::widgets::ToggleParts
+pub fn termrock::widgets::Toggle<'a>::preferred_width(&self, termrock::widgets::ToggleValue) -> u16
+pub const fn termrock::widgets::Toggle<'a>::quiet(self) -> Self
+pub const fn termrock::widgets::Toggle<'a>::recipe(self, termrock::widgets::ToggleRecipe) -> Self
+pub fn termrock::widgets::Toggle<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::ToggleState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::Toggle<'a>::size(self, termrock::widgets::ToggleSize) -> Self
+pub const fn termrock::widgets::Toggle<'a>::solid(self) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Toggle<'_>
+pub fn &termrock::widgets::Toggle<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::Toggle<'a>
+pub fn termrock::widgets::Toggle<'a>::clone(&self) -> termrock::widgets::Toggle<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Toggle<'a>
+pub fn termrock::widgets::Toggle<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::Toggle<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::Toggle<'a>
+impl<'a> core::marker::Send for termrock::widgets::Toggle<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Toggle<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Toggle<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Toggle<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Toggle<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Toggle<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Toggle<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Toggle<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Toggle<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Toggle<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Toggle<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Toggle<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Toggle<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Toggle<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Toggle<'a> where T: core::clone::Clone
+pub type termrock::widgets::Toggle<'a>::Owned = T
+pub fn termrock::widgets::Toggle<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Toggle<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Toggle<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Toggle<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Toggle<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Toggle<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Toggle<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Toggle<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Toggle<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Toggle<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Toggle<'a>
+pub fn termrock::widgets::Toggle<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Toggle<'a>
+pub struct termrock::widgets::ToggleGroup<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ToggleGroup<'a, Id>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::activate_overflow(&self, &termrock::widgets::ToggleGroupState<Id>, Id) -> termrock::widgets::ToggleGroupOutcome<Id>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::handle_key(&self, &mut termrock::widgets::ToggleGroupState<Id>, termrock::input::KeyEvent) -> termrock::widgets::ToggleGroupOutcome<Id>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::handle_key_result(&self, &mut termrock::widgets::ToggleGroupState<Id>, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::ToggleGroupOutcome<Id>>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::handle_mouse(&self, &mut termrock::widgets::ToggleGroupState<Id>, termrock::input::MouseEvent) -> termrock::widgets::ToggleGroupOutcome<Id>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToggleGroupState<Id>) -> termrock::widgets::ToggleGroupParts<Id>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::ToggleGroupState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+impl<'a, Id> termrock::widgets::ToggleGroup<'a, Id>
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::compact(self) -> Self
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::connected(self) -> Self
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::face_recipe(self, termrock::widgets::ToggleRecipe) -> Self
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::group_type(self, termrock::widgets::ToggleGroupType) -> Self
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::multiple(self) -> Self
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::new(&'a [termrock::widgets::ToggleGroupItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::orientation(self, termrock::widgets::ToggleGroupOrientation) -> Self
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::overflow_label(self, &'a str) -> Self
+pub fn termrock::widgets::ToggleGroup<'a, Id>::plan_overflow(&self, u16) -> (alloc::vec::Vec<usize>, alloc::vec::Vec<usize>)
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::separated(self) -> Self
+pub const fn termrock::widgets::ToggleGroup<'a, Id>::single(self) -> Self
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for &termrock::widgets::ToggleGroup<'a, Id>
+pub fn &termrock::widgets::ToggleGroup<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroup<'a, Id>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::clone(&self) -> termrock::widgets::ToggleGroup<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToggleGroup<'a, Id>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::ToggleGroup<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::ToggleGroup<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::ToggleGroup<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::ToggleGroup<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::ToggleGroup<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::ToggleGroup<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleGroup<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleGroup<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleGroup<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleGroup<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleGroup<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleGroup<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleGroup<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleGroup<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleGroup<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleGroup<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::ToggleGroup<'a, Id>::Owned = T
+pub fn termrock::widgets::ToggleGroup<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleGroup<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleGroup<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroup<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleGroup<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroup<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleGroup<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroup<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleGroup<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleGroup<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleGroup<'a, Id>
+pub fn termrock::widgets::ToggleGroup<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleGroup<'a, Id>
+pub struct termrock::widgets::ToggleGroupItem<'a, Id>
+pub termrock::widgets::ToggleGroupItem::accessible_label: core::option::Option<&'a str>
+pub termrock::widgets::ToggleGroupItem::enabled: bool
+pub termrock::widgets::ToggleGroupItem::icon: core::option::Option<&'a str>
+pub termrock::widgets::ToggleGroupItem::id: Id
+pub termrock::widgets::ToggleGroupItem::label: &'a str
+pub termrock::widgets::ToggleGroupItem::priority: u8
+pub termrock::widgets::ToggleGroupItem::value: termrock::widgets::ToggleValue
+impl<'a, Id> termrock::widgets::ToggleGroupItem<'a, Id>
+pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::accessible_label(self, &'a str) -> Self
+pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::icon(self, &'a str) -> Self
+pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::new(Id, &'a str) -> Self
+pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::pressed(self, bool) -> Self
+pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::priority(self, u8) -> Self
+pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::value(self, termrock::widgets::ToggleValue) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroupItem<'a, Id>
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::clone(&self) -> termrock::widgets::ToggleGroupItem<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ToggleGroupItem<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ToggleGroupItem<'a, Id>
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::eq(&self, &termrock::widgets::ToggleGroupItem<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ToggleGroupItem<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToggleGroupItem<'a, Id>
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::ToggleGroupItem<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::ToggleGroupItem<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::ToggleGroupItem<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::ToggleGroupItem<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::ToggleGroupItem<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::ToggleGroupItem<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleGroupItem<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleGroupItem<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleGroupItem<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleGroupItem<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleGroupItem<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleGroupItem<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleGroupItem<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleGroupItem<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleGroupItem<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::ToggleGroupItem<'a, Id>::Owned = T
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleGroupItem<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleGroupItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleGroupItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleGroupItem<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleGroupItem<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleGroupItem<'a, Id>
+pub fn termrock::widgets::ToggleGroupItem<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleGroupItem<'a, Id>
+pub struct termrock::widgets::ToggleGroupItemParts<Id>
+pub termrock::widgets::ToggleGroupItemParts::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::ToggleGroupItemParts::id: Id
+pub termrock::widgets::ToggleGroupItemParts::overflowed: bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroupItemParts<Id>
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::clone(&self) -> termrock::widgets::ToggleGroupItemParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ToggleGroupItemParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ToggleGroupItemParts<Id>
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::eq(&self, &termrock::widgets::ToggleGroupItemParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ToggleGroupItemParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToggleGroupItemParts<Id>
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ToggleGroupItemParts<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ToggleGroupItemParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ToggleGroupItemParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ToggleGroupItemParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ToggleGroupItemParts<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleGroupItemParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleGroupItemParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleGroupItemParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleGroupItemParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleGroupItemParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleGroupItemParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleGroupItemParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleGroupItemParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleGroupItemParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::ToggleGroupItemParts<Id>::Owned = T
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleGroupItemParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleGroupItemParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleGroupItemParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleGroupItemParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleGroupItemParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleGroupItemParts<Id>
+pub fn termrock::widgets::ToggleGroupItemParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleGroupItemParts<Id>
+pub struct termrock::widgets::ToggleGroupParts<Id>
+pub termrock::widgets::ToggleGroupParts::items: alloc::vec::Vec<termrock::widgets::ToggleGroupItemParts<Id>>
+pub termrock::widgets::ToggleGroupParts::overflow_ids: alloc::vec::Vec<Id>
+pub termrock::widgets::ToggleGroupParts::overflow_trigger: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::ToggleGroupParts::root: ratatui_core::layout::rect::Rect
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroupParts<Id>
+pub fn termrock::widgets::ToggleGroupParts<Id>::clone(&self) -> termrock::widgets::ToggleGroupParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ToggleGroupParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ToggleGroupParts<Id>
+pub fn termrock::widgets::ToggleGroupParts<Id>::eq(&self, &termrock::widgets::ToggleGroupParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ToggleGroupParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToggleGroupParts<Id>
+pub fn termrock::widgets::ToggleGroupParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ToggleGroupParts<Id>
+impl<Id> core::marker::Send for termrock::widgets::ToggleGroupParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ToggleGroupParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ToggleGroupParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ToggleGroupParts<Id>
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleGroupParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleGroupParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleGroupParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleGroupParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleGroupParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleGroupParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleGroupParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleGroupParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleGroupParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleGroupParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleGroupParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleGroupParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::ToggleGroupParts<Id>::Owned = T
+pub fn termrock::widgets::ToggleGroupParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleGroupParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleGroupParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleGroupParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleGroupParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleGroupParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleGroupParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleGroupParts<Id>
+pub fn termrock::widgets::ToggleGroupParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleGroupParts<Id>
+pub struct termrock::widgets::ToggleGroupState<Id>
+pub termrock::widgets::ToggleGroupState::allow_empty: bool
+pub termrock::widgets::ToggleGroupState::cursor: core::option::Option<Id>
+pub termrock::widgets::ToggleGroupState::hovered: core::option::Option<Id>
+pub termrock::widgets::ToggleGroupState::overflow_open: bool
+pub termrock::widgets::ToggleGroupState::parts: core::option::Option<termrock::widgets::ToggleGroupParts<Id>>
+pub termrock::widgets::ToggleGroupState::roving: termrock::interaction::RovingFocusGroup<Id>
+pub termrock::widgets::ToggleGroupState::surface_focused: bool
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ToggleGroupState<Id>
+pub fn termrock::widgets::ToggleGroupState<Id>::new() -> Self
+pub const fn termrock::widgets::ToggleGroupState<Id>::set_allow_empty(&mut self, bool)
+pub fn termrock::widgets::ToggleGroupState<Id>::set_surface_focused(&mut self, bool)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::ToggleGroupState<Id>
+pub fn termrock::widgets::ToggleGroupState<Id>::default() -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroupState<Id>
+pub fn termrock::widgets::ToggleGroupState<Id>::clone(&self) -> termrock::widgets::ToggleGroupState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ToggleGroupState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ToggleGroupState<Id>
+pub fn termrock::widgets::ToggleGroupState<Id>::eq(&self, &termrock::widgets::ToggleGroupState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ToggleGroupState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToggleGroupState<Id>
+pub fn termrock::widgets::ToggleGroupState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ToggleGroupState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ToggleGroupState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ToggleGroupState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ToggleGroupState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ToggleGroupState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleGroupState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleGroupState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleGroupState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleGroupState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleGroupState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleGroupState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleGroupState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleGroupState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleGroupState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleGroupState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleGroupState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleGroupState<Id> where T: core::clone::Clone
+pub type termrock::widgets::ToggleGroupState<Id>::Owned = T
+pub fn termrock::widgets::ToggleGroupState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleGroupState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleGroupState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleGroupState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleGroupState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleGroupState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleGroupState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleGroupState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleGroupState<Id>
+pub fn termrock::widgets::ToggleGroupState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleGroupState<Id>
+pub struct termrock::widgets::ToggleParts
+pub termrock::widgets::ToggleParts::root: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::ToggleParts
+pub fn termrock::widgets::ToggleParts::clone(&self) -> termrock::widgets::ToggleParts
+impl core::cmp::Eq for termrock::widgets::ToggleParts
+impl core::cmp::PartialEq for termrock::widgets::ToggleParts
+pub fn termrock::widgets::ToggleParts::eq(&self, &termrock::widgets::ToggleParts) -> bool
+impl core::fmt::Debug for termrock::widgets::ToggleParts
+pub fn termrock::widgets::ToggleParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToggleParts
+impl core::marker::Freeze for termrock::widgets::ToggleParts
+impl core::marker::Send for termrock::widgets::ToggleParts
+impl core::marker::Sync for termrock::widgets::ToggleParts
+impl core::marker::Unpin for termrock::widgets::ToggleParts
+impl core::marker::UnsafeUnpin for termrock::widgets::ToggleParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleParts where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleParts where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleParts::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleParts where T: core::clone::Clone
+pub type termrock::widgets::ToggleParts::Owned = T
+pub fn termrock::widgets::ToggleParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleParts where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleParts where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleParts
+pub fn termrock::widgets::ToggleParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleParts
+pub struct termrock::widgets::ToggleState
+pub termrock::widgets::ToggleState::enabled: bool
+pub termrock::widgets::ToggleState::focused: bool
+pub termrock::widgets::ToggleState::hovered: bool
+pub termrock::widgets::ToggleState::region: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::ToggleState::value: termrock::widgets::ToggleValue
+impl termrock::widgets::ToggleState
+pub const fn termrock::widgets::ToggleState::new() -> Self
+pub const fn termrock::widgets::ToggleState::set_enabled(&mut self, bool)
+pub const fn termrock::widgets::ToggleState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::ToggleState::set_value(&mut self, termrock::widgets::ToggleValue)
+pub const fn termrock::widgets::ToggleState::with_value(termrock::widgets::ToggleValue) -> Self
+impl core::clone::Clone for termrock::widgets::ToggleState
+pub fn termrock::widgets::ToggleState::clone(&self) -> termrock::widgets::ToggleState
+impl core::cmp::Eq for termrock::widgets::ToggleState
+impl core::cmp::PartialEq for termrock::widgets::ToggleState
+pub fn termrock::widgets::ToggleState::eq(&self, &termrock::widgets::ToggleState) -> bool
+impl core::default::Default for termrock::widgets::ToggleState
+pub fn termrock::widgets::ToggleState::default() -> termrock::widgets::ToggleState
+impl core::fmt::Debug for termrock::widgets::ToggleState
+pub fn termrock::widgets::ToggleState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToggleState
+impl core::marker::Freeze for termrock::widgets::ToggleState
+impl core::marker::Send for termrock::widgets::ToggleState
+impl core::marker::Sync for termrock::widgets::ToggleState
+impl core::marker::Unpin for termrock::widgets::ToggleState
+impl core::marker::UnsafeUnpin for termrock::widgets::ToggleState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToggleState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToggleState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToggleState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToggleState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToggleState where U: core::convert::From<T>
+pub fn termrock::widgets::ToggleState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToggleState where U: core::convert::Into<T>
+pub type termrock::widgets::ToggleState::Error = core::convert::Infallible
+pub fn termrock::widgets::ToggleState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToggleState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToggleState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToggleState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToggleState where T: core::clone::Clone
+pub type termrock::widgets::ToggleState::Owned = T
+pub fn termrock::widgets::ToggleState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToggleState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToggleState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToggleState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToggleState where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToggleState where T: ?core::marker::Sized
+pub fn termrock::widgets::ToggleState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToggleState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToggleState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToggleState
+pub fn termrock::widgets::ToggleState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToggleState
 pub struct termrock::widgets::TokenItem<'a, Id>
 pub termrock::widgets::TokenItem::disabled: bool
 pub termrock::widgets::TokenItem::id: Id

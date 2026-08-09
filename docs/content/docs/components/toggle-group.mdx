@@ -1,0 +1,75 @@
+---
+title: ToggleGroup
+description: 'Grouped sticky toggles — single/multi, roving, overflow, toolbar density.'
+---
+
+## Previews
+
+### `toggle-group/format`
+
+![Format multi](/component-previews/toggle-group-format.svg)
+
+### `toggle-group/align`
+
+![Align single](/component-previews/toggle-group-align.svg)
+
+### `toggle-group/overflow`
+
+![Overflow](/component-previews/toggle-group-overflow.svg)
+
+### `toggle-group/narrow`
+
+![Narrow](/component-previews/toggle-group-narrow.svg)
+
+### `toggle-group/unicode`
+
+![Unicode](/component-previews/toggle-group-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{ToggleGroup, ToggleGroupItem, ToggleGroupState};
+
+// Multi: bold + italic
+let items = [
+    ToggleGroupItem::new("b", "B").pressed(true),
+    ToggleGroupItem::new("i", "I"),
+    ToggleGroupItem::new("u", "U"),
+];
+let mut state = ToggleGroupState::new();
+state.set_surface_focused(true);
+ToggleGroup::new(&items, &system)
+    .multiple()
+    .compact()
+    .paint(area, buf, &mut state);
+
+// Single connected align
+ToggleGroup::new(&align, &system)
+    .single()
+    .connected()
+    .paint(area, buf, &mut state);
+```
+
+## When not to use
+
+| Need | Use |
+|------|-----|
+| Form boolean | Checkbox |
+| Settings On/Off | Switch |
+| Content panels / modes | Tabs, ModeRibbon, SegmentedControl |
+| One-shot action | Button / ButtonGroup |
+| Long exclusive options | RadioGroup |
+
+## Contract
+
+| Concern | Rule |
+|---------|------|
+| Single | `SelectionChanged { id }` — host clears others |
+| Multi | `ItemChanged { id, value }` |
+| allow_empty | Single re-press may clear |
+| Overflow | Low priority → `…`; pressed kept |
+| Roving | Arrows move; Space activates cursor |
+
+## Migration
+
+See `migrations/0131-v0.13.0-toggle.md`.

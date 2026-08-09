@@ -1,0 +1,61 @@
+---
+title: Toggle
+description: 'Sticky pressable control — pressed brackets, icon-only, indeterminate.'
+---
+
+## Previews
+
+### `toggle/pressed`
+
+![Pressed](/component-previews/toggle-pressed.svg)
+
+### `toggle/icon`
+
+![Icon](/component-previews/toggle-icon.svg)
+
+### `toggle/indeterminate`
+
+![Indeterminate](/component-previews/toggle-indeterminate.svg)
+
+### `toggle/narrow`
+
+![Narrow](/component-previews/toggle-narrow.svg)
+
+### `toggle/unicode`
+
+![Unicode](/component-previews/toggle-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{Toggle, ToggleState, ToggleValue};
+
+let mut state = ToggleState::new();
+state.set_focused(true);
+Toggle::new("Bold", &system).paint(area, buf, &mut state);
+
+// Icon-only requires accessible_label
+Toggle::new("", &system)
+    .icon("B")
+    .accessible_label("Bold")
+    .compact()
+    .paint(area, buf, &mut state);
+```
+
+## Contract
+
+| Concern | Rule |
+|---------|------|
+| Pressed | `[label]` + bold/reverse (not color alone) |
+| Unpressed | Spaced face |
+| Indeterminate | `[~label]`; next activate → Pressed |
+| Space/Enter | Flip value when focused |
+| Icon-only | `accessible_label` required |
+
+## Not for forms
+
+Use **Checkbox** for form fields, **Switch** for settings On/Off.
+
+## Migration
+
+See `migrations/0131-v0.13.0-toggle.md`.

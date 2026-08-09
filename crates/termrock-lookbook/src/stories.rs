@@ -21,6 +21,7 @@ use termrock::{
     widgets::{
         Action, ActionBar, ActionBarState, ActionLink, Anchor, AnsiParseOptions, AnsiText,
         ButtonGroup, ButtonGroupItem, ButtonGroupState,
+        Toggle, ToggleGroup, ToggleGroupItem, ToggleGroupState, ToggleState, ToggleValue,
         AnsiTextMode, AnsiTextState, AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS,
         Backdrop, Badge, Banner,
         BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
@@ -634,6 +635,60 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             3,
             button_group_loading_story,
+        ),
+        Story::new(
+            "toggle/pressed",
+            "Toggle pressed",
+            "Toggle",
+            "Single sticky toggle: unpressed vs pressed brackets.",
+            36,
+            3,
+            toggle_pressed_story,
+        ),
+        Story::new(
+            "toggle/icon",
+            "Toggle icon-only",
+            "Toggle",
+            "Icon-only with mandatory accessible label.",
+            24,
+            3,
+            toggle_icon_story,
+        ),
+        Story::new(
+            "toggle/indeterminate",
+            "Toggle indeterminate",
+            "Toggle",
+            "Mixed selection mark [~B].",
+            24,
+            3,
+            toggle_indeterminate_story,
+        ),
+        Story::new(
+            "toggle-group/format",
+            "ToggleGroup multi format",
+            "ToggleGroup",
+            "Bold/Italic/Underline multi-select toolbar.",
+            40,
+            3,
+            toggle_group_format_story,
+        ),
+        Story::new(
+            "toggle-group/align",
+            "ToggleGroup single align",
+            "ToggleGroup",
+            "Connected single-select L|C|R.",
+            28,
+            3,
+            toggle_group_align_story,
+        ),
+        Story::new(
+            "toggle-group/overflow",
+            "ToggleGroup overflow",
+            "ToggleGroup",
+            "Low-priority toggles collapse to …",
+            18,
+            3,
+            toggle_group_overflow_story,
         ),
         Story::new(
             "accordion/section",
@@ -3244,6 +3299,42 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             2,
             button_group_unicode_story,
+        ),
+        Story::new(
+            "toggle/narrow",
+            "Narrow Toggle",
+            "Toggle",
+            "Compact toggle at 16 cols.",
+            16,
+            2,
+            toggle_pressed_story,
+        ),
+        Story::new(
+            "toggle/unicode",
+            "Unicode Toggle",
+            "Toggle",
+            "Unicode face label.",
+            28,
+            2,
+            toggle_unicode_story,
+        ),
+        Story::new(
+            "toggle-group/narrow",
+            "Narrow ToggleGroup",
+            "ToggleGroup",
+            "Overflow recipe at 16 cols.",
+            16,
+            2,
+            toggle_group_overflow_story,
+        ),
+        Story::new(
+            "toggle-group/unicode",
+            "Unicode ToggleGroup",
+            "ToggleGroup",
+            "CJK labels in multi group.",
+            36,
+            2,
+            toggle_group_unicode_story,
         ),
         Story::new(
             "action-bar/unicode",
@@ -5946,6 +6037,100 @@ fn button_group_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let mut state = ButtonGroupState::new();
     state.set_surface_focused(true);
     let _ = ButtonGroup::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn toggle_pressed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut off = ToggleState::new();
+    let mut on = ToggleState::with_value(ToggleValue::Pressed);
+    on.set_focused(true);
+    let row = Layout::horizontal([Constraint::Length(14), Constraint::Length(14)]).split(area);
+    let _ = Toggle::new("Bold", system).paint(row[0], frame.buffer_mut(), &mut off);
+    let _ = Toggle::new("Bold", system).paint(row[1], frame.buffer_mut(), &mut on);
+}
+
+fn toggle_icon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = ToggleState::with_value(ToggleValue::Pressed);
+    state.set_focused(true);
+    let _ = Toggle::new("", system)
+        .icon("B")
+        .accessible_label("Bold")
+        .compact()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn toggle_indeterminate_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = ToggleState::with_value(ToggleValue::Indeterminate);
+    state.set_focused(true);
+    let _ = Toggle::new("B", system)
+        .accessible_label("Bold mixed")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn toggle_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = ToggleState::with_value(ToggleValue::Pressed);
+    state.set_focused(true);
+    let _ = Toggle::new("強調 ✨", system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn toggle_group_format_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ToggleGroupItem::new("b", "B").pressed(true).priority(90),
+        ToggleGroupItem::new("i", "I").pressed(true).priority(80),
+        ToggleGroupItem::new("u", "U").priority(70),
+    ];
+    let mut state = ToggleGroupState::new();
+    state.set_surface_focused(true);
+    state.cursor = Some("i");
+    let _ = ToggleGroup::new(&items, system)
+        .multiple()
+        .compact()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn toggle_group_align_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ToggleGroupItem::new("l", "L").pressed(true),
+        ToggleGroupItem::new("c", "C"),
+        ToggleGroupItem::new("r", "R"),
+    ];
+    let mut state = ToggleGroupState::new();
+    state.set_surface_focused(true);
+    state.cursor = Some("l");
+    let _ = ToggleGroup::new(&items, system)
+        .single()
+        .connected()
+        .compact()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn toggle_group_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ToggleGroupItem::new("x", "Extra").priority(10),
+        ToggleGroupItem::new("b", "Bold").pressed(true).priority(90),
+        ToggleGroupItem::new("i", "Italic").priority(40),
+        ToggleGroupItem::new("u", "Under").priority(20),
+        ToggleGroupItem::new("s", "Strike").priority(15),
+    ];
+    let mut state = ToggleGroupState::new();
+    state.set_surface_focused(true);
+    let _ = ToggleGroup::new(&items, system)
+        .multiple()
+        .compact()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn toggle_group_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ToggleGroupItem::new("b", "粗").pressed(true),
+        ToggleGroupItem::new("i", "斜"),
+        ToggleGroupItem::new("u", "下"),
+    ];
+    let mut state = ToggleGroupState::new();
+    state.set_surface_focused(true);
+    let _ = ToggleGroup::new(&items, system)
+        .multiple()
+        .connected()
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn action_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

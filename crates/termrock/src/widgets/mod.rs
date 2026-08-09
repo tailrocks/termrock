@@ -9,6 +9,7 @@ pub use crate::interaction::Outcome;
 
 mod action_bar;
 mod button_group;
+mod toggle;
 mod agent;
 mod agent_blocks;
 mod blocks;
@@ -81,6 +82,11 @@ pub use action_bar::{Action, ActionBar, ActionBarState};
 pub use button_group::{
     ButtonGroup, ButtonGroupItem, ButtonGroupItemParts, ButtonGroupOrientation, ButtonGroupOutcome,
     ButtonGroupParts, ButtonGroupRecipe, ButtonGroupState,
+};
+pub use toggle::{
+    Toggle, ToggleGroup, ToggleGroupItem, ToggleGroupItemParts, ToggleGroupOrientation,
+    ToggleGroupOutcome, ToggleGroupParts, ToggleGroupRecipe, ToggleGroupState, ToggleGroupType,
+    ToggleOutcome, ToggleParts, ToggleRecipe, ToggleSize, ToggleState, ToggleValue,
 };
 pub use agent::{ThinkingBlock, Timeline, TimelineEvent, TokenMeter, ToolCard, ToolStatus};
 pub use agent_blocks::{
