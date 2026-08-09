@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Content hierarchy primitives: heading, paragraph, surface, section, callout, alert.
+//! Content hierarchy primitives: heading, paragraph, callout, alert.
+//! Section chrome: [`crate::widgets::Section`].
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
@@ -144,179 +145,7 @@ impl Widget for &Paragraph<'_> {
 }
 
 // Surface lives in `widgets/surface.rs` (canonical fill/border/clip/hit).
-
-/// Section collapse outcome.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum SectionOutcome {
-    /// No change.
-    #[default]
-    Ignored,
-    /// Collapse toggled.
-    ToggleCollapsed {
-        /// New collapsed flag.
-        collapsed: bool,
-    },
-}
-
-/// Collapsible section state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct SectionState {
-    collapsed: bool,
-    focused: bool,
-    header_region: Option<Rect>,
-}
-
-impl SectionState {
-    /// Open section.
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            collapsed: false,
-            focused: false,
-            header_region: None,
-        }
-    }
-
-    #[must_use]
-    /// Collapsed.
-    pub const fn is_collapsed(&self) -> bool {
-        self.collapsed
-    }
-
-    /// Controlled collapse.
-    pub const fn set_collapsed(&mut self, collapsed: bool) {
-        self.collapsed = collapsed;
-    }
-
-    /// Focus on header.
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
-    }
-
-    /// Enter/Space toggles when focused (via intents; no raw key match).
-    pub fn handle_key(&mut self, key: KeyEvent) -> SectionOutcome {
-        if !self.focused || key.kind != KeyEventKind::Press {
-            return SectionOutcome::Ignored;
-        }
-        // Activate (button map: Enter/Space) or Toggle (list Space).
-        let intent = default_button_intent(key).or_else(|| default_list_intent(key));
-        match intent {
-            Some(UiIntent::Activate | UiIntent::Toggle) => self.toggle(),
-            _ => SectionOutcome::Ignored,
-        }
-    }
-
-    /// Semantic intent path.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> SectionOutcome {
-        if !self.focused {
-            return SectionOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Activate | UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse => {
-                self.toggle()
-            }
-            _ => SectionOutcome::Ignored,
-        }
-    }
-
-    fn toggle(&mut self) -> SectionOutcome {
-        self.collapsed = !self.collapsed;
-        SectionOutcome::ToggleCollapsed {
-            collapsed: self.collapsed,
-        }
-    }
-
-    /// Key path with [`EventResult`].
-    pub fn handle_key_result(&mut self, key: KeyEvent) -> EventResult<SectionOutcome> {
-        match self.handle_key(key) {
-            SectionOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
-    /// Click header toggles.
-    pub fn handle_mouse(&mut self, event: MouseEvent) -> SectionOutcome {
-        if event.kind != MouseEventKind::Down(MouseButton::Left) {
-            return SectionOutcome::Ignored;
-        }
-        if self
-            .header_region
-            .is_some_and(|r| r.contains(event.position))
-        {
-            self.collapsed = !self.collapsed;
-            SectionOutcome::ToggleCollapsed {
-                collapsed: self.collapsed,
-            }
-        } else {
-            SectionOutcome::Ignored
-        }
-    }
-}
-
-/// Section = heading + optional description with collapse.
-#[derive(Debug, Clone, Copy)]
-pub struct Section<'a> {
-    title: &'a str,
-    description: Option<&'a str>,
-    tokens: &'a DesignSystem,
-}
-
-impl<'a> Section<'a> {
-    /// Section title.
-    #[must_use]
-    pub const fn new(title: &'a str, tokens: &'a DesignSystem) -> Self {
-        Self {
-            title,
-            description: None,
-            tokens,
-        }
-    }
-
-    /// Description under title when expanded.
-    #[must_use]
-    pub const fn description(mut self, description: &'a str) -> Self {
-        self.description = Some(description);
-        self
-    }
-
-    /// Paint section chrome; returns body area when expanded.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SectionState) -> Rect {
-        state.header_region = None;
-        if area.is_empty() {
-            return area;
-        }
-        let mark = if state.collapsed { "▸" } else { "▾" };
-        let style = if state.focused {
-            self.tokens.style(Role::TextStrong)
-        } else {
-            self.tokens.style(Role::Text)
-        };
-        let line = format!("{mark} {}", self.title);
-        let text = take_display_cols(&line, usize::from(area.width));
-        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
-        state.header_region = Some(Rect::new(area.x, area.y, area.width, 1));
-        if state.collapsed {
-            return Rect::new(area.x, area.y.saturating_add(1), area.width, 0);
-        }
-        let mut y = area.y.saturating_add(1);
-        if let Some(desc) = self.description
-            && y < area.bottom()
-        {
-            let d = take_display_cols(desc, usize::from(area.width));
-            buffer.set_stringn(
-                area.x,
-                y,
-                &d,
-                usize::from(area.width),
-                self.tokens.style(Role::TextMuted),
-            );
-            y = y.saturating_add(1);
-        }
-        let height = area.bottom().saturating_sub(y);
-        Rect::new(area.x, y, area.width, height)
-    }
-}
+// Section lives in `widgets/section.rs` (editorial grouping anatomy).
 
 /// Callout semantic tone.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -538,17 +367,6 @@ mod tests {
     use crate::text::display_cols;
 
     #[test]
-    fn section_toggle_collapse() {
-        let mut state = SectionState::new();
-        state.set_focused(true);
-        assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            SectionOutcome::ToggleCollapsed { collapsed: true }
-        ));
-        assert!(state.is_collapsed());
-    }
-
-    #[test]
     fn heading_paints_strong() {
         let tokens = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
@@ -575,15 +393,4 @@ mod tests {
         assert_eq!(r.overlay(), Some(&OverlayRequest::DismissTop));
     }
 
-    #[test]
-    fn section_event_result_emits_toggle() {
-        let mut state = SectionState::new();
-        state.set_focused(true);
-        let r = state.handle_key_result(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
-        assert!(r.is_consumed());
-        assert!(matches!(
-            r.message(),
-            Some(SectionOutcome::ToggleCollapsed { collapsed: true })
-        ));
-    }
 }

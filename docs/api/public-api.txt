@@ -17304,6 +17304,8 @@ impl<T> core::convert::From<T> for termrock::widgets::ScrollOutcome
 pub fn termrock::widgets::ScrollOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ScrollOutcome
 #[non_exhaustive] pub enum termrock::widgets::SectionOutcome
+pub termrock::widgets::SectionOutcome::HeaderAction
+pub termrock::widgets::SectionOutcome::HeaderAction::id: alloc::string::String
 pub termrock::widgets::SectionOutcome::Ignored
 pub termrock::widgets::SectionOutcome::ToggleCollapsed
 pub termrock::widgets::SectionOutcome::ToggleCollapsed::collapsed: bool
@@ -17318,7 +17320,6 @@ impl core::fmt::Debug for termrock::widgets::SectionOutcome
 pub fn termrock::widgets::SectionOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for termrock::widgets::SectionOutcome
 pub fn termrock::widgets::SectionOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::SectionOutcome
 impl core::marker::StructuralPartialEq for termrock::widgets::SectionOutcome
 impl core::marker::Freeze for termrock::widgets::SectionOutcome
 impl core::marker::Send for termrock::widgets::SectionOutcome
@@ -17352,6 +17353,57 @@ pub unsafe fn termrock::widgets::SectionOutcome::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SectionOutcome
 pub fn termrock::widgets::SectionOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SectionOutcome
+#[non_exhaustive] pub enum termrock::widgets::SectionVariant
+pub termrock::widgets::SectionVariant::Divided
+pub termrock::widgets::SectionVariant::Emphasized
+pub termrock::widgets::SectionVariant::Quiet
+impl termrock::widgets::SectionVariant
+pub const fn termrock::widgets::SectionVariant::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SectionVariant
+pub fn termrock::widgets::SectionVariant::clone(&self) -> termrock::widgets::SectionVariant
+impl core::cmp::Eq for termrock::widgets::SectionVariant
+impl core::cmp::PartialEq for termrock::widgets::SectionVariant
+pub fn termrock::widgets::SectionVariant::eq(&self, &termrock::widgets::SectionVariant) -> bool
+impl core::default::Default for termrock::widgets::SectionVariant
+pub fn termrock::widgets::SectionVariant::default() -> termrock::widgets::SectionVariant
+impl core::fmt::Debug for termrock::widgets::SectionVariant
+pub fn termrock::widgets::SectionVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SectionVariant
+pub fn termrock::widgets::SectionVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SectionVariant
+impl core::marker::StructuralPartialEq for termrock::widgets::SectionVariant
+impl core::marker::Freeze for termrock::widgets::SectionVariant
+impl core::marker::Send for termrock::widgets::SectionVariant
+impl core::marker::Sync for termrock::widgets::SectionVariant
+impl core::marker::Unpin for termrock::widgets::SectionVariant
+impl core::marker::UnsafeUnpin for termrock::widgets::SectionVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SectionVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SectionVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SectionVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SectionVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SectionVariant where U: core::convert::From<T>
+pub fn termrock::widgets::SectionVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SectionVariant where U: core::convert::Into<T>
+pub type termrock::widgets::SectionVariant::Error = core::convert::Infallible
+pub fn termrock::widgets::SectionVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SectionVariant where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SectionVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SectionVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SectionVariant where T: core::clone::Clone
+pub type termrock::widgets::SectionVariant::Owned = T
+pub fn termrock::widgets::SectionVariant::clone_into(&self, &mut T)
+pub fn termrock::widgets::SectionVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SectionVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SectionVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SectionVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::SectionVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SectionVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::SectionVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SectionVariant where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SectionVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SectionVariant
+pub fn termrock::widgets::SectionVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SectionVariant
 #[non_exhaustive] pub enum termrock::widgets::SelectOutcome<Id>
 pub termrock::widgets::SelectOutcome::CloseMenu
 pub termrock::widgets::SelectOutcome::Ignored
@@ -26200,14 +26252,32 @@ pub fn termrock::widgets::ScrollAreaState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ScrollAreaState
 pub struct termrock::widgets::Section<'a>
 impl<'a> termrock::widgets::Section<'a>
+pub const fn termrock::widgets::Section<'a>::actions(self, &'a [termrock::widgets::SectionAction<'a>]) -> Self
+pub const fn termrock::widgets::Section<'a>::actions_visible(u16) -> bool
+pub const fn termrock::widgets::Section<'a>::collapsible(self, bool) -> Self
+pub const fn termrock::widgets::Section<'a>::depth(self, u8) -> Self
 pub const fn termrock::widgets::Section<'a>::description(self, &'a str) -> Self
+pub const fn termrock::widgets::Section<'a>::description_visible(u16) -> bool
+pub const fn termrock::widgets::Section<'a>::divider(self, bool) -> Self
+pub const fn termrock::widgets::Section<'a>::emphasized(self) -> Self
+pub const fn termrock::widgets::Section<'a>::indent(self, u16) -> Self
+pub const fn termrock::widgets::Section<'a>::is_focusable(&self) -> bool
+pub fn termrock::widgets::Section<'a>::layout(&self, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::SectionState>) -> termrock::widgets::SectionParts
 pub const fn termrock::widgets::Section<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::Section<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SectionState) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::Section<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, core::option::Option<&mut termrock::widgets::SectionState>) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::Section<'a>::quiet(self) -> Self
+pub fn termrock::widgets::Section<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::SectionState>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::Section<'a>::status(self, &'a str) -> Self
+pub const fn termrock::widgets::Section<'a>::status_visible(u16) -> bool
+pub const fn termrock::widgets::Section<'a>::variant(self, termrock::widgets::SectionVariant) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Section<'_>
+pub fn &termrock::widgets::Section<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Section<'_>
+pub fn termrock::widgets::Section<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Section<'a>
 pub fn termrock::widgets::Section<'a>::clone(&self) -> termrock::widgets::Section<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Section<'a>
 pub fn termrock::widgets::Section<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::Section<'a>
 impl<'a> core::marker::Freeze for termrock::widgets::Section<'a>
 impl<'a> core::marker::Send for termrock::widgets::Section<'a>
 impl<'a> core::marker::Sync for termrock::widgets::Section<'a>
@@ -26238,12 +26308,73 @@ pub unsafe fn termrock::widgets::Section<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Section<'a>
 pub fn termrock::widgets::Section<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Section<'a>
+pub struct termrock::widgets::SectionParts
+pub termrock::widgets::SectionParts::actions: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SectionParts::body: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SectionParts::clip: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SectionParts::description: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SectionParts::divider: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SectionParts::header: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SectionParts::hit: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SectionParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SectionParts::title: core::option::Option<ratatui_core::layout::rect::Rect>
+impl termrock::widgets::SectionParts
+pub const fn termrock::widgets::SectionParts::has_body(self) -> bool
+impl core::clone::Clone for termrock::widgets::SectionParts
+pub fn termrock::widgets::SectionParts::clone(&self) -> termrock::widgets::SectionParts
+impl core::cmp::Eq for termrock::widgets::SectionParts
+impl core::cmp::PartialEq for termrock::widgets::SectionParts
+pub fn termrock::widgets::SectionParts::eq(&self, &termrock::widgets::SectionParts) -> bool
+impl core::default::Default for termrock::widgets::SectionParts
+pub fn termrock::widgets::SectionParts::default() -> termrock::widgets::SectionParts
+impl core::fmt::Debug for termrock::widgets::SectionParts
+pub fn termrock::widgets::SectionParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SectionParts
+pub fn termrock::widgets::SectionParts::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SectionParts
+impl core::marker::StructuralPartialEq for termrock::widgets::SectionParts
+impl core::marker::Freeze for termrock::widgets::SectionParts
+impl core::marker::Send for termrock::widgets::SectionParts
+impl core::marker::Sync for termrock::widgets::SectionParts
+impl core::marker::Unpin for termrock::widgets::SectionParts
+impl core::marker::UnsafeUnpin for termrock::widgets::SectionParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SectionParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SectionParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SectionParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SectionParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SectionParts where U: core::convert::From<T>
+pub fn termrock::widgets::SectionParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SectionParts where U: core::convert::Into<T>
+pub type termrock::widgets::SectionParts::Error = core::convert::Infallible
+pub fn termrock::widgets::SectionParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SectionParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SectionParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SectionParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SectionParts where T: core::clone::Clone
+pub type termrock::widgets::SectionParts::Owned = T
+pub fn termrock::widgets::SectionParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::SectionParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SectionParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SectionParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SectionParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SectionParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SectionParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SectionParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SectionParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SectionParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SectionParts
+pub fn termrock::widgets::SectionParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SectionParts
 pub struct termrock::widgets::SectionState
+pub termrock::widgets::SectionState::action_hits: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::SectionState::collapsed: bool
+pub termrock::widgets::SectionState::focused: bool
+pub termrock::widgets::SectionState::parts: core::option::Option<termrock::widgets::SectionParts>
 impl termrock::widgets::SectionState
-pub fn termrock::widgets::SectionState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::SectionOutcome
-pub fn termrock::widgets::SectionState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::SectionOutcome
-pub fn termrock::widgets::SectionState::handle_key_result(&mut self, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::SectionOutcome>
-pub fn termrock::widgets::SectionState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::SectionOutcome
+pub fn termrock::widgets::SectionState::handle_intent(&mut self, termrock::context::ContextUiIntent, bool) -> termrock::widgets::SectionOutcome
+pub fn termrock::widgets::SectionState::handle_key(&mut self, termrock::input::KeyEvent, bool) -> termrock::widgets::SectionOutcome
+pub fn termrock::widgets::SectionState::handle_key_result(&mut self, termrock::input::KeyEvent, bool) -> termrock::interaction::EventResult<termrock::widgets::SectionOutcome>
+pub fn termrock::widgets::SectionState::handle_mouse(&mut self, termrock::input::MouseEvent, bool) -> termrock::widgets::SectionOutcome
 pub const fn termrock::widgets::SectionState::is_collapsed(&self) -> bool
 pub const fn termrock::widgets::SectionState::new() -> Self
 pub const fn termrock::widgets::SectionState::set_collapsed(&mut self, bool)
@@ -26257,7 +26388,6 @@ impl core::default::Default for termrock::widgets::SectionState
 pub fn termrock::widgets::SectionState::default() -> termrock::widgets::SectionState
 impl core::fmt::Debug for termrock::widgets::SectionState
 pub fn termrock::widgets::SectionState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::widgets::SectionState
 impl core::marker::StructuralPartialEq for termrock::widgets::SectionState
 impl core::marker::Freeze for termrock::widgets::SectionState
 impl core::marker::Send for termrock::widgets::SectionState
@@ -30127,4 +30257,5 @@ pub type termrock::widgets::CellCoord = termrock::interaction::CellCoord
 pub type termrock::widgets::CommandPaletteState<Id> = termrock::widgets::PickerState<Id>
 pub type termrock::widgets::ContextMenu<'a, Id> = termrock::widgets::Menu<'a, Id>
 pub type termrock::widgets::IconButtonState = termrock::widgets::ButtonState
+pub type termrock::widgets::SectionAction<'a> = termrock::widgets::PanelAction<'a>
 pub type termrock::widgets::Separator<'a> = termrock::widgets::SeparatorLine<'a>

@@ -456,6 +456,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         };
         let mut content_y = 0usize;
         for section in self.sections {
+            // Prefer plain strong title line here: FormSection owns styled
+            // `Line` titles. Use `widgets::Section` for string-based editorial
+            // chrome in settings/docs/inspector hosts (see section stories).
             paint_line(
                 buffer,
                 content_area,

@@ -438,6 +438,60 @@ pub(crate) fn stories() -> Vec<Story> {
             stack_justify_story,
         ),
         Story::new(
+            "section/quiet",
+            "Section quiet",
+            "Section",
+            "Quiet editorial header + description + body.",
+            48,
+            8,
+            section_quiet_story,
+        ),
+        Story::new(
+            "section/emphasized",
+            "Section emphasized",
+            "Section",
+            "Strong title + divider under header.",
+            48,
+            8,
+            section_emphasized_story,
+        ),
+        Story::new(
+            "section/collapsible",
+            "Section collapsible",
+            "Section",
+            "Disclosure header; body collapses.",
+            40,
+            8,
+            section_collapsible_story,
+        ),
+        Story::new(
+            "section/actions",
+            "Section header actions",
+            "Section",
+            "Status + actions; actions drop under narrow width.",
+            48,
+            7,
+            section_actions_story,
+        ),
+        Story::new(
+            "section/nested",
+            "Section nested",
+            "Section",
+            "Depth indent for nested groups.",
+            44,
+            10,
+            section_nested_story,
+        ),
+        Story::new(
+            "section/narrow",
+            "Section narrow",
+            "Section",
+            "Description and actions contract.",
+            18,
+            6,
+            section_narrow_story,
+        ),
+        Story::new(
             "panel/focused",
             "Focused panel",
             "Panel",
@@ -3599,6 +3653,124 @@ fn center_failure_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         .body_title("Timeout")
         .body_detail("upstream 30s")
         .paint(child, frame.buffer_mut(), None);
+}
+
+fn section_quiet_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Section;
+    let body = Section::new("Appearance", system)
+        .description("Theme and density")
+        .quiet()
+        .paint(area, frame.buffer_mut(), None);
+    if body.width > 2 && body.height > 0 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "Theme: phosphor",
+            usize::from(body.width),
+            system.style(Role::Text),
+        );
+    }
+}
+
+fn section_emphasized_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Section;
+    let body = Section::new("Security", system)
+        .description("Trust boundary")
+        .emphasized()
+        .paint(area, frame.buffer_mut(), None);
+    if body.width > 2 && body.height > 0 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "Require confirmation",
+            usize::from(body.width),
+            system.style(Role::Text),
+        );
+    }
+}
+
+fn section_collapsible_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Section, SectionState};
+    let mut state = SectionState::new();
+    state.set_focused(true);
+    let body = Section::new("Advanced", system)
+        .description("rarely needed")
+        .collapsible(true)
+        .emphasized()
+        .paint(area, frame.buffer_mut(), Some(&mut state));
+    if body.height > 0 && body.width > 2 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "debug logs: off",
+            usize::from(body.width),
+            system.style(Role::TextMuted),
+        );
+    }
+}
+
+fn section_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Section, SectionAction};
+    let actions = [
+        SectionAction::new("reset", "Reset"),
+        SectionAction::new("docs", "Docs"),
+    ];
+    let body = Section::new("Network", system)
+        .status("live")
+        .actions(&actions)
+        .variant(termrock::widgets::SectionVariant::Divided)
+        .paint(area, frame.buffer_mut(), None);
+    if body.width > 2 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "proxy: system",
+            usize::from(body.width),
+            system.style(Role::Text),
+        );
+    }
+}
+
+fn section_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Stack};
+    use termrock::widgets::Section;
+    let layout = Stack::new().gap(0).layout(
+        area,
+        &[FlexSize::Fixed(3), FlexSize::Weight(1)],
+    );
+    if let Some(top) = layout.get(0) {
+        let body = Section::new("Root", system)
+            .emphasized()
+            .paint(top, frame.buffer_mut(), None);
+        let _ = body;
+    }
+    if let Some(bottom) = layout.get(1) {
+        let body = Section::new("Nested", system)
+            .description("child group")
+            .depth(1)
+            .quiet()
+            .paint(bottom, frame.buffer_mut(), None);
+        if body.width > 2 {
+            frame.buffer_mut().set_stringn(
+                body.x,
+                body.y,
+                "item",
+                usize::from(body.width),
+                system.style(Role::TextMuted),
+            );
+        }
+    }
+}
+
+fn section_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Section, SectionAction};
+    let actions = [SectionAction::new("more", "More")];
+    let _ = Section::new("Title long", system)
+        .description("this drops first")
+        .status("n")
+        .actions(&actions)
+        .emphasized()
+        .paint(area, frame.buffer_mut(), None);
 }
 
 fn grid_columns_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

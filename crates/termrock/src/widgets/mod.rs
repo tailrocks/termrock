@@ -12,6 +12,7 @@ mod command_palette;
 mod completion_menu;
 mod composed_row;
 mod content;
+mod section;
 mod controls;
 mod data_table;
 mod data_view;
@@ -83,7 +84,10 @@ pub use completion_menu::{
 pub use composed_row::{ComposedRow, ComposedRowParts};
 pub use content::{
     Alert, AlertOutcome, AlertState, AlertTone, Callout, CalloutTone, Heading, HeadingLevel,
-    Paragraph, Section, SectionOutcome, SectionState,
+    Paragraph,
+};
+pub use section::{
+    Section, SectionAction, SectionOutcome, SectionParts, SectionState, SectionVariant,
 };
 pub use surface::{
     Surface, SurfaceElevation, SurfaceFill, SurfacePaintPlan, SurfaceParts, SurfaceRecipe,

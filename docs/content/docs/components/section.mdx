@@ -1,0 +1,99 @@
+---
+title: Section
+description: 'Editorial grouping without a full border — heading, description, status, actions, divider, nested depth.'
+---
+
+## Previews
+
+### `section/quiet`
+
+![Quiet section](/component-previews/section-quiet.svg)
+
+### `section/emphasized`
+
+![Emphasized section](/component-previews/section-emphasized.svg)
+
+### `section/collapsible`
+
+![Collapsible](/component-previews/section-collapsible.svg)
+
+### `section/actions`
+
+![Header actions](/component-previews/section-actions.svg)
+
+### `section/nested`
+
+![Nested](/component-previews/section-nested.svg)
+
+### `section/narrow`
+
+![Narrow](/component-previews/section-narrow.svg)
+
+## Anatomy
+
+`root` · `header` · `title` · optional `status` · optional `actions` · optional `description` · optional `divider` · `body`
+
+## Variants
+
+| Variant | Title | Divider |
+|---------|-------|---------|
+| Quiet (default) | normal/muted | no |
+| Emphasized | strong/bold | yes |
+| Divided | normal | yes |
+
+## Usage
+
+```rust
+use termrock::{style::DesignSystem, widgets::{Section, SectionAction, SectionState}};
+
+let system = DesignSystem::default();
+let body = Section::new("Appearance", &system)
+    .description("Theme and density")
+    .quiet()
+    .paint(area, buf, None);
+
+let actions = [SectionAction::new("reset", "Reset")];
+let mut state = SectionState::new();
+let body = Section::new("Advanced", &system)
+    .collapsible(true)
+    .actions(&actions)
+    .emphasized()
+    .paint(area, buf, Some(&mut state));
+```
+
+## Responsive
+
+| Width | Dropped |
+|-------|---------|
+| &lt; 28 | header actions |
+| &lt; 20 | status badge |
+| &lt; 16 | description |
+
+## Focus / keyboard
+
+Only **collapsible** sections claim header focus. Descendants in `body` keep focus otherwise.
+
+| Intent | Outcome |
+|--------|---------|
+| Activate / Toggle | `ToggleCollapsed` |
+| Expand / Collapse | force open/closed |
+| Mouse on action | `HeaderAction { id }` |
+
+## Nested sections
+
+```rust
+Section::new("Child", &system).depth(1).paint(child_area, buf, None);
+// indent = depth×2 + optional .indent(n)
+```
+
+## vs Panel / Heading
+
+| | Section | Panel | Heading |
+|--|---------|-------|---------|
+| Border box | no | yes | no |
+| Collapse | optional | optional | no |
+| Use | editorial groups | region chrome | title line only |
+
+## Migration
+
+See `migrations/0107-v0.13.0-section.md`.
