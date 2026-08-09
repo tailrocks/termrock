@@ -863,20 +863,59 @@ For each component, sections **1–24** follow the user’s list. Where behavior
 2. row + `disclosure` · indent  
 3–24. + Expand/Collapse intents; ascii disclosure; loading node status.
 
-## Table / DataTable
+## Table
 
-1. **Table:** columnar data (exists). **DataTable:** opinionated product table (sort headers, pin, density) built on Table.  
-2. `header` · `cell` · `row` · `scrollbar` · `sort_icon`  
-3. columns, rows, sort keys  
-4. selection, offset, sort request state  
-5. Table `plain`; DataTable `striped` · `compact`  
-6. column collapse right-first (existing).  
-7–18. as Table + recipes.  
-19. ObjectInspector uses DetailTable.  
-20. `SortRequested` · `Activated` · selection outcomes.  
-21. existing + `datatable/sort`.  
-22–23. sort request only (no sort exec).  
-24. visible window only.
+1. **Purpose:** Columnar data grid with borrowed cells, stable row IDs, and consumer-owned sort/filter.  
+2. **Anatomy:** `container` · `header_cell[]` · `sort_icon` · `body_row[]` · `cell[]` · `scrollbar_y` · optional `empty`  
+3. **Public properties:** `columns`, `rows`, `design`, selection mode, column width policies  
+4. **State:** Uncontrolled/controlled: `selected_row`, `offset`, `hover`, `focused`, pending `sort` request (not sorted data).  
+5. **Variants:** `plain` · `bordered`  
+6. **Sizes/density:** row height 1; density affects header pad and cell inset; columns collapse right-first at impossible widths.  
+7. **Visual states:** header sortable/sorted, row selected/hover/disabled, empty.  
+8. **Interaction states:** navigating, sorting-requested.  
+9. **Keyboard:** intents move/page/home/end; enter activate; optional sort key on header focus.  
+10. **Mouse:** click row; click header → sort request; wheel scroll.  
+11. **Focus:** table focus; optional header vs body region.  
+12. **Disabled:** rows skip selection/activate.  
+13. **Loading:** pending cells / skeleton rows (consumer projection).  
+14. **Error:** N/A (consumer empty/error surface).  
+15. **Narrow:** collapse columns right-first; keep leading identity column longest.  
+16. **Tiny:** first column + selected row only.  
+17. **Unicode/ASCII:** grapheme-safe cells; sort icons from glyph catalog.  
+18. **Colorless:** bold header sort; reverse selected row.  
+19. **Composition:** inside ScrollArea/Workspace; not nested tables.  
+20. **Outcomes:** `Changed` · `Activated(RowId)` · `SortRequested { column, direction }` · `Ignored`.  
+21. **Stories:** `table/basic`, `table/sorted`, `table/narrow`, `table/unicode`, `table/empty`.  
+22. **Snapshots:** sort icons, narrow collapse, empty.  
+23. **Interaction tests:** keyboard selection; header click only requests sort; disabled rows ignored.  
+24. **Perf:** paint O(visible rows × visible cols); no full-data sort in widget.
+
+## DataTable
+
+1. **Purpose:** Opinionated product table on Table—stripes, density presets, optional pin chrome, bulk selection affordances—still **no** data fetching/sorting execution.  
+2. **Anatomy:** Table anatomy + `toolbar` · `bulk_bar` · `pinned_shadow` · `density_hint`  
+3. **Public properties:** all Table props + `striped`, `show_toolbar`, `bulk_actions[]`, `pinned_leading_cols: usize`  
+4. **State:** Table state + `bulk_selection: Selection<RowId>` optional.  
+5. **Variants:** `default` · `striped` · `compact` (forces Dashboard density chrome)  
+6. **Sizes/density:** Comfortable/Compact/Dashboard map to cell pad and toolbar visibility.  
+7. **Visual states:** striped rows, bulk bar visible when selection non-empty, pinned edge cue.  
+8. **Interaction states:** bulk mode active.  
+9. **Keyboard:** Table intents + Space bulk-toggle when multi enabled; `Ctrl-A` request select-all **outcome only**.  
+10. **Mouse:** Table + toolbar button hits.  
+11. **Focus:** toolbar controls are separate tab stops; body uses table focus.  
+12. **Disabled:** bulk actions disabled when empty selection.  
+13. **Loading:** toolbar spinner; body skeleton rows.  
+14. **Error:** optional Callout above table (composed, not built-in fetch).  
+15. **Narrow:** hide toolbar labels→icons; collapse columns; bulk bar stacks.  
+16. **Tiny:** fall back to List projection guidance (document only) or single-column Table.  
+17. **Unicode/ASCII:** same as Table.  
+18. **Colorless:** stripe via dim/undim alternate, not color alone.  
+19. **Composition:** wraps Table; toolbar uses Button/IconButton.  
+20. **Outcomes:** Table outcomes ∪ `BulkAction { id }` ∪ `SelectAllRequested` ∪ `ClearBulk`.  
+21. **Stories:** `datatable/striped`, `datatable/bulk`, `datatable/narrow-toolbar`, `datatable/loading`.  
+22. **Snapshots:** stripe, bulk bar, pinned edge.  
+23. **Interaction tests:** bulk toggle; select-all is outcome not silent state fill of unloaded virtual data.  
+24. **Perf:** same as Table; bulk set ops O(selected), not O(total_rows) unless consumer provides.
 
 ## ObjectInspector
 
@@ -905,9 +944,96 @@ For each component, sections **1–24** follow the user’s list. Where behavior
 2. track/fill/label/%  
 3–24. existing + Spinner split for indeterminate-only.
 
-## Skeleton / EmptyState / LoadingView / ErrorView
+## Skeleton
 
-As current view_state widgets; map EmptyState/ErrorView/Skeleton/Spinner stories; colorless glyphs required.
+1. **Purpose:** Placeholder blocks while content loads (non-interactive).  
+2. **Anatomy:** `root` · `bone[]` (rows/rects)  
+3. **Public properties:** `rows`, `variant` (`text` · `card` · `table`), `design`  
+4. **State:** none (parent controls visibility).  
+5. **Variants:** `text` · `card` · `table`  
+6. **Sizes/density:** bone height/gap from density.  
+7. **Visual states:** pulse optional via Motion; static when Motion::Off.  
+8. **Interaction states:** N/A.  
+9–12. **Keyboard/Mouse/Focus/Disabled:** N/A (not focusable).  
+13. **Loading:** this component *is* the loading affordance.  
+14. **Error:** N/A (use ErrorView).  
+15. **Narrow:** fewer bones / shorter widths.  
+16. **Tiny:** single bone line.  
+17. **Unicode/ASCII:** fill `░`/`~`.  
+18. **Colorless:** dim fill only.  
+19. **Composition:** replaces List/Table body while pending.  
+20. **Outcomes:** none.  
+21. **Stories:** `skeleton/text`, `skeleton/table`, `skeleton/motion-off`.  
+22. **Snapshots:** variants; motion-off deterministic.  
+23. **Interaction tests:** N/A.  
+24. **Perf:** O(bones).
+
+## EmptyState
+
+1. **Purpose:** Centered zero-data explanation with optional recovery action slot.  
+2. **Anatomy:** `root` · `glyph` · `title` · `description` · `action` (optional Button)  
+3. **Public properties:** `title`, `description`, `glyph`, `action: Option<ActionId/label>`, `design`  
+4. **State:** none for content; action uses Button state if present.  
+5. **Variants:** `default` · `search` · `error-lite` (prefer ErrorView for hard failures)  
+6. **Sizes/density:** vertical pad from density; max description width ~48 cols.  
+7. **Visual states:** default; action hover/focus if present.  
+8. **Interaction states:** only via action Button.  
+9. **Keyboard:** Tab to action; Enter activates action.  
+10. **Mouse:** click action.  
+11. **Focus:** action focusable when present; else not a tab stop.  
+12. **Disabled:** action disabled if provided disabled.  
+13. **Loading:** N/A (use Skeleton/LoadingView).  
+14. **Error:** not primary error surface; may tone description muted.  
+15. **Narrow:** stack glyph/title/description/action; wrap description.  
+16. **Tiny:** glyph + title only.  
+17. **Unicode/ASCII:** glyph catalog (`○` / `o`).  
+18. **Colorless:** dim description; bold title.  
+19. **Composition:** inside Surface/Panel/List empty slot; action is Button.  
+20. **Outcomes:** `ActionActivated(Id)` if action present.  
+21. **Stories:** `empty-state/basic`, `empty-state/with-action`, `empty-state/narrow`, `empty-state/mono`.  
+22. **Snapshots:** with/without action; narrow.  
+23. **Interaction tests:** action Enter/click; no focus trap.  
+24. **Perf:** O(text).
+
+## LoadingView
+
+1. **Purpose:** Full-region loading message + Spinner (exists).  
+2. **Anatomy:** `root` · `spinner` · `label`  
+3. **Public properties:** `label`, `tick`/`FrameTick`, `design`  
+4. **State:** none (tick from app clock).  
+5. **Variants:** `block` · `inline`  
+6. **Sizes/density:** center in area; density pad.  
+7. **Visual states:** animating / static (motion off).  
+8–12. N/A interactive (unless future cancel button).  
+13. **Loading:** primary use.  
+14. N/A.  
+15. **Narrow:** label wrap/truncate.  
+16. **Tiny:** spinner only.  
+17–18. Spinner glyph rules.  
+19. Replaces Section body.  
+20. none (optional future `Cancel`).  
+21. `loading-view/basic`, `loading-view/motion-off`.  
+22–23. motion-off stable.  
+24. O(1).
+
+## ErrorView
+
+1. **Purpose:** Hard failure surface with glyph + title + detail (exists).  
+2. **Anatomy:** `root` · `glyph` · `title` · `detail` · `action`  
+3. **Public properties:** `title`, `detail`, `action?`, `design`  
+4. **State:** action only.  
+5. **Variants:** `default` · `compact`  
+6. **Sizes/density:** as EmptyState.  
+7. **Visual states:** danger tone.  
+8–12. as EmptyState action.  
+13. N/A.  
+14. **Error:** this *is* error UI.  
+15–18. danger glyph `✗`/`x`; mono bold.  
+19. Panel body; mutually exclusive with EmptyState.  
+20. `ActionActivated` · none.  
+21. `error-view/basic`, `error-view/with-retry`.  
+22–23. action tests.  
+24. O(text).
 
 ---
 
