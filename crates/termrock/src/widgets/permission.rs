@@ -323,8 +323,10 @@ impl PermissionAction {
 pub enum PermissionOutcome {
     /// Not handled.
     Ignored,
-    /// Focus moved among actions or scope.
-    SelectionChanged,
+    /// Action decision cursor moved (not scene focus).
+    ActionCursorMoved,
+    /// Grant scope cursor moved.
+    ScopeChanged,
     /// Details expanded/collapsed.
     DetailsToggled {
         /// Expanded?
@@ -831,8 +833,8 @@ pub struct PermissionActionRegion {
 pub struct PermissionPromptState {
     /// Queue of pending requests.
     pub queue: PermissionQueue,
-    /// Selected action.
-    selected: PermissionAction,
+    /// Action decision cursor (not scene surface focus).
+    action_cursor: PermissionAction,
     /// Selected grant scope.
     scope: PermissionScope,
     /// Details expanded.
@@ -845,6 +847,8 @@ pub struct PermissionPromptState {
     pub action_regions: Vec<PermissionActionRegion>,
     /// Available actions for current head (cached).
     available: Vec<PermissionAction>,
+    /// Host grants keyboard/pointer (overlay top).
+    accepts_input: bool,
 }
 
 impl Default for PermissionPromptState {
@@ -859,14 +863,26 @@ impl PermissionPromptState {
     pub fn new() -> Self {
         Self {
             queue: PermissionQueue::new(),
-            selected: PermissionAction::Deny,
+            action_cursor: PermissionAction::Deny,
             scope: PermissionScope::Once,
             details_expanded: false,
             mode: SurfaceMode::Navigate,
             edit_buffer: String::new(),
             action_regions: Vec::new(),
             available: vec![PermissionAction::Deny, PermissionAction::Allow],
+            accepts_input: true,
         }
+    }
+
+    /// Host input gate (overlay/scene ownership).
+    pub fn set_accepts_input(&mut self, accepts: bool) {
+        self.accepts_input = accepts;
+    }
+
+    /// Whether host granted input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
     }
 
     /// Enqueue a request and focus safe default for its risk.
@@ -883,9 +899,9 @@ impl PermissionPromptState {
     pub fn sync_from_head(&mut self) {
         if let Some(head) = self.queue.head() {
             self.available = head.actions_for_risk();
-            self.selected = head.risk.default_focus();
-            if !self.available.contains(&self.selected) {
-                self.selected = self
+            self.action_cursor = head.risk.default_focus();
+            if !self.available.contains(&self.action_cursor) {
+                self.action_cursor = self
                     .available
                     .first()
                     .copied()
@@ -897,15 +913,22 @@ impl PermissionPromptState {
             self.edit_buffer.clear();
         } else {
             self.available = vec![PermissionAction::Deny];
-            self.selected = PermissionAction::Deny;
+            self.action_cursor = PermissionAction::Deny;
         }
         self.action_regions.clear();
     }
 
-    /// Currently focused action.
+    /// Action decision cursor.
+    #[must_use]
+    pub fn action_cursor(&self) -> PermissionAction {
+        self.action_cursor
+    }
+
+    /// Deprecated name for [`Self::action_cursor`].
+    #[deprecated(note = "use action_cursor")]
     #[must_use]
     pub fn selected(&self) -> PermissionAction {
-        self.selected
+        self.action_cursor
     }
 
     /// Selected grant scope.
@@ -988,7 +1011,7 @@ impl PermissionPromptState {
 
     /// Keyboard routing.
     pub fn handle_key(&mut self, key: KeyEvent) -> PermissionOutcome {
-        if key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.kind == KeyEventKind::Release {
             return PermissionOutcome::Ignored;
         }
         let is_press = key.kind == KeyEventKind::Press;
@@ -998,6 +1021,14 @@ impl PermissionPromptState {
             SurfaceMode::EditCommand | SurfaceMode::EditPattern
         ) {
             return self.handle_edit_key(key, is_press);
+        }
+
+        // Intent-first nav/confirm/cancel/details; product chords below.
+        if let Some(intent) = crate::interaction::default_permission_intent(key) {
+            let out = self.handle_intent(intent);
+            if !matches!(out, PermissionOutcome::Ignored) {
+                return out;
+            }
         }
 
         let Some(head) = self.queue.head().cloned() else {
@@ -1036,7 +1067,7 @@ impl PermissionPromptState {
                 }
             }
             KeyCode::Char('n' | 'N') if is_press => {
-                self.selected = PermissionAction::Deny;
+                self.action_cursor = PermissionAction::Deny;
                 self.confirm(head.generation)
             }
             KeyCode::Enter if is_press => self.confirm(head.generation),
@@ -1062,6 +1093,10 @@ impl PermissionPromptState {
     pub fn handle_intent(&mut self, intent: crate::interaction::UiIntent) -> PermissionOutcome {
         use crate::interaction::{NavigationMove, UiIntent};
 
+        if !self.accepts_input {
+            return PermissionOutcome::Ignored;
+        }
+
         if matches!(
             self.mode,
             SurfaceMode::EditCommand | SurfaceMode::EditPattern
@@ -1077,7 +1112,7 @@ impl PermissionPromptState {
                         Some(h) => h.generation,
                         None => return PermissionOutcome::Ignored,
                     };
-                    self.selected = if self.mode == SurfaceMode::EditCommand {
+                    self.action_cursor = if self.mode == SurfaceMode::EditCommand {
                         PermissionAction::AllowEdited
                     } else {
                         PermissionAction::AllowRestricted
@@ -1099,18 +1134,18 @@ impl PermissionPromptState {
             UiIntent::Move(NavigationMove::Next) => self.move_action(1),
             UiIntent::Move(NavigationMove::First) => {
                 if let Some(first) = self.available.first().copied() {
-                    if first != self.selected {
-                        self.selected = first;
-                        return PermissionOutcome::SelectionChanged;
+                    if first != self.action_cursor {
+                        self.action_cursor = first;
+                        return PermissionOutcome::ActionCursorMoved;
                     }
                 }
                 PermissionOutcome::Ignored
             }
             UiIntent::Move(NavigationMove::Last) => {
                 if let Some(last) = self.available.last().copied() {
-                    if last != self.selected {
-                        self.selected = last;
-                        return PermissionOutcome::SelectionChanged;
+                    if last != self.action_cursor {
+                        self.action_cursor = last;
+                        return PermissionOutcome::ActionCursorMoved;
                     }
                 }
                 PermissionOutcome::Ignored
@@ -1165,7 +1200,7 @@ impl PermissionPromptState {
                     Some(h) => h.generation,
                     None => return PermissionOutcome::Ignored,
                 };
-                self.selected = if self.mode == SurfaceMode::EditCommand {
+                self.action_cursor = if self.mode == SurfaceMode::EditCommand {
                     PermissionAction::AllowEdited
                 } else {
                     PermissionAction::AllowRestricted
@@ -1195,16 +1230,16 @@ impl PermissionPromptState {
         let cur = self
             .available
             .iter()
-            .position(|a| *a == self.selected)
+            .position(|a| *a == self.action_cursor)
             .unwrap_or(0) as isize;
         let len = self.available.len() as isize;
         let next = (cur + delta).rem_euclid(len) as usize;
         let next_a = self.available[next];
-        if next_a == self.selected {
+        if next_a == self.action_cursor {
             return PermissionOutcome::Ignored;
         }
-        self.selected = next_a;
-        PermissionOutcome::SelectionChanged
+        self.action_cursor = next_a;
+        PermissionOutcome::ActionCursorMoved
     }
 
     fn move_scope(&mut self, delta: isize) -> PermissionOutcome {
@@ -1219,7 +1254,7 @@ impl PermissionPromptState {
             return PermissionOutcome::Ignored;
         }
         self.scope = next_s;
-        PermissionOutcome::SelectionChanged
+        PermissionOutcome::ScopeChanged
     }
 
     fn confirm(&mut self, generation: u64) -> PermissionOutcome {
@@ -1227,7 +1262,7 @@ impl PermissionPromptState {
     }
 
     fn confirm_with_edit(&mut self, generation: u64, edited: Option<String>) -> PermissionOutcome {
-        if self.selected == PermissionAction::InspectDetails {
+        if self.action_cursor == PermissionAction::InspectDetails {
             self.details_expanded = !self.details_expanded;
             return PermissionOutcome::DetailsToggled {
                 expanded: self.details_expanded,
@@ -1236,7 +1271,7 @@ impl PermissionPromptState {
         if !self.queue.is_live(generation) {
             return PermissionOutcome::StaleIgnored { generation };
         }
-        let action = self.selected;
+        let action = self.action_cursor;
         let scope = self.scope;
         let request_id = self.queue.head().map(|r| r.id.clone()).unwrap_or_default();
         match self
@@ -1259,6 +1294,9 @@ impl PermissionPromptState {
 
     /// Mouse against last action regions.
     pub fn handle_mouse(&mut self, event: MouseEvent) -> PermissionOutcome {
+        if !self.accepts_input {
+            return PermissionOutcome::Ignored;
+        }
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 let Some(region) = self
@@ -1269,7 +1307,7 @@ impl PermissionPromptState {
                 else {
                     return PermissionOutcome::Ignored;
                 };
-                self.selected = region.action;
+                self.action_cursor = region.action;
                 let generation = match self.head_generation() {
                     Some(g) => g,
                     None => return PermissionOutcome::Ignored,
@@ -1285,11 +1323,11 @@ impl PermissionPromptState {
                 else {
                     return PermissionOutcome::Ignored;
                 };
-                if region.action == self.selected {
+                if region.action == self.action_cursor {
                     return PermissionOutcome::Ignored;
                 }
-                self.selected = region.action;
-                PermissionOutcome::SelectionChanged
+                self.action_cursor = region.action;
+                PermissionOutcome::ActionCursorMoved
             }
             _ => PermissionOutcome::Ignored,
         }
@@ -1304,6 +1342,10 @@ pub struct PermissionPrompt<'a> {
     system: &'a DesignSystem,
     /// Use ASCII risk markers.
     ascii: bool,
+    /// Reduced-color paint.
+    colorless: bool,
+    /// Scene/overlay surface focus chrome.
+    focused: bool,
 }
 
 impl<'a> PermissionPrompt<'a> {
@@ -1313,6 +1355,8 @@ impl<'a> PermissionPrompt<'a> {
         Self {
             system,
             ascii: false,
+            colorless: false,
+            focused: true,
         }
     }
 
@@ -1320,6 +1364,20 @@ impl<'a> PermissionPrompt<'a> {
     #[must_use]
     pub const fn ascii(mut self, ascii: bool) -> Self {
         self.ascii = ascii;
+        self
+    }
+
+    /// Reduced-color paint (non-color risk still has glyphs).
+    #[must_use]
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
+
+    /// Surface focus chrome (action cursor is separate).
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
         self
     }
 }
@@ -1333,17 +1391,24 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             return;
         }
         let tokens = self.system.clone().density(Density::Compact);
+        let surface = self.focused && state.accepts_input();
         let Some(req) = state.queue.head() else {
             let panel = Panel::new(&tokens)
                 .title("Permission")
-                .emphasis(PanelChrome::Normal);
+                .emphasis(if surface {
+                    PanelChrome::Focused
+                } else {
+                    PanelChrome::Normal
+                });
             Widget::render(&panel, area, buffer);
             let inner = panel.inner(area);
             if !inner.is_empty() {
+                let mark = if self.ascii { "[ ] " } else { "∅ " };
+                let msg = format!("{mark}No pending permissions");
                 buffer.set_stringn(
                     inner.x,
                     inner.y,
-                    "No pending permissions",
+                    &take_display_cols(&msg, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1369,8 +1434,10 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         );
         let emphasis = if risk.is_destructive() {
             PanelChrome::Danger
-        } else {
+        } else if surface {
             PanelChrome::Focused
+        } else {
+            PanelChrome::Normal
         };
         let panel = Panel::new(&tokens).title(title.as_str()).emphasis(emphasis);
         let inner = panel.inner(area);
@@ -1517,30 +1584,91 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             y = y.saturating_add(1);
         }
 
-        // Actions row on last line
+        // Actions on last line(s); narrow stacks vertically when width tight.
+        let narrow = area.width < 36;
         if y < inner.bottom() || inner.height >= 1 {
-            let action_y = inner.bottom().saturating_sub(1).max(inner.y);
-            let mut x = inner.x;
-            for action in &state.available {
-                let label = format!(" {} ", action.label());
-                let width = (display_cols(&label) as u16).max(1);
-                if x.saturating_add(width) > inner.right() {
-                    break;
+            let action_rows = if narrow {
+                (state.available.len() as u16)
+                    .min(
+                        inner
+                            .height
+                            .saturating_sub(y.saturating_sub(inner.y))
+                            .max(1),
+                    )
+                    .max(1)
+            } else {
+                1
+            };
+            let start_y = inner.bottom().saturating_sub(action_rows).max(inner.y);
+            if narrow && action_rows > 1 {
+                let mut ay = start_y;
+                for action in &state.available {
+                    if ay >= inner.bottom() {
+                        break;
+                    }
+                    let on_cursor = *action == state.action_cursor();
+                    let mark = if on_cursor {
+                        if self.ascii { "> " } else { "› " }
+                    } else {
+                        "  "
+                    };
+                    let label = format!("{mark}{}", action.label());
+                    let rect = Rect::new(inner.x, ay, inner.width, 1);
+                    let style = if on_cursor && surface {
+                        self.system.style(Role::ActionFocused)
+                    } else if on_cursor {
+                        self.system.style(Role::TextStrong)
+                    } else if action.grants() && risk.is_destructive() {
+                        self.system.style(Role::Danger)
+                    } else {
+                        self.system.style(Role::Text)
+                    };
+                    paint_line(
+                        buffer,
+                        rect.x,
+                        rect.y,
+                        usize::from(rect.width),
+                        &label,
+                        style,
+                    );
+                    state.action_regions.push(PermissionActionRegion {
+                        action: *action,
+                        area: rect,
+                    });
+                    ay = ay.saturating_add(1);
                 }
-                let rect = Rect::new(x, action_y, width, 1);
-                let style = if *action == state.selected {
-                    self.system.style(Role::Selection)
-                } else if action.grants() && risk.is_destructive() {
-                    self.system.style(Role::Danger)
-                } else {
-                    self.system.style(Role::Text)
-                };
-                buffer.set_stringn(rect.x, rect.y, &label, usize::from(rect.width), style);
-                state.action_regions.push(PermissionActionRegion {
-                    action: *action,
-                    area: rect,
-                });
-                x = x.saturating_add(width.saturating_add(1));
+            } else {
+                let action_y = start_y;
+                let mut x = inner.x;
+                for action in &state.available {
+                    let on_cursor = *action == state.action_cursor();
+                    let mark = if on_cursor {
+                        if self.ascii { ">" } else { "›" }
+                    } else {
+                        " "
+                    };
+                    let label = format!("{mark}{} ", action.label());
+                    let width = (display_cols(&label) as u16).max(1);
+                    if x.saturating_add(width) > inner.right() {
+                        break;
+                    }
+                    let rect = Rect::new(x, action_y, width, 1);
+                    let style = if on_cursor && surface {
+                        self.system.style(Role::ActionFocused)
+                    } else if on_cursor {
+                        self.system.style(Role::TextStrong)
+                    } else if action.grants() && risk.is_destructive() {
+                        self.system.style(Role::Danger)
+                    } else {
+                        self.system.style(Role::Text)
+                    };
+                    buffer.set_stringn(rect.x, rect.y, &label, usize::from(rect.width), style);
+                    state.action_regions.push(PermissionActionRegion {
+                        action: *action,
+                        area: rect,
+                    });
+                    x = x.saturating_add(width.saturating_add(1));
+                }
             }
         }
     }
@@ -1616,12 +1744,49 @@ mod tests {
     }
 
     #[test]
+    fn accepts_input_gate_blocks_keys() {
+        let mut state = PermissionPromptState::new();
+        state.enqueue(destructive_shell());
+        state.set_accepts_input(false);
+        assert!(matches!(
+            state.handle_key(press(KeyCode::Enter)),
+            PermissionOutcome::Ignored
+        ));
+        assert!(!state.is_empty());
+    }
+
+    #[test]
+    fn action_cursor_moved_not_selection_changed() {
+        let mut state = PermissionPromptState::new();
+        state.enqueue(destructive_shell());
+        let out = state.handle_key(press(KeyCode::Right));
+        assert!(
+            matches!(out, PermissionOutcome::ActionCursorMoved),
+            "{out:?}"
+        );
+        let src = include_str!("permission.rs");
+        let head = src
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or(src)
+            .lines()
+            .filter(|l| {
+                let t = l.trim_start();
+                !t.starts_with("//") && !t.starts_with("//!")
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(!head.contains("SelectionChanged"));
+        assert!(head.contains("ActionCursorMoved"));
+        assert!(head.contains("ScopeChanged"));
+    }
+
     #[test]
     fn handle_intent_activates_deny_by_default() {
         use crate::interaction::UiIntent;
         let mut state = PermissionPromptState::new();
         state.enqueue(destructive_shell());
-        assert!(!state.selected().grants());
+        assert!(!state.action_cursor().grants());
         let out = state.handle_intent(UiIntent::Activate);
         assert!(
             matches!(
@@ -1654,6 +1819,7 @@ mod tests {
         assert_eq!(default_permission_intent(press(KeyCode::Char('y'))), None);
     }
 
+    #[test]
     fn default_focus_is_never_allow() {
         for risk in [
             PermissionRisk::Low,
@@ -1672,8 +1838,8 @@ mod tests {
     fn enqueue_defaults_selection_to_deny() {
         let mut state = PermissionPromptState::new();
         state.enqueue(destructive_shell());
-        assert_eq!(state.selected(), PermissionAction::Deny);
-        assert!(!state.selected().grants());
+        assert_eq!(state.action_cursor(), PermissionAction::Deny);
+        assert!(!state.action_cursor().grants());
     }
 
     #[test]
@@ -1756,7 +1922,7 @@ mod tests {
         let _ = state.handle_key(press(KeyCode::Enter)); // deny first
         assert_eq!(state.queue.len(), 1);
         assert_eq!(state.queue.head().unwrap().id, "r3");
-        assert_eq!(state.selected(), PermissionAction::Deny);
+        assert_eq!(state.action_cursor(), PermissionAction::Deny);
     }
 
     #[test]
@@ -1950,7 +2116,7 @@ mod tests {
         let out = state.handle_key(press(KeyCode::Esc));
         assert_eq!(out, PermissionOutcome::EditCancelled);
         assert_eq!(state.queue.len(), 1);
-        assert_eq!(state.selected(), PermissionAction::Deny);
+        assert_eq!(state.action_cursor(), PermissionAction::Deny);
     }
 
     #[test]
@@ -1988,11 +2154,11 @@ mod tests {
         // Move to Allow (last in strip for low risk)
         for _ in 0..8 {
             let _ = state.handle_key(press(KeyCode::Right));
-            if state.selected() == PermissionAction::Allow {
+            if state.action_cursor() == PermissionAction::Allow {
                 break;
             }
         }
-        assert_eq!(state.selected(), PermissionAction::Allow);
+        assert_eq!(state.action_cursor(), PermissionAction::Allow);
         // Scope Once → Session → Project
         let _ = state.handle_key(press(KeyCode::Char(']')));
         let _ = state.handle_key(press(KeyCode::Char(']')));

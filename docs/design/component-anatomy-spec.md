@@ -1763,27 +1763,27 @@ Every component below uses sections **1–24**:
 
 ## PermissionPrompt
 
-1. **Purpose:** Risk-aware permission card; **no side effects** (ApprovalCard hardened).  
-2. **Anatomy:** `frame` · `risk_glyph` · `title` · `detail` · `decision_row`  
-3. **Public properties:** risk, title, detail, decisions set, `design`  
-4. **State:** **selected decision identity** (not raw index into allow-first array). Default by risk: **High → Deny**; Low/Medium → safest non-destructive documented default (Deny or Defer—not Allow).  
-5. **Variants:** `card` · `inline`  
-6. **Sizes/density:** full width; decisions wrap/stack.  
-7. **Visual states:** risk tones.  
-8. **Interaction states:** move decision · confirm.  
-9. **Keyboard:** Left/Right; Enter confirm; `n` Deny; `y` only if risk allows explicit allow shortcut; never silent allow on High default.  
-10. **Mouse:** click decision.  
-11. **Focus:** trap; initial focus = default decision.  
-12. **Disabled:** N/A.  
-13. **Loading:** N/A (decision is sync message).  
-14. **Error:** risk tone is not validation; invalid props refuse paint tests.  
-15. **Narrow:** stack decisions vertically.  
-16. **Tiny:** title + Deny/Allow only.  
-17. **Unicode/ASCII:** risk glyphs catalog.  
-18. **Colorless:** risk prefix always.  
-19. **Composition:** scene modal layer above workbench.  
-20. **Outcomes:** `Decided(ApprovalDecision)` only—consumer executes policy.  
-21. **Stories:** `permission-prompt/high-default-deny`, `permission-prompt/medium`, `permission-prompt/narrow`  
+1. **Purpose:** Risk-aware permission card; **no side effects**.  
+2. **Anatomy:** `frame` · `risk_glyph` · `provenance` · `detail` · `scope` · `decision_row`  
+3. **Public properties:** system, ascii, colorless, focused  
+4. **State:** queue + **action_cursor** (default Deny) + scope + accepts_input.  
+5. **Variants:** card via OverlayStack (Alert trap High/Critical).  
+6. **Sizes/density:** Compact density; dialog size clamp.  
+7. **Visual states:** risk panel; empty ∅; action cursor marks.  
+8. **Interaction states:** move action · scope · edit · confirm · cancel.  
+9. **Keyboard:** intent map + product `n`/`e`/`p`/`[]`; **no y grant**.  
+10. **Mouse:** hit regions; click selects/confirms per law.  
+11. **Focus:** surface accepts_input; action_cursor local; Esc one layer.  
+12. **Disabled:** accepts_input false.  
+13. **Loading:** N/A (sync decide).  
+14. **Error:** risk is presentation, not validation.  
+15. **Narrow:** vertical action stack.  
+16. **Tiny:** risk title + actions.  
+17. **Unicode/ASCII:** risk glyphs + ›/`>`.  
+18. **Colorless:** strong cursor; risk glyphs remain.  
+19. **Composition:** AgentWorkbench overlay; PromptComposer gate.  
+20. **Outcomes:** Decided / Cancelled / ActionCursorMoved / ScopeChanged / StaleIgnored / …  
+21. **Stories:** `permission-prompt/{basic,low-read,destructive-nested,egress,narrow,unicode}`  
 22. **Snapshots:** High default selection = Deny.  
 23. **Interaction tests:** Enter on High emits Deny if default; Left/Right bounds; Esc → Deny or Cancelled per scene.  
 24. **Perf:** O(1).

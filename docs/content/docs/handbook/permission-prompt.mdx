@@ -1,6 +1,6 @@
 ---
 title: PermissionPrompt
-description: Trust surface for agent tools — provenance, risk, scopes, and stale-safe queues.
+description: Trust surface for agent tools — provenance, risk, scopes, default-deny cursor, stale-safe queues.
 ---
 
 # PermissionPrompt
@@ -17,180 +17,52 @@ decisions that **never default to grant**.
 | Product settings toggles | Form / Switch |
 | Agent prompt input | [PromptComposer](/docs/handbook/prompt-composer) |
 
-## Installation
+## Focus law
 
-```toml
-termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
-```
+| Concern | Owner |
+|---------|--------|
+| Overlay trap (High/Critical) | OverlayStack AlertDialog |
+| Surface input | Host `set_accepts_input` when overlay top |
+| Action **cursor** | `action_cursor` (default Deny) |
+| Scope cursor | `scope` via `[` `]` |
 
-Design: `docs/design/permission-trust.md`. Overlay id: `PERMISSION_OVERLAY_ID`.
+Scene surface focus ≠ decision cursor.
 
-## Source files
+## Outcomes
 
-`PermissionPrompt`, `PermissionPromptState`, `PermissionRequest`,
-`PermissionQueue`, provenance / risk / scope / outcome types
+- `Ignored`
+- `ActionCursorMoved` / `ScopeChanged`
+- `DetailsToggled` / `EditStarted` / `EditChanged` / `EditCancelled`
+- `Decided { request_id, generation, action, scope, edited }`
+- `Cancelled` / `QueueChanged` / `StaleIgnored`
 
-## Basic example
+## Intents
 
-```rust
-use termrock::widgets::{
-    InitiatorKind, PermissionPromptState, PermissionProvenance, PermissionRequest,
-    PermissionRisk, ProvenanceHop,
-};
+`default_permission_intent` — arrows/Tab, Enter, Esc, `d` toggle details.
+**No `y` grant.** Product: `n` deny, `e`/`p` edit, `[`/`]` scope.
 
-let mut ui = PermissionPromptState::new();
-let req = PermissionRequest::new("r1", "bash", "workspace")
-    .risk(PermissionRisk::High)
-    .command("rm -rf build/")
-    .irreversible()
-    .provenance(
-        PermissionProvenance::main_agent("run", "main").push(ProvenanceHop::new(
-            InitiatorKind::Subagent,
-            "s1",
-            "reviewer",
-        )),
-    );
-let generation = ui.enqueue(req);
-assert!(ui.head_generation() == Some(generation));
-assert!(!ui.selected().grants());
-```
+## Non-color
 
-## Interactive example
-
-```rust
-use termrock::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
-    widgets::{
-        PermissionAction, PermissionOutcome, PermissionPromptState, PermissionRequest,
-        PermissionRisk,
-    },
-};
-
-let mut ui = PermissionPromptState::new();
-ui.enqueue(PermissionRequest::new("r1", "read", "src/lib.rs").risk(PermissionRisk::Low));
-// Default focus is Deny — Enter does not allow.
-let out = ui.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
-assert!(matches!(
-    out,
-    PermissionOutcome::Decided {
-        action: PermissionAction::Deny,
-        ..
-    }
-));
-```
-
-## Anatomy
-
-`risk title` · `provenance path` · `action → target` · `location` · `warning` ·
-`expect` · `prior grant` · `command/pattern` · `scope` · `actions` (**Deny first**)
-
-## Public API
-
-| API | Why |
-|-----|-----|
-| `enqueue` / queue | FIFO + generation stale protection |
-| `PermissionRequest` builders | Risk, egress, provenance, command |
-| `handle_key` / `handle_mouse` | Default-deny focus; `y` unbound |
-| `open_overlay` | Trap High/Critical; Dialog Low/Medium |
-| Scopes `[` `]` | Once / Session / Project / Always (consumer enforces) |
-
-## State ownership
-
-| TermRock | Consumer |
-|----------|----------|
-| Focus, queue order, audit buffer, chrome | Policy store, execution, Always persistence |
-| Generation checks | Async re-validation before side effects |
-
-## Typed outcomes
-
-`Decided { generation, action, scope, edited }` · `Cancelled` · `StaleIgnored` ·
-edit/detail toggles — **never** run the tool inside the widget.
-
-## Variants
-
-Risk Low→Critical · scopes · AllowEdited / AllowRestricted · InspectDetails.
-
-## Sizes
-
-Card / overlay dialog; narrow stacks actions. Tiny: risk + Deny/Allow minimum.
-
-## Density
-
-Compact compresses provenance; path must remain readable.
-
-## Keyboard
-
-Arrows/Tab actions · `[`/`]` scope · Enter confirm · Esc cancel head · `n` Deny ·
-`e`/`p` edit · **`y` not bound**.
-
-## Mouse
-
-Hover selects action; click confirms. Outside-click = dismiss policy (gate cancel
-on host for dismissible peels).
-
-## Focus
-
-Default **Deny** (or non-grant). High/Critical Trap: Esc → widget Cancelled.
+- Risk glyphs: `i`/`!`/`!!`/`X` (ASCII) or unicode
+- Action cursor: `›` / `>`
+- Empty: `∅` / `[ ]`
+- Danger panel chrome for High/Critical
 
 ## Responsive
 
-Stack warning + actions; collapse details by default on narrow.
+| Width | Layout |
+|-------|--------|
+| ≥ 36 | Horizontal action strip |
+| &lt; 36 | Vertical action stack |
+| Tiny height | Risk title + actions first |
 
-## Accessibility / colorless
+## Safety
 
-Risk glyphs `i`/`!`/`!!`/`X` + labels; DATA EGRESS / DESTRUCTIVE text banners.
-
-## Unicode
-
-Command previews grapheme-safe; prefer ASCII for action labels on Minimal.
-
-## Composition
-
-AgentWorkbench OverlayStack · ToolCallCard waiting state · PromptComposer blur.
-
-## Theming
-
-Danger/Warning roles for risk; never grant-only green success styling.
-
-## Custom recipe
-
-```rust
-// High risk → actions_for_risk puts Deny first and Allow last.
-use termrock::widgets::{PermissionRequest, PermissionRisk};
-let req = PermissionRequest::new("x", "bash", ".").risk(PermissionRisk::High);
-assert!(req.actions_for_risk()[0].label() == "Deny");
-```
-
-## Common mistakes
-
-- Legacy ApprovalCard / PromptBox (removed).  
-- Ignoring `StaleIgnored` after async.  
-- Default focus on Allow.  
-- Silent overlay dismiss without gate-cancel.
-
-## Performance
-
-One head at a time; queue is light. Don’t block UI thread on tool execution.
-
-## Testing
-
-- Stories: `permission-prompt/basic`, `low-read`, `destructive-nested`, `egress`  
-- `documentation_examples::handbook_permission_prompt_example`  
-- Unit: default deny, nested provenance, stale queue  
-
-## Migration
-
-`migrations/0046` permission surface; agent ban of ApprovalCard (termrock-agent KD-25).
+- Default cursor **Deny** for Low/Medium/High/Critical
+- Enter on default → Deny, never Allow
+- Esc → cancel without grant + advance queue
+- Stale generation → `StaleIgnored` (no grant)
 
 ## Related
 
-PlanReview · QuestionFlow · PromptComposer · OverlayStack  
-
-## Complete application example
-
-```text
-tool needs gate → enqueue PermissionRequest → open overlay
-Enter on Deny → Decided(Deny) → advance queue / fail tool
-Allow path → re-check generation → execute → audit
-Esc / dismissible peel → Cancelled (host permission_gate_cancel)
-```
+PromptComposer · OverlayStack · migration `0077` · design `permission-prompt-premium.md`

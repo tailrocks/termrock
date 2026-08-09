@@ -10556,6 +10556,7 @@ impl<T> core::convert::From<T> for termrock::widgets::PermissionActionKind
 pub fn termrock::widgets::PermissionActionKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PermissionActionKind
 #[non_exhaustive] pub enum termrock::widgets::PermissionOutcome
+pub termrock::widgets::PermissionOutcome::ActionCursorMoved
 pub termrock::widgets::PermissionOutcome::Cancelled
 pub termrock::widgets::PermissionOutcome::Cancelled::generation: u64
 pub termrock::widgets::PermissionOutcome::Cancelled::request_id: core::option::Option<alloc::string::String>
@@ -10573,7 +10574,7 @@ pub termrock::widgets::PermissionOutcome::EditStarted
 pub termrock::widgets::PermissionOutcome::EditStarted::field: termrock::widgets::EditField
 pub termrock::widgets::PermissionOutcome::Ignored
 pub termrock::widgets::PermissionOutcome::QueueChanged
-pub termrock::widgets::PermissionOutcome::SelectionChanged
+pub termrock::widgets::PermissionOutcome::ScopeChanged
 pub termrock::widgets::PermissionOutcome::StaleIgnored
 pub termrock::widgets::PermissionOutcome::StaleIgnored::generation: u64
 impl core::clone::Clone for termrock::widgets::PermissionOutcome
@@ -18151,6 +18152,8 @@ impl<T> either::into_either::IntoEither for termrock::widgets::PermissionAuditEn
 pub struct termrock::widgets::PermissionPrompt<'a>
 impl<'a> termrock::widgets::PermissionPrompt<'a>
 pub const fn termrock::widgets::PermissionPrompt<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::PermissionPrompt<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::PermissionPrompt<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::PermissionPrompt<'a>::new(&'a termrock::style::DesignSystem) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PermissionPrompt<'_>
 pub type &termrock::widgets::PermissionPrompt<'_>::State = termrock::widgets::PermissionPromptState
@@ -18197,6 +18200,8 @@ pub struct termrock::widgets::PermissionPromptState
 pub termrock::widgets::PermissionPromptState::action_regions: alloc::vec::Vec<termrock::widgets::PermissionActionRegion>
 pub termrock::widgets::PermissionPromptState::queue: termrock::widgets::PermissionQueue
 impl termrock::widgets::PermissionPromptState
+pub const fn termrock::widgets::PermissionPromptState::accepts_input(&self) -> bool
+pub fn termrock::widgets::PermissionPromptState::action_cursor(&self) -> termrock::widgets::PermissionAction
 pub const fn termrock::widgets::PermissionPromptState::details_expanded(&self) -> bool
 pub fn termrock::widgets::PermissionPromptState::dismiss_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::PermissionPromptState::edit_buffer(&self) -> &str
@@ -18211,6 +18216,7 @@ pub fn termrock::widgets::PermissionPromptState::new() -> Self
 pub fn termrock::widgets::PermissionPromptState::open_overlay<FocusId: core::clone::Clone>(&self, &mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub const fn termrock::widgets::PermissionPromptState::scope(&self) -> termrock::widgets::PermissionScope
 pub fn termrock::widgets::PermissionPromptState::selected(&self) -> termrock::widgets::PermissionAction
+pub fn termrock::widgets::PermissionPromptState::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::PermissionPromptState::sync_from_head(&mut self)
 impl core::clone::Clone for termrock::widgets::PermissionPromptState
 pub fn termrock::widgets::PermissionPromptState::clone(&self) -> termrock::widgets::PermissionPromptState

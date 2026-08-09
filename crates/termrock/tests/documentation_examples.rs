@@ -217,7 +217,7 @@ fn handbook_permission_prompt_example() {
         );
     let generation = ui.enqueue(req);
     assert_eq!(ui.head_generation(), Some(generation));
-    assert!(!ui.selected().grants());
+    assert!(!ui.action_cursor().grants());
 
     let mut ui = PermissionPromptState::new();
     ui.enqueue(PermissionRequest::new("r1", "read", "src/lib.rs").risk(PermissionRisk::Low));
