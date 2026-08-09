@@ -1,29 +1,33 @@
 # Implementation plans
 
-Historical improve-skill plans **001–038** are complete (removed after verification).
+Historical plans **001–038** are complete (removed after verification).
 
 ## Design history
 
-- [`docs/design/shadcn-tui-direction.md`](../docs/design/shadcn-tui-direction.md) — landscape research (executed as 0029–0030)
-- [`docs/design/architecture-foundation.md`](../docs/design/architecture-foundation.md) — hybrid kernel + capability reduction (0031)
-- [`docs/design/shadcn-quality-roadmap.md`](../docs/design/shadcn-quality-roadmap.md) — **current** shadcn-quality recommendations (R1–R8)
+| Doc | Role |
+|-----|------|
+| [`docs/design/shadcn-tui-direction.md`](../docs/design/shadcn-tui-direction.md) | Landscape research (executed 0029–0030) |
+| [`docs/design/architecture-foundation.md`](../docs/design/architecture-foundation.md) | Hybrid kernel + progressive capability (0031) |
+| [`docs/design/shadcn-quality-roadmap.md`](../docs/design/shadcn-quality-roadmap.md) | Full R1–R8 recommendations |
 
-## Open executable plans
+## Open executable plans (do in order)
 
-| Plan | Title | Priority | Status | Depends |
-|------|-------|----------|--------|---------|
-| 039 | Fail-safe ApprovalCard + VirtualGrid contracts | P0 | TODO | — |
-| 040 | Unified InteractionScene (focus/hits/overlays/actions) | P0 | TODO | 039 |
+| Plan | Title | Priority | Status | Depends | Migration |
+|------|-------|----------|--------|---------|-----------|
+| **039** | Fail-safe ApprovalCard + VirtualGrid contracts | P0 | TODO | — | 0032 |
+| **040** | Unified InteractionScene | P0 | TODO | 039 | 0033 |
+| **041** | Variable-height streaming transcript engine | P1 | TODO | 040 | 0034 |
+| **042** | Responsive workspace tree (not flat rect recipes) | P1 | TODO | 040–041 | 0035 |
 
-## Recommended follow-ons (not yet planned files)
+## Follow-on plan IDs (not authored yet)
 
 | ID | Title | After |
 |----|-------|-------|
-| 041 | DesignTokens drive List/Panel paint + phosphor intent rarity | 040 |
-| 042 | Intent-ify Tree, Table, Picker, CompletionMenu | 040 |
-| 043 | Composed row / panel anatomy | 041 |
-| 044 | Agent workbench flagship stories | 041–042 |
-| 045 | Source registry CLI spike | 042+ |
-| 046 | Lookbook → Studio inspector | 040–041 |
+| 043 | DesignTokens drive List/Panel paint + phosphor “quiet canvas, bright intent” | 040 |
+| 044 | Intent-ify Tree, Table, Picker, CompletionMenu | 040 |
+| 045 | Composed row / panel anatomy | 043 |
+| 046 | Agent workbench flagship (scene + transcript + safe approval) | 039–041 |
+| 047 | Source registry CLI spike (`termrock add`) | 044+ |
+| 048 | Lookbook → Studio inspector (tokens, scene, capability) | 040–043 |
 
-Status values: `TODO` · `IN PROGRESS` · `DONE` · `BLOCKED` · `REJECTED`.
+Status: `TODO` · `IN PROGRESS` · `DONE` · `BLOCKED` · `REJECTED`.
