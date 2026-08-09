@@ -26,7 +26,7 @@ pin exact revisions and adapt to deliberate breaking changes using
 The repository is in its bootstrap extraction period. Consumers pin exact Git
 revisions; crates.io publication is not part of the initial migration.
 
-The **design** baseline is Rust 1.95 on Linux and macOS with truecolor terminals
+The **design** baseline is latest stable Rust (1.97.1+) on Linux and macOS with truecolor terminals
 in the Ghostty class. Optional requests cover OSC 8 hyperlinks, OSC 22 pointer
 shapes, and OSC 52 clipboard writes. **Runtime progressive enhancement** is
 supported via `ColorCapability` (including `NO_COLOR` → monochrome),
@@ -43,7 +43,7 @@ Default features are empty. Enable `crossterm` only for its event, backend, and 
 
 | Surface | Baseline |
 |---|---|
-| Rust | 1.95 minimum; 1.97 tested |
+| Rust | 1.97.1 (latest stable; toolchain-pinned) |
 | Operating systems | Linux and macOS |
 | Ratatui | `ratatui-core 0.1.2`, `ratatui-widgets 0.3.2`, optional `ratatui-crossterm 0.1.2` |
 | Crossterm | optional `0.29.0` adapter feature |

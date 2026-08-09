@@ -4,7 +4,7 @@
 //! Depends on the `termrock` kernel crate — not copied into this file.
 
 use termrock::input::KeyEvent;
-use termrock::style::DesignTokens;
+use termrock::style::DesignSystem;
 use termrock::widgets::{
     BlockChrome, ColumnModel, OpsDashboardOutcome, OpsDashboardState, OpsRegion,
 };
@@ -33,8 +33,8 @@ where
 
 /// Paint-time chrome handle (tokens only).
 #[must_use]
-pub fn chrome<'a>(tokens: &'a DesignTokens) -> BlockChrome<'a> {
-    BlockChrome::new(tokens)
+pub fn chrome<'a>(system: &'a DesignSystem) -> BlockChrome<'a> {
+    BlockChrome::new(system)
 }
 
 /// Default region for stories.
