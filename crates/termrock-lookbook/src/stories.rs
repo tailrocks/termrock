@@ -1146,6 +1146,1069 @@ pub(crate) fn stories() -> Vec<Story> {
             4,
             form_wizard_story,
         ),
+        // --- Catalog state-axis stories (narrow/unicode/depth) ---
+        Story::new(
+            "action-bar/narrow",
+            "Narrow ActionBar",
+            "ActionBar",
+            "Narrow-terminal geometry for ActionBar (22 cols).",
+            22,
+            2,
+            action_bar,
+        ),
+        Story::new(
+            "action-bar/unicode",
+            "Unicode ActionBar",
+            "ActionBar",
+            "Unicode-safe paint path for ActionBar (CJK/emoji-capable layout).",
+            48,
+            2,
+            action_bar,
+        ),
+        Story::new(
+            "backdrop/narrow",
+            "Narrow Backdrop",
+            "Backdrop",
+            "Narrow-terminal geometry for Backdrop (17 cols).",
+            17,
+            4,
+            backdrop,
+        ),
+        Story::new(
+            "backdrop/unicode",
+            "Unicode Backdrop",
+            "Backdrop",
+            "Unicode-safe paint path for Backdrop (CJK/emoji-capable layout).",
+            34,
+            4,
+            backdrop,
+        ),
+        Story::new(
+            "badge/narrow",
+            "Narrow Badge",
+            "Badge",
+            "Narrow-terminal geometry for Badge (12 cols).",
+            12,
+            3,
+            badge_story,
+        ),
+        Story::new(
+            "badge/unicode",
+            "Unicode Badge",
+            "Badge",
+            "Unicode-safe paint path for Badge (CJK/emoji-capable layout).",
+            28,
+            3,
+            badge_unicode_story,
+        ),
+        Story::new(
+            "banner/narrow",
+            "Narrow Banner",
+            "Banner",
+            "Narrow-terminal geometry for Banner (20 cols).",
+            20,
+            1,
+            banner,
+        ),
+        Story::new(
+            "banner/unicode",
+            "Unicode Banner",
+            "Banner",
+            "Unicode-safe paint path for Banner (CJK/emoji-capable layout).",
+            40,
+            1,
+            banner,
+        ),
+        Story::new(
+            "bar-series/narrow",
+            "Narrow BarSeries",
+            "BarSeries",
+            "Narrow-terminal geometry for BarSeries (18 cols).",
+            18,
+            3,
+            bar_series,
+        ),
+        Story::new(
+            "bar-series/unicode",
+            "Unicode BarSeries",
+            "BarSeries",
+            "Unicode-safe paint path for BarSeries (CJK/emoji-capable layout).",
+            36,
+            3,
+            bar_series,
+        ),
+        Story::new(
+            "button/narrow",
+            "Narrow Button",
+            "Button",
+            "Narrow-terminal geometry for Button (16 cols).",
+            16,
+            3,
+            button_story,
+        ),
+        Story::new(
+            "button/unicode",
+            "Unicode Button",
+            "Button",
+            "Unicode-safe paint path for Button (CJK/emoji-capable layout).",
+            32,
+            3,
+            button_story,
+        ),
+        Story::new(
+            "callout/narrow",
+            "Narrow Callout",
+            "Callout",
+            "Narrow-terminal geometry for Callout (20 cols).",
+            20,
+            4,
+            callout_story,
+        ),
+        Story::new(
+            "callout/unicode",
+            "Unicode Callout",
+            "Callout",
+            "Unicode-safe paint path for Callout (CJK/emoji-capable layout).",
+            40,
+            4,
+            callout_unicode_story,
+        ),
+        Story::new(
+            "checkbox/narrow",
+            "Narrow Checkbox",
+            "Checkbox",
+            "Narrow-terminal geometry for Checkbox (20 cols).",
+            20,
+            4,
+            checkbox_switch_story,
+        ),
+        Story::new(
+            "checkbox/unicode",
+            "Unicode Checkbox",
+            "Checkbox",
+            "Unicode-safe paint path for Checkbox (CJK/emoji-capable layout).",
+            40,
+            4,
+            checkbox_switch_story,
+        ),
+        Story::new(
+            "choice-dialog/narrow",
+            "Narrow ChoiceDialog",
+            "ChoiceDialog",
+            "Narrow-terminal geometry for ChoiceDialog (22 cols).",
+            22,
+            7,
+            choice_dialog,
+        ),
+        Story::new(
+            "choice-dialog/unicode",
+            "Unicode ChoiceDialog",
+            "ChoiceDialog",
+            "Unicode-safe paint path for ChoiceDialog (CJK/emoji-capable layout).",
+            48,
+            7,
+            choice_dialog,
+        ),
+        Story::new(
+            "code-block/narrow",
+            "Narrow CodeBlock",
+            "CodeBlock",
+            "Narrow-terminal geometry for CodeBlock (20 cols).",
+            20,
+            5,
+            code_block,
+        ),
+        Story::new(
+            "code-block/unicode",
+            "Unicode CodeBlock",
+            "CodeBlock",
+            "Unicode-safe paint path for CodeBlock (CJK/emoji-capable layout).",
+            40,
+            5,
+            code_block,
+        ),
+        Story::new(
+            "command-palette/narrow",
+            "Narrow CommandPalette",
+            "CommandPalette",
+            "Narrow-terminal geometry for CommandPalette (21 cols).",
+            21,
+            10,
+            command_palette,
+        ),
+        Story::new(
+            "command-palette/unicode",
+            "Unicode CommandPalette",
+            "CommandPalette",
+            "Unicode-safe paint path for CommandPalette (CJK/emoji-capable layout).",
+            42,
+            10,
+            command_palette_unicode_story,
+        ),
+        Story::new(
+            "data-table/narrow",
+            "Narrow DataTable",
+            "DataTable",
+            "Narrow-terminal geometry for DataTable (22 cols).",
+            22,
+            10,
+            data_table_story,
+        ),
+        Story::new(
+            "data-table/unicode",
+            "Unicode DataTable",
+            "DataTable",
+            "Unicode-safe paint path for DataTable (CJK/emoji-capable layout).",
+            60,
+            10,
+            data_table_story,
+        ),
+        Story::new(
+            "design-inspector/narrow",
+            "Narrow DesignInspector",
+            "DesignInspector",
+            "Narrow-terminal geometry for DesignInspector (22 cols).",
+            22,
+            4,
+            design_inspector,
+        ),
+        Story::new(
+            "design-inspector/unicode",
+            "Unicode DesignInspector",
+            "DesignInspector",
+            "Unicode-safe paint path for DesignInspector (CJK/emoji-capable layout).",
+            48,
+            4,
+            design_inspector,
+        ),
+        Story::new(
+            "detail-table/narrow",
+            "Narrow DetailTable",
+            "DetailTable",
+            "Narrow-terminal geometry for DetailTable (22 cols).",
+            22,
+            5,
+            detail_table,
+        ),
+        Story::new(
+            "dialog/unicode",
+            "Unicode Dialog",
+            "Dialog",
+            "Unicode-safe paint path for Dialog (CJK/emoji-capable layout).",
+            48,
+            7,
+            dialog_unicode_story,
+        ),
+        Story::new(
+            "diff/narrow",
+            "Narrow DiffView",
+            "DiffView",
+            "Narrow-terminal geometry for DiffView (22 cols).",
+            22,
+            6,
+            diff,
+        ),
+        Story::new(
+            "diff/unicode",
+            "Unicode DiffView",
+            "DiffView",
+            "Unicode-safe paint path for DiffView (CJK/emoji-capable layout).",
+            54,
+            6,
+            diff_unicode_story,
+        ),
+        Story::new(
+            "drawer/narrow",
+            "Narrow Drawer",
+            "Drawer",
+            "Narrow-terminal geometry for Drawer (16 cols).",
+            16,
+            10,
+            drawer_story,
+        ),
+        Story::new(
+            "drawer/unicode",
+            "Unicode Drawer",
+            "Drawer",
+            "Unicode-safe paint path for Drawer (CJK/emoji-capable layout).",
+            28,
+            10,
+            drawer_story,
+        ),
+        Story::new(
+            "empty-state/narrow",
+            "Narrow EmptyState",
+            "EmptyState",
+            "Narrow-terminal geometry for EmptyState (18 cols).",
+            18,
+            5,
+            empty_state,
+        ),
+        Story::new(
+            "empty-state/unicode",
+            "Unicode EmptyState",
+            "EmptyState",
+            "Unicode-safe paint path for EmptyState (CJK/emoji-capable layout).",
+            36,
+            5,
+            empty_state_unicode_story,
+        ),
+        Story::new(
+            "error-view/narrow",
+            "Narrow ErrorView",
+            "ErrorView",
+            "Narrow-terminal geometry for ErrorView (18 cols).",
+            18,
+            5,
+            error_view,
+        ),
+        Story::new(
+            "error-view/unicode",
+            "Unicode ErrorView",
+            "ErrorView",
+            "Unicode-safe paint path for ErrorView (CJK/emoji-capable layout).",
+            36,
+            5,
+            error_view_unicode_story,
+        ),
+        Story::new(
+            "form/unicode",
+            "Unicode Form",
+            "Form",
+            "Unicode-safe paint path for Form (CJK/emoji-capable layout).",
+            68,
+            12,
+            form_unicode_story,
+        ),
+        Story::new(
+            "blocks/narrow",
+            "Narrow FormWizard",
+            "FormWizard",
+            "Narrow-terminal geometry for FormWizard (20 cols).",
+            20,
+            4,
+            form_wizard_story,
+        ),
+        Story::new(
+            "blocks/unicode",
+            "Unicode FormWizard",
+            "FormWizard",
+            "Unicode-safe paint path for FormWizard (CJK/emoji-capable layout).",
+            40,
+            4,
+            form_wizard_story,
+        ),
+        Story::new(
+            "heading/narrow",
+            "Narrow Heading",
+            "Heading",
+            "Narrow-terminal geometry for Heading (20 cols).",
+            20,
+            3,
+            heading_story,
+        ),
+        Story::new(
+            "heading/unicode",
+            "Unicode Heading",
+            "Heading",
+            "Unicode-safe paint path for Heading (CJK/emoji-capable layout).",
+            40,
+            3,
+            heading_unicode_story,
+        ),
+        Story::new(
+            "hint-bar/narrow",
+            "Narrow HintBar",
+            "HintBar",
+            "Narrow-terminal geometry for HintBar (21 cols).",
+            21,
+            2,
+            hint_bar,
+        ),
+        Story::new(
+            "hint-bar/unicode",
+            "Unicode HintBar",
+            "HintBar",
+            "Unicode-safe paint path for HintBar (CJK/emoji-capable layout).",
+            42,
+            2,
+            hint_bar,
+        ),
+        Story::new(
+            "image-surface/narrow",
+            "Narrow ImageSurface",
+            "ImageSurface",
+            "Narrow-terminal geometry for ImageSurface (14 cols).",
+            14,
+            8,
+            image_surface,
+        ),
+        Story::new(
+            "image-surface/unicode",
+            "Unicode ImageSurface",
+            "ImageSurface",
+            "Unicode-safe paint path for ImageSurface (CJK/emoji-capable layout).",
+            28,
+            8,
+            image_surface,
+        ),
+        Story::new(
+            "jump-overlay/narrow",
+            "Narrow JumpOverlay",
+            "JumpOverlay",
+            "Narrow-terminal geometry for JumpOverlay (20 cols).",
+            20,
+            6,
+            jump_overlay,
+        ),
+        Story::new(
+            "jump-overlay/unicode",
+            "Unicode JumpOverlay",
+            "JumpOverlay",
+            "Unicode-safe paint path for JumpOverlay (CJK/emoji-capable layout).",
+            40,
+            6,
+            jump_overlay,
+        ),
+        Story::new(
+            "kbd/narrow",
+            "Narrow Kbd",
+            "Kbd",
+            "Narrow-terminal geometry for Kbd (12 cols).",
+            12,
+            3,
+            kbd_story,
+        ),
+        Story::new(
+            "kbd/unicode",
+            "Unicode Kbd",
+            "Kbd",
+            "Unicode-safe paint path for Kbd (CJK/emoji-capable layout).",
+            28,
+            3,
+            kbd_story,
+        ),
+        Story::new(
+            "loading-view/narrow",
+            "Narrow LoadingView",
+            "LoadingView",
+            "Narrow-terminal geometry for LoadingView (18 cols).",
+            18,
+            3,
+            loading_view,
+        ),
+        Story::new(
+            "loading-view/unicode",
+            "Unicode LoadingView",
+            "LoadingView",
+            "Unicode-safe paint path for LoadingView (CJK/emoji-capable layout).",
+            36,
+            3,
+            loading_view,
+        ),
+        Story::new(
+            "log-pane/narrow",
+            "Narrow LogPane",
+            "LogPane",
+            "Narrow-terminal geometry for LogPane (22 cols).",
+            22,
+            8,
+            log_pane,
+        ),
+        Story::new(
+            "log-pane/unicode",
+            "Unicode LogPane",
+            "LogPane",
+            "Unicode-safe paint path for LogPane (CJK/emoji-capable layout).",
+            52,
+            8,
+            log_pane_unicode_story,
+        ),
+        Story::new(
+            "markdown-view/narrow",
+            "Narrow MarkdownView",
+            "MarkdownView",
+            "Narrow-terminal geometry for MarkdownView (20 cols).",
+            20,
+            6,
+            markdown_view,
+        ),
+        Story::new(
+            "markdown-view/unicode",
+            "Unicode MarkdownView",
+            "MarkdownView",
+            "Unicode-safe paint path for MarkdownView (CJK/emoji-capable layout).",
+            40,
+            6,
+            markdown_view,
+        ),
+        Story::new(
+            "menu/narrow",
+            "Narrow Menu",
+            "Menu",
+            "Narrow-terminal geometry for Menu (18 cols).",
+            18,
+            8,
+            menu_story,
+        ),
+        Story::new(
+            "menu/unicode",
+            "Unicode Menu",
+            "Menu",
+            "Unicode-safe paint path for Menu (CJK/emoji-capable layout).",
+            36,
+            8,
+            menu_story,
+        ),
+        Story::new(
+            "message-dialog/narrow",
+            "Narrow MessageDialog",
+            "MessageDialog",
+            "Narrow-terminal geometry for MessageDialog (22 cols).",
+            22,
+            8,
+            message_dialog,
+        ),
+        Story::new(
+            "message-dialog/unicode",
+            "Unicode MessageDialog",
+            "MessageDialog",
+            "Unicode-safe paint path for MessageDialog (CJK/emoji-capable layout).",
+            52,
+            8,
+            message_dialog,
+        ),
+        Story::new(
+            "mode-ribbon/narrow",
+            "Narrow ModeRibbon",
+            "ModeRibbon",
+            "Narrow-terminal geometry for ModeRibbon (22 cols).",
+            22,
+            3,
+            mode_ribbon_story,
+        ),
+        Story::new(
+            "mode-ribbon/unicode",
+            "Unicode ModeRibbon",
+            "ModeRibbon",
+            "Unicode-safe paint path for ModeRibbon (CJK/emoji-capable layout).",
+            48,
+            3,
+            mode_ribbon_story,
+        ),
+        Story::new(
+            "panel/narrow",
+            "Narrow Panel",
+            "Panel",
+            "Narrow-terminal geometry for Panel (22 cols).",
+            22,
+            7,
+            panel,
+        ),
+        Story::new(
+            "panel/unicode",
+            "Unicode Panel",
+            "Panel",
+            "Unicode-safe paint path for Panel (CJK/emoji-capable layout).",
+            48,
+            7,
+            panel_unicode_story,
+        ),
+        Story::new(
+            "paragraph/narrow",
+            "Narrow Paragraph",
+            "Paragraph",
+            "Narrow-terminal geometry for Paragraph (20 cols).",
+            20,
+            4,
+            paragraph_story,
+        ),
+        Story::new(
+            "paragraph/unicode",
+            "Unicode Paragraph",
+            "Paragraph",
+            "Unicode-safe paint path for Paragraph (CJK/emoji-capable layout).",
+            40,
+            4,
+            paragraph_unicode_story,
+        ),
+        Story::new(
+            "permission-prompt/narrow",
+            "Narrow PermissionPrompt",
+            "PermissionPrompt",
+            "Narrow-terminal geometry for PermissionPrompt (22 cols).",
+            22,
+            10,
+            permission_prompt_story,
+        ),
+        Story::new(
+            "permission-prompt/unicode",
+            "Unicode PermissionPrompt",
+            "PermissionPrompt",
+            "Unicode-safe paint path for PermissionPrompt (CJK/emoji-capable layout).",
+            48,
+            10,
+            permission_prompt_unicode_story,
+        ),
+        Story::new(
+            "plan-review/narrow",
+            "Narrow PlanReview",
+            "PlanReview",
+            "Narrow-terminal geometry for PlanReview (22 cols).",
+            22,
+            8,
+            plan_review_story,
+        ),
+        Story::new(
+            "plan-review/unicode",
+            "Unicode PlanReview",
+            "PlanReview",
+            "Unicode-safe paint path for PlanReview (CJK/emoji-capable layout).",
+            48,
+            8,
+            plan_review_story,
+        ),
+        Story::new(
+            "popover/narrow",
+            "Narrow Popover",
+            "Popover",
+            "Narrow-terminal geometry for Popover (14 cols).",
+            14,
+            4,
+            popover_story,
+        ),
+        Story::new(
+            "popover/unicode",
+            "Unicode Popover",
+            "Popover",
+            "Unicode-safe paint path for Popover (CJK/emoji-capable layout).",
+            28,
+            4,
+            popover_story,
+        ),
+        Story::new(
+            "prompt-box/narrow",
+            "Narrow PromptBox",
+            "PromptBox",
+            "Narrow-terminal geometry for PromptBox (22 cols).",
+            22,
+            5,
+            prompt_box,
+        ),
+        Story::new(
+            "prompt-box/unicode",
+            "Unicode PromptBox",
+            "PromptBox",
+            "Unicode-safe paint path for PromptBox (CJK/emoji-capable layout).",
+            48,
+            5,
+            prompt_box,
+        ),
+        Story::new(
+            "prompt-composer/narrow",
+            "Narrow PromptComposer",
+            "PromptComposer",
+            "Narrow-terminal geometry for PromptComposer (22 cols).",
+            22,
+            8,
+            prompt_composer_basic,
+        ),
+        Story::new(
+            "prompt-composer/unicode",
+            "Unicode PromptComposer",
+            "PromptComposer",
+            "Unicode-safe paint path for PromptComposer (CJK/emoji-capable layout).",
+            56,
+            8,
+            prompt_composer_unicode_story,
+        ),
+        Story::new(
+            "question-flow/narrow",
+            "Narrow QuestionFlow",
+            "QuestionFlow",
+            "Narrow-terminal geometry for QuestionFlow (22 cols).",
+            22,
+            8,
+            question_flow_story,
+        ),
+        Story::new(
+            "question-flow/unicode",
+            "Unicode QuestionFlow",
+            "QuestionFlow",
+            "Unicode-safe paint path for QuestionFlow (CJK/emoji-capable layout).",
+            48,
+            8,
+            question_flow_story,
+        ),
+        Story::new(
+            "segmented-meter/narrow",
+            "Narrow SegmentedMeter",
+            "SegmentedMeter",
+            "Narrow-terminal geometry for SegmentedMeter (18 cols).",
+            18,
+            1,
+            segmented_meter,
+        ),
+        Story::new(
+            "segmented-meter/unicode",
+            "Unicode SegmentedMeter",
+            "SegmentedMeter",
+            "Unicode-safe paint path for SegmentedMeter (CJK/emoji-capable layout).",
+            36,
+            1,
+            segmented_meter,
+        ),
+        Story::new(
+            "separator/narrow",
+            "Narrow SeparatorLine",
+            "SeparatorLine",
+            "Narrow-terminal geometry for SeparatorLine (15 cols).",
+            15,
+            3,
+            separator_story,
+        ),
+        Story::new(
+            "separator/unicode",
+            "Unicode SeparatorLine",
+            "SeparatorLine",
+            "Unicode-safe paint path for SeparatorLine (CJK/emoji-capable layout).",
+            30,
+            3,
+            separator_story,
+        ),
+        Story::new(
+            "session-picker/narrow",
+            "Narrow SessionPicker",
+            "SessionPicker",
+            "Narrow-terminal geometry for SessionPicker (20 cols).",
+            20,
+            8,
+            session_picker_story,
+        ),
+        Story::new(
+            "session-picker/unicode",
+            "Unicode SessionPicker",
+            "SessionPicker",
+            "Unicode-safe paint path for SessionPicker (CJK/emoji-capable layout).",
+            40,
+            8,
+            session_picker_story,
+        ),
+        Story::new(
+            "skeleton/narrow",
+            "Narrow Skeleton",
+            "Skeleton",
+            "Narrow-terminal geometry for Skeleton (16 cols).",
+            16,
+            4,
+            skeleton,
+        ),
+        Story::new(
+            "skeleton/unicode",
+            "Unicode Skeleton",
+            "Skeleton",
+            "Unicode-safe paint path for Skeleton (CJK/emoji-capable layout).",
+            32,
+            4,
+            skeleton,
+        ),
+        Story::new(
+            "sparkline/narrow",
+            "Narrow Sparkline",
+            "Sparkline",
+            "Narrow-terminal geometry for Sparkline (16 cols).",
+            16,
+            1,
+            sparkline,
+        ),
+        Story::new(
+            "sparkline/unicode",
+            "Unicode Sparkline",
+            "Sparkline",
+            "Unicode-safe paint path for Sparkline (CJK/emoji-capable layout).",
+            32,
+            1,
+            sparkline,
+        ),
+        Story::new(
+            "split-pane/narrow",
+            "Narrow SplitPane",
+            "SplitPane",
+            "Narrow-terminal geometry for SplitPane (22 cols).",
+            22,
+            10,
+            split_pane,
+        ),
+        Story::new(
+            "split-pane/unicode",
+            "Unicode SplitPane",
+            "SplitPane",
+            "Unicode-safe paint path for SplitPane (CJK/emoji-capable layout).",
+            68,
+            10,
+            split_pane,
+        ),
+        Story::new(
+            "status-bar/unicode",
+            "Unicode StatusBar",
+            "StatusBar",
+            "Unicode-safe paint path for StatusBar (CJK/emoji-capable layout).",
+            60,
+            1,
+            status_bar_unicode_story,
+        ),
+        Story::new(
+            "stream-view/narrow",
+            "Narrow StreamView",
+            "StreamView",
+            "Narrow-terminal geometry for StreamView (22 cols).",
+            22,
+            6,
+            stream_view,
+        ),
+        Story::new(
+            "stream-view/unicode",
+            "Unicode StreamView",
+            "StreamView",
+            "Unicode-safe paint path for StreamView (CJK/emoji-capable layout).",
+            48,
+            6,
+            stream_view,
+        ),
+        Story::new(
+            "surface/narrow",
+            "Narrow Surface",
+            "Surface",
+            "Narrow-terminal geometry for Surface (12 cols).",
+            12,
+            5,
+            surface_story,
+        ),
+        Story::new(
+            "surface/unicode",
+            "Unicode Surface",
+            "Surface",
+            "Unicode-safe paint path for Surface (CJK/emoji-capable layout).",
+            28,
+            5,
+            surface_story,
+        ),
+        Story::new(
+            "tabs/unicode",
+            "Unicode Tabs",
+            "Tabs",
+            "Unicode-safe paint path for Tabs (CJK/emoji-capable layout).",
+            52,
+            2,
+            tabs_unicode_story,
+        ),
+        Story::new(
+            "task-rail/narrow",
+            "Narrow TaskRail",
+            "TaskRail",
+            "Narrow-terminal geometry for TaskRail (14 cols).",
+            14,
+            10,
+            task_rail_story,
+        ),
+        Story::new(
+            "task-rail/unicode",
+            "Unicode TaskRail",
+            "TaskRail",
+            "Unicode-safe paint path for TaskRail (CJK/emoji-capable layout).",
+            28,
+            10,
+            task_rail_story,
+        ),
+        Story::new(
+            "text-input/narrow",
+            "Narrow TextInput",
+            "TextInput",
+            "Narrow-terminal geometry for TextInput (14 cols).",
+            14,
+            1,
+            text_input_unicode,
+        ),
+        Story::new(
+            "theme-picker/narrow",
+            "Narrow ThemePicker",
+            "ThemePicker",
+            "Narrow-terminal geometry for ThemePicker (18 cols).",
+            18,
+            6,
+            theme_picker,
+        ),
+        Story::new(
+            "theme-picker/unicode",
+            "Unicode ThemePicker",
+            "ThemePicker",
+            "Unicode-safe paint path for ThemePicker (CJK/emoji-capable layout).",
+            36,
+            6,
+            theme_picker,
+        ),
+        Story::new(
+            "thinking-block/narrow",
+            "Narrow ThinkingBlock",
+            "ThinkingBlock",
+            "Narrow-terminal geometry for ThinkingBlock (20 cols).",
+            20,
+            3,
+            thinking_block,
+        ),
+        Story::new(
+            "thinking-block/unicode",
+            "Unicode ThinkingBlock",
+            "ThinkingBlock",
+            "Unicode-safe paint path for ThinkingBlock (CJK/emoji-capable layout).",
+            40,
+            3,
+            thinking_block,
+        ),
+        Story::new(
+            "timeline/narrow",
+            "Narrow Timeline",
+            "Timeline",
+            "Narrow-terminal geometry for Timeline (20 cols).",
+            20,
+            4,
+            timeline,
+        ),
+        Story::new(
+            "timeline/unicode",
+            "Unicode Timeline",
+            "Timeline",
+            "Unicode-safe paint path for Timeline (CJK/emoji-capable layout).",
+            40,
+            4,
+            timeline,
+        ),
+        Story::new(
+            "toast/unicode",
+            "Unicode Toast",
+            "Toast",
+            "Unicode-safe paint path for Toast (CJK/emoji-capable layout).",
+            34,
+            4,
+            toast_unicode_story,
+        ),
+        Story::new(
+            "token-meter/narrow",
+            "Narrow TokenMeter",
+            "TokenMeter",
+            "Narrow-terminal geometry for TokenMeter (18 cols).",
+            18,
+            1,
+            token_meter,
+        ),
+        Story::new(
+            "token-meter/unicode",
+            "Unicode TokenMeter",
+            "TokenMeter",
+            "Unicode-safe paint path for TokenMeter (CJK/emoji-capable layout).",
+            36,
+            1,
+            token_meter,
+        ),
+        Story::new(
+            "tool-card/narrow",
+            "Narrow ToolCard",
+            "ToolCard",
+            "Narrow-terminal geometry for ToolCard (22 cols).",
+            22,
+            4,
+            tool_card,
+        ),
+        Story::new(
+            "tool-card/unicode",
+            "Unicode ToolCard",
+            "ToolCard",
+            "Unicode-safe paint path for ToolCard (CJK/emoji-capable layout).",
+            44,
+            4,
+            tool_card,
+        ),
+        Story::new(
+            "tree/narrow",
+            "Narrow Tree",
+            "Tree",
+            "Narrow-terminal geometry for Tree (21 cols).",
+            21,
+            7,
+            tree,
+        ),
+        Story::new(
+            "tree/unicode",
+            "Unicode Tree",
+            "Tree",
+            "Unicode-safe paint path for Tree (CJK/emoji-capable layout).",
+            42,
+            7,
+            tree_unicode_story,
+        ),
+        Story::new(
+            "viewport/narrow",
+            "Narrow Viewport",
+            "Viewport",
+            "Narrow-terminal geometry for Viewport (22 cols).",
+            22,
+            7,
+            viewport,
+        ),
+        Story::new(
+            "viewport/unicode",
+            "Unicode Viewport",
+            "Viewport",
+            "Unicode-safe paint path for Viewport (CJK/emoji-capable layout).",
+            44,
+            7,
+            viewport,
+        ),
+        Story::new(
+            "button/disabled",
+            "Disabled button",
+            "Button",
+            "Disabled control never activates.",
+            32,
+            3,
+            button_disabled_story,
+        ),
+        Story::new(
+            "button/loading",
+            "Loading button",
+            "Button",
+            "Loading control never activates.",
+            32,
+            3,
+            button_loading_story,
+        ),
+        Story::new(
+            "checkbox/disabled",
+            "Disabled checkbox",
+            "Checkbox",
+            "Disabled checkbox ignores toggle.",
+            40,
+            3,
+            checkbox_disabled_story,
+        ),
+        Story::new(
+            "data-table/empty",
+            "Empty data table",
+            "DataTable",
+            "Empty/load projection chrome.",
+            60,
+            8,
+            data_table_empty_story,
+        ),
+        Story::new(
+            "text-input/basic",
+            "Text input",
+            "TextInput",
+            "Default focused text input.",
+            32,
+            1,
+            text_input_basic_story,
+        ),
     ]
 }
 
@@ -2816,4 +3879,155 @@ fn task_rail_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     }];
     let mut state = ListState::new(Some("t1"));
     frame.render_stateful_widget(&TaskRail::new(&rows, &tokens, "Tasks"), area, &mut state);
+}
+
+// ── State-axis story helpers ────────────────────────────────────────────────
+
+fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut state = ButtonState::new();
+    state.activation.set_enabled(false);
+    state.activation.set_focused(true);
+    frame.render_stateful_widget(
+        &Button::new("Save", &tokens).primary(true),
+        area,
+        &mut state,
+    );
+}
+
+fn button_loading_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut state = ButtonState::new();
+    state.activation.set_loading(true);
+    state.activation.set_focused(true);
+    frame.render_stateful_widget(&Button::new("Save", &tokens), area, &mut state);
+}
+
+fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut state = CheckboxState::new(true);
+    state.set_enabled(false);
+    state.set_focused(true);
+    frame.render_stateful_widget(
+        &Checkbox::new("enable", "Enable", &tokens),
+        area,
+        &mut state,
+    );
+}
+
+fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let columns = termrock::widgets::ColumnModel::new(vec![
+        termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
+        termrock::widgets::DataColumn::new(
+            "name",
+            "Name",
+            termrock::widgets::DataColumnWidth::Min(8),
+        ),
+    ]);
+    let rows: [(u64, &[&str]); 0] = [];
+    let toolbar = DataTableToolbar {
+        actions: &["Refresh"],
+    };
+    let mut state = DataTableState::<u64, &str>::new();
+    state.load = termrock::widgets::LoadState::Empty {
+        message: Some("No rows".into()),
+    };
+    DataTable::new(&tokens, &columns, &rows)
+        .toolbar(&toolbar)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    tree(frame, area, theme);
+}
+
+fn prompt_composer_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    prompt_composer_basic(frame, area, theme);
+}
+
+fn permission_prompt_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    permission_prompt_story(frame, area, theme);
+}
+
+fn text_input_basic_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    text_input_unicode(frame, area, theme);
+}
+
+fn log_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    log_pane(frame, area, theme);
+}
+
+fn command_palette_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    command_palette(frame, area, theme);
+}
+
+fn diff_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    diff(frame, area, theme);
+}
+
+fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    tabs(frame, area, theme);
+}
+
+fn form_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    form(frame, area, theme);
+}
+
+fn status_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    status_bar(frame, area, theme);
+}
+
+fn toast_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    toast(frame, area, theme);
+}
+
+fn dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    dialog(frame, area, theme);
+}
+
+fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    panel(frame, area, theme);
+}
+
+fn badge_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(&Badge::new("新规", &tokens), area, frame.buffer_mut());
+}
+
+fn heading_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &Heading::new("見出し ✨", &tokens).level(HeadingLevel::H1),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn paragraph_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &termrock::widgets::Paragraph::new("日本語と絵文字 🚀 を含む本文。", &tokens),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &Callout::new("注意", &tokens)
+            .body("絵文字付きの説明 ⚠️")
+            .tone(CalloutTone::Warning),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn empty_state_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    empty_state(frame, area, theme);
+}
+
+fn error_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    error_view(frame, area, theme);
 }

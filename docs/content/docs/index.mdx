@@ -1,29 +1,85 @@
 ---
-title: TermRock component catalog
-description: Product-neutral Ratatui foundations and widgets.
+title: TermRock
+description: Composable terminal UI components for Rust — browse the catalog with real TUI-matched previews.
 ---
 
-TermRock is a shared source of reusable UI capability for building terminal
-applications quickly. It exposes stable-ID widgets, backend-neutral input and
-interaction contracts, semantic themes, typed terminal requests, and optional
-Crossterm adapters.
+# TermRock
 
-Its direction is conceptually inspired by
-[shadcn/ui](https://ui.shadcn.com/docs) and the
-[shadcn/ui repository](https://github.com/shadcn-ui/ui): components are open,
-composable, adaptable, and presented with strong defaults. TermRock applies
-those principles to terminal constraints and Rust APIs; it does not mirror the
-React implementation.
+**TermRock is the ecosystem UI capability layer for building terminal interfaces
+quickly.** It is a Rust crate of product-neutral widgets, interaction kernels,
+and design tokens for [Ratatui](https://ratatui.rs/) apps — inspired by the open
+code and strong-default ideas of [shadcn/ui](https://ui.shadcn.com/docs), adapted
+to terminal geometry, focus, and Unicode safety.
 
-Rendering, layout, styles, focus, navigation, hit geometry, Unicode safety, and
-other product-neutral interaction behavior belong in TermRock. Consumers retain
-domain state and wording, effects, process policy, secrets, and executor choice.
-If a reusable capability is absent, extend TermRock instead of copying a local
-rendering body.
+## What you get
 
-The optional Crossterm `Session` owns raw mode, alternate screen, mouse and
-paste modes, line wrapping, cursor visibility, rollback, and idempotent
-restoration. Applications keep one session owner; widgets never manipulate
-terminal lifecycle directly.
+| Layer | Role |
+|-------|------|
+| **Widgets** | List, Table, Dialog, PromptComposer, PermissionPrompt, Tree, … with stable IDs and borrowed render data |
+| **Interaction** | `InteractionScene`, `OverlayStack`, `UiIntent`, keymaps — Esc law and focus traps |
+| **Design system** | Semantic `Role` palette, density, glyphs, recipes (phosphor default) |
+| **Lookbook** | Deterministic SVG previews of every catalog story — same paint path as the TUI CLI |
 
-Use `termrock-lookbook list --format json` to inspect stories, `render --out <dir>` to reproduce previews, and `check --dir <dir>` to verify committed previews.
+TermRock owns reusable rendering, layout, theme roles, focus/navigation, hit
+geometry, narrow-terminal behavior, and non-color cues. **Your app owns** domain
+state, wording, effects, secrets, process policy, and projections into widgets.
+
+## Browse the catalog
+
+1. **[Components](/docs/components)** — every public widget with **all lookbook
+   state previews** (basic, narrow, unicode, disabled, empty, … where applicable).
+2. **[Handbook](/docs/handbook)** — deeper guides for flagship surfaces.
+3. **[Interaction](/docs/interaction)** — scene, overlays, and session lifecycle.
+4. **[Quality & migrations](/docs/quality-migrations)** — contracts and breaking-change index.
+
+Previews on this site are **not mockups**. They are regenerated from:
+
+```bash
+cargo run -p termrock-lookbook -- render --out docs/public/component-previews
+cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+```
+
+That is the same renderer the interactive gallery CLI uses, so what you see in
+the docs matches what a terminal session paints for that story.
+
+## Quick start
+
+```toml
+# Cargo.toml — pin an exact git revision (API is pre-stable)
+termrock = { git = "https://github.com/tailrocks/termrock", rev = "…" }
+```
+
+```rust
+use termrock::style::DesignTokens;
+use termrock::widgets::{List, ListRow, ListState, RowRole};
+use ratatui_core::text::Line;
+
+let tokens = DesignTokens::default();
+let rows = [ListRow {
+    id: "a",
+    label: Line::from("Alpha"),
+    leading: None,
+    secondary: None,
+    badge: None,
+    shortcut: None,
+    trailing: None,
+    role: RowRole::Item,
+    enabled: true,
+    loading: false,
+}];
+let mut state = ListState::new(Some("a"));
+// List::new(&rows, &tokens) in your frame draw
+```
+
+## Design references
+
+| Doc | Purpose |
+|-----|---------|
+| [Architecture foundation](/docs/quality-migrations) | Hybrid kernel + progressive capability |
+| Design notes under `docs/design/` | Anatomy, registry, Studio, agent pack (source tree) |
+
+## Contributing
+
+All work is on `main` with Conventional Commits and DCO. Breaking public changes
+add a sequential file under `migrations/` and an index row in `MIGRATING.md`.
+See [CONTRIBUTING.md](https://github.com/tailrocks/termrock/blob/main/CONTRIBUTING.md).
