@@ -9,7 +9,7 @@ warning: unresolved link to `Theme`
     = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
 
 warning: `termrock` (lib doc) generated 1 warning
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.35s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.68s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -2966,6 +2966,7 @@ pub fn termrock::interaction::classify_click(ratatui_core::layout::rect::Rect, u
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
+pub fn termrock::interaction::default_transcript_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::interaction::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::interaction::place_overlay(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> ratatui_core::layout::rect::Rect
@@ -4852,6 +4853,7 @@ pub termrock::patterns::WorkbenchKeyOutcome::Permission(termrock::widgets::Permi
 pub termrock::patterns::WorkbenchKeyOutcome::Prompt(termrock::widgets::PromptComposerOutcome)
 pub termrock::patterns::WorkbenchKeyOutcome::Scene(termrock::interaction::InteractionOutcome<&'static str, &'static str, ()>)
 pub termrock::patterns::WorkbenchKeyOutcome::Task(termrock::interaction::Outcome<&'static str>)
+pub termrock::patterns::WorkbenchKeyOutcome::Transcript(termrock::widgets::TranscriptOutcome<&'static str>)
 impl core::clone::Clone for termrock::patterns::WorkbenchKeyOutcome
 pub fn termrock::patterns::WorkbenchKeyOutcome::clone(&self) -> termrock::patterns::WorkbenchKeyOutcome
 impl core::cmp::Eq for termrock::patterns::WorkbenchKeyOutcome
@@ -5045,7 +5047,7 @@ impl termrock::patterns::AgentWorkbenchState
 pub fn termrock::patterns::AgentWorkbenchState::focus_pane(&mut self, termrock::patterns::WorkbenchPane)
 pub fn termrock::patterns::AgentWorkbenchState::focused_pane(&self) -> core::option::Option<&'static str>
 pub fn termrock::patterns::AgentWorkbenchState::handle_escape(&mut self) -> termrock::interaction::InteractionOutcome<&'static str, &'static str, ()>
-pub fn termrock::patterns::AgentWorkbenchState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::ListRow<'_, &'static str>], &mut termrock::widgets::PromptComposerState, core::option::Option<&mut termrock::widgets::PermissionPromptState>) -> termrock::patterns::WorkbenchKeyOutcome
+pub fn termrock::patterns::AgentWorkbenchState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::ListRow<'_, &'static str>], &mut termrock::widgets::PromptComposerState, &mut termrock::widgets::TranscriptState<&'static str>, &[termrock::widgets::TranscriptBlock<'_, &'static str>], core::option::Option<&mut termrock::widgets::PermissionPromptState>) -> termrock::patterns::WorkbenchKeyOutcome
 pub fn termrock::patterns::AgentWorkbenchState::new() -> Self
 pub const fn termrock::patterns::AgentWorkbenchState::permission_open(&self) -> bool
 pub const fn termrock::patterns::AgentWorkbenchState::question_open(&self) -> bool
@@ -11713,55 +11715,6 @@ pub unsafe fn termrock::widgets::StaleReason::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::StaleReason
 pub fn termrock::widgets::StaleReason::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StaleReason
-#[non_exhaustive] pub enum termrock::widgets::StreamItemKind
-pub termrock::widgets::StreamItemKind::Assistant
-pub termrock::widgets::StreamItemKind::System
-pub termrock::widgets::StreamItemKind::Thinking
-pub termrock::widgets::StreamItemKind::Tool
-pub termrock::widgets::StreamItemKind::User
-impl core::clone::Clone for termrock::widgets::StreamItemKind
-pub fn termrock::widgets::StreamItemKind::clone(&self) -> termrock::widgets::StreamItemKind
-impl core::cmp::Eq for termrock::widgets::StreamItemKind
-impl core::cmp::PartialEq for termrock::widgets::StreamItemKind
-pub fn termrock::widgets::StreamItemKind::eq(&self, &termrock::widgets::StreamItemKind) -> bool
-impl core::fmt::Debug for termrock::widgets::StreamItemKind
-pub fn termrock::widgets::StreamItemKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::StreamItemKind
-pub fn termrock::widgets::StreamItemKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::StreamItemKind
-impl core::marker::StructuralPartialEq for termrock::widgets::StreamItemKind
-impl core::marker::Freeze for termrock::widgets::StreamItemKind
-impl core::marker::Send for termrock::widgets::StreamItemKind
-impl core::marker::Sync for termrock::widgets::StreamItemKind
-impl core::marker::Unpin for termrock::widgets::StreamItemKind
-impl core::marker::UnsafeUnpin for termrock::widgets::StreamItemKind
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamItemKind
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamItemKind
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StreamItemKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::StreamItemKind::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::StreamItemKind where U: core::convert::From<T>
-pub fn termrock::widgets::StreamItemKind::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamItemKind where U: core::convert::Into<T>
-pub type termrock::widgets::StreamItemKind::Error = core::convert::Infallible
-pub fn termrock::widgets::StreamItemKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamItemKind where U: core::convert::TryFrom<T>
-pub type termrock::widgets::StreamItemKind::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::StreamItemKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamItemKind where T: core::clone::Clone
-pub type termrock::widgets::StreamItemKind::Owned = T
-pub fn termrock::widgets::StreamItemKind::clone_into(&self, &mut T)
-pub fn termrock::widgets::StreamItemKind::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::StreamItemKind where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::StreamItemKind::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamItemKind where T: ?core::marker::Sized
-pub fn termrock::widgets::StreamItemKind::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamItemKind where T: ?core::marker::Sized
-pub fn termrock::widgets::StreamItemKind::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::StreamItemKind where T: core::clone::Clone
-pub unsafe fn termrock::widgets::StreamItemKind::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::StreamItemKind
-pub fn termrock::widgets::StreamItemKind::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::StreamItemKind
 #[non_exhaustive] pub enum termrock::widgets::SurfaceElevation
 pub termrock::widgets::SurfaceElevation::Base
 pub termrock::widgets::SurfaceElevation::Canvas
@@ -12233,6 +12186,10 @@ pub termrock::widgets::TranscriptKind::System
 pub termrock::widgets::TranscriptKind::Thinking
 pub termrock::widgets::TranscriptKind::Tool
 pub termrock::widgets::TranscriptKind::User
+impl termrock::widgets::TranscriptKind
+pub const fn termrock::widgets::TranscriptKind::glyph(self) -> &'static str
+pub const fn termrock::widgets::TranscriptKind::glyph_ascii(self) -> &'static str
+pub const fn termrock::widgets::TranscriptKind::role(self) -> termrock::style::Role
 impl core::clone::Clone for termrock::widgets::TranscriptKind
 pub fn termrock::widgets::TranscriptKind::clone(&self) -> termrock::widgets::TranscriptKind
 impl core::cmp::Eq for termrock::widgets::TranscriptKind
@@ -20728,95 +20685,6 @@ pub unsafe fn termrock::widgets::StatusSlot<'a, Id>::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::StatusSlot<'a, Id>
 pub fn termrock::widgets::StatusSlot<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StatusSlot<'a, Id>
-pub struct termrock::widgets::StreamItem<'a, Id>
-pub termrock::widgets::StreamItem::folded: bool
-pub termrock::widgets::StreamItem::id: Id
-pub termrock::widgets::StreamItem::kind: termrock::widgets::StreamItemKind
-pub termrock::widgets::StreamItem::text: &'a str
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::StreamItem<'a, Id>
-pub fn termrock::widgets::StreamItem<'a, Id>::clone(&self) -> termrock::widgets::StreamItem<'a, Id>
-impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::StreamItem<'a, Id>
-impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::StreamItem<'a, Id>
-pub fn termrock::widgets::StreamItem<'a, Id>::eq(&self, &termrock::widgets::StreamItem<'a, Id>) -> bool
-impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::StreamItem<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::StreamItem<'a, Id>
-pub fn termrock::widgets::StreamItem<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::StreamItem<'a, Id>
-impl<'a, Id> core::marker::Freeze for termrock::widgets::StreamItem<'a, Id> where Id: core::marker::Freeze
-impl<'a, Id> core::marker::Send for termrock::widgets::StreamItem<'a, Id> where Id: core::marker::Send
-impl<'a, Id> core::marker::Sync for termrock::widgets::StreamItem<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::StreamItem<'a, Id> where Id: core::marker::Unpin
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::StreamItem<'a, Id> where Id: core::marker::UnsafeUnpin
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamItem<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamItem<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StreamItem<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::StreamItem<'a, Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::StreamItem<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::StreamItem<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamItem<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::StreamItem<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::StreamItem<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamItem<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::StreamItem<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::StreamItem<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamItem<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::StreamItem<'a, Id>::Owned = T
-pub fn termrock::widgets::StreamItem<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::StreamItem<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::StreamItem<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::StreamItem<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamItem<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::StreamItem<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamItem<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::StreamItem<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::StreamItem<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::StreamItem<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::StreamItem<'a, Id>
-pub fn termrock::widgets::StreamItem<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::StreamItem<'a, Id>
-pub struct termrock::widgets::StreamView<'a, Id>
-impl<'a, Id> termrock::widgets::StreamView<'a, Id>
-pub const fn termrock::widgets::StreamView<'a, Id>::first(self, usize) -> Self
-pub const fn termrock::widgets::StreamView<'a, Id>::new(&'a [termrock::widgets::StreamItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::StreamView<'a, Id>
-pub fn termrock::widgets::StreamView<'a, Id>::clone(&self) -> termrock::widgets::StreamView<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::StreamView<'a, Id>
-pub fn termrock::widgets::StreamView<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::StreamView<'a, Id>
-impl<Id> ratatui_core::widgets::widget::Widget for &termrock::widgets::StreamView<'_, Id>
-pub fn &termrock::widgets::StreamView<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl<Id> ratatui_core::widgets::widget::Widget for termrock::widgets::StreamView<'_, Id>
-pub fn termrock::widgets::StreamView<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl<'a, Id> core::marker::Freeze for termrock::widgets::StreamView<'a, Id>
-impl<'a, Id> core::marker::Send for termrock::widgets::StreamView<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Sync for termrock::widgets::StreamView<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::StreamView<'a, Id>
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::StreamView<'a, Id>
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamView<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamView<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::widgets::StreamView<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::StreamView<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamView<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::StreamView<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::StreamView<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamView<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::StreamView<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::StreamView<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamView<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::StreamView<'a, Id>::Owned = T
-pub fn termrock::widgets::StreamView<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::StreamView<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::StreamView<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::StreamView<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamView<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::StreamView<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamView<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::StreamView<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::StreamView<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::StreamView<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::StreamView<'a, Id>
-pub fn termrock::widgets::StreamView<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::StreamView<'a, Id>
 pub struct termrock::widgets::SubmitPolicy
 pub termrock::widgets::SubmitPolicy::allow_empty: bool
 pub termrock::widgets::SubmitPolicy::clear_on_submit: bool
@@ -22363,6 +22231,10 @@ pub fn termrock::widgets::TooltipState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TooltipState
 pub struct termrock::widgets::Transcript<'a, Id>
 impl<'a, Id> termrock::widgets::Transcript<'a, Id>
+pub const fn termrock::widgets::Transcript<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Transcript<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Transcript<'a, Id>::empty_label(self, &'a str) -> Self
+pub const fn termrock::widgets::Transcript<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::Transcript<'a, Id>::new(&'a [termrock::widgets::TranscriptBlock<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Transcript<'a, Id>
 pub fn termrock::widgets::Transcript<'a, Id>::clone(&self) -> termrock::widgets::Transcript<'a, Id>
@@ -22504,7 +22376,9 @@ impl<T> core::convert::From<T> for termrock::widgets::TranscriptBlock<'a, Id>
 pub fn termrock::widgets::TranscriptBlock<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TranscriptBlock<'a, Id>
 pub struct termrock::widgets::TranscriptState<Id>
+pub termrock::widgets::TranscriptState::block_regions: alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>
 impl<Id: core::clone::Clone + core::cmp::Eq> termrock::widgets::TranscriptState<Id>
+pub fn termrock::widgets::TranscriptState<Id>::handle_intent(&mut self, termrock::interaction::UiIntent, &[termrock::widgets::TranscriptBlock<'_, Id>]) -> termrock::widgets::TranscriptOutcome<Id>
 pub fn termrock::widgets::TranscriptState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::TranscriptBlock<'_, Id>]) -> termrock::widgets::TranscriptOutcome<Id>
 pub fn termrock::widgets::TranscriptState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::TranscriptBlock<'_, Id>]) -> termrock::widgets::TranscriptOutcome<Id>
 pub fn termrock::widgets::TranscriptState<Id>::layout_heights(&[termrock::widgets::TranscriptBlock<'_, Id>]) -> (u64, alloc::vec::Vec<(Id, u64, u16)>)
@@ -22514,6 +22388,7 @@ pub const fn termrock::widgets::TranscriptState<Id>::first_display_row(&self) ->
 pub const fn termrock::widgets::TranscriptState<Id>::follow(&self) -> bool
 pub const fn termrock::widgets::TranscriptState<Id>::is_focused(&self) -> bool
 pub fn termrock::widgets::TranscriptState<Id>::new() -> Self
+pub fn termrock::widgets::TranscriptState<Id>::select(&mut self, core::option::Option<Id>)
 pub const fn termrock::widgets::TranscriptState<Id>::selected(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::TranscriptState<Id>::set_focused(&mut self, bool)
 pub fn termrock::widgets::TranscriptState<Id>::set_follow(&mut self, bool)

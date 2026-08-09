@@ -53,10 +53,7 @@ mod virtual_grid;
 
 pub use crate::style::PanelChrome;
 pub use action_bar::{Action, ActionBar, ActionBarState};
-pub use agent::{
-    StreamItem, StreamItemKind, StreamView, ThinkingBlock, Timeline, TimelineEvent, TokenMeter,
-    ToolCard, ToolStatus,
-};
+pub use agent::{ThinkingBlock, Timeline, TimelineEvent, TokenMeter, ToolCard, ToolStatus};
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

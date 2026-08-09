@@ -1004,8 +1004,10 @@ impl StoryInteraction for TranscriptInteractor {
             TranscriptBlock::new("u1", TranscriptKind::User, &lines[..1]),
             TranscriptBlock::new("a1", TranscriptKind::Assistant, &lines[1..]),
         ];
+        self.state.set_focused(true);
         frame.render_stateful_widget(
-            &Transcript::new(&blocks, &DesignSystem::from_palette(self.theme.clone())),
+            &Transcript::new(&blocks, &DesignSystem::from_palette(self.theme.clone()))
+                .focused(true),
             area,
             &mut self.state,
         );
@@ -1017,6 +1019,7 @@ impl StoryInteraction for TranscriptInteractor {
             TranscriptBlock::new("u1", TranscriptKind::User, &lines[..1]),
             TranscriptBlock::new("a1", TranscriptKind::Assistant, &lines[1..]),
         ];
+        self.state.set_focused(true);
         !matches!(
             self.state.handle_key(key, &blocks),
             termrock::widgets::TranscriptOutcome::Ignored

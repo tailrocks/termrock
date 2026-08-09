@@ -247,14 +247,6 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
-  "StreamView": {
-    "keyboard": "caller-owned",
-    "mouse": "caller-owned",
-    "focus": "caller-owned",
-    "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
-  },
   "Table": {
     "keyboard": "covered",
     "mouse": "covered",

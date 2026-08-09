@@ -254,12 +254,16 @@ fn preview_hints_advertise_back_and_interact() {
 fn no_dual_agent_chrome_stories() {
     for story in stories() {
         assert!(
-            !story.id.starts_with("approval-card/") && !story.id.starts_with("prompt-box/"),
+            !story.id.starts_with("approval-card/")
+                && !story.id.starts_with("prompt-box/")
+                && !story.id.starts_with("stream-view/"),
             "deleted dual story still registered: {}",
             story.id
         );
         assert!(
-            story.component != "ApprovalCard" && story.component != "PromptBox",
+            story.component != "ApprovalCard"
+                && story.component != "PromptBox"
+                && story.component != "StreamView",
             "deleted dual component label: {} ({})",
             story.component,
             story.id

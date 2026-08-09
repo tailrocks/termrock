@@ -77,6 +77,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0061 | `v0.13.0` | [DesignSystem sole paint](migrations/0061-v0.13.0-design-system-sole-paint.md) |
 | 0062 | `v0.13.0` | [InteractionScene sole focus (collections)](migrations/0062-v0.13.0-scene-sole-focus.md) |
 | 0063 | `v0.13.0` | [Agent dual chrome cutover](migrations/0063-v0.13.0-agent-dual-cutover.md) |
+| 0064 | `v0.13.0` | [Transcript sole stream](migrations/0064-v0.13.0-transcript-sole-stream.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

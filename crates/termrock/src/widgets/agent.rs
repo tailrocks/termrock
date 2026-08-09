@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Agent-era experience widgets: stream, tool cards, thinking, meters, timeline.
+//! Agent-era experience widgets: tool cards, thinking, meters, timeline.
 //!
-//! Trust gates and agent input live on [`crate::widgets::PermissionPrompt`] and
-//! [`crate::widgets::PromptComposer`] (Break J dual-chrome kill).
+//! Conversation stream: [`crate::widgets::Transcript`] only (StreamView deleted).
+//! Trust / prompt: [`crate::widgets::PermissionPrompt`] / [`crate::widgets::PromptComposer`].
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
@@ -311,100 +311,6 @@ impl Widget for ToolCard<'_> {
         clippy::needless_borrows_for_generic_args,
         reason = "explicitly delegate the owned contract to the borrowed renderer"
     )]
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
-
-// ── Stream view ─────────────────────────────────────────────────────────────
-
-/// Kind of stream turn/block.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum StreamItemKind {
-    /// User prompt.
-    User,
-    /// Assistant message.
-    Assistant,
-    /// Tool invocation summary line.
-    Tool,
-    /// System notice.
-    System,
-    /// Thinking/reasoning.
-    Thinking,
-}
-
-/// One stable-ID stream item.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct StreamItem<'a, Id> {
-    /// Stable identity.
-    pub id: Id,
-    /// Kind chrome.
-    pub kind: StreamItemKind,
-    /// Primary visible text (single line or pre-wrapped).
-    pub text: &'a str,
-    /// Whether the block is folded.
-    pub folded: bool,
-}
-
-/// Virtualized conversation stream.
-#[derive(Debug, Clone, Copy)]
-pub struct StreamView<'a, Id> {
-    items: &'a [StreamItem<'a, Id>],
-    first: usize,
-    system: &'a DesignSystem,
-}
-
-impl<'a, Id> StreamView<'a, Id> {
-    /// Creates a stream view.
-    #[must_use]
-    pub const fn new(items: &'a [StreamItem<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self {
-            items,
-            first: 0,
-            system,
-        }
-    }
-
-    /// First visible item index.
-    #[must_use]
-    pub const fn first(mut self, first: usize) -> Self {
-        self.first = first;
-        self
-    }
-}
-
-impl<Id> Widget for &StreamView<'_, Id> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        for row in 0..area.height {
-            let index = self.first.saturating_add(usize::from(row));
-            let Some(item) = self.items.get(index) else {
-                break;
-            };
-            let (prefix, role) = match item.kind {
-                StreamItemKind::User => ("› ", Role::TextStrong),
-                StreamItemKind::Assistant => ("▍ ", Role::Text),
-                StreamItemKind::Tool => ("⚙ ", Role::Info),
-                StreamItemKind::System => ("· ", Role::TextMuted),
-                StreamItemKind::Thinking => ("… ", Role::TextDisabled),
-            };
-            let fold = if item.folded { "▸ " } else { "" };
-            let line = format!("{fold}{prefix}{}", item.text);
-            buffer.set_stringn(
-                area.x,
-                area.y.saturating_add(row),
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(role),
-            );
-        }
-    }
-}
-
-impl<Id> Widget for StreamView<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         <&Self as Widget>::render(&self, area, buffer);
     }

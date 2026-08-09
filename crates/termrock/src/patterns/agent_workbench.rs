@@ -32,7 +32,8 @@ use crate::{
         List, ListRow, ListState, ModeRibbon, ModeRibbonState, Panel, PanelChrome,
         PermissionOutcome, PermissionPrompt, PermissionPromptState, PromptComposer,
         PromptComposerOutcome, PromptComposerState, QuestionFlow, QuestionFlowState, StatusBar,
-        StatusBarState, StatusSlot, Transcript, TranscriptState, WorkbenchMode,
+        StatusBarState, StatusSlot, Transcript, TranscriptBlock, TranscriptOutcome,
+        TranscriptState, WorkbenchMode,
     },
 };
 
@@ -77,6 +78,8 @@ pub enum WorkbenchKeyOutcome {
     Permission(PermissionOutcome),
     /// Task rail list outcome.
     Task(Outcome<&'static str>),
+    /// Transcript viewport / selection outcome.
+    Transcript(TranscriptOutcome<&'static str>),
 }
 
 /// Consumer-owned workbench interaction state (survives frames).
@@ -186,6 +189,8 @@ impl AgentWorkbenchState {
         key: KeyEvent,
         tasks: &[ListRow<'_, &'static str>],
         prompt: &mut PromptComposerState,
+        transcript: &mut TranscriptState<&'static str>,
+        transcript_blocks: &[TranscriptBlock<'_, &'static str>],
         permission: Option<&mut PermissionPromptState>,
     ) -> WorkbenchKeyOutcome {
         // Esc always goes through scene first when a dismissible layer is top.
@@ -247,6 +252,15 @@ impl AgentWorkbenchState {
                     WorkbenchKeyOutcome::Ignored
                 } else {
                     WorkbenchKeyOutcome::Task(out)
+                }
+            }
+            Some("transcript") => {
+                transcript.set_focused(true);
+                let out = transcript.handle_key(key, transcript_blocks);
+                if matches!(out, TranscriptOutcome::Ignored) {
+                    WorkbenchKeyOutcome::Ignored
+                } else {
+                    WorkbenchKeyOutcome::Transcript(out)
                 }
             }
             _ => WorkbenchKeyOutcome::Ignored,
@@ -519,7 +533,14 @@ pub fn render_agent_workbench(
                     });
                 let inner = panel.inner(pane.area);
                 Widget::render(&panel, pane.area, buffer);
-                StatefulWidget::render(transcript, inner, buffer, transcript_state);
+                transcript_state.set_focused(is_focused);
+                // Paint-time focused chrome; host still owns dispatch.
+                StatefulWidget::render(
+                    &transcript.focused(is_focused),
+                    inner,
+                    buffer,
+                    transcript_state,
+                );
             }
             "prompt" => {
                 // Mode ribbon sits on the top row of the prompt band when height allows.
@@ -817,10 +838,13 @@ mod tests {
         );
         assert!(workbench.permission_open());
         // Default focus is Deny — Enter confirms Deny (never Allow).
+        let mut tstate = TranscriptState::new();
         let out = workbench.handle_key(
             KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
             &[],
             &mut PromptComposerState::new(),
+            &mut tstate,
+            &[],
             Some(&mut perm),
         );
         assert!(matches!(out, WorkbenchKeyOutcome::Permission(_)), "{out:?}");
@@ -859,10 +883,13 @@ mod tests {
         );
         let mut prompt = PromptComposerState::new();
         prompt.set_text("ship");
+        let mut tstate = TranscriptState::new();
         let out = workbench.handle_key(
             KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
             &[],
             &mut prompt,
+            &mut tstate,
+            &[],
             None,
         );
         assert!(
@@ -875,6 +902,38 @@ mod tests {
     }
 
     #[test]
+    #[test]
+    fn handle_key_routes_transcript_when_focused() {
+        let mut workbench = AgentWorkbenchState::new();
+        let system = DesignSystem::default();
+        let lines = ["hello", "world"];
+        let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
+        let modes = default_modes("plan");
+        let _ = paint(
+            &mut workbench,
+            &system,
+            &[],
+            &modes,
+            &blocks,
+            None,
+            None,
+            80,
+            40,
+        );
+        let _ = workbench.scene.focus("transcript");
+        assert_eq!(workbench.focused_pane(), Some("transcript"));
+        let mut tstate = TranscriptState::new();
+        let out = workbench.handle_key(
+            KeyEvent::new(KeyCode::Up, KeyModifiers::NONE),
+            &[],
+            &mut PromptComposerState::new(),
+            &mut tstate,
+            &blocks,
+            None,
+        );
+        assert!(matches!(out, WorkbenchKeyOutcome::Transcript(_)), "{out:?}");
+    }
+
     fn flagship_script_narrow_widths_keep_contained_geometry() {
         let system = DesignSystem::default();
         let lines = ["stream line"];
@@ -1003,7 +1062,15 @@ mod tests {
         );
         let mut key = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
         key.kind = KeyEventKind::Repeat;
-        let out = workbench.handle_key(key, &[], &mut PromptComposerState::new(), Some(&mut perm));
+        let mut tstate = TranscriptState::new();
+        let out = workbench.handle_key(
+            key,
+            &[],
+            &mut PromptComposerState::new(),
+            &mut tstate,
+            &[],
+            Some(&mut perm),
+        );
         // Repeat Esc should not peel (press-only on permission / scene path).
         assert!(
             matches!(

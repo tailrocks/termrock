@@ -21,7 +21,7 @@ Composition pattern for an agent shell. **Not** a product agent — consumers ow
 |---------|------|
 | Prompt | `PromptComposer` / `PromptComposerState` |
 | Permission | `PermissionPrompt` / `PermissionPromptState` |
-| Stream | `Transcript` |
+| Stream | `Transcript` (StreamView removed) |
 | Focus / Esc layers | `InteractionScene` via `AgentWorkbenchState` |
 
 **Deleted duals:** `ApprovalCard`, `PromptBox` (migration `0063`).
@@ -78,7 +78,10 @@ render_agent_workbench(buf, area, WorkbenchSurfaces {
 });
 
 // keys
-let _ = workbench.handle_key(key, &tasks, &mut prompt_state, Some(&mut permission_state));
+let _ = workbench.handle_key(
+    key, &tasks, &mut prompt_state, &mut tstate, &blocks,
+    Some(&mut permission_state),
+);
 ```
 
 ## Intents

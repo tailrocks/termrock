@@ -9,6 +9,7 @@
     "command-palette",
     "prompt-composer",
     "permission-prompt",
-    "agent-workbench"
+    "agent-workbench",
+    "transcript"
   ]
 }

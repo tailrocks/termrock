@@ -36,13 +36,12 @@ use termrock::{
         PromptComposer, PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption,
         QuestionStep, RowRole, SegmentedMeter, SeparatorLine, SessionItem, SessionPicker, Severity,
         Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio,
-        StatusBar, StatusBarState, StatusSlot, StreamItem, StreamItemKind, StreamView, Surface,
-        SurfaceElevation, Switch, SwitchState, Tab, Table, TableRow, TableState, Tabs, TabsState,
-        TaskRail, TextArea, TextAreaState, TextCursor, TextInput, TextInputState, ThemePicker,
-        ThemePickerState, ThinkingBlock, Timeline, TimelineEvent, Toast, TokenMeter, ToolCard,
-        ToolStatus, Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode,
-        TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
-        WorkbenchMode,
+        StatusBar, StatusBarState, StatusSlot, Surface, SurfaceElevation, Switch, SwitchState, Tab,
+        Table, TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState,
+        TextCursor, TextInput, TextInputState, ThemePicker, ThemePickerState, ThinkingBlock,
+        Timeline, TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript,
+        TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus,
+        TreeState, Validation, Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
     },
 };
 
@@ -1016,15 +1015,6 @@ pub(crate) fn stories() -> Vec<Story> {
             tool_card,
         ),
         Story::new(
-            "stream-view/basic",
-            "Stream view",
-            "StreamView",
-            "Conversation stream items.",
-            48,
-            6,
-            stream_view,
-        ),
-        Story::new(
             "transcript/basic",
             "Transcript",
             "Transcript",
@@ -1041,6 +1031,42 @@ pub(crate) fn stories() -> Vec<Story> {
             "Transcript contraction at narrow widths.",
             24,
             8,
+            transcript_basic,
+        ),
+        Story::new(
+            "transcript/empty",
+            "Transcript empty",
+            "Transcript",
+            "Empty-state label distinct from content.",
+            40,
+            6,
+            transcript_empty,
+        ),
+        Story::new(
+            "transcript/folded-follow",
+            "Transcript folded follow",
+            "Transcript",
+            "Folded tool block + follow-tail chrome.",
+            56,
+            10,
+            transcript_folded_follow,
+        ),
+        Story::new(
+            "transcript/ascii-colorless",
+            "Transcript ASCII colorless",
+            "Transcript",
+            "ASCII prefixes and colorless kind roles.",
+            48,
+            8,
+            transcript_ascii_colorless,
+        ),
+        Story::new(
+            "transcript/tiny",
+            "Transcript tiny",
+            "Transcript",
+            "Tiny-terminal geometry for transcript.",
+            12,
+            4,
             transcript_basic,
         ),
         Story::new(
@@ -2251,24 +2277,6 @@ pub(crate) fn stories() -> Vec<Story> {
             60,
             1,
             status_bar_unicode_story,
-        ),
-        Story::new(
-            "stream-view/narrow",
-            "Narrow StreamView",
-            "StreamView",
-            "Narrow-terminal geometry for StreamView (22 cols).",
-            22,
-            6,
-            stream_view,
-        ),
-        Story::new(
-            "stream-view/unicode",
-            "Unicode StreamView",
-            "StreamView",
-            "Unicode-safe paint path for StreamView (CJK/emoji-capable layout).",
-            48,
-            6,
-            stream_view_unicode_story,
         ),
         Story::new(
             "surface/narrow",
@@ -4224,36 +4232,6 @@ fn transcript_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_stateful_widget(&Transcript::new(&blocks, system), area, &mut state);
 }
 
-fn stream_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let items = [
-        StreamItem {
-            id: "u1",
-            kind: StreamItemKind::User,
-            text: "Add stream widgets",
-            folded: false,
-        },
-        StreamItem {
-            id: "a1",
-            kind: StreamItemKind::Assistant,
-            text: "Implementing agent kit…",
-            folded: false,
-        },
-        StreamItem {
-            id: "t1",
-            kind: StreamItemKind::Tool,
-            text: "shell · cargo test",
-            folded: false,
-        },
-        StreamItem {
-            id: "th1",
-            kind: StreamItemKind::Thinking,
-            text: "Check catalog gates",
-            folded: true,
-        },
-    ];
-    frame.render_widget(StreamView::new(&items, system), area);
-}
-
 fn timeline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let events = [
         TimelineEvent {
@@ -5239,19 +5217,6 @@ fn permission_prompt_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &D
     }
 }
 
-fn stream_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    stream_view(frame, area, system);
-    if area.width > 2 && area.height > 1 {
-        frame.buffer_mut().set_stringn(
-            area.x.saturating_add(1),
-            area.y.saturating_add(1),
-            "ユーザー: こんにちは 👋",
-            usize::from(area.width.saturating_sub(2)),
-            system.style(Role::Text),
-        );
-    }
-}
-
 fn timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     timeline(frame, area, system);
     if area.width > 2 {
@@ -5879,5 +5844,54 @@ fn agent_workbench_permission(frame: &mut Frame<'_>, area: Rect, system: &Design
             permission: Some((&perm_w, &mut perm)),
             question: None,
         },
+    );
+}
+
+fn transcript_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let blocks: [TranscriptBlock<'_, &str>; 0] = [];
+    let mut state = TranscriptState::new();
+    frame.render_stateful_widget(
+        &Transcript::new(&blocks, system).empty_label("(no messages)"),
+        area,
+        &mut state,
+    );
+}
+
+fn transcript_folded_follow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let user = ["ship dual chrome kill"];
+    let tool = ["cargo test", "ok"];
+    let asst = ["done"];
+    let blocks = [
+        TranscriptBlock::new("u1", TranscriptKind::User, &user),
+        TranscriptBlock::new("t1", TranscriptKind::Tool, &tool)
+            .folded(true)
+            .summary("cargo test — ok"),
+        TranscriptBlock::new("a1", TranscriptKind::Assistant, &asst),
+    ];
+    let mut state = TranscriptState::new();
+    state.set_follow(true);
+    state.select(Some("t1"));
+    frame.render_stateful_widget(
+        &Transcript::new(&blocks, system).focused(true),
+        area,
+        &mut state,
+    );
+}
+
+fn transcript_ascii_colorless(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let user = ["hello"];
+    let think = ["…reasoning…"];
+    let blocks = [
+        TranscriptBlock::new("u1", TranscriptKind::User, &user),
+        TranscriptBlock::new("th", TranscriptKind::Thinking, &think),
+    ];
+    let mut state = TranscriptState::new();
+    frame.render_stateful_widget(
+        &Transcript::new(&blocks, system)
+            .ascii(true)
+            .colorless(true)
+            .focused(true),
+        area,
+        &mut state,
     );
 }

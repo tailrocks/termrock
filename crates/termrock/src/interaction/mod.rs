@@ -16,7 +16,7 @@ mod scene;
 pub(crate) use focus::{FocusOutcome, FocusRing, FocusTarget};
 pub use intent::{
     NavigationMove, PageMove, UiIntent, default_list_intent, default_permission_intent,
-    default_table_intent, default_tree_intent,
+    default_table_intent, default_transcript_intent, default_tree_intent,
 };
 pub use keymap_bridge::dispatch_keymap_action;
 pub use modal::{ModalClickResult, ModalStack, classify_click, render_backdrop};

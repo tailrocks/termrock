@@ -24,7 +24,7 @@ Lookbook and docs taught both. That fails the premium component standard and fai
 2. **Sole public permission** for trust gates: `PermissionPrompt` / `PermissionPromptState` / `PermissionRequest` / queue / provenance.
 3. **AgentWorkbench** composes only canonical types. Scene layer id: `permission` (was `approval`).
 4. **Delete** public `ApprovalCard*`, `ApprovalDecision*`, `ApprovalRisk`, `PromptBox*`.
-5. **StreamView** stays this MS (separate cutover); workbench stream remains `Transcript`.
+5. **StreamView** deleted in migration `0064`; workbench stream is `Transcript` only.
 6. **No generic abstraction** invented for one pattern — workbench is a pattern, not a new widget framework.
 7. **Intents:** `default_permission_intent` + `PermissionPromptState::handle_intent` for Activate/Cancel/Move; composer keeps existing key routing (intent pack follows).
 8. **Focus:** host gates via `InteractionScene`; composer `set_focused` reflects scene ownership; list uses `.focused(bool)`.
@@ -42,7 +42,7 @@ Lookbook and docs taught both. That fails the premium component standard and fai
 
 ## Out of scope this MS
 
-- StreamView deletion / Transcript-only stream law
+- StreamView deletion — **done** (`0064`)
 - Lookbook HostFrame / host_focus delete
 - ModalStack public kill
 - Full intent keymap for composer chords

@@ -113,6 +113,32 @@ pub fn default_table_intent(key: KeyEvent) -> Option<UiIntent> {
     })
 }
 
+/// Default intent map for [`crate::widgets::Transcript`] navigation.
+///
+/// Scroll / selection / activate / fold-toggle / cancel. Ctrl+F fold stays on
+/// [`crate::widgets::TranscriptState::handle_key`] as a product chord.
+#[must_use]
+pub fn default_transcript_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let is_press = key.kind == KeyEventKind::Press;
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
+        KeyCode::Char(' ') if is_press => Some(UiIntent::Toggle),
+        KeyCode::Right | KeyCode::Char('l' | 'L') => Some(UiIntent::Expand),
+        KeyCode::Left | KeyCode::Char('h' | 'H') => Some(UiIntent::Collapse),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::PermissionPrompt`] navigation.
 ///
 /// Covers Activate / Cancel / Move / Expand-Collapse details. Product chords
@@ -167,6 +193,22 @@ mod tests {
         assert_eq!(
             default_list_intent(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
             None
+        );
+    }
+
+    #[test]
+    fn default_transcript_intent_maps_scroll_and_activate() {
+        assert_eq!(
+            default_transcript_intent(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::Previous))
+        );
+        assert_eq!(
+            default_transcript_intent(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            Some(UiIntent::Activate)
+        );
+        assert_eq!(
+            default_transcript_intent(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
+            Some(UiIntent::Toggle)
         );
     }
 
