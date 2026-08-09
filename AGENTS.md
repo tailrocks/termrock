@@ -69,6 +69,34 @@ parallel old/new implementations, compatibility facades, or local exceptions.
 Evaluate changes against the architecture TermRock should have next, not the
 shape it happened to have before.
 
+## Cross-surface consistency
+
+Widgets, APIs, patterns, tokens, intents, recipes, stories, tests, and docs
+must stay consistent across the whole TermRock surface—not only the file being
+edited.
+
+When you improve or change something in one widget or component (anatomy,
+state model, public API shape, intent routing, design-system / recipe paint,
+focus or selection chrome, density, contraction, glyphs / ASCII / colorless
+cues, outcomes, empty/loading/error, stories, tests, migration notes), always:
+
+1. **Ask whether the same improvement applies** to peer widgets, composite
+   surfaces, application blocks, lookbook stories, crate public exports,
+   design SoTs, contract matrices, and documentation.
+2. **Prefer one shared abstraction** (tokens, recipes, composed row parts,
+   `UiIntent`, hit regions, density, glyph catalog) over a local one-off that
+   leaves siblings on an older path.
+3. **Verify before finishing the change:** search call sites and analogous
+   components; update or explicitly schedule the cascade. Do not leave the
+   library half-migrated when the better pattern is already proven in one
+   place.
+4. **Document the boundary** in the same commit when the change is public or
+   behavioral (migration file when breaking; design/contract/story updates
+   when the contract claims coverage).
+
+Inconsistency is a defect. A “local win” that invents a second way to do the
+same terminal job is incomplete work.
+
 ## Breaking-change documentation
 
 Every breaking or dramatic public change must add the next sequential file
