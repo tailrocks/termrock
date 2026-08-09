@@ -1,43 +1,76 @@
 ---
 title: Dialog
-description: Modal cards with backdrop, actions, and overlay-friendly placement — not a full app router.
+description: Modal chrome and choice action cursor — OverlayStack placement; scene owns trap Tab.
 ---
 
 # Dialog
 
-**Purpose.** Present a **blocking or semi-blocking card** (message, choice,
-confirm) with clear focus ownership and Esc policy — without embedding product
-workflow engines.
+**Purpose.** Frame a short message or choice as a **modal layer**: title, body,
+optional actions. TermRock places and paints; you decide open/close policy and
+effects.
+
+Use `ChoiceDialog` when actions need stable IDs and keyboard traversal.
+`place_dialog` / OverlayStack integrate with Esc peel law.
 
 ## When to use / when not
 
 | Use Dialog | Prefer |
 |------------|--------|
-| Confirm / choose among few actions | ChoiceDialog |
-| Read-only notice | MessageDialog |
-| Global command search | [CommandPalette](/docs/handbook/command-palette) |
-| Agent permission risk | [PermissionPrompt](/docs/handbook/permission-prompt) |
-| Multi-step forms | Form / wizard pattern |
+| Confirm destructive action | — |
+| Short system message | — |
+| Multi-step forms | Form / FormWizard |
+| Agent trust gates | [PermissionPrompt](/docs/handbook/permission-prompt) |
+| Fuzzy command jump | [Command palette](/docs/handbook/command-palette) |
 
-## Installation
+## Focus law
 
-Crate pin (see handbook index). Overlay helpers live beside dialog widgets.
+| Concern | Owner |
+|---------|--------|
+| Overlay trap / Esc peel | OverlayStack |
+| Surface focus (which layer) | Host / InteractionScene |
+| Action **cursor** among buttons | `ChoiceDialogState::cursor` (host may project scene focus into it) |
+| Tab between action ids when registered | Host scene only — **not** ChoiceDialog |
 
-## Source files
+## Outcomes (`interaction::Outcome`)
 
-`Dialog`, `ChoiceDialog`, `MessageDialog`, `Backdrop`, `place_dialog` /
-`open_dialog_overlay`, `DialogSize`
+- `Ignored`
+- `Changed` — action cursor moved
+- `Activated(Id)`
+- `Cancelled` — Esc
+
+## Intents
+
+`default_choice_dialog_intent` — Left/Right (j/k), Home/End, Enter, Esc.
+**Tab is not mapped.**
+
+## Non-color
+
+- Cursor: ActionFocused role, or `›label‹` / `[label]` with `ascii` / `colorless`
+- Danger variant: `!` title prefix + danger border
+- Backdrop: terminal Reset (not hard black)
+
+## Responsive
+
+| Width | Layout |
+|-------|--------|
+| ≥ 28 | Horizontal action bar |
+| &lt; 28 | Vertical stack of actions |
+| height &lt; 3 | Title/border only |
 
 ## Basic example
 
 ```rust
 use ratatui_core::{layout::Rect, text::Text};
-use termrock::{Theme, widgets::{Dialog, DialogSize, place_dialog}};
+use termrock::{
+    style::DesignSystem,
+    widgets::{Dialog, DialogSize, place_dialog},
+};
 
-let theme = Theme::default();
-let dialog = Dialog::new("Notice", Text::from("Done."), &theme);
+let system = DesignSystem::default();
+let dialog = Dialog::new("Notice", Text::from("Done."), &system);
 let area = place_dialog(Rect::new(0, 0, 80, 24), DialogSize::default());
-let _ = (dialog, area);
+assert!(area.width > 0);
+let _ = dialog;
 ```
 
 ## Interactive example
@@ -45,98 +78,34 @@ let _ = (dialog, area);
 ```rust
 use ratatui_core::text::Text;
 use termrock::{
-    Theme,
     input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::Outcome,
+    style::DesignSystem,
     widgets::{Action, ChoiceDialog, ChoiceDialogState, Dialog},
 };
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let actions = [
     Action { id: "ok", label: "OK", enabled: true, style: None },
     Action { id: "cancel", label: "Cancel", enabled: true, style: None },
 ];
-let dialog = ChoiceDialog::new(
-    Dialog::new("Confirm", Text::from("Continue?"), &theme),
+let choice = ChoiceDialog::new(
+    Dialog::new("Confirm", Text::from("Continue?"), &system),
     &actions,
 );
 let mut state = ChoiceDialogState::new(Some("cancel"));
 let outcome = state.handle_key(&actions, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
 assert!(matches!(outcome, Outcome::Activated("cancel")));
-let _ = dialog;
+let _ = choice;
 ```
-
-## Anatomy
-
-`backdrop` · `panel` · `title` · `body` · `action_bar` · focus on safe action
-
-## Public API (intent)
-
-| API | Why |
-|-----|-----|
-| `Dialog::new(title, body, theme)` | Chrome only |
-| `ChoiceDialog` + state | Stable action ids + outcomes |
-| `place_dialog` / overlay open | Policy-aware geometry via OverlayStack |
 
 ## State ownership
 
 | TermRock | Consumer |
 |----------|----------|
-| Focused action, hits | When dialog is open |
-| Placement | Copy, quit, domain confirm |
-| Esc outcome | Map Esc → cancel vs trap |
-
-## Typed outcomes
-
-`Outcome::Activated(id)` / `Changed` / `Cancelled` — consumer closes layer and
-applies policy.
-
-## Variants / sizes / density
-
-Message vs choice; `DialogSize` preferred/min; narrow → fullscreen promote via
-overlay policy.
-
-## Keyboard / mouse / focus
-
-Tab/arrows among actions; Enter activates; Esc cancels (unless alert trap).
-Click actions; outside-click per overlay outside policy (dialogs often Trap).
-
-## Responsive / a11y / unicode
-
-Stories: `dialog/message`, `dialog/narrow`, `choice-dialog/basic`. Title survives
-contraction longer than subtitle/footer.
-
-## Composition
-
-OverlayStack Dialog/AlertDialog kind; AgentWorkbench modals; forms.
-
-## Theming
-
-`PanelEmphasis::Focused` / Danger for destructive confirms.
-
-## Common mistakes
-
-- Default-focusing “Delete” on destructive confirms.  
-- Handling Esc as Allow.  
-- Painting dialog without a layer in the scene.
-
-## Performance
-
-One card; negligible. Prefer not rebuilding action vec every frame if static.
-
-## Testing
-
-Choice/message stories; overlay open/dismiss tests; documentation examples.
-
-## Migration
-
-Theme/scroll dialog notes in older migrations; overlay stack `0043`.
+| Action cursor, hit regions, loading gate | Open policy, message copy, effects |
+| Overlay place/open helpers | Scene registration of action ids (optional) |
 
 ## Related
 
-PermissionPrompt · CommandPalette · Backdrop · Panel  
-
-## Complete application sketch
-
-Open overlay with `open_dialog_overlay`; on Activated close layer and run
-effect; restore opener focus from overlay outcome.
+OverlayStack · ActionBar · migration `0073` · design `dialog-action-cursor.md`

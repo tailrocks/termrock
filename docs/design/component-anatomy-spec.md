@@ -728,29 +728,28 @@ Every component below uses sections **1–24**:
 
 ## ActionBar
 
-1. **Purpose:** Horizontal group of primary actions.  
-2. **Anatomy:** `root` · `action[]` · `overflow`  
-3. **Public properties:** actions projection (`id`, label, icon?, kbd?, enabled, danger?), `design`  
-4. **State:** focus index; overflow open.  
-5. **Variants:** `default` · `dense`  
-6. **Sizes/density:** 1 row; pad by density; Comfortable shows labels, Dashboard prefers icons.  
-7. **Visual states:** action hover/focus/disabled/loading.  
-8. **Interaction states:** activate · open overflow.  
-9. **Keyboard:** Left/Right among actions; Enter/Space activate; overflow Menu keys.  
-10. **Mouse:** click action; overflow chevron.  
-11. **Focus:** one tab stop or per-action stops (document: per-action when few).  
-12. **Disabled:** skip disabled actions.  
-13. **Loading:** per-action Spinner.  
-14. **Error:** N/A.  
-15. **Narrow:** drop labels → icons → overflow Menu (priority order).  
-16. **Tiny:** overflow Menu only (hamburger glyph).  
-17. **Unicode/ASCII:** icons catalog; overflow `…`/`...`.  
-18. **Colorless:** focused action underline; danger `!` prefix.  
+1. **Purpose:** Horizontal or vertical group of primary actions.  
+2. **Anatomy:** `root` · `action[]` · cursor chrome  
+3. **Public properties:** actions projection, `system`, `ascii`, `colorless`, `vertical`  
+4. **State:** `cursor: Option<Id>` (not scene focus); hit regions.  
+5. **Variants:** horizontal · vertical stack  
+6. **Sizes/density:** 1 row or N rows when stacked.  
+7. **Visual states:** cursor / disabled via Role tokens.  
+8. **Interaction states:** host/dialog owns activate.  
+9. **Keyboard:** owner (ChoiceDialog / host) moves cursor.  
+10. **Mouse:** hit regions for owner click.  
+11. **Focus:** paint cursor only; scene focus is host.  
+12. **Disabled:** skip disabled in regions.  
+13–14. Loading/error: host.  
+15. **Narrow:** vertical stack from ChoiceDialog.  
+16. **Tiny:** clip width.  
+17. **Unicode/ASCII:** `[label]` cursor when ascii.  
+18. **Colorless:** TextStrong cursor; `›label‹`.  
 19. **Composition:** Dialog footer, workbench chrome.  
-20. **Outcomes:** `Activated(Id)` · `OverflowOpened`  
-21. **Stories:** `action-bar/basic`, `action-bar/overflow`, `action-bar/narrow`  
-22. **Snapshots:** overflow collapsed.  
-23. **Interaction tests:** overflow activates nested item.  
+20. **Outcomes:** none (paint + regions only).  
+21. **Stories:** action-bar via ChoiceDialog stories.  
+22. **Snapshots:** cursor glyph.  
+23. **Interaction tests:** via ChoiceDialog.  
 24. **Perf:** O(actions).
 
 ## HintBar
@@ -1302,28 +1301,28 @@ Every component below uses sections **1–24**:
 ## Dialog
 
 1. **Purpose:** Modal container with title/body/footer.  
-2. **Anatomy:** `backdrop` · `frame` · `title` · `body` · `footer` · `close`  
-3. **Public properties:** open, size constraints, title, `design`  
-4. **State:** open controlled; focus trap via InteractionScene.  
-5. **Variants:** `default` · `danger`  
-6. **Sizes/density:** min from DimensionTokens; inset density.  
-7. **Visual states:** open; danger border role.  
-8. **Interaction states:** dismiss · confirm.  
-9. **Keyboard:** Esc per scene policy; Tab cycle trap; Enter default footer.  
-10. **Mouse:** footer clicks; optional outside-click per policy.  
-11. **Focus:** trap inside; initial focus primary or first control.  
-12. **Disabled:** N/A shell.  
-13. **Loading:** footer primary loading.  
+2. **Anatomy:** `backdrop` · `frame` · `title` · `body` · `footer` · action bar  
+3. **Public properties:** title, body, variant, footer_hint, loading, `system`  
+4. **State:** open on OverlayStack; ChoiceDialog holds action **cursor** + regions.  
+5. **Variants:** `default` · `danger` · `info`  
+6. **Sizes/density:** DialogSize density table + OverlayPolicy.  
+7. **Visual states:** open; danger border + `!` title; loading glyph.  
+8. **Interaction states:** cancel · activate · action cursor move.  
+9. **Keyboard:** Esc cancel; Enter activate; Left/Right cursor; **Tab = host scene**.  
+10. **Mouse:** action hit regions; outside-click per OverlayStack policy.  
+11. **Focus:** overlay trap on stack; action cursor local (host may project scene).  
+12. **Disabled:** loading blocks activate; `accepts_input` gate.  
+13. **Loading:** title busy glyph + ChoiceDialogState::set_loading.  
 14. **Error:** danger variant + body Callout.  
-15. **Narrow:** full width; stack footer.  
-16. **Tiny:** title + footer only.  
-17. **Unicode/ASCII:** single-line border glyphs.  
-18. **Colorless:** bold title; danger `!`.  
+15. **Narrow:** full-width promote; vertical action stack.  
+16. **Tiny:** title + border only (height &lt; 3).  
+17. **Unicode/ASCII:** single-line border; action `[label]` / `›label‹`.  
+18. **Colorless:** bold title; danger `!`; strong action cursor.  
 19. **Composition:** MessageDialog / ChoiceDialog specialize; body any.  
-20. **Outcomes:** `Closed` · `Confirmed` · footer `Activated`  
-21. **Stories:** existing dialog + choice + message.  
-22. **Snapshots:** danger title.  
-23. **Interaction tests:** Esc dismiss; focus trap.  
+20. **Outcomes:** `Cancelled` · `Activated` · `Changed` (cursor) · `Ignored`  
+21. **Stories:** dialog + choice + message (+ narrow/unicode).  
+22. **Snapshots:** danger title; action cursor; narrow stack.  
+23. **Interaction tests:** Esc; skip disabled; accepts_input; Tab ignored locally.  
 24. **Perf:** O(area) + children.
 
 ## Drawer

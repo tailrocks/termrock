@@ -83,7 +83,7 @@ fn handbook_button_action_bar_example() {
     ];
     let bar = ActionBar::new(&actions, &system);
     let state = ActionBarState {
-        focused: Some("save"),
+        cursor: Some("save"),
         ..ActionBarState::default()
     };
     let _ = (bar, state);

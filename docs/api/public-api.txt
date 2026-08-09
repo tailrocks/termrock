@@ -2851,6 +2851,7 @@ pub unsafe fn termrock::interaction::SemanticElement<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::interaction::SemanticElement<Id>
 pub fn termrock::interaction::SemanticElement<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticElement<Id>
+pub fn termrock::interaction::default_choice_dialog_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_diff_review_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_form_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -12421,8 +12422,11 @@ pub fn termrock::widgets::Action<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Action<'a, Id>
 pub struct termrock::widgets::ActionBar<'a, Id>
 impl<'a, Id> termrock::widgets::ActionBar<'a, Id>
+pub const fn termrock::widgets::ActionBar<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ActionBar<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::ActionBar<'a, Id>::gap(self, &'a str) -> Self
 pub const fn termrock::widgets::ActionBar<'a, Id>::new(&'a [termrock::widgets::Action<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::ActionBar<'a, Id>::vertical(self, bool) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ActionBar<'a, Id>
 pub fn termrock::widgets::ActionBar<'a, Id>::clone(&self) -> termrock::widgets::ActionBar<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ActionBar<'a, Id>
@@ -12465,8 +12469,11 @@ impl<T> core::convert::From<T> for termrock::widgets::ActionBar<'a, Id>
 pub fn termrock::widgets::ActionBar<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActionBar<'a, Id>
 pub struct termrock::widgets::ActionBarState<Id>
-pub termrock::widgets::ActionBarState::focused: core::option::Option<Id>
+pub termrock::widgets::ActionBarState::cursor: core::option::Option<Id>
 pub termrock::widgets::ActionBarState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
+impl<Id> termrock::widgets::ActionBarState<Id>
+pub fn termrock::widgets::ActionBarState<Id>::focused(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::ActionBarState<Id>::set_focused(&mut self, core::option::Option<Id>)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ActionBarState<Id>
 pub fn termrock::widgets::ActionBarState<Id>::clone(&self) -> termrock::widgets::ActionBarState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ActionBarState<Id>
@@ -13419,6 +13426,8 @@ pub fn termrock::widgets::ChipState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChipState
 pub struct termrock::widgets::ChoiceDialog<'a, Id>
 impl<'a, Id> termrock::widgets::ChoiceDialog<'a, Id>
+pub const fn termrock::widgets::ChoiceDialog<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ChoiceDialog<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::ChoiceDialog<'a, Id>::gap(self, &'a str) -> Self
 pub const fn termrock::widgets::ChoiceDialog<'a, Id>::new(termrock::widgets::Dialog<'a>, &'a [termrock::widgets::Action<'a, Id>]) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ChoiceDialog<'a, Id>
@@ -13462,17 +13471,21 @@ impl<T> core::convert::From<T> for termrock::widgets::ChoiceDialog<'a, Id>
 pub fn termrock::widgets::ChoiceDialog<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChoiceDialog<'a, Id>
 pub struct termrock::widgets::ChoiceDialogState<Id>
-pub termrock::widgets::ChoiceDialogState::focused: core::option::Option<Id>
+pub termrock::widgets::ChoiceDialogState::cursor: core::option::Option<Id>
 pub termrock::widgets::ChoiceDialogState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ChoiceDialogState<Id>
+pub const fn termrock::widgets::ChoiceDialogState<Id>::accepts_input(&self) -> bool
 pub fn termrock::widgets::ChoiceDialogState<Id>::activate_selected(&self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::cursor(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::focused(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::handle_intent(&mut self, &[termrock::widgets::Action<'_, Id>], termrock::interaction::UiIntent) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::handle_key(&mut self, &[termrock::widgets::Action<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::Outcome<Id>
 pub const fn termrock::widgets::ChoiceDialogState<Id>::is_loading(&self) -> bool
 pub const fn termrock::widgets::ChoiceDialogState<Id>::new(core::option::Option<Id>) -> Self
 pub fn termrock::widgets::ChoiceDialogState<Id>::select_next(&mut self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::select_previous(&mut self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::set_accepts_input(&mut self, bool)
 pub const fn termrock::widgets::ChoiceDialogState<Id>::set_loading(&mut self, bool)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ChoiceDialogState<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::clone(&self) -> termrock::widgets::ChoiceDialogState<Id>

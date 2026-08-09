@@ -260,6 +260,33 @@ pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for [`crate::widgets::ChoiceDialog`] action bar.
+///
+/// - Left/Right (and j/k) move **local action cursor**
+/// - Enter activates; Esc cancels
+/// - **Tab / BackTab are not mapped** — host InteractionScene owns trap Tab
+///   when action ids are registered as focus targets
+#[must_use]
+pub fn default_choice_dialog_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let is_press = key.kind == KeyEventKind::Press;
+    match key.code {
+        KeyCode::Left | KeyCode::Up | KeyCode::Char('h' | 'H' | 'k' | 'K') => {
+            Some(UiIntent::Move(NavigationMove::Previous))
+        }
+        KeyCode::Right | KeyCode::Down | KeyCode::Char('l' | 'L' | 'j' | 'J') => {
+            Some(UiIntent::Move(NavigationMove::Next))
+        }
+        KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::Form`] (activate + page scroll only).
 ///
 /// **Field cycle (Tab / Up / Down) is host / scene owned** — not mapped here.
@@ -400,6 +427,22 @@ mod tests {
         assert_eq!(
             default_diff_review_intent(KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE)),
             None
+        );
+    }
+
+    #[test]
+    fn default_choice_dialog_intent_no_tab() {
+        assert_eq!(
+            default_choice_dialog_intent(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::Next))
+        );
+        assert_eq!(
+            default_choice_dialog_intent(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            None
+        );
+        assert_eq!(
+            default_choice_dialog_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            Some(UiIntent::Cancel)
         );
     }
 

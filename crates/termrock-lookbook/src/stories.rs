@@ -2742,7 +2742,7 @@ fn action_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         },
     ];
     let mut state = ActionBarState {
-        focused: Some("accept"),
+        cursor: Some("accept"),
         ..ActionBarState::default()
     };
     frame.render_stateful_widget(
@@ -5345,7 +5345,7 @@ fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         },
     ];
     let mut state = ActionBarState {
-        focused: Some("accept"),
+        cursor: Some("accept"),
         ..ActionBarState::default()
     };
     frame.render_stateful_widget(

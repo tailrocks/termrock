@@ -330,7 +330,7 @@ mod backdrop_tests {
             state.handle_intent(&actions, UiIntent::Move(NavigationMove::Next)),
             Outcome::Changed
         );
-        assert_eq!(state.focused, Some("cancel"));
+        assert_eq!(state.cursor, Some("cancel"));
         assert_eq!(
             state.handle_intent(&actions, UiIntent::Activate),
             Outcome::Activated("cancel")
@@ -342,6 +342,61 @@ mod backdrop_tests {
         assert_eq!(
             state.handle_key(&actions, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             Outcome::Cancelled
+        );
+        // Tab is host/scene-owned — not local cursor.
+        assert_eq!(
+            state.handle_key(&actions, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            Outcome::Ignored
+        );
+    }
+
+    #[test]
+    fn choice_dialog_accepts_input_gate() {
+        let actions = [Action {
+            id: "ok",
+            label: "OK",
+            enabled: true,
+            style: None,
+        }];
+        let mut state = ChoiceDialogState::new(Some("ok"));
+        state.set_accepts_input(false);
+        assert_eq!(
+            state.handle_intent(&actions, UiIntent::Activate),
+            Outcome::Ignored
+        );
+    }
+
+    #[test]
+    fn choice_dialog_narrow_stacks_actions() {
+        let actions = [
+            Action {
+                id: "a",
+                label: "Accept",
+                enabled: true,
+                style: None,
+            },
+            Action {
+                id: "c",
+                label: "Cancel",
+                enabled: true,
+                style: None,
+            },
+        ];
+        let system = DesignSystem::default();
+        let dialog = ChoiceDialog::new(
+            Dialog::new("Choose", Text::from("?"), &system).emphasis(PanelChrome::Focused),
+            &actions,
+        )
+        .ascii(true);
+        let area = Rect::new(0, 0, 22, 8);
+        let mut buffer = Buffer::empty(area);
+        let mut state = ChoiceDialogState::new(Some("a"));
+        (&dialog).render(area, &mut buffer, &mut state);
+        assert!(state.regions.len() >= 1);
+        let text: String = buffer.content().iter().map(|c| c.symbol()).collect();
+        assert!(
+            text.contains("Accept") || text.contains("[Accept]"),
+            "{text:?}"
         );
     }
 
@@ -643,34 +698,65 @@ impl Widget for Dialog<'_> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `ChoiceDialog`.
+///
+/// **Action cursor** is bar-local. Scene/overlay surface focus is host-owned;
+/// hosts may project scene focus into [`Self::cursor`] each frame (lookbook trap).
 pub struct ChoiceDialogState<Id> {
-    /// Whether this item is focused.
-    pub focused: Option<Id>,
+    /// Action cursor (not scene surface focus).
+    pub cursor: Option<Id>,
     /// Hit regions produced by the most recent render.
     pub regions: Vec<HitRegion<Id>>,
     /// When true, activation is ignored (async confirm in progress).
     loading: bool,
+    /// Host grants keyboard/pointer into this dialog.
+    accepts_input: bool,
 }
 
 impl<Id> Default for ChoiceDialogState<Id> {
     fn default() -> Self {
         Self {
-            focused: None,
+            cursor: None,
             regions: Vec::new(),
             loading: false,
+            accepts_input: true,
         }
     }
 }
 
 impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     #[must_use]
-    /// Creates choice-dialog state with no focused or hovered action.
-    pub const fn new(focused: Option<Id>) -> Self {
+    /// Creates choice-dialog state with optional initial action cursor.
+    pub const fn new(cursor: Option<Id>) -> Self {
         Self {
-            focused,
+            cursor,
             regions: Vec::new(),
             loading: false,
+            accepts_input: true,
         }
+    }
+
+    /// Action cursor id.
+    #[must_use]
+    pub fn cursor(&self) -> Option<&Id> {
+        self.cursor.as_ref()
+    }
+
+    /// Deprecated name for [`Self::cursor`].
+    #[deprecated(note = "use cursor")]
+    #[must_use]
+    pub fn focused(&self) -> Option<&Id> {
+        self.cursor.as_ref()
+    }
+
+    /// Host input gate (overlay top / scene ownership).
+    pub fn set_accepts_input(&mut self, accepts: bool) {
+        self.accepts_input = accepts;
+    }
+
+    /// Whether host granted input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
     }
 
     /// Marks the dialog as waiting on an async action (blocks activation).
@@ -684,27 +770,26 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         self.loading
     }
 
-    /// Routes cancellation, cyclic action focus, and activation keys.
+    /// Routes cancellation, cyclic action cursor, and activation keys.
     ///
-    /// Prefer [`Self::handle_intent`] when the app owns keymaps.
+    /// Prefer [`Self::handle_intent`] / [`crate::interaction::default_choice_dialog_intent`].
+    /// **Tab is host/scene owned** when actions are registered on InteractionScene —
+    /// default intent maps Left/Right (not Tab) for local cursor.
     pub fn handle_key(&mut self, actions: &[Action<'_, Id>], key: KeyEvent) -> Outcome<Id> {
-        if key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
         }
-        let intent = match key.code {
-            KeyCode::Esc => UiIntent::Cancel,
-            KeyCode::Enter => UiIntent::Activate,
-            KeyCode::Left | KeyCode::Up | KeyCode::BackTab => {
-                UiIntent::Move(NavigationMove::Previous)
-            }
-            KeyCode::Right | KeyCode::Down | KeyCode::Tab => UiIntent::Move(NavigationMove::Next),
-            _ => return Outcome::Ignored,
-        };
-        self.handle_intent(actions, intent)
+        if let Some(intent) = crate::interaction::default_choice_dialog_intent(key) {
+            return self.handle_intent(actions, intent);
+        }
+        Outcome::Ignored
     }
 
     /// Semantic intent routing for footer actions.
     pub fn handle_intent(&mut self, actions: &[Action<'_, Id>], intent: UiIntent) -> Outcome<Id> {
+        if !self.accepts_input {
+            return Outcome::Ignored;
+        }
         if self.loading
             && matches!(
                 intent,
@@ -723,14 +808,20 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
             UiIntent::Move(NavigationMove::First) => {
                 let enabled: Vec<_> = actions.iter().filter(|a| a.enabled).collect();
                 enabled.first().map_or(Outcome::Ignored, |a| {
-                    self.focused = Some(a.id.clone());
+                    if self.cursor.as_ref() == Some(&a.id) {
+                        return Outcome::Ignored;
+                    }
+                    self.cursor = Some(a.id.clone());
                     Outcome::Changed
                 })
             }
             UiIntent::Move(NavigationMove::Last) => {
                 let enabled: Vec<_> = actions.iter().filter(|a| a.enabled).collect();
                 enabled.last().map_or(Outcome::Ignored, |a| {
-                    self.focused = Some(a.id.clone());
+                    if self.cursor.as_ref() == Some(&a.id) {
+                        return Outcome::Ignored;
+                    }
+                    self.cursor = Some(a.id.clone());
                     Outcome::Changed
                 })
             }
@@ -752,35 +843,39 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         let enabled: Vec<&Action<'_, Id>> =
             actions.iter().filter(|action| action.enabled).collect();
         if enabled.is_empty() {
-            self.focused = None;
+            self.cursor = None;
             return Outcome::Ignored;
         }
         let current = self
-            .focused
+            .cursor
             .as_ref()
-            .and_then(|focused| enabled.iter().position(|action| &action.id == focused));
+            .and_then(|cur| enabled.iter().position(|action| &action.id == cur));
         let next = match (current, direction.is_negative()) {
             (Some(0), true) | (None, true) => enabled.len() - 1,
             (Some(index), true) => index - 1,
             (Some(index), false) => (index + 1) % enabled.len(),
             (None, false) => 0,
         };
-        self.focused = Some(enabled[next].id.clone());
+        let id = enabled[next].id.clone();
+        if self.cursor.as_ref() == Some(&id) {
+            return Outcome::Ignored;
+        }
+        self.cursor = Some(id);
         Outcome::Changed
     }
 
     #[must_use]
     /// Returns the semantic outcome for the currently selected item.
     pub fn activate_selected(&self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
-        if self.loading {
+        if self.loading || !self.accepts_input {
             return Outcome::Ignored;
         }
-        self.focused
+        self.cursor
             .as_ref()
-            .and_then(|focused| {
+            .and_then(|cur| {
                 actions
                     .iter()
-                    .find(|action| action.enabled && &action.id == focused)
+                    .find(|action| action.enabled && &action.id == cur)
             })
             .map_or(Outcome::Ignored, |action| {
                 Outcome::Activated(action.id.clone())
@@ -789,8 +884,11 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
 
     #[must_use]
     /// Maps a pointer position to the semantic outcome of the painted hit region.
+    ///
+    /// Click always activates the hit action (dialog one-shot). Hosts that want
+    /// scene focus first should route pointer through InteractionScene.
     pub fn click(&mut self, position: ratatui_core::layout::Position) -> Outcome<Id> {
-        if self.loading {
+        if self.loading || !self.accepts_input {
             return Outcome::Ignored;
         }
         let Some(region) = self
@@ -800,7 +898,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         else {
             return Outcome::Ignored;
         };
-        self.focused = Some(region.id.clone());
+        self.cursor = Some(region.id.clone());
         Outcome::Activated(region.id.clone())
     }
 }
@@ -811,6 +909,8 @@ pub struct ChoiceDialog<'a, Id> {
     dialog: Dialog<'a>,
     actions: &'a [Action<'a, Id>],
     gap: &'a str,
+    ascii: bool,
+    colorless: bool,
 }
 
 impl<'a, Id> ChoiceDialog<'a, Id> {
@@ -821,6 +921,8 @@ impl<'a, Id> ChoiceDialog<'a, Id> {
             dialog,
             actions,
             gap: " ",
+            ascii: false,
+            colorless: false,
         }
     }
 
@@ -828,6 +930,20 @@ impl<'a, Id> ChoiceDialog<'a, Id> {
     /// Sets spacing between adjacent items in terminal cells.
     pub const fn gap(mut self, gap: &'a str) -> Self {
         self.gap = gap;
+        self
+    }
+
+    /// ASCII action cursor marks.
+    #[must_use]
+    pub const fn ascii(mut self, ascii: bool) -> Self {
+        self.ascii = ascii;
+        self
+    }
+
+    /// Reduced-color action paint.
+    #[must_use]
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
         self
     }
 }
@@ -841,22 +957,35 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
             state.regions.clear();
             return;
         }
+        let narrow = area.width < 28;
+        let action_rows = if narrow {
+            (self.actions.len() as u16)
+                .min(area.height.saturating_sub(3))
+                .max(1)
+        } else {
+            1
+        };
         let action_area = Rect::new(
             area.x.saturating_add(1),
-            area.bottom().saturating_sub(2),
+            area.bottom().saturating_sub(action_rows.saturating_add(1)),
             area.width.saturating_sub(2),
-            1,
+            action_rows,
         );
         let mut action_state = ActionBarState {
-            focused: state.focused.clone(),
+            cursor: state.cursor.clone(),
             regions: Vec::new(),
         };
-        (&ActionBar::new(self.actions, self.dialog.tokens()).gap(self.gap)).render(
-            action_area,
-            buffer,
-            &mut action_state,
-        );
-        state.focused = action_state.focused;
+        (&ActionBar::new(self.actions, self.dialog.tokens())
+            .gap(self.gap)
+            .ascii(self.ascii)
+            .colorless(self.colorless)
+            .vertical(narrow && action_rows > 1))
+            .render(action_area, buffer, &mut action_state);
+        // Do not clobber host-projected cursor from paint; only take regions.
+        // If paint discovers empty cursor, keep host value.
+        if state.cursor.is_none() {
+            state.cursor = action_state.cursor;
+        }
         state.regions = action_state.regions;
     }
 }

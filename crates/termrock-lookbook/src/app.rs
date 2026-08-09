@@ -721,7 +721,7 @@ impl Lookbook {
                 let Some(modal) = self.prototype_modal.as_mut() else {
                     return;
                 };
-                modal.state.focused = self.host.focused();
+                modal.state.cursor = self.host.focused();
                 if matches!(
                     modal.state.activate_selected(&actions),
                     Outcome::Activated(_)
@@ -749,7 +749,7 @@ impl Lookbook {
         let Some(modal) = self.prototype_modal.as_mut() else {
             return;
         };
-        modal.state.focused = self.host.focused();
+        modal.state.cursor = self.host.focused();
         if matches!(modal.state.click(mouse.position), Outcome::Activated(_)) {
             self.close_focus_modal();
         }
@@ -767,7 +767,7 @@ impl Lookbook {
         let Some(modal) = self.prototype_modal.as_mut() else {
             return;
         };
-        modal.state.focused = self.host.focused();
+        modal.state.cursor = self.host.focused();
         let system = self.host.system();
         frame.render_stateful_widget(
             &ChoiceDialog::new(

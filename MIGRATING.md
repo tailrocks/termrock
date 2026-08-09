@@ -86,6 +86,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0070 | `v0.13.0` | [ObjectInspector cursor vs scene focus](migrations/0070-v0.13.0-object-inspector-cursor.md) |
 | 0071 | `v0.13.0` | [LogStream premium redesign](migrations/0071-v0.13.0-log-stream-premium.md) |
 | 0072 | `v0.13.0` | [DiffReview hunk cursor](migrations/0072-v0.13.0-diff-review-cursor.md) |
+| 0073 | `v0.13.0` | [Dialog/ChoiceDialog action cursor](migrations/0073-v0.13.0-dialog-action-cursor.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
