@@ -12,6 +12,7 @@ mod command_palette;
 mod completion_menu;
 mod composed_row;
 mod content;
+mod accordion;
 mod collapsible;
 mod section;
 mod separator;
@@ -89,6 +90,10 @@ pub use composed_row::{ComposedRow, ComposedRowParts};
 pub use content::{
     Alert, AlertOutcome, AlertState, AlertTone, Callout, CalloutTone, Heading, HeadingLevel,
     Paragraph,
+};
+pub use accordion::{
+    Accordion, AccordionItem, AccordionItemParts, AccordionMode, AccordionOutcome, AccordionParts,
+    AccordionRecipe, AccordionState,
 };
 pub use collapsible::{
     CollapsedContentPolicy, Collapsible, CollapsibleOutcome, CollapsibleParts, CollapsibleState,

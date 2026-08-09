@@ -591,6 +591,60 @@ pub(crate) fn stories() -> Vec<Story> {
             action_bar,
         ),
         Story::new(
+            "accordion/section",
+            "Accordion section",
+            "Accordion",
+            "Multi-open section recipe with roving cursor.",
+            44,
+            14,
+            accordion_section_story,
+        ),
+        Story::new(
+            "accordion/settings",
+            "Accordion settings",
+            "Accordion",
+            "Single-open settings groups.",
+            44,
+            12,
+            accordion_settings_story,
+        ),
+        Story::new(
+            "accordion/logs",
+            "Accordion logs",
+            "Accordion",
+            "Multi-open log/tool streams; keep-mounted policy.",
+            48,
+            14,
+            accordion_logs_story,
+        ),
+        Story::new(
+            "accordion/faq",
+            "Accordion FAQ",
+            "Accordion",
+            "Single-open FAQ help recipe.",
+            48,
+            12,
+            accordion_faq_story,
+        ),
+        Story::new(
+            "accordion/narrow",
+            "Accordion narrow",
+            "Accordion",
+            "Triggers truncate; layout survives narrow width.",
+            18,
+            10,
+            accordion_narrow_story,
+        ),
+        Story::new(
+            "accordion/scroll-body",
+            "Accordion scroll body",
+            "Accordion",
+            "Capped content height for nested scroll hosts.",
+            44,
+            12,
+            accordion_scroll_body_story,
+        ),
+        Story::new(
             "collapsible/inline",
             "Collapsible inline",
             "Collapsible",
@@ -4661,6 +4715,147 @@ fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let pane = LogPane::new(system).title("Frozen build log");
     state.scroll_to_oldest();
     frame.render_stateful_widget(&pane, area, &mut state);
+}
+
+fn accordion_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use ratatui::widgets::Widget as _;
+    let items = [
+        AccordionItem::new("gen", "General").content_height(2),
+        AccordionItem::new("net", "Network").content_height(2),
+        AccordionItem::new("adv", "Advanced").content_height(2),
+    ];
+    let mut state = AccordionState::new().initially_open(["gen", "adv"]);
+    state.set_surface_focused(true);
+    state.set_cursor(Some("gen"));
+    let parts = Accordion::section(&items, system).paint(area, frame.buffer_mut(), &mut state);
+    for (id, body) in [
+        ("gen", "Theme · density"),
+        ("net", "Proxy · DNS"),
+        ("adv", "Experimental flags"),
+    ] {
+        if let Some(r) = parts.content_of(&id)
+            && r.height > 0
+        {
+            Paragraph::new(body)
+                .style(system.style(Role::TextMuted))
+                .render(r, frame.buffer_mut());
+        }
+    }
+}
+
+fn accordion_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use ratatui::widgets::Widget as _;
+    let items = [
+        AccordionItem::new("profile", "Profile").content_height(3),
+        AccordionItem::new("keys", "API keys").content_height(3),
+        AccordionItem::new("danger", "Danger zone").content_height(2),
+    ];
+    let mut state = AccordionState::new().initially_open(["profile"]);
+    state.set_surface_focused(true);
+    state.set_cursor(Some("profile"));
+    let parts = Accordion::settings(&items, system).paint(area, frame.buffer_mut(), &mut state);
+    if let Some(r) = parts.content_of(&"profile")
+        && r.height > 0
+    {
+        Paragraph::new("Name: Ada\nEmail: ada@example.com")
+            .style(system.style(Role::Text))
+            .render(r, frame.buffer_mut());
+    }
+}
+
+fn accordion_logs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use ratatui::widgets::Widget as _;
+    let items = [
+        AccordionItem::new("build", "build.log").content_height(3),
+        AccordionItem::new("test", "test.log").content_height(3),
+        AccordionItem::new("agent", "agent.trace").content_height(2),
+    ];
+    let mut state = AccordionState::new().initially_open(["build", "test"]);
+    state.set_surface_focused(true);
+    state.set_cursor(Some("test"));
+    let parts = Accordion::logs(&items, system)
+        .keep_mounted()
+        .paint(area, frame.buffer_mut(), &mut state);
+    for (id, body) in [
+        ("build", "compiling termrock…\nfinished in 4.2s"),
+        ("test", "running 19 tests\nok"),
+        ("agent", "tool: cargo test"),
+    ] {
+        if let Some(r) = parts.content_of(&id)
+            && r.height > 0
+        {
+            Paragraph::new(body)
+                .style(system.style(Role::TextMuted))
+                .render(r, frame.buffer_mut());
+        }
+    }
+}
+
+fn accordion_faq_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use ratatui::widgets::Widget as _;
+    let items = [
+        AccordionItem::new("q1", "How do I pin a version?").content_height(3),
+        AccordionItem::new("q2", "Where is focus painted?").content_height(3),
+        AccordionItem::new("q3", "Can I theme phosphor away?").content_height(2),
+    ];
+    let mut state = AccordionState::new().initially_open(["q1"]);
+    state.set_surface_focused(true);
+    state.set_cursor(Some("q1"));
+    let parts = Accordion::faq(&items, system).paint(area, frame.buffer_mut(), &mut state);
+    if let Some(r) = parts.content_of(&"q1")
+        && r.height > 0
+    {
+        Paragraph::new("Pin an exact Git revision and migrate\nforward with migrations/.")
+            .style(system.style(Role::TextMuted))
+            .render(r, frame.buffer_mut());
+    }
+}
+
+fn accordion_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use ratatui::widgets::Widget as _;
+    let items = [
+        AccordionItem::new("a", "Very long settings category title").content_height(2),
+        AccordionItem::new("b", "Another long optional group").content_height(2),
+    ];
+    let mut state = AccordionState::new().initially_open(["a"]);
+    state.set_surface_focused(true);
+    state.set_cursor(Some("a"));
+    let parts = Accordion::settings(&items, system).paint(area, frame.buffer_mut(), &mut state);
+    if let Some(r) = parts.content_of(&"a")
+        && r.height > 0
+    {
+        Paragraph::new("body")
+            .style(system.style(Role::TextMuted))
+            .render(r, frame.buffer_mut());
+    }
+}
+
+fn accordion_scroll_body_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use ratatui::widgets::Widget as _;
+    let items = [
+        AccordionItem::new("long", "Long transcript").content_height(20),
+        AccordionItem::new("short", "Notes").content_height(2),
+    ];
+    let mut state = AccordionState::new().initially_open(["long"]);
+    state.set_surface_focused(true);
+    state.set_cursor(Some("long"));
+    let parts = Accordion::logs(&items, system)
+        .max_content_height(5)
+        .paint(area, frame.buffer_mut(), &mut state);
+    if let Some(r) = parts.content_of(&"long")
+        && r.height > 0
+    {
+        // Host would nest ScrollArea here; show capped viewport cue.
+        Paragraph::new("line 1\nline 2\nline 3\nline 4\n… scroll")
+            .style(system.style(Role::TextMuted))
+            .render(r, frame.buffer_mut());
+    }
 }
 
 fn collapsible_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

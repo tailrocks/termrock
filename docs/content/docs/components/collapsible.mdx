@@ -110,8 +110,9 @@ Collapsible::new("Child", &system).depth(1).paint(area, buf, &mut child_state);
 | Role | free-form detail | editorial group | region | hierarchy |
 
 Prefer **Collapsible** for tool args, optional forms, and nested detail without
-chrome. Prefer **Section**/**Panel** when you need their chrome; they may still
-collapse their own bodies.
+chrome. Prefer **Accordion** for multi-item groups with roving focus (settings,
+FAQ, log stacks). Prefer **Section**/**Panel** when you need their chrome; they
+may still collapse their own bodies.
 
 ## Migration
 

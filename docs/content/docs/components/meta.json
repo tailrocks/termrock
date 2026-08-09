@@ -3,6 +3,7 @@
   "pagesIndex": "../components",
   "defaultOpen": true,
   "pages": [
+    "accordion",
     "action-bar",
     "approval-card",
     "backdrop",

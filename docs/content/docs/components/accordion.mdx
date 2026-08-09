@@ -1,0 +1,114 @@
+---
+title: Accordion
+description: 'Single- or multi-open disclosure groups with roving focus, typeahead, and section/settings/logs/FAQ recipes.'
+---
+
+## Previews
+
+### `accordion/section`
+
+![Section multi-open](/component-previews/accordion-section.svg)
+
+### `accordion/settings`
+
+![Settings single-open](/component-previews/accordion-settings.svg)
+
+### `accordion/logs`
+
+![Logs multi-open](/component-previews/accordion-logs.svg)
+
+### `accordion/faq`
+
+![FAQ](/component-previews/accordion-faq.svg)
+
+### `accordion/narrow`
+
+![Narrow](/component-previews/accordion-narrow.svg)
+
+### `accordion/scroll-body`
+
+![Capped body for scroll hosts](/component-previews/accordion-scroll-body.svg)
+
+## Anatomy
+
+`root` · item[] (`trigger` · optional `content`)
+
+Built from **Collapsible** (per-item paint) + **RovingFocusGroup** (cursor).
+
+## Focus model
+
+| Layer | Meaning |
+|-------|---------|
+| `surface_focused` | Accordion owns keyboard |
+| roving cursor | Navigation focus |
+| open set | Expanded bodies — independent of cursor |
+
+## Recipes
+
+| Recipe | Mode | Trigger | Closed policy |
+|--------|------|---------|---------------|
+| Section | Multiple | Section | Unmount |
+| Settings | Single | Section | Unmount |
+| Logs | Multiple | Inline | KeepMounted |
+| FAQ | Single | Section | Unmount |
+
+## Usage
+
+```rust
+use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+
+let items = [
+    AccordionItem::new("gen", "General").content_height(4),
+    AccordionItem::new("net", "Network").content_height(4),
+];
+let mut state = AccordionState::new().initially_open(["gen"]);
+state.set_surface_focused(true);
+state.set_cursor(Some("gen"));
+
+let parts = Accordion::settings(&items, &system)
+    .max_content_height(8)
+    .paint(area, buf, &mut state);
+
+if let Some(body) = parts.content_of(&"gen") {
+    // nest ScrollArea for large content
+}
+```
+
+## Controlled open
+
+```rust
+Accordion::section(&items, &system)
+    .open_ids(&host_open)
+    .paint(area, buf, &mut state);
+// Opened/Closed outcomes do not mutate state.open — host applies
+```
+
+## Keyboard
+
+| Keys | Action |
+|------|--------|
+| ↑/↓, j/k | Move cursor |
+| Home / End | First / last enabled |
+| typeahead | Jump by label prefix |
+| Enter / Space | Toggle expand |
+| → / ← | Expand / collapse |
+| click trigger | Focus + toggle |
+
+Disabled items skip roving and activation.
+
+## Large content
+
+Prefer `content_height` / `max_content_height` for the content rect, then nest
+`ScrollArea` inside. Accordion never owns scroll offsets.
+
+## vs Collapsible / Section / Tree
+
+| | Accordion | Collapsible | Section | Tree |
+|--|-----------|-------------|---------|------|
+| Items | N with group mode | 1 | 1 chrome | hierarchy |
+| Roving | yes | no | no | collection |
+| Use | settings/FAQ/logs groups | one detail | editorial | files/nav |
+
+## Migration
+
+See `migrations/0113-v0.13.0-accordion.md`.

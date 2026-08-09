@@ -13627,6 +13627,165 @@ pub const termrock::widgets::data_view_bench::ROWS_10: u64
 pub const termrock::widgets::data_view_bench::ROWS_10K: u64
 pub const termrock::widgets::data_view_bench::ROWS_1M: u64
 pub const termrock::widgets::data_view_bench::VIEWPORT_ROWS: u16
+#[non_exhaustive] pub enum termrock::widgets::AccordionMode
+pub termrock::widgets::AccordionMode::Multiple
+pub termrock::widgets::AccordionMode::Single
+impl termrock::widgets::AccordionMode
+pub const fn termrock::widgets::AccordionMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::AccordionMode
+pub fn termrock::widgets::AccordionMode::clone(&self) -> termrock::widgets::AccordionMode
+impl core::cmp::Eq for termrock::widgets::AccordionMode
+impl core::cmp::PartialEq for termrock::widgets::AccordionMode
+pub fn termrock::widgets::AccordionMode::eq(&self, &termrock::widgets::AccordionMode) -> bool
+impl core::default::Default for termrock::widgets::AccordionMode
+pub fn termrock::widgets::AccordionMode::default() -> termrock::widgets::AccordionMode
+impl core::fmt::Debug for termrock::widgets::AccordionMode
+pub fn termrock::widgets::AccordionMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AccordionMode
+pub fn termrock::widgets::AccordionMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AccordionMode
+impl core::marker::StructuralPartialEq for termrock::widgets::AccordionMode
+impl core::marker::Freeze for termrock::widgets::AccordionMode
+impl core::marker::Send for termrock::widgets::AccordionMode
+impl core::marker::Sync for termrock::widgets::AccordionMode
+impl core::marker::Unpin for termrock::widgets::AccordionMode
+impl core::marker::UnsafeUnpin for termrock::widgets::AccordionMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AccordionMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AccordionMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AccordionMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AccordionMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AccordionMode where U: core::convert::From<T>
+pub fn termrock::widgets::AccordionMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AccordionMode where U: core::convert::Into<T>
+pub type termrock::widgets::AccordionMode::Error = core::convert::Infallible
+pub fn termrock::widgets::AccordionMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AccordionMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AccordionMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AccordionMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AccordionMode where T: core::clone::Clone
+pub type termrock::widgets::AccordionMode::Owned = T
+pub fn termrock::widgets::AccordionMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::AccordionMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AccordionMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AccordionMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AccordionMode where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AccordionMode where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AccordionMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AccordionMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AccordionMode
+pub fn termrock::widgets::AccordionMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AccordionMode
+#[non_exhaustive] pub enum termrock::widgets::AccordionOutcome<Id>
+pub termrock::widgets::AccordionOutcome::Closed
+pub termrock::widgets::AccordionOutcome::Closed::id: Id
+pub termrock::widgets::AccordionOutcome::CursorMoved
+pub termrock::widgets::AccordionOutcome::CursorMoved::from: core::option::Option<Id>
+pub termrock::widgets::AccordionOutcome::CursorMoved::to: core::option::Option<Id>
+pub termrock::widgets::AccordionOutcome::ExclusiveOpened
+pub termrock::widgets::AccordionOutcome::ExclusiveOpened::closed: alloc::vec::Vec<Id>
+pub termrock::widgets::AccordionOutcome::ExclusiveOpened::id: Id
+pub termrock::widgets::AccordionOutcome::Ignored
+pub termrock::widgets::AccordionOutcome::Opened
+pub termrock::widgets::AccordionOutcome::Opened::id: Id
+impl<Id> termrock::widgets::AccordionOutcome<Id>
+pub const fn termrock::widgets::AccordionOutcome<Id>::changed(&self) -> bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::AccordionOutcome<Id>
+pub fn termrock::widgets::AccordionOutcome<Id>::clone(&self) -> termrock::widgets::AccordionOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::AccordionOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::AccordionOutcome<Id>
+pub fn termrock::widgets::AccordionOutcome<Id>::eq(&self, &termrock::widgets::AccordionOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::AccordionOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::AccordionOutcome<Id>
+pub fn termrock::widgets::AccordionOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::AccordionOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::AccordionOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::AccordionOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::AccordionOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::AccordionOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AccordionOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AccordionOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AccordionOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AccordionOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AccordionOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::AccordionOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AccordionOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::AccordionOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::AccordionOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AccordionOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AccordionOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AccordionOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AccordionOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::AccordionOutcome<Id>::Owned = T
+pub fn termrock::widgets::AccordionOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AccordionOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AccordionOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AccordionOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AccordionOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AccordionOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AccordionOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AccordionOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AccordionOutcome<Id>
+pub fn termrock::widgets::AccordionOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AccordionOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::AccordionRecipe
+pub termrock::widgets::AccordionRecipe::Faq
+pub termrock::widgets::AccordionRecipe::Logs
+pub termrock::widgets::AccordionRecipe::Section
+pub termrock::widgets::AccordionRecipe::Settings
+impl termrock::widgets::AccordionRecipe
+pub const fn termrock::widgets::AccordionRecipe::content_policy(self) -> termrock::widgets::CollapsedContentPolicy
+pub const fn termrock::widgets::AccordionRecipe::id(self) -> &'static str
+pub const fn termrock::widgets::AccordionRecipe::mode(self) -> termrock::widgets::AccordionMode
+pub const fn termrock::widgets::AccordionRecipe::variant(self) -> termrock::widgets::CollapsibleVariant
+impl core::clone::Clone for termrock::widgets::AccordionRecipe
+pub fn termrock::widgets::AccordionRecipe::clone(&self) -> termrock::widgets::AccordionRecipe
+impl core::cmp::Eq for termrock::widgets::AccordionRecipe
+impl core::cmp::PartialEq for termrock::widgets::AccordionRecipe
+pub fn termrock::widgets::AccordionRecipe::eq(&self, &termrock::widgets::AccordionRecipe) -> bool
+impl core::default::Default for termrock::widgets::AccordionRecipe
+pub fn termrock::widgets::AccordionRecipe::default() -> termrock::widgets::AccordionRecipe
+impl core::fmt::Debug for termrock::widgets::AccordionRecipe
+pub fn termrock::widgets::AccordionRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AccordionRecipe
+pub fn termrock::widgets::AccordionRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AccordionRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::AccordionRecipe
+impl core::marker::Freeze for termrock::widgets::AccordionRecipe
+impl core::marker::Send for termrock::widgets::AccordionRecipe
+impl core::marker::Sync for termrock::widgets::AccordionRecipe
+impl core::marker::Unpin for termrock::widgets::AccordionRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::AccordionRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AccordionRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AccordionRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AccordionRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AccordionRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AccordionRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::AccordionRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AccordionRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::AccordionRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::AccordionRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AccordionRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AccordionRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AccordionRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AccordionRecipe where T: core::clone::Clone
+pub type termrock::widgets::AccordionRecipe::Owned = T
+pub fn termrock::widgets::AccordionRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::AccordionRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AccordionRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AccordionRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AccordionRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AccordionRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AccordionRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AccordionRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AccordionRecipe
+pub fn termrock::widgets::AccordionRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AccordionRecipe
 #[non_exhaustive] pub enum termrock::widgets::ActivationOutcome
 pub termrock::widgets::ActivationOutcome::Activated
 pub termrock::widgets::ActivationOutcome::ConfirmRequired
@@ -19612,6 +19771,270 @@ pub unsafe fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::clone_to_unin
 impl<T> core::convert::From<T> for termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub struct termrock::widgets::Accordion<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Accordion<'a, Id>
+pub fn termrock::widgets::Accordion<'a, Id>::handle_intent(&self, &mut termrock::widgets::AccordionState<Id>, termrock::context::ContextUiIntent) -> termrock::widgets::AccordionOutcome<Id>
+pub fn termrock::widgets::Accordion<'a, Id>::handle_key(&self, &mut termrock::widgets::AccordionState<Id>, termrock::input::KeyEvent) -> termrock::widgets::AccordionOutcome<Id>
+pub fn termrock::widgets::Accordion<'a, Id>::handle_key_result(&self, &mut termrock::widgets::AccordionState<Id>, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::AccordionOutcome<Id>>
+pub fn termrock::widgets::Accordion<'a, Id>::handle_mouse(&self, &mut termrock::widgets::AccordionState<Id>, termrock::input::MouseEvent) -> termrock::widgets::AccordionOutcome<Id>
+pub fn termrock::widgets::Accordion<'a, Id>::layout(&self, ratatui_core::layout::rect::Rect, &termrock::widgets::AccordionState<Id>) -> termrock::widgets::AccordionParts<Id>
+pub fn termrock::widgets::Accordion<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::AccordionState<Id>) -> termrock::widgets::AccordionParts<Id>
+pub fn termrock::widgets::Accordion<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, ratatui_core::layout::rect::Rect, &termrock::widgets::AccordionState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+impl<'a, Id> termrock::widgets::Accordion<'a, Id>
+pub const fn termrock::widgets::Accordion<'a, Id>::content_policy(self, termrock::widgets::CollapsedContentPolicy) -> Self
+pub fn termrock::widgets::Accordion<'a, Id>::faq(&'a [termrock::widgets::AccordionItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Accordion<'a, Id>::keep_mounted(self) -> Self
+pub fn termrock::widgets::Accordion<'a, Id>::logs(&'a [termrock::widgets::AccordionItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Accordion<'a, Id>::max_content_height(self, u16) -> Self
+pub const fn termrock::widgets::Accordion<'a, Id>::mode(self, termrock::widgets::AccordionMode) -> Self
+pub const fn termrock::widgets::Accordion<'a, Id>::multiple(self) -> Self
+pub fn termrock::widgets::Accordion<'a, Id>::new(&'a [termrock::widgets::AccordionItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Accordion<'a, Id>::open_ids(self, &'a [Id]) -> Self
+pub const fn termrock::widgets::Accordion<'a, Id>::open_mode(&self) -> termrock::widgets::AccordionMode
+pub fn termrock::widgets::Accordion<'a, Id>::recipe(self, termrock::widgets::AccordionRecipe) -> Self
+pub const fn termrock::widgets::Accordion<'a, Id>::recipe_kind(&self) -> termrock::widgets::AccordionRecipe
+pub fn termrock::widgets::Accordion<'a, Id>::section(&'a [termrock::widgets::AccordionItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Accordion<'a, Id>::settings(&'a [termrock::widgets::AccordionItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Accordion<'a, Id>::single(self) -> Self
+pub const fn termrock::widgets::Accordion<'a, Id>::variant(self, termrock::widgets::CollapsibleVariant) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Accordion<'a, Id>
+pub fn termrock::widgets::Accordion<'a, Id>::clone(&self) -> termrock::widgets::Accordion<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Accordion<'a, Id>
+pub fn termrock::widgets::Accordion<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for &termrock::widgets::Accordion<'_, Id>
+pub fn &termrock::widgets::Accordion<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for termrock::widgets::Accordion<'_, Id>
+pub fn termrock::widgets::Accordion<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::Accordion<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::Accordion<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::Accordion<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::Accordion<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::Accordion<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Accordion<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Accordion<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::Accordion<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::Accordion<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Accordion<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::Accordion<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::Accordion<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Accordion<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Accordion<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Accordion<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Accordion<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::Accordion<'a, Id>::Owned = T
+pub fn termrock::widgets::Accordion<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Accordion<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Accordion<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Accordion<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Accordion<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Accordion<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Accordion<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Accordion<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Accordion<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Accordion<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Accordion<'a, Id>
+pub fn termrock::widgets::Accordion<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Accordion<'a, Id>
+pub struct termrock::widgets::AccordionItem<'a, Id>
+pub termrock::widgets::AccordionItem::content_height: u16
+pub termrock::widgets::AccordionItem::disabled: bool
+pub termrock::widgets::AccordionItem::id: Id
+pub termrock::widgets::AccordionItem::trigger: &'a str
+impl<'a, Id> termrock::widgets::AccordionItem<'a, Id>
+pub const fn termrock::widgets::AccordionItem<'a, Id>::content_height(self, u16) -> Self
+pub const fn termrock::widgets::AccordionItem<'a, Id>::disabled(self, bool) -> Self
+pub const fn termrock::widgets::AccordionItem<'a, Id>::new(Id, &'a str) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::AccordionItem<'a, Id>
+pub fn termrock::widgets::AccordionItem<'a, Id>::clone(&self) -> termrock::widgets::AccordionItem<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::AccordionItem<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::AccordionItem<'a, Id>
+pub fn termrock::widgets::AccordionItem<'a, Id>::eq(&self, &termrock::widgets::AccordionItem<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::AccordionItem<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::AccordionItem<'a, Id>
+pub fn termrock::widgets::AccordionItem<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::AccordionItem<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::AccordionItem<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::AccordionItem<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::AccordionItem<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::AccordionItem<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::AccordionItem<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AccordionItem<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AccordionItem<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AccordionItem<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AccordionItem<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AccordionItem<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::AccordionItem<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AccordionItem<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::AccordionItem<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::AccordionItem<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AccordionItem<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AccordionItem<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AccordionItem<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AccordionItem<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::AccordionItem<'a, Id>::Owned = T
+pub fn termrock::widgets::AccordionItem<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AccordionItem<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AccordionItem<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AccordionItem<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AccordionItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionItem<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AccordionItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionItem<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AccordionItem<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AccordionItem<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AccordionItem<'a, Id>
+pub fn termrock::widgets::AccordionItem<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AccordionItem<'a, Id>
+pub struct termrock::widgets::AccordionItemParts<Id>
+pub termrock::widgets::AccordionItemParts::content: ratatui_core::layout::rect::Rect
+pub termrock::widgets::AccordionItemParts::disabled: bool
+pub termrock::widgets::AccordionItemParts::id: Id
+pub termrock::widgets::AccordionItemParts::open: bool
+pub termrock::widgets::AccordionItemParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::AccordionItemParts::trigger: ratatui_core::layout::rect::Rect
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::AccordionItemParts<Id>
+pub fn termrock::widgets::AccordionItemParts<Id>::clone(&self) -> termrock::widgets::AccordionItemParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::AccordionItemParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::AccordionItemParts<Id>
+pub fn termrock::widgets::AccordionItemParts<Id>::eq(&self, &termrock::widgets::AccordionItemParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::AccordionItemParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::AccordionItemParts<Id>
+pub fn termrock::widgets::AccordionItemParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::AccordionItemParts<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::AccordionItemParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::AccordionItemParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::AccordionItemParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::AccordionItemParts<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AccordionItemParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AccordionItemParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AccordionItemParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AccordionItemParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AccordionItemParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::AccordionItemParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AccordionItemParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::AccordionItemParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::AccordionItemParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AccordionItemParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AccordionItemParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AccordionItemParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AccordionItemParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::AccordionItemParts<Id>::Owned = T
+pub fn termrock::widgets::AccordionItemParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AccordionItemParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AccordionItemParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AccordionItemParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AccordionItemParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionItemParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AccordionItemParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionItemParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AccordionItemParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AccordionItemParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AccordionItemParts<Id>
+pub fn termrock::widgets::AccordionItemParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AccordionItemParts<Id>
+pub struct termrock::widgets::AccordionParts<Id>
+pub termrock::widgets::AccordionParts::items: alloc::vec::Vec<termrock::widgets::AccordionItemParts<Id>>
+pub termrock::widgets::AccordionParts::root: ratatui_core::layout::rect::Rect
+impl<Id> termrock::widgets::AccordionParts<Id>
+pub fn termrock::widgets::AccordionParts<Id>::content_of(&self, &Id) -> core::option::Option<ratatui_core::layout::rect::Rect> where Id: core::cmp::PartialEq
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::AccordionParts<Id>
+pub fn termrock::widgets::AccordionParts<Id>::clone(&self) -> termrock::widgets::AccordionParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::AccordionParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::AccordionParts<Id>
+pub fn termrock::widgets::AccordionParts<Id>::eq(&self, &termrock::widgets::AccordionParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::AccordionParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::AccordionParts<Id>
+pub fn termrock::widgets::AccordionParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::AccordionParts<Id>
+impl<Id> core::marker::Send for termrock::widgets::AccordionParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::AccordionParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::AccordionParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::AccordionParts<Id>
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AccordionParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AccordionParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AccordionParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AccordionParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AccordionParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::AccordionParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AccordionParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::AccordionParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::AccordionParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AccordionParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AccordionParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AccordionParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AccordionParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::AccordionParts<Id>::Owned = T
+pub fn termrock::widgets::AccordionParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AccordionParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AccordionParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AccordionParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AccordionParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AccordionParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AccordionParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AccordionParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AccordionParts<Id>
+pub fn termrock::widgets::AccordionParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AccordionParts<Id>
+pub struct termrock::widgets::AccordionState<Id>
+pub termrock::widgets::AccordionState::parts: core::option::Option<termrock::widgets::AccordionParts<Id>>
+pub termrock::widgets::AccordionState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
+pub termrock::widgets::AccordionState::roving: termrock::interaction::RovingFocusGroup<Id>
+pub termrock::widgets::AccordionState::surface_focused: bool
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::AccordionState<Id>
+pub fn termrock::widgets::AccordionState<Id>::initially_open(self, impl core::iter::traits::collect::IntoIterator<Item = Id>) -> Self
+pub fn termrock::widgets::AccordionState<Id>::is_open(&self, &Id) -> bool
+pub fn termrock::widgets::AccordionState<Id>::reconcile_open(&mut self, &[termrock::widgets::AccordionItem<'_, Id>])
+pub fn termrock::widgets::AccordionState<Id>::set_cursor(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::AccordionState<Id>::set_open_ids(&mut self, impl core::iter::traits::collect::IntoIterator<Item = Id>)
+impl<Id> termrock::widgets::AccordionState<Id>
+pub const fn termrock::widgets::AccordionState<Id>::cursor(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::AccordionState<Id>::new() -> Self
+pub fn termrock::widgets::AccordionState<Id>::open_ids(&self) -> &[Id]
+pub const fn termrock::widgets::AccordionState<Id>::set_surface_focused(&mut self, bool)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::AccordionState<Id>
+pub fn termrock::widgets::AccordionState<Id>::clone(&self) -> termrock::widgets::AccordionState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::AccordionState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::AccordionState<Id>
+pub fn termrock::widgets::AccordionState<Id>::eq(&self, &termrock::widgets::AccordionState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::AccordionState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::AccordionState<Id>
+pub fn termrock::widgets::AccordionState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::AccordionState<Id>
+pub fn termrock::widgets::AccordionState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::AccordionState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::AccordionState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::AccordionState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::AccordionState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::AccordionState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AccordionState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AccordionState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AccordionState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AccordionState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AccordionState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::AccordionState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AccordionState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::AccordionState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::AccordionState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AccordionState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AccordionState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AccordionState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AccordionState<Id> where T: core::clone::Clone
+pub type termrock::widgets::AccordionState<Id>::Owned = T
+pub fn termrock::widgets::AccordionState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AccordionState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AccordionState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AccordionState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AccordionState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AccordionState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccordionState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AccordionState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AccordionState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AccordionState<Id>
+pub fn termrock::widgets::AccordionState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AccordionState<Id>
 pub struct termrock::widgets::Action<'a, Id>
 pub termrock::widgets::Action::enabled: bool
 pub termrock::widgets::Action::id: Id
