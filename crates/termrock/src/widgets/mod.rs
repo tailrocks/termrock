@@ -15,6 +15,7 @@ mod content;
 mod accordion;
 mod collapsible;
 mod section;
+mod text;
 mod separator;
 mod toolbar;
 mod controls;
@@ -90,6 +91,10 @@ pub use composed_row::{ComposedRow, ComposedRowParts};
 pub use content::{
     Alert, AlertOutcome, AlertState, AlertTone, Callout, CalloutTone, Heading, HeadingLevel,
     Paragraph,
+};
+pub use text::{
+    SelectablePolicy, Text, TextAlign, TextEmphasis, TextLayout, TextLine, TextOverflow, TextSegment,
+    TextSpan, ascii_ellipsis,
 };
 pub use accordion::{
     Accordion, AccordionItem, AccordionItemParts, AccordionMode, AccordionOutcome, AccordionParts,

@@ -4,7 +4,7 @@
 //! Content hierarchy primitives: heading, paragraph, callout, alert.
 //! Section chrome: [`crate::widgets::Section`].
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
@@ -55,17 +55,22 @@ impl<'a> Heading<'a> {
 
 impl Widget for &Heading<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
+        use crate::widgets::text::{Text, TextSpan};
         if area.is_empty() {
             return;
         }
-        let mut style = self.tokens.style(Role::TextStrong);
-        if matches!(self.level, HeadingLevel::H1) {
-            style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
-        } else if matches!(self.level, HeadingLevel::H2) {
-            style = style.add_modifier(Modifier::BOLD);
-        }
-        let text = take_display_cols(self.text, usize::from(area.width));
-        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
+        // H1: strong + underline; H2: strong; H3: TextStrong role only.
+        let span = match self.level {
+            HeadingLevel::H1 => TextSpan::new(self.text)
+                .role(Role::TextStrong)
+                .strong()
+                .underline(true),
+            HeadingLevel::H2 => TextSpan::new(self.text)
+                .role(Role::TextStrong)
+                .strong(),
+            HeadingLevel::H3 => TextSpan::new(self.text).role(Role::TextStrong),
+        };
+        let _ = Text::spans([span], self.tokens).truncate().paint(area, buffer);
     }
 }
 
@@ -98,49 +103,15 @@ impl<'a> Paragraph<'a> {
 
 impl Widget for &Paragraph<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
+        use crate::widgets::text::Text;
         if area.is_empty() {
             return;
         }
-        let style = self.tokens.style(if self.muted {
-            Role::TextMuted
-        } else {
-            Role::Text
-        });
-        let mut y = area.y;
-        let mut rest = self.text;
-        while y < area.bottom() && !rest.is_empty() {
-            let line = take_display_cols(rest, usize::from(area.width));
-            let take = line.len().min(rest.len());
-            // advance by display-safe prefix length in bytes
-            let prefix = take_display_cols(rest, usize::from(area.width));
-            buffer.set_stringn(area.x, y, &prefix, usize::from(area.width), style);
-            let _advance = prefix.len().max(1).min(rest.len());
-            // Prefer char boundary: if we didn't consume all, skip used display cols worth of chars
-            if prefix.len() >= rest.len() {
-                break;
-            }
-            // Find byte index matching display width
-            let mut cols = 0usize;
-            let mut idx = 0;
-            for (i, ch) in rest.char_indices() {
-                let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-                if cols + w > usize::from(area.width) && cols > 0 {
-                    idx = i;
-                    break;
-                }
-                cols += w;
-                idx = i + ch.len_utf8();
-                if cols >= usize::from(area.width) {
-                    break;
-                }
-            }
-            if idx == 0 {
-                break;
-            }
-            rest = &rest[idx..];
-            let _ = take;
-            y = y.saturating_add(1);
+        let mut text = Text::new(self.text, self.tokens).wrap();
+        if self.muted {
+            text = text.muted();
         }
+        let _ = text.paint(area, buffer);
     }
 }
 

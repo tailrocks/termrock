@@ -187,6 +187,141 @@ pub fn fixed_prefix_scroll_segments(
     segments
 }
 
+/// Expand ASCII tabs to spaces (`tab_width` columns, default 4 when 0 → 4).
+///
+/// Control characters other than tab are dropped (copy-safe plain text path).
+#[must_use]
+pub fn expand_tabs(s: &str, tab_width: usize) -> String {
+    let tab_w = if tab_width == 0 { 4 } else { tab_width };
+    let mut out = String::with_capacity(s.len());
+    let mut col = 0usize;
+    for c in s.chars() {
+        if c == '\t' {
+            let spaces = tab_w - (col % tab_w);
+            for _ in 0..spaces {
+                out.push(' ');
+            }
+            col += spaces;
+            continue;
+        }
+        if is_terminal_control_char(c) {
+            continue;
+        }
+        out.push(c);
+        col += unicode_width::UnicodeWidthChar::width(c).unwrap_or(0);
+    }
+    out
+}
+
+/// Soft-wrap `s` into display-column lines of at most `width` columns.
+///
+/// Grapheme-safe: never splits combining marks or wide cells. Empty input
+/// yields one empty line when `width > 0` and a single empty string otherwise.
+/// Prefer this for body prose; pair with [`take_display_cols`] for clip-only.
+#[must_use]
+pub fn wrap_display_cols(s: &str, width: usize) -> Vec<String> {
+    if width == 0 {
+        return vec![String::new()];
+    }
+    if s.is_empty() {
+        return vec![String::new()];
+    }
+    let mut lines = Vec::new();
+    let mut current = String::new();
+    let mut used = 0usize;
+    for grapheme in s.graphemes(true) {
+        let sanitized: String = grapheme
+            .chars()
+            .filter(|c| !is_terminal_control_char(*c))
+            .collect();
+        if sanitized.is_empty() {
+            continue;
+        }
+        let w = UnicodeWidthStr::width(sanitized.as_str());
+        if w == 0 {
+            // zero-width joiners already in grapheme — keep attached
+            current.push_str(&sanitized);
+            continue;
+        }
+        if w > width {
+            // Oversized grapheme alone: flush and place on own line (may overflow paint clip).
+            if !current.is_empty() {
+                lines.push(std::mem::take(&mut current));
+                used = 0;
+            }
+            lines.push(sanitized);
+            continue;
+        }
+        if used + w > width && !current.is_empty() {
+            lines.push(std::mem::take(&mut current));
+            used = 0;
+        }
+        current.push_str(&sanitized);
+        used += w;
+    }
+    if !current.is_empty() || lines.is_empty() {
+        lines.push(current);
+    }
+    lines
+}
+
+/// Truncate `s` to `max_cols` with an ellipsis policy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum TruncateMode {
+    /// Keep prefix, ellipsis at end.
+    #[default]
+    End,
+    /// Ellipsis at start, keep suffix.
+    Start,
+    /// Keep head and tail with ellipsis in the middle.
+    Middle,
+}
+
+/// Truncate to `max_cols` using `ellipsis` (display width counted). Empty if
+/// `max_cols` is zero.
+#[must_use]
+pub fn truncate_display_cols(s: &str, max_cols: usize, mode: TruncateMode, ellipsis: &str) -> String {
+    if max_cols == 0 {
+        return String::new();
+    }
+    let full = display_cols(s);
+    if full <= max_cols {
+        // Still strip controls for copy-safe consistency.
+        return take_display_cols(s, max_cols);
+    }
+    let ell_w = display_cols(ellipsis);
+    if ell_w >= max_cols {
+        return take_display_cols(ellipsis, max_cols);
+    }
+    let budget = max_cols.saturating_sub(ell_w);
+    match mode {
+        TruncateMode::End => {
+            let mut out = take_display_cols(s, budget);
+            out.push_str(ellipsis);
+            out
+        }
+        TruncateMode::Start => {
+            // Keep suffix of `budget` cols.
+            let total = display_cols(s);
+            let skip = total.saturating_sub(budget);
+            let mut out = String::from(ellipsis);
+            out.push_str(&display_cols_slice(s, skip, budget));
+            out
+        }
+        TruncateMode::Middle => {
+            let head = budget / 2;
+            let tail = budget.saturating_sub(head);
+            let total = display_cols(s);
+            let mut out = take_display_cols(s, head);
+            out.push_str(ellipsis);
+            let skip = total.saturating_sub(tail);
+            out.push_str(&display_cols_slice(s, skip, tail));
+            out
+        }
+    }
+}
+
 /// Collapse a terminal-window title to one printable line.
 #[must_use]
 pub fn sanitize_terminal_title(title: &str) -> String {
@@ -304,6 +439,35 @@ mod tests {
         assert_eq!(leading_space_cols(["  one", "two"]), 2);
         assert_eq!(leading_space_cols(["", "   "]), 3);
         assert_eq!(padded_line_display_cols(["  one"]), 7);
+    }
+
+    #[test]
+    fn expand_tabs_and_strip_controls() {
+        assert_eq!(expand_tabs("a\tb", 4), "a   b");
+        assert_eq!(expand_tabs("a\u{1b}b", 4), "ab");
+    }
+
+    #[test]
+    fn wrap_display_cols_cjk_and_ascii() {
+        let lines = wrap_display_cols("hello world", 5);
+        assert_eq!(lines, vec!["hello", " worl", "d"]);
+        let cjk = wrap_display_cols("日本語です", 4);
+        assert!(cjk.iter().all(|l| display_cols(l) <= 4));
+        assert!(cjk.len() >= 2);
+    }
+
+    #[test]
+    fn truncate_modes() {
+        assert_eq!(
+            truncate_display_cols("abcdef", 5, TruncateMode::End, "…"),
+            "abcd…"
+        );
+        let start = truncate_display_cols("abcdef", 5, TruncateMode::Start, "…");
+        assert!(start.starts_with('…') || start.starts_with("..."));
+        assert_eq!(display_cols(&start), 5);
+        let mid = truncate_display_cols("abcdefghij", 7, TruncateMode::Middle, "…");
+        assert!(mid.contains('…') || mid.contains("..."));
+        assert!(display_cols(&mid) <= 7);
     }
 
     #[test]

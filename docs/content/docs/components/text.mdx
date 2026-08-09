@@ -1,0 +1,99 @@
+---
+title: Text
+description: 'Canonical styled text — roles, spans, wrap/truncate, annotations, copy-safe plain, terminal-default background.'
+---
+
+## Previews
+
+### `text/basic`
+
+![Basic](/component-previews/text-basic.svg)
+
+### `text/spans`
+
+![Spans](/component-previews/text-spans.svg)
+
+### `text/wrap`
+
+![Wrap](/component-previews/text-wrap.svg)
+
+### `text/truncate`
+
+![Truncate](/component-previews/text-truncate.svg)
+
+### `text/unicode`
+
+![Unicode](/component-previews/text-unicode.svg)
+
+### `text/narrow`
+
+![Narrow](/component-previews/text-narrow.svg)
+
+## Anatomy
+
+One or more `TextSpan` runs · layout (overflow, align) · paint (no bg fill by default)
+
+## Usage
+
+```rust
+use termrock::widgets::{Text, TextSpan};
+use termrock::style::Role;
+
+Text::new("Body", &system).wrap().paint(area, buf);
+
+Text::spans(
+    [
+        TextSpan::new("ok").role(Role::Success).strong(),
+        TextSpan::new(" · ").dim(),
+        TextSpan::new("meta").annotation("tag"),
+        TextSpan::new("hit").highlight(true),
+    ],
+    &system,
+)
+.truncate()
+.paint(area, buf);
+
+// Clipboard-safe
+let plain = text.plain(); // tabs expanded, controls stripped
+```
+
+## Overflow
+
+| Mode | Behavior |
+|------|----------|
+| Clip | Cut at width |
+| Wrap | Soft-wrap by display columns |
+| Truncate | Ellipsis at end |
+| TruncateStart / Middle | Other ellipsis policies |
+
+## Emphasis
+
+`Normal` · `Strong` (bold) · `Emphasis` (italic+underline) · `Dim` · `Code` (underline cue, no bg fill)
+
+Extra `underline(true)` composes with emphasis (e.g. H1).
+
+## Background
+
+`preserve_bg(true)` (default) clears resolved `bg` so the terminal default or parent surface shows through. Set `preserve_bg(false)` only when a role background must paint (rare for body text).
+
+## Selectable policy
+
+| Policy | Meaning |
+|--------|---------|
+| None | Paint only |
+| Copyable | Host uses `plain()` for clipboard |
+| Selectable | Same plain path; selection chrome later |
+
+## vs Heading / Paragraph / TextArea
+
+| | Text | Heading | Paragraph | TextArea |
+|--|------|---------|-----------|----------|
+| Role | Primitive | Editorial title | Body wrap recipe | Editor |
+| Spans | yes | via Text | single | document |
+| Input | no | no | no | yes |
+
+Prefer **Text** for labels, status lines, and annotated runs. Prefer **Heading**/**Paragraph** when you want their recipes (they compose Text).
+
+## Migration
+
+See `migrations/0114-v0.13.0-text.md`.

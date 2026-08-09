@@ -2228,6 +2228,60 @@ pub(crate) fn stories() -> Vec<Story> {
             drawer_story,
         ),
         Story::new(
+            "text/basic",
+            "Text basic",
+            "Text",
+            "Semantic body text with preserve-bg paint.",
+            40,
+            3,
+            text_basic_story,
+        ),
+        Story::new(
+            "text/spans",
+            "Text spans",
+            "Text",
+            "Multi-role spans, emphasis, annotation, highlight.",
+            48,
+            3,
+            text_spans_story,
+        ),
+        Story::new(
+            "text/wrap",
+            "Text wrap",
+            "Text",
+            "Soft-wrap on display columns.",
+            28,
+            6,
+            text_wrap_story,
+        ),
+        Story::new(
+            "text/truncate",
+            "Text truncate",
+            "Text",
+            "End ellipsis truncation.",
+            24,
+            1,
+            text_truncate_story,
+        ),
+        Story::new(
+            "text/unicode",
+            "Text unicode",
+            "Text",
+            "CJK, combining marks, emoji, tabs.",
+            36,
+            3,
+            text_unicode_story,
+        ),
+        Story::new(
+            "text/narrow",
+            "Text narrow",
+            "Text",
+            "Narrow clip and center align.",
+            14,
+            3,
+            text_narrow_story,
+        ),
+        Story::new(
             "heading/basic",
             "Heading",
             "Heading",
@@ -8398,6 +8452,96 @@ fn callout_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     Widget::render(&Drawer::new("Drawer", &tokens), area, frame.buffer_mut());
+}
+
+fn text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Text;
+    let _ = Text::new("Semantic body text through DesignSystem roles.", system)
+        .copyable()
+        .paint(area, frame.buffer_mut());
+}
+
+fn text_spans_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::Role;
+    use termrock::widgets::{Text, TextSpan};
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(1),
+    ])
+    .split(area);
+    let _ = Text::spans(
+        [
+            TextSpan::new("Status: ").role(Role::TextMuted),
+            TextSpan::new("READY").role(Role::Success).strong(),
+            TextSpan::new(" · ").dim(),
+            TextSpan::new("cached")
+                .role(Role::TextMuted)
+                .annotation("meta"),
+        ],
+        system,
+    )
+    .paint(chunks[0], frame.buffer_mut());
+    let _ = Text::spans(
+        [
+            TextSpan::new("Search hit: "),
+            TextSpan::new("termrock")
+                .highlight(true)
+                .annotation("search"),
+        ],
+        system,
+    )
+    .paint(chunks[1], frame.buffer_mut());
+    let _ = Text::spans(
+        [
+            TextSpan::new("code").code(),
+            TextSpan::new(" and "),
+            TextSpan::new("emphasis").italic(),
+        ],
+        system,
+    )
+    .paint(chunks[2], frame.buffer_mut());
+}
+
+fn text_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Text;
+    let _ = Text::new(
+        "Soft-wrapped prose uses grapheme-safe display columns so CJK and emoji never split mid-cell.",
+        system,
+    )
+    .wrap()
+    .paint(area, frame.buffer_mut());
+}
+
+fn text_truncate_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Text;
+    let _ = Text::new(
+        "This very long line is truncated with an ellipsis at the end",
+        system,
+    )
+    .truncate()
+    .paint(area, frame.buffer_mut());
+}
+
+fn text_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Text;
+    let chunks = Layout::vertical([Constraint::Length(1), Constraint::Length(1), Constraint::Min(1)])
+        .split(area);
+    let _ = Text::new("日本語 e\u{301} 🧪", system).paint(chunks[0], frame.buffer_mut());
+    let _ = Text::new("tabs:\tone\ttwo", system).paint(chunks[1], frame.buffer_mut());
+    let _ = Text::new("controls stripped:\u{1b}[0mok", system).paint(chunks[2], frame.buffer_mut());
+}
+
+fn text_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Text;
+    let chunks = Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).split(area);
+    let _ = Text::new("Centered label", system)
+        .center()
+        .truncate()
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = Text::new("wraps when height allows multi-line body", system)
+        .wrap()
+        .paint(chunks[1], frame.buffer_mut());
 }
 
 fn heading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -53,7 +53,6 @@ impl Widget for &EmptyState<'_> {
             return;
         }
         use crate::layout::{Center, CenterAxis, FlexSize, Stack};
-        let title = format!("{} {}", self.glyph, self.title);
         let rows = if self.detail.is_some() { 2u16 } else { 1 };
         let block = Center::new(area.width, rows)
             .axis(CenterAxis::Vertical)
@@ -66,22 +65,26 @@ impl Widget for &EmptyState<'_> {
         };
         let stack = Stack::new().layout(block, sizes);
         if let Some(r) = stack.get(0) {
-            paint_centered_line(
-                Rect::new(area.x, r.y, area.width, 1),
-                buffer,
-                r.y,
-                &title,
-                self.system.style(Role::TextMuted),
-            );
+            use crate::widgets::text::{Text, TextSpan};
+            let _ = Text::spans(
+                [
+                    TextSpan::new(self.glyph).role(Role::TextMuted),
+                    TextSpan::new(" "),
+                    TextSpan::new(self.title).role(Role::TextMuted),
+                ],
+                self.system,
+            )
+            .center()
+            .truncate()
+            .paint(Rect::new(area.x, r.y, area.width, 1), buffer);
         }
         if let (Some(detail), Some(r)) = (self.detail, stack.get(1)) {
-            paint_centered_line(
-                Rect::new(area.x, r.y, area.width, 1),
-                buffer,
-                r.y,
-                detail,
-                self.system.style(Role::TextDisabled),
-            );
+            use crate::widgets::text::Text;
+            let _ = Text::new(detail, self.system)
+                .role(Role::TextDisabled)
+                .center()
+                .truncate()
+                .paint(Rect::new(area.x, r.y, area.width, 1), buffer);
         }
     }
 }

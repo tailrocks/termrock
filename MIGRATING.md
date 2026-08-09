@@ -127,6 +127,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0111 | `v0.13.0` | [ResizablePanelGroup](migrations/0111-v0.13.0-resizable-panel-group.md) |
 | 0112 | `v0.13.0` | [Collapsible](migrations/0112-v0.13.0-collapsible.md) |
 | 0113 | `v0.13.0` | [Accordion](migrations/0113-v0.13.0-accordion.md) |
+| 0114 | `v0.13.0` | [Text](migrations/0114-v0.13.0-text.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

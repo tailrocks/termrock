@@ -287,6 +287,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "Text": {
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "focus": "not-applicable",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "TextArea": {
     "keyboard": "covered",
     "mouse": "covered",
