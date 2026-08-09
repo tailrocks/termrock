@@ -18,6 +18,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/termrock-agent.md`](../docs/design/termrock-agent.md) | **`@termrock/agent`** agent component collection + AgentWorkbench |
 | [`docs/design/prompt-composer.md`](../docs/design/prompt-composer.md) | **PromptComposer** flagship agent input surface |
 | [`docs/design/permission-trust.md`](../docs/design/permission-trust.md) | **Permission & trust** surface (queue, provenance, stale safety) |
+| [`docs/design/data-presentation.md`](../docs/design/data-presentation.md) | **Data presentation** (DataTable, virtualization kits, 1M-row targets) |
 
 ### Using the component prompt library
 

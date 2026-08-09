@@ -11,6 +11,7 @@ mod command_palette;
 mod completion_menu;
 mod composed_row;
 mod design_inspector;
+mod data_view;
 mod detail_table;
 mod dialog;
 mod diff;
@@ -67,6 +68,12 @@ pub use completion_menu::{
     place_completion_menu,
 };
 pub use composed_row::{ComposedRow, ComposedRowParts};
+pub use data_view::{
+    CellCoord, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, DataDensity,
+    DataViewOutcome, ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode,
+    SelectionModel, SortSpec, VirtualWindow,
+};
+pub use data_view::bench as data_view_bench;
 pub use design_inspector::{DesignInspector, DesignInspectorFrame, InspectorPanel};
 pub use detail_table::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState,
