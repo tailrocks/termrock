@@ -170,9 +170,10 @@ pub use surface::{
     Surface, SurfaceElevation, SurfaceFill, SurfacePaintPlan, SurfaceParts, SurfaceRecipe,
 };
 pub use controls::{
-    Checkbox, CheckboxOutcome, CheckboxState, Combobox, ComboboxOutcome, ComboboxState,
-    MultiSelect, MultiSelectOutcome, MultiSelectState, RadioGroup, RadioOutcome, RadioState,
-    Select, SelectOutcome, SelectState, Switch, SwitchOutcome, SwitchState,
+    Checkbox, CheckboxOutcome, CheckboxParts, CheckboxState, CheckboxValue, Combobox,
+    ComboboxOutcome, ComboboxState, MultiSelect, MultiSelectOutcome, MultiSelectState, RadioGroup,
+    RadioOutcome, RadioState, Select, SelectOutcome, SelectState, Switch, SwitchOutcome,
+    SwitchState,
 };
 pub use data_table::{DataTable, DataTableOutcome, DataTableState, DataTableToolbar};
 pub use data_view::bench as data_view_bench;

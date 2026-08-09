@@ -25,7 +25,8 @@ use termrock::{
         AnsiTextMode, AnsiTextState, AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS,
         Backdrop, Badge, Banner,
         BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
-        CheckboxState, ChoiceDialog, ChoiceDialogState, CodeBlock, CodeBlockState, CodeHighlight,
+        CheckboxState, CheckboxValue, ChoiceDialog, ChoiceDialogState, CodeBlock, CodeBlockState,
+        CodeHighlight,
         CodeHighlightKind, CodeWrap, Column, ColumnWidth,
         CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
         CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
@@ -2335,6 +2336,42 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             4,
             checkbox_switch_story,
+        ),
+        Story::new(
+            "checkbox/states",
+            "Checkbox states",
+            "Checkbox",
+            "Unchecked, checked, indeterminate, invalid, read-only.",
+            48,
+            8,
+            checkbox_states_story,
+        ),
+        Story::new(
+            "checkbox/indeterminate",
+            "Checkbox indeterminate",
+            "Checkbox",
+            "Mixed-group parent with child list.",
+            44,
+            6,
+            checkbox_indeterminate_story,
+        ),
+        Story::new(
+            "checkbox/description",
+            "Checkbox description",
+            "Checkbox",
+            "Label + secondary description row.",
+            48,
+            3,
+            checkbox_description_story,
+        ),
+        Story::new(
+            "checkbox/list",
+            "Checkbox list",
+            "Checkbox",
+            "List composition with independent controlled values.",
+            40,
+            5,
+            checkbox_list_story,
         ),
         Story::new(
             "data-table/toolbar",
@@ -9519,7 +9556,8 @@ fn button_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut cb = CheckboxState::new(true);
-    Checkbox::new("enable", "Enable", &tokens).render(
+    cb.set_focused(true);
+    let _ = Checkbox::new("enable", "Enable", &tokens).paint(
         Rect::new(area.x, area.y, area.width, 1),
         frame.buffer_mut(),
         &mut cb,
@@ -9530,6 +9568,98 @@ fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         frame.buffer_mut(),
         &mut sw,
     );
+}
+
+fn checkbox_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let rows: [(&str, CheckboxValue, bool, bool, bool); 5] = [
+        ("Unchecked", CheckboxValue::Unchecked, true, false, false),
+        ("Checked", CheckboxValue::Checked, true, false, true),
+        (
+            "Indeterminate",
+            CheckboxValue::Indeterminate,
+            true,
+            false,
+            false,
+        ),
+        ("Invalid", CheckboxValue::Unchecked, true, true, false),
+        ("Read-only", CheckboxValue::Checked, false, false, false),
+    ];
+    for (i, (label, value, enabled, invalid, focused)) in rows.iter().enumerate() {
+        let y = area.y.saturating_add(u16::try_from(i).unwrap_or(0));
+        if y >= area.bottom() {
+            break;
+        }
+        let mut state = CheckboxState::with_value(*value);
+        state.set_enabled(*enabled);
+        if !enabled {
+            state.set_read_only(true);
+        }
+        state.set_invalid(*invalid);
+        state.set_focused(*focused);
+        let _ = Checkbox::new(*label, *label, system).paint(
+            Rect::new(area.x, y, area.width, 1),
+            frame.buffer_mut(),
+            &mut state,
+        );
+    }
+}
+
+fn checkbox_indeterminate_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let children = [true, false, true];
+    let parent = CheckboxValue::from_children(children);
+    let mut parent_state = CheckboxState::with_value(parent);
+    parent_state.set_focused(true);
+    let _ = Checkbox::new("all", "Select all", system)
+        .description("Mixed children")
+        .paint(
+            Rect::new(area.x, area.y, area.width, 2.min(area.height)),
+            frame.buffer_mut(),
+            &mut parent_state,
+        );
+    let labels = ["Alpha", "Beta", "Gamma"];
+    for (i, (label, on)) in labels.iter().zip(children).enumerate() {
+        let y = area.y.saturating_add(2).saturating_add(u16::try_from(i).unwrap_or(0));
+        if y >= area.bottom() {
+            break;
+        }
+        let mut st = CheckboxState::new(on);
+        let _ = Checkbox::new(*label, *label, system).paint(
+            Rect::new(area.x.saturating_add(2), y, area.width.saturating_sub(2), 1),
+            frame.buffer_mut(),
+            &mut st,
+        );
+    }
+}
+
+fn checkbox_description_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = CheckboxState::new(false);
+    state.set_focused(true);
+    let _ = Checkbox::new("notify", "Email notifications", system)
+        .description("Send a summary when long jobs complete")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn checkbox_list_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ("docs", "Documentation", true),
+        ("tests", "Tests", false),
+        ("bench", "Benchmarks", true),
+    ];
+    for (i, (id, label, on)) in items.iter().enumerate() {
+        let y = area.y.saturating_add(u16::try_from(i).unwrap_or(0));
+        if y >= area.bottom() {
+            break;
+        }
+        let mut st = CheckboxState::new(*on);
+        if i == 1 {
+            st.set_focused(true);
+        }
+        let _ = Checkbox::new(*id, *label, system).paint(
+            Rect::new(area.x, y, area.width, 1),
+            frame.buffer_mut(),
+            &mut st,
+        );
+    }
 }
 
 fn data_table_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -11150,24 +11280,23 @@ fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let tokens = system.clone().density(Density::default());
     let mut state = CheckboxState::new(true);
     state.set_enabled(false);
-    frame.render_stateful_widget(
-        &Checkbox::new("enable", "Enable", &tokens),
-        area,
-        &mut state,
-    );
+    let _ = Checkbox::new("enable", "Enable", &tokens).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut cb = CheckboxState::new(true);
-    Checkbox::new("jp", "有効化 🇯🇵", &tokens).render(
-        Rect::new(area.x, area.y, area.width, 1),
-        frame.buffer_mut(),
-        &mut cb,
-    );
+    cb.set_focused(true);
+    let _ = Checkbox::new("jp", "有効化 🇯🇵", &tokens)
+        .description("説明テキスト")
+        .paint(
+            Rect::new(area.x, area.y, area.width, 2.min(area.height)),
+            frame.buffer_mut(),
+            &mut cb,
+        );
     let mut sw = SwitchState::new(false);
     Switch::new("dark", "暗色モード", &tokens).render(
-        Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+        Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
         frame.buffer_mut(),
         &mut sw,
     );

@@ -42,7 +42,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 6 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.01s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.88s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -12755,6 +12755,7 @@ pub termrock::style::Glyph::ArrowRight
 pub termrock::style::Glyph::ArrowUp
 pub termrock::style::Glyph::Bullet
 pub termrock::style::Glyph::Busy
+pub termrock::style::Glyph::CheckMixed
 pub termrock::style::Glyph::CheckOff
 pub termrock::style::Glyph::CheckOn
 pub termrock::style::Glyph::ChevronDown
@@ -12901,6 +12902,7 @@ pub termrock::style::GlyphSet::Enhanced
 pub termrock::style::GlyphSet::Unicode
 impl termrock::style::GlyphSet
 pub const fn termrock::style::GlyphSet::bullet(self) -> &'static str
+pub const fn termrock::style::GlyphSet::check_mixed(self) -> &'static str
 pub const fn termrock::style::GlyphSet::check_off(self) -> &'static str
 pub const fn termrock::style::GlyphSet::check_on(self) -> &'static str
 pub const fn termrock::style::GlyphSet::disabled_mark(self) -> &'static str
@@ -15737,8 +15739,10 @@ impl<T> either::into_either::IntoEither for termrock::widgets::CellAlignment
 #[non_exhaustive] pub enum termrock::widgets::CheckboxOutcome<Id>
 pub termrock::widgets::CheckboxOutcome::Ignored
 pub termrock::widgets::CheckboxOutcome::ValueChanged
-pub termrock::widgets::CheckboxOutcome::ValueChanged::checked: bool
 pub termrock::widgets::CheckboxOutcome::ValueChanged::id: Id
+pub termrock::widgets::CheckboxOutcome::ValueChanged::value: termrock::widgets::CheckboxValue
+impl<Id> termrock::widgets::CheckboxOutcome<Id>
+pub const fn termrock::widgets::CheckboxOutcome<Id>::checked(&self) -> core::option::Option<bool>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CheckboxOutcome<Id>
 pub fn termrock::widgets::CheckboxOutcome<Id>::clone(&self) -> termrock::widgets::CheckboxOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::CheckboxOutcome<Id>
@@ -15779,6 +15783,63 @@ pub unsafe fn termrock::widgets::CheckboxOutcome<Id>::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::CheckboxOutcome<Id>
 pub fn termrock::widgets::CheckboxOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CheckboxOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::CheckboxValue
+pub termrock::widgets::CheckboxValue::Checked
+pub termrock::widgets::CheckboxValue::Indeterminate
+pub termrock::widgets::CheckboxValue::Unchecked
+impl termrock::widgets::CheckboxValue
+pub const fn termrock::widgets::CheckboxValue::activate(self) -> Self
+pub const fn termrock::widgets::CheckboxValue::as_bool(self) -> core::option::Option<bool>
+pub const fn termrock::widgets::CheckboxValue::from_bool(bool) -> Self
+pub fn termrock::widgets::CheckboxValue::from_children(impl core::iter::traits::collect::IntoIterator<Item = bool>) -> Self
+pub const fn termrock::widgets::CheckboxValue::id(self) -> &'static str
+pub const fn termrock::widgets::CheckboxValue::is_checked(self) -> bool
+pub const fn termrock::widgets::CheckboxValue::is_indeterminate(self) -> bool
+impl core::clone::Clone for termrock::widgets::CheckboxValue
+pub fn termrock::widgets::CheckboxValue::clone(&self) -> termrock::widgets::CheckboxValue
+impl core::cmp::Eq for termrock::widgets::CheckboxValue
+impl core::cmp::PartialEq for termrock::widgets::CheckboxValue
+pub fn termrock::widgets::CheckboxValue::eq(&self, &termrock::widgets::CheckboxValue) -> bool
+impl core::default::Default for termrock::widgets::CheckboxValue
+pub fn termrock::widgets::CheckboxValue::default() -> termrock::widgets::CheckboxValue
+impl core::fmt::Debug for termrock::widgets::CheckboxValue
+pub fn termrock::widgets::CheckboxValue::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CheckboxValue
+pub fn termrock::widgets::CheckboxValue::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CheckboxValue
+impl core::marker::StructuralPartialEq for termrock::widgets::CheckboxValue
+impl core::marker::Freeze for termrock::widgets::CheckboxValue
+impl core::marker::Send for termrock::widgets::CheckboxValue
+impl core::marker::Sync for termrock::widgets::CheckboxValue
+impl core::marker::Unpin for termrock::widgets::CheckboxValue
+impl core::marker::UnsafeUnpin for termrock::widgets::CheckboxValue
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckboxValue
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckboxValue
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CheckboxValue where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CheckboxValue::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckboxValue where U: core::convert::From<T>
+pub fn termrock::widgets::CheckboxValue::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckboxValue where U: core::convert::Into<T>
+pub type termrock::widgets::CheckboxValue::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckboxValue::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckboxValue where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckboxValue::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckboxValue::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckboxValue where T: core::clone::Clone
+pub type termrock::widgets::CheckboxValue::Owned = T
+pub fn termrock::widgets::CheckboxValue::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckboxValue::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckboxValue where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckboxValue::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckboxValue where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckboxValue::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckboxValue where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckboxValue::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckboxValue where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckboxValue::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckboxValue
+pub fn termrock::widgets::CheckboxValue::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckboxValue
 #[non_exhaustive] pub enum termrock::widgets::ChipKind
 pub termrock::widgets::ChipKind::File
 pub termrock::widgets::ChipKind::Media
@@ -25960,18 +26021,26 @@ impl<T> either::into_either::IntoEither for termrock::widgets::CardParts
 pub struct termrock::widgets::Checkbox<'a, Id>
 pub termrock::widgets::Checkbox::id: Id
 impl<'a, Id> termrock::widgets::Checkbox<'a, Id>
+pub const fn termrock::widgets::Checkbox<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Checkbox<'a, Id>::description(self, &'a str) -> Self
+pub fn termrock::widgets::Checkbox<'a, Id>::handle_key(&self, &mut termrock::widgets::CheckboxState, termrock::input::KeyEvent) -> termrock::widgets::CheckboxOutcome<Id> where Id: core::clone::Clone
+pub fn termrock::widgets::Checkbox<'a, Id>::handle_key_result(&self, &mut termrock::widgets::CheckboxState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::CheckboxOutcome<Id>> where Id: core::clone::Clone
+pub fn termrock::widgets::Checkbox<'a, Id>::handle_mouse(&self, &mut termrock::widgets::CheckboxState, termrock::input::MouseEvent) -> termrock::widgets::CheckboxOutcome<Id> where Id: core::clone::Clone
 pub const fn termrock::widgets::Checkbox<'a, Id>::new(Id, &'a str, &'a termrock::style::DesignSystem) -> Self
-impl<Id> termrock::widgets::Checkbox<'_, Id>
-pub fn termrock::widgets::Checkbox<'_, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CheckboxState)
+pub fn termrock::widgets::Checkbox<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CheckboxState) -> termrock::widgets::CheckboxParts
+pub fn termrock::widgets::Checkbox<'a, Id>::preferred_height(&self) -> u16
+pub fn termrock::widgets::Checkbox<'a, Id>::preferred_width(&self, &termrock::widgets::CheckboxState) -> u16
+pub fn termrock::widgets::Checkbox<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, ratatui_core::layout::rect::Rect, &termrock::widgets::CheckboxState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub fn termrock::widgets::Checkbox<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CheckboxState)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Checkbox<'a, Id>
 pub fn termrock::widgets::Checkbox<'a, Id>::clone(&self) -> termrock::widgets::Checkbox<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Checkbox<'a, Id>
 pub fn termrock::widgets::Checkbox<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Checkbox<'a, Id>
-impl<Id> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Checkbox<'_, Id>
+impl<Id: core::clone::Clone> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Checkbox<'_, Id>
 pub type &termrock::widgets::Checkbox<'_, Id>::State = termrock::widgets::CheckboxState
 pub fn &termrock::widgets::Checkbox<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
-impl<Id> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Checkbox<'_, Id>
+impl<Id: core::clone::Clone> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Checkbox<'_, Id>
 pub type termrock::widgets::Checkbox<'_, Id>::State = termrock::widgets::CheckboxState
 pub fn termrock::widgets::Checkbox<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Checkbox<'a, Id> where Id: core::marker::Freeze
@@ -26004,15 +26073,77 @@ pub unsafe fn termrock::widgets::Checkbox<'a, Id>::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::Checkbox<'a, Id>
 pub fn termrock::widgets::Checkbox<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Checkbox<'a, Id>
+pub struct termrock::widgets::CheckboxParts
+pub termrock::widgets::CheckboxParts::box_area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CheckboxParts::description_area: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::CheckboxParts::label_area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CheckboxParts::root: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::CheckboxParts
+pub fn termrock::widgets::CheckboxParts::clone(&self) -> termrock::widgets::CheckboxParts
+impl core::cmp::Eq for termrock::widgets::CheckboxParts
+impl core::cmp::PartialEq for termrock::widgets::CheckboxParts
+pub fn termrock::widgets::CheckboxParts::eq(&self, &termrock::widgets::CheckboxParts) -> bool
+impl core::default::Default for termrock::widgets::CheckboxParts
+pub fn termrock::widgets::CheckboxParts::default() -> termrock::widgets::CheckboxParts
+impl core::fmt::Debug for termrock::widgets::CheckboxParts
+pub fn termrock::widgets::CheckboxParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CheckboxParts
+impl core::marker::Freeze for termrock::widgets::CheckboxParts
+impl core::marker::Send for termrock::widgets::CheckboxParts
+impl core::marker::Sync for termrock::widgets::CheckboxParts
+impl core::marker::Unpin for termrock::widgets::CheckboxParts
+impl core::marker::UnsafeUnpin for termrock::widgets::CheckboxParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckboxParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckboxParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CheckboxParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CheckboxParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckboxParts where U: core::convert::From<T>
+pub fn termrock::widgets::CheckboxParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckboxParts where U: core::convert::Into<T>
+pub type termrock::widgets::CheckboxParts::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckboxParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckboxParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckboxParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckboxParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckboxParts where T: core::clone::Clone
+pub type termrock::widgets::CheckboxParts::Owned = T
+pub fn termrock::widgets::CheckboxParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckboxParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckboxParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckboxParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckboxParts where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckboxParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckboxParts where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckboxParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckboxParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckboxParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckboxParts
+pub fn termrock::widgets::CheckboxParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckboxParts
 pub struct termrock::widgets::CheckboxState
+pub termrock::widgets::CheckboxState::enabled: bool
+pub termrock::widgets::CheckboxState::focused: bool
+pub termrock::widgets::CheckboxState::hovered: bool
+pub termrock::widgets::CheckboxState::invalid: bool
+pub termrock::widgets::CheckboxState::parts: core::option::Option<termrock::widgets::CheckboxParts>
+pub termrock::widgets::CheckboxState::read_only: bool
+pub termrock::widgets::CheckboxState::value: termrock::widgets::CheckboxValue
 impl termrock::widgets::CheckboxState
+pub const fn termrock::widgets::CheckboxState::can_activate(&self) -> bool
 pub fn termrock::widgets::CheckboxState::handle_key<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &Id) -> termrock::widgets::CheckboxOutcome<Id>
+pub fn termrock::widgets::CheckboxState::handle_key_result<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &Id) -> termrock::interaction::EventResult<termrock::widgets::CheckboxOutcome<Id>>
 pub fn termrock::widgets::CheckboxState::handle_mouse<Id: core::clone::Clone>(&mut self, termrock::input::MouseEvent, &Id) -> termrock::widgets::CheckboxOutcome<Id>
 pub const fn termrock::widgets::CheckboxState::is_checked(&self) -> bool
 pub const fn termrock::widgets::CheckboxState::new(bool) -> Self
+pub const fn termrock::widgets::CheckboxState::region(&self) -> core::option::Option<ratatui_core::layout::rect::Rect>
 pub const fn termrock::widgets::CheckboxState::set_checked(&mut self, bool)
 pub const fn termrock::widgets::CheckboxState::set_enabled(&mut self, bool)
 pub const fn termrock::widgets::CheckboxState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::CheckboxState::set_invalid(&mut self, bool)
+pub const fn termrock::widgets::CheckboxState::set_read_only(&mut self, bool)
+pub const fn termrock::widgets::CheckboxState::set_value(&mut self, termrock::widgets::CheckboxValue)
+pub const fn termrock::widgets::CheckboxState::value(&self) -> termrock::widgets::CheckboxValue
+pub const fn termrock::widgets::CheckboxState::with_value(termrock::widgets::CheckboxValue) -> Self
 impl core::clone::Clone for termrock::widgets::CheckboxState
 pub fn termrock::widgets::CheckboxState::clone(&self) -> termrock::widgets::CheckboxState
 impl core::cmp::Eq for termrock::widgets::CheckboxState
@@ -26022,7 +26153,6 @@ impl core::default::Default for termrock::widgets::CheckboxState
 pub fn termrock::widgets::CheckboxState::default() -> termrock::widgets::CheckboxState
 impl core::fmt::Debug for termrock::widgets::CheckboxState
 pub fn termrock::widgets::CheckboxState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::widgets::CheckboxState
 impl core::marker::StructuralPartialEq for termrock::widgets::CheckboxState
 impl core::marker::Freeze for termrock::widgets::CheckboxState
 impl core::marker::Send for termrock::widgets::CheckboxState

@@ -145,6 +145,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0129 | `v0.13.0` | [IconButton](migrations/0129-v0.13.0-icon-button.md) |
 | 0130 | `v0.13.0` | [ButtonGroup](migrations/0130-v0.13.0-button-group.md) |
 | 0131 | `v0.13.0` | [Toggle & ToggleGroup](migrations/0131-v0.13.0-toggle.md) |
+| 0132 | `v0.13.0` | [Checkbox](migrations/0132-v0.13.0-checkbox.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

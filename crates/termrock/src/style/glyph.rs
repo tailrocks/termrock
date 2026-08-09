@@ -96,6 +96,8 @@ pub enum Glyph {
     CheckOn,
     /// Checkbox off.
     CheckOff,
+    /// Checkbox mixed / indeterminate (partial group).
+    CheckMixed,
     /// Radio selected.
     RadioOn,
     /// Radio unselected.
@@ -173,6 +175,7 @@ impl Glyph {
             Self::Busy => "busy",
             Self::CheckOn => "check-on",
             Self::CheckOff => "check-off",
+            Self::CheckMixed => "check-mixed",
             Self::RadioOn => "radio-on",
             Self::RadioOff => "radio-off",
             Self::File => "file",
@@ -224,6 +227,7 @@ impl Glyph {
             Self::Busy => "busy",
             Self::CheckOn => "checked",
             Self::CheckOff => "unchecked",
+            Self::CheckMixed => "partially checked",
             Self::RadioOn => "selected",
             Self::RadioOff => "not selected",
             Self::File => "file",
@@ -274,6 +278,7 @@ impl Glyph {
             | Self::Busy
             | Self::CheckOn
             | Self::CheckOff
+            | Self::CheckMixed
             | Self::RadioOn
             | Self::RadioOff => GlyphGroup::Status,
             Self::File | Self::Folder | Self::FolderOpen => GlyphGroup::FileType,
@@ -321,6 +326,7 @@ impl Glyph {
         Self::Busy,
         Self::CheckOn,
         Self::CheckOff,
+        Self::CheckMixed,
         Self::RadioOn,
         Self::RadioOff,
         Self::File,
@@ -400,6 +406,7 @@ impl Glyph {
             Self::Busy => ("◉", "o", "◉"),
             Self::CheckOn => ("☑", "[x]", "☑"),
             Self::CheckOff => ("☐", "[ ]", "☐"),
+            Self::CheckMixed => ("▣", "[-]", "▣"),
             Self::RadioOn => ("●", "(*)", "●"),
             Self::RadioOff => ("○", "( )", "○"),
             Self::File => ("·", ".", "📄"),
@@ -431,7 +438,7 @@ impl Glyph {
 
     const fn unicode_cols(self) -> u16 {
         match self {
-            Self::CheckOn | Self::CheckOff => 1,
+            Self::CheckOn | Self::CheckOff | Self::CheckMixed => 1,
             Self::Loading | Self::Ellipsis => 1,
             _ => 1,
         }
@@ -439,7 +446,7 @@ impl Glyph {
 
     const fn ascii_cols(self) -> u16 {
         match self {
-            Self::CheckOn | Self::CheckOff => 3,
+            Self::CheckOn | Self::CheckOff | Self::CheckMixed => 3,
             Self::RadioOn | Self::RadioOff => 3,
             Self::Loading | Self::Ellipsis => 3,
             _ => 1,
@@ -451,7 +458,7 @@ impl Glyph {
             Self::File | Self::Folder | Self::FolderOpen | Self::Search | Self::Warning | Self::Info => {
                 2
             }
-            Self::CheckOn | Self::CheckOff => 1,
+            Self::CheckOn | Self::CheckOff | Self::CheckMixed => 1,
             Self::Loading | Self::Ellipsis => 1,
             _ => 1,
         }

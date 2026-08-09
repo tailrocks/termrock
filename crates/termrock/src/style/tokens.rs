@@ -95,6 +95,12 @@ impl GlyphSet {
         self.resolve(super::glyph::Glyph::CheckOff).text
     }
 
+    /// Mixed / indeterminate checkbox marker.
+    #[must_use]
+    pub const fn check_mixed(self) -> &'static str {
+        self.resolve(super::glyph::Glyph::CheckMixed).text
+    }
+
     /// Loading / busy glyph for composed leading slots.
     #[must_use]
     pub const fn loading(self) -> &'static str {
