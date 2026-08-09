@@ -17,6 +17,7 @@
 - **Depends on**: Plans 040 and 041
 - **Category**: architecture, feature, UX, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: DONE — Workspace tree (migration 0036)
 
 ## Why this matters
 

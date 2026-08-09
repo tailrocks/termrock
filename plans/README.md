@@ -20,7 +20,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [039](039-safe-interaction-baseline.md) | Fail-safe ApprovalCard + VirtualGrid contracts | P0 | L | DONE | — | 0032–0033 |
 | [040](040-unified-interaction-scene.md) | Unified InteractionScene | P0 | L | DONE | 039 | 0034 |
 | [041](041-variable-height-transcript-engine.md) | Variable-height streaming transcript | P1 | L | DONE | 040 | 0035 |
-| [042](042-responsive-workspace-blocks.md) | Responsive workspace tree + patterns | P1 | L | TODO | 040–041 | 0035 |
+| [042](042-responsive-workspace-blocks.md) | Responsive workspace tree + patterns | P1 | L | DONE | 040–041 | 0036 |
 | [043](043-token-driven-phosphor-system.md) | Token-driven quiet phosphor hierarchy | P1 | L | TODO | 040 | 0036 |
 | [044](044-universal-intent-collections.md) | Universal intents for collections | P1 | M | TODO | 039–040 | 0037 |
 | [045](045-composed-row-panel-anatomy.md) | Priority-aware row/panel anatomy | P2 | M | TODO | 041, 043 | 0038 |
