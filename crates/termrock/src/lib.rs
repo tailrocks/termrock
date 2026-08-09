@@ -20,8 +20,9 @@ pub mod widgets;
 pub mod crossterm;
 
 pub use interaction::{
-    NavigationMove, OverlayController, OverlayEscResult, PageMove, SemanticElement, SemanticRole,
-    SemanticScene, UiIntent, default_list_intent,
+    InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
+    LayerKind, NavigationMove, PageMove, SceneError, SemanticElement, SemanticRole, SemanticScene,
+    UiIntent, default_list_intent, dispatch_keymap_action,
 };
 pub use style::{
     Appearance, AppearanceThemeMap, ColorCapability, Density, DesignTokens, GlyphSet, Motion,

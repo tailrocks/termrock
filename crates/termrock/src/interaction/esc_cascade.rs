@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Ordered Escape semantics for agent and multi-layer surfaces.
+//! Ordered Escape semantics (private legacy). Prefer [`super::InteractionScene`].
+#![allow(dead_code)]
 //!
 //! Consumers register the active layers each frame (or after state changes).
 //! Esc peels the topmost layer; when the stack is empty, Esc is ignored so

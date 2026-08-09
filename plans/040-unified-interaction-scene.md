@@ -18,6 +18,7 @@
 - **Depends on**: Plan 039
 - **Category**: architecture, UX, bug, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: DONE — InteractionScene + top-only Esc + keymap bridge (migration 0034)
 
 ## Why this matters
 

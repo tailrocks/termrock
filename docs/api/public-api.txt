@@ -808,101 +808,6 @@ impl<T> core::convert::From<T> for termrock::input::MouseEvent
 pub fn termrock::input::MouseEvent::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::input::MouseEvent
 pub mod termrock::interaction
-#[non_exhaustive] pub enum termrock::interaction::EscLayer
-pub termrock::interaction::EscLayer::Draft
-pub termrock::interaction::EscLayer::Modal
-pub termrock::interaction::EscLayer::Overlay
-pub termrock::interaction::EscLayer::Quit
-pub termrock::interaction::EscLayer::Work
-impl core::clone::Clone for termrock::interaction::EscLayer
-pub fn termrock::interaction::EscLayer::clone(&self) -> termrock::interaction::EscLayer
-impl core::cmp::Eq for termrock::interaction::EscLayer
-impl core::cmp::PartialEq for termrock::interaction::EscLayer
-pub fn termrock::interaction::EscLayer::eq(&self, &termrock::interaction::EscLayer) -> bool
-impl core::fmt::Debug for termrock::interaction::EscLayer
-pub fn termrock::interaction::EscLayer::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::interaction::EscLayer
-pub fn termrock::interaction::EscLayer::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::interaction::EscLayer
-impl core::marker::StructuralPartialEq for termrock::interaction::EscLayer
-impl core::marker::Freeze for termrock::interaction::EscLayer
-impl core::marker::Send for termrock::interaction::EscLayer
-impl core::marker::Sync for termrock::interaction::EscLayer
-impl core::marker::Unpin for termrock::interaction::EscLayer
-impl core::marker::UnsafeUnpin for termrock::interaction::EscLayer
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::EscLayer
-impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::EscLayer
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::EscLayer where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::EscLayer::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::EscLayer where U: core::convert::From<T>
-pub fn termrock::interaction::EscLayer::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::EscLayer where U: core::convert::Into<T>
-pub type termrock::interaction::EscLayer::Error = core::convert::Infallible
-pub fn termrock::interaction::EscLayer::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::EscLayer where U: core::convert::TryFrom<T>
-pub type termrock::interaction::EscLayer::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::EscLayer::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::EscLayer where T: core::clone::Clone
-pub type termrock::interaction::EscLayer::Owned = T
-pub fn termrock::interaction::EscLayer::clone_into(&self, &mut T)
-pub fn termrock::interaction::EscLayer::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::EscLayer where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::EscLayer::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::EscLayer where T: ?core::marker::Sized
-pub fn termrock::interaction::EscLayer::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::EscLayer where T: ?core::marker::Sized
-pub fn termrock::interaction::EscLayer::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::EscLayer where T: core::clone::Clone
-pub unsafe fn termrock::interaction::EscLayer::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::EscLayer
-pub fn termrock::interaction::EscLayer::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::EscLayer
-#[non_exhaustive] pub enum termrock::interaction::EscOutcome
-pub termrock::interaction::EscOutcome::Empty
-pub termrock::interaction::EscOutcome::Peeled(termrock::interaction::EscLayer)
-impl core::clone::Clone for termrock::interaction::EscOutcome
-pub fn termrock::interaction::EscOutcome::clone(&self) -> termrock::interaction::EscOutcome
-impl core::cmp::Eq for termrock::interaction::EscOutcome
-impl core::cmp::PartialEq for termrock::interaction::EscOutcome
-pub fn termrock::interaction::EscOutcome::eq(&self, &termrock::interaction::EscOutcome) -> bool
-impl core::fmt::Debug for termrock::interaction::EscOutcome
-pub fn termrock::interaction::EscOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::interaction::EscOutcome
-pub fn termrock::interaction::EscOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::interaction::EscOutcome
-impl core::marker::StructuralPartialEq for termrock::interaction::EscOutcome
-impl core::marker::Freeze for termrock::interaction::EscOutcome
-impl core::marker::Send for termrock::interaction::EscOutcome
-impl core::marker::Sync for termrock::interaction::EscOutcome
-impl core::marker::Unpin for termrock::interaction::EscOutcome
-impl core::marker::UnsafeUnpin for termrock::interaction::EscOutcome
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::EscOutcome
-impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::EscOutcome
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::EscOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::EscOutcome::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::EscOutcome where U: core::convert::From<T>
-pub fn termrock::interaction::EscOutcome::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::EscOutcome where U: core::convert::Into<T>
-pub type termrock::interaction::EscOutcome::Error = core::convert::Infallible
-pub fn termrock::interaction::EscOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::EscOutcome where U: core::convert::TryFrom<T>
-pub type termrock::interaction::EscOutcome::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::EscOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::EscOutcome where T: core::clone::Clone
-pub type termrock::interaction::EscOutcome::Owned = T
-pub fn termrock::interaction::EscOutcome::clone_into(&self, &mut T)
-pub fn termrock::interaction::EscOutcome::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::EscOutcome where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::EscOutcome::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::EscOutcome where T: ?core::marker::Sized
-pub fn termrock::interaction::EscOutcome::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::EscOutcome where T: ?core::marker::Sized
-pub fn termrock::interaction::EscOutcome::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::EscOutcome where T: core::clone::Clone
-pub unsafe fn termrock::interaction::EscOutcome::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::EscOutcome
-pub fn termrock::interaction::EscOutcome::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::EscOutcome
 pub enum termrock::interaction::FocusOutcome<Id>
 pub termrock::interaction::FocusOutcome::Changed
 pub termrock::interaction::FocusOutcome::Changed::from: core::option::Option<Id>
@@ -949,6 +854,159 @@ pub unsafe fn termrock::interaction::FocusOutcome<Id>::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::interaction::FocusOutcome<Id>
 pub fn termrock::interaction::FocusOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::FocusOutcome<Id>
+#[non_exhaustive] pub enum termrock::interaction::InteractionOutcome<Id, LayerId, Action>
+pub termrock::interaction::InteractionOutcome::Action
+pub termrock::interaction::InteractionOutcome::Action::action: Action
+pub termrock::interaction::InteractionOutcome::Action::target: Id
+pub termrock::interaction::InteractionOutcome::FocusChanged
+pub termrock::interaction::InteractionOutcome::FocusChanged::from: core::option::Option<Id>
+pub termrock::interaction::InteractionOutcome::FocusChanged::to: core::option::Option<Id>
+pub termrock::interaction::InteractionOutcome::Ignored
+pub termrock::interaction::InteractionOutcome::LayerDismissed
+pub termrock::interaction::InteractionOutcome::LayerDismissed::focus: core::option::Option<Id>
+pub termrock::interaction::InteractionOutcome::LayerDismissed::layer: LayerId
+pub termrock::interaction::InteractionOutcome::UnhandledEscape
+impl<Id: core::clone::Clone, LayerId: core::clone::Clone, Action: core::clone::Clone> core::clone::Clone for termrock::InteractionOutcome<Id, LayerId, Action>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::clone(&self) -> termrock::InteractionOutcome<Id, LayerId, Action>
+impl<Id: core::cmp::Eq, LayerId: core::cmp::Eq, Action: core::cmp::Eq> core::cmp::Eq for termrock::InteractionOutcome<Id, LayerId, Action>
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::cmp::PartialEq for termrock::InteractionOutcome<Id, LayerId, Action>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::eq(&self, &termrock::InteractionOutcome<Id, LayerId, Action>) -> bool
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::InteractionOutcome<Id, LayerId, Action>
+impl<Id: core::fmt::Debug, LayerId: core::fmt::Debug, Action: core::fmt::Debug> core::fmt::Debug for termrock::InteractionOutcome<Id, LayerId, Action>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id, LayerId, Action> core::marker::Freeze for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::Freeze, Action: core::marker::Freeze, LayerId: core::marker::Freeze
+impl<Id, LayerId, Action> core::marker::Send for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::Send, Action: core::marker::Send, LayerId: core::marker::Send
+impl<Id, LayerId, Action> core::marker::Sync for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::Sync, Action: core::marker::Sync, LayerId: core::marker::Sync
+impl<Id, LayerId, Action> core::marker::Unpin for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::Unpin, Action: core::marker::Unpin, LayerId: core::marker::Unpin
+impl<Id, LayerId, Action> core::marker::UnsafeUnpin for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::UnsafeUnpin, Action: core::marker::UnsafeUnpin, LayerId: core::marker::UnsafeUnpin
+impl<Id, LayerId, Action> core::panic::unwind_safe::RefUnwindSafe for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe, LayerId: core::panic::unwind_safe::RefUnwindSafe
+impl<Id, LayerId, Action> core::panic::unwind_safe::UnwindSafe for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::panic::unwind_safe::UnwindSafe, Action: core::panic::unwind_safe::UnwindSafe, LayerId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::InteractionOutcome<Id, LayerId, Action> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::InteractionOutcome<Id, LayerId, Action> where U: core::convert::From<T>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::InteractionOutcome<Id, LayerId, Action> where U: core::convert::Into<T>
+pub type termrock::InteractionOutcome<Id, LayerId, Action>::Error = core::convert::Infallible
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::InteractionOutcome<Id, LayerId, Action> where U: core::convert::TryFrom<T>
+pub type termrock::InteractionOutcome<Id, LayerId, Action>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::InteractionOutcome<Id, LayerId, Action> where T: core::clone::Clone
+pub type termrock::InteractionOutcome<Id, LayerId, Action>::Owned = T
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::clone_into(&self, &mut T)
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::InteractionOutcome<Id, LayerId, Action> where T: 'static + ?core::marker::Sized
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::InteractionOutcome<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::InteractionOutcome<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::InteractionOutcome<Id, LayerId, Action> where T: core::clone::Clone
+pub unsafe fn termrock::InteractionOutcome<Id, LayerId, Action>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::InteractionOutcome<Id, LayerId, Action>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::InteractionOutcome<Id, LayerId, Action>
+#[non_exhaustive] pub enum termrock::interaction::LayerDismissPolicy
+pub termrock::interaction::LayerDismissPolicy::Dismissible
+pub termrock::interaction::LayerDismissPolicy::Ignore
+pub termrock::interaction::LayerDismissPolicy::Trap
+impl core::clone::Clone for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::clone(&self) -> termrock::LayerDismissPolicy
+impl core::cmp::Eq for termrock::LayerDismissPolicy
+impl core::cmp::PartialEq for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::eq(&self, &termrock::LayerDismissPolicy) -> bool
+impl core::default::Default for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::default() -> termrock::LayerDismissPolicy
+impl core::fmt::Debug for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::LayerDismissPolicy
+impl core::marker::StructuralPartialEq for termrock::LayerDismissPolicy
+impl core::marker::Freeze for termrock::LayerDismissPolicy
+impl core::marker::Send for termrock::LayerDismissPolicy
+impl core::marker::Sync for termrock::LayerDismissPolicy
+impl core::marker::Unpin for termrock::LayerDismissPolicy
+impl core::marker::UnsafeUnpin for termrock::LayerDismissPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::LayerDismissPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::LayerDismissPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::LayerDismissPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::LayerDismissPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::LayerDismissPolicy where U: core::convert::From<T>
+pub fn termrock::LayerDismissPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::LayerDismissPolicy where U: core::convert::Into<T>
+pub type termrock::LayerDismissPolicy::Error = core::convert::Infallible
+pub fn termrock::LayerDismissPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::LayerDismissPolicy where U: core::convert::TryFrom<T>
+pub type termrock::LayerDismissPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::LayerDismissPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::LayerDismissPolicy where T: core::clone::Clone
+pub type termrock::LayerDismissPolicy::Owned = T
+pub fn termrock::LayerDismissPolicy::clone_into(&self, &mut T)
+pub fn termrock::LayerDismissPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::LayerDismissPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::LayerDismissPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::LayerDismissPolicy where T: ?core::marker::Sized
+pub fn termrock::LayerDismissPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::LayerDismissPolicy where T: ?core::marker::Sized
+pub fn termrock::LayerDismissPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::LayerDismissPolicy where T: core::clone::Clone
+pub unsafe fn termrock::LayerDismissPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::LayerDismissPolicy
+#[non_exhaustive] pub enum termrock::interaction::LayerKind
+pub termrock::interaction::LayerKind::Card
+pub termrock::interaction::LayerKind::Custom
+pub termrock::interaction::LayerKind::Jump
+pub termrock::interaction::LayerKind::Menu
+pub termrock::interaction::LayerKind::Root
+pub termrock::interaction::LayerKind::Toast
+impl core::clone::Clone for termrock::LayerKind
+pub fn termrock::LayerKind::clone(&self) -> termrock::LayerKind
+impl core::cmp::Eq for termrock::LayerKind
+impl core::cmp::PartialEq for termrock::LayerKind
+pub fn termrock::LayerKind::eq(&self, &termrock::LayerKind) -> bool
+impl core::default::Default for termrock::LayerKind
+pub fn termrock::LayerKind::default() -> termrock::LayerKind
+impl core::fmt::Debug for termrock::LayerKind
+pub fn termrock::LayerKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::LayerKind
+pub fn termrock::LayerKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::LayerKind
+impl core::marker::StructuralPartialEq for termrock::LayerKind
+impl core::marker::Freeze for termrock::LayerKind
+impl core::marker::Send for termrock::LayerKind
+impl core::marker::Sync for termrock::LayerKind
+impl core::marker::Unpin for termrock::LayerKind
+impl core::marker::UnsafeUnpin for termrock::LayerKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::LayerKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::LayerKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::LayerKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::LayerKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::LayerKind where U: core::convert::From<T>
+pub fn termrock::LayerKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::LayerKind where U: core::convert::Into<T>
+pub type termrock::LayerKind::Error = core::convert::Infallible
+pub fn termrock::LayerKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::LayerKind where U: core::convert::TryFrom<T>
+pub type termrock::LayerKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::LayerKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::LayerKind where T: core::clone::Clone
+pub type termrock::LayerKind::Owned = T
+pub fn termrock::LayerKind::clone_into(&self, &mut T)
+pub fn termrock::LayerKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::LayerKind where T: 'static + ?core::marker::Sized
+pub fn termrock::LayerKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::LayerKind where T: ?core::marker::Sized
+pub fn termrock::LayerKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::LayerKind where T: ?core::marker::Sized
+pub fn termrock::LayerKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::LayerKind where T: core::clone::Clone
+pub unsafe fn termrock::LayerKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::LayerKind
+pub fn termrock::LayerKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::LayerKind
 pub enum termrock::interaction::ModalClickResult
 pub termrock::interaction::ModalClickResult::InsideHit
 pub termrock::interaction::ModalClickResult::OutsideDismiss
@@ -1087,101 +1145,6 @@ pub unsafe fn termrock::interaction::Outcome<T>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::Outcome<T>
 pub fn termrock::interaction::Outcome<T>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::Outcome<T>
-#[non_exhaustive] pub enum termrock::interaction::OverlayEscResult<Id>
-pub termrock::interaction::OverlayEscResult::Cascade(termrock::interaction::EscLayer)
-pub termrock::interaction::OverlayEscResult::Empty
-pub termrock::interaction::OverlayEscResult::OverlayDismissed
-pub termrock::interaction::OverlayEscResult::OverlayDismissed::focus: termrock::interaction::FocusOutcome<Id>
-pub termrock::interaction::OverlayEscResult::OverlayDismissed::id: termrock::interaction::OverlayId
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayEscResult<Id>::clone(&self) -> termrock::OverlayEscResult<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::OverlayEscResult<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayEscResult<Id>::eq(&self, &termrock::OverlayEscResult<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::OverlayEscResult<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayEscResult<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::OverlayEscResult<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::OverlayEscResult<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::OverlayEscResult<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::OverlayEscResult<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::OverlayEscResult<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::OverlayEscResult<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::OverlayEscResult<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::OverlayEscResult<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::OverlayEscResult<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::OverlayEscResult<Id> where U: core::convert::From<T>
-pub fn termrock::OverlayEscResult<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::OverlayEscResult<Id> where U: core::convert::Into<T>
-pub type termrock::OverlayEscResult<Id>::Error = core::convert::Infallible
-pub fn termrock::OverlayEscResult<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::OverlayEscResult<Id> where U: core::convert::TryFrom<T>
-pub type termrock::OverlayEscResult<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::OverlayEscResult<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::OverlayEscResult<Id> where T: core::clone::Clone
-pub type termrock::OverlayEscResult<Id>::Owned = T
-pub fn termrock::OverlayEscResult<Id>::clone_into(&self, &mut T)
-pub fn termrock::OverlayEscResult<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::OverlayEscResult<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::OverlayEscResult<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::OverlayEscResult<Id> where T: ?core::marker::Sized
-pub fn termrock::OverlayEscResult<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::OverlayEscResult<Id> where T: ?core::marker::Sized
-pub fn termrock::OverlayEscResult<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::OverlayEscResult<Id> where T: core::clone::Clone
-pub unsafe fn termrock::OverlayEscResult<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayEscResult<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::OverlayEscResult<Id>
-#[non_exhaustive] pub enum termrock::interaction::OverlayKind
-pub termrock::interaction::OverlayKind::Card
-pub termrock::interaction::OverlayKind::Custom
-pub termrock::interaction::OverlayKind::Jump
-pub termrock::interaction::OverlayKind::Menu
-pub termrock::interaction::OverlayKind::Toast
-impl core::clone::Clone for termrock::interaction::OverlayKind
-pub fn termrock::interaction::OverlayKind::clone(&self) -> termrock::interaction::OverlayKind
-impl core::cmp::Eq for termrock::interaction::OverlayKind
-impl core::cmp::PartialEq for termrock::interaction::OverlayKind
-pub fn termrock::interaction::OverlayKind::eq(&self, &termrock::interaction::OverlayKind) -> bool
-impl core::fmt::Debug for termrock::interaction::OverlayKind
-pub fn termrock::interaction::OverlayKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::interaction::OverlayKind
-pub fn termrock::interaction::OverlayKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::interaction::OverlayKind
-impl core::marker::StructuralPartialEq for termrock::interaction::OverlayKind
-impl core::marker::Freeze for termrock::interaction::OverlayKind
-impl core::marker::Send for termrock::interaction::OverlayKind
-impl core::marker::Sync for termrock::interaction::OverlayKind
-impl core::marker::Unpin for termrock::interaction::OverlayKind
-impl core::marker::UnsafeUnpin for termrock::interaction::OverlayKind
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::OverlayKind
-impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::OverlayKind
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::OverlayKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::OverlayKind::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::OverlayKind where U: core::convert::From<T>
-pub fn termrock::interaction::OverlayKind::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::OverlayKind where U: core::convert::Into<T>
-pub type termrock::interaction::OverlayKind::Error = core::convert::Infallible
-pub fn termrock::interaction::OverlayKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::OverlayKind where U: core::convert::TryFrom<T>
-pub type termrock::interaction::OverlayKind::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::OverlayKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::OverlayKind where T: core::clone::Clone
-pub type termrock::interaction::OverlayKind::Owned = T
-pub fn termrock::interaction::OverlayKind::clone_into(&self, &mut T)
-pub fn termrock::interaction::OverlayKind::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::OverlayKind where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::OverlayKind::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::OverlayKind where T: ?core::marker::Sized
-pub fn termrock::interaction::OverlayKind::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::OverlayKind where T: ?core::marker::Sized
-pub fn termrock::interaction::OverlayKind::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::OverlayKind where T: core::clone::Clone
-pub unsafe fn termrock::interaction::OverlayKind::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::OverlayKind
-pub fn termrock::interaction::OverlayKind::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::OverlayKind
 #[non_exhaustive] pub enum termrock::interaction::PageMove
 pub termrock::interaction::PageMove::Backward
 pub termrock::interaction::PageMove::Forward
@@ -1228,6 +1191,50 @@ pub unsafe fn termrock::PageMove::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::PageMove
 pub fn termrock::PageMove::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::PageMove
+#[non_exhaustive] pub enum termrock::interaction::SceneError
+pub termrock::interaction::SceneError::DuplicateElement
+pub termrock::interaction::SceneError::DuplicateLayer
+pub termrock::interaction::SceneError::UnknownLayer
+impl core::clone::Clone for termrock::SceneError
+pub fn termrock::SceneError::clone(&self) -> termrock::SceneError
+impl core::cmp::Eq for termrock::SceneError
+impl core::cmp::PartialEq for termrock::SceneError
+pub fn termrock::SceneError::eq(&self, &termrock::SceneError) -> bool
+impl core::fmt::Debug for termrock::SceneError
+pub fn termrock::SceneError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::SceneError
+impl core::marker::Freeze for termrock::SceneError
+impl core::marker::Send for termrock::SceneError
+impl core::marker::Sync for termrock::SceneError
+impl core::marker::Unpin for termrock::SceneError
+impl core::marker::UnsafeUnpin for termrock::SceneError
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::SceneError
+impl core::panic::unwind_safe::UnwindSafe for termrock::SceneError
+impl<Q, K> equivalent::Equivalent<K> for termrock::SceneError where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::SceneError::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::SceneError where U: core::convert::From<T>
+pub fn termrock::SceneError::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::SceneError where U: core::convert::Into<T>
+pub type termrock::SceneError::Error = core::convert::Infallible
+pub fn termrock::SceneError::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::SceneError where U: core::convert::TryFrom<T>
+pub type termrock::SceneError::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::SceneError::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::SceneError where T: core::clone::Clone
+pub type termrock::SceneError::Owned = T
+pub fn termrock::SceneError::clone_into(&self, &mut T)
+pub fn termrock::SceneError::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::SceneError where T: 'static + ?core::marker::Sized
+pub fn termrock::SceneError::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::SceneError where T: ?core::marker::Sized
+pub fn termrock::SceneError::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::SceneError where T: ?core::marker::Sized
+pub fn termrock::SceneError::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::SceneError where T: core::clone::Clone
+pub unsafe fn termrock::SceneError::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::SceneError
+pub fn termrock::SceneError::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::SceneError
 #[non_exhaustive] pub enum termrock::interaction::SemanticRole
 pub termrock::interaction::SemanticRole::Chrome
 pub termrock::interaction::SemanticRole::Content
@@ -1330,58 +1337,6 @@ pub unsafe fn termrock::UiIntent::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::UiIntent
 pub fn termrock::UiIntent::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::UiIntent
-pub struct termrock::interaction::EscCascade
-impl termrock::interaction::EscCascade
-pub fn termrock::interaction::EscCascade::clear(&mut self)
-pub fn termrock::interaction::EscCascade::layers(&self) -> &[termrock::interaction::EscLayer]
-pub const fn termrock::interaction::EscCascade::new() -> Self
-pub fn termrock::interaction::EscCascade::peel(&mut self) -> termrock::interaction::EscOutcome
-pub fn termrock::interaction::EscCascade::pop_if(&mut self, termrock::interaction::EscLayer) -> bool
-pub fn termrock::interaction::EscCascade::push(&mut self, termrock::interaction::EscLayer)
-pub fn termrock::interaction::EscCascade::set_layers(&mut self, impl core::iter::traits::collect::IntoIterator<Item = termrock::interaction::EscLayer>)
-pub fn termrock::interaction::EscCascade::top(&self) -> core::option::Option<termrock::interaction::EscLayer>
-impl core::clone::Clone for termrock::interaction::EscCascade
-pub fn termrock::interaction::EscCascade::clone(&self) -> termrock::interaction::EscCascade
-impl core::cmp::Eq for termrock::interaction::EscCascade
-impl core::cmp::PartialEq for termrock::interaction::EscCascade
-pub fn termrock::interaction::EscCascade::eq(&self, &termrock::interaction::EscCascade) -> bool
-impl core::default::Default for termrock::interaction::EscCascade
-pub fn termrock::interaction::EscCascade::default() -> termrock::interaction::EscCascade
-impl core::fmt::Debug for termrock::interaction::EscCascade
-pub fn termrock::interaction::EscCascade::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::interaction::EscCascade
-impl core::marker::Freeze for termrock::interaction::EscCascade
-impl core::marker::Send for termrock::interaction::EscCascade
-impl core::marker::Sync for termrock::interaction::EscCascade
-impl core::marker::Unpin for termrock::interaction::EscCascade
-impl core::marker::UnsafeUnpin for termrock::interaction::EscCascade
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::EscCascade
-impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::EscCascade
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::EscCascade where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::EscCascade::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::EscCascade where U: core::convert::From<T>
-pub fn termrock::interaction::EscCascade::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::EscCascade where U: core::convert::Into<T>
-pub type termrock::interaction::EscCascade::Error = core::convert::Infallible
-pub fn termrock::interaction::EscCascade::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::EscCascade where U: core::convert::TryFrom<T>
-pub type termrock::interaction::EscCascade::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::EscCascade::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::EscCascade where T: core::clone::Clone
-pub type termrock::interaction::EscCascade::Owned = T
-pub fn termrock::interaction::EscCascade::clone_into(&self, &mut T)
-pub fn termrock::interaction::EscCascade::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::EscCascade where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::EscCascade::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::EscCascade where T: ?core::marker::Sized
-pub fn termrock::interaction::EscCascade::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::EscCascade where T: ?core::marker::Sized
-pub fn termrock::interaction::EscCascade::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::EscCascade where T: core::clone::Clone
-pub unsafe fn termrock::interaction::EscCascade::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::EscCascade
-pub fn termrock::interaction::EscCascade::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::EscCascade
 pub struct termrock::interaction::FocusRing<Id, ScopeId>
 impl<Id: core::clone::Clone + core::cmp::Eq, ScopeId: core::clone::Clone + core::cmp::Eq> termrock::interaction::FocusRing<Id, ScopeId>
 pub fn termrock::interaction::FocusRing<Id, ScopeId>::active_scope(&self) -> &ScopeId
@@ -1578,6 +1533,175 @@ pub unsafe fn termrock::interaction::HoverState<Id>::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::interaction::HoverState<Id>
 pub fn termrock::interaction::HoverState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::HoverState<Id>
+pub struct termrock::interaction::InteractionElement<Id, LayerId, Action>
+pub termrock::interaction::InteractionElement::actions: alloc::vec::Vec<Action>
+pub termrock::interaction::InteractionElement::area: ratatui_core::layout::rect::Rect
+pub termrock::interaction::InteractionElement::enabled: bool
+pub termrock::interaction::InteractionElement::focusable: bool
+pub termrock::interaction::InteractionElement::hidden: bool
+pub termrock::interaction::InteractionElement::id: Id
+pub termrock::interaction::InteractionElement::layer: LayerId
+pub termrock::interaction::InteractionElement::role: termrock::SemanticRole
+impl<Id, LayerId, Action> termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::actions(self, alloc::vec::Vec<Action>) -> Self
+pub fn termrock::InteractionElement<Id, LayerId, Action>::control(Id, LayerId, ratatui_core::layout::rect::Rect) -> Self where Action: core::clone::Clone
+pub const fn termrock::InteractionElement<Id, LayerId, Action>::enabled(self, bool) -> Self
+pub const fn termrock::InteractionElement<Id, LayerId, Action>::focusable(self, bool) -> Self
+pub const fn termrock::InteractionElement<Id, LayerId, Action>::hidden(self, bool) -> Self
+pub const fn termrock::InteractionElement<Id, LayerId, Action>::role(self, termrock::SemanticRole) -> Self
+impl<Id: core::clone::Clone, LayerId: core::clone::Clone, Action: core::clone::Clone> core::clone::Clone for termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::clone(&self) -> termrock::InteractionElement<Id, LayerId, Action>
+impl<Id: core::cmp::Eq, LayerId: core::cmp::Eq, Action: core::cmp::Eq> core::cmp::Eq for termrock::InteractionElement<Id, LayerId, Action>
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::cmp::PartialEq for termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::eq(&self, &termrock::InteractionElement<Id, LayerId, Action>) -> bool
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::InteractionElement<Id, LayerId, Action>
+impl<Id: core::fmt::Debug, LayerId: core::fmt::Debug, Action: core::fmt::Debug> core::fmt::Debug for termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id, LayerId, Action> core::marker::Freeze for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::Freeze, LayerId: core::marker::Freeze
+impl<Id, LayerId, Action> core::marker::Send for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::Send, LayerId: core::marker::Send, Action: core::marker::Send
+impl<Id, LayerId, Action> core::marker::Sync for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::Sync, LayerId: core::marker::Sync, Action: core::marker::Sync
+impl<Id, LayerId, Action> core::marker::Unpin for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::Unpin, LayerId: core::marker::Unpin, Action: core::marker::Unpin
+impl<Id, LayerId, Action> core::marker::UnsafeUnpin for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::UnsafeUnpin, LayerId: core::marker::UnsafeUnpin
+impl<Id, LayerId, Action> core::panic::unwind_safe::RefUnwindSafe for termrock::InteractionElement<Id, LayerId, Action> where Id: core::panic::unwind_safe::RefUnwindSafe, LayerId: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe
+impl<Id, LayerId, Action> core::panic::unwind_safe::UnwindSafe for termrock::InteractionElement<Id, LayerId, Action> where Id: core::panic::unwind_safe::UnwindSafe, LayerId: core::panic::unwind_safe::UnwindSafe, Action: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::InteractionElement<Id, LayerId, Action> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::InteractionElement<Id, LayerId, Action>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::InteractionElement<Id, LayerId, Action> where U: core::convert::From<T>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::InteractionElement<Id, LayerId, Action> where U: core::convert::Into<T>
+pub type termrock::InteractionElement<Id, LayerId, Action>::Error = core::convert::Infallible
+pub fn termrock::InteractionElement<Id, LayerId, Action>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::InteractionElement<Id, LayerId, Action> where U: core::convert::TryFrom<T>
+pub type termrock::InteractionElement<Id, LayerId, Action>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::InteractionElement<Id, LayerId, Action>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::InteractionElement<Id, LayerId, Action> where T: core::clone::Clone
+pub type termrock::InteractionElement<Id, LayerId, Action>::Owned = T
+pub fn termrock::InteractionElement<Id, LayerId, Action>::clone_into(&self, &mut T)
+pub fn termrock::InteractionElement<Id, LayerId, Action>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::InteractionElement<Id, LayerId, Action> where T: 'static + ?core::marker::Sized
+pub fn termrock::InteractionElement<Id, LayerId, Action>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::InteractionElement<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionElement<Id, LayerId, Action>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::InteractionElement<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionElement<Id, LayerId, Action>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::InteractionElement<Id, LayerId, Action> where T: core::clone::Clone
+pub unsafe fn termrock::InteractionElement<Id, LayerId, Action>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::InteractionElement<Id, LayerId, Action>
+pub struct termrock::interaction::InteractionLayer<LayerId, Id>
+pub termrock::interaction::InteractionLayer::esc: termrock::LayerDismissPolicy
+pub termrock::interaction::InteractionLayer::focus_return: core::option::Option<Id>
+pub termrock::interaction::InteractionLayer::id: LayerId
+pub termrock::interaction::InteractionLayer::kind: termrock::LayerKind
+pub termrock::interaction::InteractionLayer::outside: termrock::LayerDismissPolicy
+pub termrock::interaction::InteractionLayer::owns_input: bool
+impl<LayerId: core::clone::Clone, Id: core::clone::Clone> core::clone::Clone for termrock::InteractionLayer<LayerId, Id>
+pub fn termrock::InteractionLayer<LayerId, Id>::clone(&self) -> termrock::InteractionLayer<LayerId, Id>
+impl<LayerId: core::cmp::Eq, Id: core::cmp::Eq> core::cmp::Eq for termrock::InteractionLayer<LayerId, Id>
+impl<LayerId: core::cmp::PartialEq, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::InteractionLayer<LayerId, Id>
+pub fn termrock::InteractionLayer<LayerId, Id>::eq(&self, &termrock::InteractionLayer<LayerId, Id>) -> bool
+impl<LayerId: core::cmp::PartialEq, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::InteractionLayer<LayerId, Id>
+impl<LayerId: core::fmt::Debug, Id: core::fmt::Debug> core::fmt::Debug for termrock::InteractionLayer<LayerId, Id>
+pub fn termrock::InteractionLayer<LayerId, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<LayerId, Id> core::marker::Freeze for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::Freeze, Id: core::marker::Freeze
+impl<LayerId, Id> core::marker::Send for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::Send, Id: core::marker::Send
+impl<LayerId, Id> core::marker::Sync for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::Sync, Id: core::marker::Sync
+impl<LayerId, Id> core::marker::Unpin for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::Unpin, Id: core::marker::Unpin
+impl<LayerId, Id> core::marker::UnsafeUnpin for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::UnsafeUnpin, Id: core::marker::UnsafeUnpin
+impl<LayerId, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::InteractionLayer<LayerId, Id> where LayerId: core::panic::unwind_safe::RefUnwindSafe, Id: core::panic::unwind_safe::RefUnwindSafe
+impl<LayerId, Id> core::panic::unwind_safe::UnwindSafe for termrock::InteractionLayer<LayerId, Id> where LayerId: core::panic::unwind_safe::UnwindSafe, Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::InteractionLayer<LayerId, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::InteractionLayer<LayerId, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::InteractionLayer<LayerId, Id> where U: core::convert::From<T>
+pub fn termrock::InteractionLayer<LayerId, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::InteractionLayer<LayerId, Id> where U: core::convert::Into<T>
+pub type termrock::InteractionLayer<LayerId, Id>::Error = core::convert::Infallible
+pub fn termrock::InteractionLayer<LayerId, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::InteractionLayer<LayerId, Id> where U: core::convert::TryFrom<T>
+pub type termrock::InteractionLayer<LayerId, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::InteractionLayer<LayerId, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::InteractionLayer<LayerId, Id> where T: core::clone::Clone
+pub type termrock::InteractionLayer<LayerId, Id>::Owned = T
+pub fn termrock::InteractionLayer<LayerId, Id>::clone_into(&self, &mut T)
+pub fn termrock::InteractionLayer<LayerId, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::InteractionLayer<LayerId, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::InteractionLayer<LayerId, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::InteractionLayer<LayerId, Id> where T: ?core::marker::Sized
+pub fn termrock::InteractionLayer<LayerId, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::InteractionLayer<LayerId, Id> where T: ?core::marker::Sized
+pub fn termrock::InteractionLayer<LayerId, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::InteractionLayer<LayerId, Id> where T: core::clone::Clone
+pub unsafe fn termrock::InteractionLayer<LayerId, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::InteractionLayer<LayerId, Id>
+pub fn termrock::InteractionLayer<LayerId, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::InteractionLayer<LayerId, Id>
+pub struct termrock::interaction::InteractionScene<Id, LayerId, Action>
+impl<Id, LayerId, Action> termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::action_available(&self, &Action) -> bool where LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::available_actions(&self) -> alloc::vec::Vec<Action> where Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::begin_frame(&mut self)
+pub fn termrock::InteractionScene<Id, LayerId, Action>::dispatch_action(&self, Action) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::elements(&self) -> &[termrock::InteractionElement<Id, LayerId, Action>]
+pub fn termrock::InteractionScene<Id, LayerId, Action>::ensure_root(&mut self, termrock::InteractionLayer<LayerId, Id>) where LayerId: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::focus(&mut self, Id) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::focus_move(&mut self, bool) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::focus_order(&self) -> alloc::vec::Vec<&Id> where LayerId: core::cmp::PartialEq
+pub const fn termrock::InteractionScene<Id, LayerId, Action>::focused(&self) -> core::option::Option<&Id>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::get(&self, &Id) -> core::option::Option<&termrock::InteractionElement<Id, LayerId, Action>> where Id: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::handle_escape(&mut self) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::handle_key_tab_esc(&mut self, termrock::input::KeyEvent) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::clone::Clone + core::cmp::PartialEq, Action: core::clone::Clone
+pub fn termrock::InteractionScene<Id, LayerId, Action>::hit_test(&self, ratatui_core::layout::position::Position) -> core::option::Option<&termrock::InteractionElement<Id, LayerId, Action>>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::layers(&self) -> &[termrock::InteractionLayer<LayerId, Id>]
+pub const fn termrock::InteractionScene<Id, LayerId, Action>::new() -> Self
+pub fn termrock::InteractionScene<Id, LayerId, Action>::push_layer(&mut self, termrock::InteractionLayer<LayerId, Id>) where LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::reconcile(&mut self) where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::register(&mut self, termrock::InteractionElement<Id, LayerId, Action>) -> core::result::Result<(), termrock::SceneError> where Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::remove_layer(&mut self, &LayerId) -> bool where LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::top_layer(&self) -> core::option::Option<&termrock::InteractionLayer<LayerId, Id>>
+impl<Id, LayerId, Action> core::default::Default for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::default() -> Self
+impl<Id: core::clone::Clone, LayerId: core::clone::Clone, Action: core::clone::Clone> core::clone::Clone for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::clone(&self) -> termrock::InteractionScene<Id, LayerId, Action>
+impl<Id: core::cmp::Eq, LayerId: core::cmp::Eq, Action: core::cmp::Eq> core::cmp::Eq for termrock::InteractionScene<Id, LayerId, Action>
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::cmp::PartialEq for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::eq(&self, &termrock::InteractionScene<Id, LayerId, Action>) -> bool
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::InteractionScene<Id, LayerId, Action>
+impl<Id: core::fmt::Debug, LayerId: core::fmt::Debug, Action: core::fmt::Debug> core::fmt::Debug for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id, LayerId, Action> core::marker::Freeze for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::Freeze, LayerId: core::marker::Freeze
+impl<Id, LayerId, Action> core::marker::Send for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::Send, LayerId: core::marker::Send, Action: core::marker::Send
+impl<Id, LayerId, Action> core::marker::Sync for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::Sync, LayerId: core::marker::Sync, Action: core::marker::Sync
+impl<Id, LayerId, Action> core::marker::Unpin for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::Unpin, LayerId: core::marker::Unpin, Action: core::marker::Unpin
+impl<Id, LayerId, Action> core::marker::UnsafeUnpin for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::UnsafeUnpin, LayerId: core::marker::UnsafeUnpin
+impl<Id, LayerId, Action> core::panic::unwind_safe::RefUnwindSafe for termrock::InteractionScene<Id, LayerId, Action> where Id: core::panic::unwind_safe::RefUnwindSafe, LayerId: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe
+impl<Id, LayerId, Action> core::panic::unwind_safe::UnwindSafe for termrock::InteractionScene<Id, LayerId, Action> where Id: core::panic::unwind_safe::UnwindSafe, LayerId: core::panic::unwind_safe::UnwindSafe, Action: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::InteractionScene<Id, LayerId, Action> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::InteractionScene<Id, LayerId, Action>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::InteractionScene<Id, LayerId, Action> where U: core::convert::From<T>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::InteractionScene<Id, LayerId, Action> where U: core::convert::Into<T>
+pub type termrock::InteractionScene<Id, LayerId, Action>::Error = core::convert::Infallible
+pub fn termrock::InteractionScene<Id, LayerId, Action>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::InteractionScene<Id, LayerId, Action> where U: core::convert::TryFrom<T>
+pub type termrock::InteractionScene<Id, LayerId, Action>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::InteractionScene<Id, LayerId, Action>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::InteractionScene<Id, LayerId, Action> where T: core::clone::Clone
+pub type termrock::InteractionScene<Id, LayerId, Action>::Owned = T
+pub fn termrock::InteractionScene<Id, LayerId, Action>::clone_into(&self, &mut T)
+pub fn termrock::InteractionScene<Id, LayerId, Action>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::InteractionScene<Id, LayerId, Action> where T: 'static + ?core::marker::Sized
+pub fn termrock::InteractionScene<Id, LayerId, Action>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::InteractionScene<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionScene<Id, LayerId, Action>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::InteractionScene<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionScene<Id, LayerId, Action>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::InteractionScene<Id, LayerId, Action> where T: core::clone::Clone
+pub unsafe fn termrock::InteractionScene<Id, LayerId, Action>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::InteractionScene<Id, LayerId, Action>
 pub struct termrock::interaction::ModalStack<M>
 impl<M> termrock::interaction::ModalStack<M>
 pub fn termrock::interaction::ModalStack<M>::clear_chain(&mut self)
@@ -1633,210 +1757,6 @@ pub unsafe fn termrock::interaction::ModalStack<M>::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::interaction::ModalStack<M>
 pub fn termrock::interaction::ModalStack<M>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::ModalStack<M>
-pub struct termrock::interaction::OverlayController
-pub termrock::interaction::OverlayController::cascade: termrock::interaction::EscCascade
-pub termrock::interaction::OverlayController::host: termrock::interaction::OverlayHost
-impl termrock::OverlayController
-pub fn termrock::OverlayController::handle_esc<Id: core::clone::Clone + core::cmp::Eq, ScopeId: core::clone::Clone + core::cmp::Eq>(&mut self, core::option::Option<&mut termrock::interaction::FocusRing<Id, ScopeId>>, bool) -> termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayController::new() -> Self
-pub fn termrock::OverlayController::push_overlay(&mut self, termrock::interaction::OverlayLayer)
-impl core::clone::Clone for termrock::OverlayController
-pub fn termrock::OverlayController::clone(&self) -> termrock::OverlayController
-impl core::cmp::Eq for termrock::OverlayController
-impl core::cmp::PartialEq for termrock::OverlayController
-pub fn termrock::OverlayController::eq(&self, &termrock::OverlayController) -> bool
-impl core::default::Default for termrock::OverlayController
-pub fn termrock::OverlayController::default() -> termrock::OverlayController
-impl core::fmt::Debug for termrock::OverlayController
-pub fn termrock::OverlayController::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::OverlayController
-impl core::marker::Freeze for termrock::OverlayController
-impl core::marker::Send for termrock::OverlayController
-impl core::marker::Sync for termrock::OverlayController
-impl core::marker::Unpin for termrock::OverlayController
-impl core::marker::UnsafeUnpin for termrock::OverlayController
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::OverlayController
-impl core::panic::unwind_safe::UnwindSafe for termrock::OverlayController
-impl<Q, K> equivalent::Equivalent<K> for termrock::OverlayController where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::OverlayController::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::OverlayController where U: core::convert::From<T>
-pub fn termrock::OverlayController::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::OverlayController where U: core::convert::Into<T>
-pub type termrock::OverlayController::Error = core::convert::Infallible
-pub fn termrock::OverlayController::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::OverlayController where U: core::convert::TryFrom<T>
-pub type termrock::OverlayController::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::OverlayController::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::OverlayController where T: core::clone::Clone
-pub type termrock::OverlayController::Owned = T
-pub fn termrock::OverlayController::clone_into(&self, &mut T)
-pub fn termrock::OverlayController::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::OverlayController where T: 'static + ?core::marker::Sized
-pub fn termrock::OverlayController::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::OverlayController where T: ?core::marker::Sized
-pub fn termrock::OverlayController::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::OverlayController where T: ?core::marker::Sized
-pub fn termrock::OverlayController::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::OverlayController where T: core::clone::Clone
-pub unsafe fn termrock::OverlayController::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::OverlayController
-pub fn termrock::OverlayController::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::OverlayController
-pub struct termrock::interaction::OverlayHost
-impl termrock::interaction::OverlayHost
-pub fn termrock::interaction::OverlayHost::clear(&mut self)
-pub fn termrock::interaction::OverlayHost::dismiss_top_esc(&mut self) -> core::option::Option<termrock::interaction::OverlayLayer>
-pub fn termrock::interaction::OverlayHost::is_empty(&self) -> bool
-pub fn termrock::interaction::OverlayHost::layers(&self) -> &[termrock::interaction::OverlayLayer]
-pub const fn termrock::interaction::OverlayHost::new() -> Self
-pub fn termrock::interaction::OverlayHost::pop(&mut self) -> core::option::Option<termrock::interaction::OverlayLayer>
-pub fn termrock::interaction::OverlayHost::push(&mut self, termrock::interaction::OverlayLayer)
-pub fn termrock::interaction::OverlayHost::remove(&mut self, &termrock::interaction::OverlayId) -> bool
-pub fn termrock::interaction::OverlayHost::top(&self) -> core::option::Option<&termrock::interaction::OverlayLayer>
-impl core::clone::Clone for termrock::interaction::OverlayHost
-pub fn termrock::interaction::OverlayHost::clone(&self) -> termrock::interaction::OverlayHost
-impl core::cmp::Eq for termrock::interaction::OverlayHost
-impl core::cmp::PartialEq for termrock::interaction::OverlayHost
-pub fn termrock::interaction::OverlayHost::eq(&self, &termrock::interaction::OverlayHost) -> bool
-impl core::default::Default for termrock::interaction::OverlayHost
-pub fn termrock::interaction::OverlayHost::default() -> termrock::interaction::OverlayHost
-impl core::fmt::Debug for termrock::interaction::OverlayHost
-pub fn termrock::interaction::OverlayHost::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::interaction::OverlayHost
-impl core::marker::Freeze for termrock::interaction::OverlayHost
-impl core::marker::Send for termrock::interaction::OverlayHost
-impl core::marker::Sync for termrock::interaction::OverlayHost
-impl core::marker::Unpin for termrock::interaction::OverlayHost
-impl core::marker::UnsafeUnpin for termrock::interaction::OverlayHost
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::OverlayHost
-impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::OverlayHost
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::OverlayHost where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::OverlayHost::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::OverlayHost where U: core::convert::From<T>
-pub fn termrock::interaction::OverlayHost::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::OverlayHost where U: core::convert::Into<T>
-pub type termrock::interaction::OverlayHost::Error = core::convert::Infallible
-pub fn termrock::interaction::OverlayHost::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::OverlayHost where U: core::convert::TryFrom<T>
-pub type termrock::interaction::OverlayHost::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::OverlayHost::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::OverlayHost where T: core::clone::Clone
-pub type termrock::interaction::OverlayHost::Owned = T
-pub fn termrock::interaction::OverlayHost::clone_into(&self, &mut T)
-pub fn termrock::interaction::OverlayHost::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::OverlayHost where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::OverlayHost::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::OverlayHost where T: ?core::marker::Sized
-pub fn termrock::interaction::OverlayHost::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::OverlayHost where T: ?core::marker::Sized
-pub fn termrock::interaction::OverlayHost::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::OverlayHost where T: core::clone::Clone
-pub unsafe fn termrock::interaction::OverlayHost::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::OverlayHost
-pub fn termrock::interaction::OverlayHost::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::OverlayHost
-pub struct termrock::interaction::OverlayId(pub alloc::string::String)
-impl termrock::interaction::OverlayId
-pub fn termrock::interaction::OverlayId::from_static(&'static str) -> Self
-impl core::clone::Clone for termrock::interaction::OverlayId
-pub fn termrock::interaction::OverlayId::clone(&self) -> termrock::interaction::OverlayId
-impl core::cmp::Eq for termrock::interaction::OverlayId
-impl core::cmp::PartialEq for termrock::interaction::OverlayId
-pub fn termrock::interaction::OverlayId::eq(&self, &termrock::interaction::OverlayId) -> bool
-impl core::fmt::Debug for termrock::interaction::OverlayId
-pub fn termrock::interaction::OverlayId::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::fmt::Display for termrock::interaction::OverlayId
-pub fn termrock::interaction::OverlayId::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::interaction::OverlayId
-pub fn termrock::interaction::OverlayId::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::StructuralPartialEq for termrock::interaction::OverlayId
-impl core::marker::Freeze for termrock::interaction::OverlayId
-impl core::marker::Send for termrock::interaction::OverlayId
-impl core::marker::Sync for termrock::interaction::OverlayId
-impl core::marker::Unpin for termrock::interaction::OverlayId
-impl core::marker::UnsafeUnpin for termrock::interaction::OverlayId
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::OverlayId
-impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::OverlayId
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::OverlayId where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::OverlayId::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::OverlayId where U: core::convert::From<T>
-pub fn termrock::interaction::OverlayId::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::OverlayId where U: core::convert::Into<T>
-pub type termrock::interaction::OverlayId::Error = core::convert::Infallible
-pub fn termrock::interaction::OverlayId::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::OverlayId where U: core::convert::TryFrom<T>
-pub type termrock::interaction::OverlayId::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::OverlayId::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::OverlayId where T: core::clone::Clone
-pub type termrock::interaction::OverlayId::Owned = T
-pub fn termrock::interaction::OverlayId::clone_into(&self, &mut T)
-pub fn termrock::interaction::OverlayId::to_owned(&self) -> T
-impl<T> alloc::string::ToString for termrock::interaction::OverlayId where T: core::fmt::Display + ?core::marker::Sized
-pub fn termrock::interaction::OverlayId::to_string(&self) -> alloc::string::String
-impl<T> compact_str::traits::ToCompactString for termrock::interaction::OverlayId where T: core::fmt::Display
-pub fn termrock::interaction::OverlayId::try_to_compact_string(&self) -> core::result::Result<compact_str::CompactString, compact_str::ToCompactStringError>
-impl<T> core::any::Any for termrock::interaction::OverlayId where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::OverlayId::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::OverlayId where T: ?core::marker::Sized
-pub fn termrock::interaction::OverlayId::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::OverlayId where T: ?core::marker::Sized
-pub fn termrock::interaction::OverlayId::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::OverlayId where T: core::clone::Clone
-pub unsafe fn termrock::interaction::OverlayId::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::OverlayId
-pub fn termrock::interaction::OverlayId::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::OverlayId
-impl<T> ratatui_core::text::line::ToLine for termrock::interaction::OverlayId where T: core::fmt::Display
-pub fn termrock::interaction::OverlayId::to_line(&self) -> ratatui_core::text::line::Line<'_>
-impl<T> ratatui_core::text::span::ToSpan for termrock::interaction::OverlayId where T: core::fmt::Display
-pub fn termrock::interaction::OverlayId::to_span(&self) -> ratatui_core::text::span::Span<'_>
-impl<T> ratatui_core::text::text::ToText for termrock::interaction::OverlayId where T: core::fmt::Display
-pub fn termrock::interaction::OverlayId::to_text(&self) -> ratatui_core::text::text::Text<'_>
-pub struct termrock::interaction::OverlayLayer
-pub termrock::interaction::OverlayLayer::dismiss_on_esc: bool
-pub termrock::interaction::OverlayLayer::dismiss_on_outside: bool
-pub termrock::interaction::OverlayLayer::id: termrock::interaction::OverlayId
-pub termrock::interaction::OverlayLayer::kind: termrock::interaction::OverlayKind
-impl core::clone::Clone for termrock::interaction::OverlayLayer
-pub fn termrock::interaction::OverlayLayer::clone(&self) -> termrock::interaction::OverlayLayer
-impl core::cmp::Eq for termrock::interaction::OverlayLayer
-impl core::cmp::PartialEq for termrock::interaction::OverlayLayer
-pub fn termrock::interaction::OverlayLayer::eq(&self, &termrock::interaction::OverlayLayer) -> bool
-impl core::fmt::Debug for termrock::interaction::OverlayLayer
-pub fn termrock::interaction::OverlayLayer::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::interaction::OverlayLayer
-impl core::marker::Freeze for termrock::interaction::OverlayLayer
-impl core::marker::Send for termrock::interaction::OverlayLayer
-impl core::marker::Sync for termrock::interaction::OverlayLayer
-impl core::marker::Unpin for termrock::interaction::OverlayLayer
-impl core::marker::UnsafeUnpin for termrock::interaction::OverlayLayer
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::OverlayLayer
-impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::OverlayLayer
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::OverlayLayer where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::OverlayLayer::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::OverlayLayer where U: core::convert::From<T>
-pub fn termrock::interaction::OverlayLayer::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::OverlayLayer where U: core::convert::Into<T>
-pub type termrock::interaction::OverlayLayer::Error = core::convert::Infallible
-pub fn termrock::interaction::OverlayLayer::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::OverlayLayer where U: core::convert::TryFrom<T>
-pub type termrock::interaction::OverlayLayer::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::OverlayLayer::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::OverlayLayer where T: core::clone::Clone
-pub type termrock::interaction::OverlayLayer::Owned = T
-pub fn termrock::interaction::OverlayLayer::clone_into(&self, &mut T)
-pub fn termrock::interaction::OverlayLayer::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::OverlayLayer where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::OverlayLayer::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::OverlayLayer where T: ?core::marker::Sized
-pub fn termrock::interaction::OverlayLayer::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::OverlayLayer where T: ?core::marker::Sized
-pub fn termrock::interaction::OverlayLayer::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::OverlayLayer where T: core::clone::Clone
-pub unsafe fn termrock::interaction::OverlayLayer::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::OverlayLayer
-pub fn termrock::interaction::OverlayLayer::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::OverlayLayer
 pub struct termrock::interaction::SemanticElement<Id>
 pub termrock::interaction::SemanticElement::area: ratatui_core::layout::rect::Rect
 pub termrock::interaction::SemanticElement::enabled: bool
@@ -1936,6 +1856,7 @@ pub fn termrock::SemanticScene<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::SemanticScene<Id>
 pub fn termrock::interaction::classify_click(ratatui_core::layout::rect::Rect, u16, u16) -> termrock::interaction::ModalClickResult
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::UiIntent>
+pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::interaction::render_backdrop(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect)
 pub mod termrock::keymap
 pub mod termrock::keymap::glyph
@@ -11697,6 +11618,159 @@ pub unsafe fn termrock::GlyphSet::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::GlyphSet
 pub fn termrock::GlyphSet::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::GlyphSet
+#[non_exhaustive] pub enum termrock::InteractionOutcome<Id, LayerId, Action>
+pub termrock::InteractionOutcome::Action
+pub termrock::InteractionOutcome::Action::action: Action
+pub termrock::InteractionOutcome::Action::target: Id
+pub termrock::InteractionOutcome::FocusChanged
+pub termrock::InteractionOutcome::FocusChanged::from: core::option::Option<Id>
+pub termrock::InteractionOutcome::FocusChanged::to: core::option::Option<Id>
+pub termrock::InteractionOutcome::Ignored
+pub termrock::InteractionOutcome::LayerDismissed
+pub termrock::InteractionOutcome::LayerDismissed::focus: core::option::Option<Id>
+pub termrock::InteractionOutcome::LayerDismissed::layer: LayerId
+pub termrock::InteractionOutcome::UnhandledEscape
+impl<Id: core::clone::Clone, LayerId: core::clone::Clone, Action: core::clone::Clone> core::clone::Clone for termrock::InteractionOutcome<Id, LayerId, Action>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::clone(&self) -> termrock::InteractionOutcome<Id, LayerId, Action>
+impl<Id: core::cmp::Eq, LayerId: core::cmp::Eq, Action: core::cmp::Eq> core::cmp::Eq for termrock::InteractionOutcome<Id, LayerId, Action>
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::cmp::PartialEq for termrock::InteractionOutcome<Id, LayerId, Action>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::eq(&self, &termrock::InteractionOutcome<Id, LayerId, Action>) -> bool
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::InteractionOutcome<Id, LayerId, Action>
+impl<Id: core::fmt::Debug, LayerId: core::fmt::Debug, Action: core::fmt::Debug> core::fmt::Debug for termrock::InteractionOutcome<Id, LayerId, Action>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id, LayerId, Action> core::marker::Freeze for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::Freeze, Action: core::marker::Freeze, LayerId: core::marker::Freeze
+impl<Id, LayerId, Action> core::marker::Send for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::Send, Action: core::marker::Send, LayerId: core::marker::Send
+impl<Id, LayerId, Action> core::marker::Sync for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::Sync, Action: core::marker::Sync, LayerId: core::marker::Sync
+impl<Id, LayerId, Action> core::marker::Unpin for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::Unpin, Action: core::marker::Unpin, LayerId: core::marker::Unpin
+impl<Id, LayerId, Action> core::marker::UnsafeUnpin for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::marker::UnsafeUnpin, Action: core::marker::UnsafeUnpin, LayerId: core::marker::UnsafeUnpin
+impl<Id, LayerId, Action> core::panic::unwind_safe::RefUnwindSafe for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe, LayerId: core::panic::unwind_safe::RefUnwindSafe
+impl<Id, LayerId, Action> core::panic::unwind_safe::UnwindSafe for termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::panic::unwind_safe::UnwindSafe, Action: core::panic::unwind_safe::UnwindSafe, LayerId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::InteractionOutcome<Id, LayerId, Action> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::InteractionOutcome<Id, LayerId, Action> where U: core::convert::From<T>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::InteractionOutcome<Id, LayerId, Action> where U: core::convert::Into<T>
+pub type termrock::InteractionOutcome<Id, LayerId, Action>::Error = core::convert::Infallible
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::InteractionOutcome<Id, LayerId, Action> where U: core::convert::TryFrom<T>
+pub type termrock::InteractionOutcome<Id, LayerId, Action>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::InteractionOutcome<Id, LayerId, Action> where T: core::clone::Clone
+pub type termrock::InteractionOutcome<Id, LayerId, Action>::Owned = T
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::clone_into(&self, &mut T)
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::InteractionOutcome<Id, LayerId, Action> where T: 'static + ?core::marker::Sized
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::InteractionOutcome<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::InteractionOutcome<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::InteractionOutcome<Id, LayerId, Action> where T: core::clone::Clone
+pub unsafe fn termrock::InteractionOutcome<Id, LayerId, Action>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::InteractionOutcome<Id, LayerId, Action>
+pub fn termrock::InteractionOutcome<Id, LayerId, Action>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::InteractionOutcome<Id, LayerId, Action>
+#[non_exhaustive] pub enum termrock::LayerDismissPolicy
+pub termrock::LayerDismissPolicy::Dismissible
+pub termrock::LayerDismissPolicy::Ignore
+pub termrock::LayerDismissPolicy::Trap
+impl core::clone::Clone for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::clone(&self) -> termrock::LayerDismissPolicy
+impl core::cmp::Eq for termrock::LayerDismissPolicy
+impl core::cmp::PartialEq for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::eq(&self, &termrock::LayerDismissPolicy) -> bool
+impl core::default::Default for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::default() -> termrock::LayerDismissPolicy
+impl core::fmt::Debug for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::LayerDismissPolicy
+impl core::marker::StructuralPartialEq for termrock::LayerDismissPolicy
+impl core::marker::Freeze for termrock::LayerDismissPolicy
+impl core::marker::Send for termrock::LayerDismissPolicy
+impl core::marker::Sync for termrock::LayerDismissPolicy
+impl core::marker::Unpin for termrock::LayerDismissPolicy
+impl core::marker::UnsafeUnpin for termrock::LayerDismissPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::LayerDismissPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::LayerDismissPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::LayerDismissPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::LayerDismissPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::LayerDismissPolicy where U: core::convert::From<T>
+pub fn termrock::LayerDismissPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::LayerDismissPolicy where U: core::convert::Into<T>
+pub type termrock::LayerDismissPolicy::Error = core::convert::Infallible
+pub fn termrock::LayerDismissPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::LayerDismissPolicy where U: core::convert::TryFrom<T>
+pub type termrock::LayerDismissPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::LayerDismissPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::LayerDismissPolicy where T: core::clone::Clone
+pub type termrock::LayerDismissPolicy::Owned = T
+pub fn termrock::LayerDismissPolicy::clone_into(&self, &mut T)
+pub fn termrock::LayerDismissPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::LayerDismissPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::LayerDismissPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::LayerDismissPolicy where T: ?core::marker::Sized
+pub fn termrock::LayerDismissPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::LayerDismissPolicy where T: ?core::marker::Sized
+pub fn termrock::LayerDismissPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::LayerDismissPolicy where T: core::clone::Clone
+pub unsafe fn termrock::LayerDismissPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::LayerDismissPolicy
+pub fn termrock::LayerDismissPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::LayerDismissPolicy
+#[non_exhaustive] pub enum termrock::LayerKind
+pub termrock::LayerKind::Card
+pub termrock::LayerKind::Custom
+pub termrock::LayerKind::Jump
+pub termrock::LayerKind::Menu
+pub termrock::LayerKind::Root
+pub termrock::LayerKind::Toast
+impl core::clone::Clone for termrock::LayerKind
+pub fn termrock::LayerKind::clone(&self) -> termrock::LayerKind
+impl core::cmp::Eq for termrock::LayerKind
+impl core::cmp::PartialEq for termrock::LayerKind
+pub fn termrock::LayerKind::eq(&self, &termrock::LayerKind) -> bool
+impl core::default::Default for termrock::LayerKind
+pub fn termrock::LayerKind::default() -> termrock::LayerKind
+impl core::fmt::Debug for termrock::LayerKind
+pub fn termrock::LayerKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::LayerKind
+pub fn termrock::LayerKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::LayerKind
+impl core::marker::StructuralPartialEq for termrock::LayerKind
+impl core::marker::Freeze for termrock::LayerKind
+impl core::marker::Send for termrock::LayerKind
+impl core::marker::Sync for termrock::LayerKind
+impl core::marker::Unpin for termrock::LayerKind
+impl core::marker::UnsafeUnpin for termrock::LayerKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::LayerKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::LayerKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::LayerKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::LayerKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::LayerKind where U: core::convert::From<T>
+pub fn termrock::LayerKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::LayerKind where U: core::convert::Into<T>
+pub type termrock::LayerKind::Error = core::convert::Infallible
+pub fn termrock::LayerKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::LayerKind where U: core::convert::TryFrom<T>
+pub type termrock::LayerKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::LayerKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::LayerKind where T: core::clone::Clone
+pub type termrock::LayerKind::Owned = T
+pub fn termrock::LayerKind::clone_into(&self, &mut T)
+pub fn termrock::LayerKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::LayerKind where T: 'static + ?core::marker::Sized
+pub fn termrock::LayerKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::LayerKind where T: ?core::marker::Sized
+pub fn termrock::LayerKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::LayerKind where T: ?core::marker::Sized
+pub fn termrock::LayerKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::LayerKind where T: core::clone::Clone
+pub unsafe fn termrock::LayerKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::LayerKind
+pub fn termrock::LayerKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::LayerKind
 #[non_exhaustive] pub enum termrock::Motion
 pub termrock::Motion::Full
 pub termrock::Motion::Off
@@ -11797,52 +11871,6 @@ pub unsafe fn termrock::NavigationMove::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::NavigationMove
 pub fn termrock::NavigationMove::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::NavigationMove
-#[non_exhaustive] pub enum termrock::OverlayEscResult<Id>
-pub termrock::OverlayEscResult::Cascade(termrock::interaction::EscLayer)
-pub termrock::OverlayEscResult::Empty
-pub termrock::OverlayEscResult::OverlayDismissed
-pub termrock::OverlayEscResult::OverlayDismissed::focus: termrock::interaction::FocusOutcome<Id>
-pub termrock::OverlayEscResult::OverlayDismissed::id: termrock::interaction::OverlayId
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayEscResult<Id>::clone(&self) -> termrock::OverlayEscResult<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::OverlayEscResult<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayEscResult<Id>::eq(&self, &termrock::OverlayEscResult<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::OverlayEscResult<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayEscResult<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::OverlayEscResult<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::OverlayEscResult<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::OverlayEscResult<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::OverlayEscResult<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::OverlayEscResult<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::OverlayEscResult<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::OverlayEscResult<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::OverlayEscResult<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::OverlayEscResult<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::OverlayEscResult<Id> where U: core::convert::From<T>
-pub fn termrock::OverlayEscResult<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::OverlayEscResult<Id> where U: core::convert::Into<T>
-pub type termrock::OverlayEscResult<Id>::Error = core::convert::Infallible
-pub fn termrock::OverlayEscResult<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::OverlayEscResult<Id> where U: core::convert::TryFrom<T>
-pub type termrock::OverlayEscResult<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::OverlayEscResult<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::OverlayEscResult<Id> where T: core::clone::Clone
-pub type termrock::OverlayEscResult<Id>::Owned = T
-pub fn termrock::OverlayEscResult<Id>::clone_into(&self, &mut T)
-pub fn termrock::OverlayEscResult<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::OverlayEscResult<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::OverlayEscResult<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::OverlayEscResult<Id> where T: ?core::marker::Sized
-pub fn termrock::OverlayEscResult<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::OverlayEscResult<Id> where T: ?core::marker::Sized
-pub fn termrock::OverlayEscResult<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::OverlayEscResult<Id> where T: core::clone::Clone
-pub unsafe fn termrock::OverlayEscResult<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayEscResult<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::OverlayEscResult<Id>
 #[non_exhaustive] pub enum termrock::PageMove
 pub termrock::PageMove::Backward
 pub termrock::PageMove::Forward
@@ -11889,6 +11917,50 @@ pub unsafe fn termrock::PageMove::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::PageMove
 pub fn termrock::PageMove::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::PageMove
+#[non_exhaustive] pub enum termrock::SceneError
+pub termrock::SceneError::DuplicateElement
+pub termrock::SceneError::DuplicateLayer
+pub termrock::SceneError::UnknownLayer
+impl core::clone::Clone for termrock::SceneError
+pub fn termrock::SceneError::clone(&self) -> termrock::SceneError
+impl core::cmp::Eq for termrock::SceneError
+impl core::cmp::PartialEq for termrock::SceneError
+pub fn termrock::SceneError::eq(&self, &termrock::SceneError) -> bool
+impl core::fmt::Debug for termrock::SceneError
+pub fn termrock::SceneError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::SceneError
+impl core::marker::Freeze for termrock::SceneError
+impl core::marker::Send for termrock::SceneError
+impl core::marker::Sync for termrock::SceneError
+impl core::marker::Unpin for termrock::SceneError
+impl core::marker::UnsafeUnpin for termrock::SceneError
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::SceneError
+impl core::panic::unwind_safe::UnwindSafe for termrock::SceneError
+impl<Q, K> equivalent::Equivalent<K> for termrock::SceneError where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::SceneError::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::SceneError where U: core::convert::From<T>
+pub fn termrock::SceneError::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::SceneError where U: core::convert::Into<T>
+pub type termrock::SceneError::Error = core::convert::Infallible
+pub fn termrock::SceneError::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::SceneError where U: core::convert::TryFrom<T>
+pub type termrock::SceneError::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::SceneError::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::SceneError where T: core::clone::Clone
+pub type termrock::SceneError::Owned = T
+pub fn termrock::SceneError::clone_into(&self, &mut T)
+pub fn termrock::SceneError::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::SceneError where T: 'static + ?core::marker::Sized
+pub fn termrock::SceneError::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::SceneError where T: ?core::marker::Sized
+pub fn termrock::SceneError::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::SceneError where T: ?core::marker::Sized
+pub fn termrock::SceneError::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::SceneError where T: core::clone::Clone
+pub unsafe fn termrock::SceneError::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::SceneError
+pub fn termrock::SceneError::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::SceneError
 #[non_exhaustive] pub enum termrock::SelectionChrome
 pub termrock::SelectionChrome::Fill
 pub termrock::SelectionChrome::Gutter
@@ -12143,55 +12215,175 @@ pub unsafe fn termrock::DesignTokens::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::DesignTokens
 pub fn termrock::DesignTokens::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::DesignTokens
-pub struct termrock::OverlayController
-pub termrock::OverlayController::cascade: termrock::interaction::EscCascade
-pub termrock::OverlayController::host: termrock::interaction::OverlayHost
-impl termrock::OverlayController
-pub fn termrock::OverlayController::handle_esc<Id: core::clone::Clone + core::cmp::Eq, ScopeId: core::clone::Clone + core::cmp::Eq>(&mut self, core::option::Option<&mut termrock::interaction::FocusRing<Id, ScopeId>>, bool) -> termrock::OverlayEscResult<Id>
-pub fn termrock::OverlayController::new() -> Self
-pub fn termrock::OverlayController::push_overlay(&mut self, termrock::interaction::OverlayLayer)
-impl core::clone::Clone for termrock::OverlayController
-pub fn termrock::OverlayController::clone(&self) -> termrock::OverlayController
-impl core::cmp::Eq for termrock::OverlayController
-impl core::cmp::PartialEq for termrock::OverlayController
-pub fn termrock::OverlayController::eq(&self, &termrock::OverlayController) -> bool
-impl core::default::Default for termrock::OverlayController
-pub fn termrock::OverlayController::default() -> termrock::OverlayController
-impl core::fmt::Debug for termrock::OverlayController
-pub fn termrock::OverlayController::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::OverlayController
-impl core::marker::Freeze for termrock::OverlayController
-impl core::marker::Send for termrock::OverlayController
-impl core::marker::Sync for termrock::OverlayController
-impl core::marker::Unpin for termrock::OverlayController
-impl core::marker::UnsafeUnpin for termrock::OverlayController
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::OverlayController
-impl core::panic::unwind_safe::UnwindSafe for termrock::OverlayController
-impl<Q, K> equivalent::Equivalent<K> for termrock::OverlayController where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::OverlayController::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::OverlayController where U: core::convert::From<T>
-pub fn termrock::OverlayController::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::OverlayController where U: core::convert::Into<T>
-pub type termrock::OverlayController::Error = core::convert::Infallible
-pub fn termrock::OverlayController::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::OverlayController where U: core::convert::TryFrom<T>
-pub type termrock::OverlayController::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::OverlayController::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::OverlayController where T: core::clone::Clone
-pub type termrock::OverlayController::Owned = T
-pub fn termrock::OverlayController::clone_into(&self, &mut T)
-pub fn termrock::OverlayController::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::OverlayController where T: 'static + ?core::marker::Sized
-pub fn termrock::OverlayController::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::OverlayController where T: ?core::marker::Sized
-pub fn termrock::OverlayController::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::OverlayController where T: ?core::marker::Sized
-pub fn termrock::OverlayController::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::OverlayController where T: core::clone::Clone
-pub unsafe fn termrock::OverlayController::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::OverlayController
-pub fn termrock::OverlayController::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::OverlayController
+pub struct termrock::InteractionElement<Id, LayerId, Action>
+pub termrock::InteractionElement::actions: alloc::vec::Vec<Action>
+pub termrock::InteractionElement::area: ratatui_core::layout::rect::Rect
+pub termrock::InteractionElement::enabled: bool
+pub termrock::InteractionElement::focusable: bool
+pub termrock::InteractionElement::hidden: bool
+pub termrock::InteractionElement::id: Id
+pub termrock::InteractionElement::layer: LayerId
+pub termrock::InteractionElement::role: termrock::SemanticRole
+impl<Id, LayerId, Action> termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::actions(self, alloc::vec::Vec<Action>) -> Self
+pub fn termrock::InteractionElement<Id, LayerId, Action>::control(Id, LayerId, ratatui_core::layout::rect::Rect) -> Self where Action: core::clone::Clone
+pub const fn termrock::InteractionElement<Id, LayerId, Action>::enabled(self, bool) -> Self
+pub const fn termrock::InteractionElement<Id, LayerId, Action>::focusable(self, bool) -> Self
+pub const fn termrock::InteractionElement<Id, LayerId, Action>::hidden(self, bool) -> Self
+pub const fn termrock::InteractionElement<Id, LayerId, Action>::role(self, termrock::SemanticRole) -> Self
+impl<Id: core::clone::Clone, LayerId: core::clone::Clone, Action: core::clone::Clone> core::clone::Clone for termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::clone(&self) -> termrock::InteractionElement<Id, LayerId, Action>
+impl<Id: core::cmp::Eq, LayerId: core::cmp::Eq, Action: core::cmp::Eq> core::cmp::Eq for termrock::InteractionElement<Id, LayerId, Action>
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::cmp::PartialEq for termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::eq(&self, &termrock::InteractionElement<Id, LayerId, Action>) -> bool
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::InteractionElement<Id, LayerId, Action>
+impl<Id: core::fmt::Debug, LayerId: core::fmt::Debug, Action: core::fmt::Debug> core::fmt::Debug for termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id, LayerId, Action> core::marker::Freeze for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::Freeze, LayerId: core::marker::Freeze
+impl<Id, LayerId, Action> core::marker::Send for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::Send, LayerId: core::marker::Send, Action: core::marker::Send
+impl<Id, LayerId, Action> core::marker::Sync for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::Sync, LayerId: core::marker::Sync, Action: core::marker::Sync
+impl<Id, LayerId, Action> core::marker::Unpin for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::Unpin, LayerId: core::marker::Unpin, Action: core::marker::Unpin
+impl<Id, LayerId, Action> core::marker::UnsafeUnpin for termrock::InteractionElement<Id, LayerId, Action> where Id: core::marker::UnsafeUnpin, LayerId: core::marker::UnsafeUnpin
+impl<Id, LayerId, Action> core::panic::unwind_safe::RefUnwindSafe for termrock::InteractionElement<Id, LayerId, Action> where Id: core::panic::unwind_safe::RefUnwindSafe, LayerId: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe
+impl<Id, LayerId, Action> core::panic::unwind_safe::UnwindSafe for termrock::InteractionElement<Id, LayerId, Action> where Id: core::panic::unwind_safe::UnwindSafe, LayerId: core::panic::unwind_safe::UnwindSafe, Action: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::InteractionElement<Id, LayerId, Action> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::InteractionElement<Id, LayerId, Action>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::InteractionElement<Id, LayerId, Action> where U: core::convert::From<T>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::InteractionElement<Id, LayerId, Action> where U: core::convert::Into<T>
+pub type termrock::InteractionElement<Id, LayerId, Action>::Error = core::convert::Infallible
+pub fn termrock::InteractionElement<Id, LayerId, Action>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::InteractionElement<Id, LayerId, Action> where U: core::convert::TryFrom<T>
+pub type termrock::InteractionElement<Id, LayerId, Action>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::InteractionElement<Id, LayerId, Action>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::InteractionElement<Id, LayerId, Action> where T: core::clone::Clone
+pub type termrock::InteractionElement<Id, LayerId, Action>::Owned = T
+pub fn termrock::InteractionElement<Id, LayerId, Action>::clone_into(&self, &mut T)
+pub fn termrock::InteractionElement<Id, LayerId, Action>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::InteractionElement<Id, LayerId, Action> where T: 'static + ?core::marker::Sized
+pub fn termrock::InteractionElement<Id, LayerId, Action>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::InteractionElement<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionElement<Id, LayerId, Action>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::InteractionElement<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionElement<Id, LayerId, Action>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::InteractionElement<Id, LayerId, Action> where T: core::clone::Clone
+pub unsafe fn termrock::InteractionElement<Id, LayerId, Action>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::InteractionElement<Id, LayerId, Action>
+pub fn termrock::InteractionElement<Id, LayerId, Action>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::InteractionElement<Id, LayerId, Action>
+pub struct termrock::InteractionLayer<LayerId, Id>
+pub termrock::InteractionLayer::esc: termrock::LayerDismissPolicy
+pub termrock::InteractionLayer::focus_return: core::option::Option<Id>
+pub termrock::InteractionLayer::id: LayerId
+pub termrock::InteractionLayer::kind: termrock::LayerKind
+pub termrock::InteractionLayer::outside: termrock::LayerDismissPolicy
+pub termrock::InteractionLayer::owns_input: bool
+impl<LayerId: core::clone::Clone, Id: core::clone::Clone> core::clone::Clone for termrock::InteractionLayer<LayerId, Id>
+pub fn termrock::InteractionLayer<LayerId, Id>::clone(&self) -> termrock::InteractionLayer<LayerId, Id>
+impl<LayerId: core::cmp::Eq, Id: core::cmp::Eq> core::cmp::Eq for termrock::InteractionLayer<LayerId, Id>
+impl<LayerId: core::cmp::PartialEq, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::InteractionLayer<LayerId, Id>
+pub fn termrock::InteractionLayer<LayerId, Id>::eq(&self, &termrock::InteractionLayer<LayerId, Id>) -> bool
+impl<LayerId: core::cmp::PartialEq, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::InteractionLayer<LayerId, Id>
+impl<LayerId: core::fmt::Debug, Id: core::fmt::Debug> core::fmt::Debug for termrock::InteractionLayer<LayerId, Id>
+pub fn termrock::InteractionLayer<LayerId, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<LayerId, Id> core::marker::Freeze for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::Freeze, Id: core::marker::Freeze
+impl<LayerId, Id> core::marker::Send for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::Send, Id: core::marker::Send
+impl<LayerId, Id> core::marker::Sync for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::Sync, Id: core::marker::Sync
+impl<LayerId, Id> core::marker::Unpin for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::Unpin, Id: core::marker::Unpin
+impl<LayerId, Id> core::marker::UnsafeUnpin for termrock::InteractionLayer<LayerId, Id> where LayerId: core::marker::UnsafeUnpin, Id: core::marker::UnsafeUnpin
+impl<LayerId, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::InteractionLayer<LayerId, Id> where LayerId: core::panic::unwind_safe::RefUnwindSafe, Id: core::panic::unwind_safe::RefUnwindSafe
+impl<LayerId, Id> core::panic::unwind_safe::UnwindSafe for termrock::InteractionLayer<LayerId, Id> where LayerId: core::panic::unwind_safe::UnwindSafe, Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::InteractionLayer<LayerId, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::InteractionLayer<LayerId, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::InteractionLayer<LayerId, Id> where U: core::convert::From<T>
+pub fn termrock::InteractionLayer<LayerId, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::InteractionLayer<LayerId, Id> where U: core::convert::Into<T>
+pub type termrock::InteractionLayer<LayerId, Id>::Error = core::convert::Infallible
+pub fn termrock::InteractionLayer<LayerId, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::InteractionLayer<LayerId, Id> where U: core::convert::TryFrom<T>
+pub type termrock::InteractionLayer<LayerId, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::InteractionLayer<LayerId, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::InteractionLayer<LayerId, Id> where T: core::clone::Clone
+pub type termrock::InteractionLayer<LayerId, Id>::Owned = T
+pub fn termrock::InteractionLayer<LayerId, Id>::clone_into(&self, &mut T)
+pub fn termrock::InteractionLayer<LayerId, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::InteractionLayer<LayerId, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::InteractionLayer<LayerId, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::InteractionLayer<LayerId, Id> where T: ?core::marker::Sized
+pub fn termrock::InteractionLayer<LayerId, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::InteractionLayer<LayerId, Id> where T: ?core::marker::Sized
+pub fn termrock::InteractionLayer<LayerId, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::InteractionLayer<LayerId, Id> where T: core::clone::Clone
+pub unsafe fn termrock::InteractionLayer<LayerId, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::InteractionLayer<LayerId, Id>
+pub fn termrock::InteractionLayer<LayerId, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::InteractionLayer<LayerId, Id>
+pub struct termrock::InteractionScene<Id, LayerId, Action>
+impl<Id, LayerId, Action> termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::action_available(&self, &Action) -> bool where LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::available_actions(&self) -> alloc::vec::Vec<Action> where Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::begin_frame(&mut self)
+pub fn termrock::InteractionScene<Id, LayerId, Action>::dispatch_action(&self, Action) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::elements(&self) -> &[termrock::InteractionElement<Id, LayerId, Action>]
+pub fn termrock::InteractionScene<Id, LayerId, Action>::ensure_root(&mut self, termrock::InteractionLayer<LayerId, Id>) where LayerId: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::focus(&mut self, Id) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::focus_move(&mut self, bool) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::focus_order(&self) -> alloc::vec::Vec<&Id> where LayerId: core::cmp::PartialEq
+pub const fn termrock::InteractionScene<Id, LayerId, Action>::focused(&self) -> core::option::Option<&Id>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::get(&self, &Id) -> core::option::Option<&termrock::InteractionElement<Id, LayerId, Action>> where Id: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::handle_escape(&mut self) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::handle_key_tab_esc(&mut self, termrock::input::KeyEvent) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::clone::Clone + core::cmp::PartialEq, Action: core::clone::Clone
+pub fn termrock::InteractionScene<Id, LayerId, Action>::hit_test(&self, ratatui_core::layout::position::Position) -> core::option::Option<&termrock::InteractionElement<Id, LayerId, Action>>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::layers(&self) -> &[termrock::InteractionLayer<LayerId, Id>]
+pub const fn termrock::InteractionScene<Id, LayerId, Action>::new() -> Self
+pub fn termrock::InteractionScene<Id, LayerId, Action>::push_layer(&mut self, termrock::InteractionLayer<LayerId, Id>) where LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::reconcile(&mut self) where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::register(&mut self, termrock::InteractionElement<Id, LayerId, Action>) -> core::result::Result<(), termrock::SceneError> where Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::remove_layer(&mut self, &LayerId) -> bool where LayerId: core::cmp::PartialEq
+pub fn termrock::InteractionScene<Id, LayerId, Action>::top_layer(&self) -> core::option::Option<&termrock::InteractionLayer<LayerId, Id>>
+impl<Id, LayerId, Action> core::default::Default for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::default() -> Self
+impl<Id: core::clone::Clone, LayerId: core::clone::Clone, Action: core::clone::Clone> core::clone::Clone for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::clone(&self) -> termrock::InteractionScene<Id, LayerId, Action>
+impl<Id: core::cmp::Eq, LayerId: core::cmp::Eq, Action: core::cmp::Eq> core::cmp::Eq for termrock::InteractionScene<Id, LayerId, Action>
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::cmp::PartialEq for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::eq(&self, &termrock::InteractionScene<Id, LayerId, Action>) -> bool
+impl<Id: core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::InteractionScene<Id, LayerId, Action>
+impl<Id: core::fmt::Debug, LayerId: core::fmt::Debug, Action: core::fmt::Debug> core::fmt::Debug for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id, LayerId, Action> core::marker::Freeze for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::Freeze, LayerId: core::marker::Freeze
+impl<Id, LayerId, Action> core::marker::Send for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::Send, LayerId: core::marker::Send, Action: core::marker::Send
+impl<Id, LayerId, Action> core::marker::Sync for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::Sync, LayerId: core::marker::Sync, Action: core::marker::Sync
+impl<Id, LayerId, Action> core::marker::Unpin for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::Unpin, LayerId: core::marker::Unpin, Action: core::marker::Unpin
+impl<Id, LayerId, Action> core::marker::UnsafeUnpin for termrock::InteractionScene<Id, LayerId, Action> where Id: core::marker::UnsafeUnpin, LayerId: core::marker::UnsafeUnpin
+impl<Id, LayerId, Action> core::panic::unwind_safe::RefUnwindSafe for termrock::InteractionScene<Id, LayerId, Action> where Id: core::panic::unwind_safe::RefUnwindSafe, LayerId: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe
+impl<Id, LayerId, Action> core::panic::unwind_safe::UnwindSafe for termrock::InteractionScene<Id, LayerId, Action> where Id: core::panic::unwind_safe::UnwindSafe, LayerId: core::panic::unwind_safe::UnwindSafe, Action: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::InteractionScene<Id, LayerId, Action> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::InteractionScene<Id, LayerId, Action>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::InteractionScene<Id, LayerId, Action> where U: core::convert::From<T>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::InteractionScene<Id, LayerId, Action> where U: core::convert::Into<T>
+pub type termrock::InteractionScene<Id, LayerId, Action>::Error = core::convert::Infallible
+pub fn termrock::InteractionScene<Id, LayerId, Action>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::InteractionScene<Id, LayerId, Action> where U: core::convert::TryFrom<T>
+pub type termrock::InteractionScene<Id, LayerId, Action>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::InteractionScene<Id, LayerId, Action>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::InteractionScene<Id, LayerId, Action> where T: core::clone::Clone
+pub type termrock::InteractionScene<Id, LayerId, Action>::Owned = T
+pub fn termrock::InteractionScene<Id, LayerId, Action>::clone_into(&self, &mut T)
+pub fn termrock::InteractionScene<Id, LayerId, Action>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::InteractionScene<Id, LayerId, Action> where T: 'static + ?core::marker::Sized
+pub fn termrock::InteractionScene<Id, LayerId, Action>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::InteractionScene<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionScene<Id, LayerId, Action>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::InteractionScene<Id, LayerId, Action> where T: ?core::marker::Sized
+pub fn termrock::InteractionScene<Id, LayerId, Action>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::InteractionScene<Id, LayerId, Action> where T: core::clone::Clone
+pub unsafe fn termrock::InteractionScene<Id, LayerId, Action>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::InteractionScene<Id, LayerId, Action>
+pub fn termrock::InteractionScene<Id, LayerId, Action>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::InteractionScene<Id, LayerId, Action>
 pub struct termrock::SemanticElement<Id>
 pub termrock::SemanticElement::area: ratatui_core::layout::rect::Rect
 pub termrock::SemanticElement::enabled: bool
@@ -12392,4 +12584,5 @@ impl<T> core::convert::From<T> for termrock::style::Theme
 pub fn termrock::style::Theme::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Theme
 pub fn termrock::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::UiIntent>
+pub fn termrock::dispatch_keymap_action<Id, LayerId, Action>(&termrock::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::theme_for_appearance(termrock::Appearance) -> termrock::style::Theme

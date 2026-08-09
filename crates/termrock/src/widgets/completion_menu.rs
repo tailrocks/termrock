@@ -320,7 +320,8 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
                 }
                 CompletionMenuOutcome::Ignored
             }
-            MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Up(MouseButton::Left) => {
+            // Press-only activation: Up must not re-commit after Down.
+            MouseEventKind::Down(MouseButton::Left) => {
                 if let Some(id) = self.hit_at(mouse.position)
                     && candidates.iter().any(|c| c.id == id && c.enabled)
                 {
@@ -334,6 +335,7 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
                 }
                 CompletionMenuOutcome::Ignored
             }
+            MouseEventKind::Up(MouseButton::Left) => CompletionMenuOutcome::Ignored,
             _ => CompletionMenuOutcome::Ignored,
         }
     }

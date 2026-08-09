@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Coordinates overlay stack + Esc peel + focus scope restore.
+//! Legacy overlay controller (private). Prefer [`super::InteractionScene`].
+#![allow(dead_code)]
 
 use super::{
     esc_cascade::{EscCascade, EscLayer, EscOutcome},

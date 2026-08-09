@@ -18,7 +18,7 @@ Historical plans **001–038** are complete (removed after verification).
 | Plan | Title | Priority | Effort | Status | Depends | Migration |
 |------|-------|----------|--------|--------|---------|-----------|
 | [039](039-safe-interaction-baseline.md) | Fail-safe ApprovalCard + VirtualGrid contracts | P0 | L | DONE | — | 0032–0033 |
-| [040](040-unified-interaction-scene.md) | Unified InteractionScene | P0 | L | TODO | 039 | 0034 |
+| [040](040-unified-interaction-scene.md) | Unified InteractionScene | P0 | L | DONE | 039 | 0034 |
 | [041](041-variable-height-transcript-engine.md) | Variable-height streaming transcript | P1 | L | TODO | 040 | 0034 |
 | [042](042-responsive-workspace-blocks.md) | Responsive workspace tree + patterns | P1 | L | TODO | 040–041 | 0035 |
 | [043](043-token-driven-phosphor-system.md) | Token-driven quiet phosphor hierarchy | P1 | L | TODO | 040 | 0036 |

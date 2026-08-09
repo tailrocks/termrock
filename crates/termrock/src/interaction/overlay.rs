@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Z-ordered overlay host for menus, jump mode, toasts, and floating cards.
+//! Z-ordered overlay host (private legacy). Prefer [`super::InteractionScene`].
+#![allow(dead_code)]
 //!
 //! TermRock owns stack order and identity. Callers own paint payloads and
 //! decide when to push/pop layers. This is intentionally paint-agnostic so
@@ -99,10 +100,16 @@ impl OverlayHost {
         self.layers.pop()
     }
 
-    /// Dismisses the topmost Esc-dismissible layer.
+    /// Dismisses the topmost layer only when it is Esc-dismissible.
+    ///
+    /// A non-dismissible top layer protects every lower layer: Esc must not
+    /// peel a menu under a trapping dialog.
     pub fn dismiss_top_esc(&mut self) -> Option<OverlayLayer> {
-        let index = self.layers.iter().rposition(|layer| layer.dismiss_on_esc)?;
-        Some(self.layers.remove(index))
+        let top = self.layers.last()?;
+        if !top.dismiss_on_esc {
+            return None;
+        }
+        self.layers.pop()
     }
 
     /// Returns whether any layer is open.
@@ -148,22 +155,25 @@ mod tests {
     }
 
     #[test]
-    fn dismiss_top_esc_skips_non_dismissible() {
+    fn dismiss_top_esc_only_when_top_is_dismissible() {
         let mut host = OverlayHost::new();
-        host.push(OverlayLayer {
-            id: OverlayId::from_static("toast"),
-            kind: OverlayKind::Toast,
-            dismiss_on_esc: false,
-            dismiss_on_outside: false,
-        });
         host.push(OverlayLayer {
             id: OverlayId::from_static("menu"),
             kind: OverlayKind::Menu,
             dismiss_on_esc: true,
             dismiss_on_outside: true,
         });
+        host.push(OverlayLayer {
+            id: OverlayId::from_static("dialog"),
+            kind: OverlayKind::Card,
+            dismiss_on_esc: false,
+            dismiss_on_outside: false,
+        });
+        // Non-dismissible top must not peel the menu beneath.
+        assert!(host.dismiss_top_esc().is_none());
+        assert_eq!(host.layers().len(), 2);
+        host.pop();
         let dismissed = host.dismiss_top_esc().expect("menu");
         assert_eq!(dismissed.id.0, "menu");
-        assert_eq!(host.layers().len(), 1);
     }
 }
