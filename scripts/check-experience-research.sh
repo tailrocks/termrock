@@ -37,6 +37,15 @@ require "hybrid / source-owned" 'source-owned|source.owned|registry'
 require "Grok Build" 'Grok Build'
 require "Amp" 'Amp \(ampcode|ampcode\.com|Amp is|Amp for|Amp \('
 require "ampcode" 'ampcode\.com'
+# Amp agent modes must match ampcode.com/manual (not deprecated smart/deep/rush as the four dials)
+require "Amp modes low" 'low'
+require "Amp modes medium" 'medium'
+require "Amp modes high" 'high'
+require "Amp modes ultra" 'ultra'
+# Guard: competitive §9.2 must not list smart/free as the four capability dials
+if rg -n 'Modes.*\(`smart`' "$COMPETITIVE" 2>/dev/null; then
+  fail "competitive research lists deprecated Amp modes (smart) as capability dials; use low/medium/high/ultra"
+fi
 
 # Acceptance: hero / community consensus + multi-lang (need ≥2 hero names + ≥2 stacks)
 require "awesome-tuis or awesometui" 'awesome-tuis|awesometui\.com'

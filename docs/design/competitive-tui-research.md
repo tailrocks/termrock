@@ -450,7 +450,8 @@ extracts **interaction grammar**, never product brands or provider policy.
 **What elevates the experience (product signals)**
 
 - **Thread model** as first-class object (share, resume, team visibility)
-- **Modes** as explicit product dials (`smart` / free / etc.) — UI shows *which brain*, not only which model
+- **Modes** as explicit capability dials (`low` / `medium` / `high` / `ultra` per ampcode.com/manual) — UI shows *which capability preset*, not only which model name; deprecated labels (`smart` / `deep` / `rush`) may still appear on old threads
+- **Amp Free** is a separate product/tier entry point (`/mode free` or free install), not one of the four agent capability modes above
 - **Tab completion / next-action engine** — anticipatory chrome beyond chat
 - **MCP configuration panel** in-product (setup is UX, not config folklore)
 - **Headless + streaming JSON** for automation; TUI is a projection of the same runtime
