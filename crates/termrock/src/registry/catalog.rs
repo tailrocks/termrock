@@ -326,6 +326,105 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
+            id: "AppShell".into(),
+            title: "AppShell".into(),
+            description: "Canonical top-level composition: header, sidebar, main, inspector, footer, command, overlays; recipes + responsive collapse.".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::layout_app_shell".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![
+                file(
+                    "crates/termrock/src/patterns/app_shell.rs",
+                    ContractFileRole::Primary,
+                ),
+                file(
+                    "docs/public/component-previews/app-shell-workbench.svg",
+                    ContractFileRole::Fixture,
+                ),
+            ],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec![
+                    "termrock/WorkSurface".into(),
+                    "termrock/ResponsiveSurface".into(),
+                ];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("AppShell".into());
+                c.min_width = Some(20);
+                c.min_height = Some(5);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "header".into(),
+                    label: "Header".into(),
+                },
+                AnatomyPartRef {
+                    id: "sidebar".into(),
+                    label: "Sidebar".into(),
+                },
+                AnatomyPartRef {
+                    id: "main".into(),
+                    label: "Main workspace".into(),
+                },
+                AnatomyPartRef {
+                    id: "inspector".into(),
+                    label: "Inspector rail".into(),
+                },
+                AnatomyPartRef {
+                    id: "footer".into(),
+                    label: "Footer / status".into(),
+                },
+                AnatomyPartRef {
+                    id: "command".into(),
+                    label: "Command surface".into(),
+                },
+                AnatomyPartRef {
+                    id: "overlay_bounds".into(),
+                    label: "Overlay host bounds".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "workbench".into(),
+                    description: "IDE / agent multi-pane".into(),
+                },
+                VariantRef {
+                    id: "dashboard".into(),
+                    description: "Metrics + main + log".into(),
+                },
+                VariantRef {
+                    id: "master-detail".into(),
+                    description: "List + detail".into(),
+                },
+                VariantRef {
+                    id: "minimal".into(),
+                    description: "Main + footer only".into(),
+                },
+            ],
+            outcomes: vec![],
+            stories: vec![
+                "app-shell/workbench".into(),
+                "app-shell/dashboard".into(),
+                "app-shell/master-detail".into(),
+                "app-shell/minimal".into(),
+                "app-shell/narrow-drawer".into(),
+                "app-shell/offline".into(),
+            ],
+            tests: vec!["patterns::app_shell".into()],
+            migration: Some("migrations/0094-v0.13.0-app-shell.md".into()),
+            provenance: prov("crates/termrock/src/patterns/app_shell.rs"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
             id: "agent-workbench".into(),
             title: "Agent Workbench".into(),
             description: "Flagship multi-pane agent shell block (composition).".into(),
@@ -341,6 +440,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             dependencies: {
                 let mut d = kernel_dep();
                 d.registry = vec![
+                    "termrock/AppShell".into(),
                     "termrock/ScrollArea".into(),
                     "termrock/OverlayStack".into(),
                     "termrock/Panel".into(),

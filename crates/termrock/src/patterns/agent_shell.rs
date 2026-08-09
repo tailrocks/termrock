@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Agent shell geometry recipe: stream + prompt + status + optional side rail.
+//!
+//! Thin wrapper over [`crate::patterns::layout_app_shell`] (Workbench recipe
+//! with command strip = prompt). Prefer AppShell directly for new hosts.
 
 use ratatui_core::layout::Rect;
 
-use crate::{
-    layout::{RegionId, RegionLayout, RegionSize, RegionSpec, SurfaceAxis, WorkSurface},
-    style::Density,
-};
+use crate::style::Density;
+
+use super::app_shell::{layout_app_shell, AppShellConfig, AppShellRecipe};
 
 /// Named slots produced by [`layout_agent_shell`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,49 +52,55 @@ impl Default for AgentShellLayout {
 /// Resolves agent shell rectangles inside `area`.
 #[must_use]
 pub fn layout_agent_shell(area: Rect, config: AgentShellLayout) -> AgentShellSlots {
-    let (main, rail) = if config.rail_width == 0 || area.width <= config.rail_width {
-        (area, None)
+    let shell = layout_app_shell(
+        area,
+        AppShellConfig {
+            recipe: AppShellRecipe::Workbench,
+            density: config.density,
+            header_height: 0,
+            sidebar_width: config.rail_width,
+            inspector_width: 0,
+            footer_height: config.status_height.max(1),
+            command_height: config.prompt_height.max(1),
+            metrics_height: 0,
+            log_height: 0,
+            lifecycle: Default::default(),
+            inline: false,
+        },
+    );
+
+    let prompt = shell.command.unwrap_or_else(|| {
+        // Degenerate: reclaim last rows of main if command collapsed.
+        let h = config.prompt_height.max(1).min(shell.main.height);
+        Rect {
+            x: shell.main.x,
+            y: shell.main.y.saturating_add(shell.main.height.saturating_sub(h)),
+            width: shell.main.width,
+            height: h,
+        }
+    });
+    let status = shell.footer.unwrap_or(Rect {
+        x: area.x,
+        y: area.y.saturating_add(area.height.saturating_sub(1)),
+        width: area.width,
+        height: 1.min(area.height),
+    });
+    let stream = if shell.command.is_some() {
+        shell.main
     } else {
-        let surface = WorkSurface::new()
-            .axis(SurfaceAxis::Horizontal)
-            .density(Density::Dashboard)
-            .regions([
-                RegionSpec {
-                    id: RegionId::from_static("rail"),
-                    size: RegionSize::Fixed(config.rail_width),
-                },
-                RegionSpec {
-                    id: RegionId::from_static("main"),
-                    size: RegionSize::Weight(1),
-                },
-            ]);
-        let layout = surface.layout(area);
-        (layout[1].area, Some(layout[0].area))
+        Rect {
+            x: shell.main.x,
+            y: shell.main.y,
+            width: shell.main.width,
+            height: shell.main.height.saturating_sub(prompt.height),
+        }
     };
 
-    let vertical = WorkSurface::new()
-        .axis(SurfaceAxis::Vertical)
-        .density(config.density)
-        .regions([
-            RegionSpec {
-                id: RegionId::from_static("stream"),
-                size: RegionSize::Weight(1),
-            },
-            RegionSpec {
-                id: RegionId::from_static("prompt"),
-                size: RegionSize::Fixed(config.prompt_height.max(1)),
-            },
-            RegionSpec {
-                id: RegionId::from_static("status"),
-                size: RegionSize::Fixed(config.status_height.max(1)),
-            },
-        ]);
-    let regions: Vec<RegionLayout> = vertical.layout(main);
     AgentShellSlots {
-        rail,
-        stream: regions[0].area,
-        prompt: regions[1].area,
-        status: regions[2].area,
+        rail: shell.sidebar,
+        stream,
+        prompt,
+        status,
     }
 }
 
@@ -119,5 +127,18 @@ mod tests {
             slots.stream.height + slots.prompt.height + slots.status.height,
             24
         );
+    }
+
+    #[test]
+    fn agent_shell_hides_rail_when_zero() {
+        let slots = layout_agent_shell(
+            Rect::new(0, 0, 80, 24),
+            AgentShellLayout {
+                rail_width: 0,
+                ..Default::default()
+            },
+        );
+        assert!(slots.rail.is_none());
+        assert_eq!(slots.stream.width, 80);
     }
 }

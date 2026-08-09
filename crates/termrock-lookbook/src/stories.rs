@@ -1669,6 +1669,60 @@ pub(crate) fn stories() -> Vec<Story> {
             popover_story,
         ),
         Story::new(
+            "app-shell/workbench",
+            "AppShell workbench",
+            "AppShell",
+            "Header + sidebar + main + inspector + footer; multi-pane recipe.",
+            100,
+            28,
+            app_shell_workbench_story,
+        ),
+        Story::new(
+            "app-shell/dashboard",
+            "AppShell dashboard",
+            "AppShell",
+            "Metrics strip + main + log + footer ops recipe.",
+            80,
+            28,
+            app_shell_dashboard_story,
+        ),
+        Story::new(
+            "app-shell/master-detail",
+            "AppShell master-detail",
+            "AppShell",
+            "Sidebar master list + detail main + footer.",
+            80,
+            24,
+            app_shell_master_detail_story,
+        ),
+        Story::new(
+            "app-shell/minimal",
+            "AppShell minimal",
+            "AppShell",
+            "Main + footer only (inline/tiny tools).",
+            48,
+            12,
+            app_shell_minimal_story,
+        ),
+        Story::new(
+            "app-shell/narrow-drawer",
+            "AppShell narrow drawer",
+            "AppShell",
+            "Workbench under drawer/single-pane pressure; collapsed rails listed.",
+            48,
+            20,
+            app_shell_narrow_story,
+        ),
+        Story::new(
+            "app-shell/offline",
+            "AppShell offline lifecycle",
+            "AppShell",
+            "Offline lifecycle compact chrome on workbench.",
+            80,
+            24,
+            app_shell_offline_story,
+        ),
+        Story::new(
             "agent-workbench/basic",
             "Agent workbench",
             "AgentWorkbench",
@@ -7128,6 +7182,111 @@ fn progress_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             system.style(Role::TextMuted),
         );
     }
+}
+
+fn paint_app_shell_slots(
+    frame: &mut Frame<'_>,
+    slots: &termrock::patterns::AppShellSlots,
+    system: &DesignSystem,
+    title: &str,
+) {
+    let mut paint = |label: &str, rect: Option<Rect>, chrome: PanelChrome| {
+        let Some(r) = rect.filter(|r| r.width > 0 && r.height > 0) else {
+            return;
+        };
+        let dim = format!("{}×{}", r.width, r.height);
+        frame.render_widget(
+            Panel::new(system).title(label).subtitle(&dim).chrome(chrome),
+            r,
+        );
+        if r.height > 2 && r.width > 4 {
+            let inner = Rect::new(
+                r.x.saturating_add(1),
+                r.y.saturating_add(1),
+                r.width.saturating_sub(2),
+                r.height.saturating_sub(2),
+            );
+            frame.buffer_mut().set_stringn(
+                inner.x,
+                inner.y,
+                label,
+                usize::from(inner.width),
+                system.style(Role::TextMuted),
+            );
+        }
+    };
+    paint("header", slots.header, PanelChrome::Normal);
+    paint("sidebar", slots.sidebar, PanelChrome::Normal);
+    paint("main", Some(slots.main), PanelChrome::Focused);
+    paint("inspector", slots.inspector, PanelChrome::Normal);
+    paint("command", slots.command, PanelChrome::Normal);
+    paint("metrics", slots.metrics, PanelChrome::Normal);
+    paint("log", slots.log, PanelChrome::Normal);
+    paint("footer", slots.footer, PanelChrome::Normal);
+    // Caption of recipe / drawers / focus order over main when room.
+    if slots.main.height > 3 && slots.main.width > 12 {
+        let drawers: String = slots
+            .drawer_zones
+            .iter()
+            .map(|z| z.id())
+            .collect::<Vec<_>>()
+            .join(",");
+        let focus: String = slots
+            .focus_order
+            .iter()
+            .map(|z| z.id())
+            .collect::<Vec<_>>()
+            .join(">");
+        let caption = format!(
+            "{title} · {} · drawers=[{drawers}] · focus={focus}",
+            slots.recipe.id(),
+        );
+        frame.buffer_mut().set_stringn(
+            slots.main.x.saturating_add(2),
+            slots.main.y.saturating_add(2),
+            caption,
+            usize::from(slots.main.width.saturating_sub(4)),
+            system.style(Role::TextMuted),
+        );
+    }
+}
+
+fn app_shell_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{layout_app_shell, AppShellConfig};
+    let slots = layout_app_shell(area, AppShellConfig::workbench());
+    paint_app_shell_slots(frame, &slots, system, "workbench");
+}
+
+fn app_shell_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{layout_app_shell, AppShellConfig};
+    let slots = layout_app_shell(area, AppShellConfig::dashboard());
+    paint_app_shell_slots(frame, &slots, system, "dashboard");
+}
+
+fn app_shell_master_detail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{layout_app_shell, AppShellConfig};
+    let slots = layout_app_shell(area, AppShellConfig::master_detail());
+    paint_app_shell_slots(frame, &slots, system, "master-detail");
+}
+
+fn app_shell_minimal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{layout_app_shell, AppShellConfig};
+    let slots = layout_app_shell(area, AppShellConfig::minimal());
+    paint_app_shell_slots(frame, &slots, system, "minimal");
+}
+
+fn app_shell_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{layout_app_shell, AppShellConfig};
+    let slots = layout_app_shell(area, AppShellConfig::workbench());
+    paint_app_shell_slots(frame, &slots, system, "narrow");
+}
+
+fn app_shell_offline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{layout_app_shell, AppShellConfig, AppShellLifecycle};
+    let mut cfg = AppShellConfig::workbench();
+    cfg.lifecycle = AppShellLifecycle::Offline;
+    let slots = layout_app_shell(area, cfg);
+    paint_app_shell_slots(frame, &slots, system, "offline");
 }
 
 fn agent_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

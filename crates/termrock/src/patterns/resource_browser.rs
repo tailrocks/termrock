@@ -5,13 +5,13 @@
 //!
 //! Preview pane wires through [`CapabilityPreviewHost`] for generation-safe
 //! placement planning. Consumers emit protocol bytes outside render.
+//! Built on AppShell Workbench (rail=sidebar, preview=inspector).
 
 use ratatui_core::layout::Rect;
 
-use crate::{
-    layout::{RegionId, RegionSize, RegionSpec, SurfaceAxis, WorkSurface},
-    style::{CapabilityPreviewHost, Density},
-};
+use crate::style::{CapabilityPreviewHost, Density};
+
+use super::app_shell::{layout_app_shell, AppShellConfig, AppShellRecipe};
 
 /// Slots for a resource browser (file manager / k8s / DB class).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,54 +53,43 @@ impl Default for ResourceBrowserLayout {
 /// Resolves resource browser rectangles.
 #[must_use]
 pub fn layout_resource_browser(area: Rect, config: ResourceBrowserLayout) -> ResourceBrowserSlots {
-    let (body, status) = {
-        let surface = WorkSurface::new()
-            .axis(SurfaceAxis::Vertical)
-            .density(Density::Dashboard)
-            .regions([
-                RegionSpec {
-                    id: RegionId::from_static("body"),
-                    size: RegionSize::Weight(1),
-                },
-                RegionSpec {
-                    id: RegionId::from_static("status"),
-                    size: RegionSize::Fixed(config.status_height.max(1)),
-                },
-            ]);
-        let regions = surface.layout(area);
-        (regions[0].area, regions[1].area)
-    };
+    let shell = layout_app_shell(
+        area,
+        AppShellConfig {
+            recipe: AppShellRecipe::Workbench,
+            density: config.density,
+            header_height: 0,
+            sidebar_width: config.rail_width.max(1),
+            inspector_width: config.preview_width,
+            footer_height: config.status_height.max(1),
+            command_height: 0,
+            metrics_height: 0,
+            log_height: 0,
+            lifecycle: Default::default(),
+            inline: false,
+        },
+    );
 
-    let mut specs = vec![RegionSpec {
-        id: RegionId::from_static("rail"),
-        size: RegionSize::Fixed(config.rail_width.max(1).min(body.width.saturating_sub(4))),
-    }];
-    specs.push(RegionSpec {
-        id: RegionId::from_static("detail"),
-        size: RegionSize::Weight(1),
+    let status = shell.footer.unwrap_or(Rect {
+        x: area.x,
+        y: area.y.saturating_add(area.height.saturating_sub(1)),
+        width: area.width,
+        height: 1.min(area.height),
     });
-    if config.preview_width > 0
-        && body.width
-            > config
-                .rail_width
-                .saturating_add(config.preview_width)
-                .saturating_add(4)
-    {
-        specs.push(RegionSpec {
-            id: RegionId::from_static("preview"),
-            size: RegionSize::Fixed(config.preview_width),
-        });
-    }
 
-    let surface = WorkSurface::new()
-        .axis(SurfaceAxis::Horizontal)
-        .density(config.density)
-        .regions(specs);
-    let regions = surface.layout(body);
-    let preview = regions.get(2).map(|r| r.area);
+    // When responsive collapses sidebar, fall back to full-width detail.
+    let rail = shell.sidebar.unwrap_or(Rect {
+        x: shell.main.x,
+        y: shell.main.y,
+        width: 0,
+        height: shell.main.height,
+    });
+    let detail = shell.main;
+    let preview = shell.inspector;
+
     ResourceBrowserSlots {
-        rail: regions[0].area,
-        detail: regions[1].area,
+        rail,
+        detail,
         preview,
         status,
     }

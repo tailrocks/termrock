@@ -1,44 +1,3 @@
-    Blocking waiting for file lock on package cache
- Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
-warning: unresolved link to `DataTableState::handle_key`
-   --> crates/termrock/src/interaction/intent.rs:272:7
-    |
-272 | /// [`DataTableState::handle_key`].
-    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
-    |
-    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
-
-warning: unresolved link to `LogStreamState::handle_key`
-   --> crates/termrock/src/interaction/intent.rs:350:35
-    |
-350 | /// - `f` is a product chord on [`LogStreamState::handle_key`] (also Toggle)
-    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `LogStreamState` in scope
-
-warning: unresolved link to `Self::reconcile_retain`
-   --> crates/termrock/src/interaction/selection_model.rs:462:11
-    |
-462 |     /// [`Self::reconcile_retain`] when off-window selection must survive.
-    |           ^^^^^^^^^^^^^^^^^^^^^^ the struct `SelectionModel` has no field or associated item named `reconcile_retain`
-
-warning: public documentation for `IconButton` links to private item `Self::accessible_label`
-   --> crates/termrock/src/widgets/primitives.rs:621:38
-    |
-621 | /// Icon-only button; **requires** [`Self::accessible_label`].
-    |                                      ^^^^^^^^^^^^^^^^^^^^^^ this item is private
-    |
-    = note: this link will resolve properly if you pass `--document-private-items`
-    = note: `#[warn(rustdoc::private_intra_doc_links)]` on by default
-
-warning: unresolved link to `Theme`
-   --> crates/termrock/src/widgets/prompt_composer.rs:553:39
-    |
-553 |     /// pass a monochrome-quantized [`Theme`]).
-    |                                       ^^^^^ no item named `Theme` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: `termrock` (lib doc) generated 5 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.42s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -7517,6 +7476,161 @@ pub fn termrock::osc::encode_hyperlink_close() -> alloc::vec::Vec<u8>
 pub fn termrock::osc::encode_hyperlink_open(core::option::Option<&str>, &str) -> alloc::vec::Vec<u8>
 pub fn termrock::osc::encode_pointer(termrock::osc::PointerShape) -> alloc::vec::Vec<u8>
 pub mod termrock::patterns
+#[non_exhaustive] pub enum termrock::patterns::AppShellLifecycle
+pub termrock::patterns::AppShellLifecycle::Connecting
+pub termrock::patterns::AppShellLifecycle::Disconnected
+pub termrock::patterns::AppShellLifecycle::Offline
+pub termrock::patterns::AppShellLifecycle::Ready
+pub termrock::patterns::AppShellLifecycle::Tiny
+impl core::clone::Clone for termrock::patterns::AppShellLifecycle
+pub fn termrock::patterns::AppShellLifecycle::clone(&self) -> termrock::patterns::AppShellLifecycle
+impl core::cmp::Eq for termrock::patterns::AppShellLifecycle
+impl core::cmp::PartialEq for termrock::patterns::AppShellLifecycle
+pub fn termrock::patterns::AppShellLifecycle::eq(&self, &termrock::patterns::AppShellLifecycle) -> bool
+impl core::default::Default for termrock::patterns::AppShellLifecycle
+pub fn termrock::patterns::AppShellLifecycle::default() -> termrock::patterns::AppShellLifecycle
+impl core::fmt::Debug for termrock::patterns::AppShellLifecycle
+pub fn termrock::patterns::AppShellLifecycle::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::patterns::AppShellLifecycle
+pub fn termrock::patterns::AppShellLifecycle::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::patterns::AppShellLifecycle
+impl core::marker::StructuralPartialEq for termrock::patterns::AppShellLifecycle
+impl core::marker::Freeze for termrock::patterns::AppShellLifecycle
+impl core::marker::Send for termrock::patterns::AppShellLifecycle
+impl core::marker::Sync for termrock::patterns::AppShellLifecycle
+impl core::marker::Unpin for termrock::patterns::AppShellLifecycle
+impl core::marker::UnsafeUnpin for termrock::patterns::AppShellLifecycle
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::AppShellLifecycle
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::AppShellLifecycle
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::AppShellLifecycle where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::AppShellLifecycle::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::AppShellLifecycle where U: core::convert::From<T>
+pub fn termrock::patterns::AppShellLifecycle::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::AppShellLifecycle where U: core::convert::Into<T>
+pub type termrock::patterns::AppShellLifecycle::Error = core::convert::Infallible
+pub fn termrock::patterns::AppShellLifecycle::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::AppShellLifecycle where U: core::convert::TryFrom<T>
+pub type termrock::patterns::AppShellLifecycle::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::AppShellLifecycle::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::AppShellLifecycle where T: core::clone::Clone
+pub type termrock::patterns::AppShellLifecycle::Owned = T
+pub fn termrock::patterns::AppShellLifecycle::clone_into(&self, &mut T)
+pub fn termrock::patterns::AppShellLifecycle::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::AppShellLifecycle where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::AppShellLifecycle::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::AppShellLifecycle where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellLifecycle::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::AppShellLifecycle where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellLifecycle::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::AppShellLifecycle where T: core::clone::Clone
+pub unsafe fn termrock::patterns::AppShellLifecycle::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::AppShellLifecycle
+pub fn termrock::patterns::AppShellLifecycle::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::AppShellLifecycle
+#[non_exhaustive] pub enum termrock::patterns::AppShellRecipe
+pub termrock::patterns::AppShellRecipe::Dashboard
+pub termrock::patterns::AppShellRecipe::MasterDetail
+pub termrock::patterns::AppShellRecipe::Minimal
+pub termrock::patterns::AppShellRecipe::Workbench
+impl termrock::patterns::AppShellRecipe
+pub const fn termrock::patterns::AppShellRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::patterns::AppShellRecipe
+pub fn termrock::patterns::AppShellRecipe::clone(&self) -> termrock::patterns::AppShellRecipe
+impl core::cmp::Eq for termrock::patterns::AppShellRecipe
+impl core::cmp::PartialEq for termrock::patterns::AppShellRecipe
+pub fn termrock::patterns::AppShellRecipe::eq(&self, &termrock::patterns::AppShellRecipe) -> bool
+impl core::default::Default for termrock::patterns::AppShellRecipe
+pub fn termrock::patterns::AppShellRecipe::default() -> termrock::patterns::AppShellRecipe
+impl core::fmt::Debug for termrock::patterns::AppShellRecipe
+pub fn termrock::patterns::AppShellRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::patterns::AppShellRecipe
+pub fn termrock::patterns::AppShellRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::patterns::AppShellRecipe
+impl core::marker::StructuralPartialEq for termrock::patterns::AppShellRecipe
+impl core::marker::Freeze for termrock::patterns::AppShellRecipe
+impl core::marker::Send for termrock::patterns::AppShellRecipe
+impl core::marker::Sync for termrock::patterns::AppShellRecipe
+impl core::marker::Unpin for termrock::patterns::AppShellRecipe
+impl core::marker::UnsafeUnpin for termrock::patterns::AppShellRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::AppShellRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::AppShellRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::AppShellRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::AppShellRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::AppShellRecipe where U: core::convert::From<T>
+pub fn termrock::patterns::AppShellRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::AppShellRecipe where U: core::convert::Into<T>
+pub type termrock::patterns::AppShellRecipe::Error = core::convert::Infallible
+pub fn termrock::patterns::AppShellRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::AppShellRecipe where U: core::convert::TryFrom<T>
+pub type termrock::patterns::AppShellRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::AppShellRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::AppShellRecipe where T: core::clone::Clone
+pub type termrock::patterns::AppShellRecipe::Owned = T
+pub fn termrock::patterns::AppShellRecipe::clone_into(&self, &mut T)
+pub fn termrock::patterns::AppShellRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::AppShellRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::AppShellRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::AppShellRecipe where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::AppShellRecipe where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::AppShellRecipe where T: core::clone::Clone
+pub unsafe fn termrock::patterns::AppShellRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::AppShellRecipe
+pub fn termrock::patterns::AppShellRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::AppShellRecipe
+#[non_exhaustive] pub enum termrock::patterns::AppShellZone
+pub termrock::patterns::AppShellZone::Command
+pub termrock::patterns::AppShellZone::Footer
+pub termrock::patterns::AppShellZone::Header
+pub termrock::patterns::AppShellZone::Inspector
+pub termrock::patterns::AppShellZone::Main
+pub termrock::patterns::AppShellZone::Sidebar
+impl termrock::patterns::AppShellZone
+pub const fn termrock::patterns::AppShellZone::id(self) -> &'static str
+impl core::clone::Clone for termrock::patterns::AppShellZone
+pub fn termrock::patterns::AppShellZone::clone(&self) -> termrock::patterns::AppShellZone
+impl core::cmp::Eq for termrock::patterns::AppShellZone
+impl core::cmp::PartialEq for termrock::patterns::AppShellZone
+pub fn termrock::patterns::AppShellZone::eq(&self, &termrock::patterns::AppShellZone) -> bool
+impl core::fmt::Debug for termrock::patterns::AppShellZone
+pub fn termrock::patterns::AppShellZone::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::patterns::AppShellZone
+pub fn termrock::patterns::AppShellZone::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::patterns::AppShellZone
+impl core::marker::StructuralPartialEq for termrock::patterns::AppShellZone
+impl core::marker::Freeze for termrock::patterns::AppShellZone
+impl core::marker::Send for termrock::patterns::AppShellZone
+impl core::marker::Sync for termrock::patterns::AppShellZone
+impl core::marker::Unpin for termrock::patterns::AppShellZone
+impl core::marker::UnsafeUnpin for termrock::patterns::AppShellZone
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::AppShellZone
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::AppShellZone
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::AppShellZone where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::AppShellZone::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::AppShellZone where U: core::convert::From<T>
+pub fn termrock::patterns::AppShellZone::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::AppShellZone where U: core::convert::Into<T>
+pub type termrock::patterns::AppShellZone::Error = core::convert::Infallible
+pub fn termrock::patterns::AppShellZone::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::AppShellZone where U: core::convert::TryFrom<T>
+pub type termrock::patterns::AppShellZone::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::AppShellZone::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::AppShellZone where T: core::clone::Clone
+pub type termrock::patterns::AppShellZone::Owned = T
+pub fn termrock::patterns::AppShellZone::clone_into(&self, &mut T)
+pub fn termrock::patterns::AppShellZone::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::AppShellZone where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::AppShellZone::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::AppShellZone where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellZone::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::AppShellZone where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellZone::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::AppShellZone where T: core::clone::Clone
+pub unsafe fn termrock::patterns::AppShellZone::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::AppShellZone
+pub fn termrock::patterns::AppShellZone::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::AppShellZone
 #[non_exhaustive] pub enum termrock::patterns::WorkbenchKeyOutcome
 pub termrock::patterns::WorkbenchKeyOutcome::Ignored
 pub termrock::patterns::WorkbenchKeyOutcome::Permission(termrock::widgets::PermissionOutcome)
@@ -7750,6 +7864,123 @@ pub fn termrock::patterns::AgentWorkbenchState::borrow_mut(&mut self) -> &mut T
 impl<T> core::convert::From<T> for termrock::patterns::AgentWorkbenchState
 pub fn termrock::patterns::AgentWorkbenchState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::AgentWorkbenchState
+pub struct termrock::patterns::AppShellConfig
+pub termrock::patterns::AppShellConfig::command_height: u16
+pub termrock::patterns::AppShellConfig::density: termrock::style::Density
+pub termrock::patterns::AppShellConfig::footer_height: u16
+pub termrock::patterns::AppShellConfig::header_height: u16
+pub termrock::patterns::AppShellConfig::inline: bool
+pub termrock::patterns::AppShellConfig::inspector_width: u16
+pub termrock::patterns::AppShellConfig::lifecycle: termrock::patterns::AppShellLifecycle
+pub termrock::patterns::AppShellConfig::log_height: u16
+pub termrock::patterns::AppShellConfig::metrics_height: u16
+pub termrock::patterns::AppShellConfig::recipe: termrock::patterns::AppShellRecipe
+pub termrock::patterns::AppShellConfig::sidebar_width: u16
+impl termrock::patterns::AppShellConfig
+pub const fn termrock::patterns::AppShellConfig::dashboard() -> Self
+pub const fn termrock::patterns::AppShellConfig::master_detail() -> Self
+pub const fn termrock::patterns::AppShellConfig::minimal() -> Self
+pub const fn termrock::patterns::AppShellConfig::workbench() -> Self
+impl core::clone::Clone for termrock::patterns::AppShellConfig
+pub fn termrock::patterns::AppShellConfig::clone(&self) -> termrock::patterns::AppShellConfig
+impl core::cmp::Eq for termrock::patterns::AppShellConfig
+impl core::cmp::PartialEq for termrock::patterns::AppShellConfig
+pub fn termrock::patterns::AppShellConfig::eq(&self, &termrock::patterns::AppShellConfig) -> bool
+impl core::default::Default for termrock::patterns::AppShellConfig
+pub fn termrock::patterns::AppShellConfig::default() -> Self
+impl core::fmt::Debug for termrock::patterns::AppShellConfig
+pub fn termrock::patterns::AppShellConfig::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::patterns::AppShellConfig
+impl core::marker::StructuralPartialEq for termrock::patterns::AppShellConfig
+impl core::marker::Freeze for termrock::patterns::AppShellConfig
+impl core::marker::Send for termrock::patterns::AppShellConfig
+impl core::marker::Sync for termrock::patterns::AppShellConfig
+impl core::marker::Unpin for termrock::patterns::AppShellConfig
+impl core::marker::UnsafeUnpin for termrock::patterns::AppShellConfig
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::AppShellConfig
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::AppShellConfig
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::AppShellConfig where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::AppShellConfig::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::AppShellConfig where U: core::convert::From<T>
+pub fn termrock::patterns::AppShellConfig::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::AppShellConfig where U: core::convert::Into<T>
+pub type termrock::patterns::AppShellConfig::Error = core::convert::Infallible
+pub fn termrock::patterns::AppShellConfig::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::AppShellConfig where U: core::convert::TryFrom<T>
+pub type termrock::patterns::AppShellConfig::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::AppShellConfig::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::AppShellConfig where T: core::clone::Clone
+pub type termrock::patterns::AppShellConfig::Owned = T
+pub fn termrock::patterns::AppShellConfig::clone_into(&self, &mut T)
+pub fn termrock::patterns::AppShellConfig::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::AppShellConfig where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::AppShellConfig::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::AppShellConfig where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellConfig::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::AppShellConfig where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellConfig::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::AppShellConfig where T: core::clone::Clone
+pub unsafe fn termrock::patterns::AppShellConfig::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::AppShellConfig
+pub fn termrock::patterns::AppShellConfig::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::AppShellConfig
+pub struct termrock::patterns::AppShellSlots
+pub termrock::patterns::AppShellSlots::anatomy: termrock::layout::AdaptiveAnatomy
+pub termrock::patterns::AppShellSlots::command: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::AppShellSlots::drawer_zones: alloc::vec::Vec<termrock::patterns::AppShellZone>
+pub termrock::patterns::AppShellSlots::focus_order: alloc::vec::Vec<termrock::patterns::AppShellZone>
+pub termrock::patterns::AppShellSlots::footer: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::AppShellSlots::header: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::AppShellSlots::inspector: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::AppShellSlots::lifecycle: termrock::patterns::AppShellLifecycle
+pub termrock::patterns::AppShellSlots::log: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::AppShellSlots::main: ratatui_core::layout::rect::Rect
+pub termrock::patterns::AppShellSlots::metrics: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::AppShellSlots::overlay_bounds: ratatui_core::layout::rect::Rect
+pub termrock::patterns::AppShellSlots::recipe: termrock::patterns::AppShellRecipe
+pub termrock::patterns::AppShellSlots::sidebar: core::option::Option<ratatui_core::layout::rect::Rect>
+impl termrock::patterns::AppShellSlots
+pub fn termrock::patterns::AppShellSlots::zone(&self, termrock::patterns::AppShellZone) -> core::option::Option<ratatui_core::layout::rect::Rect>
+impl core::clone::Clone for termrock::patterns::AppShellSlots
+pub fn termrock::patterns::AppShellSlots::clone(&self) -> termrock::patterns::AppShellSlots
+impl core::cmp::Eq for termrock::patterns::AppShellSlots
+impl core::cmp::PartialEq for termrock::patterns::AppShellSlots
+pub fn termrock::patterns::AppShellSlots::eq(&self, &termrock::patterns::AppShellSlots) -> bool
+impl core::fmt::Debug for termrock::patterns::AppShellSlots
+pub fn termrock::patterns::AppShellSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::patterns::AppShellSlots
+impl core::marker::Freeze for termrock::patterns::AppShellSlots
+impl core::marker::Send for termrock::patterns::AppShellSlots
+impl core::marker::Sync for termrock::patterns::AppShellSlots
+impl core::marker::Unpin for termrock::patterns::AppShellSlots
+impl core::marker::UnsafeUnpin for termrock::patterns::AppShellSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::AppShellSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::AppShellSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::AppShellSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::AppShellSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::AppShellSlots where U: core::convert::From<T>
+pub fn termrock::patterns::AppShellSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::AppShellSlots where U: core::convert::Into<T>
+pub type termrock::patterns::AppShellSlots::Error = core::convert::Infallible
+pub fn termrock::patterns::AppShellSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::AppShellSlots where U: core::convert::TryFrom<T>
+pub type termrock::patterns::AppShellSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::AppShellSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::AppShellSlots where T: core::clone::Clone
+pub type termrock::patterns::AppShellSlots::Owned = T
+pub fn termrock::patterns::AppShellSlots::clone_into(&self, &mut T)
+pub fn termrock::patterns::AppShellSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::AppShellSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::AppShellSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::AppShellSlots where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::AppShellSlots where T: ?core::marker::Sized
+pub fn termrock::patterns::AppShellSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::AppShellSlots where T: core::clone::Clone
+pub unsafe fn termrock::patterns::AppShellSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::AppShellSlots
+pub fn termrock::patterns::AppShellSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::AppShellSlots
 pub struct termrock::patterns::OpsDashboardLayout
 pub termrock::patterns::OpsDashboardLayout::density: termrock::style::Density
 pub termrock::patterns::OpsDashboardLayout::log_height: u16
@@ -8107,9 +8338,11 @@ impl<T> core::convert::From<T> for termrock::patterns::WorkbenchSurfaces<'a, 'b>
 pub fn termrock::patterns::WorkbenchSurfaces<'a, 'b>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::WorkbenchSurfaces<'a, 'b>
 pub fn termrock::patterns::agent_workbench_layout(ratatui_core::layout::rect::Rect, &termrock::layout::WorkspaceState) -> alloc::vec::Vec<termrock::layout::PaneGeom>
+pub fn termrock::patterns::app_shell_viewport(ratatui_core::layout::rect::Rect) -> termrock::layout::ViewportClass
 pub fn termrock::patterns::default_modes(&'static str) -> [termrock::widgets::WorkbenchMode<'static, &'static str>; 2]
 pub fn termrock::patterns::empty_task_row() -> termrock::widgets::ListRow<'static, &'static str>
 pub fn termrock::patterns::layout_agent_shell(ratatui_core::layout::rect::Rect, termrock::patterns::AgentShellLayout) -> termrock::patterns::AgentShellSlots
+pub fn termrock::patterns::layout_app_shell(ratatui_core::layout::rect::Rect, termrock::patterns::AppShellConfig) -> termrock::patterns::AppShellSlots
 pub fn termrock::patterns::layout_ops_dashboard(ratatui_core::layout::rect::Rect, termrock::patterns::OpsDashboardLayout) -> termrock::patterns::OpsDashboardSlots
 pub fn termrock::patterns::layout_resource_browser(ratatui_core::layout::rect::Rect, termrock::patterns::ResourceBrowserLayout) -> termrock::patterns::ResourceBrowserSlots
 pub fn termrock::patterns::layout_studio_shell(ratatui_core::layout::rect::Rect, termrock::patterns::StudioShellLayout) -> termrock::patterns::StudioShellSlots

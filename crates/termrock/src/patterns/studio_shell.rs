@@ -4,11 +4,15 @@
 //! Lookbook / Studio shell geometry: preview + multi-panel design inspector.
 //!
 //! Product-neutral layout only. Story content and knobs stay caller-owned.
+//! Built on AppShell Workbench (knobs = inspector rail) with a bottom
+//! inspector band subdivided from main.
 
 use ratatui_core::layout::Rect;
 
-use crate::layout::{RegionId, RegionSize, RegionSpec, SurfaceAxis, WorkSurface};
+use crate::layout::{RegionId, RegionSize, SurfaceAxis, WorkSurface};
 use crate::style::Density;
+
+use super::app_shell::{layout_app_shell, AppShellConfig, AppShellRecipe};
 
 /// Studio shell regions for one frame.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,70 +54,54 @@ impl Default for StudioShellLayout {
 /// Resolves studio shell rectangles (preview + inspector + optional knobs).
 #[must_use]
 pub fn layout_studio_shell(area: Rect, config: StudioShellLayout) -> StudioShellSlots {
-    let (body, status) = {
-        let surface = WorkSurface::new()
-            .axis(SurfaceAxis::Vertical)
-            .density(Density::Dashboard)
-            .regions([
-                RegionSpec {
-                    id: RegionId::from_static("body"),
-                    size: RegionSize::Weight(1),
-                },
-                RegionSpec {
-                    id: RegionId::from_static("status"),
-                    size: RegionSize::Fixed(config.status_height.max(1)),
-                },
-            ]);
-        let regions = surface.layout(area);
-        (regions[0].area, regions[1].area)
-    };
+    let shell = layout_app_shell(
+        area,
+        AppShellConfig {
+            recipe: AppShellRecipe::Workbench,
+            density: config.density,
+            header_height: 0,
+            sidebar_width: 0,
+            inspector_width: config.knobs_width,
+            footer_height: config.status_height.max(1),
+            command_height: 0,
+            metrics_height: 0,
+            log_height: 0,
+            lifecycle: Default::default(),
+            inline: false,
+        },
+    );
+
+    let status = shell.footer.unwrap_or(Rect {
+        x: area.x,
+        y: area.y.saturating_add(area.height.saturating_sub(1)),
+        width: area.width,
+        height: 1.min(area.height),
+    });
+    let knobs = shell.inspector;
+    let body = shell.main;
 
     let inspector_h = config
         .inspector_height
         .min(body.height.saturating_sub(3))
         .max(1);
-    let (main, inspector) = {
-        let surface = WorkSurface::new()
-            .axis(SurfaceAxis::Vertical)
-            .density(config.density)
-            .regions([
-                RegionSpec {
-                    id: RegionId::from_static("main"),
-                    size: RegionSize::Weight(1),
-                },
-                RegionSpec {
-                    id: RegionId::from_static("inspector"),
-                    size: RegionSize::Fixed(inspector_h),
-                },
-            ]);
-        let regions = surface.layout(body);
-        (regions[0].area, regions[1].area)
-    };
-
-    let show_knobs = config.knobs_width > 0 && main.width > config.knobs_width.saturating_add(28);
-    let (preview, knobs) = if show_knobs {
-        let surface = WorkSurface::new()
-            .axis(SurfaceAxis::Horizontal)
-            .density(config.density)
-            .regions([
-                RegionSpec {
-                    id: RegionId::from_static("preview"),
-                    size: RegionSize::Weight(1),
-                },
-                RegionSpec {
-                    id: RegionId::from_static("knobs"),
-                    size: RegionSize::Fixed(config.knobs_width),
-                },
-            ]);
-        let regions = surface.layout(main);
-        (regions[0].area, Some(regions[1].area))
-    } else {
-        (main, None)
-    };
+    let rows = WorkSurface::new()
+        .axis(SurfaceAxis::Vertical)
+        .density(config.density)
+        .regions([
+            crate::layout::RegionSpec {
+                id: RegionId::from_static("preview"),
+                size: RegionSize::Weight(1),
+            },
+            crate::layout::RegionSpec {
+                id: RegionId::from_static("inspector"),
+                size: RegionSize::Fixed(inspector_h),
+            },
+        ])
+        .layout(body);
 
     StudioShellSlots {
-        preview,
-        inspector,
+        preview: rows[0].area,
+        inspector: rows[1].area,
         knobs,
         status,
     }
