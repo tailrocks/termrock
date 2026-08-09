@@ -32,6 +32,8 @@ use termrock::{
         TabsState, TextArea, TextAreaState, TextCursor, TextInput, TextInputState, ThinkingBlock,
         Timeline, TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Tree, TreeNode,
         TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
+        BUILTIN_THEME_PRESETS, ImageMeta, ImageProtocol, ImageSurface, ThemePicker,
+        ThemePickerState,
     },
 };
 
@@ -793,6 +795,24 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             5,
             prompt_box,
+        ),
+        Story::new(
+            "theme-picker/basic",
+            "Theme picker",
+            "ThemePicker",
+            "Live theme preset selection list.",
+            36,
+            6,
+            theme_picker,
+        ),
+        Story::new(
+            "image-surface/basic",
+            "Image surface",
+            "ImageSurface",
+            "Placeholder image frame with protocol label.",
+            28,
+            8,
+            image_surface,
         ),
     ]
 }
@@ -2030,4 +2050,23 @@ fn timeline(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 fn prompt_box(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = PromptBoxState::new();
     frame.render_stateful_widget(&PromptBox::new(theme).placeholder("Message…"), area, &mut state);
+}
+
+fn theme_picker(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let mut state = ThemePickerState::new(0);
+    frame.render_stateful_widget(
+        &ThemePicker::new(BUILTIN_THEME_PRESETS, theme),
+        area,
+        &mut state,
+    );
+}
+
+fn image_surface(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let meta = ImageMeta {
+        label: "preview.png",
+        pixel_width: Some(128),
+        pixel_height: Some(96),
+        protocol: ImageProtocol::Kitty,
+    };
+    frame.render_widget(ImageSurface::new(meta, theme), area);
 }

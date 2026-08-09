@@ -1,4 +1,12 @@
-# 038 — Direction research: TermRock as shadcn/ui for TUI
+# Archived direction brief (executed)
+
+> Historical research that drove migrations `0029` and `0030` and the experience-layer
+> widgets. **Plans 001–038 were verified done and removed from `plans/`** — this file
+> remains as design history. Open product work continues via new migrations only.
+
+---
+
+# TermRock as shadcn/ui for TUI (direction history)
 
 **Status:** RESEARCH (not an implementation plan)  
 **Written against:** `855a049` (2026-08-09 session)  

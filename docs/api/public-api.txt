@@ -2663,7 +2663,195 @@ pub unsafe fn termrock::patterns::AgentShellSlots::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::patterns::AgentShellSlots
 pub fn termrock::patterns::AgentShellSlots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::AgentShellSlots
+pub struct termrock::patterns::OpsDashboardLayout
+pub termrock::patterns::OpsDashboardLayout::density: termrock::Density
+pub termrock::patterns::OpsDashboardLayout::log_height: u16
+pub termrock::patterns::OpsDashboardLayout::metrics_height: u16
+pub termrock::patterns::OpsDashboardLayout::status_height: u16
+impl core::clone::Clone for termrock::patterns::OpsDashboardLayout
+pub fn termrock::patterns::OpsDashboardLayout::clone(&self) -> termrock::patterns::OpsDashboardLayout
+impl core::cmp::Eq for termrock::patterns::OpsDashboardLayout
+impl core::cmp::PartialEq for termrock::patterns::OpsDashboardLayout
+pub fn termrock::patterns::OpsDashboardLayout::eq(&self, &termrock::patterns::OpsDashboardLayout) -> bool
+impl core::default::Default for termrock::patterns::OpsDashboardLayout
+pub fn termrock::patterns::OpsDashboardLayout::default() -> Self
+impl core::fmt::Debug for termrock::patterns::OpsDashboardLayout
+pub fn termrock::patterns::OpsDashboardLayout::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::patterns::OpsDashboardLayout
+impl core::marker::StructuralPartialEq for termrock::patterns::OpsDashboardLayout
+impl core::marker::Freeze for termrock::patterns::OpsDashboardLayout
+impl core::marker::Send for termrock::patterns::OpsDashboardLayout
+impl core::marker::Sync for termrock::patterns::OpsDashboardLayout
+impl core::marker::Unpin for termrock::patterns::OpsDashboardLayout
+impl core::marker::UnsafeUnpin for termrock::patterns::OpsDashboardLayout
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::OpsDashboardLayout
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::OpsDashboardLayout
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::OpsDashboardLayout where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::OpsDashboardLayout::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::OpsDashboardLayout where U: core::convert::From<T>
+pub fn termrock::patterns::OpsDashboardLayout::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::OpsDashboardLayout where U: core::convert::Into<T>
+pub type termrock::patterns::OpsDashboardLayout::Error = core::convert::Infallible
+pub fn termrock::patterns::OpsDashboardLayout::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::OpsDashboardLayout where U: core::convert::TryFrom<T>
+pub type termrock::patterns::OpsDashboardLayout::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::OpsDashboardLayout::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::OpsDashboardLayout where T: core::clone::Clone
+pub type termrock::patterns::OpsDashboardLayout::Owned = T
+pub fn termrock::patterns::OpsDashboardLayout::clone_into(&self, &mut T)
+pub fn termrock::patterns::OpsDashboardLayout::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::OpsDashboardLayout where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::OpsDashboardLayout::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::OpsDashboardLayout where T: ?core::marker::Sized
+pub fn termrock::patterns::OpsDashboardLayout::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::OpsDashboardLayout where T: ?core::marker::Sized
+pub fn termrock::patterns::OpsDashboardLayout::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::OpsDashboardLayout where T: core::clone::Clone
+pub unsafe fn termrock::patterns::OpsDashboardLayout::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::OpsDashboardLayout
+pub fn termrock::patterns::OpsDashboardLayout::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::OpsDashboardLayout
+pub struct termrock::patterns::OpsDashboardSlots
+pub termrock::patterns::OpsDashboardSlots::log: ratatui_core::layout::rect::Rect
+pub termrock::patterns::OpsDashboardSlots::main: ratatui_core::layout::rect::Rect
+pub termrock::patterns::OpsDashboardSlots::metrics: ratatui_core::layout::rect::Rect
+pub termrock::patterns::OpsDashboardSlots::status: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::patterns::OpsDashboardSlots
+pub fn termrock::patterns::OpsDashboardSlots::clone(&self) -> termrock::patterns::OpsDashboardSlots
+impl core::cmp::Eq for termrock::patterns::OpsDashboardSlots
+impl core::cmp::PartialEq for termrock::patterns::OpsDashboardSlots
+pub fn termrock::patterns::OpsDashboardSlots::eq(&self, &termrock::patterns::OpsDashboardSlots) -> bool
+impl core::fmt::Debug for termrock::patterns::OpsDashboardSlots
+pub fn termrock::patterns::OpsDashboardSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::patterns::OpsDashboardSlots
+impl core::marker::Freeze for termrock::patterns::OpsDashboardSlots
+impl core::marker::Send for termrock::patterns::OpsDashboardSlots
+impl core::marker::Sync for termrock::patterns::OpsDashboardSlots
+impl core::marker::Unpin for termrock::patterns::OpsDashboardSlots
+impl core::marker::UnsafeUnpin for termrock::patterns::OpsDashboardSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::OpsDashboardSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::OpsDashboardSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::OpsDashboardSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::OpsDashboardSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::OpsDashboardSlots where U: core::convert::From<T>
+pub fn termrock::patterns::OpsDashboardSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::OpsDashboardSlots where U: core::convert::Into<T>
+pub type termrock::patterns::OpsDashboardSlots::Error = core::convert::Infallible
+pub fn termrock::patterns::OpsDashboardSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::OpsDashboardSlots where U: core::convert::TryFrom<T>
+pub type termrock::patterns::OpsDashboardSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::OpsDashboardSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::OpsDashboardSlots where T: core::clone::Clone
+pub type termrock::patterns::OpsDashboardSlots::Owned = T
+pub fn termrock::patterns::OpsDashboardSlots::clone_into(&self, &mut T)
+pub fn termrock::patterns::OpsDashboardSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::OpsDashboardSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::OpsDashboardSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::OpsDashboardSlots where T: ?core::marker::Sized
+pub fn termrock::patterns::OpsDashboardSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::OpsDashboardSlots where T: ?core::marker::Sized
+pub fn termrock::patterns::OpsDashboardSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::OpsDashboardSlots where T: core::clone::Clone
+pub unsafe fn termrock::patterns::OpsDashboardSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::OpsDashboardSlots
+pub fn termrock::patterns::OpsDashboardSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::OpsDashboardSlots
+pub struct termrock::patterns::ResourceBrowserLayout
+pub termrock::patterns::ResourceBrowserLayout::density: termrock::Density
+pub termrock::patterns::ResourceBrowserLayout::preview_width: u16
+pub termrock::patterns::ResourceBrowserLayout::rail_width: u16
+pub termrock::patterns::ResourceBrowserLayout::status_height: u16
+impl core::clone::Clone for termrock::patterns::ResourceBrowserLayout
+pub fn termrock::patterns::ResourceBrowserLayout::clone(&self) -> termrock::patterns::ResourceBrowserLayout
+impl core::cmp::Eq for termrock::patterns::ResourceBrowserLayout
+impl core::cmp::PartialEq for termrock::patterns::ResourceBrowserLayout
+pub fn termrock::patterns::ResourceBrowserLayout::eq(&self, &termrock::patterns::ResourceBrowserLayout) -> bool
+impl core::default::Default for termrock::patterns::ResourceBrowserLayout
+pub fn termrock::patterns::ResourceBrowserLayout::default() -> Self
+impl core::fmt::Debug for termrock::patterns::ResourceBrowserLayout
+pub fn termrock::patterns::ResourceBrowserLayout::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::patterns::ResourceBrowserLayout
+impl core::marker::StructuralPartialEq for termrock::patterns::ResourceBrowserLayout
+impl core::marker::Freeze for termrock::patterns::ResourceBrowserLayout
+impl core::marker::Send for termrock::patterns::ResourceBrowserLayout
+impl core::marker::Sync for termrock::patterns::ResourceBrowserLayout
+impl core::marker::Unpin for termrock::patterns::ResourceBrowserLayout
+impl core::marker::UnsafeUnpin for termrock::patterns::ResourceBrowserLayout
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::ResourceBrowserLayout
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::ResourceBrowserLayout
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::ResourceBrowserLayout where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::ResourceBrowserLayout::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::ResourceBrowserLayout where U: core::convert::From<T>
+pub fn termrock::patterns::ResourceBrowserLayout::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::ResourceBrowserLayout where U: core::convert::Into<T>
+pub type termrock::patterns::ResourceBrowserLayout::Error = core::convert::Infallible
+pub fn termrock::patterns::ResourceBrowserLayout::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::ResourceBrowserLayout where U: core::convert::TryFrom<T>
+pub type termrock::patterns::ResourceBrowserLayout::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::ResourceBrowserLayout::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::ResourceBrowserLayout where T: core::clone::Clone
+pub type termrock::patterns::ResourceBrowserLayout::Owned = T
+pub fn termrock::patterns::ResourceBrowserLayout::clone_into(&self, &mut T)
+pub fn termrock::patterns::ResourceBrowserLayout::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::ResourceBrowserLayout where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::ResourceBrowserLayout::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::ResourceBrowserLayout where T: ?core::marker::Sized
+pub fn termrock::patterns::ResourceBrowserLayout::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::ResourceBrowserLayout where T: ?core::marker::Sized
+pub fn termrock::patterns::ResourceBrowserLayout::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::ResourceBrowserLayout where T: core::clone::Clone
+pub unsafe fn termrock::patterns::ResourceBrowserLayout::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::ResourceBrowserLayout
+pub fn termrock::patterns::ResourceBrowserLayout::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::ResourceBrowserLayout
+pub struct termrock::patterns::ResourceBrowserSlots
+pub termrock::patterns::ResourceBrowserSlots::detail: ratatui_core::layout::rect::Rect
+pub termrock::patterns::ResourceBrowserSlots::preview: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::ResourceBrowserSlots::rail: ratatui_core::layout::rect::Rect
+pub termrock::patterns::ResourceBrowserSlots::status: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::patterns::ResourceBrowserSlots
+pub fn termrock::patterns::ResourceBrowserSlots::clone(&self) -> termrock::patterns::ResourceBrowserSlots
+impl core::cmp::Eq for termrock::patterns::ResourceBrowserSlots
+impl core::cmp::PartialEq for termrock::patterns::ResourceBrowserSlots
+pub fn termrock::patterns::ResourceBrowserSlots::eq(&self, &termrock::patterns::ResourceBrowserSlots) -> bool
+impl core::fmt::Debug for termrock::patterns::ResourceBrowserSlots
+pub fn termrock::patterns::ResourceBrowserSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::patterns::ResourceBrowserSlots
+impl core::marker::Freeze for termrock::patterns::ResourceBrowserSlots
+impl core::marker::Send for termrock::patterns::ResourceBrowserSlots
+impl core::marker::Sync for termrock::patterns::ResourceBrowserSlots
+impl core::marker::Unpin for termrock::patterns::ResourceBrowserSlots
+impl core::marker::UnsafeUnpin for termrock::patterns::ResourceBrowserSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::ResourceBrowserSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::ResourceBrowserSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::ResourceBrowserSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::ResourceBrowserSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::ResourceBrowserSlots where U: core::convert::From<T>
+pub fn termrock::patterns::ResourceBrowserSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::ResourceBrowserSlots where U: core::convert::Into<T>
+pub type termrock::patterns::ResourceBrowserSlots::Error = core::convert::Infallible
+pub fn termrock::patterns::ResourceBrowserSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::ResourceBrowserSlots where U: core::convert::TryFrom<T>
+pub type termrock::patterns::ResourceBrowserSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::ResourceBrowserSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::ResourceBrowserSlots where T: core::clone::Clone
+pub type termrock::patterns::ResourceBrowserSlots::Owned = T
+pub fn termrock::patterns::ResourceBrowserSlots::clone_into(&self, &mut T)
+pub fn termrock::patterns::ResourceBrowserSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::ResourceBrowserSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::ResourceBrowserSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::ResourceBrowserSlots where T: ?core::marker::Sized
+pub fn termrock::patterns::ResourceBrowserSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::ResourceBrowserSlots where T: ?core::marker::Sized
+pub fn termrock::patterns::ResourceBrowserSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::ResourceBrowserSlots where T: core::clone::Clone
+pub unsafe fn termrock::patterns::ResourceBrowserSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::ResourceBrowserSlots
+pub fn termrock::patterns::ResourceBrowserSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::ResourceBrowserSlots
 pub fn termrock::patterns::layout_agent_shell(ratatui_core::layout::rect::Rect, termrock::patterns::AgentShellLayout) -> termrock::patterns::AgentShellSlots
+pub fn termrock::patterns::layout_ops_dashboard(ratatui_core::layout::rect::Rect, termrock::patterns::OpsDashboardLayout) -> termrock::patterns::OpsDashboardSlots
+pub fn termrock::patterns::layout_resource_browser(ratatui_core::layout::rect::Rect, termrock::patterns::ResourceBrowserLayout) -> termrock::patterns::ResourceBrowserSlots
 pub mod termrock::runtime
 pub struct termrock::runtime::FrameTick
 impl termrock::runtime::FrameTick
@@ -3311,6 +3499,110 @@ pub const fn termrock::scroll::vertical_scrollbar_area(ratatui_core::layout::rec
 pub const fn termrock::scroll::viewport_height(ratatui_core::layout::rect::Rect) -> usize
 pub const fn termrock::scroll::viewport_width(ratatui_core::layout::rect::Rect) -> usize
 pub mod termrock::style
+#[non_exhaustive] pub enum termrock::style::Appearance
+pub termrock::style::Appearance::Dark
+pub termrock::style::Appearance::Light
+pub termrock::style::Appearance::Unknown
+impl termrock::Appearance
+pub fn termrock::Appearance::detect() -> Self
+pub const fn termrock::Appearance::theme_key(self, termrock::AppearanceThemeMap) -> &'static str
+impl core::clone::Clone for termrock::Appearance
+pub fn termrock::Appearance::clone(&self) -> termrock::Appearance
+impl core::cmp::Eq for termrock::Appearance
+impl core::cmp::PartialEq for termrock::Appearance
+pub fn termrock::Appearance::eq(&self, &termrock::Appearance) -> bool
+impl core::default::Default for termrock::Appearance
+pub fn termrock::Appearance::default() -> termrock::Appearance
+impl core::fmt::Debug for termrock::Appearance
+pub fn termrock::Appearance::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::Appearance
+pub fn termrock::Appearance::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::Appearance
+impl core::marker::StructuralPartialEq for termrock::Appearance
+impl core::marker::Freeze for termrock::Appearance
+impl core::marker::Send for termrock::Appearance
+impl core::marker::Sync for termrock::Appearance
+impl core::marker::Unpin for termrock::Appearance
+impl core::marker::UnsafeUnpin for termrock::Appearance
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::Appearance
+impl core::panic::unwind_safe::UnwindSafe for termrock::Appearance
+impl<Q, K> equivalent::Equivalent<K> for termrock::Appearance where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::Appearance::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::Appearance where U: core::convert::From<T>
+pub fn termrock::Appearance::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::Appearance where U: core::convert::Into<T>
+pub type termrock::Appearance::Error = core::convert::Infallible
+pub fn termrock::Appearance::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::Appearance where U: core::convert::TryFrom<T>
+pub type termrock::Appearance::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::Appearance::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::Appearance where T: core::clone::Clone
+pub type termrock::Appearance::Owned = T
+pub fn termrock::Appearance::clone_into(&self, &mut T)
+pub fn termrock::Appearance::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::Appearance where T: 'static + ?core::marker::Sized
+pub fn termrock::Appearance::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::Appearance where T: ?core::marker::Sized
+pub fn termrock::Appearance::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::Appearance where T: ?core::marker::Sized
+pub fn termrock::Appearance::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::Appearance where T: core::clone::Clone
+pub unsafe fn termrock::Appearance::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::Appearance
+pub fn termrock::Appearance::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::Appearance
+#[non_exhaustive] pub enum termrock::style::ColorCapability
+pub termrock::style::ColorCapability::Ansi16
+pub termrock::style::ColorCapability::Indexed256
+pub termrock::style::ColorCapability::Monochrome
+pub termrock::style::ColorCapability::Truecolor
+impl termrock::ColorCapability
+pub fn termrock::ColorCapability::detect_from_env() -> Self
+impl core::clone::Clone for termrock::ColorCapability
+pub fn termrock::ColorCapability::clone(&self) -> termrock::ColorCapability
+impl core::cmp::Eq for termrock::ColorCapability
+impl core::cmp::PartialEq for termrock::ColorCapability
+pub fn termrock::ColorCapability::eq(&self, &termrock::ColorCapability) -> bool
+impl core::default::Default for termrock::ColorCapability
+pub fn termrock::ColorCapability::default() -> termrock::ColorCapability
+impl core::fmt::Debug for termrock::ColorCapability
+pub fn termrock::ColorCapability::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::ColorCapability
+pub fn termrock::ColorCapability::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::ColorCapability
+impl core::marker::StructuralPartialEq for termrock::ColorCapability
+impl core::marker::Freeze for termrock::ColorCapability
+impl core::marker::Send for termrock::ColorCapability
+impl core::marker::Sync for termrock::ColorCapability
+impl core::marker::Unpin for termrock::ColorCapability
+impl core::marker::UnsafeUnpin for termrock::ColorCapability
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ColorCapability
+impl core::panic::unwind_safe::UnwindSafe for termrock::ColorCapability
+impl<Q, K> equivalent::Equivalent<K> for termrock::ColorCapability where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::ColorCapability::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::ColorCapability where U: core::convert::From<T>
+pub fn termrock::ColorCapability::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ColorCapability where U: core::convert::Into<T>
+pub type termrock::ColorCapability::Error = core::convert::Infallible
+pub fn termrock::ColorCapability::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ColorCapability where U: core::convert::TryFrom<T>
+pub type termrock::ColorCapability::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ColorCapability::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ColorCapability where T: core::clone::Clone
+pub type termrock::ColorCapability::Owned = T
+pub fn termrock::ColorCapability::clone_into(&self, &mut T)
+pub fn termrock::ColorCapability::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ColorCapability where T: 'static + ?core::marker::Sized
+pub fn termrock::ColorCapability::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ColorCapability where T: ?core::marker::Sized
+pub fn termrock::ColorCapability::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ColorCapability where T: ?core::marker::Sized
+pub fn termrock::ColorCapability::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ColorCapability where T: core::clone::Clone
+pub unsafe fn termrock::ColorCapability::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ColorCapability
+pub fn termrock::ColorCapability::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ColorCapability
 #[non_exhaustive] pub enum termrock::style::Density
 pub termrock::style::Density::Comfortable
 pub termrock::style::Density::Compact
@@ -3497,6 +3789,54 @@ pub unsafe fn termrock::style::Role::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Role
 pub fn termrock::style::Role::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Role
+pub struct termrock::style::AppearanceThemeMap
+pub termrock::style::AppearanceThemeMap::dark: &'static str
+pub termrock::style::AppearanceThemeMap::light: &'static str
+impl core::clone::Clone for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::clone(&self) -> termrock::AppearanceThemeMap
+impl core::cmp::Eq for termrock::AppearanceThemeMap
+impl core::cmp::PartialEq for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::eq(&self, &termrock::AppearanceThemeMap) -> bool
+impl core::default::Default for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::default() -> Self
+impl core::fmt::Debug for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::AppearanceThemeMap
+impl core::marker::StructuralPartialEq for termrock::AppearanceThemeMap
+impl core::marker::Freeze for termrock::AppearanceThemeMap
+impl core::marker::Send for termrock::AppearanceThemeMap
+impl core::marker::Sync for termrock::AppearanceThemeMap
+impl core::marker::Unpin for termrock::AppearanceThemeMap
+impl core::marker::UnsafeUnpin for termrock::AppearanceThemeMap
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::AppearanceThemeMap
+impl core::panic::unwind_safe::UnwindSafe for termrock::AppearanceThemeMap
+impl<Q, K> equivalent::Equivalent<K> for termrock::AppearanceThemeMap where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::AppearanceThemeMap::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::AppearanceThemeMap where U: core::convert::From<T>
+pub fn termrock::AppearanceThemeMap::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::AppearanceThemeMap where U: core::convert::Into<T>
+pub type termrock::AppearanceThemeMap::Error = core::convert::Infallible
+pub fn termrock::AppearanceThemeMap::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::AppearanceThemeMap where U: core::convert::TryFrom<T>
+pub type termrock::AppearanceThemeMap::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::AppearanceThemeMap::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::AppearanceThemeMap where T: core::clone::Clone
+pub type termrock::AppearanceThemeMap::Owned = T
+pub fn termrock::AppearanceThemeMap::clone_into(&self, &mut T)
+pub fn termrock::AppearanceThemeMap::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::AppearanceThemeMap where T: 'static + ?core::marker::Sized
+pub fn termrock::AppearanceThemeMap::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::AppearanceThemeMap where T: ?core::marker::Sized
+pub fn termrock::AppearanceThemeMap::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::AppearanceThemeMap where T: ?core::marker::Sized
+pub fn termrock::AppearanceThemeMap::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::AppearanceThemeMap where T: core::clone::Clone
+pub unsafe fn termrock::AppearanceThemeMap::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::AppearanceThemeMap
 pub struct termrock::style::Rgb
 pub termrock::style::Rgb::b: u8
 pub termrock::style::Rgb::g: u8
@@ -3552,6 +3892,8 @@ pub fn termrock::style::Theme::slate() -> Self
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
 pub fn termrock::style::Theme::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
+impl termrock::style::Theme
+pub fn termrock::style::Theme::quantized(&self, termrock::ColorCapability) -> Self
 impl core::clone::Clone for termrock::style::Theme
 pub fn termrock::style::Theme::clone(&self) -> termrock::style::Theme
 impl core::cmp::Eq for termrock::style::Theme
@@ -3599,6 +3941,10 @@ pub const termrock::style::PHOSPHOR_GREEN: ratatui_core::style::color::Color
 pub const termrock::style::PREVIEW_CARD: ratatui_core::style::color::Color
 pub const fn termrock::style::color(termrock::style::Rgb) -> ratatui_core::style::color::Color
 pub fn termrock::style::faded(ratatui_core::style::color::Color, f32) -> ratatui_core::style::color::Color
+pub fn termrock::style::quantize_color(ratatui_core::style::color::Color, termrock::ColorCapability) -> ratatui_core::style::color::Color
+pub fn termrock::style::quantize_theme(&termrock::style::Theme, termrock::ColorCapability) -> termrock::style::Theme
+pub fn termrock::style::rgb_to_xterm256(u8, u8, u8) -> u8
+pub fn termrock::style::theme_for_appearance(termrock::Appearance) -> termrock::style::Theme
 pub mod termrock::text
 pub struct termrock::text::FixedPrefixSegment
 pub termrock::text::FixedPrefixSegment::display_cols: usize
@@ -4312,6 +4658,56 @@ pub unsafe fn termrock::widgets::HintSpan<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HintSpan<'a>
 pub fn termrock::widgets::HintSpan<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HintSpan<'a>
+#[non_exhaustive] pub enum termrock::widgets::ImageProtocol
+pub termrock::widgets::ImageProtocol::ITerm2
+pub termrock::widgets::ImageProtocol::Kitty
+pub termrock::widgets::ImageProtocol::Placeholder
+pub termrock::widgets::ImageProtocol::Sixel
+impl core::clone::Clone for termrock::widgets::ImageProtocol
+pub fn termrock::widgets::ImageProtocol::clone(&self) -> termrock::widgets::ImageProtocol
+impl core::cmp::Eq for termrock::widgets::ImageProtocol
+impl core::cmp::PartialEq for termrock::widgets::ImageProtocol
+pub fn termrock::widgets::ImageProtocol::eq(&self, &termrock::widgets::ImageProtocol) -> bool
+impl core::default::Default for termrock::widgets::ImageProtocol
+pub fn termrock::widgets::ImageProtocol::default() -> termrock::widgets::ImageProtocol
+impl core::fmt::Debug for termrock::widgets::ImageProtocol
+pub fn termrock::widgets::ImageProtocol::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ImageProtocol
+pub fn termrock::widgets::ImageProtocol::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ImageProtocol
+impl core::marker::StructuralPartialEq for termrock::widgets::ImageProtocol
+impl core::marker::Freeze for termrock::widgets::ImageProtocol
+impl core::marker::Send for termrock::widgets::ImageProtocol
+impl core::marker::Sync for termrock::widgets::ImageProtocol
+impl core::marker::Unpin for termrock::widgets::ImageProtocol
+impl core::marker::UnsafeUnpin for termrock::widgets::ImageProtocol
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ImageProtocol
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ImageProtocol
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ImageProtocol where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ImageProtocol::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ImageProtocol where U: core::convert::From<T>
+pub fn termrock::widgets::ImageProtocol::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ImageProtocol where U: core::convert::Into<T>
+pub type termrock::widgets::ImageProtocol::Error = core::convert::Infallible
+pub fn termrock::widgets::ImageProtocol::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ImageProtocol where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ImageProtocol::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ImageProtocol::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ImageProtocol where T: core::clone::Clone
+pub type termrock::widgets::ImageProtocol::Owned = T
+pub fn termrock::widgets::ImageProtocol::clone_into(&self, &mut T)
+pub fn termrock::widgets::ImageProtocol::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ImageProtocol where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ImageProtocol::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ImageProtocol where T: ?core::marker::Sized
+pub fn termrock::widgets::ImageProtocol::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ImageProtocol where T: ?core::marker::Sized
+pub fn termrock::widgets::ImageProtocol::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ImageProtocol where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ImageProtocol::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ImageProtocol
+pub fn termrock::widgets::ImageProtocol::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ImageProtocol
 #[non_exhaustive] pub enum termrock::widgets::JumpOutcome<Id>
 pub termrock::widgets::JumpOutcome::Activated(Id)
 pub termrock::widgets::JumpOutcome::Dismissed
@@ -5132,6 +5528,52 @@ pub unsafe fn termrock::widgets::TextInputValidity::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::TextInputValidity
 pub fn termrock::widgets::TextInputValidity::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TextInputValidity
+#[non_exhaustive] pub enum termrock::widgets::ThemePickerOutcome
+pub termrock::widgets::ThemePickerOutcome::Cancelled
+pub termrock::widgets::ThemePickerOutcome::ConfirmIndex(usize)
+pub termrock::widgets::ThemePickerOutcome::Ignored
+pub termrock::widgets::ThemePickerOutcome::SelectionChanged
+impl core::clone::Clone for termrock::widgets::ThemePickerOutcome
+pub fn termrock::widgets::ThemePickerOutcome::clone(&self) -> termrock::widgets::ThemePickerOutcome
+impl core::cmp::Eq for termrock::widgets::ThemePickerOutcome
+impl core::cmp::PartialEq for termrock::widgets::ThemePickerOutcome
+pub fn termrock::widgets::ThemePickerOutcome::eq(&self, &termrock::widgets::ThemePickerOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ThemePickerOutcome
+pub fn termrock::widgets::ThemePickerOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::ThemePickerOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::ThemePickerOutcome
+impl core::marker::Freeze for termrock::widgets::ThemePickerOutcome
+impl core::marker::Send for termrock::widgets::ThemePickerOutcome
+impl core::marker::Sync for termrock::widgets::ThemePickerOutcome
+impl core::marker::Unpin for termrock::widgets::ThemePickerOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ThemePickerOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ThemePickerOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ThemePickerOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ThemePickerOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ThemePickerOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ThemePickerOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ThemePickerOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ThemePickerOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ThemePickerOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ThemePickerOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ThemePickerOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ThemePickerOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ThemePickerOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ThemePickerOutcome where T: core::clone::Clone
+pub type termrock::widgets::ThemePickerOutcome::Owned = T
+pub fn termrock::widgets::ThemePickerOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ThemePickerOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ThemePickerOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ThemePickerOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ThemePickerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ThemePickerOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ThemePickerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ThemePickerOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ThemePickerOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ThemePickerOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ThemePickerOutcome
+pub fn termrock::widgets::ThemePickerOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ThemePickerOutcome
 #[non_exhaustive] pub enum termrock::widgets::ToastLifetime
 pub termrock::widgets::ToastLifetime::ExpiresAfter(core::time::Duration)
 pub termrock::widgets::ToastLifetime::Persistent
@@ -7212,6 +7654,94 @@ pub unsafe fn termrock::widgets::HintBar<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HintBar<'a>
 pub fn termrock::widgets::HintBar<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HintBar<'a>
+pub struct termrock::widgets::ImageMeta<'a>
+pub termrock::widgets::ImageMeta::label: &'a str
+pub termrock::widgets::ImageMeta::pixel_height: core::option::Option<u32>
+pub termrock::widgets::ImageMeta::pixel_width: core::option::Option<u32>
+pub termrock::widgets::ImageMeta::protocol: termrock::widgets::ImageProtocol
+impl<'a> core::clone::Clone for termrock::widgets::ImageMeta<'a>
+pub fn termrock::widgets::ImageMeta<'a>::clone(&self) -> termrock::widgets::ImageMeta<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::ImageMeta<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::ImageMeta<'a>
+pub fn termrock::widgets::ImageMeta<'a>::eq(&self, &termrock::widgets::ImageMeta<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::ImageMeta<'a>
+pub fn termrock::widgets::ImageMeta<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ImageMeta<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::ImageMeta<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ImageMeta<'a>
+impl<'a> core::marker::Send for termrock::widgets::ImageMeta<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ImageMeta<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ImageMeta<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ImageMeta<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ImageMeta<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ImageMeta<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ImageMeta<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ImageMeta<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ImageMeta<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ImageMeta<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ImageMeta<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ImageMeta<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ImageMeta<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ImageMeta<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ImageMeta<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ImageMeta<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ImageMeta<'a> where T: core::clone::Clone
+pub type termrock::widgets::ImageMeta<'a>::Owned = T
+pub fn termrock::widgets::ImageMeta<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ImageMeta<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ImageMeta<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ImageMeta<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ImageMeta<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ImageMeta<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ImageMeta<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ImageMeta<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ImageMeta<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ImageMeta<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ImageMeta<'a>
+pub fn termrock::widgets::ImageMeta<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ImageMeta<'a>
+pub struct termrock::widgets::ImageSurface<'a>
+impl<'a> termrock::widgets::ImageSurface<'a>
+pub const fn termrock::widgets::ImageSurface<'a>::new(termrock::widgets::ImageMeta<'a>, &'a termrock::style::Theme) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::ImageSurface<'_>
+pub fn &termrock::widgets::ImageSurface<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::ImageSurface<'_>
+pub fn termrock::widgets::ImageSurface<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::ImageSurface<'a>
+pub fn termrock::widgets::ImageSurface<'a>::clone(&self) -> termrock::widgets::ImageSurface<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ImageSurface<'a>
+pub fn termrock::widgets::ImageSurface<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ImageSurface<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ImageSurface<'a>
+impl<'a> core::marker::Send for termrock::widgets::ImageSurface<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ImageSurface<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ImageSurface<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ImageSurface<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ImageSurface<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ImageSurface<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ImageSurface<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ImageSurface<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ImageSurface<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ImageSurface<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ImageSurface<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ImageSurface<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ImageSurface<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ImageSurface<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ImageSurface<'a> where T: core::clone::Clone
+pub type termrock::widgets::ImageSurface<'a>::Owned = T
+pub fn termrock::widgets::ImageSurface<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ImageSurface<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ImageSurface<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ImageSurface<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ImageSurface<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ImageSurface<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ImageSurface<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ImageSurface<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ImageSurface<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ImageSurface<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ImageSurface<'a>
+pub fn termrock::widgets::ImageSurface<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ImageSurface<'a>
 pub struct termrock::widgets::JumpOverlay<'a, Id>
 impl<'a, Id> termrock::widgets::JumpOverlay<'a, Id>
 pub const fn termrock::widgets::JumpOverlay<'a, Id>::new(&'a [termrock::widgets::JumpTarget<Id>], &'a termrock::style::Theme) -> Self
@@ -9436,6 +9966,145 @@ impl<T> core::convert::From<T> for termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TextInputState
 impl<T> serde_core::de::DeserializeOwned for termrock::widgets::TextInputState where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::widgets::ThemePicker<'a>
+impl<'a> termrock::widgets::ThemePicker<'a>
+pub const fn termrock::widgets::ThemePicker<'a>::new(&'a [termrock::widgets::ThemePreset], &'a termrock::style::Theme) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::ThemePicker<'_>
+pub type &termrock::widgets::ThemePicker<'_>::State = termrock::widgets::ThemePickerState
+pub fn &termrock::widgets::ThemePicker<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::ThemePicker<'_>
+pub type termrock::widgets::ThemePicker<'_>::State = termrock::widgets::ThemePickerState
+pub fn termrock::widgets::ThemePicker<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::ThemePicker<'a>
+pub fn termrock::widgets::ThemePicker<'a>::clone(&self) -> termrock::widgets::ThemePicker<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ThemePicker<'a>
+pub fn termrock::widgets::ThemePicker<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ThemePicker<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ThemePicker<'a>
+impl<'a> core::marker::Send for termrock::widgets::ThemePicker<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ThemePicker<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ThemePicker<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ThemePicker<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ThemePicker<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ThemePicker<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ThemePicker<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ThemePicker<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ThemePicker<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ThemePicker<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ThemePicker<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ThemePicker<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ThemePicker<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ThemePicker<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ThemePicker<'a> where T: core::clone::Clone
+pub type termrock::widgets::ThemePicker<'a>::Owned = T
+pub fn termrock::widgets::ThemePicker<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ThemePicker<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ThemePicker<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ThemePicker<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ThemePicker<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ThemePicker<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ThemePicker<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ThemePicker<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ThemePicker<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ThemePicker<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ThemePicker<'a>
+pub fn termrock::widgets::ThemePicker<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ThemePicker<'a>
+pub struct termrock::widgets::ThemePickerState
+impl termrock::widgets::ThemePickerState
+pub fn termrock::widgets::ThemePickerState::clear_confirmed(&mut self)
+pub fn termrock::widgets::ThemePickerState::confirm_id(&mut self, &'static str)
+pub const fn termrock::widgets::ThemePickerState::confirmed(&self) -> core::option::Option<&'static str>
+pub fn termrock::widgets::ThemePickerState::handle_key(&mut self, termrock::input::KeyEvent, usize) -> termrock::widgets::ThemePickerOutcome
+pub const fn termrock::widgets::ThemePickerState::new(usize) -> Self
+pub const fn termrock::widgets::ThemePickerState::selected(&self) -> usize
+impl core::clone::Clone for termrock::widgets::ThemePickerState
+pub fn termrock::widgets::ThemePickerState::clone(&self) -> termrock::widgets::ThemePickerState
+impl core::cmp::Eq for termrock::widgets::ThemePickerState
+impl core::cmp::PartialEq for termrock::widgets::ThemePickerState
+pub fn termrock::widgets::ThemePickerState::eq(&self, &termrock::widgets::ThemePickerState) -> bool
+impl core::default::Default for termrock::widgets::ThemePickerState
+pub fn termrock::widgets::ThemePickerState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ThemePickerState
+pub fn termrock::widgets::ThemePickerState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ThemePickerState
+impl core::marker::Freeze for termrock::widgets::ThemePickerState
+impl core::marker::Send for termrock::widgets::ThemePickerState
+impl core::marker::Sync for termrock::widgets::ThemePickerState
+impl core::marker::Unpin for termrock::widgets::ThemePickerState
+impl core::marker::UnsafeUnpin for termrock::widgets::ThemePickerState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ThemePickerState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ThemePickerState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ThemePickerState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ThemePickerState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ThemePickerState where U: core::convert::From<T>
+pub fn termrock::widgets::ThemePickerState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ThemePickerState where U: core::convert::Into<T>
+pub type termrock::widgets::ThemePickerState::Error = core::convert::Infallible
+pub fn termrock::widgets::ThemePickerState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ThemePickerState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ThemePickerState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ThemePickerState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ThemePickerState where T: core::clone::Clone
+pub type termrock::widgets::ThemePickerState::Owned = T
+pub fn termrock::widgets::ThemePickerState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ThemePickerState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ThemePickerState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ThemePickerState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ThemePickerState where T: ?core::marker::Sized
+pub fn termrock::widgets::ThemePickerState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ThemePickerState where T: ?core::marker::Sized
+pub fn termrock::widgets::ThemePickerState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ThemePickerState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ThemePickerState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ThemePickerState
+pub fn termrock::widgets::ThemePickerState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ThemePickerState
+pub struct termrock::widgets::ThemePreset
+pub termrock::widgets::ThemePreset::id: &'static str
+pub termrock::widgets::ThemePreset::label: &'static str
+pub termrock::widgets::ThemePreset::requires_truecolor: bool
+impl core::clone::Clone for termrock::widgets::ThemePreset
+pub fn termrock::widgets::ThemePreset::clone(&self) -> termrock::widgets::ThemePreset
+impl core::cmp::Eq for termrock::widgets::ThemePreset
+impl core::cmp::PartialEq for termrock::widgets::ThemePreset
+pub fn termrock::widgets::ThemePreset::eq(&self, &termrock::widgets::ThemePreset) -> bool
+impl core::fmt::Debug for termrock::widgets::ThemePreset
+pub fn termrock::widgets::ThemePreset::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::ThemePreset
+impl core::marker::StructuralPartialEq for termrock::widgets::ThemePreset
+impl core::marker::Freeze for termrock::widgets::ThemePreset
+impl core::marker::Send for termrock::widgets::ThemePreset
+impl core::marker::Sync for termrock::widgets::ThemePreset
+impl core::marker::Unpin for termrock::widgets::ThemePreset
+impl core::marker::UnsafeUnpin for termrock::widgets::ThemePreset
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ThemePreset
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ThemePreset
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ThemePreset where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ThemePreset::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ThemePreset where U: core::convert::From<T>
+pub fn termrock::widgets::ThemePreset::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ThemePreset where U: core::convert::Into<T>
+pub type termrock::widgets::ThemePreset::Error = core::convert::Infallible
+pub fn termrock::widgets::ThemePreset::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ThemePreset where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ThemePreset::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ThemePreset::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ThemePreset where T: core::clone::Clone
+pub type termrock::widgets::ThemePreset::Owned = T
+pub fn termrock::widgets::ThemePreset::clone_into(&self, &mut T)
+pub fn termrock::widgets::ThemePreset::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ThemePreset where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ThemePreset::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ThemePreset where T: ?core::marker::Sized
+pub fn termrock::widgets::ThemePreset::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ThemePreset where T: ?core::marker::Sized
+pub fn termrock::widgets::ThemePreset::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ThemePreset where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ThemePreset::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ThemePreset
+pub fn termrock::widgets::ThemePreset::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ThemePreset
 pub struct termrock::widgets::ThinkingBlock<'a>
 impl<'a> termrock::widgets::ThinkingBlock<'a>
 pub const fn termrock::widgets::ThinkingBlock<'a>::body(self, &'a str) -> Self
@@ -10051,6 +10720,7 @@ pub unsafe fn termrock::widgets::VirtualGridState<RowId, ColId>::clone_to_uninit
 impl<T> core::convert::From<T> for termrock::widgets::VirtualGridState<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::VirtualGridState<RowId, ColId>
+pub const termrock::widgets::BUILTIN_THEME_PRESETS: &[termrock::widgets::ThemePreset]
 pub const termrock::widgets::TAB_GAP: u16
 pub trait termrock::widgets::SyntaxHighlighter
 pub fn termrock::widgets::SyntaxHighlighter::highlight_line<'a>(&'a self, &'a str, usize) -> alloc::vec::Vec<(&'a str, ratatui_core::style::Style)>
@@ -10061,12 +10731,118 @@ pub fn termrock::widgets::hint_row_cols(&[termrock::widgets::HintSpan<'_>]) -> u
 pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>
 pub fn termrock::widgets::place_completion_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
+pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol) -> &'static str
 pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::Theme)
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::Theme, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>
+pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<termrock::style::Theme>
 pub fn termrock::widgets::wrapped_hint_lines(&[termrock::widgets::HintSpan<'_>], u16, &termrock::style::Theme) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub type termrock::widgets::CommandPaletteState<Id> = termrock::widgets::PickerState<Id>
+#[non_exhaustive] pub enum termrock::Appearance
+pub termrock::Appearance::Dark
+pub termrock::Appearance::Light
+pub termrock::Appearance::Unknown
+impl termrock::Appearance
+pub fn termrock::Appearance::detect() -> Self
+pub const fn termrock::Appearance::theme_key(self, termrock::AppearanceThemeMap) -> &'static str
+impl core::clone::Clone for termrock::Appearance
+pub fn termrock::Appearance::clone(&self) -> termrock::Appearance
+impl core::cmp::Eq for termrock::Appearance
+impl core::cmp::PartialEq for termrock::Appearance
+pub fn termrock::Appearance::eq(&self, &termrock::Appearance) -> bool
+impl core::default::Default for termrock::Appearance
+pub fn termrock::Appearance::default() -> termrock::Appearance
+impl core::fmt::Debug for termrock::Appearance
+pub fn termrock::Appearance::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::Appearance
+pub fn termrock::Appearance::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::Appearance
+impl core::marker::StructuralPartialEq for termrock::Appearance
+impl core::marker::Freeze for termrock::Appearance
+impl core::marker::Send for termrock::Appearance
+impl core::marker::Sync for termrock::Appearance
+impl core::marker::Unpin for termrock::Appearance
+impl core::marker::UnsafeUnpin for termrock::Appearance
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::Appearance
+impl core::panic::unwind_safe::UnwindSafe for termrock::Appearance
+impl<Q, K> equivalent::Equivalent<K> for termrock::Appearance where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::Appearance::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::Appearance where U: core::convert::From<T>
+pub fn termrock::Appearance::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::Appearance where U: core::convert::Into<T>
+pub type termrock::Appearance::Error = core::convert::Infallible
+pub fn termrock::Appearance::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::Appearance where U: core::convert::TryFrom<T>
+pub type termrock::Appearance::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::Appearance::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::Appearance where T: core::clone::Clone
+pub type termrock::Appearance::Owned = T
+pub fn termrock::Appearance::clone_into(&self, &mut T)
+pub fn termrock::Appearance::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::Appearance where T: 'static + ?core::marker::Sized
+pub fn termrock::Appearance::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::Appearance where T: ?core::marker::Sized
+pub fn termrock::Appearance::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::Appearance where T: ?core::marker::Sized
+pub fn termrock::Appearance::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::Appearance where T: core::clone::Clone
+pub unsafe fn termrock::Appearance::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::Appearance
+pub fn termrock::Appearance::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::Appearance
+#[non_exhaustive] pub enum termrock::ColorCapability
+pub termrock::ColorCapability::Ansi16
+pub termrock::ColorCapability::Indexed256
+pub termrock::ColorCapability::Monochrome
+pub termrock::ColorCapability::Truecolor
+impl termrock::ColorCapability
+pub fn termrock::ColorCapability::detect_from_env() -> Self
+impl core::clone::Clone for termrock::ColorCapability
+pub fn termrock::ColorCapability::clone(&self) -> termrock::ColorCapability
+impl core::cmp::Eq for termrock::ColorCapability
+impl core::cmp::PartialEq for termrock::ColorCapability
+pub fn termrock::ColorCapability::eq(&self, &termrock::ColorCapability) -> bool
+impl core::default::Default for termrock::ColorCapability
+pub fn termrock::ColorCapability::default() -> termrock::ColorCapability
+impl core::fmt::Debug for termrock::ColorCapability
+pub fn termrock::ColorCapability::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::ColorCapability
+pub fn termrock::ColorCapability::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::ColorCapability
+impl core::marker::StructuralPartialEq for termrock::ColorCapability
+impl core::marker::Freeze for termrock::ColorCapability
+impl core::marker::Send for termrock::ColorCapability
+impl core::marker::Sync for termrock::ColorCapability
+impl core::marker::Unpin for termrock::ColorCapability
+impl core::marker::UnsafeUnpin for termrock::ColorCapability
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ColorCapability
+impl core::panic::unwind_safe::UnwindSafe for termrock::ColorCapability
+impl<Q, K> equivalent::Equivalent<K> for termrock::ColorCapability where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::ColorCapability::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::ColorCapability where U: core::convert::From<T>
+pub fn termrock::ColorCapability::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ColorCapability where U: core::convert::Into<T>
+pub type termrock::ColorCapability::Error = core::convert::Infallible
+pub fn termrock::ColorCapability::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ColorCapability where U: core::convert::TryFrom<T>
+pub type termrock::ColorCapability::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ColorCapability::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ColorCapability where T: core::clone::Clone
+pub type termrock::ColorCapability::Owned = T
+pub fn termrock::ColorCapability::clone_into(&self, &mut T)
+pub fn termrock::ColorCapability::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ColorCapability where T: 'static + ?core::marker::Sized
+pub fn termrock::ColorCapability::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ColorCapability where T: ?core::marker::Sized
+pub fn termrock::ColorCapability::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ColorCapability where T: ?core::marker::Sized
+pub fn termrock::ColorCapability::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ColorCapability where T: core::clone::Clone
+pub unsafe fn termrock::ColorCapability::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ColorCapability
+pub fn termrock::ColorCapability::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ColorCapability
 #[non_exhaustive] pub enum termrock::Density
 pub termrock::Density::Comfortable
 pub termrock::Density::Compact
@@ -10173,6 +10949,54 @@ pub unsafe fn termrock::Motion::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::Motion
 pub fn termrock::Motion::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::Motion
+pub struct termrock::AppearanceThemeMap
+pub termrock::AppearanceThemeMap::dark: &'static str
+pub termrock::AppearanceThemeMap::light: &'static str
+impl core::clone::Clone for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::clone(&self) -> termrock::AppearanceThemeMap
+impl core::cmp::Eq for termrock::AppearanceThemeMap
+impl core::cmp::PartialEq for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::eq(&self, &termrock::AppearanceThemeMap) -> bool
+impl core::default::Default for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::default() -> Self
+impl core::fmt::Debug for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::AppearanceThemeMap
+impl core::marker::StructuralPartialEq for termrock::AppearanceThemeMap
+impl core::marker::Freeze for termrock::AppearanceThemeMap
+impl core::marker::Send for termrock::AppearanceThemeMap
+impl core::marker::Sync for termrock::AppearanceThemeMap
+impl core::marker::Unpin for termrock::AppearanceThemeMap
+impl core::marker::UnsafeUnpin for termrock::AppearanceThemeMap
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::AppearanceThemeMap
+impl core::panic::unwind_safe::UnwindSafe for termrock::AppearanceThemeMap
+impl<Q, K> equivalent::Equivalent<K> for termrock::AppearanceThemeMap where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::AppearanceThemeMap::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::AppearanceThemeMap where U: core::convert::From<T>
+pub fn termrock::AppearanceThemeMap::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::AppearanceThemeMap where U: core::convert::Into<T>
+pub type termrock::AppearanceThemeMap::Error = core::convert::Infallible
+pub fn termrock::AppearanceThemeMap::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::AppearanceThemeMap where U: core::convert::TryFrom<T>
+pub type termrock::AppearanceThemeMap::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::AppearanceThemeMap::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::AppearanceThemeMap where T: core::clone::Clone
+pub type termrock::AppearanceThemeMap::Owned = T
+pub fn termrock::AppearanceThemeMap::clone_into(&self, &mut T)
+pub fn termrock::AppearanceThemeMap::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::AppearanceThemeMap where T: 'static + ?core::marker::Sized
+pub fn termrock::AppearanceThemeMap::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::AppearanceThemeMap where T: ?core::marker::Sized
+pub fn termrock::AppearanceThemeMap::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::AppearanceThemeMap where T: ?core::marker::Sized
+pub fn termrock::AppearanceThemeMap::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::AppearanceThemeMap where T: core::clone::Clone
+pub unsafe fn termrock::AppearanceThemeMap::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::AppearanceThemeMap
+pub fn termrock::AppearanceThemeMap::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::AppearanceThemeMap
 pub struct termrock::Theme
 impl termrock::style::Theme
 pub fn termrock::style::Theme::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
@@ -10181,6 +11005,8 @@ pub fn termrock::style::Theme::slate() -> Self
 pub const fn termrock::style::Theme::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::Theme::tailrocks_phosphor() -> Self
 pub fn termrock::style::Theme::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
+impl termrock::style::Theme
+pub fn termrock::style::Theme::quantized(&self, termrock::ColorCapability) -> Self
 impl core::clone::Clone for termrock::style::Theme
 pub fn termrock::style::Theme::clone(&self) -> termrock::style::Theme
 impl core::cmp::Eq for termrock::style::Theme
@@ -10223,3 +11049,4 @@ pub unsafe fn termrock::style::Theme::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Theme
 pub fn termrock::style::Theme::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Theme
+pub fn termrock::theme_for_appearance(termrock::Appearance) -> termrock::style::Theme

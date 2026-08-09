@@ -14,6 +14,7 @@ mod diff;
 mod edit_core;
 mod form;
 mod hint_bar;
+mod image_surface;
 mod jump_overlay;
 mod list;
 mod log_pane;
@@ -28,6 +29,7 @@ mod table;
 mod tabs;
 mod text_area;
 mod text_input;
+mod theme_picker;
 mod toast;
 mod tree;
 mod view_state;
@@ -56,6 +58,7 @@ pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormS
 pub use hint_bar::{
     Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
 };
+pub use image_surface::{ImageMeta, ImageProtocol, ImageSurface, protocol_emission_hint};
 pub use jump_overlay::{JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges};
 pub use list::{List, ListRow, ListState, RowRole};
 pub use log_pane::{LogPane, LogPaneState};
@@ -77,6 +80,10 @@ pub use tabs::{TAB_GAP, Tab, TabCell, Tabs, TabsState, lay_out_tabs, tab_at_colu
 pub use text_area::{TextArea, TextAreaOutcome, TextAreaState, TextCursor};
 pub use text_input::{
     EditAction, TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation,
+};
+pub use theme_picker::{
+    BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,
+    theme_from_preset_id,
 };
 pub use toast::{Anchor, Severity, Toast, ToastLifetime, ToastState};
 pub use tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState};

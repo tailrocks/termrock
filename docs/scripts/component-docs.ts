@@ -513,4 +513,24 @@ let meter = TokenMeter::new(128_000, 200_000, &theme);`,
 let theme = Theme::default();
 let card = ToolCard::new("shell", "cargo test", ToolStatus::Running, &theme);`,
   },
+
+  ThemePicker: {
+    description: 'A live theme preset list; selection changes drive caller re-render.',
+    primaryStory: 'theme-picker/basic',
+    usage: `use termrock::{Theme, widgets::{BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerState, theme_from_preset_id}};
+
+let theme = Theme::default();
+let picker = ThemePicker::new(BUILTIN_THEME_PRESETS, &theme);
+let mut state = ThemePickerState::new(0);
+let preview = theme_from_preset_id("slate");`,
+  },
+  ImageSurface: {
+    description: 'A framed image slot with protocol labels; pixels stay caller-owned.',
+    primaryStory: 'image-surface/basic',
+    usage: `use termrock::{Theme, widgets::{ImageMeta, ImageProtocol, ImageSurface}};
+
+let theme = Theme::default();
+let meta = ImageMeta { label: "shot.png", pixel_width: Some(64), pixel_height: Some(64), protocol: ImageProtocol::Placeholder };
+let surface = ImageSurface::new(meta, &theme);`,
+  },
 } as const satisfies Record<string, ComponentDoc>

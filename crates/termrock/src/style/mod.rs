@@ -9,11 +9,17 @@
 
 use ratatui_core::style::{Color, Modifier, Style};
 
+mod appearance;
 mod density;
 mod palette;
+mod quantize;
 
+pub use appearance::{Appearance, AppearanceThemeMap, theme_for_appearance};
 pub use density::{Density, Motion};
 pub use palette::Rgb;
+pub use quantize::{
+    ColorCapability, quantize_color, quantize_theme, rgb_to_xterm256,
+};
 use palette::{
     BORDER_GRAY as BORDER_GRAY_RGB, CYAN as CYAN_RGB, DANGER_RED as DANGER_RED_RGB,
     DIALOG_SCROLL_THUMB as DIALOG_SCROLL_THUMB_RGB, DIALOG_SCROLL_TRACK as DIALOG_SCROLL_TRACK_RGB,

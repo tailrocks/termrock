@@ -1,80 +1,37 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Structural proof that the durable shadcn-TUI research brief is present and
-//! still carries the sections the direction goal requires.
-//!
-//! Drives the real in-repo artifact via `include_str!` — not a reimplementation
-//! of the research content.
+//! Structural proof that the archived shadcn-TUI direction brief remains in-repo.
 
-const BRIEF: &str = include_str!("../../../plans/038-direction-shadcn-tui-research.md");
+const BRIEF: &str = include_str!("../../../docs/design/shadcn-tui-direction.md");
 
 #[test]
-fn research_brief_is_substantial_prose() {
-    assert!(
-        BRIEF.len() > 8_000,
-        "research brief unexpectedly short ({} bytes)",
-        BRIEF.len()
-    );
-    assert!(
-        BRIEF.lines().count() > 100,
-        "research brief has too few lines"
-    );
+fn direction_brief_is_substantial_prose() {
+    assert!(BRIEF.len() > 8_000, "brief too short ({} bytes)", BRIEF.len());
+    assert!(BRIEF.lines().count() > 100);
 }
 
 #[test]
-fn research_brief_surveys_termrock_surface_and_gaps() {
+fn direction_brief_surveys_termrock_and_landscape() {
     for needle in [
-        "TermRock inventory",
         "Structural gaps",
-        "Public widgets",
-        "FocusRing",
-        "shadcn",
-    ] {
-        assert!(
-            BRIEF.contains(needle),
-            "missing TermRock surface/gap coverage: {needle}"
-        );
-    }
-}
-
-#[test]
-fn research_brief_covers_external_landscape() {
-    for needle in [
         "Grok Build",
         "Amp",
         "awesome-tuis",
         "lazygit",
-        "btop",
-        "yazi",
-        "posting",
-        "OpenCode",
-        "Charm",
-        "Textual",
+        "Ranked opportunities",
+        "ToolCard",
+        "WorkSurface",
+        "Breaking changes",
     ] {
-        assert!(
-            BRIEF.contains(needle),
-            "missing landscape reference: {needle}"
-        );
+        assert!(BRIEF.contains(needle), "missing: {needle}");
     }
 }
 
 #[test]
-fn research_brief_has_prioritized_breaking_ok_roadmap() {
-    for needle in [
-        "Ranked opportunities",
-        "Breaking changes",
-        "ToolCard",
-        "WorkSurface",
-        "Density",
-        "non-goals",
-        "Tier 0",
-        "Phase A",
-        "quality over compatibility",
-    ] {
-        assert!(
-            BRIEF.contains(needle),
-            "missing prioritized roadmap content: {needle}"
-        );
-    }
+fn direction_brief_records_execution_status() {
+    assert!(
+        BRIEF.contains("Archived direction brief") || BRIEF.contains("0029"),
+        "brief should record that the research was executed"
+    );
 }

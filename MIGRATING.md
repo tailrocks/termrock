@@ -43,6 +43,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0027 | `v0.11.0` | [TextInput insertion boundary repair](migrations/0027-v0.11.0-text-input-boundary-repair.md) |
 | 0028 | `v0.11.0` | [VirtualGrid widget](migrations/0028-v0.11.0-virtual-grid.md) |
 | 0029 | `v0.12.0` | [Experience layer](migrations/0029-v0.12.0-experience-layer.md) |
+| 0030 | `v0.12.0` | [Theme system and patterns](migrations/0030-v0.12.0-theme-system-and-patterns.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

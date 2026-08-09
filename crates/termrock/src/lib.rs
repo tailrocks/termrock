@@ -19,4 +19,7 @@ pub mod widgets;
 #[cfg(feature = "crossterm")]
 pub mod crossterm;
 
-pub use style::{Density, Motion, Theme};
+pub use style::{
+    Appearance, AppearanceThemeMap, ColorCapability, Density, Motion, Theme,
+    theme_for_appearance,
+};
