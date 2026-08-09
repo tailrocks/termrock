@@ -5403,25 +5403,33 @@ pub fn termrock::interaction::SemanticNode<Id, Action>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticNode<Id, Action>
 pub struct termrock::interaction::SemanticScene<Id, Action>
 impl<Id, Action> termrock::interaction::SemanticScene<Id, Action>
+pub fn termrock::interaction::SemanticScene<Id, Action>::action_catalog(&self) -> alloc::vec::Vec<(&Id, &Action)>
 pub fn termrock::interaction::SemanticScene<Id, Action>::begin_frame(&mut self)
+pub fn termrock::interaction::SemanticScene<Id, Action>::by_role(&self, termrock::interaction::SemanticRole) -> alloc::vec::Vec<&termrock::interaction::SemanticNode<Id, Action>>
 pub fn termrock::interaction::SemanticScene<Id, Action>::children_of(&self, &Id) -> alloc::vec::Vec<&termrock::interaction::SemanticNode<Id, Action>> where Id: core::cmp::PartialEq
 pub fn termrock::interaction::SemanticScene<Id, Action>::diagnostics(&self) -> &[termrock::interaction::SemanticDiagnostic]
 pub fn termrock::interaction::SemanticScene<Id, Action>::elements(&self) -> &[termrock::interaction::SemanticNode<Id, Action>]
+pub fn termrock::interaction::SemanticScene<Id, Action>::focus_neighbor(&self, core::option::Option<&Id>, bool, bool) -> core::option::Option<&Id> where Id: core::cmp::PartialEq
 pub fn termrock::interaction::SemanticScene<Id, Action>::focus_order(&self) -> alloc::vec::Vec<&Id>
 pub fn termrock::interaction::SemanticScene<Id, Action>::from_interaction<LayerId>(&termrock::interaction::InteractionScene<Id, LayerId, Action>) -> Self where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub fn termrock::interaction::SemanticScene<Id, Action>::get(&self, &Id) -> core::option::Option<&termrock::interaction::SemanticNode<Id, Action>> where Id: core::cmp::PartialEq
 pub fn termrock::interaction::SemanticScene<Id, Action>::help_lines(&self) -> alloc::vec::Vec<alloc::string::String> where Id: core::fmt::Display
 pub fn termrock::interaction::SemanticScene<Id, Action>::hit_test(&self, ratatui_core::layout::position::Position) -> core::option::Option<&termrock::interaction::SemanticNode<Id, Action>>
+pub fn termrock::interaction::SemanticScene<Id, Action>::hit_test_focusable(&self, ratatui_core::layout::position::Position) -> core::option::Option<&termrock::interaction::SemanticNode<Id, Action>>
 pub fn termrock::interaction::SemanticScene<Id, Action>::hit_test_interactive(&self, ratatui_core::layout::position::Position) -> core::option::Option<&termrock::interaction::SemanticNode<Id, Action>>
+pub fn termrock::interaction::SemanticScene<Id, Action>::is_empty(&self) -> bool
 pub fn termrock::interaction::SemanticScene<Id, Action>::jump_regions(&self) -> alloc::vec::Vec<termrock::interaction::HitRegion<Id>> where Id: core::clone::Clone
+pub fn termrock::interaction::SemanticScene<Id, Action>::len(&self) -> usize
 pub const fn termrock::interaction::SemanticScene<Id, Action>::new() -> Self
 pub fn termrock::interaction::SemanticScene<Id, Action>::nodes(&self) -> &[termrock::interaction::SemanticNode<Id, Action>]
 pub fn termrock::interaction::SemanticScene<Id, Action>::path_to(&self, &Id) -> alloc::vec::Vec<&Id> where Id: core::cmp::PartialEq
 pub fn termrock::interaction::SemanticScene<Id, Action>::register(&mut self, termrock::interaction::SemanticNode<Id, Action>) -> core::result::Result<(), termrock::interaction::SemanticError> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display
 pub fn termrock::interaction::SemanticScene<Id, Action>::register_child(&mut self, Id, termrock::interaction::SemanticNode<Id, Action>) -> core::result::Result<(), termrock::interaction::SemanticError> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display
+pub fn termrock::interaction::SemanticScene<Id, Action>::register_many<I>(&mut self, I) where I: core::iter::traits::collect::IntoIterator<Item = termrock::interaction::SemanticNode<Id, Action>>, Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display
 pub fn termrock::interaction::SemanticScene<Id, Action>::reserve(&mut self, usize)
 pub fn termrock::interaction::SemanticScene<Id, Action>::snapshot(&self) -> termrock::interaction::SemanticSnapshot where Id: core::fmt::Display
 pub fn termrock::interaction::SemanticScene<Id, Action>::snapshot_with<F>(&self, F) -> termrock::interaction::SemanticSnapshot where Id: core::fmt::Display, F: core::ops::function::FnMut(&Action) -> alloc::string::String
+pub fn termrock::interaction::SemanticScene<Id, Action>::to_focus_nodes(&self) -> alloc::vec::Vec<termrock::interaction::FocusNode<Id>> where Id: core::clone::Clone
 impl<Id, Action> core::default::Default for termrock::interaction::SemanticScene<Id, Action>
 pub fn termrock::interaction::SemanticScene<Id, Action>::default() -> Self
 impl<Id: core::clone::Clone, Action: core::clone::Clone> core::clone::Clone for termrock::interaction::SemanticScene<Id, Action>
@@ -5468,6 +5476,8 @@ pub struct termrock::interaction::SemanticSnapshot
 pub termrock::interaction::SemanticSnapshot::diagnostics: alloc::vec::Vec<alloc::string::String>
 pub termrock::interaction::SemanticSnapshot::nodes: alloc::vec::Vec<termrock::interaction::SemanticSnapshotNode>
 impl termrock::interaction::SemanticSnapshot
+pub fn termrock::interaction::SemanticSnapshot::focusable_ids(&self) -> alloc::vec::Vec<&str>
+pub fn termrock::interaction::SemanticSnapshot::from_text(&str) -> Self
 pub fn termrock::interaction::SemanticSnapshot::summary_lines(&self, usize) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::interaction::SemanticSnapshot::to_text(&self) -> alloc::string::String
 impl core::clone::Clone for termrock::interaction::SemanticSnapshot
@@ -5526,6 +5536,7 @@ pub termrock::interaction::SemanticSnapshotNode::id: alloc::string::String
 pub termrock::interaction::SemanticSnapshotNode::invalid: bool
 pub termrock::interaction::SemanticSnapshotNode::label: core::option::Option<alloc::string::String>
 pub termrock::interaction::SemanticSnapshotNode::parent: core::option::Option<alloc::string::String>
+pub termrock::interaction::SemanticSnapshotNode::pressed: bool
 pub termrock::interaction::SemanticSnapshotNode::role: &'static str
 pub termrock::interaction::SemanticSnapshotNode::selected: bool
 pub termrock::interaction::SemanticSnapshotNode::width: u16

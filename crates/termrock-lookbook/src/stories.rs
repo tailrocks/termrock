@@ -953,6 +953,33 @@ pub(crate) fn stories() -> Vec<Story> {
             semantic_scene_tree_story,
         ),
         Story::new(
+            "semantic-scene/hit-jump",
+            "Semantic hit and jump",
+            "SemanticScene",
+            "Hit-test focusable nodes; jump badges from jump_regions.",
+            48,
+            10,
+            semantic_scene_hit_jump_story,
+        ),
+        Story::new(
+            "semantic-scene/snapshot",
+            "Semantic snapshot text",
+            "SemanticScene",
+            "Portable to_text / from_text for remote and AI-readable UI.",
+            56,
+            12,
+            semantic_scene_snapshot_story,
+        ),
+        Story::new(
+            "semantic-scene/virt-window",
+            "Semantic virtualized window",
+            "SemanticScene",
+            "Only visible rows registered (not full logical length).",
+            40,
+            12,
+            semantic_scene_virt_story,
+        ),
+        Story::new(
             "event-result/compose",
             "EventResult bubble compose",
             "EventResult",
@@ -5599,7 +5626,7 @@ fn semantic_scene_tree_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         recipes: &recipes,
         selection_chrome: "gutter",
         semantics: &semantics,
-    focus_graph: &[],
+        focus_graph: &[],
     };
     // Panel chrome + semantics body.
     frame.render_widget(
@@ -5618,6 +5645,133 @@ fn semantic_scene_tree_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         DesignInspector::new(snap, system).panel(InspectorPanel::Semantics),
         inner,
     );
+}
+
+fn semantic_scene_hit_jump_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{SemanticNode, SemanticRole, SemanticScene};
+    use termrock::widgets::{
+        JumpOverlay, Panel, PanelChrome, assign_jump_badges_from_semantics,
+    };
+    use ratatui::layout::Position;
+
+    let mut scene = SemanticScene::<&str>::new();
+    let mid = area.y.saturating_add(area.height / 2);
+    let _ = scene.register(
+        SemanticNode::control("left", Rect::new(area.x, mid, 8, 1))
+            .role(SemanticRole::Button)
+            .label("Left"),
+    );
+    let _ = scene.register(
+        SemanticNode::control(
+            "right",
+            Rect::new(area.x.saturating_add(12), mid, 8, 1),
+        )
+        .role(SemanticRole::Button)
+        .label("Right"),
+    );
+    let hit = scene
+        .hit_test_focusable(Position::new(area.x.saturating_add(13), mid))
+        .map(|n| n.id)
+        .unwrap_or("—");
+    let targets = assign_jump_badges_from_semantics(&scene);
+    frame.render_widget(
+        Panel::new(system)
+            .title("hit+jump")
+            .subtitle(hit)
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    frame.render_widget(JumpOverlay::new(&targets, system), area);
+}
+
+fn semantic_scene_snapshot_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticSnapshot};
+    use termrock::widgets::Panel;
+
+    let mut scene = SemanticScene::<&str, &str>::new();
+    let _ = scene.register(
+        SemanticNode::content("root", area)
+            .role(SemanticRole::Chrome)
+            .label("App"),
+    );
+    let _ = scene.register_child(
+        "root",
+        SemanticNode::control(
+            "btn",
+            Rect::new(area.x.saturating_add(1), area.y.saturating_add(1), 10, 1),
+        )
+        .role(SemanticRole::Button)
+        .label("Run")
+        .actions(vec!["activate"]),
+    );
+    let text = scene.snapshot_with(|a| (*a).to_string()).to_text();
+    let parsed = SemanticSnapshot::from_text(&text);
+    let round = parsed.to_text();
+    frame.render_widget(Panel::new(system).title("snapshot"), area);
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    let mut y = inner.y;
+    for line in round.lines().take(usize::from(inner.height)) {
+        frame.buffer_mut().set_stringn(
+            inner.x,
+            y,
+            line,
+            usize::from(inner.width),
+            system.style(Role::TextMuted),
+        );
+        y = y.saturating_add(1);
+    }
+}
+
+fn semantic_scene_virt_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{SemanticNode, SemanticRole, SemanticScene};
+    use termrock::widgets::{Panel, PanelChrome};
+
+    let logical = 1_000_000usize;
+    let visible = usize::from(area.height.saturating_sub(2)).max(1).min(20);
+    let offset = 42_000usize;
+    let mut scene = SemanticScene::<usize>::new();
+    scene.reserve(visible);
+    scene.register_many((0..visible).map(|i| {
+        let id = offset + i;
+        SemanticNode::control(
+            id,
+            Rect::new(
+                area.x.saturating_add(1),
+                area.y.saturating_add(1).saturating_add(i as u16),
+                area.width.saturating_sub(2),
+                1,
+            ),
+        )
+        .role(SemanticRole::ListItem)
+        .label(format!("row {id}"))
+    }));
+    let title = format!("virt {}/{}", scene.len(), logical);
+    frame.render_widget(
+        Panel::new(system)
+            .title(&title)
+            .chrome(PanelChrome::Normal),
+        area,
+    );
+    let summary = scene.snapshot().summary_lines(visible.min(8));
+    let mut y = area.y.saturating_add(1);
+    for line in summary {
+        if y >= area.bottom().saturating_sub(1) {
+            break;
+        }
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            y,
+            &line,
+            usize::from(area.width.saturating_sub(2)),
+            system.style(Role::TextMuted),
+        );
+        y = y.saturating_add(1);
+    }
 }
 
 fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

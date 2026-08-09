@@ -918,6 +918,8 @@ pub struct SemanticSnapshotNode {
     pub busy: bool,
     /// Invalid flag.
     pub invalid: bool,
+    /// Pressed / active pointer flag.
+    pub pressed: bool,
     /// Action names (Display form).
     pub actions: Vec<String>,
 }
@@ -946,6 +948,7 @@ impl SemanticSnapshot {
                     n.disabled.then_some("d"),
                     n.selected.then_some("s"),
                     n.busy.then_some("b"),
+                    n.pressed.then_some("p"),
                 ]
                 .into_iter()
                 .flatten()
@@ -960,7 +963,19 @@ impl SemanticSnapshot {
         lines
     }
 
+    /// Focusable node ids in snapshot order.
+    #[must_use]
+    pub fn focusable_ids(&self) -> Vec<&str> {
+        self.nodes
+            .iter()
+            .filter(|n| n.focusable && !n.disabled && !n.hidden)
+            .map(|n| n.id.as_str())
+            .collect()
+    }
+
     /// Serializes to a stable newline text format (one node per line).
+    ///
+    /// Format is line-oriented TSV-ish fields for remote clients and AI tools.
     #[must_use]
     pub fn to_text(&self) -> String {
         let mut out = String::new();
@@ -980,7 +995,7 @@ impl SemanticSnapshot {
                 .replace('\n', " ");
             let actions = n.actions.join(",").replace('\t', " ");
             out.push_str(&format!(
-                "node\tid={}\tparent={}\trole={}\tx={}\ty={}\tw={}\th={}\tlabel={}\tfocusable={}\tdisabled={}\thidden={}\tselected={}\texpanded={}\tchecked={}\tbusy={}\tinvalid={}\tactions={}\tdesc={}\n",
+                "node\tid={}\tparent={}\trole={}\tx={}\ty={}\tw={}\th={}\tlabel={}\tfocusable={}\tdisabled={}\thidden={}\tselected={}\texpanded={}\tchecked={}\tbusy={}\tinvalid={}\tpressed={}\tactions={}\tdesc={}\n",
                 n.id,
                 parent,
                 n.role,
@@ -997,6 +1012,7 @@ impl SemanticSnapshot {
                 u8::from(n.checked),
                 u8::from(n.busy),
                 u8::from(n.invalid),
+                u8::from(n.pressed),
                 actions,
                 desc,
             ));
@@ -1008,6 +1024,97 @@ impl SemanticSnapshot {
             ));
         }
         out
+    }
+
+    /// Parses [`Self::to_text`] output (best-effort; unknown fields ignored).
+    #[must_use]
+    pub fn from_text(text: &str) -> Self {
+        let mut nodes = Vec::new();
+        let mut diagnostics = Vec::new();
+        for line in text.lines() {
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+            if let Some(rest) = line.strip_prefix("diag\t") {
+                diagnostics.push(rest.to_string());
+                continue;
+            }
+            if !line.starts_with("node\t") {
+                continue;
+            }
+            let mut map = std::collections::BTreeMap::<&str, &str>::new();
+            for field in line.split('\t').skip(1) {
+                if let Some((k, v)) = field.split_once('=') {
+                    map.insert(k, v);
+                }
+            }
+            let flag = |k: &str| map.get(k).copied().unwrap_or("0") == "1";
+            let parse_u16 = |k: &str| {
+                map.get(k)
+                    .and_then(|s| s.parse::<u16>().ok())
+                    .unwrap_or(0)
+            };
+            let parent = map.get("parent").copied().filter(|p| *p != "-" && !p.is_empty());
+            let label = map
+                .get("label")
+                .copied()
+                .filter(|s| !s.is_empty())
+                .map(str::to_string);
+            let description = map
+                .get("desc")
+                .copied()
+                .filter(|s| !s.is_empty())
+                .map(str::to_string);
+            let actions = map
+                .get("actions")
+                .copied()
+                .filter(|s| !s.is_empty())
+                .map(|s| s.split(',').map(str::to_string).collect())
+                .unwrap_or_default();
+            nodes.push(SemanticSnapshotNode {
+                id: map.get("id").unwrap_or(&"").to_string(),
+                parent: parent.map(str::to_string),
+                role: match map.get("role").copied().unwrap_or("content") {
+                    // snapshot stores static role tokens; keep as leaked-free via as_str match
+                    "control" => "control",
+                    "overlay" => "overlay",
+                    "chrome" => "chrome",
+                    "button" => "button",
+                    "input" => "input",
+                    "list" => "list",
+                    "list_item" => "list_item",
+                    "tree" => "tree",
+                    "table" => "table",
+                    "tab" => "tab",
+                    "dialog" => "dialog",
+                    "menu" => "menu",
+                    "status" => "status",
+                    "heading" => "heading",
+                    "image" => "image",
+                    "progress" => "progress",
+                    "custom" => "custom",
+                    _ => "content",
+                },
+                label,
+                description,
+                x: parse_u16("x"),
+                y: parse_u16("y"),
+                width: parse_u16("w"),
+                height: parse_u16("h"),
+                focusable: flag("focusable"),
+                disabled: flag("disabled"),
+                hidden: flag("hidden"),
+                selected: flag("selected"),
+                expanded: flag("expanded"),
+                checked: flag("checked"),
+                busy: flag("busy"),
+                invalid: flag("invalid"),
+                pressed: flag("pressed"),
+                actions,
+            });
+        }
+        Self { nodes, diagnostics }
     }
 }
 
@@ -1256,6 +1363,7 @@ impl<Id, Action> SemanticScene<Id, Action> {
                 checked: n.state.checked,
                 busy: n.state.busy,
                 invalid: n.state.invalid,
+                pressed: n.state.pressed,
                 actions: n.actions.iter().map(&mut action_name).collect(),
             })
             .collect();
@@ -1280,6 +1388,118 @@ impl<Id, Action> SemanticScene<Id, Action> {
         Id: std::fmt::Display,
     {
         self.snapshot_with(|_| String::new())
+    }
+
+    /// Topmost focusable interactive node at `position`.
+    #[must_use]
+    pub fn hit_test_focusable(&self, position: Position) -> Option<&SemanticNode<Id, Action>> {
+        self.nodes.iter().rev().find(|node| {
+            node.focusable
+                && !node.hidden
+                && !node.disabled
+                && node.area.width > 0
+                && node.area.height > 0
+                && node.area.contains(position)
+        })
+    }
+
+    /// Nodes with a given role (registration order).
+    #[must_use]
+    pub fn by_role(&self, role: SemanticRole) -> Vec<&SemanticNode<Id, Action>> {
+        self.nodes.iter().filter(|n| n.role == role).collect()
+    }
+
+    /// Next/previous focusable id in registration order (wraps optional).
+    #[must_use]
+    pub fn focus_neighbor(&self, current: Option<&Id>, forward: bool, wrap: bool) -> Option<&Id>
+    where
+        Id: PartialEq,
+    {
+        let order = self.focus_order();
+        if order.is_empty() {
+            return None;
+        }
+        let Some(cur) = current else {
+            return if forward {
+                order.first().copied()
+            } else {
+                order.last().copied()
+            };
+        };
+        let pos = order.iter().position(|id| *id == cur)?;
+        if forward {
+            if pos + 1 < order.len() {
+                Some(order[pos + 1])
+            } else if wrap {
+                order.first().copied()
+            } else {
+                None
+            }
+        } else if pos > 0 {
+            Some(order[pos - 1])
+        } else if wrap {
+            order.last().copied()
+        } else {
+            None
+        }
+    }
+
+    /// Bulk-register visible virtualized rows (skips errors; records diagnostics).
+    ///
+    /// Prefer this for large windows: call [`Self::reserve`] first with the
+    /// visible count (not logical length).
+    pub fn register_many<I>(&mut self, nodes: I)
+    where
+        I: IntoIterator<Item = SemanticNode<Id, Action>>,
+        Id: Clone + PartialEq + std::fmt::Display,
+    {
+        for node in nodes {
+            let _ = self.register(node);
+        }
+    }
+
+    /// Project focusable nodes into [`super::FocusNode`] leaves for FocusGraph.
+    #[must_use]
+    pub fn to_focus_nodes(&self) -> Vec<super::FocusNode<Id>>
+    where
+        Id: Clone,
+    {
+        self.nodes
+            .iter()
+            .filter(|n| n.focusable && !n.hidden)
+            .map(|n| {
+                let mut leaf = super::FocusNode::leaf(n.id.clone(), n.area);
+                leaf.enabled = !n.disabled;
+                leaf
+            })
+            .collect()
+    }
+
+    /// Flatten advertised actions with owner id (help / command palette seed).
+    #[must_use]
+    pub fn action_catalog(&self) -> Vec<(&Id, &Action)> {
+        let mut out = Vec::new();
+        for n in &self.nodes {
+            if n.hidden || n.disabled {
+                continue;
+            }
+            for a in &n.actions {
+                out.push((&n.id, a));
+            }
+        }
+        out
+    }
+
+    /// Count of registered nodes (Studio / diagnostics).
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.nodes.len()
+    }
+
+    /// Whether the scene has no nodes.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
     }
 
     /// Projects an [`InteractionScene`] into a flat semantic scene (no parents).
@@ -1785,5 +2005,121 @@ mod tests {
             [SemanticDiagnostic::EmptyArea { .. }]
         ));
         assert!(scene.hit_test(Position::new(0, 0)).is_none());
+    }
+
+    #[test]
+    fn semantic_focus_neighbor_and_by_role() {
+        let mut scene = SemanticScene::<&str>::new();
+        scene
+            .register(
+                SemanticNode::control("a", Rect::new(0, 0, 2, 1))
+                    .role(SemanticRole::Button)
+                    .label("A"),
+            )
+            .unwrap();
+        scene
+            .register(
+                SemanticNode::control("b", Rect::new(2, 0, 2, 1))
+                    .role(SemanticRole::Button)
+                    .label("B"),
+            )
+            .unwrap();
+        scene
+            .register(
+                SemanticNode::content("note", Rect::new(0, 1, 4, 1)).role(SemanticRole::Heading),
+            )
+            .unwrap();
+        assert_eq!(scene.by_role(SemanticRole::Button).len(), 2);
+        assert_eq!(
+            scene.focus_neighbor(Some(&"a"), true, false),
+            Some(&"b")
+        );
+        assert_eq!(
+            scene.focus_neighbor(Some(&"b"), true, true),
+            Some(&"a")
+        );
+        assert_eq!(
+            scene.hit_test_focusable(Position::new(3, 0)).map(|n| n.id),
+            Some("b")
+        );
+    }
+
+    #[test]
+    fn semantic_snapshot_roundtrip_text() {
+        let mut scene = SemanticScene::<&str, Act>::new();
+        scene
+            .register(
+                SemanticNode::control("ok", Rect::new(1, 2, 8, 1))
+                    .role(SemanticRole::Button)
+                    .label("Confirm")
+                    .state(SemanticState {
+                        pressed: true,
+                        ..Default::default()
+                    })
+                    .actions(vec![Act::Confirm]),
+            )
+            .unwrap();
+        let snap = scene.snapshot_with(|a| format!("{a:?}"));
+        let text = snap.to_text();
+        let parsed = SemanticSnapshot::from_text(&text);
+        assert_eq!(parsed.nodes.len(), 1);
+        assert_eq!(parsed.nodes[0].id, "ok");
+        assert_eq!(parsed.nodes[0].role, "button");
+        assert!(parsed.nodes[0].pressed);
+        assert_eq!(parsed.nodes[0].x, 1);
+        assert_eq!(parsed.focusable_ids(), vec!["ok"]);
+        let again = SemanticSnapshot::from_text(&parsed.to_text());
+        assert_eq!(again.nodes[0].id, snap.nodes[0].id);
+    }
+
+    #[test]
+    fn semantic_register_many_and_focus_nodes() {
+        let mut scene = SemanticScene::<usize>::new();
+        scene.reserve(200);
+        scene.register_many((0..100).map(|i| {
+            SemanticNode::control(i, Rect::new(0, (i % 20) as u16, 12, 1)).label(format!("r{i}"))
+        }));
+        assert_eq!(scene.len(), 100);
+        let focus_nodes = scene.to_focus_nodes();
+        assert_eq!(focus_nodes.len(), 100);
+        assert!(focus_nodes[0].focusable);
+    }
+
+    #[test]
+    fn semantic_action_catalog() {
+        let mut scene = SemanticScene::<&str, Act>::new();
+        scene
+            .register(
+                SemanticNode::control("ok", Rect::new(0, 0, 2, 1)).actions(vec![Act::Confirm]),
+            )
+            .unwrap();
+        scene
+            .register(
+                SemanticNode::control("x", Rect::new(2, 0, 2, 1))
+                    .disabled(true)
+                    .actions(vec![Act::Cancel]),
+            )
+            .unwrap();
+        let catalog = scene.action_catalog();
+        assert_eq!(catalog.len(), 1);
+        assert_eq!(*catalog[0].0, "ok");
+    }
+
+    #[test]
+    fn semantic_virtualizer_window_not_full_len() {
+        // Only register the visible window (contract for large lists).
+        let logical = 1_000_000usize;
+        let visible = 40usize;
+        let offset = 250_000usize;
+        let mut scene = SemanticScene::<usize>::new();
+        scene.reserve(visible);
+        scene.register_many((0..visible).map(|i| {
+            let id = offset + i;
+            SemanticNode::control(id, Rect::new(0, i as u16, 20, 1)).label(format!("row-{id}"))
+        }));
+        assert_eq!(scene.len(), visible);
+        assert!(scene.len() << 10 < logical); // << logical
+        assert!(scene.get(&(offset + 5)).is_some());
+        assert!(scene.get(&0).is_none());
     }
 }

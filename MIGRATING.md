@@ -115,6 +115,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0099 | `v0.13.0` | [Center](migrations/0099-v0.13.0-center.md) |
 | 0100 | `v0.13.0` | [DesignSystem recipes & presets](migrations/0100-v0.13.0-design-system-recipes.md) |
 | 0101 | `v0.13.0` | [UiContext](migrations/0101-v0.13.0-ui-context.md) |
+| 0102 | `v0.13.0` | [SemanticScene premium](migrations/0102-v0.13.0-semantic-scene-premium.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

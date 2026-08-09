@@ -352,6 +352,53 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
+            id: "SemanticScene".into(),
+            title: "SemanticScene".into(),
+            description: "Frame-local semantic tree: register, hit-test, jump, help, snapshots, FocusGraph projection.".into(),
+            kind: RegistryItemKind::Primitive,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::interaction::SemanticScene".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/interaction/scene.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "nodes".into(),
+                    label: "Semantic nodes".into(),
+                },
+                AnatomyPartRef {
+                    id: "diagnostics".into(),
+                    label: "Collision diagnostics".into(),
+                },
+                AnatomyPartRef {
+                    id: "snapshot".into(),
+                    label: "Portable snapshot".into(),
+                },
+            ],
+            semantic_roles: vec![SemanticRoleRef {
+                id: "SemanticRole::*".into(),
+            }],
+            variants: vec![],
+            outcomes: vec![],
+            stories: vec![
+                "semantic-scene/tree".into(),
+                "semantic-scene/hit-jump".into(),
+                "semantic-scene/snapshot".into(),
+                "semantic-scene/virt-window".into(),
+            ],
+            tests: vec!["interaction::scene".into()],
+            migration: Some("migrations/0102-v0.13.0-semantic-scene-premium.md".into()),
+            provenance: prov("crates/termrock/src/interaction/scene.rs"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
             id: "UiContext".into(),
             title: "UiContext".into(),
             description: "Per-frame coordination: design, caps, keymap, scene, focus, overlays, semantics, clock — no retained DOM.".into(),
