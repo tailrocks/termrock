@@ -1,6 +1,6 @@
 ---
 title: Center
-description: 'Axis-aware constrained centering for empty states, dialogs, and onboarding.'
+description: 'Axis-aware constrained centering for empty states, dialogs, onboarding, and failure screens.'
 ---
 
 ## Previews
@@ -12,6 +12,26 @@ description: 'Axis-aware constrained centering for empty states, dialogs, and on
 ### `center/dialog`
 
 ![Center dialog](/component-previews/center-dialog.svg)
+
+### `center/horizontal`
+
+![Center horizontal](/component-previews/center-horizontal.svg)
+
+### `center/vertical`
+
+![Center vertical](/component-previews/center-vertical.svg)
+
+### `center/max`
+
+![Center max-width](/component-previews/center-max.svg)
+
+### `center/onboarding`
+
+![Onboarding recipe](/component-previews/center-onboarding.svg)
+
+### `center/failure`
+
+![Failure recipe](/component-previews/center-failure.svg)
 
 ### `center/tiny`
 
@@ -27,8 +47,20 @@ description: 'Axis-aware constrained centering for empty states, dialogs, and on
 use termrock::layout::{Center, CenterAxis, centered_rect};
 
 let child = Center::new(40, 12).layout(area).child;
-// legacy alias with safe margin:
+
+// dialog = safe 1-cell margin when room
 let child = centered_rect(52, 9, area);
+
+// recipes
+let hero = Center::onboarding(48, 10).layout(area).child;
+let fail = Center::failure(40, 8).layout(area).child;
+
+// caps
+let child = Center::new(100, 20)
+    .max(48, 16)
+    .min(12, 4)
+    .layout(area)
+    .child;
 ```
 
 ## Axes
@@ -41,15 +73,25 @@ let child = centered_rect(52, 9, area);
 
 ## Semantics
 
-Center is **not** interactive. Do not register it on FocusGraph — register the
-**child** widgets only.
+Center is **not** interactive and must not be a focus node. Register only the
+**child** widgets, or:
+
+```rust
+layout.register_child_semantics(&mut scene, "empty", "No items");
+```
+
+## Safety
+
+Child is always ⊆ outer. Empty / tiny terminals never underflow. Preferred size
+is clamped by max, min (when room), margins, and available cells.
 
 ## Common mistakes
 
 - Treating Center as a Panel (it does not paint borders)
-- Forgetting max-width on wide terminals (content stretches too wide)
+- Registering Center on FocusGraph (register children only)
+- Forgetting max-width on wide terminals
 - Assuming underflow on tiny sizes (child is clamped inside)
 
 ## Migration
 
-`migrations/0099-v0.13.0-center.md`
+See `migrations/0106-v0.13.0-center-premium.md` (extends 0099).

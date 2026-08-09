@@ -276,6 +276,33 @@ pub(crate) fn stories() -> Vec<Story> {
             center_tiny_story,
         ),
         Story::new(
+            "center/vertical",
+            "Center vertical only",
+            "Center",
+            "Vertical axis: width fills; height preferred.",
+            40,
+            10,
+            center_vertical_story,
+        ),
+        Story::new(
+            "center/onboarding",
+            "Center onboarding recipe",
+            "Center",
+            "Onboarding hero with max-width and safe margin.",
+            56,
+            14,
+            center_onboarding_story,
+        ),
+        Story::new(
+            "center/failure",
+            "Center failure recipe",
+            "Center",
+            "Failure/error panel placement with caps.",
+            48,
+            12,
+            center_failure_story,
+        ),
+        Story::new(
             "grid/columns",
             "Grid columns",
             "Grid",
@@ -3518,6 +3545,59 @@ fn center_tiny_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let child = Center::new(40, 20).safe_margin(true).layout(area).child;
     let _ = Panel::new(system)
         .title("tiny")
+        .paint(child, frame.buffer_mut(), None);
+}
+
+fn center_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{Center, CenterAxis};
+    use termrock::widgets::Panel;
+    let child = Center::new(10, 3)
+        .axis(CenterAxis::Vertical)
+        .layout(area)
+        .child;
+    let body = Panel::new(system)
+        .title("v-center")
+        .paint(child, frame.buffer_mut(), None);
+    if body.width > 2 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "fills width",
+            usize::from(body.width),
+            system.style(Role::TextMuted),
+        );
+    }
+}
+
+fn center_onboarding_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::Center;
+    use termrock::widgets::Panel;
+    let child = Center::onboarding(48, 8).layout(area).child;
+    let body = Panel::new(system)
+        .title("Welcome")
+        .subtitle("onboarding")
+        .paint(child, frame.buffer_mut(), None);
+    if body.width > 2 && body.height > 0 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "Get started with TermRock",
+            usize::from(body.width),
+            system.style(Role::Text),
+        );
+    }
+}
+
+fn center_failure_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::Center;
+    use termrock::widgets::{Panel, PanelBody, PanelChrome};
+    let child = Center::failure(40, 6).layout(area).child;
+    let _ = Panel::new(system)
+        .title("Failed")
+        .emphasis(PanelChrome::Danger)
+        .body(PanelBody::Error)
+        .body_title("Timeout")
+        .body_detail("upstream 30s")
         .paint(child, frame.buffer_mut(), None);
 }
 

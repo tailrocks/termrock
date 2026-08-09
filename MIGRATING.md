@@ -119,6 +119,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0103 | `v0.13.0` | [Panel / Card anatomy](migrations/0103-v0.13.0-panel-card-anatomy.md) |
 | 0104 | `v0.13.0` | [Stack / Inline premium](migrations/0104-v0.13.0-stack-inline-premium.md) |
 | 0105 | `v0.13.0` | [Grid premium](migrations/0105-v0.13.0-grid-premium.md) |
+| 0106 | `v0.13.0` | [Center premium](migrations/0106-v0.13.0-center-premium.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

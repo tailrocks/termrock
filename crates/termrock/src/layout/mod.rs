@@ -88,14 +88,20 @@ pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
         .min(available_height.max(spec.min_height));
     match spec.placement {
         Placement::Centered => Center::new(width, height)
+            .max(width, height)
+            .min(spec.min_width.min(width), spec.min_height.min(height))
             .margin(spec.horizontal_margin / 2, spec.vertical_margin / 2)
+            .safe_margin(true)
             .layout(outer)
             .child,
         Placement::Top => {
-            let x = outer
-                .x
-                .saturating_add(outer.width.saturating_sub(width) / 2);
-            Rect::new(x, outer.y, width, height)
+            // Horizontal center only; top-aligned (onboarding banners, etc.).
+            let child = Center::new(width, height)
+                .axis(CenterAxis::Horizontal)
+                .max_width(width)
+                .layout(outer)
+                .child;
+            Rect::new(child.x, outer.y, child.width, height.min(outer.height))
         }
     }
 }

@@ -7154,14 +7154,19 @@ pub struct termrock::layout::Center
 impl termrock::layout::Center
 pub const fn termrock::layout::Center::axis(self, termrock::layout::CenterAxis) -> Self
 pub const fn termrock::layout::Center::dialog(u16, u16) -> Self
+pub const fn termrock::layout::Center::failure(u16, u16) -> Self
 pub const fn termrock::layout::Center::from_spec(termrock::layout::CenterSpec) -> Self
 pub fn termrock::layout::Center::layout(self, ratatui_core::layout::rect::Rect) -> termrock::layout::CenterLayout
 pub const fn termrock::layout::Center::margin(self, u16, u16) -> Self
+pub const fn termrock::layout::Center::max(self, u16, u16) -> Self
 pub const fn termrock::layout::Center::max_height(self, u16) -> Self
 pub const fn termrock::layout::Center::max_width(self, u16) -> Self
 pub const fn termrock::layout::Center::min(self, u16, u16) -> Self
 pub const fn termrock::layout::Center::new(u16, u16) -> Self
+pub const fn termrock::layout::Center::onboarding(u16, u16) -> Self
 pub const fn termrock::layout::Center::safe_margin(self, bool) -> Self
+pub const fn termrock::layout::Center::size(self, u16, u16) -> Self
+pub const fn termrock::layout::Center::spec(self) -> termrock::layout::CenterSpec
 impl core::clone::Clone for termrock::layout::Center
 pub fn termrock::layout::Center::clone(&self) -> termrock::layout::Center
 impl core::cmp::Eq for termrock::layout::Center
@@ -7211,7 +7216,9 @@ pub termrock::layout::CenterLayout::child: ratatui_core::layout::rect::Rect
 pub termrock::layout::CenterLayout::content: ratatui_core::layout::rect::Rect
 impl termrock::layout::CenterLayout
 pub fn termrock::layout::CenterLayout::contains_child(self, u16, u16) -> bool
+pub fn termrock::layout::CenterLayout::debug_summary(self) -> alloc::string::String
 pub const fn termrock::layout::CenterLayout::has_child(self) -> bool
+pub fn termrock::layout::CenterLayout::register_child_semantics<Id, Action>(self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, &str) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 impl core::clone::Clone for termrock::layout::CenterLayout
 pub fn termrock::layout::CenterLayout::clone(&self) -> termrock::layout::CenterLayout
 impl core::cmp::Eq for termrock::layout::CenterLayout
@@ -7269,11 +7276,14 @@ pub termrock::layout::CenterSpec::width: u16
 impl termrock::layout::CenterSpec
 pub const fn termrock::layout::CenterSpec::axis(self, termrock::layout::CenterAxis) -> Self
 pub const fn termrock::layout::CenterSpec::dialog(u16, u16) -> Self
+pub const fn termrock::layout::CenterSpec::failure(u16, u16) -> Self
 pub const fn termrock::layout::CenterSpec::margin(self, u16, u16) -> Self
 pub const fn termrock::layout::CenterSpec::max(self, core::option::Option<u16>, core::option::Option<u16>) -> Self
 pub const fn termrock::layout::CenterSpec::min(self, u16, u16) -> Self
 pub const fn termrock::layout::CenterSpec::new(u16, u16) -> Self
+pub const fn termrock::layout::CenterSpec::onboarding(u16, u16) -> Self
 pub const fn termrock::layout::CenterSpec::safe_margin(self, bool) -> Self
+pub const fn termrock::layout::CenterSpec::size(self, u16, u16) -> Self
 impl core::clone::Clone for termrock::layout::CenterSpec
 pub fn termrock::layout::CenterSpec::clone(&self) -> termrock::layout::CenterSpec
 impl core::cmp::Eq for termrock::layout::CenterSpec
