@@ -1,11 +1,12 @@
 # Performance baseline
 
-> **Staleness note (2026-07-16):** the measurements below predate the
-> v0.7/v0.8 widget additions (Form, SplitPane, Tree) and describe the
-> v0.6.0 candidate. The current enforced hot-path budget lives in
-> `crates/termrock/COMPONENTS.md` (tree_hot_path, 250 ms batch budget).
-> Re-measure on equivalent hardware before citing these numbers for the
-> 0.8.x line.
+> **Authoritative budgets (0.12.x):** `termrock::perf::budgets()` and
+> [`docs/design/streaming-performance.md`](docs/design/streaming-performance.md).
+> CI: `tree_hot_path` uses `check_batch_budget("tree_viewport_10k")` and
+> `check_zero_alloc_steady("tree_viewport_10k_alloc")` (100× paint / 250 ms
+> debug + zero steady alloc).
+>
+> **Staleness note (2026-07-16 table):** historical v0.6 donor comparison only.
 
 Measured on 2026-07-15 on Linux aarch64 after jackin❯ parity, using Rust 1.97.0. These budgets compare against the frozen donor baseline; they guard behavior as well as speed.
 

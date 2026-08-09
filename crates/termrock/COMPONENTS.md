@@ -86,11 +86,12 @@ filtering, label text, kind annotations, and commit policy (token replace).
 
 The `tree_hot_path` evidence renders a warmed 40-row viewport over 10,000
 borrowed nodes 100 times in the Cargo test/debug profile, asserts bounded
-painted regions, rejects allocator or reallocator calls, and enforces a 250 ms
-batch budget (2.5 ms/render). The 2026-07-16 baseline was 45.09 ms on an Apple
-M1 Max with 64 GiB, macOS 26.5.2, and Rust 1.97.0. The 250 ms threshold is the
-cross-run/CI tolerance; a slower result blocks the component gate until measured
-and deliberately revised with new environment evidence.
+painted regions, and enforces named budgets `tree_viewport_10k` /
+`tree_viewport_10k_alloc` via `termrock::perf` (`check_batch_budget` 250 ms,
+`check_zero_alloc_steady`). Full budget table:
+`docs/design/streaming-performance.md` and `termrock::perf::budgets()`.
+The 2026-07-16 baseline was 45.09 ms on an Apple M1 Max; raising a budget
+requires a deliberate PR with new measurement evidence.
 
 Every component uses borrowed render data and stable IDs where interaction identity is required. Consumers own labels, validation, filtering, lifecycle, output, and domain models. Canonical neutral stories and SVG previews are maintained by `termrock-lookbook`; the catalog coverage check derives the component inventory from `docs/api/public-api.txt`, requires at least one typed story, documented story ID, and deterministic preview per public widget, and requires an exact keyboard/mouse/focus/non-color/Unicode/narrow-terminal classification in `docs/api/component-contracts.json`.
 

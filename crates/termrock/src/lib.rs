@@ -10,6 +10,7 @@ pub mod keymap;
 pub mod layout;
 pub mod osc;
 pub mod patterns;
+pub mod perf;
 pub mod runtime;
 pub mod scroll;
 pub mod style;
@@ -31,6 +32,12 @@ pub use layout::{
     AdaptiveAnatomy, AnatomyPart, ContentPriority, ContractionStage, OverflowBehavior,
     ResponsiveSurface, SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER,
     contract_parts, essential_survives,
+};
+pub use perf::{
+    BackpressureSignal, BudgetKind, ComponentBudget, DirtyFlags, FollowMode, NewContentIndicator,
+    PerfClass, ScrollAnchor, ScrollAnchorKind, StreamBatch, StreamCoalescer, UpdatePriority,
+    apply_follow_after_append, budget_for, budgets, check_batch_budget, check_zero_alloc_steady,
+    pause_follow_on_user_scroll,
 };
 pub use style::{
     Appearance, AppearanceThemeMap, CapabilityPreviewHost, ColorCapability, Density, DesignSystem,
