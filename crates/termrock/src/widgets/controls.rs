@@ -183,11 +183,11 @@ pub enum RadioOutcome<Id> {
     Selected(Id),
 }
 
-/// Radio group state: selected value + roving active descendant.
+/// Radio group state: selected value + collection active descendant.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RadioState<Id> {
     selected: Option<Id>,
-    roving: crate::interaction::RovingFocusGroup<Id>,
+    collection: crate::interaction::CollectionState<Id>,
     enabled: bool,
     regions: Vec<Rect>,
 }
@@ -196,14 +196,12 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
     /// Empty selection.
     #[must_use]
     pub fn new(selected: Option<Id>) -> Self {
-        let mut roving = crate::interaction::RovingFocusGroup::new()
+        let mut collection = crate::interaction::CollectionState::new()
             .orientation(crate::interaction::RovingOrientation::Vertical);
-        if let Some(id) = selected.clone() {
-            roving.set_active(Some(id));
-        }
+        collection.set_active(selected.clone());
         Self {
             selected,
-            roving,
+            collection,
             enabled: true,
             regions: Vec::new(),
         }
@@ -215,32 +213,33 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         self.selected.as_ref()
     }
 
-    /// Active descendant (roving cursor); may differ from selected until Activate.
+    /// Active descendant (cursor); may differ from selected until Activate.
     #[must_use]
     pub const fn active(&self) -> Option<&Id> {
-        self.roving.active()
+        self.collection.active()
     }
 
-    /// Controlled select (also moves roving active when `Some`).
+    /// Controlled select (also moves collection active when `Some`).
     pub fn set_selected(&mut self, selected: Option<Id>) {
         self.selected = selected.clone();
         if selected.is_some() {
-            self.roving.set_active(selected);
+            self.collection.set_active(selected);
         }
     }
 
-    fn entries_plain(options: &[Id]) -> Vec<crate::interaction::RovingEntry<Id>> {
+    fn entries_plain(options: &[Id]) -> Vec<crate::interaction::CollectionItem<Id>> {
         options
             .iter()
-            .map(|id| crate::interaction::RovingEntry {
+            .map(|id| crate::interaction::CollectionItem {
                 id: id.clone(),
                 enabled: true,
                 label: String::new(),
+                parent: None,
             })
             .collect()
     }
 
-    /// Arrow/Home/End roving + Space/Enter select (via intents where applicable).
+    /// Arrow/Home/End move + Space/Enter select.
     pub fn handle_key(&mut self, key: KeyEvent, options: &[Id]) -> RadioOutcome<Id>
     where
         Id: Clone,
@@ -249,20 +248,18 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
             return RadioOutcome::Ignored;
         }
         let entries = Self::entries_plain(options);
-        let _ = self.roving.reconcile(&entries);
+        let _ = self.collection.reconcile(&entries);
         let is_press = key.kind == KeyEventKind::Press;
-        // Activate without raw multi-match when possible.
         if is_press
             && key.modifiers.is_empty()
             && matches!(key.code, KeyCode::Enter | KeyCode::Char(' '))
         {
-            if let Some(id) = self.roving.active().cloned() {
+            if let Some(id) = self.collection.active().cloned() {
                 self.selected = Some(id.clone());
                 return RadioOutcome::Selected(id);
             }
             return RadioOutcome::Ignored;
         }
-        // Tab moves roving inside group (host may instead use FocusGraph — both ok for radio).
         if matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
             || (matches!(key.code, KeyCode::Tab)
                 && key.modifiers.contains(KeyModifiers::SHIFT))
@@ -270,17 +267,17 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
             let reverse = matches!(key.code, KeyCode::BackTab)
                 || key.modifiers.contains(KeyModifiers::SHIFT);
             if reverse {
-                let _ = self.roving.move_previous(&entries);
+                let _ = self.collection.move_previous(&entries);
             } else {
-                let _ = self.roving.move_next(&entries);
+                let _ = self.collection.move_next(&entries);
             }
             return RadioOutcome::Ignored;
         }
-        let _ = self.roving.handle_key(key, &entries);
+        let _ = self.collection.handle_key(key, &entries);
         RadioOutcome::Ignored
     }
 
-    /// Intent path for roving (Activate still on handle_key / host).
+    /// Intent path for collection move / activate.
     pub fn handle_intent(
         &mut self,
         intent: crate::interaction::UiIntent,
@@ -290,12 +287,12 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
             return RadioOutcome::Ignored;
         }
         let entries = Self::entries_plain(options);
-        let _ = self.roving.reconcile(&entries);
+        let _ = self.collection.reconcile(&entries);
         match intent {
             crate::interaction::UiIntent::Activate
             | crate::interaction::UiIntent::Submit
             | crate::interaction::UiIntent::Toggle => {
-                if let Some(id) = self.roving.active().cloned() {
+                if let Some(id) = self.collection.active().cloned() {
                     self.selected = Some(id.clone());
                     RadioOutcome::Selected(id)
                 } else {
@@ -303,7 +300,7 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
                 }
             }
             other => {
-                let _ = self.roving.handle_intent(other, &entries);
+                let _ = self.collection.handle_intent(other, &entries);
                 RadioOutcome::Ignored
             }
         }

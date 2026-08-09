@@ -104,11 +104,11 @@ pub enum MenuOutcome<Id> {
     Closed,
 }
 
-/// Menu state (roving cursor within the open menu).
+/// Menu state (collection cursor within the open menu).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MenuState {
-    /// Index-based roving group (menu rows; virtualized windows use visible indices).
-    roving: crate::interaction::RovingFocusGroup<usize>,
+    /// Index-based headless collection (visible indices for this open menu).
+    collection: crate::interaction::CollectionState<usize>,
     open: bool,
     /// Host grants input (overlay/scene focused).
     accepts_input: bool,
@@ -129,7 +129,7 @@ impl MenuState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            roving: crate::interaction::RovingFocusGroup::new()
+            collection: crate::interaction::CollectionState::new()
                 .orientation(crate::interaction::RovingOrientation::Vertical),
             open: true,
             accepts_input: true,
@@ -141,7 +141,7 @@ impl MenuState {
     /// Cursor index.
     #[must_use]
     pub fn cursor_index(&self) -> usize {
-        self.roving.active().copied().unwrap_or(0)
+        self.collection.active().copied().unwrap_or(0)
     }
 
     /// Deprecated name for [`Self::cursor_index`].
@@ -162,21 +162,22 @@ impl MenuState {
         self.accepts_input = accepts;
     }
 
-    fn entries<Id>(items: &[MenuItem<Id>]) -> Vec<crate::interaction::RovingEntry<usize>> {
+    fn entries<Id>(items: &[MenuItem<Id>]) -> Vec<crate::interaction::CollectionItem<usize>> {
         items
             .iter()
             .enumerate()
-            .map(|(i, it)| crate::interaction::RovingEntry {
+            .map(|(i, it)| crate::interaction::CollectionItem {
                 id: i,
                 enabled: it.enabled,
                 label: it.label.clone(),
+                parent: None,
             })
             .collect()
     }
 
     fn ensure_cursor_enabled<Id>(&mut self, items: &[MenuItem<Id>]) {
         let entries = Self::entries(items);
-        let _ = self.roving.reconcile(&entries);
+        let _ = self.collection.reconcile(&entries);
     }
 
     /// Keyboard navigation.
@@ -224,8 +225,8 @@ impl MenuState {
                 | NavigationMove::Left
                 | NavigationMove::Right,
             ) => {
-                let out = self.roving.handle_intent(intent, &entries);
-                if out.changed() {
+                let out = self.collection.handle_intent(intent, &entries);
+                if out.active_changed() {
                     MenuOutcome::CursorMoved
                 } else {
                     MenuOutcome::Ignored
@@ -275,7 +276,7 @@ impl MenuState {
                         if self.cursor_index() == i {
                             return MenuOutcome::Activated(item.id.clone());
                         }
-                        self.roving.set_active(Some(i));
+                        self.collection.set_active(Some(i));
                         return MenuOutcome::CursorMoved;
                     }
                     y = y.saturating_add(1);
@@ -284,7 +285,7 @@ impl MenuState {
             }
             MouseEventKind::ScrollDown => {
                 let entries = Self::entries(items);
-                if self.roving.move_next(&entries).changed() {
+                if self.collection.move_next(&entries).active_changed() {
                     MenuOutcome::CursorMoved
                 } else {
                     MenuOutcome::Ignored
@@ -292,7 +293,7 @@ impl MenuState {
             }
             MouseEventKind::ScrollUp => {
                 let entries = Self::entries(items);
-                if self.roving.move_previous(&entries).changed() {
+                if self.collection.move_previous(&entries).active_changed() {
                     MenuOutcome::CursorMoved
                 } else {
                     MenuOutcome::Ignored

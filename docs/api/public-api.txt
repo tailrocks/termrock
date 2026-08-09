@@ -1553,6 +1553,57 @@ pub unsafe fn termrock::interaction::BackdropPolicy::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::interaction::BackdropPolicy
 pub fn termrock::interaction::BackdropPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::BackdropPolicy
+#[non_exhaustive] pub enum termrock::interaction::CollectionOutcome<Id>
+pub termrock::interaction::CollectionOutcome::ActiveChanged
+pub termrock::interaction::CollectionOutcome::ActiveChanged::from: core::option::Option<Id>
+pub termrock::interaction::CollectionOutcome::ActiveChanged::to: core::option::Option<Id>
+pub termrock::interaction::CollectionOutcome::Ignored
+pub termrock::interaction::CollectionOutcome::Scrolled
+impl<Id: core::cmp::PartialEq> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionOutcome<Id>::active_changed(&self) -> bool
+pub fn termrock::interaction::CollectionOutcome<Id>::changed(&self) -> bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionOutcome<Id>::clone(&self) -> termrock::interaction::CollectionOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::CollectionOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionOutcome<Id>::eq(&self, &termrock::interaction::CollectionOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::CollectionOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::convert::From<termrock::interaction::RovingOutcome<Id>> for termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionOutcome<Id>::from(termrock::interaction::RovingOutcome<Id>) -> Self
+impl<Id> core::marker::Freeze for termrock::interaction::CollectionOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::interaction::CollectionOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::interaction::CollectionOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::interaction::CollectionOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::interaction::CollectionOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::CollectionOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::CollectionOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::CollectionOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::CollectionOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::CollectionOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::interaction::CollectionOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::CollectionOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::interaction::CollectionOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::interaction::CollectionOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::CollectionOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::CollectionOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::CollectionOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::CollectionOutcome<Id> where T: core::clone::Clone
+pub type termrock::interaction::CollectionOutcome<Id>::Owned = T
+pub fn termrock::interaction::CollectionOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::interaction::CollectionOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::CollectionOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::CollectionOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::CollectionOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::CollectionOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::CollectionOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::CollectionOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::CollectionOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::CollectionOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::CollectionOutcome<Id>
 #[non_exhaustive] pub enum termrock::interaction::FocusNavMode
 pub termrock::interaction::FocusNavMode::Hybrid
 pub termrock::interaction::FocusNavMode::Linear
@@ -2424,6 +2475,8 @@ pub fn termrock::interaction::RovingOutcome<Id>::eq(&self, &termrock::interactio
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::RovingOutcome<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::RovingOutcome<Id>
 pub fn termrock::interaction::RovingOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::convert::From<termrock::interaction::RovingOutcome<Id>> for termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionOutcome<Id>::from(termrock::interaction::RovingOutcome<Id>) -> Self
 impl<Id> core::marker::Freeze for termrock::interaction::RovingOutcome<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::interaction::RovingOutcome<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::interaction::RovingOutcome<Id> where Id: core::marker::Sync
@@ -2727,6 +2780,127 @@ pub unsafe fn termrock::interaction::UiIntent::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::UiIntent
 pub fn termrock::interaction::UiIntent::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::UiIntent
+pub struct termrock::interaction::CollectionItem<Id>
+pub termrock::interaction::CollectionItem::enabled: bool
+pub termrock::interaction::CollectionItem::id: Id
+pub termrock::interaction::CollectionItem::label: alloc::string::String
+pub termrock::interaction::CollectionItem::parent: core::option::Option<Id>
+impl<Id> termrock::interaction::CollectionItem<Id>
+pub fn termrock::interaction::CollectionItem<Id>::enabled(self, bool) -> Self
+pub fn termrock::interaction::CollectionItem<Id>::new(Id, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::interaction::CollectionItem<Id>::parent(self, Id) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::CollectionItem<Id>
+pub fn termrock::interaction::CollectionItem<Id>::clone(&self) -> termrock::interaction::CollectionItem<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::CollectionItem<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::CollectionItem<Id>
+pub fn termrock::interaction::CollectionItem<Id>::eq(&self, &termrock::interaction::CollectionItem<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::CollectionItem<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::CollectionItem<Id>
+pub fn termrock::interaction::CollectionItem<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::interaction::CollectionItem<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::interaction::CollectionItem<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::interaction::CollectionItem<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::interaction::CollectionItem<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::interaction::CollectionItem<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::CollectionItem<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::CollectionItem<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::CollectionItem<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::CollectionItem<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::CollectionItem<Id> where U: core::convert::From<T>
+pub fn termrock::interaction::CollectionItem<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::CollectionItem<Id> where U: core::convert::Into<T>
+pub type termrock::interaction::CollectionItem<Id>::Error = core::convert::Infallible
+pub fn termrock::interaction::CollectionItem<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::CollectionItem<Id> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::CollectionItem<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::CollectionItem<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::CollectionItem<Id> where T: core::clone::Clone
+pub type termrock::interaction::CollectionItem<Id>::Owned = T
+pub fn termrock::interaction::CollectionItem<Id>::clone_into(&self, &mut T)
+pub fn termrock::interaction::CollectionItem<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::CollectionItem<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::CollectionItem<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::CollectionItem<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::CollectionItem<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::CollectionItem<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::CollectionItem<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::CollectionItem<Id> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::CollectionItem<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::CollectionItem<Id>
+pub fn termrock::interaction::CollectionItem<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::CollectionItem<Id>
+pub struct termrock::interaction::CollectionState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::interaction::CollectionState<Id>
+pub fn termrock::interaction::CollectionState<Id>::active_index(&self, &[termrock::interaction::CollectionItem<Id>]) -> core::option::Option<usize>
+pub fn termrock::interaction::CollectionState<Id>::ensure_active_visible(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::handle_intent(&mut self, termrock::interaction::UiIntent, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::move_by(&mut self, &[termrock::interaction::CollectionItem<Id>], isize) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::move_first(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::move_last(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::move_next(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::move_page(&mut self, &[termrock::interaction::CollectionItem<Id>], isize) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::move_previous(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::reconcile(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::reconcile_window(&mut self, &[termrock::interaction::CollectionItem<Id>], usize, usize, usize) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::scroll_by(&mut self, isize) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::set_active(&mut self, core::option::Option<Id>)
+pub fn termrock::interaction::CollectionState<Id>::set_current(&mut self, core::option::Option<Id>)
+pub fn termrock::interaction::CollectionState<Id>::set_viewport(&mut self, usize, usize, usize)
+pub fn termrock::interaction::CollectionState<Id>::to_roving_entries(&[termrock::interaction::CollectionItem<Id>]) -> alloc::vec::Vec<termrock::interaction::RovingEntry<Id>>
+impl<Id> termrock::interaction::CollectionState<Id>
+pub const fn termrock::interaction::CollectionState<Id>::active(&self) -> core::option::Option<&Id>
+pub fn termrock::interaction::CollectionState<Id>::clear_typeahead(&mut self)
+pub const fn termrock::interaction::CollectionState<Id>::current(&self) -> core::option::Option<&Id>
+pub const fn termrock::interaction::CollectionState<Id>::new() -> Self
+pub const fn termrock::interaction::CollectionState<Id>::offset(&self) -> usize
+pub fn termrock::interaction::CollectionState<Id>::orientation(self, termrock::interaction::RovingOrientation) -> Self
+pub const fn termrock::interaction::CollectionState<Id>::roving(&self) -> &termrock::interaction::RovingFocusGroup<Id>
+pub const fn termrock::interaction::CollectionState<Id>::total_len(&self) -> usize
+pub const fn termrock::interaction::CollectionState<Id>::viewport_len(&self) -> usize
+pub fn termrock::interaction::CollectionState<Id>::wrap(self, bool) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::CollectionState<Id>
+pub fn termrock::interaction::CollectionState<Id>::clone(&self) -> termrock::interaction::CollectionState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::CollectionState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::CollectionState<Id>
+pub fn termrock::interaction::CollectionState<Id>::eq(&self, &termrock::interaction::CollectionState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::CollectionState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::CollectionState<Id>
+pub fn termrock::interaction::CollectionState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::interaction::CollectionState<Id>
+pub fn termrock::interaction::CollectionState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::interaction::CollectionState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::interaction::CollectionState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::interaction::CollectionState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::interaction::CollectionState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::interaction::CollectionState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::CollectionState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::CollectionState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::CollectionState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::CollectionState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::CollectionState<Id> where U: core::convert::From<T>
+pub fn termrock::interaction::CollectionState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::CollectionState<Id> where U: core::convert::Into<T>
+pub type termrock::interaction::CollectionState<Id>::Error = core::convert::Infallible
+pub fn termrock::interaction::CollectionState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::CollectionState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::CollectionState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::CollectionState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::CollectionState<Id> where T: core::clone::Clone
+pub type termrock::interaction::CollectionState<Id>::Owned = T
+pub fn termrock::interaction::CollectionState<Id>::clone_into(&self, &mut T)
+pub fn termrock::interaction::CollectionState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::CollectionState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::CollectionState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::CollectionState<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::CollectionState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::CollectionState<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::CollectionState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::CollectionState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::CollectionState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::CollectionState<Id>
+pub fn termrock::interaction::CollectionState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::CollectionState<Id>
 pub struct termrock::interaction::EventResult<M, FocusId>
 impl<M, FocusId> termrock::interaction::EventResult<M, FocusId>
 pub const fn termrock::interaction::EventResult<M, FocusId>::changed() -> Self
@@ -18022,7 +18196,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::ListRow<'a, Id>
 pub struct termrock::widgets::ListState<Id>
 impl termrock::widgets::ListState<usize>
 pub fn termrock::widgets::ListState<usize>::cycle_index(&mut self, usize, isize) -> bool
-pub const fn termrock::widgets::ListState<usize>::for_count(usize) -> Self
+pub fn termrock::widgets::ListState<usize>::for_count(usize) -> Self
 pub fn termrock::widgets::ListState<usize>::move_index(&mut self, usize, isize) -> bool
 pub fn termrock::widgets::ListState<usize>::reconcile_count(&mut self, usize)
 pub fn termrock::widgets::ListState<usize>::selected_item<'a, T>(&self, &'a [T]) -> core::option::Option<&'a T>
@@ -18034,19 +18208,22 @@ pub fn termrock::widgets::ListState<Id>::handle_intent_result(&mut self, &[termr
 pub fn termrock::widgets::ListState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::handle_key_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::interaction::Outcome<Id>>
 pub fn termrock::widgets::ListState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
+pub fn termrock::widgets::ListState<Id>::reconcile_collection(&mut self, &[termrock::widgets::ListRow<'_, Id>])
 pub fn termrock::widgets::ListState<Id>::select_next(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::select_previous(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
 impl<Id> termrock::widgets::ListState<Id>
 pub const fn termrock::widgets::ListState<Id>::click_policy(&self) -> termrock::widgets::ListClickPolicy
+pub const fn termrock::widgets::ListState<Id>::collection(&self) -> &termrock::interaction::CollectionState<Id>
+pub const fn termrock::widgets::ListState<Id>::collection_mut(&mut self) -> &mut termrock::interaction::CollectionState<Id>
 pub fn termrock::widgets::ListState<Id>::disable_multi_select(&mut self)
 pub fn termrock::widgets::ListState<Id>::enable_multi_select(&mut self)
 pub const fn termrock::widgets::ListState<Id>::hovered(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::ListState<Id>::new(core::option::Option<Id>) -> Self
+pub fn termrock::widgets::ListState<Id>::new(core::option::Option<Id>) -> Self where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::ListState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::ListState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
-pub fn termrock::widgets::ListState<Id>::scroll_by(&mut self, isize, usize) -> bool
-pub fn termrock::widgets::ListState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
-pub fn termrock::widgets::ListState<Id>::select(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::ListState<Id>::scroll_by(&mut self, isize, usize) -> bool where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::ListState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::ListState<Id>::select(&mut self, core::option::Option<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::ListState<Id>::selected(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::ListState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
 pub fn termrock::widgets::ListState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
@@ -19742,15 +19919,6 @@ pub fn termrock::widgets::Picker<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Picker<'a, Id>
 pub struct termrock::widgets::PickerState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::PickerState<Id>
-pub fn termrock::widgets::PickerState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::PickerOutcome<Id>
-pub fn termrock::widgets::PickerState<Id>::handle_intent(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::widgets::PickerOutcome<Id>
-pub fn termrock::widgets::PickerState<Id>::handle_intent_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::interaction::EventResult<termrock::widgets::PickerOutcome<Id>>
-pub fn termrock::widgets::PickerState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::PickerOutcome<Id>
-pub fn termrock::widgets::PickerState<Id>::handle_key_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::PickerOutcome<Id>>
-pub fn termrock::widgets::PickerState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
-pub fn termrock::widgets::PickerState<Id>::reconcile(&mut self, &[termrock::widgets::ListRow<'_, Id>])
-pub fn termrock::widgets::PickerState<Id>::scroll_by(&mut self, isize, usize) -> bool
-impl<Id> termrock::widgets::PickerState<Id>
 pub const fn termrock::widgets::PickerState<Id>::accepts_input(&self) -> bool
 pub const fn termrock::widgets::PickerState<Id>::list(&self) -> &termrock::widgets::ListState<Id>
 pub const fn termrock::widgets::PickerState<Id>::list_mut(&mut self) -> &mut termrock::widgets::ListState<Id>
@@ -19759,6 +19927,17 @@ pub const fn termrock::widgets::PickerState<Id>::query(&self) -> &termrock::widg
 pub const fn termrock::widgets::PickerState<Id>::query_mut(&mut self) -> &mut termrock::widgets::TextInputState
 pub fn termrock::widgets::PickerState<Id>::query_text(&self) -> &str
 pub fn termrock::widgets::PickerState<Id>::set_accepts_input(&mut self, bool)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::PickerState<Id>
+pub fn termrock::widgets::PickerState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerState<Id>::handle_intent(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerState<Id>::handle_intent_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::interaction::EventResult<termrock::widgets::PickerOutcome<Id>>
+pub fn termrock::widgets::PickerState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerState<Id>::handle_key_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::PickerOutcome<Id>>
+pub fn termrock::widgets::PickerState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
+pub fn termrock::widgets::PickerState<Id>::reconcile(&mut self, &[termrock::widgets::ListRow<'_, Id>])
+pub fn termrock::widgets::PickerState<Id>::scroll_by(&mut self, isize, usize) -> bool
+impl<Id: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::PickerState<Id>
+pub fn termrock::widgets::PickerState<Id>::default() -> Self
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PickerState<Id>
 pub fn termrock::widgets::PickerState<Id>::clone(&self) -> termrock::widgets::PickerState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::PickerState<Id>
@@ -19767,8 +19946,6 @@ pub fn termrock::widgets::PickerState<Id>::eq(&self, &termrock::widgets::PickerS
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::PickerState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::PickerState<Id>
 pub fn termrock::widgets::PickerState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::default::Default for termrock::widgets::PickerState<Id>
-pub fn termrock::widgets::PickerState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::PickerState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::PickerState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::PickerState<Id> where Id: core::marker::Sync

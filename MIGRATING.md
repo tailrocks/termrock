@@ -96,6 +96,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0080 | `v0.13.0` | [EventResult + typed outcomes](migrations/0080-v0.13.0-event-result.md) |
 | 0081 | `v0.13.0` | [FocusGraph](migrations/0081-v0.13.0-focus-graph.md) |
 | 0082 | `v0.13.0` | [RovingFocusGroup](migrations/0082-v0.13.0-roving-focus-group.md) |
+| 0083 | `v0.13.0` | [CollectionState](migrations/0083-v0.13.0-collection-state.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

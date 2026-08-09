@@ -754,6 +754,15 @@ pub(crate) fn stories() -> Vec<Story> {
             roving_focus_group_story,
         ),
         Story::new(
+            "collection-state/headless",
+            "CollectionState headless",
+            "CollectionState",
+            "Shared model: active id, virt offset, disabled skip (list paint).",
+            40,
+            8,
+            collection_state_story,
+        ),
+        Story::new(
             "capability/color-ladder",
             "Capability color ladder",
             "DesignInspector",
@@ -4055,6 +4064,78 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 
 
+
+
+fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{NavigationMove, UiIntent};
+    use termrock::widgets::{List, ListRow, ListState, Panel, PanelChrome, RowRole};
+
+    let rows = [
+        ListRow {
+            id: "a",
+            label: Line::from("Alpha"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "b",
+            label: Line::from("Beta"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Item,
+            enabled: false,
+            loading: false,
+        },
+        ListRow {
+            id: "c",
+            label: Line::from("Gamma"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "d",
+            label: Line::from("Delta"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+    ];
+    let mut state = ListState::new(Some("a"));
+    let _ = state.handle_intent(&rows, UiIntent::Move(NavigationMove::Next));
+    frame.render_widget(
+        Panel::new(system)
+            .title("CollectionState → List")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    frame.render_stateful_widget(List::new(&rows, system).focused(true), inner, &mut state);
+}
 
 fn roving_focus_group_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{RovingEntry, RovingFocusGroup, RovingOrientation};

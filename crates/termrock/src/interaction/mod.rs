@@ -1,5 +1,6 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
+mod collection;
 mod event_result;
 mod focus;
 mod focus_graph;
@@ -10,6 +11,7 @@ mod overlay_stack;
 mod roving;
 mod scene;
 
+pub use collection::{CollectionItem, CollectionOutcome, CollectionState};
 pub use event_result::{
     EventResult, FocusRequest, OverlayRequest, Propagation, Redraw, compose_bubble, compose_capture,
     from_consumed_flag,

@@ -172,10 +172,9 @@ impl<'a, Id> ListRow<'a, Id> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `List`.
 pub struct ListState<Id> {
-    selected: Option<Id>,
+    /// Headless cursor + virtualization (stable ids only).
+    collection: crate::interaction::CollectionState<Id>,
     hovered: Option<Id>,
-    offset: usize,
-    viewport_height: usize,
     regions: Vec<HitRegion<Id>>,
     pointer: Option<Position>,
     selection: Option<Selection<Id>>,
@@ -186,10 +185,8 @@ pub struct ListState<Id> {
 impl<Id> Default for ListState<Id> {
     fn default() -> Self {
         Self {
-            selected: None,
+            collection: crate::interaction::CollectionState::new(),
             hovered: None,
-            offset: 0,
-            viewport_height: 0,
             regions: Vec::new(),
             pointer: None,
             selection: None,
@@ -202,18 +199,32 @@ impl<Id> Default for ListState<Id> {
 impl<Id> ListState<Id> {
     #[must_use]
     /// Creates list state with no selection, hover, checks, or scroll.
-    pub const fn new(selected: Option<Id>) -> Self {
+    pub fn new(selected: Option<Id>) -> Self
+    where
+        Id: Clone + PartialEq,
+    {
+        let mut collection = crate::interaction::CollectionState::new();
+        collection.set_active(selected);
         Self {
-            selected,
+            collection,
             hovered: None,
-            offset: 0,
-            viewport_height: 0,
             regions: Vec::new(),
             pointer: None,
             selection: None,
             check_regions: Vec::new(),
             click_policy: ListClickPolicy::Activate,
         }
+    }
+
+    /// Borrow the headless collection model.
+    #[must_use]
+    pub const fn collection(&self) -> &crate::interaction::CollectionState<Id> {
+        &self.collection
+    }
+
+    /// Mutable headless collection model.
+    pub const fn collection_mut(&mut self) -> &mut crate::interaction::CollectionState<Id> {
+        &mut self.collection
     }
 
     /// Configures pointer-click outcomes ([`ListClickPolicy`]).
@@ -228,14 +239,17 @@ impl<Id> ListState<Id> {
     }
 
     /// Replace the stable selected identity.
-    pub fn select(&mut self, selected: Option<Id>) {
-        self.selected = selected;
+    pub fn select(&mut self, selected: Option<Id>)
+    where
+        Id: Clone + PartialEq,
+    {
+        self.collection.set_active(selected);
     }
 
     #[must_use]
     /// Returns the stable identity selected for keyboard interaction.
     pub const fn selected(&self) -> Option<&Id> {
-        self.selected.as_ref()
+        self.collection.active()
     }
 
     #[must_use]
@@ -247,7 +261,7 @@ impl<Id> ListState<Id> {
     #[must_use]
     /// Returns the first visible row index.
     pub const fn offset(&self) -> usize {
-        self.offset
+        self.collection.offset()
     }
 
     #[must_use]
@@ -278,30 +292,36 @@ impl<Id> ListState<Id> {
     }
 
     /// Moves the scroll position by a signed delta and clamps it to valid content.
-    pub fn scroll_by(&mut self, delta: isize, rows_len: usize) -> bool {
-        let before = self.offset;
-        let max = max_offset(rows_len, self.viewport_height);
-        self.offset = if delta.is_negative() {
-            self.offset.saturating_sub(delta.unsigned_abs())
-        } else {
-            self.offset.saturating_add(delta.unsigned_abs()).min(max)
-        };
-        before != self.offset
+    pub fn scroll_by(&mut self, delta: isize, rows_len: usize) -> bool
+    where
+        Id: Clone + PartialEq,
+    {
+        let vp = self.collection.viewport_len().max(1);
+        self.collection
+            .set_viewport(self.collection.offset(), vp, rows_len);
+        matches!(
+            self.collection.scroll_by(delta),
+            crate::interaction::CollectionOutcome::Scrolled
+        )
     }
 
     /// Scrolls toward a pointer position within the painted viewport.
-    pub fn scroll_to_position(&mut self, position: Position, rows_len: usize) -> bool {
+    pub fn scroll_to_position(&mut self, position: Position, rows_len: usize) -> bool
+    where
+        Id: Clone + PartialEq,
+    {
         self.pointer = Some(position);
-        if self.viewport_height == 0 || self.regions.is_empty() {
+        let vp = self.collection.viewport_len();
+        if vp == 0 || self.regions.is_empty() {
             return false;
         }
         let first = self.regions[0].area;
         if position.y < first.y {
             return self.scroll_by(-1, rows_len);
         }
-        let bottom = first.y.saturating_add(
-            u16::try_from(self.viewport_height.saturating_sub(1)).unwrap_or(u16::MAX),
-        );
+        let bottom = first
+            .y
+            .saturating_add(u16::try_from(vp.saturating_sub(1)).unwrap_or(u16::MAX));
         if position.y > bottom {
             return self.scroll_by(1, rows_len);
         }
@@ -327,12 +347,37 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     /// Applies a semantic intent to this list.
     pub fn handle_intent(&mut self, rows: &[ListRow<'_, Id>], intent: UiIntent) -> Outcome<Id> {
         match intent {
-            UiIntent::Move(NavigationMove::Previous) => self.select_relative(rows, -1),
-            UiIntent::Move(NavigationMove::Next) => self.select_relative(rows, 1),
-            UiIntent::Move(NavigationMove::First) => self.select_edge(rows, false),
-            UiIntent::Move(NavigationMove::Last) => self.select_edge(rows, true),
-            UiIntent::Page(PageMove::Backward) => self.select_page(rows, -1),
-            UiIntent::Page(PageMove::Forward) => self.select_page(rows, 1),
+            UiIntent::Move(_) | UiIntent::Page(_) => {
+                let items = collection_items_from_rows(rows);
+                // Empty selection: first Next/PageForward lands on first, Previous on last.
+                let out = if self.collection.active().is_none() {
+                    match intent {
+                        UiIntent::Move(
+                            NavigationMove::Next
+                            | NavigationMove::Down
+                            | NavigationMove::Right
+                            | NavigationMove::First,
+                        )
+                        | UiIntent::Page(PageMove::Forward) => self.collection.move_first(&items),
+                        UiIntent::Move(
+                            NavigationMove::Previous
+                            | NavigationMove::Up
+                            | NavigationMove::Left
+                            | NavigationMove::Last,
+                        )
+                        | UiIntent::Page(PageMove::Backward) => self.collection.move_last(&items),
+                        _ => self.collection.handle_intent(intent, &items),
+                    }
+                } else {
+                    self.collection.handle_intent(intent, &items)
+                };
+                if out.active_changed() {
+                    ensure_list_active_visible(self, rows, self.collection.viewport_len());
+                    Outcome::Changed
+                } else {
+                    Outcome::Ignored
+                }
+            }
             UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self.activate(rows),
             UiIntent::Toggle => self.toggle_selected(rows),
             UiIntent::Cancel | UiIntent::Close => Outcome::Cancelled,
@@ -364,7 +409,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         let Some(selection) = self.selection.as_mut() else {
             return Outcome::Ignored;
         };
-        let Some(row) = self.selected.as_ref().and_then(|selected| {
+        let Some(row) = self.collection.active().and_then(|selected| {
             rows.iter()
                 .find(|row| row.enabled && row.role == RowRole::Item && &row.id == selected)
         }) else {
@@ -376,80 +421,52 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     /// Moves selection to the next enabled item, wrapping at the end.
     pub fn select_next(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
-        self.select_relative(rows, 1)
+        let items = collection_items_from_rows(rows);
+        if self.collection.move_next(&items).active_changed() {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
+        }
     }
 
     /// Moves selection to the previous enabled item, wrapping at the start.
     pub fn select_previous(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
-        self.select_relative(rows, -1)
+        let items = collection_items_from_rows(rows);
+        if self.collection.move_previous(&items).active_changed() {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
+        }
     }
 
     fn select_relative(&mut self, rows: &[ListRow<'_, Id>], direction: isize) -> Outcome<Id> {
-        let selectable = selectable_indices(rows);
-        if selectable.is_empty() {
-            self.selected = None;
-            return Outcome::Ignored;
+        let items = collection_items_from_rows(rows);
+        if self.collection.move_by(&items, direction).active_changed() {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
         }
-        let current = self.selected.as_ref().and_then(|selected| {
-            selectable
-                .iter()
-                .position(|index| &rows[*index].id == selected)
-        });
-        let next = match (current, direction.is_negative()) {
-            (Some(0), true) | (None, true) => selectable.len() - 1,
-            (Some(index), true) => index - 1,
-            (Some(index), false) => (index + 1) % selectable.len(),
-            (None, false) => 0,
-        };
-        self.selected = Some(rows[selectable[next]].id.clone());
-        Outcome::Changed
     }
 
     fn select_edge(&mut self, rows: &[ListRow<'_, Id>], end: bool) -> Outcome<Id> {
-        let selectable = selectable_indices(rows);
-        let index = if end {
-            selectable.last().copied()
+        let items = collection_items_from_rows(rows);
+        let out = if end {
+            self.collection.move_last(&items)
         } else {
-            selectable.first().copied()
+            self.collection.move_first(&items)
         };
-        let Some(index) = index else {
-            self.selected = None;
-            return Outcome::Ignored;
-        };
-        self.selected = Some(rows[index].id.clone());
-        Outcome::Changed
-    }
-
-    fn select_page(&mut self, rows: &[ListRow<'_, Id>], direction: isize) -> Outcome<Id> {
-        let selectable = selectable_indices(rows);
-        if selectable.is_empty() {
-            self.selected = None;
-            return Outcome::Ignored;
+        if out.active_changed() {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
         }
-        let current = self
-            .selected
-            .as_ref()
-            .and_then(|selected| {
-                selectable
-                    .iter()
-                    .position(|index| &rows[*index].id == selected)
-            })
-            .unwrap_or(0);
-        let page = self.viewport_height.max(1);
-        let next = if direction.is_negative() {
-            current.saturating_sub(page)
-        } else {
-            current.saturating_add(page).min(selectable.len() - 1)
-        };
-        self.selected = Some(rows[selectable[next]].id.clone());
-        Outcome::Changed
     }
 
     #[must_use]
     /// Returns the semantic action associated with the supplied stable identity.
     pub fn activate(&self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
-        self.selected
-            .as_ref()
+        self.collection
+            .active()
             .and_then(|selected| {
                 rows.iter()
                     .find(|row| row.enabled && row.role == RowRole::Item && &row.id == selected)
@@ -483,7 +500,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             .find(|region| region.area.contains(position))
             .map(|region| region.id.clone())
         {
-            self.selected = Some(id.clone());
+            self.collection.set_active(Some(id.clone()));
             if let Some(selection) = self.selection.as_mut() {
                 selection.toggle(&id);
                 return Outcome::CheckToggled(id);
@@ -496,37 +513,47 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         else {
             return Outcome::Ignored;
         };
-        self.selected = Some(region.id.clone());
+        self.collection.set_active(Some(region.id.clone()));
         match self.click_policy {
             ListClickPolicy::Activate => Outcome::Activated(region.id.clone()),
             ListClickPolicy::Select => Outcome::Changed,
         }
+    }
+
+    /// Projects list rows into headless collection items and reconciles active id.
+    pub fn reconcile_collection(&mut self, rows: &[ListRow<'_, Id>]) {
+        let items = collection_items_from_rows(rows);
+        let vp = self.collection.viewport_len().max(1);
+        self.collection
+            .set_viewport(self.collection.offset(), vp, items.len());
+        let _ = self.collection.reconcile(&items);
     }
 }
 
 impl ListState<usize> {
     /// Create index-addressed list state with the first item selected.
     #[must_use]
-    pub const fn for_count(count: usize) -> Self {
+    pub fn for_count(count: usize) -> Self {
         Self::new(if count == 0 { None } else { Some(0) })
     }
 
     /// Reconcile an index selection after the backing collection changes.
     pub fn reconcile_count(&mut self, count: usize) {
-        self.selected = match (self.selected, count) {
+        let selected = match (self.collection.active().copied(), count) {
             (_, 0) => None,
             (Some(index), _) => Some(if index < count { index } else { count - 1 }),
             (None, _) => Some(0),
         };
+        self.collection.set_active(selected);
     }
 
     /// Move an index selection by one item, wrapping at either edge.
     pub fn cycle_index(&mut self, count: usize, direction: isize) -> bool {
         if count == 0 {
-            self.selected = None;
+            self.collection.set_active(None);
             return false;
         }
-        let current = self.selected.unwrap_or(0).min(count - 1);
+        let current = self.collection.active().copied().unwrap_or(0).min(count - 1);
         let next = if direction.is_negative() {
             if current == 0 { count - 1 } else { current - 1 }
         } else if current + 1 >= count {
@@ -534,30 +561,32 @@ impl ListState<usize> {
         } else {
             current + 1
         };
-        self.selected = Some(next);
+        self.collection.set_active(Some(next));
         next != current
     }
 
     /// Move an index selection by a gesture delta without wrapping.
     pub fn move_index(&mut self, count: usize, delta: isize) -> bool {
         if count == 0 {
-            self.selected = None;
+            self.collection.set_active(None);
             return false;
         }
-        let current = self.selected.unwrap_or(0).min(count - 1);
+        let current = self.collection.active().copied().unwrap_or(0).min(count - 1);
         let next = if delta.is_negative() {
             current.saturating_sub(delta.unsigned_abs())
         } else {
             current.saturating_add(delta.unsigned_abs()).min(count - 1)
         };
-        self.selected = Some(next);
+        self.collection.set_active(Some(next));
         next != current
     }
 
     /// Borrow the selected item from an index-addressed collection.
     #[must_use]
     pub fn selected_item<'a, T>(&self, items: &'a [T]) -> Option<&'a T> {
-        self.selected.and_then(|index| items.get(index))
+        self.collection
+            .active()
+            .and_then(|index| items.get(*index))
     }
 }
 
@@ -645,7 +674,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         state.regions.clear();
         state.check_regions.clear();
-        state.viewport_height = usize::from(area.height);
+        let viewport_height = usize::from(area.height);
+        state.collection.set_viewport(
+            state.collection.offset(),
+            viewport_height,
+            self.rows.len(),
+        );
+        let items = collection_items_from_rows(self.rows);
+        let _ = state.collection.reconcile(&items);
+        ensure_list_active_visible(state, self.rows, viewport_height);
         if self.rows.is_empty() {
             if let Some(message) = self.empty_message.as_ref() {
                 let style = self.tokens.style(Role::TextMuted);
@@ -655,27 +692,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             state.hovered = None;
             return;
         }
-        let scrollable = crate::scroll::is_scrollable(self.rows.len(), state.viewport_height);
+        let scrollable = crate::scroll::is_scrollable(self.rows.len(), viewport_height);
         let content_width = area.width.saturating_sub(u16::from(scrollable));
-        state.offset = state
-            .offset
-            .min(max_offset(self.rows.len(), state.viewport_height));
-        if let Some(selected) = state.selected.as_ref()
-            && let Some(index) = self.rows.iter().position(|row| &row.id == selected)
-        {
-            if index < state.offset {
-                state.offset = index;
-            } else if index >= state.offset.saturating_add(state.viewport_height) {
-                state.offset = index
-                    .saturating_add(1)
-                    .saturating_sub(state.viewport_height);
-            }
-        }
+        let offset = state.collection.offset();
         for (visible, row) in self
             .rows
             .iter()
-            .skip(state.offset)
-            .take(state.viewport_height)
+            .skip(offset)
+            .take(viewport_height)
             .enumerate()
         {
             let rect = Rect::new(
@@ -685,7 +709,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 content_width,
                 1,
             );
-            let selected = state.selected.as_ref() == Some(&row.id);
+            let selected = state.collection.active() == Some(&row.id);
             let hovered = row.enabled
                 && row.role == RowRole::Item
                 && state
@@ -902,8 +926,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     crate::scroll::ScrollAxis::Vertical,
                     crate::scroll::ScrollbarGeometry::new(
                         self.rows.len(),
-                        state.viewport_height,
-                        u16::try_from(state.offset).unwrap_or(u16::MAX),
+                        viewport_height,
+                        u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
                     ),
                 ),
                 self.tokens,
@@ -967,11 +991,44 @@ impl<Id: Clone + PartialEq> StatefulWidget for List<'_, Id> {
     }
 }
 
-fn selectable_indices<Id>(rows: &[ListRow<'_, Id>]) -> Vec<usize> {
+/// Frame projection for headless [`crate::interaction::CollectionState`] (no long-lived borrows).
+fn collection_items_from_rows<Id: Clone>(
+    rows: &[ListRow<'_, Id>],
+) -> Vec<crate::interaction::CollectionItem<Id>> {
     rows.iter()
-        .enumerate()
-        .filter_map(|(index, row)| (row.enabled && row.role == RowRole::Item).then_some(index))
+        .filter(|row| row.role == RowRole::Item)
+        .map(|row| crate::interaction::CollectionItem {
+            id: row.id.clone(),
+            enabled: row.enabled,
+            // Labels stay on the frame projection only; typeahead optional via host rebuild.
+            label: String::new(),
+            parent: None,
+        })
         .collect()
+}
+
+/// Scrolls list offset so the active id is within the painted window (full row index space).
+fn ensure_list_active_visible<Id: Clone + PartialEq>(
+    state: &mut ListState<Id>,
+    rows: &[ListRow<'_, Id>],
+    viewport_height: usize,
+) {
+    let vp = viewport_height.max(1);
+    let Some(active) = state.collection.active() else {
+        return;
+    };
+    let Some(index) = rows.iter().position(|row| &row.id == active) else {
+        return;
+    };
+    let mut offset = state.collection.offset();
+    if index < offset {
+        offset = index;
+    } else if index >= offset.saturating_add(vp) {
+        offset = index.saturating_add(1).saturating_sub(vp);
+    }
+    state
+        .collection
+        .set_viewport(offset, vp, rows.len());
 }
 
 #[cfg(test)]

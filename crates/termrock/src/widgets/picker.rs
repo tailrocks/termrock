@@ -44,7 +44,7 @@ pub struct PickerState<Id> {
     accepts_input: bool,
 }
 
-impl<Id> PickerState<Id> {
+impl<Id: Clone + PartialEq> PickerState<Id> {
     /// Creates empty query state with an optional stable selection.
     #[must_use]
     pub fn new(selected: Option<Id>) -> Self {
@@ -96,7 +96,7 @@ impl<Id> PickerState<Id> {
     }
 }
 
-impl<Id> Default for PickerState<Id> {
+impl<Id: Clone + PartialEq> Default for PickerState<Id> {
     fn default() -> Self {
         Self::new(None)
     }
