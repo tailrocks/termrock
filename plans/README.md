@@ -22,6 +22,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/component-quality-standard.md`](../docs/design/component-quality-standard.md) | **Component quality standard** (contracts, lints, CI evidence) |
 | [`docs/design/streaming-performance.md`](../docs/design/streaming-performance.md) | **Streaming / large-data performance** (budgets, coalesce, follow) |
 | [`docs/design/terminal-capability-architecture.md`](../docs/design/terminal-capability-architecture.md) | **Terminal capabilities** (profiles, doctor, graceful degrade) |
+| [`docs/design/component-documentation-standard.md`](../docs/design/component-documentation-standard.md) | **Component docs standard** (shadcn-depth handbook template) |
 
 ### Using the component prompt library
 

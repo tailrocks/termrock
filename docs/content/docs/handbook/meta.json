@@ -1,0 +1,13 @@
+{
+  "title": "Component handbook",
+  "pages": [
+    "index",
+    "button",
+    "list",
+    "data-table",
+    "dialog",
+    "command-palette",
+    "prompt-composer",
+    "permission-prompt"
+  ]
+}

@@ -1,0 +1,163 @@
+---
+title: List
+description: Scrollable rows with stable IDs — selection, activation, and contraction without owning your data.
+---
+
+# List
+
+**Purpose.** Present a vertical collection where each row has a **stable identity**
+for selection, activation, and hits — without TermRock owning filtering, sorting,
+or domain models.
+
+## When to use / when not
+
+| Use List | Prefer |
+|----------|--------|
+| Navigation, pickers’ result body, task lists | — |
+| Rows with primary + optional meta | ComposedRow contraction |
+| Multi-column relational data | [DataTable](./data-table) / `Table` |
+| Hierarchical data | Tree |
+| Fuzzy query + results | Picker / CommandPalette |
+
+## Installation
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
+```
+
+## Source files
+
+`termrock::widgets::{List, ListRow, ListState, RowRole}`
+
+## Basic example
+
+```rust
+use ratatui_core::text::Line;
+use termrock::{
+    style::DesignTokens,
+    widgets::{List, ListRow, ListState},
+};
+
+let tokens = DesignTokens::default();
+let rows = [
+    ListRow::item("alpha", Line::from("Alpha")),
+    ListRow::item("beta", Line::from("Beta")),
+];
+let list = List::new(&rows, &tokens);
+let mut state = ListState::new(Some("alpha"));
+let _ = (list, &mut state);
+```
+
+## Interactive example
+
+```rust
+use ratatui_core::text::Line;
+use termrock::{
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    interaction::Outcome,
+    style::DesignTokens,
+    widgets::{List, ListRow, ListState},
+};
+
+let tokens = DesignTokens::default();
+let rows = [
+    ListRow::item("a", Line::from("A")),
+    ListRow::item("b", Line::from("B")),
+];
+let _list = List::new(&rows, &tokens);
+let mut state = ListState::new(Some("a"));
+let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+assert!(matches!(outcome, Outcome::Changed));
+assert_eq!(state.selected(), Some(&"b"));
+```
+
+## Anatomy
+
+`viewport` · `row[]` · each row: `leading` · **primary label** · `secondary` · `badge` · `shortcut` · selection gutter  
+
+Under width pressure, drop order is shortcut → badge → secondary → leading → **primary last**
+(`ComposedRow`).
+
+## Public API (intent)
+
+| API | Why |
+|-----|-----|
+| `ListRow::item` | Fast path for primary-only rows |
+| `List::new(&[rows], &tokens)` | Borrowed projection — no clone of domain data |
+| `ListState::new(selected)` | Selection + scroll owned by state |
+| `handle_key` / mouse | Typed `Outcome` only |
+
+## State ownership
+
+| TermRock | Consumer |
+|----------|----------|
+| Selected id, offset, hover, hits | Row data, filter, sort |
+| Contraction of row parts | Labels, enablement, loading flags |
+| | Navigation side effects on Activate |
+
+## Typed outcomes
+
+`Outcome::{Ignored, Changed, Activated(id), …}` — activation means “user chose this id”; open a file or run a tool **outside** the list.
+
+## Variants / sizes / density
+
+- **RowRole** (item vs section headers where used).  
+- **Loading** rows show busy leading.  
+- **Density:** tokens pad; row height stays one line for virtualization-friendly lists.
+
+## Keyboard / mouse / focus
+
+- Move / page / home-end via collection intents or `handle_key`.  
+- Enter → Activated.  
+- Wheel scrolls; click selects/activates.  
+- Focus: list is one screen target; internal selection is the “focus” within.
+
+## Responsive / a11y / unicode
+
+Stories: `list/narrow`, `list/unicode`. Colorless: gutter marker for selection.
+CJK/wide labels measure with display width.
+
+## Composition
+
+Sidebar, TaskRail, Picker results, SessionPicker body.
+
+## Theming
+
+`Role::Selection`, `Role::Text`, `Role::TextMuted`, `Role::TextDisabled`.
+
+## Custom recipe
+
+Use `DesignTokens` density and theme roles; avoid per-row RGB for selection.
+
+## Common mistakes
+
+- Rebuilding ids every frame (breaks selection).  
+- Cloning the full dataset into the list each paint.  
+- Putting secondary meta that must survive when primary is clipped.
+
+## Performance
+
+Paint O(visible rows). For 10k+ use virtual offset (state) and only project the
+viewport slice. See streaming-performance design for budgets.
+
+## Testing
+
+- `list/selection`, `list/narrow`, `list/unicode`  
+- `documentation_examples::list_*`  
+- Contract: keyboard/mouse/focus/nonColor/unicode/narrow covered  
+
+## Migration
+
+Historical list multiselect: `migrations/0023`. Prefer stable ids always.
+
+## Related
+
+Tree · Table · Picker · TaskRail · ComposedRow  
+
+## Complete application sketch
+
+```text
+filter domain → project visible ListRow[] → List::render
+on Activated(id) → open detail / start agent tool
+on resize → keep selected id, clamp scroll
+```

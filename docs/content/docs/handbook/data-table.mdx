@@ -1,0 +1,176 @@
+---
+title: DataTable
+description: Large, virtualized tabular data for DB and ops tools — project only the visible window.
+---
+
+# DataTable
+
+**Purpose.** Show relational or operational tables at interactive scale: sticky
+headers, sort/filter hooks, selection, and **viewport-only** paint even when the
+logical dataset has millions of rows.
+
+**Status.** Full `DataTable` widget is rolling out. **Today** ship with:
+
+- `Table` / `TableState` for interactive borrowed grids  
+- `termrock::widgets::{VirtualWindow, ColumnModel, SelectionModel, LoadState, DataDensity}`  
+  for large-data kits (`data_view`)
+
+Handbook contracts describe the **target** DataTable; examples compile against
+public kits + `Table`.
+
+## When to use / when not
+
+| Use DataTable / Table | Prefer |
+|----------------------|--------|
+| Columns, sort, cell data | — |
+| 10k–1M logical rows | VirtualWindow projection |
+| Hierarchical ops objects | TreeTable (planned) / Tree |
+| Simple nav rows | [List](./list) |
+| Key/value inspector | DetailTable / ObjectInspector |
+
+## Installation
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
+```
+
+```bash
+# future
+# termrock add termrock/data-table
+```
+
+## Source files
+
+| Unit | Path |
+|------|------|
+| Table | `termrock::widgets::{Table, TableRow, Column, TableState, …}` |
+| Kits | `VirtualWindow`, `ColumnModel`, `SelectionModel`, `LoadState`, `data_view_bench` |
+| Design | `docs/design/data-presentation.md` |
+
+## Basic example (virtual window)
+
+```rust
+use termrock::widgets::{VirtualWindow, data_view_bench};
+
+// Logical universe can be huge; paint cost must stay O(viewport).
+let mut rows = VirtualWindow::new(data_view_bench::ROWS_1M, 40);
+let (start, end) = rows.visible_range();
+assert!(end - start <= 40);
+// Consumer: project only [start, end) from DB / index.
+let _ = start;
+```
+
+## Interactive example (Table selection)
+
+```rust
+use ratatui_core::text::Line;
+use termrock::{
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    style::DesignTokens,
+    widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState},
+};
+
+let tokens = DesignTokens::default();
+let columns = [Column::new("name", Line::from("Name"), ColumnWidth::Min(12))];
+let cells = [Line::from("alpha")];
+let rows = [TableRow::new("r1", &cells)];
+let table = Table::new(&columns, &rows, &tokens);
+let mut state = TableState::new(Some("r1"));
+let _ = (
+    table,
+    state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+    CellAlignment::Left,
+);
+```
+
+## Anatomy
+
+Sticky **header** · optional pin strips · **body viewport** · scrollbar · footer
+(count/load) · expandable detail (planned)
+
+Column parts: title · sort mark · resize edge · visibility
+
+## Public API (intent)
+
+| API | Why |
+|-----|-----|
+| `VirtualWindow` | u64 length without allocating N rows |
+| `ColumnModel::contract_to_budget` | Drop low-priority columns before primary |
+| `SelectionModel` | Row / multi / cell modes |
+| `LoadState` | Loading vs empty vs error vs partial stream |
+| `Table` | Current interactive paint + sort regions |
+
+## State ownership
+
+| TermRock | Consumer |
+|----------|----------|
+| Viewport, selection chrome, hits | Data fetch, sort/filter execution |
+| Column width negotiation | Cell text, types, edit commits |
+| Outcomes only | Clipboard, navigation, mutations |
+
+## Typed outcomes
+
+Sort requested · filter changed · row/cell activated · copy payload · edit
+committed — **effects stay in the app**.
+
+## Variants / sizes / density
+
+- Density: `DataDensity::{Compact, Comfortable}`  
+- Wide tables: horizontal `VirtualWindow` on columns  
+- Fullscreen: promote table pane in Workspace  
+
+## Keyboard / mouse / focus
+
+Arrows/page move focus; Enter activates; Space multi-toggles (multi mode);
+header click sorts; wheel scrolls body; drag resize columns (when implemented).
+
+## Responsive / a11y / unicode
+
+Priority drops secondary columns first. Selection gutter works without color.
+Cell text uses grapheme-safe clipping (`table/unicode` story family).
+
+## Composition
+
+Ops dashboards, resource browsers, DB clients, workbench side panels.
+
+## Theming
+
+Header / selection / muted meta roles; sort glyphs non-color.
+
+## Custom recipe
+
+Pin identity column `priority(100)` + `ColumnPin::Start`; hide meta under 60 cols.
+
+## Common mistakes
+
+- Building `Vec` of 1M `TableRow` every frame.  
+- Sorting inside the widget instead of re-projecting.  
+- Color-only selected cell.
+
+## Performance
+
+Budgets: `datatable_million_window`, `table_viewport_10k` — see
+`termrock::perf` and streaming-performance design. Stories: `table/*`,
+`virtual-grid/million`.
+
+## Testing
+
+`table_hot_path`, table stories (`table/basic`, `narrow`, `unicode`, `empty`,
+`disabled`, `sorted`), `data_view` unit tests.
+
+## Migration
+
+`0047` data presentation foundation. Table API remains until DataTable renames.
+
+## Related
+
+VirtualGrid · List · Tree · DetailTable · LogStream  
+
+## Complete application sketch
+
+```text
+query → page cache by VirtualWindow range
+on SortRequested → re-query
+on RowActivated → open inspector
+on resize → reflow columns + reveal selection
+```

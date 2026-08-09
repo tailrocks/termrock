@@ -1,0 +1,152 @@
+---
+title: PermissionPrompt
+description: Trust surface for agent tools — provenance, risk, scopes, and stale-safe queues.
+---
+
+# PermissionPrompt
+
+**Purpose.** Replace vague “Allow?” prompts with a **trust surface**: who asked
+(including nested subagents/MCP), exact action/target, risk, egress, scope, and
+decisions that **never default to grant**.
+
+## When to use / when not
+
+| Use PermissionPrompt | Prefer |
+|----------------------|--------|
+| Shell/file/network/MCP gates | — |
+| Simple yes/no chrome only | ApprovalCard (minimal) |
+| Product settings toggles | Form / Switch |
+
+## Installation
+
+Crate pin. Design: `docs/design/permission-trust.md` · migration `0046`.
+
+## Source files
+
+`PermissionPrompt`, `PermissionPromptState`, `PermissionRequest`,
+`PermissionQueue`, provenance/risk/scope/outcome types
+
+## Basic example
+
+```rust
+use termrock::widgets::{
+    InitiatorKind, PermissionPromptState, PermissionProvenance, PermissionRequest,
+    PermissionRisk, ProvenanceHop,
+};
+
+let mut ui = PermissionPromptState::new();
+let req = PermissionRequest::new("r1", "bash", "workspace")
+    .risk(PermissionRisk::High)
+    .command("rm -rf build/")
+    .irreversible()
+    .provenance(
+        PermissionProvenance::main_agent("run", "main").push(ProvenanceHop::new(
+            InitiatorKind::Subagent,
+            "s1",
+            "reviewer",
+        )),
+    );
+let generation = ui.enqueue(req);
+assert!(ui.head_generation() == Some(generation));
+assert!(!ui.selected().grants());
+```
+
+## Interactive example
+
+```rust
+use termrock::{
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    widgets::{
+        PermissionOutcome, PermissionPromptState, PermissionRequest, PermissionRisk,
+    },
+};
+
+let mut ui = PermissionPromptState::new();
+ui.enqueue(PermissionRequest::new("r1", "read", "src/lib.rs").risk(PermissionRisk::Low));
+// Default focus is Deny — Enter does not allow.
+let out = ui.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+assert!(matches!(
+    out,
+    PermissionOutcome::Decided {
+        action: termrock::widgets::PermissionAction::Deny,
+        ..
+    }
+));
+```
+
+## Anatomy
+
+`risk title` · `provenance path` · `action → target` · `location` · `warning` ·
+`expect` · `prior grant` · `command/pattern` · `scope` · `actions` (Deny first)
+
+## Public API (intent)
+
+| API | Why |
+|-----|-----|
+| `enqueue` | FIFO queue + generation |
+| `handle_key` / `handle_mouse` | Decide / edit / cancel |
+| `PermissionQueue::resolve` | Stale generation → error |
+| Scopes Once/Session/Project/Always | Consumer enforces store |
+
+## State ownership
+
+| TermRock | Consumer |
+|----------|----------|
+| Focus, queue order, audit log UI | Policy store, execution |
+| Edit buffers for command/pattern | Whether edit is allowed |
+| | Map Decided → allow/deny tool |
+
+## Typed outcomes
+
+`Decided { generation, action, scope, edited }` · `StaleIgnored` · `Cancelled` ·
+`Edit*` · `DetailsToggled` — **never runs the tool**.
+
+## Variants / sizes / density
+
+Risk Low→Critical changes warning copy and action strip order. Narrow stacks
+fields; fullscreen promote via overlay.
+
+## Keyboard / mouse / focus
+
+Deny default; `n` denies; **`y` not bound**; `[`/`]` scope; `e`/`p` edit;
+Esc cancels without grant. Click action regions.
+
+## Responsive / a11y / unicode
+
+ASCII risk markers available; labels always present. Nested provenance string
+for screen readers/logs.
+
+## Composition
+
+OverlayStack Alert/Dialog policy; AgentWorkbench; pairs with PromptComposer blur.
+
+## Theming
+
+Danger panel for high/critical; selection on actions.
+
+## Common mistakes
+
+- Defaulting selection to Allow.  
+- Ignoring `StaleIgnored` after queue advanced.  
+- Treating Esc as AllowOnce.
+
+## Performance
+
+One card + queue metadata; negligible vs stream paint.
+
+## Testing
+
+`permission` module tests (queue, nested provenance, stale, esc); handbook
+examples; design mockups in permission-trust.md.
+
+## Related
+
+ApprovalCard · PromptComposer · PlanReview · OverlayStack  
+
+## Complete application sketch
+
+```text
+tool needs gate → enqueue PermissionRequest
+Esc/Decided → resolve generation → apply policy → resume/cancel agent
+prompt composer set_focused(false) while open
+```

@@ -1,0 +1,26 @@
+---
+title: Component handbook
+description: Shadcn-depth TermRock component documentation — purpose, ownership, and compilable examples.
+---
+
+# Component handbook
+
+These pages follow the component documentation standard in the repo at
+`docs/design/component-documentation-standard.md`.
+
+They go beyond the thin inventory pages under **Components** (generated from the
+public API). Use the handbook when you need **when/why**, full anatomy,
+outcomes, and a small application sketch.
+
+| Page | Status |
+|------|--------|
+| [Button](./button) | Pattern via `Action` / `ActionBar` (first-class `Button` planned) |
+| [List](./list) | Stable public widget |
+| [DataTable](./data-table) | `Table` + `data_view` kits; full DataTable in progress |
+| [Dialog](./dialog) | `Dialog` / `ChoiceDialog` / overlay helpers |
+| [Command palette](./command-palette) | Public widget + overlay stack |
+| [Prompt composer](./prompt-composer) | Flagship agent input |
+| [Permission prompt](./permission-prompt) | Trust surface + queue |
+
+All fenced Rust examples that claim to compile are mirrored in
+`crates/termrock/tests/documentation_examples.rs` and must stay green in CI.

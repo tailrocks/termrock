@@ -1,1 +1,10 @@
-{"pages":["index","components","application-patterns","interaction","quality-migrations"]}
+{
+  "pages": [
+    "index",
+    "components",
+    "handbook",
+    "application-patterns",
+    "interaction",
+    "quality-migrations"
+  ]
+}

@@ -1,0 +1,142 @@
+---
+title: Command palette
+description: Global fuzzy command launcher — query + results without owning your command registry.
+---
+
+# Command palette
+
+**Purpose.** Give power users a **single entry point** to run commands by name:
+type to filter, move selection, activate — while the app owns the command list
+and side effects.
+
+## When to use / when not
+
+| Use palette | Prefer |
+|-------------|--------|
+| Global commands, jump to settings | — |
+| Many actions discoverable by name | — |
+| In-field completions | CompletionMenu |
+| Modal yes/no | Dialog |
+| Agent slash in composer | PromptComposer + slash menu |
+
+## Installation
+
+Crate pin. Overlay: `open_command_palette_overlay`.
+
+## Source files
+
+`CommandPalette`, `CommandPaletteState`, `CommandPaletteOutcome`,
+`place_command_palette`, overlay helpers
+
+## Basic example
+
+```rust
+use ratatui_core::{layout::Rect, text::Line};
+use termrock::{
+    style::DesignTokens,
+    widgets::{
+        CommandPalette, CommandPaletteSize, ListRow, place_command_palette,
+    },
+};
+
+let tokens = DesignTokens::default();
+let rows = [ListRow::item("quit", Line::from("Quit"))];
+let palette = CommandPalette::new("Commands", &rows, &tokens);
+let rect = place_command_palette(Rect::new(0, 0, 80, 24), CommandPaletteSize::default());
+let _ = (palette, rect);
+```
+
+## Interactive example
+
+```rust
+use ratatui_core::text::Line;
+use termrock::{
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    widgets::{CommandPalette, CommandPaletteOutcome, CommandPaletteState, ListRow},
+};
+
+let rows = [ListRow::item("quit", Line::from("Quit"))];
+let mut state = CommandPaletteState::new(Some("quit"));
+let outcome = CommandPalette::handle_key(
+    &mut state,
+    KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+    &rows,
+);
+assert!(matches!(outcome, CommandPaletteOutcome::Activated("quit")));
+```
+
+## Anatomy
+
+`backdrop (optional)` · `panel` · `query field` · `results list` · empty state
+
+## Public API (intent)
+
+| API | Why |
+|-----|-----|
+| `CommandPalette::new(title, rows, tokens)` | Chrome around Picker |
+| `handle_key` | Query change / selection / activate / cancel |
+| Overlay open/place | Centered, dim backdrop, dismissible Esc |
+
+## State ownership
+
+| TermRock | Consumer |
+|----------|----------|
+| Query text, selection, scroll | Command catalog & filtering |
+| Placement | What each id does |
+| | When palette is open |
+
+## Typed outcomes
+
+`QueryChanged` (refilter) · `SelectionChanged` · `Activated(id)` · `Cancelled`
+
+## Variants / sizes / density
+
+`CommandPaletteSize`; narrow promotes fullscreen via overlay policy.
+
+## Keyboard / mouse / focus
+
+Type to filter; up/down; Enter activate; Esc dismiss one layer. Mouse select on
+rows. Focus trapped while open.
+
+## Responsive / a11y / unicode
+
+Stories: `command-palette/basic`. Results use list contraction rules.
+
+## Composition
+
+Global keymap Ctrl+K-class → open overlay; AgentWorkbench chrome.
+
+## Theming
+
+Focused panel border; selection on result row.
+
+## Common mistakes
+
+- Filtering inside TermRock with domain rules (keep filter in app).  
+- Not handling `QueryChanged` (stale rows).  
+- Nested Esc closing the whole app.
+
+## Performance
+
+Filter in consumer O(n) ok for hundreds of commands; for thousands, index
+outside and pass only top-k rows.
+
+## Testing
+
+`command-palette/basic`; overlay open/restore tests; documentation examples.
+
+## Migration
+
+Overlay stack integration `0043`.
+
+## Related
+
+Picker · CompletionMenu · JumpOverlay · Keymap  
+
+## Complete application sketch
+
+```text
+keymap OpenPalette → stack.open command_palette
+each frame: filter commands by state.query → rows
+Activated → run command + dismiss overlay
+```

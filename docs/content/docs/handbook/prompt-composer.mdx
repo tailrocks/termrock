@@ -1,0 +1,156 @@
+---
+title: PromptComposer
+description: Flagship agent input — draft, chips, completion, queue, without owning the model.
+---
+
+# PromptComposer
+
+**Purpose.** Be the **primary human→agent input**: multiline grapheme-safe
+editing, attachments, slash/mentions, busy queue, and chrome (mode/model/context)
+while **preserving draft** when permission/plan/palette overlays take focus.
+
+## When to use / when not
+
+| Use PromptComposer | Prefer |
+|--------------------|--------|
+| Agent/chat shells | — |
+| Simple one-line fields | TextInput |
+| Code editors | TextArea alone |
+| Command-only | CommandPalette |
+
+## Installation
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
+```
+
+## Source files
+
+`PromptComposer`, `PromptComposerState`, `PromptComposerOutcome`, chips,
+`SubmitPolicy`, overlay completion helpers  
+Design: `docs/design/prompt-composer.md` · migration `0045`
+
+## Basic example
+
+```rust
+use termrock::{
+    style::{Density, DesignTokens},
+    widgets::{ModeIndicator, ModelIndicator, PromptComposer, PromptComposerState},
+    Theme,
+};
+
+let theme = Theme::default();
+let tokens = DesignTokens::new(theme.clone(), Density::Comfortable);
+let mut state = PromptComposerState::new();
+state.set_placeholder("Ask anything…");
+state.set_mode(Some(ModeIndicator {
+    label: "EDIT".into(),
+    warning: false,
+}));
+state.set_model(Some(ModelIndicator {
+    label: "model".into(),
+}));
+let _composer = PromptComposer::new(&tokens, &theme);
+let _ = &mut state;
+```
+
+## Interactive example
+
+```rust
+use termrock::{
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    widgets::{PromptComposerOutcome, PromptComposerState},
+};
+
+let mut state = PromptComposerState::new();
+state.set_text("ship it");
+let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+assert!(matches!(
+    out,
+    PromptComposerOutcome::Submit { ref text, .. } if text == "ship it"
+));
+
+// Overlay takeover must not clear draft:
+state.set_text("keep");
+state.set_focused(false);
+assert_eq!(state.text(), "keep");
+```
+
+## Anatomy
+
+`chips` · `editor` · `status` (mode · model · busy · queue · ctx meter) · validation
+
+## Public API (intent)
+
+| API | Why |
+|-----|-----|
+| `set_busy` | Enter queues instead of dual-submit |
+| `set_focused(false)` | Permission/plan/palette — **draft stays** |
+| `handle_paste` | Large paste → chip |
+| `Completion` outcomes | Consumer fills slash/file menus |
+| `SubmitPolicy` | App owns Enter/newline/clear rules |
+
+## State ownership
+
+| TermRock | Consumer |
+|----------|----------|
+| Draft, undo, history, chips UI | Model/provider, tools |
+| Queue entries text | Drain queue / run agent |
+| Completion *query* | Candidate lists & inserts |
+
+## Typed outcomes
+
+Submit · Queued · Cancel/Interrupt · Completion* · Chip* · ValidationFailed ·
+ExternalEditor · DismissRequest — **no network in the widget**.
+
+## Variants / sizes / density
+
+`ComposerPresentation::{Compact,Normal,Expanded,Fullscreen}`; density on tokens.
+
+## Keyboard / mouse / focus
+
+Enter submit (policy); Mod+Enter newline; Ctrl+Z/Y undo; Esc closes completion
+then dismiss; mouse positions caret / chip hits.
+
+## Responsive / a11y / unicode
+
+Stories: `prompt-composer/basic`, `busy-queue`, `compact`. ASCII fallback flag
+for badges. Grapheme editor via TextArea.
+
+## Composition
+
+AgentWorkbench south; OverlayStack for completion; PermissionPrompt above.
+
+## Theming
+
+Focused panel; warning mode badge; danger validation.
+
+## Common mistakes
+
+- Clearing draft when opening permission UI.  
+- Submitting again while busy without queue.  
+- Handling Esc as process kill without Cancel outcome.
+
+## Performance
+
+Coalesce token paints elsewhere; composer paint is O(visible editor rows + chips).
+Large paste chips avoid multi-MB inserts.
+
+## Testing
+
+Unit module `prompt_composer`; handbook examples; migration `0045`.
+
+## Related
+
+TextArea · CompletionMenu · TokenMeter · PermissionPrompt · CommandPalette  
+
+## Complete application sketch
+
+```text
+busy=agent.running
+key → composer.handle_key
+Submit → agent.run; clear per policy
+Queued → agent.queue.push
+open permission → composer.set_focused(false)
+close permission → set_focused(true)
+```

@@ -64,6 +64,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0048 | `v0.12.0` | [Component quality standard](migrations/0048-v0.12.0-component-quality-standard.md) |
 | 0049 | `v0.12.0` | [Streaming performance kits](migrations/0049-v0.12.0-streaming-performance.md) |
 | 0050 | `v0.12.0` | [Terminal capability architecture](migrations/0050-v0.12.0-terminal-capabilities.md) |
+| 0051 | `v0.12.0` | [Component documentation standard](migrations/0051-v0.12.0-component-documentation-standard.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

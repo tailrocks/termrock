@@ -1,0 +1,166 @@
+---
+title: Button (Action pattern)
+description: Stable-ID actions for toolbars and dialogs — when to use ActionBar instead of ad-hoc labels.
+---
+
+# Button (Action pattern)
+
+**Purpose.** Represent a discrete, activatable command with a **stable identity**
+so focus, hits, and keymaps can refer to “Save” without owning the side effect.
+
+**Status.** A dedicated `Button` primitive is planned (anatomy library). Today’s
+public surface is `Action` + `ActionBar` (and dialog action rows). Use those
+until `Button` ships; the contracts below apply to both.
+
+## When to use / when not
+
+| Use | Prefer instead |
+|-----|----------------|
+| Toolbar / dialog actions with IDs | — |
+| One-shot commands with labels | — |
+| Dense icon-only chrome later | IconButton (planned) |
+| Navigation between screens | Tabs / List / router, not buttons |
+| Free-form text entry | TextInput / PromptComposer |
+
+## Installation
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
+```
+
+```bash
+# future registry skin
+# termrock add termrock/button
+```
+
+## Source files
+
+| Unit | Path |
+|------|------|
+| Crate | `termrock::widgets::{Action, ActionBar, ActionBarState}` |
+
+## Basic example
+
+```rust
+use termrock::{Theme, widgets::{Action, ActionBar, ActionBarState}};
+
+let theme = Theme::default();
+let actions = [
+    Action { id: "save", label: "Save", enabled: true, style: None },
+    Action { id: "cancel", label: "Cancel", enabled: true, style: None },
+];
+let bar = ActionBar::new(&actions, &theme);
+let mut state = ActionBarState::default();
+state.focused = Some("save");
+let _ = (bar, &mut state);
+```
+
+## Interactive example
+
+Focus moves across enabled actions; activation is a typed outcome for the
+consumer to handle (write file, close dialog, …).
+
+```rust
+use termrock::{
+    Theme,
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    widgets::{Action, ActionBarState},
+};
+
+let actions = [
+    Action { id: "a", label: "A", enabled: true, style: None },
+    Action { id: "b", label: "B", enabled: true, style: None },
+];
+let mut state = ActionBarState::default();
+state.focused = Some("a");
+// Consumer routes Tab/Enter via ActionBar handlers or scene actions.
+let _ = (actions, state, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+let _ = Theme::default();
+```
+
+## Anatomy
+
+`root` · `action[]` · optional `label` / `icon` (icon when Button ships) · focus chrome via selection/focus role
+
+Primary label is the action text; under narrow pressure, labels drop before
+removing the hit target (overflow menu — planned).
+
+## Public API (intent)
+
+| API | Why |
+|-----|-----|
+| `Action { id, label, enabled, style }` | Stable id for focus/keymap; label is paint-only |
+| `ActionBar::new` | Lays out a horizontal group with hits |
+| `ActionBarState::focused` | Which action owns keyboard |
+
+## State ownership
+
+| TermRock | Consumer |
+|----------|----------|
+| Focus index, hit regions | Whether action is enabled |
+| Paint from theme roles | Side effects on activate |
+| | Keymap binding ids → actions |
+
+## Typed outcomes
+
+Prefer scene/keymap `Action` payloads or `Outcome::Activated(id)` from dialogs.
+Never run I/O inside the bar.
+
+## Variants / sizes / density
+
+- **Variants:** enabled vs disabled; optional emphasis style on Action.  
+- **Sizes:** one row high; width follows labels.  
+- **Density:** compact reduces horizontal pad between actions.
+
+## Keyboard / mouse / focus
+
+- **Keyboard:** Tab between actions; Enter activates focused (via host/dialog).  
+- **Mouse:** click hit region → activate.  
+- **Focus:** panel emphasis on owning surface; action uses selection role.
+
+## Responsive / a11y / unicode
+
+- Narrow: shorten labels before dropping enabled actions.  
+- Colorless: focused action uses marker/bold, not color alone.  
+- Labels are Unicode-safe; keep critical verbs ASCII-friendly for tiny terms.
+
+## Composition
+
+Dialog footers, form submit rows, workbench toolbars, PermissionPrompt actions.
+
+## Theming
+
+`Role::Selection` / `Role::Text` / `Role::TextDisabled` for focus and disabled.
+
+## Custom recipe
+
+Override `Action.style` for a single dangerous action; keep Deny as default focus
+on destructive dialogs.
+
+## Common mistakes
+
+- Using index-only “button 0” without stable ids.  
+- Running save I/O inside render.  
+- Making the only difference between actions pure color.
+
+## Performance
+
+O(actions) paint — keep bars small; overflow for many actions.
+
+## Testing
+
+Stories: `action-bar/basic`. Contract axes on ActionBar. Unit: focus + hit.
+
+## Migration
+
+None yet; when `Button` lands, handbook will point to it and keep ActionBar as
+the group layout.
+
+## Related
+
+ChoiceDialog · PermissionPrompt · HintBar · StatusBar slots
+
+## Complete application sketch
+
+Register actions in a keymap and ActionBar with the same ids; on activate, match
+id in the app loop and run domain effects once.
