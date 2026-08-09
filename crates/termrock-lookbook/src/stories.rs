@@ -2202,12 +2202,48 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "badge/basic",
+            "Badge variants",
             "Badge",
-            "Badge",
-            "Non-interactive status badge.",
-            20,
-            3,
+            "Neutral info success warning destructive outline count.",
+            48,
+            8,
             badge_story,
+        ),
+        Story::new(
+            "badge/table",
+            "Badge in table context",
+            "Badge",
+            "Dense row badges without fill dominance.",
+            48,
+            5,
+            badge_table_story,
+        ),
+        Story::new(
+            "badge/task",
+            "Badge task status",
+            "Badge",
+            "Agent/task status chips with glyphs.",
+            40,
+            5,
+            badge_task_story,
+        ),
+        Story::new(
+            "badge/settings",
+            "Badge settings",
+            "Badge",
+            "Settings category badges: outline, optional interactive filter.",
+            44,
+            4,
+            badge_settings_story,
+        ),
+        Story::new(
+            "badge/count",
+            "Badge counts",
+            "Badge",
+            "Count variant with 99+ clamp.",
+            32,
+            3,
+            badge_count_story,
         ),
         Story::new(
             "callout/basic",
@@ -8549,8 +8585,141 @@ fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(&Badge::new("NEW", &tokens), area, frame.buffer_mut());
+    use termrock::widgets::Badge;
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let _ = Badge::new("meta", system)
+        .neutral()
+        .paint(chunks[0], frame.buffer_mut(), None);
+    let _ = Badge::new("info", system)
+        .info()
+        .paint(chunks[1], frame.buffer_mut(), None);
+    let _ = Badge::new("ok", system)
+        .success()
+        .paint(chunks[2], frame.buffer_mut(), None);
+    let _ = Badge::new("warn", system)
+        .warning()
+        .paint(chunks[3], frame.buffer_mut(), None);
+    let _ = Badge::new("fail", system)
+        .destructive()
+        .paint(chunks[4], frame.buffer_mut(), None);
+    let _ = Badge::new("tag", system)
+        .outline()
+        .paint(chunks[5], frame.buffer_mut(), None);
+    let _ = Badge::count(150, system).paint(chunks[6], frame.buffer_mut(), None);
+}
+
+fn badge_table_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Badge;
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    // Simulated dense table trailing badges — no soft fill.
+    for (i, (name, paint)) in [
+        ("row-a", "active"),
+        ("row-b", "idle"),
+        ("row-c", "error"),
+        ("row-d", "beta"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let row = chunks[i];
+        frame.buffer_mut().set_stringn(
+            row.x,
+            row.y,
+            name,
+            12,
+            system.style(Role::Text),
+        );
+        let badge_area = Rect {
+            x: row.x.saturating_add(14),
+            y: row.y,
+            width: row.width.saturating_sub(14),
+            height: 1,
+        };
+        let b = match paint {
+            "active" => Badge::new(paint, system).success(),
+            "error" => Badge::new(paint, system).destructive(),
+            "beta" => Badge::new(paint, system).outline(),
+            _ => Badge::new(paint, system).neutral(),
+        };
+        let _ = b.paint(badge_area, frame.buffer_mut(), None);
+    }
+}
+
+fn badge_task_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Badge;
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let _ = Badge::new("running", system)
+        .info()
+        .paint(chunks[0], frame.buffer_mut(), None);
+    let _ = Badge::new("done", system)
+        .success()
+        .paint(chunks[1], frame.buffer_mut(), None);
+    let _ = Badge::new("blocked", system)
+        .warning()
+        .paint(chunks[2], frame.buffer_mut(), None);
+    let _ = Badge::new("failed", system)
+        .destructive()
+        .paint(chunks[3], frame.buffer_mut(), None);
+}
+
+fn badge_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Badge, BadgeState};
+    let chunks = Layout::horizontal([
+        Constraint::Length(14),
+        Constraint::Length(12),
+        Constraint::Min(10),
+    ])
+    .split(area);
+    let _ = Badge::new("experimental", system)
+        .outline()
+        .paint(chunks[0], frame.buffer_mut(), None);
+    let mut state = BadgeState::new();
+    state.set_focused(true);
+    state.set_selected(true);
+    let _ = Badge::new("filter", system)
+        .interactive(true)
+        .neutral()
+        .paint(chunks[1], frame.buffer_mut(), Some(&mut state));
+    let _ = Badge::new("default", system)
+        .neutral()
+        .paint(chunks[2], frame.buffer_mut(), None);
+}
+
+fn badge_count_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Badge;
+    let chunks = Layout::horizontal([
+        Constraint::Length(8),
+        Constraint::Length(10),
+        Constraint::Min(12),
+    ])
+    .split(area);
+    let _ = Badge::count(3, system).paint(chunks[0], frame.buffer_mut(), None);
+    let _ = Badge::count(99, system).paint(chunks[1], frame.buffer_mut(), None);
+    let _ = Badge::new("msgs", system)
+        .with_count(120)
+        .info()
+        .paint(chunks[2], frame.buffer_mut(), None);
 }
 
 fn callout_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -10089,8 +10258,10 @@ fn form_wizard_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn badge_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(&Badge::new("新规 ✨", &tokens), area, frame.buffer_mut());
+    use termrock::widgets::Badge;
+    let _ = Badge::new("新规 ✨", system)
+        .warning()
+        .paint(area, frame.buffer_mut(), None);
 }
 
 fn heading_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

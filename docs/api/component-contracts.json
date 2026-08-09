@@ -416,9 +416,9 @@
     "narrowTerminal": "covered"
   },
   "Badge": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "keyboard": "partial",
+    "mouse": "partial",
+    "focus": "partial",
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"

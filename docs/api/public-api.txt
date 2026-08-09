@@ -14195,6 +14195,162 @@ pub unsafe fn termrock::widgets::Anchor::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Anchor
 pub fn termrock::widgets::Anchor::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Anchor
+#[non_exhaustive] pub enum termrock::widgets::BadgeFill
+pub termrock::widgets::BadgeFill::None
+pub termrock::widgets::BadgeFill::Soft
+impl termrock::widgets::BadgeFill
+pub const fn termrock::widgets::BadgeFill::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::BadgeFill
+pub fn termrock::widgets::BadgeFill::clone(&self) -> termrock::widgets::BadgeFill
+impl core::cmp::Eq for termrock::widgets::BadgeFill
+impl core::cmp::PartialEq for termrock::widgets::BadgeFill
+pub fn termrock::widgets::BadgeFill::eq(&self, &termrock::widgets::BadgeFill) -> bool
+impl core::default::Default for termrock::widgets::BadgeFill
+pub fn termrock::widgets::BadgeFill::default() -> termrock::widgets::BadgeFill
+impl core::fmt::Debug for termrock::widgets::BadgeFill
+pub fn termrock::widgets::BadgeFill::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BadgeFill
+pub fn termrock::widgets::BadgeFill::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BadgeFill
+impl core::marker::StructuralPartialEq for termrock::widgets::BadgeFill
+impl core::marker::Freeze for termrock::widgets::BadgeFill
+impl core::marker::Send for termrock::widgets::BadgeFill
+impl core::marker::Sync for termrock::widgets::BadgeFill
+impl core::marker::Unpin for termrock::widgets::BadgeFill
+impl core::marker::UnsafeUnpin for termrock::widgets::BadgeFill
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BadgeFill
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BadgeFill
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BadgeFill where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BadgeFill::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BadgeFill where U: core::convert::From<T>
+pub fn termrock::widgets::BadgeFill::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BadgeFill where U: core::convert::Into<T>
+pub type termrock::widgets::BadgeFill::Error = core::convert::Infallible
+pub fn termrock::widgets::BadgeFill::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BadgeFill where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BadgeFill::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BadgeFill::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BadgeFill where T: core::clone::Clone
+pub type termrock::widgets::BadgeFill::Owned = T
+pub fn termrock::widgets::BadgeFill::clone_into(&self, &mut T)
+pub fn termrock::widgets::BadgeFill::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BadgeFill where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BadgeFill::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BadgeFill where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeFill::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BadgeFill where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeFill::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BadgeFill where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BadgeFill::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BadgeFill
+pub fn termrock::widgets::BadgeFill::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BadgeFill
+#[non_exhaustive] pub enum termrock::widgets::BadgeOutcome
+pub termrock::widgets::BadgeOutcome::Activated
+pub termrock::widgets::BadgeOutcome::Ignored
+pub termrock::widgets::BadgeOutcome::Toggled
+pub termrock::widgets::BadgeOutcome::Toggled::selected: bool
+impl core::clone::Clone for termrock::widgets::BadgeOutcome
+pub fn termrock::widgets::BadgeOutcome::clone(&self) -> termrock::widgets::BadgeOutcome
+impl core::cmp::Eq for termrock::widgets::BadgeOutcome
+impl core::cmp::PartialEq for termrock::widgets::BadgeOutcome
+pub fn termrock::widgets::BadgeOutcome::eq(&self, &termrock::widgets::BadgeOutcome) -> bool
+impl core::default::Default for termrock::widgets::BadgeOutcome
+pub fn termrock::widgets::BadgeOutcome::default() -> termrock::widgets::BadgeOutcome
+impl core::fmt::Debug for termrock::widgets::BadgeOutcome
+pub fn termrock::widgets::BadgeOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BadgeOutcome
+pub fn termrock::widgets::BadgeOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BadgeOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::BadgeOutcome
+impl core::marker::Freeze for termrock::widgets::BadgeOutcome
+impl core::marker::Send for termrock::widgets::BadgeOutcome
+impl core::marker::Sync for termrock::widgets::BadgeOutcome
+impl core::marker::Unpin for termrock::widgets::BadgeOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::BadgeOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BadgeOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BadgeOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BadgeOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BadgeOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BadgeOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::BadgeOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BadgeOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::BadgeOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::BadgeOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BadgeOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BadgeOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BadgeOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BadgeOutcome where T: core::clone::Clone
+pub type termrock::widgets::BadgeOutcome::Owned = T
+pub fn termrock::widgets::BadgeOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::BadgeOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BadgeOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BadgeOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BadgeOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BadgeOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BadgeOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BadgeOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BadgeOutcome
+pub fn termrock::widgets::BadgeOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BadgeOutcome
+#[non_exhaustive] pub enum termrock::widgets::BadgeVariant
+pub termrock::widgets::BadgeVariant::Count
+pub termrock::widgets::BadgeVariant::Destructive
+pub termrock::widgets::BadgeVariant::Info
+pub termrock::widgets::BadgeVariant::Neutral
+pub termrock::widgets::BadgeVariant::Outline
+pub termrock::widgets::BadgeVariant::Success
+pub termrock::widgets::BadgeVariant::Warning
+impl termrock::widgets::BadgeVariant
+pub const fn termrock::widgets::BadgeVariant::id(self) -> &'static str
+pub const fn termrock::widgets::BadgeVariant::status_glyph(self) -> core::option::Option<termrock::style::Glyph>
+impl core::clone::Clone for termrock::widgets::BadgeVariant
+pub fn termrock::widgets::BadgeVariant::clone(&self) -> termrock::widgets::BadgeVariant
+impl core::cmp::Eq for termrock::widgets::BadgeVariant
+impl core::cmp::PartialEq for termrock::widgets::BadgeVariant
+pub fn termrock::widgets::BadgeVariant::eq(&self, &termrock::widgets::BadgeVariant) -> bool
+impl core::default::Default for termrock::widgets::BadgeVariant
+pub fn termrock::widgets::BadgeVariant::default() -> termrock::widgets::BadgeVariant
+impl core::fmt::Debug for termrock::widgets::BadgeVariant
+pub fn termrock::widgets::BadgeVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BadgeVariant
+pub fn termrock::widgets::BadgeVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BadgeVariant
+impl core::marker::StructuralPartialEq for termrock::widgets::BadgeVariant
+impl core::marker::Freeze for termrock::widgets::BadgeVariant
+impl core::marker::Send for termrock::widgets::BadgeVariant
+impl core::marker::Sync for termrock::widgets::BadgeVariant
+impl core::marker::Unpin for termrock::widgets::BadgeVariant
+impl core::marker::UnsafeUnpin for termrock::widgets::BadgeVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BadgeVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BadgeVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BadgeVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BadgeVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BadgeVariant where U: core::convert::From<T>
+pub fn termrock::widgets::BadgeVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BadgeVariant where U: core::convert::Into<T>
+pub type termrock::widgets::BadgeVariant::Error = core::convert::Infallible
+pub fn termrock::widgets::BadgeVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BadgeVariant where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BadgeVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BadgeVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BadgeVariant where T: core::clone::Clone
+pub type termrock::widgets::BadgeVariant::Owned = T
+pub fn termrock::widgets::BadgeVariant::clone_into(&self, &mut T)
+pub fn termrock::widgets::BadgeVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BadgeVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BadgeVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BadgeVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BadgeVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BadgeVariant where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BadgeVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BadgeVariant
+pub fn termrock::widgets::BadgeVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BadgeVariant
 #[non_exhaustive] pub enum termrock::widgets::BreadcrumbsOutcome<Id>
 pub termrock::widgets::BreadcrumbsOutcome::Ignored
 pub termrock::widgets::BreadcrumbsOutcome::Navigate(Id)
@@ -21212,10 +21368,40 @@ pub fn termrock::widgets::Backdrop::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Backdrop
 pub struct termrock::widgets::Badge<'a>
 impl<'a> termrock::widgets::Badge<'a>
+pub fn termrock::widgets::Badge<'a>::body_text(&self) -> alloc::string::String
+pub const fn termrock::widgets::Badge<'a>::count(u64, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Badge<'a>::count_spec(self, termrock::widgets::BadgeCount) -> Self
+pub fn termrock::widgets::Badge<'a>::decorated(&self, core::option::Option<&termrock::widgets::BadgeState>) -> alloc::string::String
+pub const fn termrock::widgets::Badge<'a>::destructive(self) -> Self
+pub const fn termrock::widgets::Badge<'a>::disabled(self, bool) -> Self
+pub const fn termrock::widgets::Badge<'a>::fill(self, termrock::widgets::BadgeFill) -> Self
+pub fn termrock::widgets::Badge<'a>::handle_intent(&self, &mut termrock::widgets::BadgeState, termrock::context::ContextUiIntent) -> termrock::widgets::BadgeOutcome
+pub fn termrock::widgets::Badge<'a>::handle_key(&self, &mut termrock::widgets::BadgeState, termrock::input::KeyEvent) -> termrock::widgets::BadgeOutcome
+pub fn termrock::widgets::Badge<'a>::handle_key_result(&self, &mut termrock::widgets::BadgeState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::BadgeOutcome>
+pub fn termrock::widgets::Badge<'a>::handle_mouse(&self, &mut termrock::widgets::BadgeState, termrock::input::MouseEvent) -> termrock::widgets::BadgeOutcome
+pub const fn termrock::widgets::Badge<'a>::info(self) -> Self
+pub const fn termrock::widgets::Badge<'a>::interactive(self, bool) -> Self
+pub const fn termrock::widgets::Badge<'a>::is_interactive(&self) -> bool
+pub fn termrock::widgets::Badge<'a>::layout(&self, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::BadgeState>) -> termrock::widgets::BadgeParts
+pub const fn termrock::widgets::Badge<'a>::max_cols(self, u16) -> Self
+pub fn termrock::widgets::Badge<'a>::measure_width(&self, core::option::Option<&termrock::widgets::BadgeState>) -> u16
+pub const fn termrock::widgets::Badge<'a>::neutral(self) -> Self
 pub const fn termrock::widgets::Badge<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
-pub const fn termrock::widgets::Badge<'a>::role(self, termrock::style::Role) -> Self
+pub const fn termrock::widgets::Badge<'a>::outline(self) -> Self
+pub fn termrock::widgets::Badge<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, core::option::Option<&mut termrock::widgets::BadgeState>) -> termrock::widgets::BadgeParts
+pub fn termrock::widgets::Badge<'a>::plain(&self) -> alloc::string::String
+pub fn termrock::widgets::Badge<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::BadgeState>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::Badge<'a>::show_glyph(self, bool) -> Self
+pub const fn termrock::widgets::Badge<'a>::soft(self) -> Self
+pub const fn termrock::widgets::Badge<'a>::success(self) -> Self
+pub const fn termrock::widgets::Badge<'a>::variant(self, termrock::widgets::BadgeVariant) -> Self
+pub const fn termrock::widgets::Badge<'a>::variant_of(&self) -> termrock::widgets::BadgeVariant
+pub const fn termrock::widgets::Badge<'a>::warning(self) -> Self
+pub const fn termrock::widgets::Badge<'a>::with_count(self, u64) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Badge<'_>
 pub fn &termrock::widgets::Badge<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Badge<'_>
+pub fn termrock::widgets::Badge<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Badge<'a>
 pub fn termrock::widgets::Badge<'a>::clone(&self) -> termrock::widgets::Badge<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Badge<'a>
@@ -21251,6 +21437,157 @@ pub unsafe fn termrock::widgets::Badge<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Badge<'a>
 pub fn termrock::widgets::Badge<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Badge<'a>
+pub struct termrock::widgets::BadgeCount
+pub termrock::widgets::BadgeCount::max_display: u64
+pub termrock::widgets::BadgeCount::value: u64
+impl termrock::widgets::BadgeCount
+pub fn termrock::widgets::BadgeCount::format(self) -> alloc::string::String
+pub const fn termrock::widgets::BadgeCount::max_display(self, u64) -> Self
+pub const fn termrock::widgets::BadgeCount::new(u64) -> Self
+impl core::clone::Clone for termrock::widgets::BadgeCount
+pub fn termrock::widgets::BadgeCount::clone(&self) -> termrock::widgets::BadgeCount
+impl core::cmp::Eq for termrock::widgets::BadgeCount
+impl core::cmp::PartialEq for termrock::widgets::BadgeCount
+pub fn termrock::widgets::BadgeCount::eq(&self, &termrock::widgets::BadgeCount) -> bool
+impl core::fmt::Debug for termrock::widgets::BadgeCount
+pub fn termrock::widgets::BadgeCount::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BadgeCount
+pub fn termrock::widgets::BadgeCount::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BadgeCount
+impl core::marker::StructuralPartialEq for termrock::widgets::BadgeCount
+impl core::marker::Freeze for termrock::widgets::BadgeCount
+impl core::marker::Send for termrock::widgets::BadgeCount
+impl core::marker::Sync for termrock::widgets::BadgeCount
+impl core::marker::Unpin for termrock::widgets::BadgeCount
+impl core::marker::UnsafeUnpin for termrock::widgets::BadgeCount
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BadgeCount
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BadgeCount
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BadgeCount where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BadgeCount::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BadgeCount where U: core::convert::From<T>
+pub fn termrock::widgets::BadgeCount::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BadgeCount where U: core::convert::Into<T>
+pub type termrock::widgets::BadgeCount::Error = core::convert::Infallible
+pub fn termrock::widgets::BadgeCount::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BadgeCount where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BadgeCount::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BadgeCount::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BadgeCount where T: core::clone::Clone
+pub type termrock::widgets::BadgeCount::Owned = T
+pub fn termrock::widgets::BadgeCount::clone_into(&self, &mut T)
+pub fn termrock::widgets::BadgeCount::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BadgeCount where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BadgeCount::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BadgeCount where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeCount::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BadgeCount where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeCount::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BadgeCount where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BadgeCount::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BadgeCount
+pub fn termrock::widgets::BadgeCount::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BadgeCount
+pub struct termrock::widgets::BadgeParts
+pub termrock::widgets::BadgeParts::content: ratatui_core::layout::rect::Rect
+pub termrock::widgets::BadgeParts::root: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::BadgeParts
+pub fn termrock::widgets::BadgeParts::clone(&self) -> termrock::widgets::BadgeParts
+impl core::cmp::Eq for termrock::widgets::BadgeParts
+impl core::cmp::PartialEq for termrock::widgets::BadgeParts
+pub fn termrock::widgets::BadgeParts::eq(&self, &termrock::widgets::BadgeParts) -> bool
+impl core::default::Default for termrock::widgets::BadgeParts
+pub fn termrock::widgets::BadgeParts::default() -> termrock::widgets::BadgeParts
+impl core::fmt::Debug for termrock::widgets::BadgeParts
+pub fn termrock::widgets::BadgeParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BadgeParts
+pub fn termrock::widgets::BadgeParts::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BadgeParts
+impl core::marker::StructuralPartialEq for termrock::widgets::BadgeParts
+impl core::marker::Freeze for termrock::widgets::BadgeParts
+impl core::marker::Send for termrock::widgets::BadgeParts
+impl core::marker::Sync for termrock::widgets::BadgeParts
+impl core::marker::Unpin for termrock::widgets::BadgeParts
+impl core::marker::UnsafeUnpin for termrock::widgets::BadgeParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BadgeParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BadgeParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BadgeParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BadgeParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BadgeParts where U: core::convert::From<T>
+pub fn termrock::widgets::BadgeParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BadgeParts where U: core::convert::Into<T>
+pub type termrock::widgets::BadgeParts::Error = core::convert::Infallible
+pub fn termrock::widgets::BadgeParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BadgeParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BadgeParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BadgeParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BadgeParts where T: core::clone::Clone
+pub type termrock::widgets::BadgeParts::Owned = T
+pub fn termrock::widgets::BadgeParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::BadgeParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BadgeParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BadgeParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BadgeParts where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BadgeParts where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BadgeParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BadgeParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BadgeParts
+pub fn termrock::widgets::BadgeParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BadgeParts
+pub struct termrock::widgets::BadgeState
+pub termrock::widgets::BadgeState::focused: bool
+pub termrock::widgets::BadgeState::region: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::BadgeState::selected: bool
+impl termrock::widgets::BadgeState
+pub const fn termrock::widgets::BadgeState::new() -> Self
+pub const fn termrock::widgets::BadgeState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::BadgeState::set_selected(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::BadgeState
+pub fn termrock::widgets::BadgeState::clone(&self) -> termrock::widgets::BadgeState
+impl core::cmp::Eq for termrock::widgets::BadgeState
+impl core::cmp::PartialEq for termrock::widgets::BadgeState
+pub fn termrock::widgets::BadgeState::eq(&self, &termrock::widgets::BadgeState) -> bool
+impl core::default::Default for termrock::widgets::BadgeState
+pub fn termrock::widgets::BadgeState::default() -> termrock::widgets::BadgeState
+impl core::fmt::Debug for termrock::widgets::BadgeState
+pub fn termrock::widgets::BadgeState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BadgeState
+pub fn termrock::widgets::BadgeState::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BadgeState
+impl core::marker::StructuralPartialEq for termrock::widgets::BadgeState
+impl core::marker::Freeze for termrock::widgets::BadgeState
+impl core::marker::Send for termrock::widgets::BadgeState
+impl core::marker::Sync for termrock::widgets::BadgeState
+impl core::marker::Unpin for termrock::widgets::BadgeState
+impl core::marker::UnsafeUnpin for termrock::widgets::BadgeState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BadgeState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BadgeState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BadgeState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BadgeState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BadgeState where U: core::convert::From<T>
+pub fn termrock::widgets::BadgeState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BadgeState where U: core::convert::Into<T>
+pub type termrock::widgets::BadgeState::Error = core::convert::Infallible
+pub fn termrock::widgets::BadgeState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BadgeState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BadgeState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BadgeState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BadgeState where T: core::clone::Clone
+pub type termrock::widgets::BadgeState::Owned = T
+pub fn termrock::widgets::BadgeState::clone_into(&self, &mut T)
+pub fn termrock::widgets::BadgeState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BadgeState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BadgeState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BadgeState where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BadgeState where T: ?core::marker::Sized
+pub fn termrock::widgets::BadgeState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BadgeState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BadgeState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BadgeState
+pub fn termrock::widgets::BadgeState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BadgeState
 pub struct termrock::widgets::Banner<'a>
 impl<'a> termrock::widgets::Banner<'a>
 pub const fn termrock::widgets::Banner<'a>::new(&'a str, termrock::widgets::Severity, &'a termrock::style::DesignSystem) -> Self

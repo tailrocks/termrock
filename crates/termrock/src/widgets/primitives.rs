@@ -693,50 +693,7 @@ impl IconButton<'_> {
 }
 
 // ── Badge / Tag / Chip ──────────────────────────────────────────────────────
-
-/// Non-interactive status badge.
-#[derive(Debug, Clone, Copy)]
-pub struct Badge<'a> {
-    label: &'a str,
-    tokens: &'a DesignSystem,
-    role: Role,
-}
-
-impl<'a> Badge<'a> {
-    /// Label with info role by default.
-    #[must_use]
-    pub const fn new(label: &'a str, tokens: &'a DesignSystem) -> Self {
-        Self {
-            label,
-            tokens,
-            role: Role::Info,
-        }
-    }
-
-    /// Semantic role for paint.
-    #[must_use]
-    pub const fn role(mut self, role: Role) -> Self {
-        self.role = role;
-        self
-    }
-}
-
-impl Widget for &Badge<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        let text = format!("[{}]", self.label);
-        let text = take_display_cols(&text, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &text,
-            usize::from(area.width),
-            self.tokens.style(self.role),
-        );
-    }
-}
+// Badge lives in `widgets/badge.rs` (variants, count, interactive, fill policy).
 
 /// Removable tag outcome.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1307,7 +1264,7 @@ mod tests {
         let tokens = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 3));
         Widget::render(
-            &Badge::new("NEW", &tokens),
+            &crate::widgets::Badge::new("NEW", &tokens),
             Rect::new(0, 0, 10, 1),
             &mut buf,
         );

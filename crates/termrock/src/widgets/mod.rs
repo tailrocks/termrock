@@ -15,6 +15,7 @@ mod content;
 mod accordion;
 mod collapsible;
 mod section;
+mod badge;
 mod icon;
 mod label;
 mod text;
@@ -93,6 +94,9 @@ pub use composed_row::{ComposedRow, ComposedRowParts};
 pub use content::{
     Alert, AlertOutcome, AlertState, AlertTone, Callout, CalloutTone, Heading, HeadingLevel,
     HeadingParts, HeadingRecipe, Paragraph, ParagraphKind, ParagraphParts, ParagraphRecipe,
+};
+pub use badge::{
+    Badge, BadgeCount, BadgeFill, BadgeOutcome, BadgeParts, BadgeState, BadgeVariant,
 };
 pub use icon::{Icon, IconParts};
 pub use label::{
@@ -176,9 +180,9 @@ pub use picker::{
     open_picker_overlay, place_picker,
 };
 pub use primitives::{
-    ActivationOutcome, ActivationState, Badge, Button, ButtonSize, ButtonState, ButtonVariant,
-    Chip, ChipOutcome, ChipState, IconButton, IconButtonState, Kbd, Spinner, Tag, TagOutcome,
-    TagState, button_hit,
+    ActivationOutcome, ActivationState, Button, ButtonSize, ButtonState, ButtonVariant, Chip,
+    ChipOutcome, ChipState, IconButton, IconButtonState, Kbd, Spinner, Tag, TagOutcome, TagState,
+    button_hit,
 };
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
