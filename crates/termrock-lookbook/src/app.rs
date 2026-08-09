@@ -16,15 +16,13 @@ use termrock::{
         Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
         MouseEventKind,
     },
-    interaction::{
-        Outcome, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack, render_backdrop,
-    },
+    interaction::{Outcome, OverlayOutcome, render_backdrop},
     keymap::KeyChord,
     layout::centered_rect,
     patterns::{StudioShellLayout, layout_studio_shell},
     runtime::FrameTick,
     scroll::{self, ScrollSpan},
-    style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
+    style::{ColorCapability, Density, Role, RolePalette},
     widgets::{
         Action, ChoiceDialog, ChoiceDialogState, DesignInspector, DesignInspectorFrame, Dialog,
         InspectorPanel, List as ComponentList, ListRow, ListState as ComponentListState, Panel,
@@ -34,7 +32,8 @@ use termrock::{
 
 use crate::{
     PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction,
-    focus::{FocusId, FocusOutcome, FocusRing, FocusScope, FocusTarget},
+    focus::{FocusId, is_focused, panel_chrome},
+    host_frame::HostFrame,
     interactors::StoryInteraction,
     stories::gallery_stories,
 };
@@ -81,7 +80,8 @@ pub(crate) struct Lookbook {
     selected: usize,
     preview_scroll: u16,
     sidebar_scroll: u16,
-    focus: FocusRing,
+    /// Public TermRock authorities only (scene + overlays + theme).
+    host: HostFrame,
     interactor: Box<dyn StoryInteraction>,
     component_area: Rect,
     preview_panel_area: Rect,
@@ -89,15 +89,10 @@ pub(crate) struct Lookbook {
     sidebar_inner_area: Rect,
     sidebar_viewport_items: usize,
     preview_viewport_rows: usize,
-    theme: RolePalette,
     knob_selected: usize,
     prototype_toast: ToastState,
-    /// OverlayStack sole authority for lookbook floating UI (Break D).
-    overlays: OverlayStack<()>,
     /// Domain state for the focus-trap prototype dialog.
     prototype_modal: Option<PrototypeModal>,
-    /// Last frame bounds for overlay placement.
-    frame_bounds: Rect,
 }
 
 impl Lookbook {
@@ -109,7 +104,7 @@ impl Lookbook {
             selected: 0,
             preview_scroll: 0,
             sidebar_scroll: 0,
-            focus: FocusRing::new(FocusScope::Screen, Some(FocusId::Sidebar)),
+            host: HostFrame::new(theme),
             interactor,
             component_area: Rect::default(),
             preview_panel_area: Rect::default(),
@@ -117,12 +112,9 @@ impl Lookbook {
             sidebar_inner_area: Rect::default(),
             sidebar_viewport_items: 1,
             preview_viewport_rows: 1,
-            theme,
             knob_selected: 0,
             prototype_toast: ToastState::new(ToastLifetime::ExpiresAfter(PROTOTYPE_TOAST_TTL)),
-            overlays: OverlayStack::new(),
             prototype_modal: None,
-            frame_bounds: Rect::default(),
         }
     }
 
@@ -158,43 +150,29 @@ impl Lookbook {
         let controls_area = studio.knobs;
         let modal_area = centered_rect(52, 9, frame.area());
 
-        self.focus.begin_frame();
-        self.focus.register(FocusTarget {
-            scope: FocusScope::Screen,
-            id: FocusId::Sidebar,
-            area: Some(sidebar_area),
-            enabled: true,
-        });
-        self.focus.register(FocusTarget {
-            scope: FocusScope::Screen,
-            id: FocusId::Preview,
-            area: Some(preview_area),
-            enabled: true,
-        });
+        self.host.frame_bounds = frame.area();
+        self.host.begin_shell_frame(self.prototype_modal.is_some());
+        self.host
+            .register_shell(FocusId::Sidebar, sidebar_area, true);
+        self.host
+            .register_shell(FocusId::Preview, preview_area, true);
         if let Some(controls_area) = controls_area {
-            self.focus.register(FocusTarget {
-                scope: FocusScope::Screen,
-                id: FocusId::Controls,
-                area: Some(controls_area),
-                enabled: true,
-            });
+            self.host
+                .register_shell(FocusId::Controls, controls_area, true);
         }
         if self.prototype_modal.is_some() {
+            // Areas refined after modal paint; register enabled actions for Tab order.
             for action in prototype_modal_actions() {
-                self.focus.register(FocusTarget {
-                    scope: FocusScope::Modal,
-                    id: action.id,
-                    area: None,
-                    enabled: action.enabled,
-                });
+                self.host
+                    .register_modal_action(action.id, modal_area, action.enabled);
             }
         }
-        let _ = self.focus.reconcile();
+        self.host.reconcile();
 
         let [brand_title_area, brand_progress_area] =
             Layout::horizontal([Constraint::Min(1), Constraint::Length(24)]).areas(brand_area);
         frame.render_widget(
-            Paragraph::new("TermRock  lookbook").style(self.theme.style(Role::Text)),
+            Paragraph::new("TermRock  lookbook").style(self.host.theme.style(Role::Text)),
             brand_title_area,
         );
         let spinner_tick = u64::try_from(tick.elapsed().as_millis() / 100).unwrap_or(u64::MAX);
@@ -202,7 +180,7 @@ impl Lookbook {
         frame.render_widget(
             Progress::new(
                 ProgressKind::Indeterminate { tick: spinner_tick },
-                &DesignSystem::from_palette(self.theme.clone()),
+                &self.host.system(),
             )
             .label(&live_label),
             Rect::new(
@@ -223,7 +201,7 @@ impl Lookbook {
         if self.prototype_toast.is_visible(tick) {
             frame.render_widget(
                 Toast::new(
-                    &DesignSystem::from_palette(self.theme.clone()),
+                    &self.host.system(),
                     "Preview updated · expires in 2s",
                     Severity::Success,
                 ),
@@ -236,11 +214,11 @@ impl Lookbook {
     }
 
     fn render_sidebar(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let panel_tokens = DesignSystem::from_palette(self.theme.clone());
+        let panel_tokens = self.host.system();
         let catalog = gallery_stories();
         let block = Panel::new(&panel_tokens)
             .title("Stories")
-            .emphasis(self.focus.panel_emphasis_for(&FocusId::Sidebar))
+            .emphasis(panel_chrome(&self.host.scene, FocusId::Sidebar))
             .block();
         let inner = block.inner(area);
         frame.render_widget(block, area);
@@ -257,8 +235,14 @@ impl Lookbook {
             .iter()
             .map(|story| {
                 ListItem::new(vec![
-                    Line::from(Span::styled(story.component, self.theme.style(Role::Text))),
-                    Line::from(Span::styled(story.id, self.theme.style(Role::TextMuted))),
+                    Line::from(Span::styled(
+                        story.component,
+                        self.host.theme.style(Role::Text),
+                    )),
+                    Line::from(Span::styled(
+                        story.id,
+                        self.host.theme.style(Role::TextMuted),
+                    )),
                 ])
             })
             .collect::<Vec<_>>();
@@ -268,7 +252,8 @@ impl Lookbook {
         frame.render_stateful_widget(
             RatatuiList::new(items)
                 .highlight_style(
-                    self.theme
+                    self.host
+                        .theme
                         .style(Role::Selection)
                         .add_modifier(Modifier::BOLD),
                 )
@@ -282,7 +267,7 @@ impl Lookbook {
     }
 
     fn render_description(&self, frame: &mut Frame<'_>, area: Rect) {
-        let panel_tokens = DesignSystem::from_palette(self.theme.clone());
+        let panel_tokens = self.host.system();
         let story = gallery_stories()[self.selected];
         let block = Panel::new(&panel_tokens).title("About").block();
         let inner = block.inner(area);
@@ -295,38 +280,38 @@ impl Lookbook {
         .areas(inner);
         frame.render_widget(
             Paragraph::new(Line::from(vec![
-                Span::styled(story.title, self.theme.style(Role::Text)),
+                Span::styled(story.title, self.host.theme.style(Role::Text)),
                 Span::raw("  "),
                 Span::styled(
                     story.component,
                     Style::default()
-                        .patch(self.theme.style(Role::Accent))
+                        .patch(self.host.theme.style(Role::Accent))
                         .add_modifier(Modifier::DIM),
                 ),
                 Span::raw("  "),
-                Span::styled(story.id, self.theme.style(Role::TextMuted)),
+                Span::styled(story.id, self.host.theme.style(Role::TextMuted)),
             ])),
             title,
         );
         frame.render_widget(
             Paragraph::new(story.description)
-                .style(self.theme.style(Role::Border))
+                .style(self.host.theme.style(Role::Border))
                 .wrap(Wrap { trim: false }),
             description,
         );
     }
 
     fn render_preview(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let panel_tokens = DesignSystem::from_palette(self.theme.clone());
+        let panel_tokens = self.host.system();
         let story = gallery_stories()[self.selected];
         let block = Panel::new(&panel_tokens)
             .title("Preview")
-            .emphasis(self.focus.panel_emphasis_for(&FocusId::Preview))
+            .emphasis(panel_chrome(&self.host.scene, FocusId::Preview))
             .block();
         let inner = block.inner(area);
         frame.render_widget(block, area);
         frame.render_widget(
-            Block::default().style(self.theme.style(Role::Surface)),
+            Block::default().style(self.host.theme.style(Role::Surface)),
             inner,
         );
         let canvas = inner.inner(ratatui::layout::Margin {
@@ -369,7 +354,7 @@ impl Lookbook {
         if area.height == 0 || area.width == 0 {
             return;
         }
-        let focused = match self.focus.focused() {
+        let focused = match self.host.focused() {
             Some(FocusId::Sidebar) => "sidebar",
             Some(FocusId::Preview) => "preview",
             Some(FocusId::Controls) => "controls",
@@ -402,17 +387,16 @@ impl Lookbook {
             selection_chrome: "gutter",
         };
         frame.render_widget(
-            DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone()))
-                .panel(InspectorPanel::Focus),
+            DesignInspector::new(snap, &self.host.system()).panel(InspectorPanel::Focus),
             area,
         );
     }
 
     fn render_knobs(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let tokens = DesignSystem::from_palette(self.theme.clone());
+        let tokens = self.host.system();
         let panel = Panel::new(&tokens)
             .title("Controls")
-            .emphasis(self.focus.panel_emphasis_for(&FocusId::Controls));
+            .emphasis(panel_chrome(&self.host.scene, FocusId::Controls));
         let inner = panel.inner(area);
         frame.render_widget(panel, area);
         let [list_area, editor_area] = Layout::vertical([
@@ -432,7 +416,7 @@ impl Lookbook {
             })
             .collect::<Vec<_>>();
         let mut state = ComponentListState::new(Some(self.knob_selected));
-        let focused = self.focus.is_focused(&FocusId::Controls);
+        let focused = is_focused(&self.host.scene, FocusId::Controls);
         frame.render_stateful_widget(
             &ComponentList::new(&rows, &tokens).focused(focused),
             list_area,
@@ -450,14 +434,14 @@ impl Lookbook {
             );
             return;
         }
-        if self.focus.is_focused(&FocusId::Controls) {
+        if is_focused(&self.host.scene, FocusId::Controls) {
             frame.render_widget(
                 Paragraph::new("↑↓ knob   ←→ change   type edit   Esc back   t/^t theme"),
                 area,
             );
             return;
         }
-        let spans = match self.focus.focused() {
+        let spans = match self.host.focused() {
             Some(FocusId::Preview) => PREVIEW_KEYMAP.hint_spans(),
             Some(FocusId::Sidebar) | None => SIDEBAR_KEYMAP.hint_spans(),
             Some(FocusId::Controls) => unreachable!(),
@@ -511,12 +495,12 @@ impl Lookbook {
                     let index = (usize::from(self.sidebar_scroll) + row / 2)
                         .min(gallery_stories().len().saturating_sub(1));
                     self.select(index);
-                    let _ = self.focus.request_focus(FocusId::Sidebar);
+                    self.host.focus(FocusId::Sidebar);
                 }
                 if self.preview_panel_area.contains(mouse.position) {
-                    let _ = self.focus.request_focus(FocusId::Preview);
+                    self.host.focus(FocusId::Preview);
                 }
-                let _ = self.focus.focus_at(mouse.position);
+                let _ = self.host.scene.handle_mouse(mouse);
             }
             MouseEventKind::ScrollUp | MouseEventKind::ScrollDown if over_sidebar => {
                 let before = self.selected;
@@ -535,7 +519,7 @@ impl Lookbook {
                 if self.selected != before {
                     self.preview_scroll = 0;
                     self.interactor = gallery_stories()[self.selected].make_interactor();
-                    self.interactor.set_theme(self.theme.clone());
+                    self.interactor.set_theme(self.host.theme.clone());
                     self.knob_selected = 0;
                 }
             }
@@ -543,7 +527,7 @@ impl Lookbook {
             | MouseEventKind::ScrollDown
             | MouseEventKind::ScrollLeft
             | MouseEventKind::ScrollRight
-                if self.focus.is_focused(&FocusId::Preview) =>
+                if is_focused(&self.host.scene, FocusId::Preview) =>
             {
                 let mut ignored_x = 0;
                 scroll::apply_mouse_scroll_u16(
@@ -574,16 +558,17 @@ impl Lookbook {
 
     fn handle_key(&mut self, key: KeyEvent, tick: FrameTick) -> ControlFlow<()> {
         let chord = KeyChord::from(key);
-        let captures_text = match self.focus.focused() {
+        let captures_text = match self.host.focused() {
             Some(FocusId::Preview) => self.interactor.captures_text_input(),
             Some(FocusId::Controls) => self.interactor.knob_captures_text_input(self.knob_selected),
             Some(FocusId::Sidebar) | None => false,
             Some(FocusId::ModalContinue | FocusId::ModalDisabled | FocusId::ModalCancel) => false,
         };
-        if matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
-            && !matches!(self.focus.handle_key(key), FocusOutcome::Ignored)
-        {
-            return ControlFlow::Continue(());
+        if matches!(key.code, KeyCode::Tab | KeyCode::BackTab) {
+            let out = self.host.handle_scene_key(key);
+            if !matches!(out, termrock::interaction::InteractionOutcome::Ignored) {
+                return ControlFlow::Continue(());
+            }
         }
         if key.code == KeyCode::Char('m') && !captures_text {
             self.open_focus_modal();
@@ -592,15 +577,15 @@ impl Lookbook {
         let theme_toggle = key.code == KeyCode::Char('t')
             && (key.modifiers.contains(KeyModifiers::CONTROL) || !captures_text);
         if theme_toggle {
-            self.theme = if self.theme == RolePalette::tailrocks_phosphor() {
+            self.host.theme = if self.host.theme == RolePalette::tailrocks_phosphor() {
                 RolePalette::slate()
             } else {
                 RolePalette::default()
             };
-            self.interactor.set_theme(self.theme.clone());
+            self.interactor.set_theme(self.host.theme.clone());
             return ControlFlow::Continue(());
         }
-        match self.focus.focused() {
+        match self.host.focused() {
             Some(FocusId::Preview) => self.handle_preview_key(key, chord),
             Some(FocusId::Sidebar) | None => return self.handle_sidebar_key(chord),
             Some(FocusId::Controls) => self.handle_knob_key(key, chord, tick),
@@ -621,7 +606,7 @@ impl Lookbook {
             .unwrap_or(PreviewAction::Forward)
         {
             PreviewAction::BackToList => {
-                let _ = self.focus.request_focus(FocusId::Sidebar);
+                self.host.focus(FocusId::Sidebar);
             }
             PreviewAction::MovePreviewDown => self.scroll_preview(content, 1),
             PreviewAction::MovePreviewUp => self.scroll_preview(content, -1),
@@ -640,7 +625,7 @@ impl Lookbook {
     fn handle_knob_key(&mut self, key: KeyEvent, chord: KeyChord, tick: FrameTick) {
         match chord.key {
             KeyCode::Esc => {
-                let _ = self.focus.request_focus(FocusId::Sidebar);
+                self.host.focus(FocusId::Sidebar);
             }
             KeyCode::Up => self.knob_selected = self.knob_selected.saturating_sub(1),
             KeyCode::Down => {
@@ -660,7 +645,7 @@ impl Lookbook {
         match SIDEBAR_KEYMAP.dispatch(chord) {
             Some(SidebarAction::Quit) => return ControlFlow::Break(()),
             Some(SidebarAction::FocusPreview) => {
-                let _ = self.focus.request_focus(FocusId::Preview);
+                self.host.focus(FocusId::Preview);
             }
             Some(SidebarAction::Navigate) => {
                 let down = matches!(chord.key, KeyCode::Down | KeyCode::Char('j'));
@@ -687,7 +672,7 @@ impl Lookbook {
     fn select(&mut self, selected: usize) {
         if selected != self.selected {
             self.interactor = gallery_stories()[selected].make_interactor();
-            self.interactor.set_theme(self.theme.clone());
+            self.interactor.set_theme(self.host.theme.clone());
             self.preview_scroll = 0;
             self.knob_selected = 0;
             self.selected = selected;
@@ -704,53 +689,39 @@ impl Lookbook {
     }
 
     fn open_focus_modal(&mut self) {
-        let bounds = if self.frame_bounds.width > 0 {
-            self.frame_bounds
-        } else {
-            Rect::new(0, 0, 80, 24)
-        };
-        let _ = self.overlays.open(
-            bounds,
-            OverlaySpec::dialog(
-                OverlayId::from_static("lookbook.focus_trap"),
-                OverlaySize::dialog(52, 9),
-                None,
-            ),
-        );
+        self.host.open_focus_trap();
         self.prototype_modal = Some(PrototypeModal::new());
-        self.focus.push_modal_scope(FocusScope::Modal);
+        // Next frame registers Modal layer + focuses first action after reconcile.
+        self.host.begin_shell_frame(true);
+        for action in prototype_modal_actions() {
+            self.host
+                .register_modal_action(action.id, Rect::default(), action.enabled);
+        }
+        self.host.reconcile();
+        self.host.focus(FocusId::ModalContinue);
     }
 
     fn close_focus_modal(&mut self) {
-        let _ = self
-            .overlays
-            .dismiss(&OverlayId::from_static("lookbook.focus_trap"));
+        self.host.close_focus_trap();
         self.prototype_modal = None;
-        self.focus.pop_modal_scope();
     }
 
     fn handle_modal_key(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Tab | KeyCode::BackTab => {
-                let _ = self.focus.handle_key(key);
+                let _ = self.host.handle_scene_key(key);
             }
-            KeyCode::Esc => match self.overlays.handle_escape() {
-                OverlayOutcome::Dismissed { .. } | OverlayOutcome::UnhandledEscape => {
-                    self.prototype_modal = None;
-                    self.focus.pop_modal_scope();
-                }
-                OverlayOutcome::Ignored => {
-                    // Trap policy — still allow host prototype cancel via domain Esc.
-                    self.close_focus_modal();
-                }
-                _ => self.close_focus_modal(),
-            },
+            KeyCode::Esc => {
+                let _ = self.host.overlays.handle_escape();
+                let _ = self.host.scene.handle_escape();
+                self.close_focus_modal();
+            }
             KeyCode::Enter => {
                 let actions = prototype_modal_actions();
                 let Some(modal) = self.prototype_modal.as_mut() else {
                     return;
                 };
-                modal.state.focused = self.focus.focused().copied();
+                modal.state.focused = self.host.focused();
                 if matches!(
                     modal.state.activate_selected(&actions),
                     Outcome::Activated(_)
@@ -766,30 +737,28 @@ impl Lookbook {
         if mouse.kind != MouseEventKind::Down(MouseButton::Left) {
             return;
         }
-        let _ = self.focus.focus_at(mouse.position);
+        let _ = self.host.scene.handle_mouse(mouse);
         // Outside-click dismiss via OverlayStack sole authority.
         if matches!(
-            self.overlays.handle_outside_click(mouse.position),
+            self.host.overlays.handle_outside_click(mouse.position),
             OverlayOutcome::Dismissed { .. }
         ) {
-            self.prototype_modal = None;
-            self.focus.pop_modal_scope();
+            self.close_focus_modal();
             return;
         }
         let Some(modal) = self.prototype_modal.as_mut() else {
             return;
         };
-        modal.state.focused = self.focus.focused().copied();
+        modal.state.focused = self.host.focused();
         if matches!(modal.state.click(mouse.position), Outcome::Activated(_)) {
             self.close_focus_modal();
         }
     }
 
     fn render_focus_modal(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        self.frame_bounds = frame.area();
-        self.overlays.reflow(frame.area());
-        // Stack-driven backdrop wash.
-        if self.overlays.backdrop_policy() != termrock::interaction::BackdropPolicy::None
+        self.host.frame_bounds = frame.area();
+        self.host.overlays.reflow(frame.area());
+        if self.host.overlays.backdrop_policy() != termrock::interaction::BackdropPolicy::None
             || self.prototype_modal.is_some()
         {
             render_backdrop(frame, frame.area());
@@ -798,17 +767,14 @@ impl Lookbook {
         let Some(modal) = self.prototype_modal.as_mut() else {
             return;
         };
-        modal.state.focused = self.focus.focused().copied();
-        let tokens = termrock::style::DesignSystem::new(
-            self.theme.clone(),
-            termrock::style::Density::default(),
-        );
+        modal.state.focused = self.host.focused();
+        let system = self.host.system();
         frame.render_stateful_widget(
             &ChoiceDialog::new(
                 Dialog::new(
                     "Focus trap",
                     Line::from("Tab stays here; close restores the opener.").into(),
-                    &tokens,
+                    &system,
                 )
                 .emphasis(PanelChrome::Focused),
                 &actions,
@@ -823,10 +789,22 @@ impl Lookbook {
             .iter()
             .map(|region| (region.id, region.area))
             .collect::<Vec<_>>();
-        for (id, action_area) in regions {
-            let _ = self
-                .focus
-                .attach_region(&FocusScope::Modal, &id, action_area);
+        // Refresh modal action hit geometry for next pointer frame.
+        if self.prototype_modal.is_some() {
+            self.host.begin_shell_frame(true);
+            self.host
+                .register_shell(FocusId::Sidebar, self.sidebar_area, true);
+            self.host
+                .register_shell(FocusId::Preview, self.preview_panel_area, true);
+            for (id, action_area) in regions {
+                let enabled = prototype_modal_actions()
+                    .iter()
+                    .find(|a| a.id == id)
+                    .map(|a| a.enabled)
+                    .unwrap_or(true);
+                self.host.register_modal_action(id, action_area, enabled);
+            }
+            self.host.reconcile();
         }
     }
 }
@@ -860,16 +838,13 @@ mod tests {
             .unwrap();
         app.select(toast);
         render_app(&mut app, tick);
-        assert!(!matches!(
-            app.focus.request_focus(FocusId::Preview),
-            FocusOutcome::Ignored
-        ));
+        app.host.focus(FocusId::Preview);
 
         assert_eq!(
             app.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE), tick),
             ControlFlow::Continue(())
         );
-        assert_eq!(app.focus.focused(), Some(&FocusId::Controls));
+        assert_eq!(app.host.focused(), Some(FocusId::Controls));
         let _ = app.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), tick);
         assert_eq!(app.interactor.knobs()[0].display_value(), "Warning");
         let _ = app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), tick);
@@ -888,14 +863,11 @@ mod tests {
             .unwrap();
         app.select(toast);
         render_app(&mut app, tick);
-        assert!(!matches!(
-            app.focus.request_focus(FocusId::Controls),
-            FocusOutcome::Ignored
-        ));
+        app.host.focus(FocusId::Controls);
 
         let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
 
-        assert_eq!(app.theme, RolePalette::slate());
+        assert_eq!(app.host.theme, RolePalette::slate());
     }
 
     #[test]
@@ -908,18 +880,15 @@ mod tests {
             .unwrap();
         app.select(picker);
         render_app(&mut app, tick);
-        assert!(!matches!(
-            app.focus.request_focus(FocusId::Preview),
-            FocusOutcome::Ignored
-        ));
+        app.host.focus(FocusId::Preview);
 
         let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
-        assert_eq!(app.theme, RolePalette::default());
+        assert_eq!(app.host.theme, RolePalette::default());
         let _ = app.handle_key(
             KeyEvent::new(KeyCode::Char('t'), KeyModifiers::CONTROL),
             tick,
         );
-        assert_eq!(app.theme, RolePalette::slate());
+        assert_eq!(app.host.theme, RolePalette::slate());
     }
 
     #[test]
@@ -933,10 +902,7 @@ mod tests {
         let start = Instant::now();
         let action_tick = tick_at(start, 100);
         render_app(&mut app, action_tick);
-        assert!(!matches!(
-            app.focus.request_focus(FocusId::Controls),
-            FocusOutcome::Ignored
-        ));
+        app.host.focus(FocusId::Controls);
 
         app.handle_knob_key(
             KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
@@ -953,21 +919,18 @@ mod tests {
         let mut app = Lookbook::new();
         let tick = tick_at(Instant::now(), 0);
         render_app(&mut app, tick);
-        assert!(!matches!(
-            app.focus.request_focus(FocusId::Preview),
-            FocusOutcome::Ignored
-        ));
+        app.host.focus(FocusId::Preview);
 
         app.open_focus_modal();
         render_app(&mut app, tick);
-        assert_eq!(app.focus.focused(), Some(&FocusId::ModalContinue));
+        assert_eq!(app.host.focused(), Some(FocusId::ModalContinue));
 
         app.handle_modal_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
-        assert_eq!(app.focus.focused(), Some(&FocusId::ModalCancel));
+        assert_eq!(app.host.focused(), Some(FocusId::ModalCancel));
         app.handle_modal_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
 
         assert!(!app.prototype_modal.is_some());
-        assert_eq!(app.focus.focused(), Some(&FocusId::Preview));
+        assert_eq!(app.host.focused(), Some(FocusId::Preview));
     }
 
     #[test]
@@ -975,10 +938,7 @@ mod tests {
         let mut app = Lookbook::new();
         let tick = tick_at(Instant::now(), 0);
         render_app(&mut app, tick);
-        assert!(!matches!(
-            app.focus.request_focus(FocusId::Preview),
-            FocusOutcome::Ignored
-        ));
+        app.host.focus(FocusId::Preview);
         app.open_focus_modal();
         render_app(&mut app, tick);
 
@@ -991,7 +951,7 @@ mod tests {
             tick,
         );
         assert!(app.prototype_modal.is_some());
-        assert_eq!(app.focus.focused(), Some(&FocusId::ModalContinue));
+        assert_eq!(app.host.focused(), Some(FocusId::ModalContinue));
 
         let cancel = app
             .prototype_modal
@@ -1013,6 +973,77 @@ mod tests {
         );
 
         assert!(!app.prototype_modal.is_some());
-        assert_eq!(app.focus.focused(), Some(&FocusId::Preview));
+        assert_eq!(app.host.focused(), Some(FocusId::Preview));
+    }
+
+    #[test]
+    fn host_frame_narrow_and_tiny_shell_geometry() {
+        let mut app = Lookbook::new();
+        let tick = tick_at(Instant::now(), 0);
+        for (w, h) in [(80, 24), (40, 16), (20, 10), (12, 8)] {
+            let mut terminal = Terminal::new(TestBackend::new(w, h)).unwrap();
+            terminal.draw(|frame| app.render_at(frame, tick)).unwrap();
+            assert!(
+                app.host.frame_bounds.width == w && app.host.frame_bounds.height == h,
+                "{w}x{h}"
+            );
+            // Root layer always present after paint.
+            assert!(
+                app.host
+                    .scene
+                    .layers()
+                    .iter()
+                    .any(|l| l.id == crate::focus::LayerId::Root)
+            );
+        }
+    }
+
+    #[test]
+    fn host_frame_sidebar_focus_paints_title_and_tab_cycles() {
+        let mut app = Lookbook::new();
+        let tick = tick_at(Instant::now(), 0);
+        let mut terminal = Terminal::new(TestBackend::new(100, 30)).unwrap();
+        app.host.focus(FocusId::Sidebar);
+        terminal.draw(|frame| app.render_at(frame, tick)).unwrap();
+        let text: String = terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("Stories") || text.contains("TermRock"),
+            "shell chrome missing: {text:?}"
+        );
+        assert_eq!(app.host.focused(), Some(FocusId::Sidebar));
+        let _ = app.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE), tick);
+        // After Tab from Sidebar, scene should move to Preview or Controls depending on order.
+        assert!(
+            matches!(
+                app.host.focused(),
+                Some(FocusId::Preview) | Some(FocusId::Controls)
+            ),
+            "{:?}",
+            app.host.focused()
+        );
+    }
+
+    #[test]
+    fn host_frame_uses_public_authorities_only() {
+        let host = include_str!("host_frame.rs");
+        let production: String = host
+            .lines()
+            .filter(|l| {
+                let t = l.trim_start();
+                !t.starts_with("//")
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(production.contains("InteractionScene"));
+        assert!(production.contains("OverlayStack"));
+        assert!(production.contains("DesignSystem"));
+        assert!(!production.contains("FocusRing"));
+        assert!(!production.contains("ModalStack"));
     }
 }

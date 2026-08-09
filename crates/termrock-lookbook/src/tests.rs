@@ -271,17 +271,45 @@ fn no_dual_agent_chrome_stories() {
     }
 }
 
+fn production_source(s: &str) -> String {
+    let head = s.split("#[cfg(test)]").next().unwrap_or(s);
+    head.lines()
+        .filter(|l| {
+            let t = l.trim_start();
+            !t.starts_with("//") && !t.starts_with("//!")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 #[test]
 fn no_modal_stack_in_lookbook_sources() {
-    let app = include_str!("app.rs");
-    let host = include_str!("host_focus.rs");
-    assert!(!app.contains("ModalStack"), "app must use OverlayStack");
+    let app_p = production_source(include_str!("app.rs"));
+    let host_p = production_source(include_str!("host_frame.rs"));
+    assert!(!app_p.contains("ModalStack"), "app must use OverlayStack");
     assert!(
-        !host.contains("ModalStack"),
-        "host_focus must not import ModalStack"
+        !host_p.contains("ModalStack"),
+        "host_frame must not import ModalStack"
     );
     assert!(
-        app.contains("OverlayStack"),
-        "app must dogfood OverlayStack"
+        app_p.contains("HostFrame") && host_p.contains("OverlayStack"),
+        "lookbook must dogfood HostFrame/OverlayStack"
     );
+}
+
+#[test]
+fn no_focus_ring_fork_in_lookbook() {
+    let app = production_source(include_str!("app.rs"));
+    let focus = production_source(include_str!("focus.rs"));
+    let host = production_source(include_str!("host_frame.rs"));
+    assert!(
+        !app.contains("FocusRing") && !focus.contains("FocusRing") && !host.contains("FocusRing")
+    );
+    assert!(
+        !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/host_focus.rs")
+            .exists(),
+        "host_focus.rs must be deleted"
+    );
+    assert!(host.contains("InteractionScene"));
 }

@@ -1,12 +1,15 @@
-//! Lookbook focus identities + host-owned FocusRing.
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! Lookbook focus / layer identities for [`termrock::interaction::InteractionScene`].
 //!
-//! TermRock M3 removed public FocusRing (`InteractionScene` is the library
-//! authority). Lookbook keeps a host-local ring for the studio shell until a
-//! full InteractionScene HostFrame cutover.
+//! No host-local FocusRing — scene + OverlayStack are the sole authorities.
 
-pub(crate) use crate::host_focus::{FocusOutcome, FocusTarget};
+use termrock::interaction::InteractionScene;
+use termrock::style::PanelChrome;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Stable focus targets for the studio shell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum FocusId {
     Sidebar,
     Preview,
@@ -16,10 +19,27 @@ pub(crate) enum FocusId {
     ModalCancel,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum FocusScope {
-    Screen,
+/// Scene layers (root shell vs focus-trap modal).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum LayerId {
+    Root,
     Modal,
 }
 
-pub(crate) type FocusRing = crate::host_focus::FocusRing<FocusId, FocusScope>;
+/// Panel chrome from scene focus (BorderFocused role via Panel).
+#[must_use]
+pub(crate) fn panel_chrome(
+    scene: &InteractionScene<FocusId, LayerId, ()>,
+    id: FocusId,
+) -> PanelChrome {
+    if scene.focused() == Some(&id) {
+        PanelChrome::Focused
+    } else {
+        PanelChrome::Normal
+    }
+}
+
+#[must_use]
+pub(crate) fn is_focused(scene: &InteractionScene<FocusId, LayerId, ()>, id: FocusId) -> bool {
+    scene.focused() == Some(&id)
+}

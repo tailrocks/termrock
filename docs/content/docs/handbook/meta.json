@@ -11,6 +11,7 @@
     "permission-prompt",
     "agent-workbench",
     "transcript",
-    "overlay-stack"
+    "overlay-stack",
+    "host-frame"
   ]
 }
