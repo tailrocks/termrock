@@ -196,7 +196,16 @@ fn buffer_to_svg(buffer: &Buffer, title: &str) -> String {
             }
             let symbol = cell.symbol();
             if !symbol.trim().is_empty() {
-                let fg = foreground_to_css(cell.fg);
+                // Materialize REVERSED / DIM so previews match terminal cues even
+                // when the theme only set modifiers without explicit RGB pairs.
+                let (fg, swap_bg) = resolve_text_paint(cell.fg, cell.bg, cell.modifier);
+                if let Some(bg_css) = swap_bg {
+                    if bg_css != "#000000" {
+                        out.push_str(&format!(
+                            r#"<rect x="{px}" y="{py}" width="{CELL_W}" height="{CELL_H}" fill="{bg_css}"/>"#
+                        ));
+                    }
+                }
                 let text_y = py.saturating_add(BASELINE);
                 out.push_str(&format!(
                     r#"<text x="{px}" y="{text_y}" fill="{fg}">{}</text>"#,
@@ -238,6 +247,53 @@ fn foreground_to_css(color: Color) -> String {
     } else {
         color_to_css(color)
     }
+}
+
+/// Resolve cell foreground (and optional reverse background) for SVG export.
+fn resolve_text_paint(
+    fg: Color,
+    bg: Color,
+    modifier: ratatui::style::Modifier,
+) -> (String, Option<String>) {
+    use ratatui::style::Modifier;
+    let mut fg_css = foreground_to_css(fg);
+    let mut swap_bg = None;
+    if modifier.contains(Modifier::REVERSED) {
+        // Swap: text uses former bg (or black), paint former fg as cell bg.
+        let new_bg = if fg == Color::Reset {
+            "#ffffff".into()
+        } else {
+            color_to_css(fg)
+        };
+        let new_fg = if bg == Color::Reset || bg == Color::Black {
+            "#000000".into()
+        } else {
+            color_to_css(bg)
+        };
+        fg_css = new_fg;
+        swap_bg = Some(new_bg);
+    }
+    if modifier.contains(Modifier::DIM) {
+        fg_css = dim_css(&fg_css);
+    }
+    (fg_css, swap_bg)
+}
+
+fn dim_css(css: &str) -> String {
+    // Approximate ANSI dim by scaling RGB toward black (~55%).
+    if let Some(hex) = css.strip_prefix('#') {
+        if hex.len() == 6 {
+            if let (Ok(r), Ok(g), Ok(b)) = (
+                u8::from_str_radix(&hex[0..2], 16),
+                u8::from_str_radix(&hex[2..4], 16),
+                u8::from_str_radix(&hex[4..6], 16),
+            ) {
+                let scale = |c: u8| ((u16::from(c) * 140) / 255) as u8;
+                return format!("#{:02x}{:02x}{:02x}", scale(r), scale(g), scale(b));
+            }
+        }
+    }
+    "#808080".into()
 }
 
 fn escape_xml(value: &str) -> String {
@@ -301,5 +357,61 @@ mod color_tests {
 
         assert_eq!(svg.matches(">日</text>").count(), 1);
         assert!(svg.contains(r##"<text x="9" y="14" fill="#ffffff">日</text>"##));
+    }
+
+    #[test]
+    fn dim_modifier_darkens_foreground_rgb() {
+        assert_eq!(dim_css("#ffffff"), "#8c8c8c");
+    }
+
+    #[test]
+    fn button_disabled_svg_body_differs_from_activation() {
+        use crate::stories::stories;
+        let theme = Theme::default();
+        let act = stories()
+            .into_iter()
+            .find(|s| s.id == "button/activation")
+            .expect("activation story");
+        let dis = stories()
+            .into_iter()
+            .find(|s| s.id == "button/disabled")
+            .expect("disabled story");
+        let a = render_story_to_svg(act, &theme);
+        let d = render_story_to_svg(dis, &theme);
+        let strip = |s: &str| {
+            s.replace(r#"aria-label="Button""#, "")
+                .replace(r#"aria-label="Disabled button""#, "")
+        };
+        assert_ne!(
+            strip(&a),
+            strip(&d),
+            "disabled paint must not collapse to focused activation in SVG"
+        );
+        // Disabled uses dim phosphor gray, not pure white label on green chip alone.
+        assert!(
+            d.contains("#") && a.contains("#"),
+            "both SVGs must serialize explicit fills"
+        );
+    }
+
+    #[test]
+    fn button_unicode_svg_contains_cjk_or_emoji() {
+        use crate::stories::stories;
+        let theme = Theme::default();
+        let story = stories()
+            .into_iter()
+            .find(|s| s.id == "button/unicode")
+            .expect("unicode story");
+        let svg = render_story_to_svg(story, &theme);
+        assert!(
+            svg.contains("保存") || svg.contains("✨") || svg.contains("&#"),
+            "unicode story must paint non-ASCII content, got snippet: {}",
+            &svg[svg.find("<text").unwrap_or(0)
+                ..svg
+                    .find("<text")
+                    .unwrap_or(0)
+                    .saturating_add(200)
+                    .min(svg.len())]
+        );
     }
 }

@@ -306,8 +306,14 @@ impl Theme {
                 GREEN,
                 DIM,
                 Style::new().fg(BORDER_GRAY),
-                Style::new().reversed(),
-                Style::new().dim(),
+                // Explicit RGB so lookbook SVG (and monochrome-unaware paths)
+                // distinguish focused vs disabled actions without relying on
+                // REVERSED/DIM modifiers alone.
+                Style::new()
+                    .fg(INK)
+                    .bg(PHOSPHOR_GREEN)
+                    .add_modifier(Modifier::BOLD),
+                Style::new().fg(PHOSPHOR_DIM),
                 Style::new(),
                 Style::new().fg(DIFF_ADDED_FG).bg(DIFF_ADDED_BG),
                 Style::new().fg(DIFF_REMOVED_FG).bg(DIFF_REMOVED_BG),
@@ -371,7 +377,7 @@ impl Theme {
                 Style::new().fg(muted),
                 Style::new().fg(border),
                 Style::new().fg(canvas).bg(accent).bold(),
-                Style::new().fg(disabled).dim(),
+                Style::new().fg(disabled),
                 Style::new().fg(text).bg(surface),
                 Style::new()
                     .fg(Color::Rgb(134, 239, 172))
@@ -475,6 +481,25 @@ mod tests {
         let theme = Theme::default();
         assert_eq!(theme.style(Role::Border).fg, Some(BORDER_GRAY));
         assert_eq!(theme.style(Role::BorderFocused).fg, Some(PHOSPHOR_GREEN));
+    }
+
+    #[test]
+    fn action_focused_and_disabled_use_distinct_rgb() {
+        let theme = Theme::tailrocks_phosphor();
+        let focused = theme.style(Role::ActionFocused);
+        let disabled = theme.style(Role::ActionDisabled);
+        assert_ne!(focused.fg, disabled.fg);
+        assert!(
+            focused.bg.is_some(),
+            "ActionFocused needs explicit bg for SVG"
+        );
+        assert!(
+            disabled.fg.is_some(),
+            "ActionDisabled needs explicit fg for SVG"
+        );
+        // Not modifier-only styles.
+        assert_ne!(focused, Style::new().reversed());
+        assert_ne!(disabled, Style::new().dim());
     }
 
     #[test]

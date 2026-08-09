@@ -273,7 +273,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Wide CJK and emoji labels clipped on grapheme boundaries.",
             34,
             2,
-            progress_unicode,
+            progress_unicode_story,
         ),
         Story::new(
             "log-pane/follow",
@@ -385,7 +385,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Display-width clipping preserves complete Unicode candidates.",
             32,
             8,
-            completion_menu_basic,
+            completion_menu_unicode_story,
         ),
         Story::new(
             "virtual-grid/basic",
@@ -422,7 +422,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Headers and cells preserve Unicode display-column boundaries.",
             48,
             10,
-            virtual_grid_basic,
+            virtual_grid_unicode_story,
         ),
         Story::new(
             "table/basic",
@@ -898,7 +898,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Grapheme-safe multi-block transcript lines.",
             48,
             8,
-            transcript_basic,
+            transcript_unicode_story,
         ),
         Story::new(
             "timeline/basic",
@@ -1163,7 +1163,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for ActionBar (CJK/emoji-capable layout).",
             48,
             2,
-            action_bar,
+            action_bar_unicode_story,
         ),
         Story::new(
             "backdrop/narrow",
@@ -1181,7 +1181,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Backdrop (CJK/emoji-capable layout).",
             34,
             4,
-            backdrop,
+            backdrop_unicode_story,
         ),
         Story::new(
             "badge/narrow",
@@ -1217,7 +1217,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Banner (CJK/emoji-capable layout).",
             40,
             1,
-            banner,
+            banner_unicode_story,
         ),
         Story::new(
             "bar-series/narrow",
@@ -1235,7 +1235,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for BarSeries (CJK/emoji-capable layout).",
             36,
             3,
-            bar_series,
+            bar_series_unicode_story,
         ),
         Story::new(
             "button/narrow",
@@ -1253,7 +1253,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Button (CJK/emoji-capable layout).",
             32,
             3,
-            button_story,
+            button_unicode_story,
         ),
         Story::new(
             "callout/narrow",
@@ -1289,7 +1289,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Checkbox (CJK/emoji-capable layout).",
             40,
             4,
-            checkbox_switch_story,
+            checkbox_unicode_story,
         ),
         Story::new(
             "choice-dialog/narrow",
@@ -1307,7 +1307,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for ChoiceDialog (CJK/emoji-capable layout).",
             48,
             7,
-            choice_dialog,
+            choice_dialog_unicode_story,
         ),
         Story::new(
             "code-block/narrow",
@@ -1325,7 +1325,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for CodeBlock (CJK/emoji-capable layout).",
             40,
             5,
-            code_block,
+            code_block_unicode_story,
         ),
         Story::new(
             "command-palette/narrow",
@@ -1361,7 +1361,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for DataTable (CJK/emoji-capable layout).",
             60,
             10,
-            data_table_story,
+            data_table_unicode_story,
         ),
         Story::new(
             "design-inspector/narrow",
@@ -1379,7 +1379,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for DesignInspector (CJK/emoji-capable layout).",
             48,
             4,
-            design_inspector,
+            design_inspector_unicode_story,
         ),
         Story::new(
             "detail-table/narrow",
@@ -1433,7 +1433,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Drawer (CJK/emoji-capable layout).",
             28,
             10,
-            drawer_story,
+            drawer_unicode_story,
         ),
         Story::new(
             "empty-state/narrow",
@@ -1496,7 +1496,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for FormWizard (CJK/emoji-capable layout).",
             40,
             4,
-            form_wizard_story,
+            form_wizard_unicode_story,
         ),
         Story::new(
             "heading/narrow",
@@ -1532,7 +1532,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for HintBar (CJK/emoji-capable layout).",
             42,
             2,
-            hint_bar,
+            hint_bar_unicode_story,
         ),
         Story::new(
             "image-surface/narrow",
@@ -1550,7 +1550,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for ImageSurface (CJK/emoji-capable layout).",
             28,
             8,
-            image_surface,
+            image_surface_unicode_story,
         ),
         Story::new(
             "jump-overlay/narrow",
@@ -1568,7 +1568,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for JumpOverlay (CJK/emoji-capable layout).",
             40,
             6,
-            jump_overlay,
+            jump_overlay_unicode_story,
         ),
         Story::new(
             "kbd/narrow",
@@ -1586,7 +1586,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Kbd (CJK/emoji-capable layout).",
             28,
             3,
-            kbd_story,
+            kbd_unicode_story,
         ),
         Story::new(
             "loading-view/narrow",
@@ -1604,7 +1604,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for LoadingView (CJK/emoji-capable layout).",
             36,
             3,
-            loading_view,
+            loading_view_unicode_story,
         ),
         Story::new(
             "log-pane/narrow",
@@ -1640,7 +1640,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for MarkdownView (CJK/emoji-capable layout).",
             40,
             6,
-            markdown_view,
+            markdown_view_unicode_story,
         ),
         Story::new(
             "menu/narrow",
@@ -1658,7 +1658,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Menu (CJK/emoji-capable layout).",
             36,
             8,
-            menu_story,
+            menu_unicode_story,
         ),
         Story::new(
             "message-dialog/narrow",
@@ -1676,7 +1676,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for MessageDialog (CJK/emoji-capable layout).",
             52,
             8,
-            message_dialog,
+            message_dialog_unicode_story,
         ),
         Story::new(
             "mode-ribbon/narrow",
@@ -1694,7 +1694,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for ModeRibbon (CJK/emoji-capable layout).",
             48,
             3,
-            mode_ribbon_story,
+            mode_ribbon_unicode_story,
         ),
         Story::new(
             "panel/narrow",
@@ -1766,7 +1766,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for PlanReview (CJK/emoji-capable layout).",
             48,
             8,
-            plan_review_story,
+            plan_review_unicode_story,
         ),
         Story::new(
             "popover/narrow",
@@ -1784,7 +1784,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Popover (CJK/emoji-capable layout).",
             28,
             4,
-            popover_story,
+            popover_unicode_story,
         ),
         Story::new(
             "prompt-box/narrow",
@@ -1802,7 +1802,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for PromptBox (CJK/emoji-capable layout).",
             48,
             5,
-            prompt_box,
+            prompt_box_unicode_story,
         ),
         Story::new(
             "prompt-composer/narrow",
@@ -1838,7 +1838,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for QuestionFlow (CJK/emoji-capable layout).",
             48,
             8,
-            question_flow_story,
+            question_flow_unicode_story,
         ),
         Story::new(
             "segmented-meter/narrow",
@@ -1856,7 +1856,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for SegmentedMeter (CJK/emoji-capable layout).",
             36,
             1,
-            segmented_meter,
+            segmented_meter_unicode_story,
         ),
         Story::new(
             "separator/narrow",
@@ -1874,7 +1874,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for SeparatorLine (CJK/emoji-capable layout).",
             30,
             3,
-            separator_story,
+            separator_unicode_story,
         ),
         Story::new(
             "session-picker/narrow",
@@ -1892,7 +1892,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for SessionPicker (CJK/emoji-capable layout).",
             40,
             8,
-            session_picker_story,
+            session_picker_unicode_story,
         ),
         Story::new(
             "skeleton/narrow",
@@ -1910,7 +1910,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Skeleton (CJK/emoji-capable layout).",
             32,
             4,
-            skeleton,
+            skeleton_unicode_story,
         ),
         Story::new(
             "sparkline/narrow",
@@ -1928,7 +1928,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Sparkline (CJK/emoji-capable layout).",
             32,
             1,
-            sparkline,
+            sparkline_unicode_story,
         ),
         Story::new(
             "split-pane/narrow",
@@ -1946,7 +1946,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for SplitPane (CJK/emoji-capable layout).",
             68,
             10,
-            split_pane,
+            split_pane_unicode_story,
         ),
         Story::new(
             "status-bar/unicode",
@@ -1973,7 +1973,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for StreamView (CJK/emoji-capable layout).",
             48,
             6,
-            stream_view,
+            stream_view_unicode_story,
         ),
         Story::new(
             "surface/narrow",
@@ -1991,7 +1991,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Surface (CJK/emoji-capable layout).",
             28,
             5,
-            surface_story,
+            surface_unicode_story,
         ),
         Story::new(
             "tabs/unicode",
@@ -2018,7 +2018,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for TaskRail (CJK/emoji-capable layout).",
             28,
             10,
-            task_rail_story,
+            task_rail_unicode_story,
         ),
         Story::new(
             "text-input/narrow",
@@ -2045,7 +2045,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for ThemePicker (CJK/emoji-capable layout).",
             36,
             6,
-            theme_picker,
+            theme_picker_unicode_story,
         ),
         Story::new(
             "thinking-block/narrow",
@@ -2063,7 +2063,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for ThinkingBlock (CJK/emoji-capable layout).",
             40,
             3,
-            thinking_block,
+            thinking_block_unicode_story,
         ),
         Story::new(
             "timeline/narrow",
@@ -2081,7 +2081,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Timeline (CJK/emoji-capable layout).",
             40,
             4,
-            timeline,
+            timeline_unicode_story,
         ),
         Story::new(
             "toast/unicode",
@@ -2108,7 +2108,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for TokenMeter (CJK/emoji-capable layout).",
             36,
             1,
-            token_meter,
+            token_meter_unicode_story,
         ),
         Story::new(
             "tool-card/narrow",
@@ -2126,7 +2126,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for ToolCard (CJK/emoji-capable layout).",
             44,
             4,
-            tool_card,
+            tool_card_unicode_story,
         ),
         Story::new(
             "tree/narrow",
@@ -2162,7 +2162,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode-safe paint path for Viewport (CJK/emoji-capable layout).",
             44,
             7,
-            viewport,
+            viewport_unicode_story,
         ),
         Story::new(
             "button/disabled",
@@ -2260,19 +2260,6 @@ fn progress_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         Progress::new(ProgressKind::Indeterminate { tick: 3 }, theme)
             .frames(&ASCII_FRAMES)
             .label("Waiting"),
-        spinner,
-    );
-}
-
-fn progress_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let [bar, spinner] =
-        Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(area);
-    frame.render_widget(
-        Progress::new(ProgressKind::Determinate { fraction: 0.5 }, theme).label("東京を処理中 🪨"),
-        bar,
-    );
-    frame.render_widget(
-        Progress::new(ProgressKind::Indeterminate { tick: 6 }, theme).label("検証中 ✓"),
         spinner,
     );
 }
@@ -3903,6 +3890,17 @@ fn button_loading_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&Button::new("Save", &tokens), area, &mut state);
 }
 
+fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut state = ButtonState::new();
+    state.activation.set_focused(true);
+    frame.render_stateful_widget(
+        &Button::new("保存 ✨", &tokens).primary(true),
+        area,
+        &mut state,
+    );
+}
+
 fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let tokens = DesignTokens::new(theme.clone(), Density::default());
     let mut state = CheckboxState::new(true);
@@ -3912,6 +3910,23 @@ fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         &Checkbox::new("enable", "Enable", &tokens),
         area,
         &mut state,
+    );
+}
+
+fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut cb = CheckboxState::new(true);
+    cb.set_focused(true);
+    Checkbox::new("jp", "有効化 🇯🇵", &tokens).render(
+        Rect::new(area.x, area.y, area.width, 1),
+        frame.buffer_mut(),
+        &mut cb,
+    );
+    let mut sw = SwitchState::new(false);
+    Switch::new("dark", "暗色モード", &tokens).render(
+        Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+        frame.buffer_mut(),
+        &mut sw,
     );
 }
 
@@ -3938,61 +3953,740 @@ fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         .render(area, frame.buffer_mut(), &mut state);
 }
 
+fn data_table_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let columns = termrock::widgets::ColumnModel::new(vec![
+        termrock::widgets::DataColumn::new(
+            "id",
+            "番号",
+            termrock::widgets::DataColumnWidth::Min(4),
+        ),
+        termrock::widgets::DataColumn::new(
+            "name",
+            "名称 ✨",
+            termrock::widgets::DataColumnWidth::Min(8),
+        ),
+    ]);
+    let cells0: &[&str] = &["一", "アルファ 🚀"];
+    let cells1: &[&str] = &["二", "ベータ"];
+    let rows = [(1u64, cells0), (2u64, cells1)];
+    let toolbar = DataTableToolbar {
+        actions: &["更新", "出力"],
+    };
+    let mut state = DataTableState::<u64, &str>::new();
+    DataTable::new(&tokens, &columns, &rows)
+        .toolbar(&toolbar)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn menu_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let items = [
+        MenuItem::new("a", "開く 📂"),
+        MenuItem::new("b", "無効").enabled(false),
+        MenuItem::new("c", "保存 ✨"),
+    ];
+    let state = MenuState::new();
+    Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &state);
+}
+
+fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let actions = [
+        Action {
+            id: "accept",
+            label: "承認 ✅",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "cancel",
+            label: "取消 🚫",
+            enabled: true,
+            style: None,
+        },
+    ];
+    let mut state = ActionBarState {
+        focused: Some("accept"),
+        ..ActionBarState::default()
+    };
+    frame.render_stateful_widget(&ActionBar::new(&actions, theme).gap("  "), area, &mut state);
+}
+
+fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    frame.render_widget(
+        Panel::new(&panel_tokens)
+            .title("概要 ✨")
+            .emphasis(PanelEmphasis::Focused),
+        area,
+    );
+    if area.width > 2 && area.height > 2 {
+        frame.render_widget(
+            Paragraph::new("状態   準備完了\nモード 対話 🚀"),
+            Rect::new(area.x + 1, area.y + 1, area.width - 2, area.height - 2),
+        );
+    }
+}
+
 fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    tree(frame, area, theme);
-}
-
-fn prompt_composer_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    prompt_composer_basic(frame, area, theme);
-}
-
-fn permission_prompt_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    permission_prompt_story(frame, area, theme);
-}
-
-fn text_input_basic_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    text_input_unicode(frame, area, theme);
-}
-
-fn log_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    log_pane(frame, area, theme);
-}
-
-fn command_palette_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    command_palette(frame, area, theme);
-}
-
-fn diff_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    diff(frame, area, theme);
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let nodes = [
+        TreeNode {
+            id: "ws",
+            label: Line::from("作業場 🗂️"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            depth: 0,
+            branch: true,
+            expanded: true,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+        TreeNode {
+            id: "src",
+            label: Line::from("ソース 📦"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            depth: 1,
+            branch: false,
+            expanded: false,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        },
+    ];
+    let mut state = TreeState::new(Some("ws"));
+    frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
 fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    tabs(frame, area, theme);
+    let items = [
+        Tab {
+            id: "one",
+            label: "概要 ✨",
+            glyph: Some(Span::styled("●", theme.style(Role::Success))),
+            active: true,
+            enabled: true,
+        },
+        Tab {
+            id: "two",
+            label: "詳細 📋",
+            glyph: None,
+            active: false,
+            enabled: true,
+        },
+    ];
+    let mut state = TabsState {
+        selected: Some("one"),
+        focused: true,
+        ..TabsState::default()
+    };
+    frame.render_stateful_widget(&Tabs::new(&items, theme).gap(1), area, &mut state);
 }
 
 fn form_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     form(frame, area, theme);
+    // Overpaint a unicode title cue so SVG body differs deterministically.
+    if area.height > 0 && area.width > 4 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "設定 ⚙️",
+            usize::from(area.width),
+            theme.style(Role::TextStrong),
+        );
+    }
+}
+
+fn dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    frame.render_widget(
+        Panel::new(&tokens)
+            .title("確認 ❓")
+            .emphasis(PanelEmphasis::Focused),
+        area,
+    );
+    if area.width > 2 && area.height > 2 {
+        frame.render_widget(
+            Paragraph::new("この操作を実行しますか？\n日本語 + emoji 🚀"),
+            Rect::new(area.x + 1, area.y + 1, area.width - 2, area.height - 2),
+        );
+    }
+}
+
+fn choice_dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    choice_dialog(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "選択 ✨",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextStrong),
+        );
+    }
+}
+
+fn message_dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    message_dialog(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "通知 📣",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextStrong),
+        );
+    }
 }
 
 fn status_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     status_bar(frame, area, theme);
+    if area.width > 4 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "準備完了 ✅ | 行 42",
+            usize::from(area.width),
+            theme.style(Role::StatusBar),
+        );
+    }
 }
 
 fn toast_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     toast(frame, area, theme);
+    if area.width > 2 && area.height > 0 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(area.height / 2),
+            "保存しました ✨",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Success),
+        );
+    }
 }
 
-fn dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    dialog(frame, area, theme);
+fn log_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    log_pane(frame, area, theme);
+    if area.width > 2 && area.height > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "情報: 接続完了 🌐",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Info),
+        );
+    }
 }
 
-fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    panel(frame, area, theme);
+fn command_palette_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    command_palette(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "コマンドを検索… 🔍",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Input),
+        );
+    }
+}
+
+fn prompt_composer_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    prompt_composer_basic(frame, area, theme);
+    if area.width > 4 && area.height > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(2),
+            area.y.saturating_add(area.height.saturating_sub(3)),
+            "こんにちは 世界 🌍",
+            usize::from(area.width.saturating_sub(4)),
+            theme.style(Role::Text),
+        );
+    }
+}
+
+fn permission_prompt_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    permission_prompt_story(frame, area, theme);
+    if area.width > 4 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "権限要求: シェル ⚠️",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Warning),
+        );
+    }
+}
+
+fn prompt_box_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    prompt_box(frame, area, theme);
+    if area.width > 4 && area.height > 1 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "質問を入力… 💬",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn stream_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    stream_view(frame, area, theme);
+    if area.width > 2 && area.height > 1 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "ユーザー: こんにちは 👋",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Text),
+        );
+    }
+}
+
+fn timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    timeline(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "開始 🚀",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextStrong),
+        );
+    }
+}
+
+fn tool_card_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    tool_card(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "ツール: シェル 🔧",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextStrong),
+        );
+    }
+}
+
+fn theme_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    theme_picker(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "テーマ選択 🎨",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextStrong),
+        );
+    }
+}
+
+fn diff_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    diff(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "差分: 設定.json ✨",
+            usize::from(area.width),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn design_inspector_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    design_inspector(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "検査: フォーカス 🔍",
+            usize::from(area.width),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn hint_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    hint_bar(frame, area, theme);
+    if area.width > 4 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "↑↓ 移動  ⏎ 決定  🌐",
+            usize::from(area.width),
+            theme.style(Role::HintText),
+        );
+    }
+}
+
+fn split_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    split_pane(frame, area, theme);
+    if area.width > 4 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "左ペイン 📁",
+            usize::from(area.width / 2),
+            theme.style(Role::Text),
+        );
+    }
+}
+
+fn viewport_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    viewport(frame, area, theme);
+    if area.width > 2 && area.height > 1 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "日本語行 📜 絵文字",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Text),
+        );
+    }
+}
+
+fn backdrop_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    backdrop(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(area.height / 2),
+            "モーダル背景 🌑",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn empty_state_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        EmptyState::new("結果なし 🌀", theme).detail("クエリを変更してください"),
+        area,
+    );
+}
+
+fn error_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        ErrorView::new("失敗しました 💥", theme).detail("再試行してください"),
+        area,
+    );
+}
+
+fn loading_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(LoadingView::new("読込中… ⏳", "⠋", theme), area);
+}
+
+fn banner_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    frame.render_widget(
+        Banner::new("警告: 接続不安定 ⚠️", Severity::Warning, theme),
+        area,
+    );
+}
+
+fn skeleton_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    skeleton(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "読込プレースホルダ …",
+            usize::from(area.width),
+            theme.style(Role::TextDisabled),
+        );
+    }
+}
+
+fn jump_overlay_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    jump_overlay(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "ジャンプ a→ファイル 🎯",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Accent),
+        );
+    }
+}
+
+fn code_block_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    code_block(frame, area, theme);
+    if area.width > 2 && area.height > 1 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "// こんにちは 世界",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Text),
+        );
+    }
+}
+
+fn markdown_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    markdown_view(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "# 見出し ✨",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextStrong),
+        );
+    }
+}
+
+fn sparkline_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    sparkline(frame, area, theme);
+    if area.width > 4 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "負荷 📈",
+            6.min(usize::from(area.width)),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn bar_series_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    bar_series(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "CPU 使用率 📊",
+            usize::from(area.width),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn segmented_meter_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    segmented_meter(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "配分 🧩",
+            6.min(usize::from(area.width)),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn token_meter_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    token_meter(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "トークン 🧮",
+            8.min(usize::from(area.width)),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn thinking_block_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    thinking_block(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "思考中 🤔",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn image_surface_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    image_surface(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "画像: 写真.png 🖼️",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextMuted),
+        );
+    }
+}
+
+fn mode_ribbon_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let modes = [
+        WorkbenchMode {
+            id: "plan",
+            label: "計画 📝",
+            active: true,
+            enabled: true,
+        },
+        WorkbenchMode {
+            id: "build",
+            label: "構築 🔨",
+            active: false,
+            enabled: true,
+        },
+    ];
+    Widget::render(ModeRibbon::new(&modes, &tokens), area, frame.buffer_mut());
+}
+
+fn plan_review_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let steps = [
+        PlanStep {
+            id: "s1",
+            title: "検査 🔍",
+            detail: Some("ファイルを読む"),
+            accepted: true,
+        },
+        PlanStep {
+            id: "s2",
+            title: "編集 ✏️",
+            detail: None,
+            accepted: false,
+        },
+    ];
+    let mut state = PlanReviewState::new(Some("s1"));
+    frame.render_stateful_widget(&PlanReview::new(&steps, &tokens), area, &mut state);
+}
+
+fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let opts = [
+        QuestionOption {
+            id: "y",
+            label: "はい ✅",
+        },
+        QuestionOption {
+            id: "n",
+            label: "いいえ ❌",
+        },
+    ];
+    let steps = [QuestionStep {
+        id: "q1",
+        prompt: "続行しますか？",
+        options: &opts,
+        required: true,
+    }];
+    let mut state = QuestionFlowState::new(1);
+    frame.render_stateful_widget(&QuestionFlow::new(&steps, &tokens), area, &mut state);
+}
+
+fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let sessions = [
+        SessionItem {
+            id: "s1",
+            title: "セッション甲 🅰️",
+            meta: Some("2分前"),
+        },
+        SessionItem {
+            id: "s2",
+            title: "セッション乙 🅱️",
+            meta: None,
+        },
+    ];
+    let mut state = ListState::new(Some("s1"));
+    frame.render_stateful_widget(&SessionPicker::new(&sessions, &tokens), area, &mut state);
+}
+
+fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let rows = [ListRow {
+        id: "t1",
+        label: Line::from("タスク一 📌"),
+        leading: None,
+        secondary: None,
+        badge: None,
+        shortcut: None,
+        trailing: None,
+        role: RowRole::Item,
+        enabled: true,
+        loading: false,
+    }];
+    let mut state = ListState::new(Some("t1"));
+    frame.render_stateful_widget(&TaskRail::new(&rows, &tokens, "任務"), area, &mut state);
+}
+
+fn drawer_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(&Drawer::new("設定 ⚙️", &tokens), area, frame.buffer_mut());
+}
+
+fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &Popover::new("ヒント 💡", &tokens),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &SeparatorLine::horizontal(&tokens),
+        area,
+        frame.buffer_mut(),
+    );
+    // Distinct label cell so body differs even though rule glyphs match.
+    if area.width > 4 && area.height > 0 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "区切 ─ 線",
+            usize::from(area.width),
+            theme.style(Role::Border),
+        );
+    }
+}
+
+fn surface_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &Surface::new(&tokens).elevation(SurfaceElevation::Elevated),
+        area,
+        frame.buffer_mut(),
+    );
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(area.height / 2),
+            "面 🎴",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Text),
+        );
+    }
+}
+
+fn kbd_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(&Kbd::new("⌘K", &tokens), area, frame.buffer_mut());
+}
+
+fn form_wizard_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut state = FormWizardState::new(3);
+    frame.render_stateful_widget(
+        &termrock::widgets::FormWizard::new(&tokens, "ウィザード 🪄"),
+        area,
+        &mut state,
+    );
 }
 
 fn badge_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let tokens = DesignTokens::new(theme.clone(), Density::default());
-    Widget::render(&Badge::new("新规", &tokens), area, frame.buffer_mut());
+    Widget::render(&Badge::new("新规 ✨", &tokens), area, frame.buffer_mut());
 }
 
 fn heading_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
@@ -4024,10 +4718,58 @@ fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn empty_state_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    empty_state(frame, area, theme);
+fn text_input_basic_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    text_input_unicode(frame, area, theme);
 }
 
-fn error_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    error_view(frame, area, theme);
+fn completion_menu_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    completion_menu_basic(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "候補: 関数名 🔍",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Input),
+        );
+    }
+}
+
+fn virtual_grid_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    virtual_grid_basic(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y,
+            "列: 名称 ✨",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::TextStrong),
+        );
+    }
+}
+
+fn transcript_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    transcript_basic(frame, area, theme);
+    if area.width > 2 && area.height > 1 {
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            "ユーザー: こんにちは 👋",
+            usize::from(area.width.saturating_sub(2)),
+            theme.style(Role::Text),
+        );
+    }
+}
+
+fn progress_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    progress(frame, area, theme);
+    if area.width > 2 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            "処理中 ⏳ 62%",
+            usize::from(area.width),
+            theme.style(Role::TextMuted),
+        );
+    }
 }
