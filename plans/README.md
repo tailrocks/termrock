@@ -26,6 +26,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/competitive-tui-research.md`](../docs/design/competitive-tui-research.md) | **Competitive TUI research** (matrix + 10 exceed opportunities) |
 | [`docs/design/experience-research-2026.md`](../docs/design/experience-research-2026.md) | **shadcn-TUI experience research** (Grok Build, Amp, hero apps, multi-lang ports, concept catalog, roadmap) |
 | [`docs/design/shadcn-tui-strategic-brief.md`](../docs/design/shadcn-tui-strategic-brief.md) | **Strategic brief** (hybrid kernel+registry, DesignSystem, agent pack, Studio, first six PRs) |
+| [`docs/design/product-audit-shadcn-tui.md`](../docs/design/product-audit-shadcn-tui.md) | **Full product audit** (16 sections, P0–P3, first 10 PRs, preserve/remove APIs) |
 | [`docs/design/pre-1.0-api-redesign.md`](../docs/design/pre-1.0-api-redesign.md) | **Pre-1.0 dual-authority kill** (breaking public API redesign) |
 | [`docs/design/showcase-workbench.md`](../docs/design/showcase-workbench.md) | **Flagship showcase** AI/dev workbench (IA, mockups, dogfood law) |
 
