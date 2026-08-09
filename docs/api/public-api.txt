@@ -5947,6 +5947,54 @@ pub unsafe fn termrock::layout::FlexSize::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::layout::FlexSize
 pub fn termrock::layout::FlexSize::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::FlexSize
+#[non_exhaustive] pub enum termrock::layout::GridAutoFlow
+pub termrock::layout::GridAutoFlow::Column
+pub termrock::layout::GridAutoFlow::Row
+impl core::clone::Clone for termrock::layout::GridAutoFlow
+pub fn termrock::layout::GridAutoFlow::clone(&self) -> termrock::layout::GridAutoFlow
+impl core::cmp::Eq for termrock::layout::GridAutoFlow
+impl core::cmp::PartialEq for termrock::layout::GridAutoFlow
+pub fn termrock::layout::GridAutoFlow::eq(&self, &termrock::layout::GridAutoFlow) -> bool
+impl core::default::Default for termrock::layout::GridAutoFlow
+pub fn termrock::layout::GridAutoFlow::default() -> termrock::layout::GridAutoFlow
+impl core::fmt::Debug for termrock::layout::GridAutoFlow
+pub fn termrock::layout::GridAutoFlow::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::GridAutoFlow
+pub fn termrock::layout::GridAutoFlow::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::GridAutoFlow
+impl core::marker::StructuralPartialEq for termrock::layout::GridAutoFlow
+impl core::marker::Freeze for termrock::layout::GridAutoFlow
+impl core::marker::Send for termrock::layout::GridAutoFlow
+impl core::marker::Sync for termrock::layout::GridAutoFlow
+impl core::marker::Unpin for termrock::layout::GridAutoFlow
+impl core::marker::UnsafeUnpin for termrock::layout::GridAutoFlow
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::GridAutoFlow
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::GridAutoFlow
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::GridAutoFlow where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::GridAutoFlow::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::GridAutoFlow where U: core::convert::From<T>
+pub fn termrock::layout::GridAutoFlow::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::GridAutoFlow where U: core::convert::Into<T>
+pub type termrock::layout::GridAutoFlow::Error = core::convert::Infallible
+pub fn termrock::layout::GridAutoFlow::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::GridAutoFlow where U: core::convert::TryFrom<T>
+pub type termrock::layout::GridAutoFlow::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::GridAutoFlow::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::GridAutoFlow where T: core::clone::Clone
+pub type termrock::layout::GridAutoFlow::Owned = T
+pub fn termrock::layout::GridAutoFlow::clone_into(&self, &mut T)
+pub fn termrock::layout::GridAutoFlow::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::GridAutoFlow where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::GridAutoFlow::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::GridAutoFlow where T: ?core::marker::Sized
+pub fn termrock::layout::GridAutoFlow::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::GridAutoFlow where T: ?core::marker::Sized
+pub fn termrock::layout::GridAutoFlow::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::GridAutoFlow where T: core::clone::Clone
+pub unsafe fn termrock::layout::GridAutoFlow::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::GridAutoFlow
+pub fn termrock::layout::GridAutoFlow::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::GridAutoFlow
 #[non_exhaustive] pub enum termrock::layout::Justify
 pub termrock::layout::Justify::Center
 pub termrock::layout::Justify::End
@@ -6401,6 +6449,61 @@ pub unsafe fn termrock::layout::SurfaceAxis::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::layout::SurfaceAxis
 pub fn termrock::layout::SurfaceAxis::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::SurfaceAxis
+#[non_exhaustive] pub enum termrock::layout::TrackSize
+pub termrock::layout::TrackSize::Fixed(u16)
+pub termrock::layout::TrackSize::MinMax
+pub termrock::layout::TrackSize::MinMax::max: u16
+pub termrock::layout::TrackSize::MinMax::min: u16
+pub termrock::layout::TrackSize::MinMax::preferred: u16
+pub termrock::layout::TrackSize::Weight(u16)
+impl termrock::layout::TrackSize
+pub const fn termrock::layout::TrackSize::fixed(u16) -> Self
+pub const fn termrock::layout::TrackSize::fr(u16) -> Self
+pub const fn termrock::layout::TrackSize::min_size(self) -> u16
+pub const fn termrock::layout::TrackSize::minmax(u16, u16, u16) -> Self
+impl core::clone::Clone for termrock::layout::TrackSize
+pub fn termrock::layout::TrackSize::clone(&self) -> termrock::layout::TrackSize
+impl core::cmp::Eq for termrock::layout::TrackSize
+impl core::cmp::PartialEq for termrock::layout::TrackSize
+pub fn termrock::layout::TrackSize::eq(&self, &termrock::layout::TrackSize) -> bool
+impl core::fmt::Debug for termrock::layout::TrackSize
+pub fn termrock::layout::TrackSize::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::TrackSize
+pub fn termrock::layout::TrackSize::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::TrackSize
+impl core::marker::StructuralPartialEq for termrock::layout::TrackSize
+impl core::marker::Freeze for termrock::layout::TrackSize
+impl core::marker::Send for termrock::layout::TrackSize
+impl core::marker::Sync for termrock::layout::TrackSize
+impl core::marker::Unpin for termrock::layout::TrackSize
+impl core::marker::UnsafeUnpin for termrock::layout::TrackSize
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::TrackSize
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::TrackSize
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::TrackSize where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::TrackSize::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::TrackSize where U: core::convert::From<T>
+pub fn termrock::layout::TrackSize::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::TrackSize where U: core::convert::Into<T>
+pub type termrock::layout::TrackSize::Error = core::convert::Infallible
+pub fn termrock::layout::TrackSize::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::TrackSize where U: core::convert::TryFrom<T>
+pub type termrock::layout::TrackSize::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::TrackSize::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::TrackSize where T: core::clone::Clone
+pub type termrock::layout::TrackSize::Owned = T
+pub fn termrock::layout::TrackSize::clone_into(&self, &mut T)
+pub fn termrock::layout::TrackSize::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::TrackSize where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::TrackSize::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::TrackSize where T: ?core::marker::Sized
+pub fn termrock::layout::TrackSize::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::TrackSize where T: ?core::marker::Sized
+pub fn termrock::layout::TrackSize::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::TrackSize where T: core::clone::Clone
+pub unsafe fn termrock::layout::TrackSize::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::TrackSize
+pub fn termrock::layout::TrackSize::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::TrackSize
 #[non_exhaustive] pub enum termrock::layout::WorkspaceAxis
 pub termrock::layout::WorkspaceAxis::Horizontal
 pub termrock::layout::WorkspaceAxis::Vertical
@@ -6713,6 +6816,222 @@ pub unsafe fn termrock::layout::DialogSpec::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::layout::DialogSpec
 pub fn termrock::layout::DialogSpec::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::DialogSpec
+pub struct termrock::layout::Grid
+impl termrock::layout::Grid
+pub fn termrock::layout::Grid::auto_row(self, termrock::layout::TrackSize) -> Self
+pub fn termrock::layout::Grid::columns(u16) -> Self
+pub fn termrock::layout::Grid::from_spec(termrock::layout::GridSpec) -> Self
+pub fn termrock::layout::Grid::gaps(self, u16, u16) -> Self
+pub fn termrock::layout::Grid::layout(&self, ratatui_core::layout::rect::Rect, &[termrock::layout::GridItem]) -> termrock::layout::GridLayout
+pub fn termrock::layout::Grid::layout_flow(&self, ratatui_core::layout::rect::Rect, usize, termrock::layout::GridAutoFlow) -> termrock::layout::GridLayout
+pub fn termrock::layout::Grid::new() -> Self
+pub fn termrock::layout::Grid::padding(self, u16, u16) -> Self
+pub fn termrock::layout::Grid::row_tracks(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::layout::TrackSize>) -> Self
+pub fn termrock::layout::Grid::tracks(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::layout::TrackSize>) -> Self
+pub fn termrock::layout::Grid::with_density(self, termrock::style::Density) -> Self
+impl core::clone::Clone for termrock::layout::Grid
+pub fn termrock::layout::Grid::clone(&self) -> termrock::layout::Grid
+impl core::cmp::Eq for termrock::layout::Grid
+impl core::cmp::PartialEq for termrock::layout::Grid
+pub fn termrock::layout::Grid::eq(&self, &termrock::layout::Grid) -> bool
+impl core::default::Default for termrock::layout::Grid
+pub fn termrock::layout::Grid::default() -> Self
+impl core::fmt::Debug for termrock::layout::Grid
+pub fn termrock::layout::Grid::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::layout::Grid
+impl core::marker::Freeze for termrock::layout::Grid
+impl core::marker::Send for termrock::layout::Grid
+impl core::marker::Sync for termrock::layout::Grid
+impl core::marker::Unpin for termrock::layout::Grid
+impl core::marker::UnsafeUnpin for termrock::layout::Grid
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::Grid
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::Grid
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::Grid where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::Grid::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::Grid where U: core::convert::From<T>
+pub fn termrock::layout::Grid::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::Grid where U: core::convert::Into<T>
+pub type termrock::layout::Grid::Error = core::convert::Infallible
+pub fn termrock::layout::Grid::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::Grid where U: core::convert::TryFrom<T>
+pub type termrock::layout::Grid::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::Grid::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::Grid where T: core::clone::Clone
+pub type termrock::layout::Grid::Owned = T
+pub fn termrock::layout::Grid::clone_into(&self, &mut T)
+pub fn termrock::layout::Grid::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::Grid where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::Grid::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::Grid where T: ?core::marker::Sized
+pub fn termrock::layout::Grid::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::Grid where T: ?core::marker::Sized
+pub fn termrock::layout::Grid::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::Grid where T: core::clone::Clone
+pub unsafe fn termrock::layout::Grid::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::Grid
+pub fn termrock::layout::Grid::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::Grid
+pub struct termrock::layout::GridItem
+pub termrock::layout::GridItem::col: u16
+pub termrock::layout::GridItem::col_span: u16
+pub termrock::layout::GridItem::row: u16
+pub termrock::layout::GridItem::row_span: u16
+impl termrock::layout::GridItem
+pub const fn termrock::layout::GridItem::cell(u16, u16) -> Self
+pub const fn termrock::layout::GridItem::span(u16, u16, u16, u16) -> Self
+impl core::clone::Clone for termrock::layout::GridItem
+pub fn termrock::layout::GridItem::clone(&self) -> termrock::layout::GridItem
+impl core::cmp::Eq for termrock::layout::GridItem
+impl core::cmp::PartialEq for termrock::layout::GridItem
+pub fn termrock::layout::GridItem::eq(&self, &termrock::layout::GridItem) -> bool
+impl core::fmt::Debug for termrock::layout::GridItem
+pub fn termrock::layout::GridItem::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::GridItem
+pub fn termrock::layout::GridItem::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::GridItem
+impl core::marker::StructuralPartialEq for termrock::layout::GridItem
+impl core::marker::Freeze for termrock::layout::GridItem
+impl core::marker::Send for termrock::layout::GridItem
+impl core::marker::Sync for termrock::layout::GridItem
+impl core::marker::Unpin for termrock::layout::GridItem
+impl core::marker::UnsafeUnpin for termrock::layout::GridItem
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::GridItem
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::GridItem
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::GridItem where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::GridItem::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::GridItem where U: core::convert::From<T>
+pub fn termrock::layout::GridItem::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::GridItem where U: core::convert::Into<T>
+pub type termrock::layout::GridItem::Error = core::convert::Infallible
+pub fn termrock::layout::GridItem::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::GridItem where U: core::convert::TryFrom<T>
+pub type termrock::layout::GridItem::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::GridItem::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::GridItem where T: core::clone::Clone
+pub type termrock::layout::GridItem::Owned = T
+pub fn termrock::layout::GridItem::clone_into(&self, &mut T)
+pub fn termrock::layout::GridItem::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::GridItem where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::GridItem::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::GridItem where T: ?core::marker::Sized
+pub fn termrock::layout::GridItem::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::GridItem where T: ?core::marker::Sized
+pub fn termrock::layout::GridItem::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::GridItem where T: core::clone::Clone
+pub unsafe fn termrock::layout::GridItem::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::GridItem
+pub fn termrock::layout::GridItem::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::GridItem
+pub struct termrock::layout::GridLayout
+pub termrock::layout::GridLayout::cells: alloc::vec::Vec<ratatui_core::layout::rect::Rect>
+pub termrock::layout::GridLayout::col_count: u16
+pub termrock::layout::GridLayout::column_tracks: alloc::vec::Vec<ratatui_core::layout::rect::Rect>
+pub termrock::layout::GridLayout::content: ratatui_core::layout::rect::Rect
+pub termrock::layout::GridLayout::overflowed: bool
+pub termrock::layout::GridLayout::row_count: u16
+pub termrock::layout::GridLayout::row_tracks: alloc::vec::Vec<ratatui_core::layout::rect::Rect>
+impl termrock::layout::GridLayout
+pub fn termrock::layout::GridLayout::get(&self, usize) -> core::option::Option<ratatui_core::layout::rect::Rect>
+pub fn termrock::layout::GridLayout::hit_cell(&self, u16, u16) -> core::option::Option<usize>
+impl core::clone::Clone for termrock::layout::GridLayout
+pub fn termrock::layout::GridLayout::clone(&self) -> termrock::layout::GridLayout
+impl core::cmp::Eq for termrock::layout::GridLayout
+impl core::cmp::PartialEq for termrock::layout::GridLayout
+pub fn termrock::layout::GridLayout::eq(&self, &termrock::layout::GridLayout) -> bool
+impl core::fmt::Debug for termrock::layout::GridLayout
+pub fn termrock::layout::GridLayout::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::layout::GridLayout
+impl core::marker::Freeze for termrock::layout::GridLayout
+impl core::marker::Send for termrock::layout::GridLayout
+impl core::marker::Sync for termrock::layout::GridLayout
+impl core::marker::Unpin for termrock::layout::GridLayout
+impl core::marker::UnsafeUnpin for termrock::layout::GridLayout
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::GridLayout
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::GridLayout
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::GridLayout where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::GridLayout::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::GridLayout where U: core::convert::From<T>
+pub fn termrock::layout::GridLayout::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::GridLayout where U: core::convert::Into<T>
+pub type termrock::layout::GridLayout::Error = core::convert::Infallible
+pub fn termrock::layout::GridLayout::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::GridLayout where U: core::convert::TryFrom<T>
+pub type termrock::layout::GridLayout::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::GridLayout::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::GridLayout where T: core::clone::Clone
+pub type termrock::layout::GridLayout::Owned = T
+pub fn termrock::layout::GridLayout::clone_into(&self, &mut T)
+pub fn termrock::layout::GridLayout::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::GridLayout where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::GridLayout::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::GridLayout where T: ?core::marker::Sized
+pub fn termrock::layout::GridLayout::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::GridLayout where T: ?core::marker::Sized
+pub fn termrock::layout::GridLayout::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::GridLayout where T: core::clone::Clone
+pub unsafe fn termrock::layout::GridLayout::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::GridLayout
+pub fn termrock::layout::GridLayout::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::GridLayout
+pub struct termrock::layout::GridSpec
+pub termrock::layout::GridSpec::auto_row: termrock::layout::TrackSize
+pub termrock::layout::GridSpec::column_gap: u16
+pub termrock::layout::GridSpec::columns: alloc::vec::Vec<termrock::layout::TrackSize>
+pub termrock::layout::GridSpec::pad_x: u16
+pub termrock::layout::GridSpec::pad_y: u16
+pub termrock::layout::GridSpec::row_gap: u16
+pub termrock::layout::GridSpec::rows: alloc::vec::Vec<termrock::layout::TrackSize>
+impl termrock::layout::GridSpec
+pub const fn termrock::layout::GridSpec::auto_row(self, termrock::layout::TrackSize) -> Self
+pub fn termrock::layout::GridSpec::col_count(&self) -> u16
+pub fn termrock::layout::GridSpec::columns(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::layout::TrackSize>) -> Self
+pub fn termrock::layout::GridSpec::columns_fr(u16) -> Self
+pub const fn termrock::layout::GridSpec::gaps(self, u16, u16) -> Self
+pub const fn termrock::layout::GridSpec::padding(self, u16, u16) -> Self
+pub fn termrock::layout::GridSpec::rows(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::layout::TrackSize>) -> Self
+pub fn termrock::layout::GridSpec::with_density(self, termrock::style::Density) -> Self
+impl core::clone::Clone for termrock::layout::GridSpec
+pub fn termrock::layout::GridSpec::clone(&self) -> termrock::layout::GridSpec
+impl core::cmp::Eq for termrock::layout::GridSpec
+impl core::cmp::PartialEq for termrock::layout::GridSpec
+pub fn termrock::layout::GridSpec::eq(&self, &termrock::layout::GridSpec) -> bool
+impl core::default::Default for termrock::layout::GridSpec
+pub fn termrock::layout::GridSpec::default() -> Self
+impl core::fmt::Debug for termrock::layout::GridSpec
+pub fn termrock::layout::GridSpec::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::layout::GridSpec
+impl core::marker::Freeze for termrock::layout::GridSpec
+impl core::marker::Send for termrock::layout::GridSpec
+impl core::marker::Sync for termrock::layout::GridSpec
+impl core::marker::Unpin for termrock::layout::GridSpec
+impl core::marker::UnsafeUnpin for termrock::layout::GridSpec
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::GridSpec
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::GridSpec
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::GridSpec where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::GridSpec::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::GridSpec where U: core::convert::From<T>
+pub fn termrock::layout::GridSpec::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::GridSpec where U: core::convert::Into<T>
+pub type termrock::layout::GridSpec::Error = core::convert::Infallible
+pub fn termrock::layout::GridSpec::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::GridSpec where U: core::convert::TryFrom<T>
+pub type termrock::layout::GridSpec::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::GridSpec::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::GridSpec where T: core::clone::Clone
+pub type termrock::layout::GridSpec::Owned = T
+pub fn termrock::layout::GridSpec::clone_into(&self, &mut T)
+pub fn termrock::layout::GridSpec::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::GridSpec where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::GridSpec::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::GridSpec where T: ?core::marker::Sized
+pub fn termrock::layout::GridSpec::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::GridSpec where T: ?core::marker::Sized
+pub fn termrock::layout::GridSpec::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::GridSpec where T: core::clone::Clone
+pub unsafe fn termrock::layout::GridSpec::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::GridSpec
+pub fn termrock::layout::GridSpec::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::GridSpec
 pub struct termrock::layout::HitRegion<Id>
 pub termrock::layout::HitRegion::area: ratatui_core::layout::rect::Rect
 pub termrock::layout::HitRegion::id: Id
@@ -7648,19 +7967,27 @@ pub fn termrock::layout::WorkspaceState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::WorkspaceState
 pub const termrock::layout::HEIGHT_LADDER: [u16; 6]
 pub const termrock::layout::WIDTH_LADDER: [u16; 7]
+pub fn termrock::layout::auto_flow_items(u16, usize, termrock::layout::GridAutoFlow) -> alloc::vec::Vec<termrock::layout::GridItem>
 pub fn termrock::layout::bottom_rows<const N: usize>(ratatui_core::layout::rect::Rect, [u16; N]) -> (ratatui_core::layout::rect::Rect, [ratatui_core::layout::rect::Rect; N])
 pub fn termrock::layout::centered_rect(u16, u16, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::composed_row_anatomy() -> [termrock::layout::AnatomyPart; 5]
 pub fn termrock::layout::contract_parts(&[termrock::layout::AnatomyPart], u16, termrock::layout::AdaptiveAnatomy) -> alloc::vec::Vec<termrock::layout::AnatomyPart>
+pub fn termrock::layout::dashboard_grid_template(u16, u16, u16, u16) -> termrock::layout::GridSpec
 pub fn termrock::layout::dialog_anatomy() -> [termrock::layout::AnatomyPart; 4]
 pub fn termrock::layout::dialog_stack_actions(u16, u16) -> bool
 pub const fn termrock::layout::direction_for_width(u16, u16) -> termrock::layout::StackDirection
 pub fn termrock::layout::essential_survives(termrock::layout::ResponsiveSurface, u16) -> bool
+pub fn termrock::layout::form_grid_template(u16) -> termrock::layout::GridSpec
+pub fn termrock::layout::grid_neighbor(&[termrock::layout::GridItem], usize, termrock::interaction::NavigationMove) -> core::option::Option<usize>
+pub fn termrock::layout::grid_neighbor_2d(&[termrock::layout::GridItem], usize, i32, i32) -> core::option::Option<usize>
+pub fn termrock::layout::grid_reading_neighbor(&[termrock::layout::GridItem], usize, bool) -> core::option::Option<usize>
+pub fn termrock::layout::layout_grid(ratatui_core::layout::rect::Rect, &termrock::layout::GridSpec, &[termrock::layout::GridItem]) -> termrock::layout::GridLayout
 pub fn termrock::layout::layout_stack(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize]) -> termrock::layout::StackLayout
 pub fn termrock::layout::layout_stack_into(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)
 pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::style::PanelChrome, &termrock::style::DesignSystem) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::scroll::DialogScroll, &termrock::style::DesignSystem) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect
+pub fn termrock::layout::responsive_columns(u16, u16, u16, u16) -> termrock::layout::GridSpec
 pub fn termrock::layout::status_bar_anatomy() -> [termrock::layout::AnatomyPart; 4]
 pub fn termrock::layout::table_row_shows_optional(u16) -> (bool, bool)
 pub fn termrock::layout::tabs_show_status_glyphs(u16) -> bool

@@ -4,6 +4,7 @@
 //! Multi-pane shells: [`WorkSurface`] / [`Workspace`].
 
 mod dialog;
+mod grid;
 mod responsive;
 mod stack;
 mod work_surface;
@@ -19,6 +20,11 @@ pub use responsive::{
     SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER, composed_row_anatomy,
     contract_parts, dialog_anatomy, dialog_stack_actions, essential_survives, status_bar_anatomy,
     table_row_shows_optional, tabs_show_status_glyphs,
+};
+pub use grid::{
+    auto_flow_items, dashboard_grid_template, form_grid_template, grid_neighbor, grid_neighbor_2d,
+    grid_reading_neighbor, layout_grid, responsive_columns, Grid, GridAutoFlow, GridItem,
+    GridLayout, GridSpec, TrackSize,
 };
 pub use stack::{
     direction_for_width, layout_stack, layout_stack_into, Align, FlexSize, Inline, Justify, Stack,

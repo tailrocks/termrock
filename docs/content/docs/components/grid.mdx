@@ -1,0 +1,76 @@
+---
+title: Grid
+description: '2D track grid for dashboards, forms, and card collections.'
+---
+
+## Previews
+
+### `grid/columns`
+
+![Grid columns](/component-previews/grid-columns.svg)
+
+### `grid/span`
+
+![Grid span](/component-previews/grid-span.svg)
+
+### `grid/dashboard`
+
+![Dashboard template](/component-previews/grid-dashboard.svg)
+
+### `grid/form`
+
+![Form template](/component-previews/grid-form.svg)
+
+### `grid/narrow`
+
+![Narrow collapse](/component-previews/grid-narrow.svg)
+
+## Anatomy
+
+`content` · `column_tracks[]` · `row_tracks[]` · `cells[]` · `overflowed`
+
+## Usage
+
+```rust
+use termrock::layout::{Grid, TrackSize, GridAutoFlow, form_grid_template};
+
+let layout = Grid::columns(3)
+    .gaps(1, 1)
+    .auto_row(TrackSize::Fixed(4))
+    .layout_flow(area, 6, GridAutoFlow::Row);
+
+let form = form_grid_template(area.width);
+```
+
+## Tracks
+
+| Track | Behavior |
+|-------|----------|
+| `Fixed(n)` | Exact cells |
+| `Weight` / `fr` | Share residual |
+| `MinMax` | Preferred clamped to [min, max] |
+
+## Navigation
+
+Grid is **not** interactive by default. Hosts wire:
+
+```rust
+use termrock::layout::grid_neighbor_2d;
+// Arrow Right → grid_neighbor_2d(items, focus, 1, 0)
+```
+
+## Overflow
+
+Track minima that exceed the axis shrink from the end; `overflowed` is set.
+
+## vs Stack / WorkSurface
+
+| | Grid | Stack | WorkSurface |
+|--|------|-------|-------------|
+| Axes | 2D tracks | 1D | 1D named regions |
+| Spans | yes | no | no |
+| Use | forms, dashboards | anatomy | app chrome |
+
+## Migration
+
+`migrations/0098-v0.13.0-grid.md`

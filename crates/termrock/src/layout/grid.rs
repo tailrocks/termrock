@@ -1,0 +1,901 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! Terminal grid layout for dashboards, forms, settings, and card collections.
+//!
+//! **Stateless.** Track templates + placements → rectangles. No retained DOM.
+//! Complements [`crate::layout::Stack`] (1D) and [`crate::layout::WorkSurface`]
+//! (named app panes).
+//!
+//! ## Tracks
+//!
+//! - [`TrackSize::Fixed`] — exact cells
+//! - [`TrackSize::Weight`] — fractional share of residual (CSS `fr`)
+//! - [`TrackSize::MinMax`] — preferred clamped to [min, max]
+//!
+//! ## Overflow
+//!
+//! When fixed/minmax minima exceed the axis: shrink tracks from the **end**
+//! (same contract as Stack). Spanned cells are clipped to the grid bounds.
+//!
+//! ## Navigation
+//!
+//! Optional spatial neighbor helpers for hosts that wire keyboard Move intents.
+//! The grid itself is not interactive.
+
+use ratatui_core::layout::Rect;
+
+use crate::interaction::NavigationMove;
+use crate::style::Density;
+
+/// How one row or column track sizes along its axis.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum TrackSize {
+    /// Exact track size in cells.
+    Fixed(u16),
+    /// Fractional share of residual after fixed/minmax mins (weight ≥ 1).
+    Weight(u16),
+    /// Preferred size clamped to [min, max].
+    MinMax {
+        /// Minimum cells.
+        min: u16,
+        /// Ideal cells.
+        preferred: u16,
+        /// Maximum cells.
+        max: u16,
+    },
+}
+
+impl TrackSize {
+    /// Fixed track.
+    #[must_use]
+    pub const fn fixed(n: u16) -> Self {
+        Self::Fixed(n)
+    }
+
+    /// Fractional weight track.
+    #[must_use]
+    pub const fn fr(w: u16) -> Self {
+        Self::Weight(if w == 0 { 1 } else { w })
+    }
+
+    /// Minmax track.
+    #[must_use]
+    pub const fn minmax(min: u16, preferred: u16, max: u16) -> Self {
+        Self::MinMax {
+            min,
+            preferred,
+            max,
+        }
+    }
+
+    /// Minimum claim before free-space distribution.
+    #[must_use]
+    pub const fn min_size(self) -> u16 {
+        match self {
+            Self::Fixed(n) => n,
+            Self::Weight(_) => 0,
+            Self::MinMax { min, .. } => min,
+        }
+    }
+}
+
+/// One placed cell (0-based grid coordinates).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct GridItem {
+    /// Column start (0-based).
+    pub col: u16,
+    /// Row start (0-based).
+    pub row: u16,
+    /// Column span (≥ 1).
+    pub col_span: u16,
+    /// Row span (≥ 1).
+    pub row_span: u16,
+}
+
+impl GridItem {
+    /// Single cell at (col, row).
+    #[must_use]
+    pub const fn cell(col: u16, row: u16) -> Self {
+        Self {
+            col,
+            row,
+            col_span: 1,
+            row_span: 1,
+        }
+    }
+
+    /// Cell with spans.
+    #[must_use]
+    pub const fn span(col: u16, row: u16, col_span: u16, row_span: u16) -> Self {
+        Self {
+            col,
+            row,
+            col_span: if col_span == 0 { 1 } else { col_span },
+            row_span: if row_span == 0 { 1 } else { row_span },
+        }
+    }
+}
+
+/// Auto-flow order when placing a sequence of items.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum GridAutoFlow {
+    /// Fill columns left→right, then next row (default).
+    #[default]
+    Row,
+    /// Fill rows top→bottom, then next column.
+    Column,
+}
+
+/// Grid template and gaps.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GridSpec {
+    /// Column tracks (left → right).
+    pub columns: Vec<TrackSize>,
+    /// Row tracks (top → bottom). Empty → auto rows of `auto_row` size.
+    pub rows: Vec<TrackSize>,
+    /// Gap between columns.
+    pub column_gap: u16,
+    /// Gap between rows.
+    pub row_gap: u16,
+    /// Default row track when `rows` is empty and items need more rows.
+    pub auto_row: TrackSize,
+    /// Padding inside the grid area.
+    pub pad_x: u16,
+    /// Padding inside the grid area.
+    pub pad_y: u16,
+}
+
+impl Default for GridSpec {
+    fn default() -> Self {
+        Self {
+            columns: vec![TrackSize::fr(1)],
+            rows: vec![],
+            column_gap: 0,
+            row_gap: 0,
+            auto_row: TrackSize::Fixed(1),
+            pad_x: 0,
+            pad_y: 0,
+        }
+    }
+}
+
+impl GridSpec {
+    /// N equal fractional columns.
+    #[must_use]
+    pub fn columns_fr(n: u16) -> Self {
+        let n = n.max(1);
+        Self {
+            columns: (0..n).map(|_| TrackSize::fr(1)).collect(),
+            ..Self::default()
+        }
+    }
+
+    /// Density-driven gaps (no pad by default).
+    #[must_use]
+    pub fn with_density(mut self, density: Density) -> Self {
+        self.column_gap = density.gap();
+        self.row_gap = density.gap();
+        self
+    }
+
+    /// Explicit gaps.
+    #[must_use]
+    pub const fn gaps(mut self, column_gap: u16, row_gap: u16) -> Self {
+        self.column_gap = column_gap;
+        self.row_gap = row_gap;
+        self
+    }
+
+    /// Explicit column tracks.
+    #[must_use]
+    pub fn columns(mut self, columns: impl IntoIterator<Item = TrackSize>) -> Self {
+        self.columns = columns.into_iter().collect();
+        if self.columns.is_empty() {
+            self.columns.push(TrackSize::fr(1));
+        }
+        self
+    }
+
+    /// Explicit row tracks.
+    #[must_use]
+    pub fn rows(mut self, rows: impl IntoIterator<Item = TrackSize>) -> Self {
+        self.rows = rows.into_iter().collect();
+        self
+    }
+
+    /// Padding.
+    #[must_use]
+    pub const fn padding(mut self, pad_x: u16, pad_y: u16) -> Self {
+        self.pad_x = pad_x;
+        self.pad_y = pad_y;
+        self
+    }
+
+    /// Auto row size when rows are generated.
+    #[must_use]
+    pub const fn auto_row(mut self, track: TrackSize) -> Self {
+        self.auto_row = track;
+        self
+    }
+
+    /// Column count.
+    #[must_use]
+    pub fn col_count(&self) -> u16 {
+        self.columns.len() as u16
+    }
+}
+
+/// Resolved grid geometry.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GridLayout {
+    /// One rect per input item (same order). Zero-sized when clipped out.
+    pub cells: Vec<Rect>,
+    /// Column track rectangles (full height of content).
+    pub column_tracks: Vec<Rect>,
+    /// Row track rectangles (full width of content).
+    pub row_tracks: Vec<Rect>,
+    /// Content area after padding.
+    pub content: Rect,
+    /// True if any track was shrunk below its preferred/fixed claim.
+    pub overflowed: bool,
+    /// Column count used.
+    pub col_count: u16,
+    /// Row count used.
+    pub row_count: u16,
+}
+
+impl GridLayout {
+    /// Cell by item index.
+    #[must_use]
+    pub fn get(&self, index: usize) -> Option<Rect> {
+        self.cells.get(index).copied()
+    }
+
+    /// Hit-test: first cell containing the point.
+    #[must_use]
+    pub fn hit_cell(&self, col: u16, row: u16) -> Option<usize> {
+        let pos = ratatui_core::layout::Position { x: col, y: row };
+        self.cells
+            .iter()
+            .position(|r| r.width > 0 && r.height > 0 && r.contains(pos))
+    }
+}
+
+/// Builder for common grid layouts.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Grid {
+    spec: GridSpec,
+}
+
+impl Grid {
+    /// Single full-width column.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            spec: GridSpec::default(),
+        }
+    }
+
+    /// Equal fractional columns.
+    #[must_use]
+    pub fn columns(n: u16) -> Self {
+        Self {
+            spec: GridSpec::columns_fr(n),
+        }
+    }
+
+    /// From a full spec.
+    #[must_use]
+    pub fn from_spec(spec: GridSpec) -> Self {
+        Self { spec }
+    }
+
+    /// Density gaps.
+    #[must_use]
+    pub fn with_density(mut self, density: Density) -> Self {
+        self.spec = self.spec.with_density(density);
+        self
+    }
+
+    /// Gaps.
+    #[must_use]
+    pub fn gaps(mut self, column_gap: u16, row_gap: u16) -> Self {
+        self.spec = self.spec.gaps(column_gap, row_gap);
+        self
+    }
+
+    /// Column tracks.
+    #[must_use]
+    pub fn tracks(mut self, columns: impl IntoIterator<Item = TrackSize>) -> Self {
+        self.spec = self.spec.columns(columns);
+        self
+    }
+
+    /// Row tracks.
+    #[must_use]
+    pub fn row_tracks(mut self, rows: impl IntoIterator<Item = TrackSize>) -> Self {
+        self.spec = self.spec.rows(rows);
+        self
+    }
+
+    /// Auto row height for auto-generated rows.
+    #[must_use]
+    pub fn auto_row(mut self, track: TrackSize) -> Self {
+        self.spec = self.spec.auto_row(track);
+        self
+    }
+
+    /// Padding.
+    #[must_use]
+    pub fn padding(mut self, pad_x: u16, pad_y: u16) -> Self {
+        self.spec = self.spec.padding(pad_x, pad_y);
+        self
+    }
+
+    /// Layout explicit placements.
+    #[must_use]
+    pub fn layout(&self, area: Rect, items: &[GridItem]) -> GridLayout {
+        layout_grid(area, &self.spec, items)
+    }
+
+    /// Auto-flow `count` cells into the grid (row-major by default).
+    #[must_use]
+    pub fn layout_flow(
+        &self,
+        area: Rect,
+        count: usize,
+        flow: GridAutoFlow,
+    ) -> GridLayout {
+        let items = auto_flow_items(self.spec.col_count(), count, flow);
+        layout_grid(area, &self.spec, &items)
+    }
+}
+
+impl Default for Grid {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Responsive form/dashboard column template.
+///
+/// - width ≥ `two_col_min` and ≥ 2× min column + gap → 2 equal columns
+/// - else → 1 column
+#[must_use]
+pub fn responsive_columns(width: u16, two_col_min: u16, min_col: u16, gap: u16) -> GridSpec {
+    let fits_two = width >= two_col_min
+        && width >= min_col.saturating_mul(2).saturating_add(gap);
+    if fits_two {
+        GridSpec::columns_fr(2).gaps(gap, gap)
+    } else {
+        GridSpec::columns_fr(1).gaps(0, gap)
+    }
+}
+
+/// Form-oriented template (matches historical Form column policy).
+#[must_use]
+pub fn form_grid_template(width: u16) -> GridSpec {
+    // Historical: MIN_COLUMN_WIDTH=30, COLUMN_GAP=2, two cols when policy allows.
+    const MIN_COL: u16 = 30;
+    const GAP: u16 = 2;
+    const TWO_MIN: u16 = 64;
+    responsive_columns(width, TWO_MIN, MIN_COL, GAP).auto_row(TrackSize::Fixed(4))
+}
+
+/// Dashboard card grid: up to `max_cols` equal columns when width allows.
+#[must_use]
+pub fn dashboard_grid_template(width: u16, max_cols: u16, min_card: u16, gap: u16) -> GridSpec {
+    let max_cols = max_cols.max(1);
+    let mut cols = 1u16;
+    for c in (2..=max_cols).rev() {
+        let need = min_card.saturating_mul(c).saturating_add(gap.saturating_mul(c - 1));
+        if width >= need {
+            cols = c;
+            break;
+        }
+    }
+    GridSpec::columns_fr(cols)
+        .gaps(gap, gap)
+        .auto_row(TrackSize::minmax(3, 6, 12))
+}
+
+/// Layout items into `area` using `spec`.
+#[must_use]
+pub fn layout_grid(area: Rect, spec: &GridSpec, items: &[GridItem]) -> GridLayout {
+    let content = pad_rect(area, spec.pad_x, spec.pad_y);
+    if content.width == 0 || content.height == 0 || items.is_empty() {
+        return GridLayout {
+            cells: vec![
+                Rect {
+                    x: content.x,
+                    y: content.y,
+                    width: 0,
+                    height: 0,
+                };
+                items.len()
+            ],
+            column_tracks: vec![],
+            row_tracks: vec![],
+            content,
+            overflowed: false,
+            col_count: spec.col_count(),
+            row_count: 0,
+        };
+    }
+
+    let col_count = spec.col_count().max(1);
+    let max_row = items
+        .iter()
+        .map(|i| i.row.saturating_add(i.row_span.saturating_sub(1)))
+        .max()
+        .unwrap_or(0);
+    let row_count = {
+        let explicit = spec.rows.len() as u16;
+        explicit.max(max_row.saturating_add(1))
+    };
+
+    // Build row track list (extend with auto_row).
+    let mut row_tracks_spec = spec.rows.clone();
+    while (row_tracks_spec.len() as u16) < row_count {
+        row_tracks_spec.push(spec.auto_row);
+    }
+
+    let (col_sizes, col_overflow) = resolve_tracks(
+        main_available(content.width, spec.column_gap, col_count),
+        &spec.columns,
+        spec.column_gap,
+    );
+    let (row_sizes, row_overflow) = resolve_tracks(
+        main_available(content.height, spec.row_gap, row_count),
+        &row_tracks_spec,
+        spec.row_gap,
+    );
+
+    let col_offsets = prefix_offsets(&col_sizes, spec.column_gap, content.x);
+    let row_offsets = prefix_offsets(&row_sizes, spec.row_gap, content.y);
+
+    let column_tracks: Vec<Rect> = col_sizes
+        .iter()
+        .enumerate()
+        .map(|(i, &w)| Rect {
+            x: col_offsets[i],
+            y: content.y,
+            width: w,
+            height: content.height,
+        })
+        .collect();
+    let row_tracks: Vec<Rect> = row_sizes
+        .iter()
+        .enumerate()
+        .map(|(i, &h)| Rect {
+            x: content.x,
+            y: row_offsets[i],
+            width: content.width,
+            height: h,
+        })
+        .collect();
+
+    let cells: Vec<Rect> = items
+        .iter()
+        .map(|item| {
+            cell_rect(
+                item,
+                &col_offsets,
+                &row_offsets,
+                &col_sizes,
+                &row_sizes,
+                col_count,
+                row_count,
+                content,
+            )
+        })
+        .collect();
+
+    GridLayout {
+        cells,
+        column_tracks,
+        row_tracks,
+        content,
+        overflowed: col_overflow || row_overflow,
+        col_count,
+        row_count,
+    }
+}
+
+/// Generate row-major or column-major placements for `count` items.
+#[must_use]
+pub fn auto_flow_items(col_count: u16, count: usize, flow: GridAutoFlow) -> Vec<GridItem> {
+    let cols = col_count.max(1) as usize;
+    (0..count)
+        .map(|i| match flow {
+            GridAutoFlow::Row => {
+                let row = (i / cols) as u16;
+                let col = (i % cols) as u16;
+                GridItem::cell(col, row)
+            }
+            GridAutoFlow::Column => {
+                // Column-major: fill down each column, then next column.
+                // With C columns and N items, column height = ceil(N/C).
+                let rows = count.div_ceil(cols).max(1);
+                GridItem::cell((i / rows) as u16, (i % rows) as u16)
+            }
+        })
+        .collect()
+}
+
+/// Spatial neighbor among placed cells (Manhattan on grid coords).
+///
+/// Returns the index of the nearest item in the move direction, or `None`.
+/// Hosts map [`NavigationMove`] from intents; grid does not consume keys.
+#[must_use]
+pub fn grid_neighbor(
+    items: &[GridItem],
+    focus: usize,
+    direction: NavigationMove,
+) -> Option<usize> {
+    match direction {
+        NavigationMove::First => return items.iter().enumerate().map(|(i, _)| i).min(),
+        NavigationMove::Last => return items.iter().enumerate().map(|(i, _)| i).max(),
+        NavigationMove::Next | NavigationMove::Right => grid_neighbor_2d(items, focus, 1, 0)
+            .or_else(|| grid_reading_neighbor(items, focus, true)),
+        NavigationMove::Previous | NavigationMove::Left => grid_neighbor_2d(items, focus, -1, 0)
+            .or_else(|| grid_reading_neighbor(items, focus, false)),
+        NavigationMove::Down => grid_neighbor_2d(items, focus, 0, 1),
+        NavigationMove::Up => grid_neighbor_2d(items, focus, 0, -1),
+        _ => None,
+    }
+}
+
+/// 2D spatial neighbor: `(dx, dy)` in grid cell steps (e.g. (0,-1) = up).
+#[must_use]
+pub fn grid_neighbor_2d(
+    items: &[GridItem],
+    focus: usize,
+    dx: i32,
+    dy: i32,
+) -> Option<usize> {
+    if dx == 0 && dy == 0 {
+        return Some(focus);
+    }
+    let cur = items.get(focus)?;
+    let cx = i32::from(cur.col);
+    let cy = i32::from(cur.row);
+    let mut best: Option<(usize, i32, i32)> = None; // index, primary dist, secondary dist
+    for (i, item) in items.iter().enumerate() {
+        if i == focus {
+            continue;
+        }
+        let ix = i32::from(item.col);
+        let iy = i32::from(item.row);
+        let ddx = ix - cx;
+        let ddy = iy - cy;
+        // Must be in the half-plane of the move.
+        if dx != 0 && ddx.signum() != dx.signum() {
+            continue;
+        }
+        if dy != 0 && ddy.signum() != dy.signum() {
+            continue;
+        }
+        if dx != 0 && ddx == 0 {
+            continue;
+        }
+        if dy != 0 && ddy == 0 {
+            continue;
+        }
+        // Prefer same row for horizontal, same col for vertical.
+        let primary = if dx != 0 { ddx.abs() } else { ddy.abs() };
+        let secondary = if dx != 0 { ddy.abs() } else { ddx.abs() };
+        let better = match best {
+            None => true,
+            Some((_, bp, bs)) => primary < bp || (primary == bp && secondary < bs),
+        };
+        if better {
+            best = Some((i, primary, secondary));
+        }
+    }
+    best.map(|(i, _, _)| i)
+}
+
+/// Reading-order next/previous (row-major by (row, col)).
+#[must_use]
+pub fn grid_reading_neighbor(
+    items: &[GridItem],
+    focus: usize,
+    forward: bool,
+) -> Option<usize> {
+    if items.is_empty() {
+        return None;
+    }
+    let mut order: Vec<usize> = (0..items.len()).collect();
+    order.sort_by_key(|&i| (items[i].row, items[i].col));
+    let pos = order.iter().position(|&i| i == focus)?;
+    if forward {
+        order.get(pos + 1).copied()
+    } else if pos > 0 {
+        order.get(pos - 1).copied()
+    } else {
+        None
+    }
+}
+
+// ── internals ──────────────────────────────────────────────────────────────
+
+fn pad_rect(area: Rect, pad_x: u16, pad_y: u16) -> Rect {
+    let x = area.x.saturating_add(pad_x);
+    let y = area.y.saturating_add(pad_y);
+    let width = area.width.saturating_sub(pad_x.saturating_mul(2));
+    let height = area.height.saturating_sub(pad_y.saturating_mul(2));
+    if width == 0 || height == 0 {
+        Rect {
+            x,
+            y,
+            width: 0,
+            height: 0,
+        }
+    } else {
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+}
+
+fn main_available(total: u16, gap: u16, count: u16) -> u16 {
+    let gaps = gap.saturating_mul(count.saturating_sub(1));
+    total.saturating_sub(gaps)
+}
+
+/// Resolve track sizes along one axis. Returns (sizes, overflowed).
+fn resolve_tracks(available: u16, tracks: &[TrackSize], _gap: u16) -> (Vec<u16>, bool) {
+    let n = tracks.len();
+    if n == 0 {
+        return (vec![], false);
+    }
+    let mut sizes = vec![0u16; n];
+    let mut weight_sum = 0u32;
+    let mut fixed_sum = 0u16;
+
+    for (i, track) in tracks.iter().enumerate() {
+        match *track {
+            TrackSize::Fixed(f) => {
+                sizes[i] = f;
+                fixed_sum = fixed_sum.saturating_add(f);
+            }
+            TrackSize::MinMax {
+                min,
+                preferred,
+                max,
+            } => {
+                let p = preferred.clamp(min, max.max(min));
+                sizes[i] = p;
+                fixed_sum = fixed_sum.saturating_add(p);
+            }
+            TrackSize::Weight(w) => {
+                weight_sum = weight_sum.saturating_add(u32::from(w.max(1)));
+            }
+        }
+    }
+
+    let mut overflowed = false;
+    if fixed_sum > available {
+        overflowed = true;
+        let mut remaining = available;
+        for i in (0..n).rev() {
+            if matches!(tracks[i], TrackSize::Weight(_)) {
+                sizes[i] = 0;
+                continue;
+            }
+            let take = sizes[i].min(remaining);
+            sizes[i] = take;
+            remaining = remaining.saturating_sub(take);
+        }
+    } else if weight_sum > 0 {
+        let mut rem_flex = available.saturating_sub(fixed_sum);
+        let mut rem_w = weight_sum;
+        for i in 0..n {
+            if let TrackSize::Weight(w) = tracks[i] {
+                let w = u32::from(w.max(1));
+                let is_last = tracks[i + 1..]
+                    .iter()
+                    .all(|t| !matches!(t, TrackSize::Weight(_)));
+                let share = if rem_w == 0 {
+                    0
+                } else {
+                    (u32::from(rem_flex) * w / rem_w) as u16
+                };
+                let size = if is_last { rem_flex } else { share };
+                sizes[i] = size;
+                rem_w = rem_w.saturating_sub(w);
+                rem_flex = rem_flex.saturating_sub(size);
+            }
+        }
+    }
+
+    (sizes, overflowed)
+}
+
+fn prefix_offsets(sizes: &[u16], gap: u16, origin: u16) -> Vec<u16> {
+    let mut out = Vec::with_capacity(sizes.len());
+    let mut cursor = origin;
+    for (i, &s) in sizes.iter().enumerate() {
+        out.push(cursor);
+        cursor = cursor.saturating_add(s);
+        if i + 1 < sizes.len() {
+            cursor = cursor.saturating_add(gap);
+        }
+    }
+    out
+}
+
+#[expect(clippy::too_many_arguments, reason = "pure geometry helper")]
+fn cell_rect(
+    item: &GridItem,
+    col_offsets: &[u16],
+    row_offsets: &[u16],
+    col_sizes: &[u16],
+    row_sizes: &[u16],
+    col_count: u16,
+    row_count: u16,
+    content: Rect,
+) -> Rect {
+    let col = item.col;
+    let row = item.row;
+    if col >= col_count || row >= row_count {
+        return Rect {
+            x: content.x,
+            y: content.y,
+            width: 0,
+            height: 0,
+        };
+    }
+    let col_end = (col.saturating_add(item.col_span)).min(col_count);
+    let row_end = (row.saturating_add(item.row_span)).min(row_count);
+    let x = col_offsets[col as usize];
+    let y = row_offsets[row as usize];
+    let right = if col_end == 0 {
+        x
+    } else {
+        let last = (col_end - 1) as usize;
+        col_offsets[last].saturating_add(col_sizes[last])
+    };
+    let bottom = if row_end == 0 {
+        y
+    } else {
+        let last = (row_end - 1) as usize;
+        row_offsets[last].saturating_add(row_sizes[last])
+    };
+    let width = right.saturating_sub(x);
+    let height = bottom.saturating_sub(y);
+    Rect {
+        x,
+        y,
+        width,
+        height,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn two_column_equal_fr() {
+        let grid = Grid::columns(2).gaps(2, 0);
+        let layout = grid.layout_flow(Rect::new(0, 0, 42, 10), 2, GridAutoFlow::Row);
+        assert_eq!(layout.col_count, 2);
+        assert_eq!(layout.cells[0].width, 20);
+        assert_eq!(layout.cells[1].width, 20);
+        assert_eq!(layout.cells[1].x, 22);
+    }
+
+    #[test]
+    fn span_merges_columns() {
+        let spec = GridSpec::columns_fr(3).gaps(1, 1).rows([
+            TrackSize::Fixed(3),
+            TrackSize::Fixed(3),
+        ]);
+        let items = [
+            GridItem::span(0, 0, 2, 1),
+            GridItem::cell(2, 0),
+            GridItem::span(0, 1, 3, 1),
+        ];
+        let layout = layout_grid(Rect::new(0, 0, 32, 10), &spec, &items);
+        assert!(layout.cells[0].width > layout.cells[1].width);
+        assert_eq!(layout.cells[2].width, layout.content.width);
+    }
+
+    #[test]
+    fn overflow_shrinks_fixed_tracks() {
+        let spec = GridSpec::default().columns([
+            TrackSize::Fixed(10),
+            TrackSize::Fixed(10),
+            TrackSize::Fixed(10),
+        ]);
+        let items = [GridItem::cell(0, 0), GridItem::cell(1, 0), GridItem::cell(2, 0)];
+        let layout = layout_grid(Rect::new(0, 0, 15, 5), &spec, &items);
+        assert!(layout.overflowed);
+        let sum: u16 = layout.column_tracks.iter().map(|r| r.width).sum();
+        assert!(sum <= 15);
+    }
+
+    #[test]
+    fn auto_flow_row_major() {
+        let items = auto_flow_items(2, 4, GridAutoFlow::Row);
+        assert_eq!(items[0], GridItem::cell(0, 0));
+        assert_eq!(items[1], GridItem::cell(1, 0));
+        assert_eq!(items[2], GridItem::cell(0, 1));
+        assert_eq!(items[3], GridItem::cell(1, 1));
+    }
+
+    #[test]
+    fn form_template_collapses_narrow() {
+        let wide = form_grid_template(80);
+        assert_eq!(wide.col_count(), 2);
+        let narrow = form_grid_template(40);
+        assert_eq!(narrow.col_count(), 1);
+    }
+
+    #[test]
+    fn dashboard_template_max_cols() {
+        let g = dashboard_grid_template(100, 3, 20, 2);
+        assert_eq!(g.col_count(), 3);
+        let tiny = dashboard_grid_template(25, 3, 20, 2);
+        assert_eq!(tiny.col_count(), 1);
+    }
+
+    #[test]
+    fn neighbor_right() {
+        let items = auto_flow_items(3, 6, GridAutoFlow::Row);
+        // focus 0 (0,0) → right is 1 (1,0)
+        assert_eq!(grid_neighbor_2d(&items, 0, 1, 0), Some(1));
+        assert_eq!(grid_neighbor_2d(&items, 0, 0, 1), Some(3)); // down
+    }
+
+    #[test]
+    fn reading_order() {
+        let items = [
+            GridItem::cell(1, 0),
+            GridItem::cell(0, 0),
+            GridItem::cell(0, 1),
+        ];
+        // focus on index 1 (0,0) → next reading is index 0 (1,0)
+        assert_eq!(grid_reading_neighbor(&items, 1, true), Some(0));
+    }
+
+    #[test]
+    fn hit_cell() {
+        let layout = Grid::columns(2)
+            .gaps(0, 0)
+            .auto_row(TrackSize::Fixed(4))
+            .layout_flow(Rect::new(0, 0, 20, 4), 2, GridAutoFlow::Row);
+        assert_eq!(layout.hit_cell(15, 1), Some(1));
+        assert_eq!(layout.hit_cell(2, 1), Some(0));
+    }
+
+    #[test]
+    fn layout_is_cheap() {
+        let grid = Grid::columns(4).gaps(1, 1).auto_row(TrackSize::Fixed(3));
+        let area = Rect::new(0, 0, 120, 40);
+        for _ in 0..10_000 {
+            let _ = grid.layout_flow(area, 32, GridAutoFlow::Row);
+        }
+    }
+
+    #[test]
+    fn minmax_clamps_preferred() {
+        let spec = GridSpec::default()
+            .columns([TrackSize::minmax(5, 100, 10), TrackSize::fr(1)])
+            .rows([TrackSize::Fixed(4)]);
+        let layout = layout_grid(
+            Rect::new(0, 0, 40, 4),
+            &spec,
+            &[GridItem::cell(0, 0), GridItem::cell(1, 0)],
+        );
+        assert_eq!(layout.column_tracks[0].width, 10);
+    }
+}

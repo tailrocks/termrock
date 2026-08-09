@@ -352,6 +352,69 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
+            id: "Grid".into(),
+            title: "Grid".into(),
+            description: "2D track grid: fixed/fr/minmax, gaps, spans, auto-flow, responsive templates, spatial neighbors.".into(),
+            kind: RegistryItemKind::Primitive,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::layout::Grid".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/layout/grid.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec!["termrock/Stack".into()];
+                d
+            },
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "columns".into(),
+                    label: "Column tracks".into(),
+                },
+                AnatomyPartRef {
+                    id: "rows".into(),
+                    label: "Row tracks".into(),
+                },
+                AnatomyPartRef {
+                    id: "cells".into(),
+                    label: "Placed cells".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "columns-fr".into(),
+                    description: "Equal fractional columns".into(),
+                },
+                VariantRef {
+                    id: "form".into(),
+                    description: "form_grid_template".into(),
+                },
+                VariantRef {
+                    id: "dashboard".into(),
+                    description: "dashboard_grid_template".into(),
+                },
+            ],
+            outcomes: vec![],
+            stories: vec![
+                "grid/columns".into(),
+                "grid/span".into(),
+                "grid/dashboard".into(),
+                "grid/form".into(),
+                "grid/narrow".into(),
+            ],
+            tests: vec!["layout::grid".into()],
+            migration: Some("migrations/0098-v0.13.0-grid.md".into()),
+            provenance: prov("crates/termrock/src/layout/grid.rs"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
             id: "Stack".into(),
             title: "Stack / Inline".into(),
             description: "Stateless vertical/horizontal packing: FlexSize, gap, align, justify, wrap, overflow.".into(),

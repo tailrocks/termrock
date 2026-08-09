@@ -186,6 +186,51 @@ fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 pub(crate) fn stories() -> Vec<Story> {
     vec![
         Story::new(
+            "grid/columns",
+            "Grid columns",
+            "Grid",
+            "Equal fr columns with gap; auto-flow cards.",
+            56,
+            12,
+            grid_columns_story,
+        ),
+        Story::new(
+            "grid/span",
+            "Grid span",
+            "Grid",
+            "Header spans full width; detail cells below.",
+            48,
+            10,
+            grid_span_story,
+        ),
+        Story::new(
+            "grid/dashboard",
+            "Grid dashboard template",
+            "Grid",
+            "Responsive card grid (up to 3 columns).",
+            72,
+            14,
+            grid_dashboard_story,
+        ),
+        Story::new(
+            "grid/form",
+            "Grid form template",
+            "Grid",
+            "form_grid_template: 2-col wide / 1-col narrow.",
+            70,
+            12,
+            grid_form_story,
+        ),
+        Story::new(
+            "grid/narrow",
+            "Grid narrow",
+            "Grid",
+            "Single-column collapse under narrow width.",
+            28,
+            10,
+            grid_narrow_story,
+        ),
+        Story::new(
             "stack/vertical",
             "Stack vertical",
             "Stack",
@@ -2991,6 +3036,115 @@ pub(crate) fn stories() -> Vec<Story> {
 /// Catalog generation deliberately uses [`stories`] instead.
 pub(crate) fn gallery_stories() -> Vec<Story> {
     stories()
+}
+
+fn grid_columns_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{Grid, GridAutoFlow};
+    use termrock::widgets::Panel;
+    let layout = Grid::columns(3)
+        .gaps(1, 1)
+        .auto_row(termrock::layout::TrackSize::Fixed(4))
+        .layout_flow(area, 6, GridAutoFlow::Row);
+    for (i, r) in layout.cells.iter().enumerate() {
+        if r.width == 0 {
+            continue;
+        }
+        let labels = ["A", "B", "C", "D", "E", "F"];
+        let _ = Panel::new(system)
+            .title(labels.get(i).copied().unwrap_or("x"))
+            .paint(*r, frame.buffer_mut(), None);
+    }
+}
+
+fn grid_span_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{layout_grid, GridItem, GridSpec, TrackSize};
+    use termrock::widgets::{Panel, PanelChrome};
+    let spec = GridSpec::columns_fr(2)
+        .gaps(1, 1)
+        .rows([TrackSize::Fixed(3), TrackSize::Weight(1)]);
+    let items = [
+        GridItem::span(0, 0, 2, 1),
+        GridItem::cell(0, 1),
+        GridItem::cell(1, 1),
+    ];
+    let layout = layout_grid(area, &spec, &items);
+    if let Some(r) = layout.get(0) {
+        let _ = Panel::new(system)
+            .title("header span")
+            .emphasis(PanelChrome::Focused)
+            .paint(r, frame.buffer_mut(), None);
+    }
+    if let Some(r) = layout.get(1) {
+        let _ = Panel::new(system)
+            .title("left")
+            .paint(r, frame.buffer_mut(), None);
+    }
+    if let Some(r) = layout.get(2) {
+        let _ = Panel::new(system)
+            .title("right")
+            .paint(r, frame.buffer_mut(), None);
+    }
+}
+
+fn grid_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{dashboard_grid_template, layout_grid, auto_flow_items, GridAutoFlow};
+    use termrock::widgets::Card;
+    let spec = dashboard_grid_template(area.width, 3, 18, 1);
+    let items = auto_flow_items(spec.col_count(), 6, GridAutoFlow::Row);
+    let layout = layout_grid(area, &spec, &items);
+    let titles = ["CPU", "MEM", "NET", "DISK", "QPS", "ERR"];
+    for (i, r) in layout.cells.iter().enumerate() {
+        if r.height < 2 {
+            continue;
+        }
+        let _ = Card::new(system)
+            .title(titles.get(i).copied().unwrap_or("m"))
+            .description("metric")
+            .paint(*r, frame.buffer_mut(), None);
+    }
+}
+
+fn grid_form_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{form_grid_template, layout_grid, auto_flow_items, GridAutoFlow};
+    use termrock::widgets::Panel;
+    let spec = form_grid_template(area.width);
+    let items = auto_flow_items(spec.col_count(), 4, GridAutoFlow::Row);
+    let layout = layout_grid(area, &spec, &items);
+    let labels = ["Name", "Email", "Role", "Team"];
+    for (i, r) in layout.cells.iter().enumerate() {
+        if r.height == 0 {
+            continue;
+        }
+        let body = Panel::new(system)
+            .title(labels.get(i).copied().unwrap_or("f"))
+            .paint(*r, frame.buffer_mut(), None);
+        if body.width > 2 {
+            frame.buffer_mut().set_stringn(
+                body.x,
+                body.y,
+                "value",
+                usize::from(body.width),
+                system.style(Role::Input),
+            );
+        }
+    }
+}
+
+fn grid_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{form_grid_template, layout_grid, auto_flow_items, GridAutoFlow};
+    use termrock::widgets::Panel;
+    let spec = form_grid_template(area.width);
+    let items = auto_flow_items(spec.col_count(), 3, GridAutoFlow::Row);
+    let layout = layout_grid(area, &spec, &items);
+    for (i, r) in layout.cells.iter().enumerate() {
+        if r.height == 0 {
+            continue;
+        }
+        let labels = ["1", "2", "3"];
+        let _ = Panel::new(system)
+            .title(labels.get(i).copied().unwrap_or("x"))
+            .paint(*r, frame.buffer_mut(), None);
+    }
 }
 
 fn stack_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

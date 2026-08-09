@@ -20,7 +20,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::{HitRegion, NavigationMove, PageMove, UiIntent},
-    layout::ResponsiveSurface,
+    layout::{form_grid_template, ResponsiveSurface},
     scroll::max_offset,
     style::{DesignSystem, Role},
 };
@@ -28,7 +28,6 @@ use crate::{
 const FIELD_HEIGHT: usize = 4;
 const SECTION_HEADER_HEIGHT: usize = 2;
 const COLUMN_GAP: u16 = 2;
-const MIN_COLUMN_WIDTH: u16 = 30;
 
 /// A stable form field with label, value, and validation metadata.
 #[derive(Debug, Clone)]
@@ -577,14 +576,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for Form<'_, Id> {
 }
 
 fn columns_for(width: u16) -> u8 {
-    // Recipe + surface policy: multi-pane only when anatomy allows.
+    // Grid template + Form surface policy (multi-pane anatomy must allow).
     let class = ResponsiveSurface::Form.classify(width, 24);
     let policy_cols = ResponsiveSurface::Form.form_columns(width);
-    let fits = width
-        >= MIN_COLUMN_WIDTH
-            .saturating_mul(2)
-            .saturating_add(COLUMN_GAP);
-    if policy_cols >= 2 && fits && class.anatomy.multi_pane && !class.anatomy.line_mode {
+    let template_cols = form_grid_template(width).col_count();
+    if policy_cols >= 2
+        && template_cols >= 2
+        && class.anatomy.multi_pane
+        && !class.anatomy.line_mode
+    {
         2
     } else {
         1
