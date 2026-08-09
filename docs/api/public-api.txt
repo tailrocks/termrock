@@ -37,7 +37,7 @@ warning: unresolved link to `Theme`
     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
 
 warning: `termrock` (lib doc) generated 5 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.76s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.63s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -1693,6 +1693,207 @@ pub unsafe fn termrock::interaction::CollectionOutcome<Id>::clone_to_uninit(&sel
 impl<T> core::convert::From<T> for termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::CollectionOutcome<Id>
+#[non_exhaustive] pub enum termrock::interaction::DismissAction
+pub termrock::interaction::DismissAction::Bubble
+pub termrock::interaction::DismissAction::Dismiss
+pub termrock::interaction::DismissAction::Trap
+impl termrock::interaction::DismissAction
+pub const fn termrock::interaction::DismissAction::from_layer(termrock::interaction::LayerDismissPolicy) -> Self
+pub const fn termrock::interaction::DismissAction::to_layer(self) -> termrock::interaction::LayerDismissPolicy
+impl core::clone::Clone for termrock::interaction::DismissAction
+pub fn termrock::interaction::DismissAction::clone(&self) -> termrock::interaction::DismissAction
+impl core::cmp::Eq for termrock::interaction::DismissAction
+impl core::cmp::PartialEq for termrock::interaction::DismissAction
+pub fn termrock::interaction::DismissAction::eq(&self, &termrock::interaction::DismissAction) -> bool
+impl core::default::Default for termrock::interaction::DismissAction
+pub fn termrock::interaction::DismissAction::default() -> termrock::interaction::DismissAction
+impl core::fmt::Debug for termrock::interaction::DismissAction
+pub fn termrock::interaction::DismissAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::DismissAction
+pub fn termrock::interaction::DismissAction::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::DismissAction
+impl core::marker::StructuralPartialEq for termrock::interaction::DismissAction
+impl core::marker::Freeze for termrock::interaction::DismissAction
+impl core::marker::Send for termrock::interaction::DismissAction
+impl core::marker::Sync for termrock::interaction::DismissAction
+impl core::marker::Unpin for termrock::interaction::DismissAction
+impl core::marker::UnsafeUnpin for termrock::interaction::DismissAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::DismissAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::DismissAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::DismissAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::DismissAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::DismissAction where U: core::convert::From<T>
+pub fn termrock::interaction::DismissAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::DismissAction where U: core::convert::Into<T>
+pub type termrock::interaction::DismissAction::Error = core::convert::Infallible
+pub fn termrock::interaction::DismissAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::DismissAction where U: core::convert::TryFrom<T>
+pub type termrock::interaction::DismissAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::DismissAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::DismissAction where T: core::clone::Clone
+pub type termrock::interaction::DismissAction::Owned = T
+pub fn termrock::interaction::DismissAction::clone_into(&self, &mut T)
+pub fn termrock::interaction::DismissAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::DismissAction where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::DismissAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::DismissAction where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::DismissAction where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::DismissAction where T: core::clone::Clone
+pub unsafe fn termrock::interaction::DismissAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::DismissAction
+pub fn termrock::interaction::DismissAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::DismissAction
+#[non_exhaustive] pub enum termrock::interaction::DismissDecision
+pub termrock::interaction::DismissDecision::Bubble
+pub termrock::interaction::DismissDecision::Consumed
+pub termrock::interaction::DismissDecision::Dismiss
+pub termrock::interaction::DismissDecision::Dismiss::reason: termrock::interaction::DismissReason
+pub termrock::interaction::DismissDecision::None
+impl termrock::interaction::DismissDecision
+pub const fn termrock::interaction::DismissDecision::should_dismiss(self) -> bool
+pub const fn termrock::interaction::DismissDecision::stops_propagation(self) -> bool
+impl core::clone::Clone for termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissDecision::clone(&self) -> termrock::interaction::DismissDecision
+impl core::cmp::Eq for termrock::interaction::DismissDecision
+impl core::cmp::PartialEq for termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissDecision::eq(&self, &termrock::interaction::DismissDecision) -> bool
+impl core::fmt::Debug for termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissDecision::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissDecision::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::DismissDecision
+impl core::marker::StructuralPartialEq for termrock::interaction::DismissDecision
+impl core::marker::Freeze for termrock::interaction::DismissDecision
+impl core::marker::Send for termrock::interaction::DismissDecision
+impl core::marker::Sync for termrock::interaction::DismissDecision
+impl core::marker::Unpin for termrock::interaction::DismissDecision
+impl core::marker::UnsafeUnpin for termrock::interaction::DismissDecision
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::DismissDecision
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::DismissDecision
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::DismissDecision where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::DismissDecision::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::DismissDecision where U: core::convert::From<T>
+pub fn termrock::interaction::DismissDecision::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::DismissDecision where U: core::convert::Into<T>
+pub type termrock::interaction::DismissDecision::Error = core::convert::Infallible
+pub fn termrock::interaction::DismissDecision::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::DismissDecision where U: core::convert::TryFrom<T>
+pub type termrock::interaction::DismissDecision::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::DismissDecision::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::DismissDecision where T: core::clone::Clone
+pub type termrock::interaction::DismissDecision::Owned = T
+pub fn termrock::interaction::DismissDecision::clone_into(&self, &mut T)
+pub fn termrock::interaction::DismissDecision::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::DismissDecision where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::DismissDecision::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::DismissDecision where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissDecision::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::DismissDecision where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissDecision::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::DismissDecision where T: core::clone::Clone
+pub unsafe fn termrock::interaction::DismissDecision::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissDecision::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::DismissDecision
+#[non_exhaustive] pub enum termrock::interaction::DismissPhase
+pub termrock::interaction::DismissPhase::BubbleBottomFirst
+pub termrock::interaction::DismissPhase::CaptureTopFirst
+impl core::clone::Clone for termrock::interaction::DismissPhase
+pub fn termrock::interaction::DismissPhase::clone(&self) -> termrock::interaction::DismissPhase
+impl core::cmp::Eq for termrock::interaction::DismissPhase
+impl core::cmp::PartialEq for termrock::interaction::DismissPhase
+pub fn termrock::interaction::DismissPhase::eq(&self, &termrock::interaction::DismissPhase) -> bool
+impl core::default::Default for termrock::interaction::DismissPhase
+pub fn termrock::interaction::DismissPhase::default() -> termrock::interaction::DismissPhase
+impl core::fmt::Debug for termrock::interaction::DismissPhase
+pub fn termrock::interaction::DismissPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::DismissPhase
+pub fn termrock::interaction::DismissPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::DismissPhase
+impl core::marker::StructuralPartialEq for termrock::interaction::DismissPhase
+impl core::marker::Freeze for termrock::interaction::DismissPhase
+impl core::marker::Send for termrock::interaction::DismissPhase
+impl core::marker::Sync for termrock::interaction::DismissPhase
+impl core::marker::Unpin for termrock::interaction::DismissPhase
+impl core::marker::UnsafeUnpin for termrock::interaction::DismissPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::DismissPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::DismissPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::DismissPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::DismissPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::DismissPhase where U: core::convert::From<T>
+pub fn termrock::interaction::DismissPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::DismissPhase where U: core::convert::Into<T>
+pub type termrock::interaction::DismissPhase::Error = core::convert::Infallible
+pub fn termrock::interaction::DismissPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::DismissPhase where U: core::convert::TryFrom<T>
+pub type termrock::interaction::DismissPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::DismissPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::DismissPhase where T: core::clone::Clone
+pub type termrock::interaction::DismissPhase::Owned = T
+pub fn termrock::interaction::DismissPhase::clone_into(&self, &mut T)
+pub fn termrock::interaction::DismissPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::DismissPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::DismissPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::DismissPhase where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::DismissPhase where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::DismissPhase where T: core::clone::Clone
+pub unsafe fn termrock::interaction::DismissPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::DismissPhase
+pub fn termrock::interaction::DismissPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::DismissPhase
+#[non_exhaustive] pub enum termrock::interaction::DismissReason
+pub termrock::interaction::DismissReason::Escape
+pub termrock::interaction::DismissReason::Explicit
+pub termrock::interaction::DismissReason::FocusLeave
+pub termrock::interaction::DismissReason::OutsidePointer
+pub termrock::interaction::DismissReason::ParentClosed
+impl core::clone::Clone for termrock::interaction::DismissReason
+pub fn termrock::interaction::DismissReason::clone(&self) -> termrock::interaction::DismissReason
+impl core::cmp::Eq for termrock::interaction::DismissReason
+impl core::cmp::PartialEq for termrock::interaction::DismissReason
+pub fn termrock::interaction::DismissReason::eq(&self, &termrock::interaction::DismissReason) -> bool
+impl core::fmt::Debug for termrock::interaction::DismissReason
+pub fn termrock::interaction::DismissReason::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::DismissReason
+pub fn termrock::interaction::DismissReason::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::DismissReason
+impl core::marker::StructuralPartialEq for termrock::interaction::DismissReason
+impl core::marker::Freeze for termrock::interaction::DismissReason
+impl core::marker::Send for termrock::interaction::DismissReason
+impl core::marker::Sync for termrock::interaction::DismissReason
+impl core::marker::Unpin for termrock::interaction::DismissReason
+impl core::marker::UnsafeUnpin for termrock::interaction::DismissReason
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::DismissReason
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::DismissReason
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::DismissReason where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::DismissReason::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::DismissReason where U: core::convert::From<T>
+pub fn termrock::interaction::DismissReason::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::DismissReason where U: core::convert::Into<T>
+pub type termrock::interaction::DismissReason::Error = core::convert::Infallible
+pub fn termrock::interaction::DismissReason::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::DismissReason where U: core::convert::TryFrom<T>
+pub type termrock::interaction::DismissReason::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::DismissReason::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::DismissReason where T: core::clone::Clone
+pub type termrock::interaction::DismissReason::Owned = T
+pub fn termrock::interaction::DismissReason::clone_into(&self, &mut T)
+pub fn termrock::interaction::DismissReason::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::DismissReason where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::DismissReason::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::DismissReason where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissReason::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::DismissReason where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissReason::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::DismissReason where T: core::clone::Clone
+pub unsafe fn termrock::interaction::DismissReason::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::DismissReason
+pub fn termrock::interaction::DismissReason::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::DismissReason
 #[non_exhaustive] pub enum termrock::interaction::FocusNavMode
 pub termrock::interaction::FocusNavMode::Hybrid
 pub termrock::interaction::FocusNavMode::Linear
@@ -2454,6 +2655,57 @@ pub unsafe fn termrock::interaction::PlacementPrefer::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::interaction::PlacementPrefer
 pub fn termrock::interaction::PlacementPrefer::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::PlacementPrefer
+#[non_exhaustive] pub enum termrock::interaction::PointerGesture
+pub termrock::interaction::PointerGesture::Idle
+pub termrock::interaction::PointerGesture::PressInside
+pub termrock::interaction::PointerGesture::PressInside::at: ratatui_core::layout::position::Position
+pub termrock::interaction::PointerGesture::PressOutside
+pub termrock::interaction::PointerGesture::PressOutside::at: ratatui_core::layout::position::Position
+impl core::clone::Clone for termrock::interaction::PointerGesture
+pub fn termrock::interaction::PointerGesture::clone(&self) -> termrock::interaction::PointerGesture
+impl core::cmp::Eq for termrock::interaction::PointerGesture
+impl core::cmp::PartialEq for termrock::interaction::PointerGesture
+pub fn termrock::interaction::PointerGesture::eq(&self, &termrock::interaction::PointerGesture) -> bool
+impl core::default::Default for termrock::interaction::PointerGesture
+pub fn termrock::interaction::PointerGesture::default() -> termrock::interaction::PointerGesture
+impl core::fmt::Debug for termrock::interaction::PointerGesture
+pub fn termrock::interaction::PointerGesture::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::PointerGesture
+pub fn termrock::interaction::PointerGesture::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::PointerGesture
+impl core::marker::StructuralPartialEq for termrock::interaction::PointerGesture
+impl core::marker::Freeze for termrock::interaction::PointerGesture
+impl core::marker::Send for termrock::interaction::PointerGesture
+impl core::marker::Sync for termrock::interaction::PointerGesture
+impl core::marker::Unpin for termrock::interaction::PointerGesture
+impl core::marker::UnsafeUnpin for termrock::interaction::PointerGesture
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::PointerGesture
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::PointerGesture
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::PointerGesture where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::PointerGesture::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::PointerGesture where U: core::convert::From<T>
+pub fn termrock::interaction::PointerGesture::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::PointerGesture where U: core::convert::Into<T>
+pub type termrock::interaction::PointerGesture::Error = core::convert::Infallible
+pub fn termrock::interaction::PointerGesture::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::PointerGesture where U: core::convert::TryFrom<T>
+pub type termrock::interaction::PointerGesture::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::PointerGesture::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::PointerGesture where T: core::clone::Clone
+pub type termrock::interaction::PointerGesture::Owned = T
+pub fn termrock::interaction::PointerGesture::clone_into(&self, &mut T)
+pub fn termrock::interaction::PointerGesture::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::PointerGesture where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::PointerGesture::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::PointerGesture where T: ?core::marker::Sized
+pub fn termrock::interaction::PointerGesture::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::PointerGesture where T: ?core::marker::Sized
+pub fn termrock::interaction::PointerGesture::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::PointerGesture where T: core::clone::Clone
+pub unsafe fn termrock::interaction::PointerGesture::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::PointerGesture
+pub fn termrock::interaction::PointerGesture::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::PointerGesture
 #[non_exhaustive] pub enum termrock::interaction::PointerRoute
 pub termrock::interaction::PointerRoute::Empty
 pub termrock::interaction::PointerRoute::Lower
@@ -3369,6 +3621,222 @@ pub unsafe fn termrock::interaction::CollectionState<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::interaction::CollectionState<Id>
 pub fn termrock::interaction::CollectionState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::CollectionState<Id>
+pub struct termrock::interaction::DismissEventId(pub u64)
+impl termrock::interaction::DismissEventId
+pub const fn termrock::interaction::DismissEventId::next(self) -> Self
+impl core::clone::Clone for termrock::interaction::DismissEventId
+pub fn termrock::interaction::DismissEventId::clone(&self) -> termrock::interaction::DismissEventId
+impl core::cmp::Eq for termrock::interaction::DismissEventId
+impl core::cmp::PartialEq for termrock::interaction::DismissEventId
+pub fn termrock::interaction::DismissEventId::eq(&self, &termrock::interaction::DismissEventId) -> bool
+impl core::default::Default for termrock::interaction::DismissEventId
+pub fn termrock::interaction::DismissEventId::default() -> termrock::interaction::DismissEventId
+impl core::fmt::Debug for termrock::interaction::DismissEventId
+pub fn termrock::interaction::DismissEventId::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::DismissEventId
+pub fn termrock::interaction::DismissEventId::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::DismissEventId
+impl core::marker::StructuralPartialEq for termrock::interaction::DismissEventId
+impl core::marker::Freeze for termrock::interaction::DismissEventId
+impl core::marker::Send for termrock::interaction::DismissEventId
+impl core::marker::Sync for termrock::interaction::DismissEventId
+impl core::marker::Unpin for termrock::interaction::DismissEventId
+impl core::marker::UnsafeUnpin for termrock::interaction::DismissEventId
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::DismissEventId
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::DismissEventId
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::DismissEventId where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::DismissEventId::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::DismissEventId where U: core::convert::From<T>
+pub fn termrock::interaction::DismissEventId::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::DismissEventId where U: core::convert::Into<T>
+pub type termrock::interaction::DismissEventId::Error = core::convert::Infallible
+pub fn termrock::interaction::DismissEventId::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::DismissEventId where U: core::convert::TryFrom<T>
+pub type termrock::interaction::DismissEventId::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::DismissEventId::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::DismissEventId where T: core::clone::Clone
+pub type termrock::interaction::DismissEventId::Owned = T
+pub fn termrock::interaction::DismissEventId::clone_into(&self, &mut T)
+pub fn termrock::interaction::DismissEventId::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::DismissEventId where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::DismissEventId::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::DismissEventId where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissEventId::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::DismissEventId where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissEventId::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::DismissEventId where T: core::clone::Clone
+pub unsafe fn termrock::interaction::DismissEventId::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::DismissEventId
+pub fn termrock::interaction::DismissEventId::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::DismissEventId
+pub struct termrock::interaction::DismissGuard
+impl termrock::interaction::DismissGuard
+pub const fn termrock::interaction::DismissGuard::already_dismissed(&self) -> bool
+pub fn termrock::interaction::DismissGuard::begin(&mut self, termrock::interaction::DismissEventId) -> bool
+pub fn termrock::interaction::DismissGuard::mark_dismissed(&mut self)
+pub const fn termrock::interaction::DismissGuard::new() -> Self
+impl core::clone::Clone for termrock::interaction::DismissGuard
+pub fn termrock::interaction::DismissGuard::clone(&self) -> termrock::interaction::DismissGuard
+impl core::cmp::Eq for termrock::interaction::DismissGuard
+impl core::cmp::PartialEq for termrock::interaction::DismissGuard
+pub fn termrock::interaction::DismissGuard::eq(&self, &termrock::interaction::DismissGuard) -> bool
+impl core::default::Default for termrock::interaction::DismissGuard
+pub fn termrock::interaction::DismissGuard::default() -> termrock::interaction::DismissGuard
+impl core::fmt::Debug for termrock::interaction::DismissGuard
+pub fn termrock::interaction::DismissGuard::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::DismissGuard
+pub fn termrock::interaction::DismissGuard::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::DismissGuard
+impl core::marker::StructuralPartialEq for termrock::interaction::DismissGuard
+impl core::marker::Freeze for termrock::interaction::DismissGuard
+impl core::marker::Send for termrock::interaction::DismissGuard
+impl core::marker::Sync for termrock::interaction::DismissGuard
+impl core::marker::Unpin for termrock::interaction::DismissGuard
+impl core::marker::UnsafeUnpin for termrock::interaction::DismissGuard
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::DismissGuard
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::DismissGuard
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::DismissGuard where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::DismissGuard::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::DismissGuard where U: core::convert::From<T>
+pub fn termrock::interaction::DismissGuard::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::DismissGuard where U: core::convert::Into<T>
+pub type termrock::interaction::DismissGuard::Error = core::convert::Infallible
+pub fn termrock::interaction::DismissGuard::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::DismissGuard where U: core::convert::TryFrom<T>
+pub type termrock::interaction::DismissGuard::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::DismissGuard::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::DismissGuard where T: core::clone::Clone
+pub type termrock::interaction::DismissGuard::Owned = T
+pub fn termrock::interaction::DismissGuard::clone_into(&self, &mut T)
+pub fn termrock::interaction::DismissGuard::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::DismissGuard where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::DismissGuard::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::DismissGuard where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissGuard::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::DismissGuard where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissGuard::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::DismissGuard where T: core::clone::Clone
+pub unsafe fn termrock::interaction::DismissGuard::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::DismissGuard
+pub fn termrock::interaction::DismissGuard::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::DismissGuard
+pub struct termrock::interaction::DismissPolicy
+pub termrock::interaction::DismissPolicy::escape: termrock::interaction::DismissAction
+pub termrock::interaction::DismissPolicy::explicit: termrock::interaction::DismissAction
+pub termrock::interaction::DismissPolicy::focus_leave: termrock::interaction::DismissAction
+pub termrock::interaction::DismissPolicy::outside: termrock::interaction::DismissAction
+pub termrock::interaction::DismissPolicy::parent_closed: termrock::interaction::DismissAction
+impl termrock::interaction::DismissPolicy
+pub const fn termrock::interaction::DismissPolicy::action_for(self, termrock::interaction::DismissReason) -> termrock::interaction::DismissAction
+pub const fn termrock::interaction::DismissPolicy::critical() -> Self
+pub const fn termrock::interaction::DismissPolicy::dismissible() -> Self
+pub const fn termrock::interaction::DismissPolicy::from_layer_pair(termrock::interaction::LayerDismissPolicy, termrock::interaction::LayerDismissPolicy) -> Self
+pub const fn termrock::interaction::DismissPolicy::light() -> Self
+impl core::clone::Clone for termrock::interaction::DismissPolicy
+pub fn termrock::interaction::DismissPolicy::clone(&self) -> termrock::interaction::DismissPolicy
+impl core::cmp::Eq for termrock::interaction::DismissPolicy
+impl core::cmp::PartialEq for termrock::interaction::DismissPolicy
+pub fn termrock::interaction::DismissPolicy::eq(&self, &termrock::interaction::DismissPolicy) -> bool
+impl core::default::Default for termrock::interaction::DismissPolicy
+pub fn termrock::interaction::DismissPolicy::default() -> Self
+impl core::fmt::Debug for termrock::interaction::DismissPolicy
+pub fn termrock::interaction::DismissPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::DismissPolicy
+pub fn termrock::interaction::DismissPolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::DismissPolicy
+impl core::marker::StructuralPartialEq for termrock::interaction::DismissPolicy
+impl core::marker::Freeze for termrock::interaction::DismissPolicy
+impl core::marker::Send for termrock::interaction::DismissPolicy
+impl core::marker::Sync for termrock::interaction::DismissPolicy
+impl core::marker::Unpin for termrock::interaction::DismissPolicy
+impl core::marker::UnsafeUnpin for termrock::interaction::DismissPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::DismissPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::DismissPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::DismissPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::DismissPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::DismissPolicy where U: core::convert::From<T>
+pub fn termrock::interaction::DismissPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::DismissPolicy where U: core::convert::Into<T>
+pub type termrock::interaction::DismissPolicy::Error = core::convert::Infallible
+pub fn termrock::interaction::DismissPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::DismissPolicy where U: core::convert::TryFrom<T>
+pub type termrock::interaction::DismissPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::DismissPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::DismissPolicy where T: core::clone::Clone
+pub type termrock::interaction::DismissPolicy::Owned = T
+pub fn termrock::interaction::DismissPolicy::clone_into(&self, &mut T)
+pub fn termrock::interaction::DismissPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::DismissPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::DismissPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::DismissPolicy where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::DismissPolicy where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::DismissPolicy where T: core::clone::Clone
+pub unsafe fn termrock::interaction::DismissPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::DismissPolicy
+pub fn termrock::interaction::DismissPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::DismissPolicy
+pub struct termrock::interaction::DismissableLayer
+impl termrock::interaction::DismissableLayer
+pub const fn termrock::interaction::DismissableLayer::from_layer_policies(termrock::interaction::LayerDismissPolicy, termrock::interaction::LayerDismissPolicy) -> Self
+pub const fn termrock::interaction::DismissableLayer::gesture(&self) -> termrock::interaction::PointerGesture
+pub fn termrock::interaction::DismissableLayer::is_outside(&self, ratatui_core::layout::position::Position) -> bool
+pub const fn termrock::interaction::DismissableLayer::new(termrock::interaction::DismissPolicy) -> Self
+pub fn termrock::interaction::DismissableLayer::on_escape(&mut self, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissableLayer::on_explicit(&mut self, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissableLayer::on_focus_leave(&mut self, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissableLayer::on_outside_click(&mut self, ratatui_core::layout::position::Position, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissableLayer::on_parent_closed(&mut self, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissableLayer::on_pointer_down(&mut self, ratatui_core::layout::position::Position, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
+pub fn termrock::interaction::DismissableLayer::on_pointer_up(&mut self, ratatui_core::layout::position::Position, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
+pub const fn termrock::interaction::DismissableLayer::policy(&self) -> termrock::interaction::DismissPolicy
+pub const fn termrock::interaction::DismissableLayer::rect(&self) -> ratatui_core::layout::rect::Rect
+pub fn termrock::interaction::DismissableLayer::reset_gesture(&mut self)
+pub fn termrock::interaction::DismissableLayer::set_policy(&mut self, termrock::interaction::DismissPolicy)
+pub fn termrock::interaction::DismissableLayer::set_rect(&mut self, ratatui_core::layout::rect::Rect)
+impl core::clone::Clone for termrock::interaction::DismissableLayer
+pub fn termrock::interaction::DismissableLayer::clone(&self) -> termrock::interaction::DismissableLayer
+impl core::cmp::Eq for termrock::interaction::DismissableLayer
+impl core::cmp::PartialEq for termrock::interaction::DismissableLayer
+pub fn termrock::interaction::DismissableLayer::eq(&self, &termrock::interaction::DismissableLayer) -> bool
+impl core::default::Default for termrock::interaction::DismissableLayer
+pub fn termrock::interaction::DismissableLayer::default() -> Self
+impl core::fmt::Debug for termrock::interaction::DismissableLayer
+pub fn termrock::interaction::DismissableLayer::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::interaction::DismissableLayer
+impl core::marker::Freeze for termrock::interaction::DismissableLayer
+impl core::marker::Send for termrock::interaction::DismissableLayer
+impl core::marker::Sync for termrock::interaction::DismissableLayer
+impl core::marker::Unpin for termrock::interaction::DismissableLayer
+impl core::marker::UnsafeUnpin for termrock::interaction::DismissableLayer
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::DismissableLayer
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::DismissableLayer
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::DismissableLayer where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::DismissableLayer::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::DismissableLayer where U: core::convert::From<T>
+pub fn termrock::interaction::DismissableLayer::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::DismissableLayer where U: core::convert::Into<T>
+pub type termrock::interaction::DismissableLayer::Error = core::convert::Infallible
+pub fn termrock::interaction::DismissableLayer::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::DismissableLayer where U: core::convert::TryFrom<T>
+pub type termrock::interaction::DismissableLayer::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::DismissableLayer::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::DismissableLayer where T: core::clone::Clone
+pub type termrock::interaction::DismissableLayer::Owned = T
+pub fn termrock::interaction::DismissableLayer::clone_into(&self, &mut T)
+pub fn termrock::interaction::DismissableLayer::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::DismissableLayer where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::DismissableLayer::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::DismissableLayer where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissableLayer::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::DismissableLayer where T: ?core::marker::Sized
+pub fn termrock::interaction::DismissableLayer::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::DismissableLayer where T: core::clone::Clone
+pub unsafe fn termrock::interaction::DismissableLayer::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::DismissableLayer
+pub fn termrock::interaction::DismissableLayer::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::DismissableLayer
 pub struct termrock::interaction::EventResult<M, FocusId>
 impl<M, FocusId> termrock::interaction::EventResult<M, FocusId>
 pub const fn termrock::interaction::EventResult<M, FocusId>::changed() -> Self
@@ -4213,11 +4681,14 @@ pub fn termrock::interaction::OverlayStack<FocusId>::enqueue(&mut self, ratatui_
 pub fn termrock::interaction::OverlayStack<FocusId>::handle_escape(&mut self) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::handle_outside_click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::handle_pointer(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::interaction::OverlayStack<FocusId>::handle_pointer_down(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::interaction::OverlayStack<FocusId>::handle_pointer_up(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::open(&mut self, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySpec<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::open_with(&mut self, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySpec<FocusId>, termrock::interaction::OpenMode) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::promote_top_fullscreen(&mut self, ratatui_core::layout::rect::Rect) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::reflow(&mut self, ratatui_core::layout::rect::Rect)
 pub fn termrock::interaction::OverlayStack<FocusId>::sync_scene_layers<Id, Action>(&self, &mut termrock::interaction::InteractionScene<Id, alloc::string::String, Action>) where Id: core::clone::Clone + core::cmp::PartialEq, FocusId: core::convert::Into<Id> + core::clone::Clone
+pub const fn termrock::interaction::OverlayStack<FocusId>::top_dismissable(&self) -> &termrock::interaction::DismissableLayer
 impl<FocusId> termrock::interaction::OverlayStack<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::backdrop_policy(&self) -> termrock::interaction::BackdropPolicy
 pub const fn termrock::interaction::OverlayStack<FocusId>::bounds(&self) -> ratatui_core::layout::rect::Rect
@@ -4819,6 +5290,8 @@ pub fn termrock::interaction::default_transcript_intent(termrock::input::KeyEven
 pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::deselect_subtree<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::interaction::SelectionModel<Id>, &[Id]) -> termrock::interaction::SelectionDelta<Id>
 pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::interaction::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
+pub fn termrock::interaction::evaluate_escape_stack(&mut [termrock::interaction::DismissableLayer], &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId, termrock::interaction::DismissPhase) -> core::option::Option<(usize, termrock::interaction::DismissDecision)>
+pub fn termrock::interaction::evaluate_outside_top(&mut termrock::interaction::DismissableLayer, ratatui_core::layout::position::Position, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
 pub fn termrock::interaction::from_consumed_flag<M, FocusId>(bool, core::option::Option<M>) -> termrock::interaction::EventResult<M, FocusId>
 pub const fn termrock::interaction::kind_blocks_queue(termrock::interaction::OverlayKind) -> bool
 pub fn termrock::interaction::place_overlay(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> ratatui_core::layout::rect::Rect

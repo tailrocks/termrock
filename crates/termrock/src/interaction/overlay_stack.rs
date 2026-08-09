@@ -12,7 +12,10 @@
 
 use ratatui_core::layout::{Position, Rect};
 
-use super::{InteractionLayer, InteractionScene, LayerDismissPolicy, LayerKind};
+use super::{
+    DismissDecision, DismissEventId, DismissGuard, DismissableLayer, InteractionLayer,
+    InteractionScene, LayerDismissPolicy, LayerKind,
+};
 
 /// Stable overlay identity.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -751,6 +754,12 @@ pub struct OverlayStack<FocusId = ()> {
     queue: Vec<OverlaySpec<FocusId>>,
     /// Last known screen bounds for reflow on resize.
     bounds: Rect,
+    /// Double-dismiss guard (one Esc / pointer event peels at most one layer).
+    dismiss_guard: DismissGuard,
+    /// Monotonic event ids for [`DismissableLayer`].
+    dismiss_event_seq: u64,
+    /// Top-layer dismiss controller (pointer press/release sequences).
+    top_dismiss: DismissableLayer,
 }
 
 impl<FocusId> Default for OverlayStack<FocusId> {
@@ -767,6 +776,37 @@ impl<FocusId> OverlayStack<FocusId> {
             entries: Vec::new(),
             queue: Vec::new(),
             bounds: Rect::new(0, 0, 0, 0),
+            dismiss_guard: DismissGuard::new(),
+            dismiss_event_seq: 0,
+            top_dismiss: DismissableLayer::new(
+                crate::interaction::DismissPolicy::dismissible(),
+            ),
+        }
+    }
+
+    fn next_dismiss_event(&mut self) -> DismissEventId {
+        self.dismiss_event_seq = self.dismiss_event_seq.saturating_add(1);
+        DismissEventId(self.dismiss_event_seq)
+    }
+
+    /// Sync top [`DismissableLayer`] policy + rect from the current top entry.
+    fn sync_top_dismiss(&mut self) {
+        match self.entries.last() {
+            Some(top) => {
+                self.top_dismiss.set_policy(
+                    crate::interaction::DismissPolicy::from_layer_pair(
+                        top.policy.esc,
+                        top.policy.outside,
+                    ),
+                );
+                self.top_dismiss.set_rect(top.rect);
+            }
+            None => {
+                self.top_dismiss = DismissableLayer::new(
+                    crate::interaction::DismissPolicy::dismissible(),
+                );
+                self.top_dismiss.reset_gesture();
+            }
         }
     }
 
@@ -855,6 +895,8 @@ impl<FocusId> OverlayStack<FocusId> {
     pub fn clear(&mut self) {
         self.entries.clear();
         self.queue.clear();
+        self.top_dismiss.reset_gesture();
+        self.sync_top_dismiss();
     }
 
     /// Route a pointer position for host input (before widget handlers).
@@ -957,6 +999,7 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             opener_focus: spec.opener_focus,
             fullscreen_promoted: placement.fullscreen_promoted,
         });
+        self.sync_top_dismiss();
         OverlayOutcome::Opened {
             id,
             rect: placement.rect,
@@ -1002,8 +1045,10 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         let id = self.entries[index].id.clone();
         let doomed = collect_descendants(&self.entries, root_id);
         self.entries.retain(|e| !doomed.iter().any(|d| d == &e.id));
+        self.sync_top_dismiss();
         let out = OverlayOutcome::Dismissed { id, focus };
         let _ = self.drain_queue();
+        self.sync_top_dismiss();
         out
     }
 
@@ -1069,49 +1114,96 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             entry.fullscreen_promoted =
                 placement.fullscreen_promoted || entry.fullscreen_promoted;
         }
+        self.sync_top_dismiss();
     }
 
-    /// Esc: dismiss exactly one conceptual layer (top only).
+    /// Esc: dismiss exactly one conceptual layer (top only) via [`DismissableLayer`].
     pub fn handle_escape(&mut self) -> OverlayOutcome<FocusId> {
-        let Some(top) = self.entries.last() else {
+        if self.entries.is_empty() {
             return OverlayOutcome::UnhandledEscape;
-        };
-        match top.policy.esc {
-            LayerDismissPolicy::Trap => OverlayOutcome::Ignored,
-            LayerDismissPolicy::Ignore => OverlayOutcome::UnhandledEscape,
-            LayerDismissPolicy::Dismissible => {
-                let id = top.id.clone();
+        }
+        self.sync_top_dismiss();
+        let event = self.next_dismiss_event();
+        let decision = self.top_dismiss.on_escape(&mut self.dismiss_guard, event);
+        match decision {
+            DismissDecision::Dismiss { .. } => {
+                let id = self.entries.last().expect("non-empty").id.clone();
                 self.dismiss_root(&id)
             }
+            DismissDecision::Consumed => OverlayOutcome::Ignored,
+            DismissDecision::Bubble => OverlayOutcome::UnhandledEscape,
+            DismissDecision::None => OverlayOutcome::Ignored,
         }
     }
 
-    /// Outside-click: dismiss top when policy allows and position is outside rect.
+    /// Outside click as completed press+release outside (simple hosts / tests).
+    ///
+    /// Prefer [`Self::handle_pointer_down`] + [`Self::handle_pointer_up`] when
+    /// the host has separate press/release events (drag-cancel safety).
     pub fn handle_outside_click(&mut self, position: Position) -> OverlayOutcome<FocusId> {
-        match self.route_pointer(position) {
-            PointerRoute::Empty | PointerRoute::Top { .. } | PointerRoute::Lower { .. } => {
-                OverlayOutcome::Ignored
+        if self.entries.is_empty() {
+            return OverlayOutcome::Ignored;
+        }
+        self.sync_top_dismiss();
+        let event = self.next_dismiss_event();
+        let decision =
+            self.top_dismiss
+                .on_outside_click(position, &mut self.dismiss_guard, event);
+        match decision {
+            DismissDecision::Dismiss { .. } => {
+                let id = self.entries.last().expect("non-empty").id.clone();
+                self.dismiss_root(&id)
             }
-            PointerRoute::OutsideTop { .. } => {
-                let Some(top) = self.entries.last() else {
-                    return OverlayOutcome::Ignored;
-                };
-                match top.policy.outside {
-                    LayerDismissPolicy::Trap | LayerDismissPolicy::Ignore => {
-                        OverlayOutcome::Ignored
-                    }
-                    LayerDismissPolicy::Dismissible => {
-                        let id = top.id.clone();
-                        self.dismiss_root(&id)
-                    }
-                }
-            }
+            DismissDecision::Consumed => OverlayOutcome::Ignored,
+            DismissDecision::Bubble | DismissDecision::None => OverlayOutcome::Ignored,
         }
     }
 
-    /// Unified pointer entry: outside-click policy or hit top.
+    /// Pointer down — starts outside-dismiss gesture (no dismiss yet).
+    pub fn handle_pointer_down(&mut self, position: Position) -> OverlayOutcome<FocusId> {
+        if self.entries.is_empty() {
+            return OverlayOutcome::Ignored;
+        }
+        self.sync_top_dismiss();
+        let event = self.next_dismiss_event();
+        match self
+            .top_dismiss
+            .on_pointer_down(position, &mut self.dismiss_guard, event)
+        {
+            DismissDecision::Consumed => OverlayOutcome::Ignored,
+            _ => OverlayOutcome::Ignored,
+        }
+    }
+
+    /// Pointer up — completes outside dismiss when press was outside.
+    pub fn handle_pointer_up(&mut self, position: Position) -> OverlayOutcome<FocusId> {
+        if self.entries.is_empty() {
+            return OverlayOutcome::Ignored;
+        }
+        self.sync_top_dismiss();
+        let event = self.next_dismiss_event();
+        match self
+            .top_dismiss
+            .on_pointer_up(position, &mut self.dismiss_guard, event)
+        {
+            DismissDecision::Dismiss { .. } => {
+                let id = self.entries.last().expect("non-empty").id.clone();
+                self.dismiss_root(&id)
+            }
+            DismissDecision::Consumed => OverlayOutcome::Ignored,
+            DismissDecision::Bubble | DismissDecision::None => OverlayOutcome::Ignored,
+        }
+    }
+
+    /// Unified pointer entry (legacy: single-shot outside click).
     pub fn handle_pointer(&mut self, position: Position) -> OverlayOutcome<FocusId> {
         self.handle_outside_click(position)
+    }
+
+    /// Access top dismiss controller (tests / advanced hosts).
+    #[must_use]
+    pub const fn top_dismissable(&self) -> &DismissableLayer {
+        &self.top_dismiss
     }
 
     /// Removes an overlay by id (and its transitive descendants).
@@ -2236,5 +2328,55 @@ mod tests {
         assert_eq!(rect.y, 0);
         assert_eq!(rect.height, 24);
         assert!(rect.x + rect.width == 80 || rect.x >= 40);
+    }
+
+    #[test]
+    fn dismissable_pointer_press_release_and_double_guard() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<()>::new();
+        stack.open(
+            bounds,
+            OverlaySpec::menu("m", Rect::new(20, 10, 1, 1), OverlaySize::menu(15, 5), None),
+        );
+        let outside = Position::new(0, 0);
+        // Press outside does not dismiss yet.
+        let _ = stack.handle_pointer_down(outside);
+        assert_eq!(stack.entries().len(), 1);
+        // Release outside dismisses once.
+        assert!(matches!(
+            stack.handle_pointer_up(outside),
+            OverlayOutcome::Dismissed { .. }
+        ));
+        assert!(stack.is_empty());
+        // Nested: trap alert ignores outside press/release.
+        stack.open(
+            bounds,
+            OverlaySpec::alert_dialog("a", OverlaySize::dialog(20, 6), None),
+        );
+        let _ = stack.handle_pointer_down(outside);
+        assert_eq!(
+            stack.handle_pointer_up(outside),
+            OverlayOutcome::Ignored
+        );
+        assert_eq!(stack.entries().len(), 1);
+    }
+
+    #[test]
+    fn double_escape_same_stack_peels_one_per_call() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<()>::new();
+        stack.open(
+            bounds,
+            OverlaySpec::dialog("d1", OverlaySize::dialog(30, 8), None),
+        );
+        stack.open(
+            bounds,
+            OverlaySpec::menu("m", Rect::new(10, 10, 1, 1), OverlaySize::menu(12, 4), None)
+                .with_parent("d1"),
+        );
+        assert_eq!(stack.handle_escape().is_dismissed(), true);
+        assert_eq!(stack.entries().len(), 1);
+        assert_eq!(stack.handle_escape().is_dismissed(), true);
+        assert!(stack.is_empty());
     }
 }

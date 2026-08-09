@@ -1,6 +1,7 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
 mod collection;
+mod dismissable;
 mod event_result;
 mod focus;
 mod focus_graph;
@@ -13,6 +14,10 @@ mod scene;
 mod selection_model;
 
 pub use collection::{CollectionItem, CollectionOutcome, CollectionState};
+pub use dismissable::{
+    DismissAction, DismissDecision, DismissEventId, DismissGuard, DismissPhase, DismissPolicy,
+    DismissReason, DismissableLayer, PointerGesture, evaluate_escape_stack, evaluate_outside_top,
+};
 pub use event_result::{
     EventResult, FocusRequest, OverlayRequest, Propagation, Redraw, compose_bubble, compose_capture,
     from_consumed_flag,

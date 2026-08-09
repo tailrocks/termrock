@@ -835,6 +835,15 @@ pub(crate) fn stories() -> Vec<Story> {
             overlay_nested,
         ),
         Story::new(
+            "dismissable/gestures",
+            "DismissableLayer gestures",
+            "DismissableLayer",
+            "Press/release outside dismiss; trap critical; drag-cancel.",
+            48,
+            10,
+            dismissable_gestures_story,
+        ),
+        Story::new(
             "overlay/edge-placement",
             "Overlay edges",
             "OverlayStack",
@@ -4719,6 +4728,67 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     focus_graph: &[],
     };
     frame.render_widget(DesignInspector::new(snap, &mono), area);
+}
+
+fn dismissable_gestures_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{
+        DismissDecision, DismissEventId, DismissGuard, DismissPolicy, DismissableLayer,
+    };
+    use termrock::widgets::{Panel, PanelChrome};
+
+    let mut menu = DismissableLayer::new(DismissPolicy::dismissible());
+    menu.set_rect(Rect::new(
+        area.x.saturating_add(4),
+        area.y.saturating_add(2),
+        area.width.saturating_sub(16).max(12),
+        area.height.saturating_sub(5).max(3),
+    ));
+    let mut alert = DismissableLayer::new(DismissPolicy::critical());
+    alert.set_rect(Rect::new(
+        area.x.saturating_add(2),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(4).max(10),
+        area.height.saturating_sub(3).max(4),
+    ));
+    let mut g = DismissGuard::new();
+    let outside = menu.on_outside_click(
+        ratatui::layout::Position::new(area.x, area.y),
+        &mut g,
+        DismissEventId(1),
+    );
+    let mut g2 = DismissGuard::new();
+    let trap = alert.on_escape(&mut g2, DismissEventId(2));
+    let note = match (outside, trap) {
+        (DismissDecision::Dismiss { .. }, DismissDecision::Consumed) => {
+            "outside→dismiss · Esc on critical→trap"
+        }
+        _ => "dismiss policy demo",
+    };
+    frame.render_widget(
+        Panel::new(system)
+            .title("DismissableLayer")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    frame.render_widget(
+        Panel::new(system)
+            .title("menu body")
+            .chrome(PanelChrome::Normal),
+        menu.rect(),
+    );
+    frame.buffer_mut().set_stringn(
+        inner.x,
+        inner.bottom().saturating_sub(1),
+        note,
+        usize::from(inner.width),
+        system.style(termrock::style::Role::TextMuted),
+    );
 }
 
 fn overlay_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
