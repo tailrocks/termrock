@@ -42,7 +42,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 6 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.25s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.14s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -21116,6 +21116,105 @@ pub unsafe fn termrock::widgets::SectionVariant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SectionVariant
 pub fn termrock::widgets::SectionVariant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SectionVariant
+#[non_exhaustive] pub enum termrock::widgets::SegmentedControlOutcome<Id>
+pub termrock::widgets::SegmentedControlOutcome::CursorMoved
+pub termrock::widgets::SegmentedControlOutcome::CursorMoved::id: Id
+pub termrock::widgets::SegmentedControlOutcome::Ignored
+pub termrock::widgets::SegmentedControlOutcome::MenuClosed
+pub termrock::widgets::SegmentedControlOutcome::MenuOpened
+pub termrock::widgets::SegmentedControlOutcome::Selected
+pub termrock::widgets::SegmentedControlOutcome::Selected::id: Id
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SegmentedControlOutcome<Id>
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::clone(&self) -> termrock::widgets::SegmentedControlOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SegmentedControlOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SegmentedControlOutcome<Id>
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::eq(&self, &termrock::widgets::SegmentedControlOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SegmentedControlOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SegmentedControlOutcome<Id>
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::SegmentedControlOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::SegmentedControlOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SegmentedControlOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SegmentedControlOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SegmentedControlOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SegmentedControlOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SegmentedControlOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SegmentedControlOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SegmentedControlOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SegmentedControlOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SegmentedControlOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SegmentedControlOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SegmentedControlOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SegmentedControlOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::SegmentedControlOutcome<Id>::Owned = T
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SegmentedControlOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SegmentedControlOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SegmentedControlOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SegmentedControlOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SegmentedControlOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SegmentedControlOutcome<Id>
+pub fn termrock::widgets::SegmentedControlOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedControlOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::SegmentedPresentation
+pub termrock::widgets::SegmentedPresentation::Collapsed
+pub termrock::widgets::SegmentedPresentation::Expanded
+pub termrock::widgets::SegmentedPresentation::Overflow
+impl termrock::widgets::SegmentedPresentation
+pub const fn termrock::widgets::SegmentedPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SegmentedPresentation
+pub fn termrock::widgets::SegmentedPresentation::clone(&self) -> termrock::widgets::SegmentedPresentation
+impl core::cmp::Eq for termrock::widgets::SegmentedPresentation
+impl core::cmp::PartialEq for termrock::widgets::SegmentedPresentation
+pub fn termrock::widgets::SegmentedPresentation::eq(&self, &termrock::widgets::SegmentedPresentation) -> bool
+impl core::default::Default for termrock::widgets::SegmentedPresentation
+pub fn termrock::widgets::SegmentedPresentation::default() -> termrock::widgets::SegmentedPresentation
+impl core::fmt::Debug for termrock::widgets::SegmentedPresentation
+pub fn termrock::widgets::SegmentedPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SegmentedPresentation
+pub fn termrock::widgets::SegmentedPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SegmentedPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::SegmentedPresentation
+impl core::marker::Freeze for termrock::widgets::SegmentedPresentation
+impl core::marker::Send for termrock::widgets::SegmentedPresentation
+impl core::marker::Sync for termrock::widgets::SegmentedPresentation
+impl core::marker::Unpin for termrock::widgets::SegmentedPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::SegmentedPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SegmentedPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SegmentedPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SegmentedPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SegmentedPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::SegmentedPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SegmentedPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::SegmentedPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::SegmentedPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SegmentedPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SegmentedPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SegmentedPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SegmentedPresentation where T: core::clone::Clone
+pub type termrock::widgets::SegmentedPresentation::Owned = T
+pub fn termrock::widgets::SegmentedPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::SegmentedPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SegmentedPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SegmentedPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SegmentedPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SegmentedPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SegmentedPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SegmentedPresentation
+pub fn termrock::widgets::SegmentedPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedPresentation
 #[non_exhaustive] pub enum termrock::widgets::SelectOutcome<Id>
 pub termrock::widgets::SelectOutcome::CloseMenu
 pub termrock::widgets::SelectOutcome::Ignored
@@ -35690,6 +35789,260 @@ pub unsafe fn termrock::widgets::SectionState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SectionState
 pub fn termrock::widgets::SectionState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SectionState
+pub struct termrock::widgets::SegmentedControl<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::SegmentedControl<'a, Id>
+pub fn termrock::widgets::SegmentedControl<'a, Id>::handle_key(&self, &mut termrock::widgets::SegmentedControlState<Id>, termrock::input::KeyEvent) -> termrock::widgets::SegmentedControlOutcome<Id>
+pub fn termrock::widgets::SegmentedControl<'a, Id>::handle_key_result(&self, &mut termrock::widgets::SegmentedControlState<Id>, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::SegmentedControlOutcome<Id>>
+pub fn termrock::widgets::SegmentedControl<'a, Id>::handle_mouse(&self, &mut termrock::widgets::SegmentedControlState<Id>, termrock::input::MouseEvent) -> termrock::widgets::SegmentedControlOutcome<Id>
+pub fn termrock::widgets::SegmentedControl<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SegmentedControlState<Id>) -> termrock::widgets::SegmentedControlParts<Id>
+pub fn termrock::widgets::SegmentedControl<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::SegmentedControlState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub fn termrock::widgets::SegmentedControl<'a, Id>::select_from_menu(&self, &mut termrock::widgets::SegmentedControlState<Id>, Id) -> termrock::widgets::SegmentedControlOutcome<Id>
+impl<'a, Id> termrock::widgets::SegmentedControl<'a, Id>
+pub const fn termrock::widgets::SegmentedControl<'a, Id>::collapse_below(self, u16) -> Self
+pub const fn termrock::widgets::SegmentedControl<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::SegmentedControl<'a, Id>::new(&'a [termrock::widgets::SegmentedItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::SegmentedControl<'a, Id>::overflow_label(self, &'a str) -> Self
+pub fn termrock::widgets::SegmentedControl<'a, Id>::plan(&self, u16, core::option::Option<&Id>) -> (termrock::widgets::SegmentedPresentation, alloc::vec::Vec<usize>, alloc::vec::Vec<usize>) where Id: core::cmp::PartialEq
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for &termrock::widgets::SegmentedControl<'a, Id>
+pub fn &termrock::widgets::SegmentedControl<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SegmentedControl<'a, Id>
+pub fn termrock::widgets::SegmentedControl<'a, Id>::clone(&self) -> termrock::widgets::SegmentedControl<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SegmentedControl<'a, Id>
+pub fn termrock::widgets::SegmentedControl<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::SegmentedControl<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::SegmentedControl<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::SegmentedControl<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::SegmentedControl<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::SegmentedControl<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::SegmentedControl<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SegmentedControl<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SegmentedControl<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::SegmentedControl<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SegmentedControl<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SegmentedControl<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SegmentedControl<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SegmentedControl<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SegmentedControl<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SegmentedControl<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SegmentedControl<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SegmentedControl<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::SegmentedControl<'a, Id>::Owned = T
+pub fn termrock::widgets::SegmentedControl<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SegmentedControl<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SegmentedControl<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControl<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SegmentedControl<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControl<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SegmentedControl<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControl<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SegmentedControl<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SegmentedControl<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SegmentedControl<'a, Id>
+pub fn termrock::widgets::SegmentedControl<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedControl<'a, Id>
+pub struct termrock::widgets::SegmentedControlParts<Id>
+pub termrock::widgets::SegmentedControlParts::collapsed_trigger: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SegmentedControlParts::items: alloc::vec::Vec<termrock::widgets::SegmentedItemParts<Id>>
+pub termrock::widgets::SegmentedControlParts::overflow_ids: alloc::vec::Vec<Id>
+pub termrock::widgets::SegmentedControlParts::overflow_trigger: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SegmentedControlParts::presentation: termrock::widgets::SegmentedPresentation
+pub termrock::widgets::SegmentedControlParts::root: ratatui_core::layout::rect::Rect
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SegmentedControlParts<Id>
+pub fn termrock::widgets::SegmentedControlParts<Id>::clone(&self) -> termrock::widgets::SegmentedControlParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SegmentedControlParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SegmentedControlParts<Id>
+pub fn termrock::widgets::SegmentedControlParts<Id>::eq(&self, &termrock::widgets::SegmentedControlParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SegmentedControlParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SegmentedControlParts<Id>
+pub fn termrock::widgets::SegmentedControlParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::SegmentedControlParts<Id>
+impl<Id> core::marker::Send for termrock::widgets::SegmentedControlParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SegmentedControlParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SegmentedControlParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SegmentedControlParts<Id>
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SegmentedControlParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SegmentedControlParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SegmentedControlParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SegmentedControlParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SegmentedControlParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SegmentedControlParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SegmentedControlParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SegmentedControlParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SegmentedControlParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SegmentedControlParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SegmentedControlParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SegmentedControlParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::SegmentedControlParts<Id>::Owned = T
+pub fn termrock::widgets::SegmentedControlParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SegmentedControlParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SegmentedControlParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SegmentedControlParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SegmentedControlParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SegmentedControlParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SegmentedControlParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SegmentedControlParts<Id>
+pub fn termrock::widgets::SegmentedControlParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedControlParts<Id>
+pub struct termrock::widgets::SegmentedControlState<Id>
+pub termrock::widgets::SegmentedControlState::cursor: core::option::Option<Id>
+pub termrock::widgets::SegmentedControlState::hovered: core::option::Option<Id>
+pub termrock::widgets::SegmentedControlState::menu_open: bool
+pub termrock::widgets::SegmentedControlState::parts: core::option::Option<termrock::widgets::SegmentedControlParts<Id>>
+pub termrock::widgets::SegmentedControlState::roving: termrock::interaction::RovingFocusGroup<Id>
+pub termrock::widgets::SegmentedControlState::selected: core::option::Option<Id>
+pub termrock::widgets::SegmentedControlState::surface_focused: bool
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::SegmentedControlState<Id>
+pub fn termrock::widgets::SegmentedControlState<Id>::new(core::option::Option<Id>) -> Self
+pub fn termrock::widgets::SegmentedControlState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::SegmentedControlState<Id>::set_selected(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::SegmentedControlState<Id>::set_surface_focused(&mut self, bool)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::SegmentedControlState<Id>
+pub fn termrock::widgets::SegmentedControlState<Id>::default() -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SegmentedControlState<Id>
+pub fn termrock::widgets::SegmentedControlState<Id>::clone(&self) -> termrock::widgets::SegmentedControlState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SegmentedControlState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SegmentedControlState<Id>
+pub fn termrock::widgets::SegmentedControlState<Id>::eq(&self, &termrock::widgets::SegmentedControlState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SegmentedControlState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SegmentedControlState<Id>
+pub fn termrock::widgets::SegmentedControlState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::SegmentedControlState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::SegmentedControlState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SegmentedControlState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SegmentedControlState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SegmentedControlState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SegmentedControlState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SegmentedControlState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SegmentedControlState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SegmentedControlState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SegmentedControlState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SegmentedControlState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SegmentedControlState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SegmentedControlState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SegmentedControlState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SegmentedControlState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SegmentedControlState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SegmentedControlState<Id> where T: core::clone::Clone
+pub type termrock::widgets::SegmentedControlState<Id>::Owned = T
+pub fn termrock::widgets::SegmentedControlState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SegmentedControlState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SegmentedControlState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SegmentedControlState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SegmentedControlState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedControlState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SegmentedControlState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SegmentedControlState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SegmentedControlState<Id>
+pub fn termrock::widgets::SegmentedControlState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedControlState<Id>
+pub struct termrock::widgets::SegmentedItem<'a, Id>
+pub termrock::widgets::SegmentedItem::accessible_label: core::option::Option<&'a str>
+pub termrock::widgets::SegmentedItem::badge: core::option::Option<&'a str>
+pub termrock::widgets::SegmentedItem::enabled: bool
+pub termrock::widgets::SegmentedItem::icon: core::option::Option<&'a str>
+pub termrock::widgets::SegmentedItem::id: Id
+pub termrock::widgets::SegmentedItem::label: &'a str
+pub termrock::widgets::SegmentedItem::priority: u8
+impl<'a, Id> termrock::widgets::SegmentedItem<'a, Id>
+pub fn termrock::widgets::SegmentedItem<'a, Id>::a11y(&self) -> &str
+pub const fn termrock::widgets::SegmentedItem<'a, Id>::accessible_label(self, &'a str) -> Self
+pub const fn termrock::widgets::SegmentedItem<'a, Id>::badge(self, &'a str) -> Self
+pub const fn termrock::widgets::SegmentedItem<'a, Id>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::SegmentedItem<'a, Id>::icon(self, &'a str) -> Self
+pub const fn termrock::widgets::SegmentedItem<'a, Id>::new(Id, &'a str) -> Self
+pub const fn termrock::widgets::SegmentedItem<'a, Id>::priority(self, u8) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SegmentedItem<'a, Id>
+pub fn termrock::widgets::SegmentedItem<'a, Id>::clone(&self) -> termrock::widgets::SegmentedItem<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SegmentedItem<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SegmentedItem<'a, Id>
+pub fn termrock::widgets::SegmentedItem<'a, Id>::eq(&self, &termrock::widgets::SegmentedItem<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SegmentedItem<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SegmentedItem<'a, Id>
+pub fn termrock::widgets::SegmentedItem<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::SegmentedItem<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::SegmentedItem<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::SegmentedItem<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::SegmentedItem<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::SegmentedItem<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::SegmentedItem<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SegmentedItem<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SegmentedItem<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SegmentedItem<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedItem<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SegmentedItem<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SegmentedItem<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SegmentedItem<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SegmentedItem<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SegmentedItem<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SegmentedItem<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SegmentedItem<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SegmentedItem<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SegmentedItem<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::SegmentedItem<'a, Id>::Owned = T
+pub fn termrock::widgets::SegmentedItem<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SegmentedItem<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SegmentedItem<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedItem<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SegmentedItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedItem<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SegmentedItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedItem<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SegmentedItem<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SegmentedItem<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SegmentedItem<'a, Id>
+pub fn termrock::widgets::SegmentedItem<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedItem<'a, Id>
+pub struct termrock::widgets::SegmentedItemParts<Id>
+pub termrock::widgets::SegmentedItemParts::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SegmentedItemParts::id: Id
+pub termrock::widgets::SegmentedItemParts::overflowed: bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SegmentedItemParts<Id>
+pub fn termrock::widgets::SegmentedItemParts<Id>::clone(&self) -> termrock::widgets::SegmentedItemParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SegmentedItemParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SegmentedItemParts<Id>
+pub fn termrock::widgets::SegmentedItemParts<Id>::eq(&self, &termrock::widgets::SegmentedItemParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SegmentedItemParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SegmentedItemParts<Id>
+pub fn termrock::widgets::SegmentedItemParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::SegmentedItemParts<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::SegmentedItemParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SegmentedItemParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SegmentedItemParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SegmentedItemParts<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SegmentedItemParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SegmentedItemParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SegmentedItemParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedItemParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SegmentedItemParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SegmentedItemParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SegmentedItemParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SegmentedItemParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SegmentedItemParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SegmentedItemParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SegmentedItemParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SegmentedItemParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SegmentedItemParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::SegmentedItemParts<Id>::Owned = T
+pub fn termrock::widgets::SegmentedItemParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SegmentedItemParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SegmentedItemParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SegmentedItemParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SegmentedItemParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedItemParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SegmentedItemParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SegmentedItemParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SegmentedItemParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SegmentedItemParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SegmentedItemParts<Id>
+pub fn termrock::widgets::SegmentedItemParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedItemParts<Id>
 pub struct termrock::widgets::SegmentedMeter<'a>
 impl<'a> termrock::widgets::SegmentedMeter<'a>
 pub const fn termrock::widgets::SegmentedMeter<'a>::new(&'a [termrock::widgets::MeterSegment<'a>], &'a termrock::style::DesignSystem) -> Self

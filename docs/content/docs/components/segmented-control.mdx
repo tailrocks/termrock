@@ -1,0 +1,71 @@
+---
+title: SegmentedControl
+description: 'Compact exclusive view/mode selector — overflow, collapse, FollowFocus.'
+---
+
+## Previews
+
+### `segmented-control/basic`
+
+![Basic](/component-previews/segmented-control-basic.svg)
+
+### `segmented-control/icons`
+
+![Icons](/component-previews/segmented-control-icons.svg)
+
+### `segmented-control/overflow`
+
+![Overflow](/component-previews/segmented-control-overflow.svg)
+
+### `segmented-control/collapsed`
+
+![Collapsed](/component-previews/segmented-control-collapsed.svg)
+
+### `segmented-control/narrow`
+
+![Narrow](/component-previews/segmented-control-narrow.svg)
+
+### `segmented-control/unicode`
+
+![Unicode](/component-previews/segmented-control-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{SegmentedControl, SegmentedControlState, SegmentedItem};
+
+let items = [
+    SegmentedItem::new("list", "List"),
+    SegmentedItem::new("grid", "Grid"),
+    SegmentedItem::new("table", "Table"),
+];
+let mut state = SegmentedControlState::new(Some("grid"));
+state.set_surface_focused(true);
+SegmentedControl::new(&items, &system).paint(area, buf, &mut state);
+// Arrows / click → Selected { id }
+// Very narrow → collapsed Select-like trigger; host paints menu
+```
+
+## vs Tabs / RadioGroup
+
+| Need | Use |
+|------|-----|
+| View mode / density / filter on one surface | **SegmentedControl** |
+| Multi-panel content pages | Tabs |
+| Form exclusive options with help text | RadioGroup |
+| Sticky toolbar tools (multi ok) | ToggleGroup |
+| Share chart | SegmentedMeter |
+
+## Contract
+
+| Concern | Rule |
+|---------|------|
+| Active | Brackets `[Seg]` + bold (no neon-only fill) |
+| Keys | ←→ FollowFocus select; typeahead; Space confirms |
+| Overflow | Low priority → `…` |
+| Collapse | `collapse_below` → Select trigger + `MenuOpened` |
+| Disabled | Skipped |
+
+## Migration
+
+See `migrations/0135-v0.13.0-segmented-control.md`.

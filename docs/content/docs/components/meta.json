@@ -64,6 +64,7 @@
     "prompt-composer",
     "question-flow",
     "radio-group",
+    "segmented-control",
     "segmented-meter",
     "separator-line",
     "session-picker",

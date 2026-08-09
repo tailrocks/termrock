@@ -21,7 +21,8 @@ use termrock::{
     widgets::{
         Action, ActionBar, ActionBarState, ActionLink, Anchor, AnsiParseOptions, AnsiText,
         ButtonGroup, ButtonGroupItem, ButtonGroupState,
-        Toggle, ToggleGroup, ToggleGroupItem, ToggleGroupState, ToggleState, ToggleValue,
+        SegmentedControl, SegmentedControlState, SegmentedItem, Toggle, ToggleGroup,
+        ToggleGroupItem, ToggleGroupState, ToggleState, ToggleValue,
         AnsiTextMode, AnsiTextState, AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS,
         Backdrop, Badge, Banner,
         BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
@@ -2375,6 +2376,42 @@ pub(crate) fn stories() -> Vec<Story> {
             checkbox_list_story,
         ),
         Story::new(
+            "segmented-control/basic",
+            "SegmentedControl basic",
+            "SegmentedControl",
+            "View mode List/Grid/Table exclusive segments.",
+            44,
+            3,
+            segmented_control_basic_story,
+        ),
+        Story::new(
+            "segmented-control/icons",
+            "SegmentedControl icons",
+            "SegmentedControl",
+            "Icon + badge segments for density filters.",
+            40,
+            3,
+            segmented_control_icons_story,
+        ),
+        Story::new(
+            "segmented-control/overflow",
+            "SegmentedControl overflow",
+            "SegmentedControl",
+            "Low-priority segments collapse to …",
+            22,
+            3,
+            segmented_control_overflow_story,
+        ),
+        Story::new(
+            "segmented-control/collapsed",
+            "SegmentedControl collapsed",
+            "SegmentedControl",
+            "Select-like trigger when very narrow.",
+            14,
+            3,
+            segmented_control_collapsed_story,
+        ),
+        Story::new(
             "switch/basic",
             "Switch basic",
             "Switch",
@@ -3616,6 +3653,24 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             6,
             radio_group_unicode_story,
+        ),
+        Story::new(
+            "segmented-control/narrow",
+            "Narrow SegmentedControl",
+            "SegmentedControl",
+            "Overflow at 20 cols.",
+            20,
+            2,
+            segmented_control_overflow_story,
+        ),
+        Story::new(
+            "segmented-control/unicode",
+            "Unicode SegmentedControl",
+            "SegmentedControl",
+            "CJK mode labels.",
+            36,
+            2,
+            segmented_control_unicode_story,
         ),
         Story::new(
             "switch/narrow",
@@ -9678,6 +9733,74 @@ fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         frame.buffer_mut(),
         &mut sw,
     );
+}
+
+fn segmented_control_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        SegmentedItem::new("list", "List").priority(90),
+        SegmentedItem::new("grid", "Grid").priority(80),
+        SegmentedItem::new("table", "Table").priority(70),
+    ];
+    let mut state = SegmentedControlState::new(Some("grid"));
+    state.set_surface_focused(true);
+    let _ = SegmentedControl::new(&items, system)
+        .collapse_below(0)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn segmented_control_icons_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        SegmentedItem::new("comfy", "Comfort").icon("▣").priority(90),
+        SegmentedItem::new("compact", "Compact").icon("▤").badge("def").priority(80),
+        SegmentedItem::new("dash", "Dash").icon("▥").priority(70),
+    ];
+    let mut state = SegmentedControlState::new(Some("compact"));
+    state.set_surface_focused(true);
+    let _ = SegmentedControl::new(&items, system)
+        .collapse_below(0)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn segmented_control_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        SegmentedItem::new("list", "List").priority(90),
+        SegmentedItem::new("grid", "Grid").priority(80),
+        SegmentedItem::new("table", "Table").priority(40),
+        SegmentedItem::new("graph", "Graph").priority(10),
+        SegmentedItem::new("raw", "Raw").priority(5),
+    ];
+    let mut state = SegmentedControlState::new(Some("list"));
+    state.set_surface_focused(true);
+    let _ = SegmentedControl::new(&items, system)
+        .collapse_below(0)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn segmented_control_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        SegmentedItem::new("list", "List").priority(90),
+        SegmentedItem::new("grid", "Grid").priority(80),
+        SegmentedItem::new("table", "Table").priority(70),
+    ];
+    let mut state = SegmentedControlState::new(Some("grid"));
+    state.set_surface_focused(true);
+    state.menu_open = true;
+    let _ = SegmentedControl::new(&items, system)
+        .collapse_below(40)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn segmented_control_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        SegmentedItem::new("list", "一覧"),
+        SegmentedItem::new("grid", "格子"),
+        SegmentedItem::new("table", "表 ✨"),
+    ];
+    let mut state = SegmentedControlState::new(Some("grid"));
+    state.set_surface_focused(true);
+    let _ = SegmentedControl::new(&items, system)
+        .collapse_below(0)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn switch_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

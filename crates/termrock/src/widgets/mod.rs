@@ -9,6 +9,7 @@ pub use crate::interaction::Outcome;
 
 mod action_bar;
 mod button_group;
+mod segmented_control;
 mod toggle;
 mod agent;
 mod agent_blocks;
@@ -82,6 +83,10 @@ pub use action_bar::{Action, ActionBar, ActionBarState};
 pub use button_group::{
     ButtonGroup, ButtonGroupItem, ButtonGroupItemParts, ButtonGroupOrientation, ButtonGroupOutcome,
     ButtonGroupParts, ButtonGroupRecipe, ButtonGroupState,
+};
+pub use segmented_control::{
+    SegmentedControl, SegmentedControlOutcome, SegmentedControlParts, SegmentedControlState,
+    SegmentedItem, SegmentedItemParts, SegmentedPresentation,
 };
 pub use toggle::{
     Toggle, ToggleGroup, ToggleGroupItem, ToggleGroupItemParts, ToggleGroupOrientation,
