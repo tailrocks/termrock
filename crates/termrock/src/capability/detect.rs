@@ -63,7 +63,114 @@ pub struct DetectionReport {
     pub warnings: Vec<String>,
 }
 
-/// Read environment and produce a detection report.
+/// Build warnings and normalize color hints from a pure [`EnvHints`] snapshot.
+///
+/// Use this for PTY / unit tests that inject environment without process env.
+#[must_use]
+pub fn detect_from_hints(mut env: EnvHints) -> DetectionReport {
+    // Normalize color ladder if caller left default and provided TERM-like fields.
+    if env.truecolor_hint || env.color256_hint || env.no_color || env.term.is_some() {
+        env.color = color_from_hints(&env);
+    }
+    if let Some(ct) = &env.colorterm {
+        let l = ct.to_ascii_lowercase();
+        if l.contains("truecolor") || l.contains("24bit") {
+            env.truecolor_hint = true;
+        }
+    }
+    if let Some(term) = &env.term {
+        if term.contains("256color") {
+            env.color256_hint = true;
+        }
+    }
+
+    let mut warnings = Vec::new();
+    if env.no_color && env.truecolor_hint {
+        warnings.push("NO_COLOR is set; truecolor hints ignored".into());
+    }
+    if env.multiplexer.is_some()
+        && env.truecolor_hint
+        && env.term.as_deref().is_some_and(|t| t.starts_with("screen"))
+    {
+        warnings.push(
+            "multiplexer TERM=screen* with truecolor COLORTERM — ensure outer Tc/RGB (tmux terminal-overrides)"
+                .into(),
+        );
+    }
+    if env.term.as_deref() == Some("dumb") {
+        warnings.push("TERM=dumb — Minimal/Headless profile recommended".into());
+    }
+    if env.ssh {
+        warnings.push(
+            "SSH detected — local clipboard/OSC 52 may fail; prefer Compatible profile".into(),
+        );
+    }
+    if env.term.is_none() {
+        warnings.push("TERM unset — capability detection degraded".into());
+    }
+
+    DetectionReport { env, warnings }
+}
+
+fn color_from_hints(env: &EnvHints) -> ColorCapability {
+    if env.no_color {
+        return ColorCapability::Monochrome;
+    }
+    if env.truecolor_hint {
+        return ColorCapability::Truecolor;
+    }
+    if env.color256_hint {
+        return ColorCapability::Indexed256;
+    }
+    if let Some(term) = env.term.as_deref() {
+        if term == "dumb" {
+            return ColorCapability::Monochrome;
+        }
+        if term.contains("256color") {
+            return ColorCapability::Indexed256;
+        }
+        if term.contains("color") {
+            return ColorCapability::Ansi16;
+        }
+    }
+    env.color
+}
+
+impl EnvHints {
+    /// Pure fixture for tests / PTY harnesses (no process env).
+    #[must_use]
+    pub fn fixture(
+        term: &str,
+        colorterm: Option<&str>,
+        no_color: bool,
+    ) -> Self {
+        let mut env = Self {
+            term: Some(term.into()),
+            colorterm: colorterm.map(str::to_owned),
+            no_color,
+            ..Self::default()
+        };
+        if let Some(ct) = colorterm {
+            let l = ct.to_ascii_lowercase();
+            env.truecolor_hint = l.contains("truecolor") || l.contains("24bit");
+        }
+        env.color256_hint = term.contains("256color");
+        env.color = color_from_hints(&env);
+        env
+    }
+
+    /// SSH + multiplexer fixture.
+    #[must_use]
+    pub fn fixture_ssh_tmux() -> Self {
+        let mut e = Self::fixture("screen-256color", Some("truecolor"), false);
+        e.ssh = true;
+        e.multiplexer = Some("tmux:fixture".into());
+        e.color = color_from_hints(&e);
+        e
+    }
+}
+
+/// Read process environment and produce a detection report.
 #[must_use]
 pub fn detect_environment() -> DetectionReport {
     let mut env = EnvHints {
@@ -106,32 +213,7 @@ pub fn detect_environment() -> DetectionReport {
         env.color256_hint = term.contains("256color");
     }
 
-    let mut warnings = Vec::new();
-    if env.no_color && env.truecolor_hint {
-        warnings.push("NO_COLOR is set; truecolor hints ignored".into());
-    }
-    if env.multiplexer.is_some()
-        && env.truecolor_hint
-        && env.term.as_deref().is_some_and(|t| t.starts_with("screen"))
-    {
-        warnings.push(
-            "multiplexer TERM=screen* with truecolor COLORTERM — ensure outer Tc/RGB (tmux terminal-overrides)"
-                .into(),
-        );
-    }
-    if env.term.as_deref() == Some("dumb") {
-        warnings.push("TERM=dumb — Minimal/Headless profile recommended".into());
-    }
-    if env.ssh {
-        warnings.push(
-            "SSH detected — local clipboard/OSC 52 may fail; prefer Compatible profile".into(),
-        );
-    }
-    if env.term.is_none() {
-        warnings.push("TERM unset — capability detection degraded".into());
-    }
-
-    DetectionReport { env, warnings }
+    detect_from_hints(env)
 }
 
 #[cfg(test)]
@@ -151,5 +233,33 @@ mod tests {
         // Full env isolation is host-specific; this locks the helper.
         let c = ColorCapability::detect_from_env();
         let _ = c;
+    }
+
+    #[test]
+    fn pure_fixture_no_color_is_monochrome() {
+        let report = detect_from_hints(EnvHints::fixture("xterm-256color", Some("truecolor"), true));
+        assert!(report.env.no_color);
+        assert!(matches!(
+            report.env.color,
+            ColorCapability::Monochrome
+        ));
+        assert!(report.warnings.iter().any(|w| w.contains("NO_COLOR")));
+    }
+
+    #[test]
+    fn pure_fixture_dumb_warns() {
+        let report = detect_from_hints(EnvHints::fixture("dumb", None, false));
+        assert!(report.warnings.iter().any(|w| w.contains("dumb")));
+        assert!(matches!(
+            report.env.color,
+            ColorCapability::Monochrome
+        ));
+    }
+
+    #[test]
+    fn pure_ssh_tmux_fixture() {
+        let report = detect_from_hints(EnvHints::fixture_ssh_tmux());
+        assert!(report.env.ssh);
+        assert!(report.env.multiplexer.is_some());
     }
 }

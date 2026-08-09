@@ -215,9 +215,12 @@ impl CapabilityOverrides {
     }
 }
 
-/// Resolved capabilities with provenance for doctor.
+/// Resolved terminal capabilities (detect + profile + overrides).
+///
+/// Primary public name for progressive enhancement. Also available as the
+/// historical alias [`EffectiveCapabilities`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EffectiveCapabilities {
+pub struct TerminalCapabilities {
     /// Active profile.
     pub profile: CapabilityProfile,
     /// Effective set.
@@ -234,15 +237,27 @@ pub struct EffectiveCapabilities {
     pub profile_source: CapabilitySource,
 }
 
-/// Resolve profile + env detection + overrides → effective set.
+/// Historical name for [`TerminalCapabilities`].
+pub type EffectiveCapabilities = TerminalCapabilities;
+
+/// Resolve profile + process env detection + overrides.
 ///
 /// Order: profile baseline → clamp to detected environment → apply overrides.
 #[must_use]
 pub fn resolve_capabilities(
     preferred_profile: Option<CapabilityProfile>,
     overrides: CapabilityOverrides,
-) -> EffectiveCapabilities {
-    let detection = detect_environment();
+) -> TerminalCapabilities {
+    resolve_from_detection(detect_environment(), preferred_profile, overrides)
+}
+
+/// Pure resolve from an injected detection report (PTY / unit tests).
+#[must_use]
+pub fn resolve_from_detection(
+    detection: DetectionReport,
+    preferred_profile: Option<CapabilityProfile>,
+    overrides: CapabilityOverrides,
+) -> TerminalCapabilities {
     // Lowest → highest priority: default → auto-env → preferred arg → TERMROCK_PROFILE → overrides.
     let mut profile = CapabilityProfile::Modern;
     let mut profile_source = CapabilitySource::Default;
@@ -355,7 +370,7 @@ pub fn resolve_capabilities(
         set.mouse = false;
     }
 
-    EffectiveCapabilities {
+    TerminalCapabilities {
         profile,
         set,
         detection,
@@ -366,7 +381,59 @@ pub fn resolve_capabilities(
     }
 }
 
-impl EffectiveCapabilities {
+impl TerminalCapabilities {
+    /// Detect process environment and resolve (Modern auto-clamp).
+    #[must_use]
+    pub fn detect() -> Self {
+        resolve_capabilities(None, CapabilityOverrides::default())
+    }
+
+    /// Resolve with preferred profile + overrides (reads process env).
+    #[must_use]
+    pub fn resolve(
+        preferred_profile: Option<CapabilityProfile>,
+        overrides: CapabilityOverrides,
+    ) -> Self {
+        resolve_capabilities(preferred_profile, overrides)
+    }
+
+    /// Profile baseline only — no environment (Studio / pure tests).
+    #[must_use]
+    pub fn for_profile(profile: CapabilityProfile) -> Self {
+        resolve_from_detection(
+            DetectionReport {
+                env: super::detect::EnvHints::default(),
+                warnings: Vec::new(),
+            },
+            Some(profile),
+            CapabilityOverrides {
+                profile: Some(profile),
+                ..CapabilityOverrides::default()
+            },
+        )
+    }
+
+    /// Injected env hints (PTY / deterministic tests).
+    #[must_use]
+    pub fn with_hints(
+        hints: super::detect::EnvHints,
+        preferred_profile: Option<CapabilityProfile>,
+        overrides: CapabilityOverrides,
+    ) -> Self {
+        use super::detect::detect_from_hints;
+        resolve_from_detection(
+            detect_from_hints(hints),
+            preferred_profile,
+            overrides,
+        )
+    }
+
+    /// Progressive-enhancement boundary for widgets.
+    #[must_use]
+    pub const fn boundary(&self) -> super::boundary::CapabilityBoundary {
+        super::boundary::CapabilityBoundary::from_capabilities(self)
+    }
+
     /// Map to session flags for hosts / crossterm `SessionOptions`.
     #[must_use]
     pub fn session_flags(&self) -> SessionFlags {
@@ -487,5 +554,53 @@ mod tests {
             Some(CapabilityProfile::Compatible),
             CapabilityOverrides::default(),
         );
+    }
+
+    #[test]
+    fn no_color_fixture_forces_monochrome() {
+        use super::super::detect::{EnvHints, detect_from_hints};
+        let detection = detect_from_hints(EnvHints::fixture(
+            "xterm-256color",
+            Some("truecolor"),
+            true,
+        ));
+        let caps = resolve_from_detection(
+            detection,
+            Some(CapabilityProfile::Modern),
+            CapabilityOverrides::default(),
+        );
+        assert!(matches!(caps.set.color, ColorCapability::Monochrome));
+        assert!(caps.boundary().colorless());
+    }
+
+    #[test]
+    fn ssh_fixture_prefers_compatible_when_no_override() {
+        use super::super::detect::{EnvHints, detect_from_hints};
+        let detection = detect_from_hints(EnvHints::fixture_ssh_tmux());
+        let caps = resolve_from_detection(detection, None, CapabilityOverrides::default());
+        assert_eq!(caps.profile, CapabilityProfile::Compatible);
+        assert!(caps.set.ssh && caps.set.multiplexer);
+    }
+
+    #[test]
+    fn all_profiles_roundtrip_for_profile() {
+        for p in [
+            CapabilityProfile::Modern,
+            CapabilityProfile::Compatible,
+            CapabilityProfile::Minimal,
+            CapabilityProfile::Inline,
+            CapabilityProfile::Headless,
+        ] {
+            let caps = TerminalCapabilities::for_profile(p);
+            assert_eq!(caps.profile, p);
+            let _ = caps.boundary().session_flags();
+        }
+    }
+
+    #[test]
+    fn ascii_override_via_env_keys() {
+        let o = CapabilityOverrides::from_env_keys(None, Some("ascii"), Some("modern"));
+        assert_eq!(o.glyphs, Some(GlyphSet::Ascii));
+        assert_eq!(o.profile, Some(CapabilityProfile::Modern));
     }
 }

@@ -3,7 +3,7 @@
 
 //! Structured report for `termrock doctor` (CLI or embed).
 
-use super::profile::{CapabilityOverrides, CapabilityProfile, EffectiveCapabilities};
+use super::profile::{CapabilityOverrides, CapabilityProfile, TerminalCapabilities};
 use super::resolve_capabilities;
 use super::set::{CapabilityKind, fallback_policies};
 
@@ -33,8 +33,8 @@ pub struct DoctorFinding {
 /// Full doctor report (no I/O — caller prints / paints).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DoctorReport {
-    /// Resolved capabilities.
-    pub effective: EffectiveCapabilities,
+    /// Resolved capabilities ([`TerminalCapabilities`]).
+    pub effective: TerminalCapabilities,
     /// Per-capability status lines.
     pub capabilities: Vec<(CapabilityKind, bool, &'static str)>,
     /// Findings / recommendations.

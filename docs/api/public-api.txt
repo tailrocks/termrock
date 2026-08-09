@@ -37,7 +37,7 @@ warning: unresolved link to `Theme`
     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
 
 warning: `termrock` (lib doc) generated 5 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.68s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.71s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -264,6 +264,69 @@ pub unsafe fn termrock::capability::DoctorSeverity::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::capability::DoctorSeverity
 pub fn termrock::capability::DoctorSeverity::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::capability::DoctorSeverity
+pub struct termrock::capability::CapabilityBoundary
+pub termrock::capability::CapabilityBoundary::profile: termrock::capability::CapabilityProfile
+pub termrock::capability::CapabilityBoundary::set: termrock::capability::CapabilitySet
+impl termrock::capability::CapabilityBoundary
+pub const fn termrock::capability::CapabilityBoundary::allow_bracketed_paste(self) -> bool
+pub const fn termrock::capability::CapabilityBoundary::allow_hyperlinks(self) -> bool
+pub const fn termrock::capability::CapabilityBoundary::allow_images(self) -> bool
+pub const fn termrock::capability::CapabilityBoundary::allow_mouse(self) -> bool
+pub const fn termrock::capability::CapabilityBoundary::ascii_glyphs(self) -> bool
+pub const fn termrock::capability::CapabilityBoundary::colorless(self) -> bool
+pub const fn termrock::capability::CapabilityBoundary::component_hints(self) -> termrock::capability::ComponentCapabilityHints
+pub const fn termrock::capability::CapabilityBoundary::enabled(self, termrock::capability::CapabilityKind) -> bool
+pub fn termrock::capability::CapabilityBoundary::fallback(self, termrock::capability::CapabilityKind) -> core::option::Option<&'static termrock::capability::FallbackPolicy>
+pub const fn termrock::capability::CapabilityBoundary::from_capabilities(&termrock::capability::TerminalCapabilities) -> Self
+pub const fn termrock::capability::CapabilityBoundary::from_profile(termrock::capability::CapabilityProfile) -> Self
+pub const fn termrock::capability::CapabilityBoundary::interactive(self) -> bool
+pub const fn termrock::capability::CapabilityBoundary::new(termrock::capability::CapabilitySet, termrock::capability::CapabilityProfile) -> Self
+pub fn termrock::capability::CapabilityBoundary::project_palette(self, termrock::style::RolePalette) -> termrock::style::RolePalette
+pub fn termrock::capability::CapabilityBoundary::project_system(self, termrock::style::DesignSystem) -> termrock::style::DesignSystem
+pub const fn termrock::capability::CapabilityBoundary::session_flags(self) -> termrock::capability::SessionFlags
+impl core::clone::Clone for termrock::capability::CapabilityBoundary
+pub fn termrock::capability::CapabilityBoundary::clone(&self) -> termrock::capability::CapabilityBoundary
+impl core::cmp::Eq for termrock::capability::CapabilityBoundary
+impl core::cmp::PartialEq for termrock::capability::CapabilityBoundary
+pub fn termrock::capability::CapabilityBoundary::eq(&self, &termrock::capability::CapabilityBoundary) -> bool
+impl core::fmt::Debug for termrock::capability::CapabilityBoundary
+pub fn termrock::capability::CapabilityBoundary::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::capability::CapabilityBoundary
+pub fn termrock::capability::CapabilityBoundary::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::capability::CapabilityBoundary
+impl core::marker::StructuralPartialEq for termrock::capability::CapabilityBoundary
+impl core::marker::Freeze for termrock::capability::CapabilityBoundary
+impl core::marker::Send for termrock::capability::CapabilityBoundary
+impl core::marker::Sync for termrock::capability::CapabilityBoundary
+impl core::marker::Unpin for termrock::capability::CapabilityBoundary
+impl core::marker::UnsafeUnpin for termrock::capability::CapabilityBoundary
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::capability::CapabilityBoundary
+impl core::panic::unwind_safe::UnwindSafe for termrock::capability::CapabilityBoundary
+impl<Q, K> equivalent::Equivalent<K> for termrock::capability::CapabilityBoundary where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::capability::CapabilityBoundary::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::capability::CapabilityBoundary where U: core::convert::From<T>
+pub fn termrock::capability::CapabilityBoundary::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::capability::CapabilityBoundary where U: core::convert::Into<T>
+pub type termrock::capability::CapabilityBoundary::Error = core::convert::Infallible
+pub fn termrock::capability::CapabilityBoundary::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::capability::CapabilityBoundary where U: core::convert::TryFrom<T>
+pub type termrock::capability::CapabilityBoundary::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::capability::CapabilityBoundary::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::capability::CapabilityBoundary where T: core::clone::Clone
+pub type termrock::capability::CapabilityBoundary::Owned = T
+pub fn termrock::capability::CapabilityBoundary::clone_into(&self, &mut T)
+pub fn termrock::capability::CapabilityBoundary::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::capability::CapabilityBoundary where T: 'static + ?core::marker::Sized
+pub fn termrock::capability::CapabilityBoundary::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::capability::CapabilityBoundary where T: ?core::marker::Sized
+pub fn termrock::capability::CapabilityBoundary::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::capability::CapabilityBoundary where T: ?core::marker::Sized
+pub fn termrock::capability::CapabilityBoundary::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::capability::CapabilityBoundary where T: core::clone::Clone
+pub unsafe fn termrock::capability::CapabilityBoundary::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::capability::CapabilityBoundary
+pub fn termrock::capability::CapabilityBoundary::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::capability::CapabilityBoundary
 pub struct termrock::capability::CapabilityOverrides
 pub termrock::capability::CapabilityOverrides::alternate_screen: core::option::Option<bool>
 pub termrock::capability::CapabilityOverrides::bracketed_paste: core::option::Option<bool>
@@ -389,6 +452,59 @@ pub unsafe fn termrock::capability::CapabilitySet::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::capability::CapabilitySet
 pub fn termrock::capability::CapabilitySet::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::capability::CapabilitySet
+pub struct termrock::capability::ComponentCapabilityHints
+pub termrock::capability::ComponentCapabilityHints::ascii: bool
+pub termrock::capability::ComponentCapabilityHints::colorless: bool
+pub termrock::capability::ComponentCapabilityHints::headless: bool
+pub termrock::capability::ComponentCapabilityHints::hyperlinks: bool
+pub termrock::capability::ComponentCapabilityHints::inline: bool
+pub termrock::capability::ComponentCapabilityHints::interactive: bool
+pub termrock::capability::ComponentCapabilityHints::mouse: bool
+impl core::clone::Clone for termrock::capability::ComponentCapabilityHints
+pub fn termrock::capability::ComponentCapabilityHints::clone(&self) -> termrock::capability::ComponentCapabilityHints
+impl core::cmp::Eq for termrock::capability::ComponentCapabilityHints
+impl core::cmp::PartialEq for termrock::capability::ComponentCapabilityHints
+pub fn termrock::capability::ComponentCapabilityHints::eq(&self, &termrock::capability::ComponentCapabilityHints) -> bool
+impl core::default::Default for termrock::capability::ComponentCapabilityHints
+pub fn termrock::capability::ComponentCapabilityHints::default() -> termrock::capability::ComponentCapabilityHints
+impl core::fmt::Debug for termrock::capability::ComponentCapabilityHints
+pub fn termrock::capability::ComponentCapabilityHints::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::capability::ComponentCapabilityHints
+pub fn termrock::capability::ComponentCapabilityHints::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::capability::ComponentCapabilityHints
+impl core::marker::StructuralPartialEq for termrock::capability::ComponentCapabilityHints
+impl core::marker::Freeze for termrock::capability::ComponentCapabilityHints
+impl core::marker::Send for termrock::capability::ComponentCapabilityHints
+impl core::marker::Sync for termrock::capability::ComponentCapabilityHints
+impl core::marker::Unpin for termrock::capability::ComponentCapabilityHints
+impl core::marker::UnsafeUnpin for termrock::capability::ComponentCapabilityHints
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::capability::ComponentCapabilityHints
+impl core::panic::unwind_safe::UnwindSafe for termrock::capability::ComponentCapabilityHints
+impl<Q, K> equivalent::Equivalent<K> for termrock::capability::ComponentCapabilityHints where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::capability::ComponentCapabilityHints::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::capability::ComponentCapabilityHints where U: core::convert::From<T>
+pub fn termrock::capability::ComponentCapabilityHints::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::capability::ComponentCapabilityHints where U: core::convert::Into<T>
+pub type termrock::capability::ComponentCapabilityHints::Error = core::convert::Infallible
+pub fn termrock::capability::ComponentCapabilityHints::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::capability::ComponentCapabilityHints where U: core::convert::TryFrom<T>
+pub type termrock::capability::ComponentCapabilityHints::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::capability::ComponentCapabilityHints::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::capability::ComponentCapabilityHints where T: core::clone::Clone
+pub type termrock::capability::ComponentCapabilityHints::Owned = T
+pub fn termrock::capability::ComponentCapabilityHints::clone_into(&self, &mut T)
+pub fn termrock::capability::ComponentCapabilityHints::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::capability::ComponentCapabilityHints where T: 'static + ?core::marker::Sized
+pub fn termrock::capability::ComponentCapabilityHints::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::capability::ComponentCapabilityHints where T: ?core::marker::Sized
+pub fn termrock::capability::ComponentCapabilityHints::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::capability::ComponentCapabilityHints where T: ?core::marker::Sized
+pub fn termrock::capability::ComponentCapabilityHints::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::capability::ComponentCapabilityHints where T: core::clone::Clone
+pub unsafe fn termrock::capability::ComponentCapabilityHints::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::capability::ComponentCapabilityHints
+pub fn termrock::capability::ComponentCapabilityHints::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::capability::ComponentCapabilityHints
 pub struct termrock::capability::DetectionReport
 pub termrock::capability::DetectionReport::env: termrock::capability::EnvHints
 pub termrock::capability::DetectionReport::warnings: alloc::vec::Vec<alloc::string::String>
@@ -480,7 +596,7 @@ pub fn termrock::capability::DoctorFinding::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::capability::DoctorFinding
 pub struct termrock::capability::DoctorReport
 pub termrock::capability::DoctorReport::capabilities: alloc::vec::Vec<(termrock::capability::CapabilityKind, bool, &'static str)>
-pub termrock::capability::DoctorReport::effective: termrock::capability::EffectiveCapabilities
+pub termrock::capability::DoctorReport::effective: termrock::capability::TerminalCapabilities
 pub termrock::capability::DoctorReport::findings: alloc::vec::Vec<termrock::capability::DoctorFinding>
 pub termrock::capability::DoctorReport::recommended_env: alloc::vec::Vec<alloc::string::String>
 pub termrock::capability::DoctorReport::sample_hint: alloc::string::String
@@ -524,56 +640,6 @@ pub unsafe fn termrock::capability::DoctorReport::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::capability::DoctorReport
 pub fn termrock::capability::DoctorReport::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::capability::DoctorReport
-pub struct termrock::capability::EffectiveCapabilities
-pub termrock::capability::EffectiveCapabilities::color_source: termrock::capability::CapabilitySource
-pub termrock::capability::EffectiveCapabilities::detection: termrock::capability::DetectionReport
-pub termrock::capability::EffectiveCapabilities::glyph_source: termrock::capability::CapabilitySource
-pub termrock::capability::EffectiveCapabilities::overrides: termrock::capability::CapabilityOverrides
-pub termrock::capability::EffectiveCapabilities::profile: termrock::capability::CapabilityProfile
-pub termrock::capability::EffectiveCapabilities::profile_source: termrock::capability::CapabilitySource
-pub termrock::capability::EffectiveCapabilities::set: termrock::capability::CapabilitySet
-impl termrock::capability::EffectiveCapabilities
-pub fn termrock::capability::EffectiveCapabilities::session_flags(&self) -> termrock::capability::SessionFlags
-impl core::clone::Clone for termrock::capability::EffectiveCapabilities
-pub fn termrock::capability::EffectiveCapabilities::clone(&self) -> termrock::capability::EffectiveCapabilities
-impl core::cmp::Eq for termrock::capability::EffectiveCapabilities
-impl core::cmp::PartialEq for termrock::capability::EffectiveCapabilities
-pub fn termrock::capability::EffectiveCapabilities::eq(&self, &termrock::capability::EffectiveCapabilities) -> bool
-impl core::fmt::Debug for termrock::capability::EffectiveCapabilities
-pub fn termrock::capability::EffectiveCapabilities::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::capability::EffectiveCapabilities
-impl core::marker::Freeze for termrock::capability::EffectiveCapabilities
-impl core::marker::Send for termrock::capability::EffectiveCapabilities
-impl core::marker::Sync for termrock::capability::EffectiveCapabilities
-impl core::marker::Unpin for termrock::capability::EffectiveCapabilities
-impl core::marker::UnsafeUnpin for termrock::capability::EffectiveCapabilities
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::capability::EffectiveCapabilities
-impl core::panic::unwind_safe::UnwindSafe for termrock::capability::EffectiveCapabilities
-impl<Q, K> equivalent::Equivalent<K> for termrock::capability::EffectiveCapabilities where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::capability::EffectiveCapabilities::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::capability::EffectiveCapabilities where U: core::convert::From<T>
-pub fn termrock::capability::EffectiveCapabilities::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::capability::EffectiveCapabilities where U: core::convert::Into<T>
-pub type termrock::capability::EffectiveCapabilities::Error = core::convert::Infallible
-pub fn termrock::capability::EffectiveCapabilities::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::capability::EffectiveCapabilities where U: core::convert::TryFrom<T>
-pub type termrock::capability::EffectiveCapabilities::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::capability::EffectiveCapabilities::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::capability::EffectiveCapabilities where T: core::clone::Clone
-pub type termrock::capability::EffectiveCapabilities::Owned = T
-pub fn termrock::capability::EffectiveCapabilities::clone_into(&self, &mut T)
-pub fn termrock::capability::EffectiveCapabilities::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::capability::EffectiveCapabilities where T: 'static + ?core::marker::Sized
-pub fn termrock::capability::EffectiveCapabilities::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::capability::EffectiveCapabilities where T: ?core::marker::Sized
-pub fn termrock::capability::EffectiveCapabilities::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::capability::EffectiveCapabilities where T: ?core::marker::Sized
-pub fn termrock::capability::EffectiveCapabilities::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::capability::EffectiveCapabilities where T: core::clone::Clone
-pub unsafe fn termrock::capability::EffectiveCapabilities::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::capability::EffectiveCapabilities
-pub fn termrock::capability::EffectiveCapabilities::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::capability::EffectiveCapabilities
 pub struct termrock::capability::EnvHints
 pub termrock::capability::EnvHints::color: termrock::style::ColorCapability
 pub termrock::capability::EnvHints::color256_hint: bool
@@ -588,6 +654,9 @@ pub termrock::capability::EnvHints::term: core::option::Option<alloc::string::St
 pub termrock::capability::EnvHints::term_program: core::option::Option<alloc::string::String>
 pub termrock::capability::EnvHints::truecolor_hint: bool
 pub termrock::capability::EnvHints::windows_conpty: bool
+impl termrock::capability::EnvHints
+pub fn termrock::capability::EnvHints::fixture(&str, core::option::Option<&str>, bool) -> Self
+pub fn termrock::capability::EnvHints::fixture_ssh_tmux() -> Self
 impl core::clone::Clone for termrock::capability::EnvHints
 pub fn termrock::capability::EnvHints::clone(&self) -> termrock::capability::EnvHints
 impl core::cmp::Eq for termrock::capability::EnvHints
@@ -732,11 +801,69 @@ pub unsafe fn termrock::capability::SessionFlags::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::capability::SessionFlags
 pub fn termrock::capability::SessionFlags::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::capability::SessionFlags
+pub struct termrock::capability::TerminalCapabilities
+pub termrock::capability::TerminalCapabilities::color_source: termrock::capability::CapabilitySource
+pub termrock::capability::TerminalCapabilities::detection: termrock::capability::DetectionReport
+pub termrock::capability::TerminalCapabilities::glyph_source: termrock::capability::CapabilitySource
+pub termrock::capability::TerminalCapabilities::overrides: termrock::capability::CapabilityOverrides
+pub termrock::capability::TerminalCapabilities::profile: termrock::capability::CapabilityProfile
+pub termrock::capability::TerminalCapabilities::profile_source: termrock::capability::CapabilitySource
+pub termrock::capability::TerminalCapabilities::set: termrock::capability::CapabilitySet
+impl termrock::capability::TerminalCapabilities
+pub const fn termrock::capability::TerminalCapabilities::boundary(&self) -> termrock::capability::CapabilityBoundary
+pub fn termrock::capability::TerminalCapabilities::detect() -> Self
+pub fn termrock::capability::TerminalCapabilities::for_profile(termrock::capability::CapabilityProfile) -> Self
+pub fn termrock::capability::TerminalCapabilities::resolve(core::option::Option<termrock::capability::CapabilityProfile>, termrock::capability::CapabilityOverrides) -> Self
+pub fn termrock::capability::TerminalCapabilities::session_flags(&self) -> termrock::capability::SessionFlags
+pub fn termrock::capability::TerminalCapabilities::with_hints(termrock::capability::EnvHints, core::option::Option<termrock::capability::CapabilityProfile>, termrock::capability::CapabilityOverrides) -> Self
+impl core::clone::Clone for termrock::capability::TerminalCapabilities
+pub fn termrock::capability::TerminalCapabilities::clone(&self) -> termrock::capability::TerminalCapabilities
+impl core::cmp::Eq for termrock::capability::TerminalCapabilities
+impl core::cmp::PartialEq for termrock::capability::TerminalCapabilities
+pub fn termrock::capability::TerminalCapabilities::eq(&self, &termrock::capability::TerminalCapabilities) -> bool
+impl core::fmt::Debug for termrock::capability::TerminalCapabilities
+pub fn termrock::capability::TerminalCapabilities::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::capability::TerminalCapabilities
+impl core::marker::Freeze for termrock::capability::TerminalCapabilities
+impl core::marker::Send for termrock::capability::TerminalCapabilities
+impl core::marker::Sync for termrock::capability::TerminalCapabilities
+impl core::marker::Unpin for termrock::capability::TerminalCapabilities
+impl core::marker::UnsafeUnpin for termrock::capability::TerminalCapabilities
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::capability::TerminalCapabilities
+impl core::panic::unwind_safe::UnwindSafe for termrock::capability::TerminalCapabilities
+impl<Q, K> equivalent::Equivalent<K> for termrock::capability::TerminalCapabilities where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::capability::TerminalCapabilities::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::capability::TerminalCapabilities where U: core::convert::From<T>
+pub fn termrock::capability::TerminalCapabilities::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::capability::TerminalCapabilities where U: core::convert::Into<T>
+pub type termrock::capability::TerminalCapabilities::Error = core::convert::Infallible
+pub fn termrock::capability::TerminalCapabilities::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::capability::TerminalCapabilities where U: core::convert::TryFrom<T>
+pub type termrock::capability::TerminalCapabilities::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::capability::TerminalCapabilities::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::capability::TerminalCapabilities where T: core::clone::Clone
+pub type termrock::capability::TerminalCapabilities::Owned = T
+pub fn termrock::capability::TerminalCapabilities::clone_into(&self, &mut T)
+pub fn termrock::capability::TerminalCapabilities::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::capability::TerminalCapabilities where T: 'static + ?core::marker::Sized
+pub fn termrock::capability::TerminalCapabilities::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::capability::TerminalCapabilities where T: ?core::marker::Sized
+pub fn termrock::capability::TerminalCapabilities::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::capability::TerminalCapabilities where T: ?core::marker::Sized
+pub fn termrock::capability::TerminalCapabilities::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::capability::TerminalCapabilities where T: core::clone::Clone
+pub unsafe fn termrock::capability::TerminalCapabilities::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::capability::TerminalCapabilities
+pub fn termrock::capability::TerminalCapabilities::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::capability::TerminalCapabilities
 pub fn termrock::capability::build_doctor_report(core::option::Option<termrock::capability::CapabilityProfile>, termrock::capability::CapabilityOverrides) -> termrock::capability::DoctorReport
 pub fn termrock::capability::detect_environment() -> termrock::capability::DetectionReport
+pub fn termrock::capability::detect_from_hints(termrock::capability::EnvHints) -> termrock::capability::DetectionReport
 pub fn termrock::capability::fallback_policies() -> &'static [termrock::capability::FallbackPolicy]
 pub fn termrock::capability::format_doctor_text(&termrock::capability::DoctorReport) -> alloc::string::String
-pub fn termrock::capability::resolve_capabilities(core::option::Option<termrock::capability::CapabilityProfile>, termrock::capability::CapabilityOverrides) -> termrock::capability::EffectiveCapabilities
+pub fn termrock::capability::resolve_capabilities(core::option::Option<termrock::capability::CapabilityProfile>, termrock::capability::CapabilityOverrides) -> termrock::capability::TerminalCapabilities
+pub fn termrock::capability::resolve_from_detection(termrock::capability::DetectionReport, core::option::Option<termrock::capability::CapabilityProfile>, termrock::capability::CapabilityOverrides) -> termrock::capability::TerminalCapabilities
+pub type termrock::capability::EffectiveCapabilities = termrock::capability::TerminalCapabilities
 pub mod termrock::crossterm
 pub use termrock::crossterm::CrosstermBackend
 pub struct termrock::crossterm::Session<W: core::io::write::Write>

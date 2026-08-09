@@ -826,6 +826,15 @@ pub(crate) fn stories() -> Vec<Story> {
             capability_headless_story,
         ),
         Story::new(
+            "capability/profiles",
+            "Capability profiles matrix",
+            "TerminalCapabilities",
+            "Modern / Compatible / Minimal / Inline / Headless boundary flags.",
+            56,
+            12,
+            capability_profiles_story,
+        ),
+        Story::new(
             "overlay/nested-escape",
             "Nested overlays",
             "OverlayStack",
@@ -4737,6 +4746,57 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     focus_graph: &[],
     };
     frame.render_widget(DesignInspector::new(snap, &mono), area);
+}
+
+fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::capability::{CapabilityBoundary, CapabilityProfile, TerminalCapabilities};
+    use termrock::widgets::{Panel, PanelChrome};
+
+    frame.render_widget(
+        Panel::new(system)
+            .title("TerminalCapabilities · profiles")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    let profiles = [
+        CapabilityProfile::Modern,
+        CapabilityProfile::Compatible,
+        CapabilityProfile::Minimal,
+        CapabilityProfile::Inline,
+        CapabilityProfile::Headless,
+    ];
+    let mut y = inner.y;
+    for p in profiles {
+        let caps = TerminalCapabilities::for_profile(p);
+        let b = CapabilityBoundary::from_capabilities(&caps);
+        let h = b.component_hints();
+        let line = format!(
+            "{:<11} color={:?} ascii={} mouse={} alt={} kbd={}",
+            p.id(),
+            caps.set.color,
+            h.ascii as u8,
+            h.mouse as u8,
+            caps.set.alternate_screen as u8,
+            h.interactive as u8,
+        );
+        frame.buffer_mut().set_stringn(
+            inner.x,
+            y,
+            &line,
+            usize::from(inner.width),
+            system.style(termrock::style::Role::Text),
+        );
+        y = y.saturating_add(1);
+        if y >= inner.bottom() {
+            break;
+        }
+    }
 }
 
 fn responsive_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
