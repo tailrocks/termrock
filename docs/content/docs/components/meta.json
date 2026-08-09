@@ -32,6 +32,8 @@
     "drawer",
     "empty-state",
     "error-view",
+    "field",
+    "fieldset",
     "form",
     "form-wizard",
     "heading",

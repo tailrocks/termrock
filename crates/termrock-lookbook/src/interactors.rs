@@ -14,7 +14,7 @@ use termrock::{
     widgets::{
         Anchor, BUILTIN_THEME_PRESETS, CellAlignment, ChoiceDialogState, Column, ColumnWidth,
         CommandPalette, CommandPaletteState, ComposerChip, ContextEstimate, DesignInspector,
-        DesignInspectorFrame, Form, FormOutcome, FormSection, FormState, InspectorPanel, List,
+        DesignInspectorFrame, Fieldset, Form, FormOutcome, FormState, InspectorPanel, List,
         ListState, LogPane, LogPaneState, ModeIndicator, ModelIndicator, Picker, PickerOutcome,
         PickerState, PromptComposer, PromptComposerOutcome, PromptComposerState, Severity,
         SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, Tab, Table,
@@ -462,10 +462,7 @@ impl StoryInteraction for FormInteractor {
         // FormSection borrows its fields, so storing both in the interactor
         // would be self-referential. Rebuild this tiny fixture at each call.
         let fields = form_fields();
-        let sections = [FormSection {
-            title: ratatui::text::Line::from("General"),
-            fields: &fields,
-        }];
+        let sections = [Fieldset::new("General", &fields)];
         if let Some(id) = self.focused {
             self.state.ensure_visible(Some(id));
         }
@@ -479,10 +476,7 @@ impl StoryInteraction for FormInteractor {
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         let fields = form_fields();
-        let sections = [FormSection {
-            title: ratatui::text::Line::from("General"),
-            fields: &fields,
-        }];
+        let sections = [Fieldset::new("General", &fields)];
         // Host/scene field cycle stand-in: Tab moves focus id, then form activates only.
         use termrock::input::{KeyCode, KeyEventKind};
         if key.kind != KeyEventKind::Release

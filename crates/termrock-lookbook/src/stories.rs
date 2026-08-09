@@ -35,8 +35,8 @@ use termrock::{
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
         InspectorPanel,
         DetailTableState, Dialog, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
-        DiffState, DiffView, Drawer, EmptyState, ErrorView, Form, FormField, FormSection,
-        FormState, FormWizardState, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
+        DiffState, DiffView, Drawer, EmptyState, ErrorView, Field, Fieldset, Form, FormState,
+        FormWizardState, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
         HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
         InspectorField, JumpOverlay, JumpTarget, Kbd, KeyValueList, KeyValueListState, KvEntry,
         KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
@@ -987,6 +987,24 @@ pub(crate) fn stories() -> Vec<Story> {
             form,
         )
         .with_interactor(form_interactor),
+        Story::new(
+            "form/compact",
+            "Form compact",
+            "Form",
+            "Compact layout recipe.",
+            44,
+            12,
+            form_compact_story,
+        ),
+        Story::new(
+            "form/validation",
+            "Form validation",
+            "Form",
+            "Error summary + first invalid focus target.",
+            44,
+            14,
+            form_validation_story,
+        ),
         Story::new(
             "split-pane/horizontal",
             "Horizontal split pane",
@@ -6494,32 +6512,61 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
     ]
 }
 
-pub(crate) fn form_fields() -> Vec<FormField<'static, &'static str>> {
+pub(crate) fn form_fields() -> Vec<Field<'static, &'static str>> {
     vec![
-        FormField::new("name", Line::from("Name"), Line::from("Example profile"))
-            .help(Line::from("A recognizable display name"))
-            .required(true),
-        FormField::new("endpoint", Line::from("Endpoint"), Line::from("localhost"))
-            .error(Line::from("Enter a reachable address"))
-            .required(true),
-        FormField::new(
-            "mode",
-            Line::from("Managed mode"),
-            Line::from("Unavailable"),
-        )
-        .enabled(false),
+        Field::new("name", "Name", "Example profile")
+            .help("A recognizable display name")
+            .required(true)
+            .dirty(true)
+            .touched(true),
+        Field::new("endpoint", "Endpoint", "localhost")
+            .error("Enter a reachable address")
+            .required(true)
+            .touched(true),
+        Field::new("mode", "Managed mode", "Unavailable").enabled(false),
     ]
 }
 
 fn form(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let fields = form_fields();
-    let sections = [FormSection {
-        title: Line::from("General"),
-        fields: &fields,
-    }];
+    let sections = [Fieldset::new("General", &fields).description("Profile settings")];
     let mut state = FormState::new();
     frame.render_stateful_widget(
         &Form::new(&sections, system).focused_field(Some(&"name")),
+        area,
+        &mut state,
+    );
+}
+
+fn form_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let fields = form_fields();
+    let sections = [Fieldset::new("General", &fields)];
+    let mut state = FormState::new();
+    frame.render_stateful_widget(
+        &Form::new(&sections, system)
+            .compact()
+            .focused_field(Some(&"endpoint")),
+        area,
+        &mut state,
+    );
+}
+
+fn form_validation_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let fields = [
+        Field::new("email", "Email", "bad")
+            .error("invalid email")
+            .required(true)
+            .touched(true),
+        Field::new("token", "Token", "")
+            .pending("checking…")
+            .required(true),
+        Field::new("note", "Note", "ok").warning("optional warning"),
+    ];
+    let sections = [Fieldset::new("Security", &fields)];
+    let mut state = FormState::new();
+    let _ = state.focus_first_invalid(&sections);
+    frame.render_stateful_widget(
+        &Form::new(&sections, system).focused_field(Some(&"email")),
         area,
         &mut state,
     );

@@ -199,7 +199,10 @@ pub use dialog::{
     open_dialog_overlay, place_dialog,
 };
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
-pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
+pub use form::{
+    any_dirty, any_touched, collect_errors, first_invalid_id, required_filled, Field, FieldStatus,
+    Fieldset, Form, FormField, FormFieldRegion, FormLayout, FormOutcome, FormSection, FormState,
+};
 pub use hint_bar::{
     Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
 };

@@ -42,7 +42,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 6 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.16s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.92s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -17489,10 +17489,120 @@ pub unsafe fn termrock::widgets::ExtentPolicy::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ExtentPolicy
 pub fn termrock::widgets::ExtentPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ExtentPolicy
+#[non_exhaustive] pub enum termrock::widgets::FieldStatus<'a>
+pub termrock::widgets::FieldStatus::Error(&'a str)
+pub termrock::widgets::FieldStatus::Help(&'a str)
+pub termrock::widgets::FieldStatus::None
+pub termrock::widgets::FieldStatus::Pending(&'a str)
+pub termrock::widgets::FieldStatus::Warning(&'a str)
+impl<'a> termrock::widgets::FieldStatus<'a>
+pub const fn termrock::widgets::FieldStatus<'a>::id(self) -> &'static str
+pub const fn termrock::widgets::FieldStatus<'a>::is_error(self) -> bool
+pub const fn termrock::widgets::FieldStatus<'a>::is_pending(self) -> bool
+pub const fn termrock::widgets::FieldStatus<'a>::message(self) -> core::option::Option<&'a str>
+impl<'a> core::clone::Clone for termrock::widgets::FieldStatus<'a>
+pub fn termrock::widgets::FieldStatus<'a>::clone(&self) -> termrock::widgets::FieldStatus<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::FieldStatus<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::FieldStatus<'a>
+pub fn termrock::widgets::FieldStatus<'a>::eq(&self, &termrock::widgets::FieldStatus<'a>) -> bool
+impl<'a> core::default::Default for termrock::widgets::FieldStatus<'a>
+pub fn termrock::widgets::FieldStatus<'a>::default() -> termrock::widgets::FieldStatus<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::FieldStatus<'a>
+pub fn termrock::widgets::FieldStatus<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::hash::Hash for termrock::widgets::FieldStatus<'a>
+pub fn termrock::widgets::FieldStatus<'a>::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl<'a> core::marker::Copy for termrock::widgets::FieldStatus<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::FieldStatus<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::FieldStatus<'a>
+impl<'a> core::marker::Send for termrock::widgets::FieldStatus<'a>
+impl<'a> core::marker::Sync for termrock::widgets::FieldStatus<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::FieldStatus<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::FieldStatus<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FieldStatus<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FieldStatus<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FieldStatus<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FieldStatus<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FieldStatus<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::FieldStatus<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FieldStatus<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::FieldStatus<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::FieldStatus<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FieldStatus<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FieldStatus<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FieldStatus<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FieldStatus<'a> where T: core::clone::Clone
+pub type termrock::widgets::FieldStatus<'a>::Owned = T
+pub fn termrock::widgets::FieldStatus<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FieldStatus<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FieldStatus<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FieldStatus<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FieldStatus<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::FieldStatus<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FieldStatus<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::FieldStatus<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FieldStatus<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FieldStatus<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FieldStatus<'a>
+pub fn termrock::widgets::FieldStatus<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FieldStatus<'a>
+#[non_exhaustive] pub enum termrock::widgets::FormLayout
+pub termrock::widgets::FormLayout::Compact
+pub termrock::widgets::FormLayout::Inline
+pub termrock::widgets::FormLayout::Responsive
+pub termrock::widgets::FormLayout::Stacked
+impl termrock::widgets::FormLayout
+pub const fn termrock::widgets::FormLayout::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::FormLayout
+pub fn termrock::widgets::FormLayout::clone(&self) -> termrock::widgets::FormLayout
+impl core::cmp::Eq for termrock::widgets::FormLayout
+impl core::cmp::PartialEq for termrock::widgets::FormLayout
+pub fn termrock::widgets::FormLayout::eq(&self, &termrock::widgets::FormLayout) -> bool
+impl core::default::Default for termrock::widgets::FormLayout
+pub fn termrock::widgets::FormLayout::default() -> termrock::widgets::FormLayout
+impl core::fmt::Debug for termrock::widgets::FormLayout
+pub fn termrock::widgets::FormLayout::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FormLayout
+pub fn termrock::widgets::FormLayout::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FormLayout
+impl core::marker::StructuralPartialEq for termrock::widgets::FormLayout
+impl core::marker::Freeze for termrock::widgets::FormLayout
+impl core::marker::Send for termrock::widgets::FormLayout
+impl core::marker::Sync for termrock::widgets::FormLayout
+impl core::marker::Unpin for termrock::widgets::FormLayout
+impl core::marker::UnsafeUnpin for termrock::widgets::FormLayout
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FormLayout
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FormLayout
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FormLayout where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FormLayout::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FormLayout where U: core::convert::From<T>
+pub fn termrock::widgets::FormLayout::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FormLayout where U: core::convert::Into<T>
+pub type termrock::widgets::FormLayout::Error = core::convert::Infallible
+pub fn termrock::widgets::FormLayout::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FormLayout where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FormLayout::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FormLayout::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FormLayout where T: core::clone::Clone
+pub type termrock::widgets::FormLayout::Owned = T
+pub fn termrock::widgets::FormLayout::clone_into(&self, &mut T)
+pub fn termrock::widgets::FormLayout::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FormLayout where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FormLayout::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FormLayout where T: ?core::marker::Sized
+pub fn termrock::widgets::FormLayout::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FormLayout where T: ?core::marker::Sized
+pub fn termrock::widgets::FormLayout::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FormLayout where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FormLayout::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FormLayout
+pub fn termrock::widgets::FormLayout::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FormLayout
 #[non_exhaustive] pub enum termrock::widgets::FormOutcome<Id>
 pub termrock::widgets::FormOutcome::Activated(Id)
 pub termrock::widgets::FormOutcome::Ignored
+pub termrock::widgets::FormOutcome::ResetRequested
 pub termrock::widgets::FormOutcome::Scrolled
+pub termrock::widgets::FormOutcome::SubmitRequested
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormOutcome<Id>::clone(&self) -> termrock::widgets::FormOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FormOutcome<Id>
@@ -29374,6 +29484,75 @@ pub unsafe fn termrock::widgets::ExpandState<RowId>::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::ExpandState<RowId>
 pub fn termrock::widgets::ExpandState<RowId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ExpandState<RowId>
+pub struct termrock::widgets::Field<'a, Id>
+pub termrock::widgets::Field::description: core::option::Option<&'a str>
+pub termrock::widgets::Field::dirty: bool
+pub termrock::widgets::Field::enabled: bool
+pub termrock::widgets::Field::id: Id
+pub termrock::widgets::Field::label: &'a str
+pub termrock::widgets::Field::read_only: bool
+pub termrock::widgets::Field::required: bool
+pub termrock::widgets::Field::show_optional: bool
+pub termrock::widgets::Field::status: termrock::widgets::FieldStatus<'a>
+pub termrock::widgets::Field::touched: bool
+pub termrock::widgets::Field::value: &'a str
+impl<'a, Id> termrock::widgets::Field<'a, Id>
+pub const fn termrock::widgets::Field<'a, Id>::can_activate(&self) -> bool
+pub const fn termrock::widgets::Field<'a, Id>::description(self, &'a str) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::dirty(self, bool) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::error(self, &'a str) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::help(self, &'a str) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::is_invalid(&self) -> bool
+pub const fn termrock::widgets::Field<'a, Id>::new(Id, &'a str, &'a str) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::optional(self, bool) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::pending(self, &'a str) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::read_only(self, bool) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::required(self, bool) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::status(self, termrock::widgets::FieldStatus<'a>) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::touched(self, bool) -> Self
+pub const fn termrock::widgets::Field<'a, Id>::warning(self, &'a str) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Field<'a, Id>
+pub fn termrock::widgets::Field<'a, Id>::clone(&self) -> termrock::widgets::Field<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::Field<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::Field<'a, Id>
+pub fn termrock::widgets::Field<'a, Id>::eq(&self, &termrock::widgets::Field<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::Field<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Field<'a, Id>
+pub fn termrock::widgets::Field<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Field<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::Field<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::Field<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::Field<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::Field<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::Field<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Field<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Field<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::Field<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::Field<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::Field<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::Field<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Field<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::Field<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::Field<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Field<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Field<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Field<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Field<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::Field<'a, Id>::Owned = T
+pub fn termrock::widgets::Field<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Field<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Field<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Field<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Field<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Field<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Field<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Field<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Field<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Field<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Field<'a, Id>
+pub fn termrock::widgets::Field<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Field<'a, Id>
 pub struct termrock::widgets::FieldCaption<'a, Id>
 impl<'a, Id: core::clone::Clone> termrock::widgets::FieldCaption<'a, Id>
 pub fn termrock::widgets::FieldCaption<'a, Id>::compact(self) -> Self
@@ -29435,6 +29614,54 @@ pub unsafe fn termrock::widgets::FieldCaption<'a, Id>::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::FieldCaption<'a, Id>
 pub fn termrock::widgets::FieldCaption<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FieldCaption<'a, Id>
+pub struct termrock::widgets::Fieldset<'a, Id>
+pub termrock::widgets::Fieldset::description: core::option::Option<&'a str>
+pub termrock::widgets::Fieldset::fields: &'a [termrock::widgets::Field<'a, Id>]
+pub termrock::widgets::Fieldset::legend: &'a str
+impl<'a, Id> termrock::widgets::Fieldset<'a, Id>
+pub const fn termrock::widgets::Fieldset<'a, Id>::description(self, &'a str) -> Self
+pub const fn termrock::widgets::Fieldset<'a, Id>::new(&'a str, &'a [termrock::widgets::Field<'a, Id>]) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Fieldset<'a, Id>
+pub fn termrock::widgets::Fieldset<'a, Id>::clone(&self) -> termrock::widgets::Fieldset<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::Fieldset<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::Fieldset<'a, Id>
+pub fn termrock::widgets::Fieldset<'a, Id>::eq(&self, &termrock::widgets::Fieldset<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::Fieldset<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Fieldset<'a, Id>
+pub fn termrock::widgets::Fieldset<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Fieldset<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::Fieldset<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::Fieldset<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::Fieldset<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::Fieldset<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::Fieldset<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Fieldset<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Fieldset<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::Fieldset<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::Fieldset<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::Fieldset<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::Fieldset<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Fieldset<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::Fieldset<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::Fieldset<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Fieldset<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Fieldset<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Fieldset<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Fieldset<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::Fieldset<'a, Id>::Owned = T
+pub fn termrock::widgets::Fieldset<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Fieldset<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Fieldset<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Fieldset<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Fieldset<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Fieldset<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Fieldset<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Fieldset<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Fieldset<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Fieldset<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Fieldset<'a, Id>
+pub fn termrock::widgets::Fieldset<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Fieldset<'a, Id>
 pub struct termrock::widgets::FilterSpec
 pub termrock::widgets::FilterSpec::clauses: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
 pub termrock::widgets::FilterSpec::query: alloc::string::String
@@ -29482,8 +29709,14 @@ pub fn termrock::widgets::FilterSpec::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FilterSpec
 pub struct termrock::widgets::Form<'a, Id>
 impl<'a, Id> termrock::widgets::Form<'a, Id>
+pub const fn termrock::widgets::Form<'a, Id>::compact(self) -> Self
+pub const fn termrock::widgets::Form<'a, Id>::fieldsets(&self) -> &'a [termrock::widgets::Fieldset<'a, Id>]
 pub const fn termrock::widgets::Form<'a, Id>::focused_field(self, core::option::Option<&'a Id>) -> Self
-pub const fn termrock::widgets::Form<'a, Id>::new(&'a [termrock::widgets::FormSection<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Form<'a, Id>::inline(self) -> Self
+pub const fn termrock::widgets::Form<'a, Id>::layout(self, termrock::widgets::FormLayout) -> Self
+pub const fn termrock::widgets::Form<'a, Id>::new(&'a [termrock::widgets::Fieldset<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Form<'a, Id>::show_error_summary(self, bool) -> Self
+pub const fn termrock::widgets::Form<'a, Id>::stacked(self) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Form<'a, Id>
 pub fn termrock::widgets::Form<'a, Id>::clone(&self) -> termrock::widgets::Form<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Form<'a, Id>
@@ -29525,54 +29758,6 @@ pub unsafe fn termrock::widgets::Form<'a, Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Form<'a, Id>
 pub fn termrock::widgets::Form<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Form<'a, Id>
-#[non_exhaustive] pub struct termrock::widgets::FormField<'a, Id>
-pub termrock::widgets::FormField::enabled: bool
-pub termrock::widgets::FormField::error: core::option::Option<ratatui_core::text::line::Line<'a>>
-pub termrock::widgets::FormField::help: core::option::Option<ratatui_core::text::line::Line<'a>>
-pub termrock::widgets::FormField::id: Id
-pub termrock::widgets::FormField::label: ratatui_core::text::line::Line<'a>
-pub termrock::widgets::FormField::required: bool
-pub termrock::widgets::FormField::value: ratatui_core::text::line::Line<'a>
-impl<'a, Id> termrock::widgets::FormField<'a, Id>
-pub const fn termrock::widgets::FormField<'a, Id>::enabled(self, bool) -> Self
-pub fn termrock::widgets::FormField<'a, Id>::error(self, ratatui_core::text::line::Line<'a>) -> Self
-pub fn termrock::widgets::FormField<'a, Id>::help(self, ratatui_core::text::line::Line<'a>) -> Self
-pub const fn termrock::widgets::FormField<'a, Id>::new(Id, ratatui_core::text::line::Line<'a>, ratatui_core::text::line::Line<'a>) -> Self
-pub const fn termrock::widgets::FormField<'a, Id>::required(self, bool) -> Self
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormField<'a, Id>
-pub fn termrock::widgets::FormField<'a, Id>::clone(&self) -> termrock::widgets::FormField<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FormField<'a, Id>
-pub fn termrock::widgets::FormField<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id> core::marker::Freeze for termrock::widgets::FormField<'a, Id> where Id: core::marker::Freeze
-impl<'a, Id> core::marker::Send for termrock::widgets::FormField<'a, Id> where Id: core::marker::Send
-impl<'a, Id> core::marker::Sync for termrock::widgets::FormField<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::FormField<'a, Id> where Id: core::marker::Unpin
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::FormField<'a, Id> where Id: core::marker::UnsafeUnpin
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FormField<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FormField<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::widgets::FormField<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::FormField<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FormField<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::FormField<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::FormField<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::FormField<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::FormField<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::FormField<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::FormField<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::FormField<'a, Id>::Owned = T
-pub fn termrock::widgets::FormField<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::FormField<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::FormField<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::FormField<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::FormField<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::FormField<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FormField<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::FormField<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::FormField<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::FormField<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::FormField<'a, Id>
-pub fn termrock::widgets::FormField<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::FormField<'a, Id>
 pub struct termrock::widgets::FormFieldRegion<Id>
 pub termrock::widgets::FormFieldRegion::area: ratatui_core::layout::rect::Rect
 pub termrock::widgets::FormFieldRegion::id: Id
@@ -29619,48 +29804,12 @@ pub unsafe fn termrock::widgets::FormFieldRegion<Id>::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::FormFieldRegion<Id>
 pub fn termrock::widgets::FormFieldRegion<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormFieldRegion<Id>
-pub struct termrock::widgets::FormSection<'a, Id>
-pub termrock::widgets::FormSection::fields: &'a [termrock::widgets::FormField<'a, Id>]
-pub termrock::widgets::FormSection::title: ratatui_core::text::line::Line<'a>
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormSection<'a, Id>
-pub fn termrock::widgets::FormSection<'a, Id>::clone(&self) -> termrock::widgets::FormSection<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FormSection<'a, Id>
-pub fn termrock::widgets::FormSection<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id> core::marker::Freeze for termrock::widgets::FormSection<'a, Id>
-impl<'a, Id> core::marker::Send for termrock::widgets::FormSection<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Sync for termrock::widgets::FormSection<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::FormSection<'a, Id>
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::FormSection<'a, Id>
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FormSection<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FormSection<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::widgets::FormSection<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::FormSection<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FormSection<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::FormSection<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::FormSection<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::FormSection<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::FormSection<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::FormSection<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::FormSection<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::FormSection<'a, Id>::Owned = T
-pub fn termrock::widgets::FormSection<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::FormSection<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::FormSection<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::FormSection<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::FormSection<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::FormSection<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FormSection<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::FormSection<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::FormSection<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::FormSection<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::FormSection<'a, Id>
-pub fn termrock::widgets::FormSection<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::FormSection<'a, Id>
 pub struct termrock::widgets::FormState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::FormState<Id>
 pub fn termrock::widgets::FormState<Id>::click(&mut self, ratatui_core::layout::position::Position, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
-pub fn termrock::widgets::FormState<Id>::handle_intent(&mut self, &[termrock::widgets::FormSection<'_, Id>], termrock::context::ContextUiIntent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
-pub fn termrock::widgets::FormState<Id>::handle_key(&mut self, &[termrock::widgets::FormSection<'_, Id>], termrock::input::KeyEvent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormState<Id>::focus_first_invalid(&mut self, &[termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<Id>
+pub fn termrock::widgets::FormState<Id>::handle_intent(&mut self, &[termrock::widgets::Fieldset<'_, Id>], termrock::context::ContextUiIntent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormState<Id>::handle_key(&mut self, &[termrock::widgets::Fieldset<'_, Id>], termrock::input::KeyEvent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormState<Id>::hit_id(&self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 pub fn termrock::widgets::FormState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id> termrock::widgets::FormState<Id>
@@ -29668,16 +29817,15 @@ pub const fn termrock::widgets::FormState<Id>::accepts_input(&self) -> bool
 pub const fn termrock::widgets::FormState<Id>::column_count(&self) -> u8
 pub const fn termrock::widgets::FormState<Id>::content_height(&self) -> usize
 pub fn termrock::widgets::FormState<Id>::ensure_visible(&mut self, core::option::Option<Id>)
+pub const fn termrock::widgets::FormState<Id>::error_summary_count(&self) -> usize
 pub fn termrock::widgets::FormState<Id>::field_regions(&self) -> &[termrock::widgets::FormFieldRegion<Id>]
 pub const fn termrock::widgets::FormState<Id>::hovered(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::FormState<Id>::is_active(&self) -> bool
 pub const fn termrock::widgets::FormState<Id>::new() -> Self
 pub const fn termrock::widgets::FormState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::FormState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
 pub fn termrock::widgets::FormState<Id>::scroll_by(&mut self, isize, usize) -> bool
 pub fn termrock::widgets::FormState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position) -> bool
 pub const fn termrock::widgets::FormState<Id>::set_accepts_input(&mut self, bool)
-pub const fn termrock::widgets::FormState<Id>::set_active(&mut self, bool)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FormState<Id>
 pub fn termrock::widgets::FormState<Id>::clone(&self) -> termrock::widgets::FormState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FormState<Id>
@@ -41858,10 +42006,13 @@ impl termrock::widgets::SyntaxHighlighter for termrock::widgets::RoleTokenSyntax
 pub fn termrock::widgets::RoleTokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
 impl termrock::widgets::SyntaxHighlighter for termrock::widgets::TokenSyntax<'_>
 pub fn termrock::widgets::TokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
+pub fn termrock::widgets::any_dirty<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
+pub fn termrock::widgets::any_touched<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::ascii_ellipsis() -> &'static str
 pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock::interaction::HitRegion<Id>]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
+pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> alloc::vec::Vec<(&'a str, &'a str)>
 pub fn termrock::widgets::dashboard_panels() -> [termrock::widgets::ResizablePanelSpec; 2]
 pub fn termrock::widgets::dismiss_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -41869,6 +42020,7 @@ pub fn termrock::widgets::dismiss_dialog_overlay<FocusId: core::clone::Clone>(&m
 pub fn termrock::widgets::dismiss_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>
 pub const fn termrock::widgets::fixed_visible_range(u64, u16, u64) -> (u64, u64)
 pub fn termrock::widgets::format_alternatives(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termrock::keymap::KeyBinding<A>, termrock::widgets::ChordFormat) -> alloc::string::String
@@ -41908,6 +42060,7 @@ pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock:
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
 pub fn termrock::widgets::remove_label(&str) -> alloc::string::String
 pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem)
+pub fn termrock::widgets::required_filled<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::role_for_seed(u64) -> termrock::style::Role
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
@@ -41928,5 +42081,7 @@ pub type termrock::widgets::AlertTone = termrock::widgets::CalloutTone
 pub type termrock::widgets::CellCoord = termrock::interaction::CellCoord
 pub type termrock::widgets::CommandPaletteState<Id> = termrock::widgets::PickerState<Id>
 pub type termrock::widgets::ContextMenu<'a, Id> = termrock::widgets::Menu<'a, Id>
+pub type termrock::widgets::FormField<'a, Id> = termrock::widgets::Field<'a, Id>
+pub type termrock::widgets::FormSection<'a, Id> = termrock::widgets::Fieldset<'a, Id>
 pub type termrock::widgets::SectionAction<'a> = termrock::widgets::PanelAction<'a>
 pub type termrock::widgets::SeparatorLine<'a> = termrock::widgets::Separator<'a>

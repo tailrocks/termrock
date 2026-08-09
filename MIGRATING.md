@@ -150,6 +150,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0134 | `v0.13.0` | [Switch](migrations/0134-v0.13.0-switch.md) |
 | 0135 | `v0.13.0` | [SegmentedControl](migrations/0135-v0.13.0-segmented-control.md) |
 | 0136 | `v0.13.0` | [Slider & RangeSlider](migrations/0136-v0.13.0-slider.md) |
+| 0137 | `v0.13.0` | [Field, Fieldset & Form](migrations/0137-v0.13.0-form-field-fieldset.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
