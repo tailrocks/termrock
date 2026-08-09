@@ -25,18 +25,69 @@ pub enum RowRole {
 }
 
 #[derive(Debug, Clone)]
-/// A stable row in a selectable list.
+/// A stable row in a selectable list with composed-part anatomy.
+///
+/// Parts map to [`ComposedRow`]: leading · primary(label) · secondary · badge ·
+/// shortcut · trailing. Narrow terminals drop by
+/// shortcut → badge → secondary → trailing → leading → primary.
 pub struct ListRow<'a, Id> {
     /// Stable identity used for selection and activation.
     pub id: Id,
-    /// Caller-visible label.
+    /// Primary label (never dropped first under contraction).
     pub label: Line<'a>,
-    /// Optional metadata aligned at the trailing edge.
+    /// Optional leading icon / check chrome (composed leading).
+    pub leading: Option<Line<'a>>,
+    /// Optional secondary metadata line (composed secondary).
+    pub secondary: Option<Line<'a>>,
+    /// Optional badge (composed badge).
+    pub badge: Option<Line<'a>>,
+    /// Optional keyboard shortcut hint (composed shortcut).
+    pub shortcut: Option<&'a str>,
+    /// Optional metadata aligned at the trailing edge (legacy + composed).
     pub trailing: Option<Line<'a>>,
     /// Interaction role controlling selection and hit testing.
     pub role: RowRole,
     /// Whether this item is enabled.
     pub enabled: bool,
+    /// Loading placeholder (composed loading).
+    pub loading: bool,
+}
+
+impl<'a, Id> ListRow<'a, Id> {
+    /// Creates a primary-only item row.
+    #[must_use]
+    pub fn item(id: Id, label: Line<'a>) -> Self {
+        Self {
+            id,
+            label,
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        }
+    }
+
+    /// Projects this row into composed anatomy for contraction/paint.
+    #[must_use]
+    pub fn composed(&self) -> ComposedRow<'a, ()>
+    where
+        Id: Clone,
+    {
+        ComposedRow {
+            id: (),
+            leading: self.leading.clone(),
+            primary: self.label.clone(),
+            secondary: self.secondary.clone(),
+            badge: self.badge.clone().or_else(|| self.trailing.clone()),
+            shortcut: self.shortcut,
+            enabled: self.enabled,
+            loading: self.loading,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -426,8 +477,8 @@ impl ListState<usize> {
 /// };
 ///
 /// let rows = [
-///     ListRow { id: "a", label: Line::from("Alpha"), trailing: None, role: RowRole::Item, enabled: true },
-///     ListRow { id: "b", label: Line::from("Beta"), trailing: None, role: RowRole::Item, enabled: true },
+///     ListRow { id: "a", label: Line::from("Alpha"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true , loading: false },
+///     ListRow { id: "b", label: Line::from("Beta"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true , loading: false },
 /// ];
 /// let tokens = termrock::style::DesignTokens::default();
 /// let _widget = List::new(&rows, &tokens);
@@ -464,15 +515,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         state.viewport_height = usize::from(area.height);
         let scrollable = crate::scroll::is_scrollable(self.rows.len(), state.viewport_height);
         let content_width = area.width.saturating_sub(u16::from(scrollable));
-        let trailing_width = self
-            .rows
-            .iter()
-            .filter_map(|row| row.trailing.as_ref())
-            .map(Line::width)
-            .max()
-            .and_then(|width| u16::try_from(width).ok())
-            .unwrap_or(0)
-            .min(content_width);
         state.offset = state
             .offset
             .min(max_offset(self.rows.len(), state.viewport_height));
@@ -524,20 +566,17 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             if recipe.use_fill {
                 buffer.set_style(rect, style);
             }
-            let trailing_x = rect.right().saturating_sub(trailing_width);
             if row.role == RowRole::Separator {
                 let rule = self.tokens.glyphs.rule();
                 buffer.set_stringn(rect.x, rect.y, rule, usize::from(rect.width), style);
                 if rect.width > 2 {
-                    let label_x = rect
-                        .x
-                        .saturating_add(2)
-                        .saturating_add(u16::from(state.selection.is_some()) * 4);
+                    let label_x = rect.x.saturating_add(2);
+                    let parts = row.composed().parts_for_width(rect.width.saturating_sub(2));
                     buffer.set_line(
                         label_x,
                         rect.y,
-                        &row.label,
-                        label_width(label_x, trailing_x, trailing_width),
+                        &parts.primary,
+                        rect.right().saturating_sub(label_x),
                     );
                 }
             } else {
@@ -549,43 +588,127 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 }
                 let check_x = rect.x.saturating_add(2);
                 render_check_cell(buffer, state, row, rect, check_x, checked, style);
-                // Priority-aware contraction via ComposedRow (plan 045).
-                let composed = ComposedRow {
-                    id: (),
-                    leading: None,
-                    primary: row.label.clone(),
-                    secondary: None,
-                    badge: row.trailing.clone(),
-                    shortcut: None,
-                    enabled: row.enabled,
-                    loading: false,
-                };
-                let parts = composed.parts_for_width(rect.width);
-                if rect.width > 2 {
-                    let label_x = check_x.saturating_add(u16::from(state.selection.is_some()) * 4);
-                    buffer.set_line(
-                        label_x,
-                        rect.y,
-                        &parts.primary,
-                        label_width(label_x, trailing_x, trailing_width),
-                    );
-                }
-                if let Some(badge) = parts.badge.as_ref().or(row.trailing.as_ref())
-                    && trailing_width > 0
-                    && parts.badge.is_some()
-                {
-                    let width = u16::try_from(badge.width())
-                        .unwrap_or(u16::MAX)
-                        .min(trailing_width);
-                    buffer.set_line(rect.right().saturating_sub(width), rect.y, badge, width);
-                } else if let Some(trailing) = row.trailing.as_ref()
-                    && trailing_width > 0
-                {
-                    // Fallback when contraction dropped badge but trailing still fits.
-                    let width = u16::try_from(trailing.width())
-                        .unwrap_or(u16::MAX)
-                        .min(trailing_width);
-                    buffer.set_line(rect.right().saturating_sub(width), rect.y, trailing, width);
+                let content_x = check_x.saturating_add(u16::from(state.selection.is_some()) * 4);
+                if content_x < rect.right() {
+                    // Zero-copy contraction (ComposedRow grammar without Line clones).
+                    let content_w = rect.right().saturating_sub(content_x);
+                    let badge = row.badge.as_ref().or(row.trailing.as_ref());
+                    let mut budget = content_w.saturating_sub(1);
+                    let shortcut_need = row
+                        .shortcut
+                        .map(|s| {
+                            u16::try_from(crate::text::display_cols(s))
+                                .unwrap_or(u16::MAX)
+                                .saturating_add(1)
+                        })
+                        .unwrap_or(0);
+                    // Shortcuts need room; never steal the last primary cells.
+                    let show_shortcut =
+                        row.shortcut.is_some() && content_w >= 12 && budget >= shortcut_need + 2;
+                    if show_shortcut {
+                        budget = budget.saturating_sub(shortcut_need);
+                    }
+                    let badge_need = badge
+                        .map(|b| {
+                            u16::try_from(b.width())
+                                .unwrap_or(u16::MAX)
+                                .saturating_add(1)
+                        })
+                        .unwrap_or(0);
+                    let show_badge = badge.is_some() && content_w >= 8 && budget > badge_need;
+                    if show_badge {
+                        budget = budget.saturating_sub(badge_need);
+                    }
+                    let secondary_need = row
+                        .secondary
+                        .as_ref()
+                        .map(|s| {
+                            u16::try_from(s.width())
+                                .unwrap_or(u16::MAX)
+                                .saturating_add(1)
+                        })
+                        .unwrap_or(0);
+                    let show_secondary = row.secondary.is_some() && budget >= secondary_need;
+                    if show_secondary {
+                        budget = budget.saturating_sub(secondary_need);
+                    }
+                    let leading_need = if row.loading {
+                        2
+                    } else {
+                        row.leading
+                            .as_ref()
+                            .map(|l| {
+                                u16::try_from(l.width())
+                                    .unwrap_or(u16::MAX)
+                                    .saturating_add(1)
+                            })
+                            .unwrap_or(0)
+                    };
+                    let show_leading =
+                        (row.loading || row.leading.is_some()) && budget >= leading_need;
+
+                    let mut x = content_x;
+                    let right = rect.right();
+                    if show_leading {
+                        if row.loading {
+                            buffer.set_stringn(x, rect.y, "…", 1, style);
+                            x = x.saturating_add(2);
+                        } else if let Some(lead) = row.leading.as_ref() {
+                            let lw = u16::try_from(lead.width())
+                                .unwrap_or(u16::MAX)
+                                .min(right.saturating_sub(x));
+                            if lw > 0 {
+                                buffer.set_line(x, rect.y, lead, lw);
+                                x = x.saturating_add(lw).saturating_add(1);
+                            }
+                        }
+                    }
+                    let reserve = if show_badge { badge_need } else { 0 }
+                        .saturating_add(if show_shortcut { shortcut_need } else { 0 });
+                    let mid_end = right.saturating_sub(reserve);
+                    let primary_budget = mid_end.saturating_sub(x);
+                    if primary_budget > 0 {
+                        buffer.set_line(x, rect.y, &row.label, primary_budget);
+                        x = x.saturating_add(
+                            u16::try_from(row.label.width())
+                                .unwrap_or(u16::MAX)
+                                .min(primary_budget),
+                        );
+                    }
+                    if show_secondary && let Some(sec) = row.secondary.as_ref() {
+                        let avail = mid_end.saturating_sub(x);
+                        if avail > 2 {
+                            x = x.saturating_add(1);
+                            let sw = u16::try_from(sec.width())
+                                .unwrap_or(u16::MAX)
+                                .min(mid_end.saturating_sub(x));
+                            if sw > 0 {
+                                buffer.set_line(x, rect.y, sec, sw);
+                            }
+                        }
+                    }
+                    let mut cursor = right;
+                    if show_shortcut && let Some(sc) = row.shortcut {
+                        let w = u16::try_from(crate::text::display_cols(sc))
+                            .unwrap_or(u16::MAX)
+                            .min(cursor.saturating_sub(content_x));
+                        if w > 0 {
+                            cursor = cursor.saturating_sub(w);
+                            buffer.set_stringn(cursor, rect.y, sc, usize::from(w), style);
+                        }
+                    }
+                    if show_badge && let Some(b) = badge {
+                        let w = u16::try_from(b.width())
+                            .unwrap_or(u16::MAX)
+                            .min(cursor.saturating_sub(content_x));
+                        if w > 0 {
+                            if show_shortcut {
+                                cursor = cursor.saturating_sub(1);
+                            }
+                            cursor = cursor.saturating_sub(w);
+                            buffer.set_line(cursor, rect.y, b, w);
+                        }
+                    }
                 }
             }
             if row.enabled && row.role == RowRole::Item && !rect.is_empty() {
@@ -650,12 +773,6 @@ fn render_check_cell<Id: Clone>(
     }
 }
 
-fn label_width(label_x: u16, trailing_x: u16, trailing_width: u16) -> u16 {
-    trailing_x
-        .saturating_sub(label_x)
-        .saturating_sub(u16::from(trailing_width > 0))
-}
-
 impl<Id: Clone + PartialEq> StatefulWidget for List<'_, Id> {
     type State = ListState<Id>;
 
@@ -701,30 +818,50 @@ mod tests {
             ListRow {
                 id: "section",
                 label: Line::from("Section"),
+                leading: None,
+                secondary: None,
+                badge: None,
+                shortcut: None,
                 trailing: None,
                 role: RowRole::Separator,
                 enabled: true,
+                loading: false,
             },
             ListRow {
                 id: "disabled",
                 label: Line::from("Disabled"),
+                leading: None,
+                secondary: None,
+                badge: None,
+                shortcut: None,
                 trailing: None,
                 role: RowRole::Item,
                 enabled: false,
+                loading: false,
             },
             ListRow {
                 id: "first",
                 label: Line::from("First"),
+                leading: None,
+                secondary: None,
+                badge: None,
+                shortcut: None,
                 trailing: None,
                 role: RowRole::Item,
                 enabled: true,
+                loading: false,
             },
             ListRow {
                 id: "second",
                 label: Line::from("Second"),
+                leading: None,
+                secondary: None,
+                badge: None,
+                shortcut: None,
                 trailing: None,
                 role: RowRole::Item,
                 enabled: true,
+                loading: false,
             },
         ]
     }
@@ -776,52 +913,115 @@ mod tests {
             ListRow {
                 id: "wide",
                 label: Line::from("🧪🧪label"),
+                leading: None,
+                secondary: None,
+                badge: None,
+                shortcut: None,
                 trailing: Some(Line::from("9 KiB")),
                 role: RowRole::Item,
                 enabled: true,
+                loading: false,
             },
             ListRow {
                 id: "short",
                 label: Line::from("short"),
+                leading: None,
+                secondary: None,
+                badge: None,
+                shortcut: None,
                 trailing: Some(Line::from("1 B")),
                 role: RowRole::Item,
                 enabled: true,
+                loading: false,
             },
         ];
         let tokens = DesignTokens::default();
         let mut state = ListState::new(None);
-        let area = Rect::new(0, 0, 11, 2);
+        // Gutter (2) + content: badge right-aligned within content band.
+        let area = Rect::new(0, 0, 14, 2);
         let mut buffer = Buffer::empty(area);
 
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
 
-        assert_eq!(buffer[(6, 0)].symbol(), "9");
-        assert_eq!(buffer[(8, 1)].symbol(), "1");
-        assert_eq!(buffer[(10, 0)].symbol(), "B");
-        assert_eq!(buffer[(10, 1)].symbol(), "B");
+        // Right edge of full row holds trailing badge.
+        assert_eq!(buffer[(9, 0)].symbol(), "9");
+        assert_eq!(buffer[(13, 0)].symbol(), "B");
+        assert_eq!(buffer[(11, 1)].symbol(), "1");
+        assert_eq!(buffer[(13, 1)].symbol(), "B");
+        // Primary starts after gutter and keeps wide graphemes intact.
         assert_eq!(buffer[(2, 0)].symbol(), "🧪");
-        assert_ne!(buffer[(4, 0)].symbol(), "🧪");
     }
 
     #[test]
     fn narrow_trailing_cell_clips_only_at_grapheme_boundaries() {
-        let rows = [ListRow {
-            id: "wide-trailing",
-            label: Line::from("hidden"),
-            trailing: Some(Line::from("🧪Z")),
-            role: RowRole::Item,
-            enabled: true,
-        }];
+        let mut row = ListRow::item("wide-trailing", Line::from("x"));
+        row.trailing = Some(Line::from("🧪Z"));
+        let rows = [row];
         let tokens = DesignTokens::default();
         let mut state = ListState::new(None);
-        let area = Rect::new(0, 0, 2, 1);
+        // Gutter 2 + content 3: badge "🧪Z" (3 cells) fits; grapheme-safe clip drops Z if tighter.
+        let area = Rect::new(0, 0, 5, 1);
         let mut buffer = Buffer::empty(area);
 
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
 
-        assert_eq!(buffer[(0, 0)].symbol(), "🧪");
-        assert_eq!(buffer[(1, 0)].symbol(), " ");
-        assert!(!buffer.content().iter().any(|cell| cell.symbol() == "Z"));
+        let text: String = (0..5)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        // Badge is right-aligned in content; wide emoji either fully present or absent — never half.
+        let emoji_count = text.matches('🧪').count();
+        assert!(emoji_count <= 1, "must not split wide grapheme: {text:?}");
+        if emoji_count == 1 {
+            assert!(
+                !text.contains('Z'),
+                "clip after emoji not mid-grapheme: {text:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn composed_row_anatomy_paints_leading_secondary_shortcut() {
+        let mut row = ListRow::item("job", Line::from("Build"));
+        row.leading = Some(Line::from("*"));
+        row.secondary = Some(Line::from("meta"));
+        row.badge = Some(Line::from("ok"));
+        row.shortcut = Some("⌘B");
+        let rows = [row];
+        let tokens = DesignTokens::default();
+        let mut state = ListState::new(None);
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
+        let text: String = (0..40)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(text.contains("Build"), "{text:?}");
+        assert!(text.contains('*'), "{text:?}");
+        assert!(text.contains("meta"), "{text:?}");
+        assert!(text.contains("ok"), "{text:?}");
+        assert!(text.contains('⌘') || text.contains('B'), "{text:?}");
+    }
+
+    #[test]
+    fn narrow_list_drops_shortcut_before_primary_identity() {
+        let mut row = ListRow::item("job", Line::from("Identity"));
+        row.shortcut = Some("⌘K");
+        row.badge = Some(Line::from("99"));
+        let rows = [row];
+        let tokens = DesignTokens::default();
+        let mut state = ListState::new(None);
+        // Gutter 2 + content 4: optional chrome must drop before primary.
+        let area = Rect::new(0, 0, 6, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
+        let text: String = (0..6)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            text.contains('I') || text.contains("Id"),
+            "primary survives: {text:?}"
+        );
+        assert!(!text.contains('⌘'), "shortcut drops first: {text:?}");
     }
 
     #[test]

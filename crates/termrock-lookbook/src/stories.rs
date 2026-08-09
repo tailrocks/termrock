@@ -13,7 +13,7 @@ use ratatui::{
     widgets::Paragraph,
 };
 use termrock::{
-    Theme,
+    Density, Theme,
     scroll::DialogScroll,
     style::ColorCapability,
     style::DesignTokens,
@@ -41,9 +41,11 @@ use termrock::{
 };
 
 use crate::interactors::{
-    ChoiceDialogInteractor, FormInteractor, ListInteractor, LogPaneInteractor, PickerInteractor,
-    SplitPaneInteractor, StaticStory, StoryInteraction, TextAreaInteractor, ToastInteractor,
-    TreeInteractor,
+    ApprovalCardInteractor, ChoiceDialogInteractor, CommandPaletteInteractor,
+    DesignInspectorInteractor, FormInteractor, ListInteractor, LogPaneInteractor, PickerInteractor,
+    PromptBoxInteractor, SplitPaneInteractor, StaticStory, StoryInteraction, TableInteractor,
+    TabsInteractor, TextAreaInteractor, ThemePickerInteractor, ToastInteractor,
+    TranscriptInteractor, TreeInteractor, VirtualGridInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
@@ -140,6 +142,42 @@ fn text_area_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(TextAreaInteractor::new())
 }
 
+fn tabs_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TabsInteractor::new())
+}
+
+fn table_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TableInteractor::new())
+}
+
+fn theme_picker_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ThemePickerInteractor::new())
+}
+
+fn command_palette_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(CommandPaletteInteractor::new())
+}
+
+fn approval_card_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ApprovalCardInteractor::new())
+}
+
+fn design_inspector_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(DesignInspectorInteractor::new())
+}
+
+fn transcript_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TranscriptInteractor::new())
+}
+
+fn prompt_box_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PromptBoxInteractor::new())
+}
+
+fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(VirtualGridInteractor::new())
+}
+
 pub(crate) fn stories() -> Vec<Story> {
     vec![
         Story::new(
@@ -168,7 +206,8 @@ pub(crate) fn stories() -> Vec<Story> {
             52,
             2,
             tabs,
-        ),
+        )
+        .with_interactor(tabs_interactor),
         Story::new(
             "hint-bar/wrapped",
             "Hint bar",
@@ -345,7 +384,8 @@ pub(crate) fn stories() -> Vec<Story> {
             72,
             12,
             virtual_grid_basic,
-        ),
+        )
+        .with_interactor(virtual_grid_interactor),
         Story::new(
             "virtual-grid/million",
             "Virtual grid million-row window",
@@ -381,7 +421,8 @@ pub(crate) fn stories() -> Vec<Story> {
             68,
             8,
             table_basic,
-        ),
+        )
+        .with_interactor(table_interactor),
         Story::new(
             "table/sorted",
             "Sorted table",
@@ -488,9 +529,10 @@ pub(crate) fn stories() -> Vec<Story> {
             "DesignInspector",
             "Studio focus/layer/capability strip.",
             48,
-            2,
+            4,
             design_inspector,
-        ),
+        )
+        .with_interactor(design_inspector_interactor),
         Story::new(
             "dialog/message",
             "Message dialog",
@@ -699,7 +741,8 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             10,
             command_palette,
-        ),
+        )
+        .with_interactor(command_palette_interactor),
         Story::new(
             "code-block/basic",
             "Code block",
@@ -780,7 +823,8 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             6,
             approval_card,
-        ),
+        )
+        .with_interactor(approval_card_interactor),
         Story::new(
             "approval-card/narrow",
             "Approval card narrow",
@@ -825,7 +869,8 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             10,
             transcript_basic,
-        ),
+        )
+        .with_interactor(transcript_interactor),
         Story::new(
             "transcript/narrow",
             "Transcript narrow",
@@ -861,7 +906,8 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             5,
             prompt_box,
-        ),
+        )
+        .with_interactor(prompt_box_interactor),
         Story::new(
             "theme-picker/basic",
             "Theme picker",
@@ -870,7 +916,8 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             6,
             theme_picker,
-        ),
+        )
+        .with_interactor(theme_picker_interactor),
         Story::new(
             "image-surface/basic",
             "Image surface",
@@ -890,8 +937,9 @@ pub(crate) fn gallery_stories() -> Vec<Story> {
 }
 
 fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
     frame.render_widget(
-        Panel::new(theme)
+        Panel::new(&panel_tokens)
             .title("Summary")
             .emphasis(PanelEmphasis::Focused),
         area,
@@ -1005,6 +1053,10 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "workspace",
             label: Line::from("Workspace"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("4 items")),
             depth: 0,
             branch: true,
@@ -1015,6 +1067,10 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "documents",
             label: Line::from("Documents"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("2 items")),
             depth: 1,
             branch: true,
@@ -1025,6 +1081,10 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "loading",
             label: Line::from("Remote items"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             depth: 1,
             branch: true,
@@ -1035,6 +1095,10 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
         TreeNode {
             id: "notes",
             label: Line::from("Wide 🧪 notes"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("12 KiB")),
             depth: 1,
             branch: false,
@@ -1189,23 +1253,38 @@ fn list_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         ListRow {
             id: "cjk",
             label: Line::from("東京 設定"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("日本語")),
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: "emoji",
             label: Line::from("🧪 Laboratory"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("✅")),
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: "combining",
             label: Line::from("Cafe\u{301} profile"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("e\u{301}")),
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
     ];
     let mut state = ListState::new(Some("cjk"));
@@ -1217,30 +1296,50 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
         ListRow {
             id: "section",
             label: Line::from("Workspace"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("3 entries")),
             role: RowRole::Separator,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: "alpha",
             label: Line::from("Alpha"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("12 ms")),
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: "beta",
             label: Line::from("Beta"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("28 ms")),
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: "gamma",
             label: Line::from("Gamma"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: false,
+            loading: false,
         },
     ]
 }
@@ -1264,16 +1363,26 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         ListRow {
             id: "tokyo",
             label: Line::from("東京デプロイ 🧪"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("操作")),
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: "cafe",
             label: Line::from("Cafe\u{301} logs"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: Some(Line::from("表示")),
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
     ];
     let mut state = PickerState::new(Some("tokyo"));
@@ -1301,12 +1410,10 @@ pub(crate) fn picker_rows(query: &str) -> Vec<ListRow<'static, &'static str>> {
     ]
     .into_iter()
     .filter(|(_, label, _)| label.to_ascii_lowercase().contains(&query))
-    .map(|(id, label, kind)| ListRow {
-        id,
-        label: Line::from(label),
-        trailing: Some(Line::from(kind)),
-        role: RowRole::Item,
-        enabled: true,
+    .map(|(id, label, kind)| {
+        let mut row = ListRow::item(id, Line::from(label));
+        row.trailing = Some(Line::from(kind));
+        row
     })
     .collect()
 }
@@ -1382,7 +1489,8 @@ enum TableVariant {
 }
 
 fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    frame.render_widget(Panel::new(theme).title("Editor"), area);
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    frame.render_widget(Panel::new(&panel_tokens).title("Editor"), area);
     let candidates = [
         CompletionCandidate::new("select", "SELECT").kind("keyword"),
         CompletionCandidate::new("from", "FROM").kind("keyword"),
@@ -1403,7 +1511,8 @@ fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    frame.render_widget(Panel::new(theme).title("Edge"), area);
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    frame.render_widget(Panel::new(&panel_tokens).title("Edge"), area);
     let candidates = [
         CompletionCandidate::new("alpha", "αlpha-wide-label"),
         CompletionCandidate::new("beta", "βeta"),
@@ -1613,6 +1722,8 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme, variant: Table
         .map(|(index, cells)| TableRow {
             id: index,
             cells,
+            leading: None,
+            badge: None,
             enabled: !(matches!(variant, TableVariant::Disabled) && index == 2),
             emphasis: index == 0 && matches!(variant, TableVariant::Unicode),
             style: None,
@@ -1722,11 +1833,16 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn design_inspector(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let layers = ["root"];
+    let recipes = ["list_row", "panel"];
     let snap = DesignInspectorFrame {
         focused: Some("list"),
         layer: Some("root"),
         capability: ColorCapability::Truecolor,
         density: "comfortable",
+        layers: &layers,
+        recipes: &recipes,
+        selection_chrome: "gutter",
     };
     frame.render_widget(DesignInspector::new(snap, theme), area);
 }
@@ -1927,8 +2043,9 @@ fn skeleton(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn jump_overlay(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
     frame.render_widget(
-        Panel::new(theme)
+        Panel::new(&panel_tokens)
             .title("Jump targets")
             .emphasis(PanelEmphasis::Normal),
         area,
@@ -1949,22 +2066,10 @@ fn jump_overlay(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn command_palette(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
     let rows = [
-        ListRow {
-            id: "theme",
-            label: Line::from("Toggle theme"),
-            trailing: None,
-            enabled: true,
-            role: RowRole::Item,
-        },
-        ListRow {
-            id: "quit",
-            label: Line::from("Quit"),
-            trailing: None,
-            enabled: true,
-            role: RowRole::Item,
-        },
+        ListRow::item("theme", Line::from("Toggle theme")),
+        ListRow::item("quit", Line::from("Quit")),
     ];
     let mut state = CommandPaletteState::new(Some("theme"));
     frame.render_stateful_widget(
@@ -2188,11 +2293,8 @@ fn theme_picker(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn image_surface(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let meta = ImageMeta {
-        label: "preview.png",
-        pixel_width: Some(128),
-        pixel_height: Some(96),
-        protocol: ImageProtocol::Kitty,
-    };
+    let mut meta = ImageMeta::new("preview.png", ImageProtocol::Kitty);
+    meta.pixel_width = Some(128);
+    meta.pixel_height = Some(96);
     frame.render_widget(ImageSurface::new(meta, theme), area);
 }

@@ -20,6 +20,12 @@
 - **Planned at**: commit `16b0ee8`, 2026-08-09
 - **Execution**: BLOCKED — requires maintainer approval for workspace CLI/schema; not shipped
 
+### Evidence (2026-08-09)
+
+- No `registry/` crate or CLI binary in workspace `Cargo.toml` members.
+- Plan STOP: “maintainers explicitly approve adding a workspace CLI crate” — **not granted**.
+- Downstream plans 048–049 re-planned to **not hard-block** on 047 (orthogonal distribution spike).
+
 ## Why this matters
 
 shadcn/ui's distinctive value is source ownership: inspect, copy, adapt, and

@@ -161,6 +161,23 @@ impl DesignTokens {
         DesignSystem { tokens: self }
     }
 
+    /// Panel chrome recipe for single-line borders and title hierarchy.
+    #[must_use]
+    pub fn panel_recipe(&self, emphasis: PanelChrome) -> PanelRecipe {
+        let (border_role, title_role) = match emphasis {
+            PanelChrome::Normal => (Role::Border, Role::TextStrong),
+            PanelChrome::Focused => (Role::BorderFocused, Role::TextStrong),
+            PanelChrome::Danger => (Role::Danger, Role::TextStrong),
+        };
+        PanelRecipe {
+            border: self.theme.style(border_role),
+            title: self.theme.style(title_role),
+            pad_x: self.spacing.pad_x,
+            pad_y: self.spacing.pad_y,
+            surface: self.theme.style(Role::Surface),
+        }
+    }
+
     /// Resolves styles for a **list row** chrome recipe (one vertical slice).
     #[must_use]
     pub fn list_row_recipe(&self, selected: bool, focused: bool, enabled: bool) -> ListRowRecipe {
@@ -196,6 +213,34 @@ impl DesignTokens {
             focus: self.theme.style(Role::Focus),
         }
     }
+}
+
+/// Semantic panel chrome emphasis for recipes (mirrors widget emphasis).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum PanelChrome {
+    /// Inactive / background panel.
+    #[default]
+    Normal,
+    /// Interaction owner.
+    Focused,
+    /// Destructive / risk surface.
+    Danger,
+}
+
+/// Resolved paint plan for a panel chrome surface.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PanelRecipe {
+    /// Single-line border style (weight never encodes focus).
+    pub border: Style,
+    /// Title text style.
+    pub title: Style,
+    /// Horizontal content pad (cells).
+    pub pad_x: u16,
+    /// Vertical content pad (cells).
+    pub pad_y: u16,
+    /// Optional surface fill style.
+    pub surface: Style,
 }
 
 /// Token-driven design system surface (quiet canvas, bright intent).
@@ -236,6 +281,12 @@ impl DesignSystem {
     #[must_use]
     pub fn list_row_recipe(&self, selected: bool, focused: bool, enabled: bool) -> ListRowRecipe {
         self.tokens.list_row_recipe(selected, focused, enabled)
+    }
+
+    /// Panel chrome recipe.
+    #[must_use]
+    pub fn panel_recipe(&self, emphasis: PanelChrome) -> PanelRecipe {
+        self.tokens.panel_recipe(emphasis)
     }
 
     /// Theme borrow.

@@ -4,6 +4,7 @@ pub use crate::interaction::Outcome;
 
 mod action_bar;
 mod agent;
+mod agent_blocks;
 mod charts;
 mod code_block;
 mod command_palette;
@@ -45,6 +46,12 @@ pub use agent::{
     ApprovalRisk, PromptBox, PromptBoxOutcome, PromptBoxState, StreamItem, StreamItemKind,
     StreamView, ThinkingBlock, Timeline, TimelineEvent, TokenMeter, ToolCard, ToolStatus,
 };
+pub use agent_blocks::{
+    ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
+    PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,
+    SessionItem, SessionPicker, SessionPickerOutcome, TaskRail, WorkbenchMode,
+    session_picker_handle_key,
+};
 pub use charts::{BarDatum, BarSeries, MeterSegment, SegmentedMeter, Sparkline};
 pub use code_block::{CodeBlock, PlainSyntax, SyntaxHighlighter};
 pub use command_palette::{CommandPalette, CommandPaletteOutcome, CommandPaletteState};
@@ -53,7 +60,7 @@ pub use completion_menu::{
     CompletionMenuState, place_completion_menu,
 };
 pub use composed_row::{ComposedRow, ComposedRowParts};
-pub use design_inspector::{DesignInspector, DesignInspectorFrame};
+pub use design_inspector::{DesignInspector, DesignInspectorFrame, InspectorPanel};
 pub use detail_table::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState,
 };
@@ -70,7 +77,7 @@ pub use jump_overlay::{
 pub use list::{List, ListRow, ListState, RowRole};
 pub use log_pane::{LogPane, LogPaneState};
 pub use markdown::{MarkdownBlock, MarkdownBlockKind, MarkdownView, project_plain_lines};
-pub use panel::{Panel, PanelEmphasis};
+pub use panel::{Panel, PanelEmphasis, PanelSlots};
 pub use picker::{Picker, PickerOutcome, PickerState};
 pub use progress::{Progress, ProgressKind};
 pub use selection::Selection;

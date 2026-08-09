@@ -220,13 +220,14 @@ fn layout_node(node: &WorkspaceNode, area: Rect, state: &WorkspaceState, out: &m
             let ratio = state.root_ratio_percent.unwrap_or(*ratio_percent).min(100);
             let (a, b) = split_area(area, *axis, ratio);
             // Pressure: if fixed mins cannot fit, collapse lower priority leaf.
+            // Only recurse when a new collapse is applied — otherwise we would
+            // stack-overflow when every candidate is already collapsed.
             if !fits(area, first, second, *axis)
                 && let Some(victim) = lower_priority_leaf(first, second)
+                && !state.is_collapsed(&victim)
             {
                 let mut forced = state.clone();
-                if !forced.is_collapsed(&victim) {
-                    forced.collapsed.push(victim);
-                }
+                forced.collapsed.push(victim);
                 layout_node(node, area, &forced, out);
                 return;
             }

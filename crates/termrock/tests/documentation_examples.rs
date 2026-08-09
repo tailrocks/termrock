@@ -34,16 +34,26 @@ fn list_documentation_example() {
         ListRow {
             id: "a",
             label: Line::from("Alpha"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: "b",
             label: Line::from("Beta"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
     ];
     let _widget = List::new(&rows, &tokens);

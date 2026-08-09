@@ -13,7 +13,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{Role, Theme},
+    style::{Density, DesignTokens, Role, Theme},
     text::{display_cols, take_display_cols},
     widgets::{Panel, PanelEmphasis, TextArea, TextAreaOutcome, TextAreaState},
 };
@@ -270,10 +270,12 @@ impl<'a> ToolCard<'a> {
 
 impl Widget for &ToolCard<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
+        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
+
         if area.is_empty() {
             return;
         }
-        let panel = Panel::new(self.theme).emphasis(match self.status {
+        let panel = Panel::new(&panel_tokens).emphasis(match self.status {
             ToolStatus::Error => PanelEmphasis::Danger,
             ToolStatus::Running => PanelEmphasis::Focused,
             _ => PanelEmphasis::Normal,
@@ -588,6 +590,8 @@ impl StatefulWidget for &ApprovalCard<'_> {
     type State = ApprovalCardState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
+
         state.decision_regions.clear();
         if area.is_empty() {
             return;
@@ -596,7 +600,9 @@ impl StatefulWidget for &ApprovalCard<'_> {
             ApprovalRisk::High => PanelEmphasis::Danger,
             _ => PanelEmphasis::Focused,
         };
-        let panel = Panel::new(self.theme).title(self.title).emphasis(emphasis);
+        let panel = Panel::new(&panel_tokens)
+            .title(self.title)
+            .emphasis(emphasis);
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
         if inner.is_empty() {

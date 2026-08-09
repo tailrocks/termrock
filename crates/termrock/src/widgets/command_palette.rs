@@ -96,7 +96,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CommandPalette<'_, Id> {
         if area.is_empty() {
             return;
         }
-        let panel = Panel::new(&self.tokens.theme)
+        let panel = Panel::new(self.tokens)
             .title(self.title)
             .emphasis(PanelEmphasis::Focused);
         let inner = panel.inner(area);
@@ -122,20 +122,11 @@ mod tests {
     use ratatui_core::text::Line;
 
     use super::*;
-    use crate::{
-        input::{KeyCode, KeyModifiers},
-        widgets::RowRole,
-    };
+    use crate::input::{KeyCode, KeyModifiers};
 
     #[test]
     fn activation_maps_from_picker() {
-        let rows = [ListRow {
-            id: "quit",
-            label: Line::from("Quit"),
-            trailing: None,
-            enabled: true,
-            role: RowRole::Item,
-        }];
+        let rows = [ListRow::item("quit", Line::from("Quit"))];
         let mut state = CommandPaletteState::new(Some("quit"));
         let key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
         assert_eq!(

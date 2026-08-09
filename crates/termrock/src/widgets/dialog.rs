@@ -10,7 +10,7 @@ use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::{HitRegion, Outcome},
-    style::Theme,
+    style::{Density, DesignTokens, Theme},
 };
 
 use super::{
@@ -246,7 +246,8 @@ impl<'a> Dialog<'a> {
 impl Widget for &Dialog<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         Clear.render(area, buffer);
-        let panel = Panel::new(self.theme)
+        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let panel = Panel::new(&tokens)
             .title(self.title)
             .emphasis(self.emphasis);
         Paragraph::new(self.body.clone())

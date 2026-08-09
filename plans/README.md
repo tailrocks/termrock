@@ -26,7 +26,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [045](045-composed-row-panel-anatomy.md) | Priority-aware row/panel anatomy | P2 | M | DONE | 041, 043 | 0039 |
 | [046](046-agent-workbench-flagship.md) | Agent Workbench flagship | P2 | L | DONE | 039–045 | 0040 |
 | [047](047-source-registry-cli-spike.md) | Safe source-registry CLI spike | P3 | L | BLOCKED | 046 + approval | — |
-| [048](048-lookbook-studio-inspector.md) | Lookbook → executable Studio | P3 | L | DONE | 040, 043–047 | 0041 |
+| [048](048-lookbook-studio-inspector.md) | Lookbook → executable Studio | P3 | L | DONE | 040, 043–046 | 0041 |
 | [049](049-capability-aware-preview-host.md) | Capability-aware preview/media host | P3 | L | DONE | 042–043, 048 | 0042 |
 | [050](050-terminal-native-primitives.md) | Primitives, content, and feedback | P2 | L | TODO | 043, 045, 048–049 | 0043 |
 | [051](051-controls-navigation-overlays.md) | Controls, navigation, and overlays | P2 | L | TODO | 040, 043–045, 048, 050 | 0044 |

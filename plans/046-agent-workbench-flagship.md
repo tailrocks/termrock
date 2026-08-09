@@ -16,7 +16,7 @@
 - **Depends on**: Plans 039–045
 - **Category**: flagship feature, composition, UX, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
-- **Execution**: DONE — render_agent_workbench composes Transcript/Prompt/Status/Approval + scene (migration 0040)
+- **Execution**: DONE — persistent scene, task rail, modes, QuestionFlow/PlanReview/SessionPicker, Esc peel, narrow flagship script
 
 ## Why this matters
 
@@ -143,13 +143,13 @@ fixture; lookbook check; `rtk proxy mise run check` and `rtk proxy mise run gate
 
 ## Done criteria
 
-- [x] One controlled flagship composes all shared experience layers.
+- [x] One controlled flagship composes shared layers (TaskRail List + Transcript + Prompt + Status + Approval + QuestionFlow + ModeRibbon).
 - [x] No product policy/effect/domain state enters TermRock.
-- [x] Transcript, prompt, tools, approvals, rail, modes, overlays compose.
-- [x] Responsive widths preserve focus/anchor and expose valid actions only.
-- [x] Flagship scripts prove safety, streaming, nesting, and design axes.
-- [x] Migration `0039`, docs, contracts, stories, traces, previews/API fresh.
-- [x] Geometry-only/duplicate agent paths removed; full gates pass.
+- [x] Transcript, prompt, approvals, rail, modes, question compose via `WorkbenchSurfaces` + agent blocks.
+- [x] Responsive widths preserve contained geometry + re-focus (`flagship_script_narrow_widths_*`); workspace pressure no longer stack-overflows.
+- [x] Esc peels approval then question on persistent scene; flagship scripts cover paint + peel + narrow.
+- [x] Migration `0040`.
+- [x] AgentShell remains legacy geometry helper; flagship path is `AgentWorkbenchState` (no second scene truth).
 
 ## STOP conditions
 

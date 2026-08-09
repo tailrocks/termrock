@@ -346,9 +346,14 @@ mod tests {
             .map(|id| ListRow {
                 id: *id,
                 label: Line::from(*id),
+                leading: None,
+                secondary: None,
+                badge: None,
+                shortcut: None,
                 trailing: None,
                 role: RowRole::Item,
                 enabled: true,
+                loading: false,
             })
             .collect()
     }
@@ -383,17 +388,27 @@ mod tests {
             ListRow {
                 id: "separator",
                 label: Line::from("Group"),
+                leading: None,
+                secondary: None,
+                badge: None,
+                shortcut: None,
                 trailing: None,
                 role: RowRole::Separator,
                 enabled: true,
+                loading: false,
             },
         );
         visible.push(ListRow {
             id: "disabled",
             label: Line::from("Disabled"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: false,
+            loading: false,
         });
         let mut state = PickerState::new(Some("missing"));
         state.reconcile(&visible);

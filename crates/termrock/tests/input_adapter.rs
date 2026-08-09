@@ -81,9 +81,14 @@ fn neutral_mouse_event_drives_list_activation() {
     let rows = [ListRow {
         id: "entry",
         label: Line::from("Entry"),
+        leading: None,
+        secondary: None,
+        badge: None,
+        shortcut: None,
         trailing: None,
         role: RowRole::Item,
         enabled: true,
+        loading: false,
     }];
     let list = List::new(&rows, &tokens);
     let area = Rect::new(0, 0, 12, 1);
@@ -117,9 +122,14 @@ fn unknown_is_inert_in_widgets() {
     let rows = [ListRow {
         id: 1,
         label: Line::from("one"),
+        leading: None,
+        secondary: None,
+        badge: None,
+        shortcut: None,
         trailing: None,
         role: RowRole::Item,
         enabled: true,
+        loading: false,
     }];
     let mut list = ListState::new(Some(1));
     let actions = [Action {
@@ -145,9 +155,14 @@ fn release_events_are_ignored() {
     let rows = [ListRow {
         id: 1,
         label: Line::from("one"),
+        leading: None,
+        secondary: None,
+        badge: None,
+        shortcut: None,
         trailing: None,
         role: RowRole::Item,
         enabled: true,
+        loading: false,
     }];
     let mut list = ListState::new(Some(1));
     let actions = [Action {

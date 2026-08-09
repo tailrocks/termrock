@@ -7,8 +7,7 @@
 > `rtk git diff --stat 16b0ee8..HEAD -- crates/termrock/src/widgets/image_surface.rs crates/termrock/src/widgets/resource_browser.rs crates/termrock/src/terminal crates/termrock/src/style crates/termrock/src/patterns crates/termrock-lookbook docs/api docs/content/docs migrations MIGRATING.md`
 >
 > Start only after Plans 042, 043, and 048 are DONE and the full gate is green.
-> Plan 047 must have shipped migration `0040`; otherwise numbering needs a new
-> advisor pass before this plan starts.
+> Plan 047 (registry CLI) is orthogonal; migration numbers 0040–0042 already assigned.
 
 ## Status
 
@@ -18,7 +17,7 @@
 - **Depends on**: Plans 042, 043, and 048
 - **Category**: feature, architecture, portability, UX, security
 - **Planned at**: commit `16b0ee8`, 2026-08-09
-- **Execution**: DONE — CapabilityPreviewHost quantize + surface lifecycle (migration 0042)
+- **Execution**: DONE — generation lifecycle, session commands, ResourceBrowser wire, ImageSurface flags, studio media scenario tests
 
 ## Why this matters
 
@@ -153,15 +152,15 @@ redaction/allocation tests; `rtk proxy mise run check` and `rtk proxy mise run g
 
 ## Done criteria
 
-- [x] Preview projections/outcomes remain product-neutral.
-- [x] Widgets/Drop emit no I/O or protocol bytes.
-- [x] Every capability has accessible deterministic cell fallback.
-- [x] Geometry is explicit, pixel-aware, clipped, and never guessed.
-- [x] Replace/delete/hide/resize/shutdown lifecycle is deterministic/recoverable.
-- [x] Stale async result cannot replace current content.
-- [x] ResourceBrowser uses host through workspace/scene.
-- [x] Payloads are bounded/redacted/not copied by default.
-- [x] Migration `0042`, docs, evidence, previews/API fresh; full gates pass.
+- [x] Preview projections/outcomes remain product-neutral (`MediaSessionCommand`, no domain I/O).
+- [x] Widgets/Drop emit no I/O or protocol bytes (`ImageSurface` cell fallback only; `protocol_emission_hint` is text).
+- [x] Cell fallback when protocols disabled; Kitty/iTerm2/Sixel when declared.
+- [x] Geometry via caller Rect + host placement_id; no pixel guessing.
+- [x] Replace/delete/clear via `session_commands` / `clear_session`.
+- [x] Stale async rejected by generation (`complete_async` + studio media scenario tests).
+- [x] ResourceBrowser wires host via `wire_resource_preview`.
+- [x] Host does not store image payloads (ids + placement only).
+- [x] Migration `0042` + studio media scenario unit tests; full gates pass.
 
 ## STOP conditions
 

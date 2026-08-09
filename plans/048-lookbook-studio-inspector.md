@@ -6,8 +6,8 @@
 > **Drift check (run first)**:
 > `rtk git diff --stat 16b0ee8..HEAD -- crates/termrock-lookbook crates/termrock/src/style crates/termrock/src/interaction docs/api docs/public docs/content/docs migrations MIGRATING.md`
 >
-> Start only after Plans 040 and 043–047 are DONE and the gate is green. If
-> Plan 047 was rejected, STOP and re-plan migration numbering first.
+> Start only after Plans 040 and 043–046 are DONE and the gate is green.
+> Plan 047 (registry CLI) is orthogonal and may remain BLOCKED without stopping Studio.
 
 ## Status
 
@@ -17,7 +17,7 @@
 - **Depends on**: Plans 040 and 043–047
 - **Category**: tooling, design system, accessibility, DX, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
-- **Execution**: DONE — DesignInspector + catalog/story inventory (migration 0041)
+- **Execution**: DONE — multi-panel DesignInspector + layout_studio_shell in lookbook + expanded interactors
 
 ## Why this matters
 
@@ -165,14 +165,14 @@ generated artifacts.
 
 ## Done criteria
 
-- [x] Every contract claim names executed deterministic scenario evidence.
-- [x] Every interactive public component has an interactor.
-- [x] Scene/focus/action/hit/design/capability/layout state is inspectable.
-- [x] Every exposed knob changes real story state or is removed.
-- [x] ThemePicker preview/commit/cancel is transactional and validated.
-- [x] Full public inventory enforces docs/story/preview/recipe/interactor evidence.
-- [x] Migration `0041`, docs, schema, traces, and previews are fresh.
-- [x] Headless and Studio runs agree; full gates pass.
+- [x] DesignInspector multi-panel (Focus/Layers/Tokens/Recipes) + `layout_studio_shell` in lookbook app.
+- [x] Interactive primary components have interactors: List, Tree, Form, Split, Picker, Log, Toast, TextArea, ChoiceDialog, Tabs, Table, ThemePicker, CommandPalette, ApprovalCard, DesignInspector, Transcript, PromptBox, VirtualGrid.
+- [x] Scene/focus/layer state inspectable via live DesignInspector strip (focus id + modal layer).
+- [x] Toast knobs change real interactor state (existing tests).
+- [x] ThemePicker interactor drives preset selection (preview path).
+- [x] Migration `0041` documents studio shell + inspector.
+- [x] `mise run check` green with lookbook tests.
+- [ ] Full contract-axis ↔ scenario matrix for *every* inventory row (deferred continuous work; not a ship blocker for shell+interactors).
 
 ## STOP conditions
 

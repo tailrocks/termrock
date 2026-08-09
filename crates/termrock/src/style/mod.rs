@@ -29,10 +29,14 @@ use palette::{
     TAB_BG_INACTIVE as TAB_BG_INACTIVE_RGB, TAB_BG_INACTIVE_HOVER as TAB_BG_INACTIVE_HOVER_RGB,
     WARNING_YELLOW as WARNING_YELLOW_RGB, WHITE as WHITE_RGB,
 };
-pub use preview_host::{CapabilityPreviewHost, PreviewSurface, PreviewSurfaceKind};
+pub use preview_host::{
+    CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
+    PreviewSurfaceKind,
+};
 pub use quantize::{ColorCapability, quantize_color, quantize_theme, rgb_to_xterm256};
 pub use tokens::{
-    DesignSystem, DesignTokens, GlyphSet, ListRowRecipe, SelectionChrome, SpacingScale,
+    DesignSystem, DesignTokens, GlyphSet, ListRowRecipe, PanelChrome, PanelRecipe, SelectionChrome,
+    SpacingScale,
 };
 
 #[must_use]

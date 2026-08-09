@@ -1,7 +1,15 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! Token-driven panel chrome with priority-aware title slots.
+//!
+//! Border *weight* never encodes focus — only semantic theme roles do.
+
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Span, widgets::Widget};
 use ratatui_widgets::block::Block;
 
-use crate::style::{DesignTokens, Role, Theme};
+use crate::style::{DesignTokens, PanelChrome, PanelRecipe, Theme};
+use crate::text::display_cols;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -15,37 +23,156 @@ pub enum PanelEmphasis {
     Danger,
 }
 
+impl PanelEmphasis {
+    /// Maps to design-token panel chrome.
+    #[must_use]
+    pub const fn chrome(self) -> PanelChrome {
+        match self {
+            Self::Normal => PanelChrome::Normal,
+            Self::Focused => PanelChrome::Focused,
+            Self::Danger => PanelChrome::Danger,
+        }
+    }
+}
+
+/// Priority-ordered title/footer slots for one-line panel chrome.
+///
+/// Narrow drop order: footer → trailing → subtitle → leading → title (last).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct PanelSlots<'a> {
+    /// Primary title (survives longest under contraction).
+    pub title: Option<&'a str>,
+    /// Secondary title text after the primary.
+    pub subtitle: Option<&'a str>,
+    /// Leading status glyph/text before the title.
+    pub leading: Option<&'a str>,
+    /// Trailing badge/action label on the title line.
+    pub trailing: Option<&'a str>,
+    /// Footer hint/status on the bottom border.
+    pub footer: Option<&'a str>,
+}
+
+impl<'a> PanelSlots<'a> {
+    /// Resolves which slots survive at the available title width.
+    #[must_use]
+    pub fn for_width(self, width: u16) -> Self {
+        let mut slots = self;
+        // Drop order: footer → trailing → subtitle → leading → title.
+        if width < 24 {
+            slots.footer = None;
+        }
+        if width < 20 {
+            slots.trailing = None;
+        }
+        if width < 14 {
+            slots.subtitle = None;
+        }
+        if width < 10 {
+            slots.leading = None;
+        }
+        slots
+    }
+
+    /// Formats the top title span content (without outer spaces).
+    #[must_use]
+    pub fn title_text(self) -> Option<String> {
+        if self.title.is_none()
+            && self.leading.is_none()
+            && self.subtitle.is_none()
+            && self.trailing.is_none()
+        {
+            return None;
+        }
+        let mut parts = Vec::new();
+        if let Some(leading) = self.leading {
+            parts.push(leading.trim().to_string());
+        }
+        if let Some(title) = self.title {
+            parts.push(title.trim().to_string());
+        }
+        if let Some(subtitle) = self.subtitle {
+            parts.push(format!("· {}", subtitle.trim()));
+        }
+        if let Some(trailing) = self.trailing {
+            parts.push(format!("[{}]", trailing.trim()));
+        }
+        let text = parts.join(" ");
+        if text.is_empty() { None } else { Some(text) }
+    }
+}
+
 #[derive(Debug, Clone)]
-/// A themed bordered container for product-owned content.
+/// A bordered container painted through [`DesignTokens`] recipes.
 pub struct Panel<'a> {
-    title: Option<&'a str>,
+    slots: PanelSlots<'a>,
     emphasis: PanelEmphasis,
     style: Option<Style>,
-    theme: &'a Theme,
+    tokens: &'a DesignTokens,
 }
 
 impl<'a> Panel<'a> {
+    /// Creates an untitled panel from design tokens (canonical constructor).
     #[must_use]
-    /// Creates an untitled panel with normal emphasis.
-    pub const fn new(theme: &'a Theme) -> Self {
+    pub const fn new(tokens: &'a DesignTokens) -> Self {
         Self {
-            title: None,
+            slots: PanelSlots {
+                title: None,
+                subtitle: None,
+                leading: None,
+                trailing: None,
+                footer: None,
+            },
             emphasis: PanelEmphasis::Normal,
             style: None,
-            theme,
+            tokens,
         }
     }
 
-    /// Creates a panel driven by design tokens (canonical design input).
+    /// Alias for [`Self::new`].
     #[must_use]
     pub const fn from_tokens(tokens: &'a DesignTokens) -> Self {
-        Self::new(&tokens.theme)
+        Self::new(tokens)
     }
 
     #[must_use]
     /// Sets the optional visible title.
     pub const fn title(mut self, title: &'a str) -> Self {
-        self.title = Some(title);
+        self.slots.title = Some(title);
+        self
+    }
+
+    #[must_use]
+    /// Sets the optional subtitle (drops before title under narrow pressure).
+    pub const fn subtitle(mut self, subtitle: &'a str) -> Self {
+        self.slots.subtitle = Some(subtitle);
+        self
+    }
+
+    #[must_use]
+    /// Sets leading status chrome on the title line.
+    pub const fn leading(mut self, leading: &'a str) -> Self {
+        self.slots.leading = Some(leading);
+        self
+    }
+
+    #[must_use]
+    /// Sets trailing badge/action text on the title line.
+    pub const fn trailing(mut self, trailing: &'a str) -> Self {
+        self.slots.trailing = Some(trailing);
+        self
+    }
+
+    #[must_use]
+    /// Sets footer hint on the bottom border (drops first under narrow pressure).
+    pub const fn footer(mut self, footer: &'a str) -> Self {
+        self.slots.footer = Some(footer);
+        self
+    }
+
+    #[must_use]
+    /// Replaces all panel slots at once.
+    pub const fn slots(mut self, slots: PanelSlots<'a>) -> Self {
+        self.slots = slots;
         self
     }
 
@@ -57,46 +184,120 @@ impl<'a> Panel<'a> {
     }
 
     #[must_use]
-    /// Overrides the theme-derived panel style.
+    /// Overrides the recipe border style.
     pub const fn style(mut self, style: Style) -> Self {
         self.style = Some(style);
         self
     }
 
+    /// Resolves the panel recipe for current emphasis.
     #[must_use]
-    /// Builds the surrounding block from the current title, emphasis, and style.
+    pub fn recipe(&self) -> PanelRecipe {
+        self.tokens.panel_recipe(self.emphasis.chrome())
+    }
+
+    /// Theme borrow from tokens.
+    #[must_use]
+    pub const fn theme(&self) -> &Theme {
+        &self.tokens.theme
+    }
+
+    /// Slot projection after contraction for a given outer width.
+    #[must_use]
+    pub fn slots_for_width(&self, width: u16) -> PanelSlots<'a> {
+        // Border corners consume 2 cells; title padding uses ~2 more.
+        self.slots.for_width(width.saturating_sub(4))
+    }
+
+    #[must_use]
+    /// Builds the surrounding block from the recipe (single-line border only).
     pub fn block(&self) -> Block<'a> {
-        let role = match self.emphasis {
-            PanelEmphasis::Normal => Role::Border,
-            PanelEmphasis::Focused => Role::BorderFocused,
-            PanelEmphasis::Danger => Role::Danger,
-        };
-        let mut block =
-            Block::bordered().border_style(self.style.unwrap_or(self.theme.style(role)));
-        if let Some(title) = self.title {
-            block = block.title(Span::styled(
-                format!(" {} ", title.trim()),
-                self.theme.style(Role::TextStrong),
-            ));
+        // Unknown width at block-build time: keep all slots; render path may
+        // re-resolve. Consumers painting with known width should use
+        // [`Self::block_for_width`].
+        self.block_for_width(u16::MAX)
+    }
+
+    /// Builds chrome contracted to the available outer width.
+    #[must_use]
+    pub fn block_for_width(&self, width: u16) -> Block<'a> {
+        let recipe = self.recipe();
+        let border = self.style.unwrap_or(recipe.border);
+        let mut block = Block::bordered().border_style(border);
+        let slots = self.slots_for_width(width);
+        if let Some(title) = slots.title_text() {
+            // Clamp title display width roughly for very narrow frames.
+            let budget = width.saturating_sub(4).max(1);
+            let clipped = if display_cols(&title) > usize::from(budget) {
+                // Keep start of primary title text.
+                title
+                    .chars()
+                    .take(usize::from(budget.saturating_sub(1)))
+                    .collect::<String>()
+                    + "…"
+            } else {
+                title
+            };
+            block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
+        }
+        if let Some(footer) = slots.footer {
+            block = block.title_bottom(Span::styled(format!(" {} ", footer.trim()), recipe.title));
         }
         block
     }
 
     #[must_use]
-    /// Returns the content rectangle inside dialog chrome.
+    /// Returns the content rectangle inside panel chrome.
     pub fn inner(&self, area: Rect) -> Rect {
-        self.block().inner(area)
+        self.block_for_width(area.width).inner(area)
     }
 }
 
 impl Widget for &Panel<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.block().render(area, buffer);
+        self.block_for_width(area.width).render(area, buffer);
     }
 }
 
 impl Widget for Panel<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         <&Self as Widget>::render(&self, area, buffer);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn panel_recipe_focus_uses_border_focused_not_weight() {
+        let tokens = DesignTokens::default();
+        let normal = tokens.panel_recipe(PanelChrome::Normal);
+        let focused = tokens.panel_recipe(PanelChrome::Focused);
+        assert_ne!(normal.border, focused.border);
+        let panel = Panel::new(&tokens)
+            .emphasis(PanelEmphasis::Focused)
+            .title("T");
+        assert_eq!(panel.recipe().border, focused.border);
+    }
+
+    #[test]
+    fn panel_slots_drop_trailing_before_title() {
+        let tokens = DesignTokens::default();
+        let panel = Panel::new(&tokens)
+            .title("Main")
+            .subtitle("sub")
+            .leading("*")
+            .trailing("act")
+            .footer("hint");
+        let wide = panel.slots_for_width(80);
+        assert!(wide.footer.is_some());
+        assert!(wide.trailing.is_some());
+        let mid = panel.slots_for_width(18);
+        assert!(mid.trailing.is_none());
+        assert_eq!(mid.title, Some("Main"));
+        let tiny = panel.slots_for_width(8);
+        assert!(tiny.leading.is_none());
+        assert_eq!(tiny.title, Some("Main"));
     }
 }

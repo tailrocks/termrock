@@ -10,11 +10,16 @@ mod agent_shell;
 mod agent_workbench;
 mod ops_dashboard;
 mod resource_browser;
+mod studio_shell;
 
 pub use agent_shell::{AgentShellLayout, AgentShellSlots, layout_agent_shell};
 pub use agent_workbench::{
-    WorkbenchPane, WorkbenchSurfaces, agent_workbench_layout, register_workbench_scene,
-    render_agent_workbench,
+    AgentWorkbenchState, WorkbenchModals, WorkbenchPane, WorkbenchSurfaces, agent_workbench_layout,
+    default_modes, empty_task_row, register_workbench_scene, render_agent_workbench,
+    sync_workbench_scene,
 };
 pub use ops_dashboard::{OpsDashboardLayout, OpsDashboardSlots, layout_ops_dashboard};
-pub use resource_browser::{ResourceBrowserLayout, ResourceBrowserSlots, layout_resource_browser};
+pub use resource_browser::{
+    ResourceBrowserLayout, ResourceBrowserSlots, layout_resource_browser, wire_resource_preview,
+};
+pub use studio_shell::{StudioShellLayout, StudioShellSlots, layout_studio_shell};

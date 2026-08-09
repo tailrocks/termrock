@@ -62,6 +62,8 @@ fn warmed_large_table_paints_only_the_viewport_without_allocating() {
         .map(|(id, cells)| TableRow {
             id,
             cells,
+            leading: None,
+            badge: None,
             enabled: true,
             emphasis: false,
             style: None,

@@ -103,6 +103,10 @@ pub struct TableRow<'a, Id> {
     pub id: Id,
     /// Styled cells in column order.
     pub cells: &'a [Line<'a>],
+    /// Optional leading status/icon painted before the first cell.
+    pub leading: Option<Line<'a>>,
+    /// Optional trailing badge after the last cell (composed badge).
+    pub badge: Option<Line<'a>>,
     /// Whether selection, activation, and pointer input may reach this row.
     pub enabled: bool,
     /// Whether ordinary rendering uses the semantic accent role.
@@ -118,9 +122,37 @@ impl<'a, Id> TableRow<'a, Id> {
         Self {
             id,
             cells,
+            leading: None,
+            badge: None,
             enabled: true,
             emphasis: false,
             style: None,
+        }
+    }
+
+    /// Projects identity anatomy for narrow / status chrome.
+    #[must_use]
+    pub fn composed(&self) -> super::ComposedRow<'a, ()>
+    where
+        Id: Clone,
+    {
+        let primary = self
+            .cells
+            .first()
+            .cloned()
+            .unwrap_or_else(|| Line::from(""));
+        super::ComposedRow {
+            id: (),
+            leading: self.leading.clone(),
+            primary,
+            secondary: self.cells.get(1).cloned(),
+            badge: self
+                .badge
+                .clone()
+                .or_else(|| self.cells.last().filter(|_| self.cells.len() > 2).cloned()),
+            shortcut: None,
+            enabled: self.enabled,
+            loading: false,
         }
     }
 
@@ -726,9 +758,42 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 usize::from(MARKER_WIDTH),
                 style,
             );
+            // Shared contraction grammar without allocating Line clones on the
+            // warm paint path (badge/leading only — cells stay borrowed).
+            let show_leading = row.leading.is_some() && area.width >= 10;
+            let show_badge = row.badge.is_some() && area.width >= 14;
             let mut x = area.x.saturating_add(MARKER_WIDTH);
+            if show_leading && let Some(leading) = row.leading.as_ref() {
+                let lw = u16::try_from(leading.width())
+                    .unwrap_or(u16::MAX)
+                    .min(area.right().saturating_sub(x));
+                if lw > 0 {
+                    buffer.set_line(x, y, leading, lw);
+                    buffer.set_style(Rect::new(x, y, lw, 1), style);
+                    x = x.saturating_add(lw).saturating_add(1);
+                }
+            }
+            let badge_reserve = if show_badge {
+                row.badge
+                    .as_ref()
+                    .map(|b| {
+                        u16::try_from(b.width())
+                            .unwrap_or(u16::MAX)
+                            .saturating_add(1)
+                    })
+                    .unwrap_or(0)
+                    .min(area.right().saturating_sub(x))
+            } else {
+                0
+            };
+            let columns_right = area.right().saturating_sub(badge_reserve);
             for (visible_index, column_index) in state.visible_columns.iter().copied().enumerate() {
-                let rect = Rect::new(x, y, state.resolved_widths[column_index], 1);
+                if x >= columns_right {
+                    break;
+                }
+                let width =
+                    state.resolved_widths[column_index].min(columns_right.saturating_sub(x));
+                let rect = Rect::new(x, y, width, 1);
                 if let Some(value) = row.cells.get(column_index) {
                     render_line(
                         value,
@@ -744,6 +809,16 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 x = x.saturating_add(rect.width);
                 if visible_index + 1 < state.visible_columns.len() {
                     x = x.saturating_add(self.column_gap);
+                }
+            }
+            if show_badge && let Some(badge) = row.badge.as_ref() {
+                let bw = u16::try_from(badge.width())
+                    .unwrap_or(u16::MAX)
+                    .min(area.width);
+                if bw > 0 {
+                    let bx = area.right().saturating_sub(bw);
+                    buffer.set_line(bx, y, badge, bw);
+                    buffer.set_style(Rect::new(bx, y, bw, 1), style);
                 }
             }
             if owns_id && row.enabled {
@@ -1109,6 +1184,8 @@ mod tests {
             TableRow {
                 id: 1,
                 cells: &cells[0],
+                leading: None,
+                badge: None,
                 enabled: true,
                 emphasis: false,
                 style: None,
@@ -1116,6 +1193,8 @@ mod tests {
             TableRow {
                 id: 2,
                 cells: &cells[1],
+                leading: None,
+                badge: None,
                 enabled: false,
                 emphasis: false,
                 style: None,
@@ -1123,6 +1202,8 @@ mod tests {
             TableRow {
                 id: 3,
                 cells: &cells[2],
+                leading: None,
+                badge: None,
                 enabled: true,
                 emphasis: true,
                 style: None,
@@ -1130,6 +1211,8 @@ mod tests {
             TableRow {
                 id: 4,
                 cells: &cells[3],
+                leading: None,
+                badge: None,
                 enabled: true,
                 emphasis: false,
                 style: None,

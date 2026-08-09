@@ -13,7 +13,7 @@ use crate::{
     style::{DesignTokens, Role},
 };
 
-use super::Selection;
+use super::{ComposedRow, Selection};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -34,7 +34,15 @@ pub struct TreeNode<'a, Id> {
     pub id: Id,
     /// Caller-visible label.
     pub label: Line<'a>,
-    /// Optional metadata aligned at the trailing edge.
+    /// Optional leading status/icon (composed leading).
+    pub leading: Option<Line<'a>>,
+    /// Optional secondary metadata (composed secondary).
+    pub secondary: Option<Line<'a>>,
+    /// Optional badge (composed badge; preferred over trailing when both set).
+    pub badge: Option<Line<'a>>,
+    /// Optional keyboard shortcut hint.
+    pub shortcut: Option<&'a str>,
+    /// Optional metadata aligned at the trailing edge (maps to badge when badge unset).
     pub trailing: Option<Line<'a>>,
     /// Zero-based hierarchy depth.
     pub depth: u16,
@@ -46,6 +54,43 @@ pub struct TreeNode<'a, Id> {
     pub enabled: bool,
     /// Optional loading or error state.
     pub status: TreeNodeStatus,
+}
+
+impl<'a, Id> TreeNode<'a, Id> {
+    /// Creates a ready leaf/branch node with empty optional anatomy.
+    #[must_use]
+    pub fn new(id: Id, label: Line<'a>, depth: u16) -> Self {
+        Self {
+            id,
+            label,
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            depth,
+            branch: false,
+            expanded: false,
+            enabled: true,
+            status: TreeNodeStatus::Ready,
+        }
+    }
+
+    /// Projects hierarchy chrome + label into shared composed anatomy.
+    #[must_use]
+    pub fn composed(&self) -> ComposedRow<'a, ()> {
+        ComposedRow {
+            id: (),
+            leading: self.leading.clone(),
+            primary: self.label.clone(),
+            secondary: self.secondary.clone(),
+            badge: self.badge.clone().or_else(|| self.trailing.clone()),
+            shortcut: self.shortcut,
+            enabled: self.enabled,
+            // Loading/error use status suffix paint (colorless text), not leading ellipsis.
+            loading: false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -482,17 +527,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             width: area.width.saturating_sub(u16::from(show_scrollbar)),
             ..area
         };
-        let trailing_width = self
-            .nodes
-            .iter()
-            .filter_map(|node| node.trailing.as_ref())
-            .map(Line::width)
-            .max()
-            .and_then(|width| u16::try_from(width).ok())
-            .unwrap_or(0)
-            .min(content_area.width);
-        let trailing_x = content_area.right().saturating_sub(trailing_width);
-
         for (visible, node) in self
             .nodes
             .iter()
@@ -569,46 +603,151 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 }
             }
             let label_x = check_x.saturating_add(u16::from(state.selection.is_some()) * 4);
+            // Colorless status suffixes; composed anatomy owns label/badge/shortcut.
             let status = match node.status {
                 TreeNodeStatus::Ready => None,
                 TreeNodeStatus::Loading => Some(" loading"),
                 TreeNodeStatus::Error => Some(" error"),
             };
-            let metadata_gap = u16::from(trailing_width > 0);
-            let status_end = trailing_x.saturating_sub(metadata_gap);
-            let status_width = status
+            let status_w = status
                 .map(crate::text::display_cols)
                 .and_then(|width| u16::try_from(width).ok())
-                .filter(|width| status_end.saturating_sub(*width) >= label_x)
                 .unwrap_or(0);
-            let used = label_x.saturating_sub(content_area.x);
-            if used < content_area.width {
-                let label_end = status_end.saturating_sub(status_width);
-                buffer.set_line(label_x, y, &node.label, label_end.saturating_sub(label_x));
-            }
-            if let Some(status) = status
-                && status_width > 0
-            {
-                buffer.set_stringn(
-                    status_end.saturating_sub(status_width),
-                    y,
-                    status,
-                    usize::from(status_width),
-                    style,
-                );
-            }
-            if let Some(trailing) = node.trailing.as_ref()
-                && trailing_width > 0
-            {
-                let width = u16::try_from(trailing.width())
-                    .unwrap_or(u16::MAX)
-                    .min(trailing_width);
-                buffer.set_line(
-                    content_area.right().saturating_sub(width),
-                    y,
-                    trailing,
-                    width,
-                );
+            if label_x < content_area.right() {
+                let content_w = content_area
+                    .right()
+                    .saturating_sub(label_x)
+                    .saturating_sub(status_w);
+                // Zero-copy contraction: borrow fields; no Line clones (hot path).
+                // Fit-based: keep trailing badge whenever it still fits next to
+                // a one-cell primary identity (mirrors ComposedRow budgets).
+                let badge = node.badge.as_ref().or(node.trailing.as_ref());
+                let badge_need = badge
+                    .map(|b| {
+                        u16::try_from(b.width())
+                            .unwrap_or(u16::MAX)
+                            .saturating_add(2)
+                    })
+                    .unwrap_or(0);
+                let shortcut_need = node
+                    .shortcut
+                    .map(|s| {
+                        u16::try_from(crate::text::display_cols(s))
+                            .unwrap_or(u16::MAX)
+                            .saturating_add(2)
+                    })
+                    .unwrap_or(0);
+                let leading_need = node
+                    .leading
+                    .as_ref()
+                    .map(|l| {
+                        u16::try_from(l.width())
+                            .unwrap_or(u16::MAX)
+                            .saturating_add(1)
+                    })
+                    .unwrap_or(0);
+                let secondary_need = node
+                    .secondary
+                    .as_ref()
+                    .map(|s| {
+                        u16::try_from(s.width())
+                            .unwrap_or(u16::MAX)
+                            .saturating_add(1)
+                    })
+                    .unwrap_or(0);
+                let mut budget = content_w.saturating_sub(1); // primary min
+                let show_shortcut = node.shortcut.is_some() && budget >= shortcut_need;
+                if show_shortcut {
+                    budget = budget.saturating_sub(shortcut_need);
+                }
+                let show_badge = badge.is_some() && budget >= badge_need;
+                if show_badge {
+                    budget = budget.saturating_sub(badge_need);
+                }
+                let show_secondary = node.secondary.is_some() && budget >= secondary_need;
+                if show_secondary {
+                    budget = budget.saturating_sub(secondary_need);
+                }
+                let show_leading = node.leading.is_some() && budget >= leading_need;
+                let mut x = label_x;
+                if show_leading && let Some(leading) = node.leading.as_ref() {
+                    let lw = u16::try_from(leading.width())
+                        .unwrap_or(u16::MAX)
+                        .min(label_x.saturating_add(content_w).saturating_sub(x));
+                    if lw > 0 {
+                        buffer.set_line(x, y, leading, lw);
+                        x = x.saturating_add(lw).saturating_add(1);
+                    }
+                }
+                let badge_w = if show_badge {
+                    badge
+                        .map(|b| u16::try_from(b.width()).unwrap_or(u16::MAX))
+                        .unwrap_or(0)
+                } else {
+                    0
+                };
+                let shortcut_w = if show_shortcut {
+                    node.shortcut
+                        .map(|s| u16::try_from(crate::text::display_cols(s)).unwrap_or(u16::MAX))
+                        .unwrap_or(0)
+                } else {
+                    0
+                };
+                let right_edge = label_x.saturating_add(content_w);
+                let reserve = badge_w
+                    .saturating_add(shortcut_w)
+                    .saturating_add(u16::from(badge_w > 0 && shortcut_w > 0));
+                let mid_end = right_edge.saturating_sub(reserve);
+                let primary_budget = mid_end.saturating_sub(x);
+                if primary_budget > 0 {
+                    buffer.set_line(x, y, &node.label, primary_budget);
+                    x = x.saturating_add(
+                        u16::try_from(node.label.width())
+                            .unwrap_or(u16::MAX)
+                            .min(primary_budget),
+                    );
+                }
+                if show_secondary && let Some(secondary) = node.secondary.as_ref() {
+                    let avail = mid_end.saturating_sub(x);
+                    if avail > 2 {
+                        x = x.saturating_add(1);
+                        let sw = u16::try_from(secondary.width())
+                            .unwrap_or(u16::MAX)
+                            .min(mid_end.saturating_sub(x));
+                        if sw > 0 {
+                            buffer.set_line(x, y, secondary, sw);
+                        }
+                    }
+                }
+                let mut cursor = right_edge;
+                if show_shortcut && let Some(shortcut) = node.shortcut {
+                    let w = shortcut_w.min(cursor.saturating_sub(label_x));
+                    if w > 0 {
+                        cursor = cursor.saturating_sub(w);
+                        buffer.set_stringn(cursor, y, shortcut, usize::from(w), style);
+                    }
+                }
+                if show_badge && let Some(badge) = badge {
+                    let w = badge_w.min(cursor.saturating_sub(label_x));
+                    if w > 0 {
+                        if show_shortcut {
+                            cursor = cursor.saturating_sub(1);
+                        }
+                        cursor = cursor.saturating_sub(w);
+                        buffer.set_line(cursor, y, badge, w);
+                    }
+                }
+                if let Some(status) = status
+                    && status_w > 0
+                {
+                    buffer.set_stringn(
+                        content_area.right().saturating_sub(status_w),
+                        y,
+                        status,
+                        usize::from(status_w),
+                        style,
+                    );
+                }
             }
             buffer.set_style(row, style);
 

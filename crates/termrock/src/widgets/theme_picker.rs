@@ -11,7 +11,7 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    style::{Role, Theme},
+    style::{Density, DesignTokens, Role, Theme},
     text::take_display_cols,
     widgets::{Panel, PanelEmphasis},
 };
@@ -167,7 +167,8 @@ impl StatefulWidget for &ThemePicker<'_> {
         if area.is_empty() {
             return;
         }
-        let panel = Panel::new(self.paint_theme)
+        let tokens = DesignTokens::new(self.paint_theme.clone(), Density::default());
+        let panel = Panel::new(&tokens)
             .title("Theme")
             .emphasis(PanelEmphasis::Focused);
         let inner = panel.inner(area);
