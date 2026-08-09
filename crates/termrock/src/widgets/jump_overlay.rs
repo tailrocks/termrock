@@ -10,26 +10,10 @@ use ratatui_core::{
 };
 
 use crate::{
-
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
-    interaction::{
-        HitRegion,
-        OverlayId,
-        OverlayOutcome,
-        OverlaySpec,
-        OverlayStack,
-    },
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
+    interaction::{HitRegion, OverlayId, OverlayOutcome, OverlaySpec, OverlayStack},
+    style::{DesignSystem, Role, RolePalette},
 };
-
 
 /// Default overlay id for jump mode (fullscreen-class, owns input).
 pub const JUMP_OVERLAY_ID: &str = "termrock.jump";

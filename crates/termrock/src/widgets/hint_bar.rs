@@ -1,15 +1,8 @@
-use crate::style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    };
+use crate::style::{DesignSystem, Role, RolePalette};
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
-    style::{
-        Color,
-        Style,
-    },
+    style::{Color, Style},
     text::{Line, Span},
     widgets::Widget,
 };
@@ -176,7 +169,11 @@ fn remap_style(mut style: Style, remap: &impl Fn(Color) -> Color) -> Style {
 
 /// Wrap semantic hint groups without splitting a key/label pair.
 #[must_use]
-pub fn wrapped_hint_lines(spans: &[HintSpan<'_>], width: u16, system: &DesignSystem) -> Vec<Line<'static>> {
+pub fn wrapped_hint_lines(
+    spans: &[HintSpan<'_>],
+    width: u16,
+    system: &DesignSystem,
+) -> Vec<Line<'static>> {
     #[derive(Clone, Copy)]
     enum Separator {
         Group,

@@ -21,47 +21,20 @@ use ratatui_core::{
 };
 
 use crate::{
-
     input::{
-        Event,
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        KeyModifiers,
-        MouseButton,
-        MouseEvent,
+        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
         MouseEventKind,
     },
     interaction::{
-        OverlayId,
-        OverlayKind,
-        OverlayOutcome,
-        OverlaySize,
-        OverlaySpec,
-        OverlayStack,
+        OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         place_overlay,
     },
-    style::{
-        Density,
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
-    text::{
-        display_cols,
-        take_display_cols,
-    },
+    style::{Density, DesignSystem, Role, RolePalette},
+    text::{display_cols, take_display_cols},
     widgets::{
-        Panel,
-        PanelChrome,
-        TextArea,
-        TextAreaOutcome,
-        TextAreaState,
-        TextCursor,
-        TokenMeter,
+        Panel, PanelChrome, TextArea, TextAreaOutcome, TextAreaState, TextCursor, TokenMeter,
     },
 };
-
 
 /// Default overlay id for composer completion (slash / mention).
 pub const PROMPT_COMPLETION_OVERLAY_ID: &str = "termrock.prompt_completion";
@@ -1629,12 +1602,16 @@ fn paint_editor_selection(
         if vis0 >= vis1 {
             continue;
         }
-        let x0 = area.x.saturating_add(u16::try_from(vis0).unwrap_or(u16::MAX));
+        let x0 = area
+            .x
+            .saturating_add(u16::try_from(vis0).unwrap_or(u16::MAX));
         let width = u16::try_from(vis1.saturating_sub(vis0)).unwrap_or(0);
         if width == 0 {
             continue;
         }
-        let y = area.y.saturating_add(u16::try_from(row).unwrap_or(u16::MAX));
+        let y = area
+            .y
+            .saturating_add(u16::try_from(row).unwrap_or(u16::MAX));
         buffer.set_style(Rect::new(x0, y, width, 1), style);
     }
 }
@@ -2171,9 +2148,7 @@ mod tests {
             label: "PLAN".into(),
             warning: false,
         }));
-        state.set_model(Some(ModelIndicator {
-            label: "m1".into(),
-        }));
+        state.set_model(Some(ModelIndicator { label: "m1".into() }));
         state.set_text("x");
         let layout = state.layout_in(Rect::new(0, 0, 60, 10));
         assert!(layout.mode_hit.is_some());
@@ -2196,10 +2171,7 @@ mod tests {
     #[test]
     fn selection_paint_does_not_panic() {
         use ratatui_core::widgets::StatefulWidget;
-        let system = crate::style::DesignSystem::new(
-            RolePalette::default(),
-            Density::Comfortable,
-        );
+        let system = crate::style::DesignSystem::new(RolePalette::default(), Density::Comfortable);
         let mut state = PromptComposerState::new();
         state.set_focused(true);
         state.set_text("hello world");

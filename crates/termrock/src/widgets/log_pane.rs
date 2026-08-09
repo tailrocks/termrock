@@ -9,25 +9,12 @@ use std::fmt::Write as _;
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::Outcome,
-    scroll::{
-        DialogScroll,
-        max_offset,
-        TailScroll,
-    },
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    scroll::{DialogScroll, TailScroll, max_offset},
+    style::{DesignSystem, Role, RolePalette},
     text::display_cols,
 };
-
 
 use super::Viewport;
 
@@ -286,7 +273,10 @@ impl<'a> LogPane<'a> {
     #[must_use]
     /// Creates a log pane over mutable log state and a semantic theme.
     pub const fn new(system: &'a DesignSystem) -> Self {
-        Self { title: None, system }
+        Self {
+            title: None,
+            system,
+        }
     }
 
     #[must_use]

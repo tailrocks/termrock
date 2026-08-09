@@ -10,31 +10,14 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::{
-        OverlayId,
-        OverlayKind,
-        OverlayOutcome,
-        OverlayPolicy,
-        OverlaySize,
-        OverlaySpec,
-        OverlayStack,
-        place_overlay,
+        OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
+        OverlayStack, place_overlay,
     },
-    style::{
-        DesignSystem,
-        Role,
-    },
-    text::{
-        display_cols,
-        take_display_cols,
-    },
+    style::{DesignSystem, Role},
+    text::{display_cols, take_display_cols},
 };
-
 
 /// Default overlay id for drawers opened via helpers.
 pub const DRAWER_OVERLAY_ID: &str = "termrock.drawer";
@@ -922,13 +905,7 @@ mod tests {
             OverlayOutcome::Dismissed { .. }
         ));
 
-        let tip = open_tooltip_overlay(
-            &mut stack,
-            bounds,
-            anchor,
-            OverlaySize::menu(16, 1),
-            None,
-        );
+        let tip = open_tooltip_overlay(&mut stack, bounds, anchor, OverlaySize::menu(16, 1), None);
         assert!(matches!(tip, OverlayOutcome::Opened { .. }));
         assert_eq!(stack.top().unwrap().kind, OverlayKind::Tooltip);
         assert!(!stack.top_owns_input());

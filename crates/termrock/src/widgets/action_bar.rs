@@ -9,11 +9,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     interaction::HitRegion,
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    style::{DesignSystem, Role, RolePalette},
 };
 
 #[derive(Debug, Clone)]

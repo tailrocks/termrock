@@ -7,19 +7,9 @@ use ratatui_core::{
     widgets::StatefulWidget,
 };
 use termrock::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyModifiers,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{Density, DesignSystem, Role, RolePalette},
-    widgets::{
-        Tree,
-        TreeNode,
-        TreeNodeStatus,
-        TreeOutcome,
-        TreeState,
-    },
+    widgets::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
 };
 
 fn nodes() -> Vec<TreeNode<'static, &'static str>> {
@@ -368,21 +358,23 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         .collect::<String>();
     assert!(rendered.contains("disabled"), "{rendered:?}");
     assert!(rendered.contains("loading"), "{rendered:?}");
-    assert!(rendered.contains("error") || rendered.contains("failed"), "{rendered:?}");
+    assert!(
+        rendered.contains("error") || rendered.contains("failed"),
+        "{rendered:?}"
+    );
     // Semantic styles: disabled dim, loading muted, error danger — scan primary label cells.
     let find_fg = |needle: &str| -> Option<ratatui_core::style::Color> {
         for y in 0..3 {
-            let row: String = (0..20).map(|x| buffer[(x, y)].symbol().to_string()).collect();
+            let row: String = (0..20)
+                .map(|x| buffer[(x, y)].symbol().to_string())
+                .collect();
             if let Some(idx) = row.find(needle) {
                 return Some(buffer[(u16::try_from(idx).unwrap(), y)].fg);
             }
         }
         None
     };
-    assert_eq!(
-        find_fg("disabled"),
-        theme.style(Role::TextDisabled).fg
-    );
+    assert_eq!(find_fg("disabled"), theme.style(Role::TextDisabled).fg);
     assert_eq!(find_fg("loading"), theme.style(Role::TextMuted).fg);
     assert_eq!(find_fg("failed"), theme.style(Role::Danger).fg);
 }
@@ -414,7 +406,10 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
         one == " " || one == "▌" || one == ">" || one.chars().count() == 1,
         "single cell must not split wide graphemes: {one:?}"
     );
-    assert_ne!(one, "🧪", "wide emoji must not paint into a 1-cell clip alone mid-split");
+    assert_ne!(
+        one, "🧪",
+        "wide emoji must not paint into a 1-cell clip alone mid-split"
+    );
 
     let mut four_cells = Buffer::empty(Rect::new(0, 0, 8, 1));
     tree.render(Rect::new(0, 0, 8, 1), &mut four_cells, &mut state);

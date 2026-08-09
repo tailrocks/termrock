@@ -4,11 +4,7 @@ use ratatui_core::{
 
 use crate::{
     interaction::HitRegion,
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    style::{DesignSystem, Role, RolePalette},
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -218,10 +214,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for Tabs<'_, Id> {
 mod tests {
     use super::*;
     use ratatui_core::layout::Position;
-    use ratatui_core::style::{
-        Color,
-        Style,
-    };
+    use ratatui_core::style::{Color, Style};
 
     #[test]
     fn selection_cue_and_hit_regions_share_two_row_geometry() {

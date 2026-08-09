@@ -6,15 +6,8 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget};
 
 use crate::{
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
-    text::{
-        display_cols_slice,
-        take_display_cols,
-    },
+    style::{DesignSystem, Role, RolePalette},
+    text::{display_cols_slice, take_display_cols},
 };
 
 /// Caller-supplied syntax styling for one source line.

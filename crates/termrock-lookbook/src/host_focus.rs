@@ -154,8 +154,7 @@ impl<Id: Clone + Eq, ScopeId: Clone + Eq> FocusRing<Id, ScopeId> {
         match key.code {
             KeyCode::Tab if key.modifiers.is_empty() => self.move_relative(false),
             KeyCode::BackTab
-                if key.modifiers.is_empty()
-                    || key.modifiers == KeyModifiers::SHIFT =>
+                if key.modifiers.is_empty() || key.modifiers == KeyModifiers::SHIFT =>
             {
                 self.move_relative(true)
             }

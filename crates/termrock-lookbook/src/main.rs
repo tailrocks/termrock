@@ -20,13 +20,7 @@ use stories::stories;
 use svg::{check_svgs, write_story_svgs};
 use termrock::{
     input::KeyCode,
-    keymap::{
-        glyph,
-        KeyBinding,
-        KeyChord,
-        Keymap,
-        Visibility,
-    },
+    keymap::{KeyBinding, KeyChord, Keymap, Visibility, glyph},
     style::RolePalette,
 };
 

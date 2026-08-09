@@ -6,20 +6,10 @@ use ratatui_core::{
     widgets::StatefulWidget,
 };
 use termrock::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyModifiers,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers},
     scroll::max_offset,
     style::{DesignSystem, RolePalette},
-    widgets::{
-        DetailCapability,
-        DetailRow,
-        DetailTable,
-        DetailTableOutcome,
-        DetailTableState,
-    },
+    widgets::{DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState},
 };
 
 #[test]

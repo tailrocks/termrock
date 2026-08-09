@@ -4,18 +4,9 @@
 //! Bridge Keymap chord resolution to InteractionScene action availability.
 
 use crate::{
-    input::{
-        KeyEvent,
-        KeyEventKind,
-    },
-    interaction::{
-        InteractionOutcome,
-        InteractionScene,
-    },
-    keymap::{
-        KeyChord,
-        Keymap,
-    },
+    input::{KeyEvent, KeyEventKind},
+    interaction::{InteractionOutcome, InteractionScene},
+    keymap::{KeyChord, Keymap},
 };
 
 /// Resolve a key through `map`, then dispatch only if the scene advertises it.
@@ -49,22 +40,12 @@ where
 mod tests {
     use super::*;
     use crate::{
-    input::{
-        KeyCode,
-        KeyModifiers,
-    },
-    interaction::{
-        InteractionElement,
-        InteractionLayer,
-        InteractionScene,
-        LayerDismissPolicy,
-        LayerKind,
-    },
-    keymap::{
-        KeyBinding,
-        Visibility,
-    },
-};
+        input::{KeyCode, KeyModifiers},
+        interaction::{
+            InteractionElement, InteractionLayer, InteractionScene, LayerDismissPolicy, LayerKind,
+        },
+        keymap::{KeyBinding, Visibility},
+    };
     use ratatui_core::layout::Rect;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]

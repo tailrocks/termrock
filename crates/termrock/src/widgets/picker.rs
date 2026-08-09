@@ -5,20 +5,11 @@ use ratatui_core::{
 };
 
 use crate::{
-
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::Outcome,
-    style::{
-        DesignSystem,
-        Role,
-    },
+    style::{DesignSystem, Role},
     text::take_display_cols,
 };
-
 
 use super::{List, ListRow, ListState, RowRole, TextInput, TextInputOutcome, TextInputState};
 

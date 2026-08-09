@@ -8,20 +8,9 @@ use ratatui_core::{
 use ratatui_widgets::{block::Block, borders::Borders, paragraph::Paragraph};
 
 use crate::{
-    scroll::{
-        DialogScroll,
-        full_cell_thumb,
-        is_scrollable,
-        max_line_width,
-        UNCACHED_REVISION,
-    },
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    scroll::{DialogScroll, UNCACHED_REVISION, full_cell_thumb, is_scrollable, max_line_width},
+    style::{DesignSystem, Role, RolePalette},
 };
-
 
 use super::PanelChrome;
 

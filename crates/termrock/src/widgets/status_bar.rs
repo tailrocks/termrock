@@ -6,18 +6,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    interaction::{
-        HitRegion,
-        Outcome,
-    },
-    style::{
-        DesignSystem,
-        faded,
-        Role,
-        RolePalette,
-    },
+    interaction::{HitRegion, Outcome},
+    style::{DesignSystem, Role, RolePalette, faded},
 };
-
 
 #[derive(Debug, Clone)]
 /// A prioritized status-bar segment.
@@ -379,8 +370,8 @@ mod tests {
     #[test]
     fn hover_and_activation_follow_only_painted_regions() {
         let left = [slot("activity", " activity ", 1, 4)];
-        let theme =
-            RolePalette::default().with_role(Role::StatusBar, Style::new().bg(Color::Rgb(80, 80, 80)));
+        let theme = RolePalette::default()
+            .with_role(Role::StatusBar, Style::new().bg(Color::Rgb(80, 80, 80)));
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let bar = StatusBar::new(&left, &[], &system).alpha(0.5);
         let area = Rect::new(4, 3, 6, 1);

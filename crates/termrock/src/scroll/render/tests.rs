@@ -1,8 +1,7 @@
 use ratatui_core::{
     backend::TestBackend,
     layout::Rect,
-    style::{
-        Color, Style},
+    style::{Color, Style},
     terminal::Terminal,
     text::{Line, Span},
 };

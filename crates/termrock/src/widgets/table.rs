@@ -11,18 +11,10 @@ use ratatui_core::{
 };
 
 use crate::{
+    input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     style::DesignSystem,
-
-    input::{
-        KeyEvent,
-        KeyEventKind,
-        MouseButton,
-        MouseEvent,
-        MouseEventKind,
-    },
     style::Role,
 };
-
 
 const MARKER_WIDTH: u16 = 2;
 
@@ -138,7 +130,6 @@ impl<'a, Id> TableRow<'a, Id> {
             style: None,
         }
     }
-
 
     /// Projects identity anatomy for narrow / status chrome.
     #[must_use]
@@ -368,7 +359,9 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         let Some(intent) = crate::interaction::default_table_intent(key) else {
             return TableOutcome::Ignored;
         };
-        if matches!(intent, crate::interaction::UiIntent::Activate) && key.kind != KeyEventKind::Press {
+        if matches!(intent, crate::interaction::UiIntent::Activate)
+            && key.kind != KeyEventKind::Press
+        {
             return TableOutcome::Ignored;
         }
         self.handle_intent(rows, intent)
@@ -380,7 +373,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         rows: &[TableRow<'_, RowId>],
         intent: crate::interaction::UiIntent,
     ) -> TableOutcome<RowId, ColumnId> {
-                use crate::interaction::{NavigationMove, PageMove, UiIntent};
+        use crate::interaction::{NavigationMove, PageMove, UiIntent};
         match intent {
             UiIntent::Move(NavigationMove::Previous) => self.move_by(rows, -1, true),
             UiIntent::Move(NavigationMove::Next) => self.move_by(rows, 1, true),
@@ -1052,7 +1045,7 @@ const fn sort_glyph(direction: SortDirection) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-        use ratatui_core::{style::Color, text::Span};
+    use ratatui_core::{style::Color, text::Span};
 
     use crate::input::{KeyCode, KeyModifiers};
 

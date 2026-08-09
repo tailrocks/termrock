@@ -4,20 +4,9 @@ use ratatui_core::{layout::Rect, terminal::Frame, text::Line, widgets::Widget};
 use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
-    scroll::{
-        DialogScroll,
-        effective_offset,
-    },
-    style::{
-        Density,
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
-    widgets::{
-        Panel,
-        PanelChrome,
-    },
+    scroll::{DialogScroll, effective_offset},
+    style::{Density, DesignSystem, Role, RolePalette},
+    widgets::{Panel, PanelChrome},
 };
 
 /// Minimal dialog shell: clear area, paint bordered block, return inner area.
@@ -99,8 +88,13 @@ mod tests {
             let mut terminal = Terminal::new(TestBackend::new(12, 4)).unwrap();
             terminal
                 .draw(|frame| {
-                    let _ =
-                        render_dialog_shell(frame, frame.area(), Some("Test"), emphasis, &DesignSystem::from_palette(theme.clone()));
+                    let _ = render_dialog_shell(
+                        frame,
+                        frame.area(),
+                        Some("Test"),
+                        emphasis,
+                        &DesignSystem::from_palette(theme.clone()),
+                    );
                 })
                 .unwrap();
             assert_eq!(terminal.backend().buffer()[(0, 0)].fg, expected);

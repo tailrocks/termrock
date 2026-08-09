@@ -9,12 +9,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::DesignSystem,
-
-    style::{
-        ColorCapability,
-        Role,
-        RolePalette,
-    },
+    style::{ColorCapability, Role, RolePalette},
     text::take_display_cols,
 };
 

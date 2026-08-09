@@ -4,8 +4,8 @@
   "components": [
     {
       "schema": 2,
-      "component": "ApprovalCard",
-      "module": "termrock::widgets::ApprovalCard",
+      "component": "PermissionPrompt",
+      "module": "termrock::widgets::PermissionPrompt",
       "kind": "interactive",
       "complete": false,
       "axes": {
@@ -32,6 +32,8 @@
         "focus": {
           "status": "covered",
           "evidence": {
+            "tests": ["agent::tests::approval_default_enter_confirms_deny_never_allow"],
+            "stories": ["approval-card/basic"],
             "notes": "selection is the focus affordance; default Deny"
           }
         },
@@ -103,6 +105,8 @@
         "no_color": {
           "status": "covered",
           "evidence": {
+            "stories": ["approval-card/basic"],
+            "tests": ["agent::tests::approval_default_enter_confirms_deny_never_allow"],
             "notes": "decision labels + default Deny selection not color-alone"
           }
         },

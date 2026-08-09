@@ -1,31 +1,19 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{
-        Modifier,
-        Style,
-    },
+    style::{Modifier, Style},
     text::Line,
     widgets::StatefulWidget,
 };
 
 use crate::{
-    style::DesignSystem,
-
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::HitRegion,
     layout::ResponsiveSurface,
     scroll::max_offset,
-    style::{
-        Role,
-        RolePalette,
-    },
+    style::DesignSystem,
+    style::{Role, RolePalette},
 };
-
 
 const FIELD_HEIGHT: usize = 4;
 const SECTION_HEADER_HEIGHT: usize = 2;

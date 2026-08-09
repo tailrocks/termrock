@@ -6,11 +6,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    style::{DesignSystem, Role, RolePalette},
     text::take_display_cols,
 };
 

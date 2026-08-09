@@ -6,14 +6,7 @@
 use ratatui_core::layout::Rect;
 
 use crate::{
-    layout::{
-        RegionId,
-        RegionLayout,
-        RegionSize,
-        RegionSpec,
-        SurfaceAxis,
-        WorkSurface,
-    },
+    layout::{RegionId, RegionLayout, RegionSize, RegionSpec, SurfaceAxis, WorkSurface},
     style::Density,
 };
 

@@ -17,7 +17,6 @@ use crate::{
     },
 };
 
-
 // ── OpsDashboard ────────────────────────────────────────────────────────────
 
 /// Ops dashboard outcomes (never execute domain effects).

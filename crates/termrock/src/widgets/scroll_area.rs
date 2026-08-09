@@ -6,23 +6,10 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        MouseEvent,
-        MouseEventKind,
-    },
-    scroll::{
-        apply_delta_u16,
-        max_offset,
-    },
-    style::{
-        DesignSystem,
-        Role,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind, MouseEvent, MouseEventKind},
+    scroll::{apply_delta_u16, max_offset},
+    style::{DesignSystem, Role},
 };
-
 
 /// Scrollbar visibility policy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]

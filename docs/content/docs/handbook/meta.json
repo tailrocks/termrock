@@ -8,6 +8,7 @@
     "dialog",
     "command-palette",
     "prompt-composer",
-    "permission-prompt"
+    "permission-prompt",
+    "agent-workbench"
   ]
 }

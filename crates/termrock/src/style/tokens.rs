@@ -201,8 +201,7 @@ impl DesignSystem {
     /// Default phosphor Obsidian system (quiet gutter selection).
     #[must_use]
     pub fn phosphor() -> Self {
-        Self::from_palette(RolePalette::default())
-            .selection(SelectionChrome::Gutter)
+        Self::from_palette(RolePalette::default()).selection(SelectionChrome::Gutter)
     }
 
     /// Builds from palette + density-derived spacing.
@@ -334,10 +333,7 @@ impl DesignSystem {
         });
         let shortcut = secondary;
         let gutter = if state.selected {
-            Some((
-                self.glyphs.selection_gutter(),
-                self.style(Role::Accent),
-            ))
+            Some((self.glyphs.selection_gutter(), self.style(Role::Accent)))
         } else {
             None
         };

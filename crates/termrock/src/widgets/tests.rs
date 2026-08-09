@@ -7,12 +7,7 @@ use ratatui_core::{
 };
 
 use super::*;
-use crate::style::{
-        Density,
-        DesignSystem,
-        Role,
-        RolePalette,
-    };
+use crate::style::{Density, DesignSystem, Role, RolePalette};
 
 #[cfg(feature = "serde")]
 #[test]
@@ -37,7 +32,7 @@ fn areas() -> [Rect; 5] {
 #[test]
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let panel = Panel::new(&panel_tokens)
         .title("Title")
@@ -63,7 +58,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 #[test]
 fn focused_panel_preserves_plain_border_glyphs() {
     let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
@@ -75,7 +70,7 @@ fn focused_panel_preserves_plain_border_glyphs() {
 #[test]
 fn inactive_panel_preserves_plain_gray_border() {
     let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
@@ -237,7 +232,7 @@ fn text_input_edits_extended_graphemes_atomically() {
 #[test]
 fn action_and_status_regions_match_painted_geometry() {
     let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let actions = [
         Action {
             id: "save",
@@ -297,7 +292,7 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
         Line::from("three"),
     ];
     let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let viewport = Viewport::new(&lines, &system).title(" Log ");
     let area = Rect::new(0, 0, 12, 4);
     let mut buffer = Buffer::empty(area);
@@ -320,7 +315,7 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
 fn viewport_emphasis_focused_uses_border_focused_role() {
     let lines = [Line::from("row")];
     let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let viewport = Viewport::new(&lines, &system)
         .title("Active")
         .emphasis(PanelChrome::Focused);
@@ -346,7 +341,7 @@ fn theme_override_reaches_active_tab_cells() {
     use ratatui_core::style::Color;
 
     let theme = RolePalette::default().with_role(Role::TabActive, Style::new().bg(Color::Blue));
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let tabs = [Tab {
         id: "active",
         label: "Active",
@@ -367,7 +362,7 @@ fn theme_override_reaches_active_tab_cells() {
 #[test]
 fn owned_panel_render_matches_borrowed_render() {
     let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 12, 3);
     let mut owned = Buffer::empty(area);

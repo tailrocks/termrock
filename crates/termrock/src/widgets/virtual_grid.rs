@@ -9,25 +9,11 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::Stateful
 
 use crate::{
     input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        KeyModifiers,
-        MouseButton,
-        MouseEvent,
-        MouseEventKind,
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
-    text::{
-        display_cols,
-        take_display_cols,
-    },
+    style::{DesignSystem, Role, RolePalette},
+    text::{display_cols, take_display_cols},
 };
-
 
 /// Width policy for one grid column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -135,7 +121,6 @@ impl<'a, RowId> GridRow<'a, RowId> {
             enabled: true,
         }
     }
-
 
     /// Disables interaction.
     #[must_use]
@@ -444,7 +429,9 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         let before = (self.first_row, self.first_col);
         // Prefer universal intents for shared collection actions.
         if !control && let Some(intent) = crate::interaction::default_table_intent(event) {
-            if matches!(intent, crate::interaction::UiIntent::Activate) && event.kind != KeyEventKind::Press {
+            if matches!(intent, crate::interaction::UiIntent::Activate)
+                && event.kind != KeyEventKind::Press
+            {
                 return VirtualGridOutcome::Ignored;
             }
             // Page/Activate/Cancel/vertical Move via intent; Left/Right not in table map.
@@ -539,7 +526,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         columns: &[GridColumn<'_, ColId>],
         rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
-                use crate::interaction::{NavigationMove, PageMove, UiIntent};
+        use crate::interaction::{NavigationMove, PageMove, UiIntent};
         match intent {
             UiIntent::Move(NavigationMove::Previous) => {
                 self.move_cursor(-1, 0, extend, columns, rows)
@@ -1240,7 +1227,6 @@ mod tests {
             })
             .unwrap();
     }
-
 
     #[test]
     fn zero_total_has_no_body_hits_and_enter_ignored() {

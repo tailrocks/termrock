@@ -1,10 +1,6 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 
-use crate::style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    };
+use crate::style::{DesignSystem, Role, RolePalette};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]

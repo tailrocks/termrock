@@ -17,13 +17,10 @@ use ratatui::{
     backend::TestBackend,
     buffer::Buffer,
     layout::Rect,
-    style::{
-        Color,
-        Style,
-    },
+    style::{Color, Style},
     widgets::{Block, Clear},
 };
-use termrock::style::{DesignSystem, RolePalette, PREVIEW_CARD};
+use termrock::style::{DesignSystem, PREVIEW_CARD, RolePalette};
 
 use crate::stories::{Story, stories};
 

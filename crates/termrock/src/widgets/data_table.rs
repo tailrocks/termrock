@@ -9,24 +9,14 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        KeyModifiers,
-    },
-    style::{
-        DesignSystem,
-        Role,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::data_view::{
         ColumnModel, CopyPayload, DataDensity, ExpandState, FilterSpec, LoadState, SelectionModel,
         SortSpec, VirtualWindow,
     },
 };
-
 
 /// Toolbar action ids are consumer-owned strings/labels.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -252,9 +242,10 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 DataTableOutcome::SelectAllRequested
             }
             KeyCode::Char('s') if is_press => {
-                let col_id = vis_cols.get(self.focus_col).cloned().or_else(|| {
-                    columns.visible().next().map(|(_, c)| c.id.clone())
-                });
+                let col_id = vis_cols
+                    .get(self.focus_col)
+                    .cloned()
+                    .or_else(|| columns.visible().next().map(|(_, c)| c.id.clone()));
                 let Some(col) = col_id else {
                     return DataTableOutcome::Ignored;
                 };
@@ -270,9 +261,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 DataTableOutcome::SortSpec(spec)
             }
             KeyCode::Char('/') if is_press => DataTableOutcome::FilterChanged(self.filter.clone()),
-            KeyCode::Char('c')
-                if is_press && !key.modifiers.contains(KeyModifiers::CONTROL) =>
-            {
+            KeyCode::Char('c') if is_press && !key.modifiers.contains(KeyModifiers::CONTROL) => {
                 // Consumer should re-project cell text for the focused row; empty
                 // range signals "copy focus row" without requiring RowId: Debug.
                 DataTableOutcome::Copy(CopyPayload::Row { cells: Vec::new() })
@@ -387,11 +376,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                     && sort.column == c.id
                 {
                     let mark = if state.ascii {
-                        if sort.ascending {
-                            "^"
-                        } else {
-                            "v"
-                        }
+                        if sort.ascending { "^" } else { "v" }
                     } else if sort.ascending {
                         "▲"
                     } else {
@@ -471,19 +456,11 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             };
             // Colorless selection/focus gutter
             let gutter = if selected {
-                if state.ascii {
-                    "*"
-                } else {
-                    "›"
-                }
+                if state.ascii { "*" } else { "›" }
             } else if focused {
                 ">"
             } else if expanded {
-                if state.ascii {
-                    "v"
-                } else {
-                    "▾"
-                }
+                if state.ascii { "v" } else { "▾" }
             } else {
                 " "
             };
@@ -539,7 +516,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::data_view::{DataColumn, DataColumnWidth, ColumnPin, bench};
+    use crate::widgets::data_view::{ColumnPin, DataColumn, DataColumnWidth, bench};
 
     #[test]
     fn select_all_is_request_not_scan() {

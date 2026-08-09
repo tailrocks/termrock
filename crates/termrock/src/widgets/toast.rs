@@ -3,11 +3,7 @@ use ratatui_widgets::{block::Block, clear::Clear, paragraph::Paragraph};
 
 use crate::{
     runtime::FrameTick,
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    style::{DesignSystem, Role, RolePalette},
     text::display_cols,
 };
 

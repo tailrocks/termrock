@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use termrock::keymap::glyph;
-use termrock::{
-    input::KeyCode,
-    keymap::KeyChord,
-    style::RolePalette,
-};
+use termrock::{input::KeyCode, keymap::KeyChord, style::RolePalette};
 
 use crate::{
     PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction, stories::stories,
@@ -252,4 +248,21 @@ fn preview_hints_advertise_back_and_interact() {
         !text.contains("BackTab"),
         "BackTab alias must not appear in hint: {text}"
     );
+}
+
+#[test]
+fn no_dual_agent_chrome_stories() {
+    for story in stories() {
+        assert!(
+            !story.id.starts_with("approval-card/") && !story.id.starts_with("prompt-box/"),
+            "deleted dual story still registered: {}",
+            story.id
+        );
+        assert!(
+            story.component != "ApprovalCard" && story.component != "PromptBox",
+            "deleted dual component label: {} ({})",
+            story.component,
+            story.id
+        );
+    }
 }

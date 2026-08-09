@@ -1,22 +1,23 @@
 ---
 title: PromptComposer
-description: Flagship agent input — draft, chips, completion, queue, without owning the model.
+description: Flagship agent input — draft-preserving multiline composer with queue, chips, and completion hooks.
 ---
 
 # PromptComposer
 
-**Purpose.** Be the **primary human→agent input**: multiline grapheme-safe
-editing, attachments, slash/mentions, busy queue, and chrome (mode/model/context)
-while **preserving draft** when permission/plan/palette overlays take focus.
+**Purpose.** Primary human → agent input: grapheme-safe multiline editing,
+attachments, slash/@ completion, mode/model chrome, and **queue while busy** —
+without embedding provider SDKs or clearing the draft when permission/plan
+overlays take focus.
 
 ## When to use / when not
 
 | Use PromptComposer | Prefer |
 |--------------------|--------|
-| Agent/chat shells | — |
+| Agent / chat / studio prompts | — |
 | Simple one-line fields | TextInput |
-| Code editors | TextArea alone |
-| Command-only | CommandPalette |
+| Modal confirm | Dialog |
+| Trust gates | [PermissionPrompt](/docs/handbook/permission-prompt) |
 
 ## Installation
 
@@ -24,11 +25,12 @@ while **preserving draft** when permission/plan/palette overlays take focus.
 termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
 ```
 
+Design: `docs/design/prompt-composer.md`.
+
 ## Source files
 
 `PromptComposer`, `PromptComposerState`, `PromptComposerOutcome`, chips,
-`SubmitPolicy`, overlay completion helpers  
-Design: `docs/design/prompt-composer.md` · migration `0045`
+completion query, overlay helpers (`PROMPT_COMPLETION_OVERLAY_ID`, fullscreen)
 
 ## Basic example
 
@@ -51,7 +53,6 @@ state.set_model(Some(ModelIndicator {
     label: "model".into(),
 }));
 let _composer = PromptComposer::new(&tokens, &theme);
-let _ = &mut state;
 ```
 
 ## Interactive example
@@ -69,8 +70,7 @@ assert!(matches!(
     out,
     PromptComposerOutcome::Submit { ref text, .. } if text == "ship it"
 ));
-
-// Overlay takeover must not clear draft:
+// Overlay takeover: draft preserved
 state.set_text("keep");
 state.set_focused(false);
 assert_eq!(state.text(), "keep");
@@ -78,79 +78,114 @@ assert_eq!(state.text(), "keep");
 
 ## Anatomy
 
-`chips` · `editor` · `status` (mode · model · busy · queue · ctx meter) · validation
+`chip_row` · multiline `editor` · mode/model badges · busy/queue chrome ·
+context meter · validation · send/stop affordances  
 
-## Public API (intent)
+## Public API
 
 | API | Why |
 |-----|-----|
-| `set_busy` | Enter queues instead of dual-submit |
-| `set_focused(false)` | Permission/plan/palette — **draft stays** |
+| `set_focused(false)` | Permission/plan takeover **without** clearing draft |
+| `set_busy` + queue policy | Enter enqueues while agent runs |
 | `handle_paste` | Large paste → chip |
-| `Completion` outcomes | Consumer fills slash/file menus |
-| `SubmitPolicy` | App owns Enter/newline/clear rules |
+| `commit_completion` | Slash/@ insert without owning candidates |
+| Overlay helpers | Completion + fullscreen |
 
 ## State ownership
 
 | TermRock | Consumer |
 |----------|----------|
-| Draft, undo, history, chips UI | Model/provider, tools |
-| Queue entries text | Drain queue / run agent |
-| Completion *query* | Candidate lists & inserts |
+| Text edit, undo, chips, queue chrome | Model routing, attachments meaning |
+| Completion query detect | Candidate search |
+| | Run/cancel agent on Submit / Cancel |
 
 ## Typed outcomes
 
-Submit · Queued · Cancel/Interrupt · Completion* · Chip* · ValidationFailed ·
-ExternalEditor · DismissRequest — **no network in the widget**.
+`Submit` · `Queued` · `Cancel` · `Interrupt` · `Completion` · `ExternalEditor` ·
+`ValidationFailed` · … — pure; effects outside.
 
-## Variants / sizes / density
+## Variants
 
-`ComposerPresentation::{Compact,Normal,Expanded,Fullscreen}`; density on tokens.
+Presentation: Compact / Normal / Expanded / Fullscreen. Connection: Ready /
+Disabled / Disconnected.
 
-## Keyboard / mouse / focus
+## Sizes
 
-Enter submit (policy); Mod+Enter newline; Ctrl+Z/Y undo; Esc closes completion
-then dismiss; mouse positions caret / chip hits.
+Compact ~2–3 editor rows; expand with content; fullscreen overlay on tiny
+terminals.
 
-## Responsive / a11y / unicode
+## Density
 
-Stories: `prompt-composer/basic`, `busy-queue`, `compact`. ASCII fallback flag
-for badges. Grapheme editor via TextArea.
+Comfortable default; Compact for dense workbenches.
+
+## Keyboard
+
+Enter submit · Mod+Enter newline · Ctrl+C interrupt when busy · Ctrl+U cancel ·
+Esc peels completion/fullscreen first · `/` `@` `#` completion triggers.
+
+## Mouse
+
+Editor click positions caret; chip × removes; mode/model hits open menus.
+
+## Focus
+
+Blur keeps draft; chip strip via BackTab; completion overlay owns keys when open.
+
+## Responsive
+
+`contract_for_width`; ASCII fallback on very narrow.
+
+## Accessibility / colorless
+
+Busy/queue/offline as words; chip type letters `F`/`P` in ASCII mode.
+
+## Unicode
+
+Grapheme TextArea; large paste chips avoid multi-MB wrap thrash.
 
 ## Composition
 
-AgentWorkbench south; OverlayStack for completion; PermissionPrompt above.
+AgentWorkbench · OverlayStack (permission/plan) · CompletionMenu · ContextMeter.
 
 ## Theming
 
-Focused panel; warning mode badge; danger validation.
+Panel focus border · warning mode badge · danger validation · TokenMeter roles.
+
+## Custom recipe
+
+`SubmitPolicy` for newline/queue/clear; never put provider keys in the composer.
 
 ## Common mistakes
 
-- Clearing draft when opening permission UI.  
-- Submitting again while busy without queue.  
-- Handling Esc as process kill without Cancel outcome.
+- `clear_draft` on permission open.  
+- Dual-submit while busy (disable queue policy).  
+- Binding `y` globally for allow (trust surface, not composer).
 
 ## Performance
 
-Coalesce token paints elsewhere; composer paint is O(visible editor rows + chips).
-Large paste chips avoid multi-MB inserts.
+Undo snapshots bounded; paste chips; see streaming-performance for token stream
+(coalesce on host).
 
 ## Testing
 
-Unit module `prompt_composer`; handbook examples; migration `0045`.
+- Stories: `prompt-composer/basic`, `busy-queue`, `paste-chip`, `fullscreen`  
+- `documentation_examples::handbook_prompt_composer_example`  
+- Unit: draft blur, queue, undo  
+
+## Migration
+
+Canonical agent prompt surface; see prompt-composer design and agent
+migrations.
 
 ## Related
 
-TextArea · CompletionMenu · TokenMeter · PermissionPrompt · CommandPalette  
+TextArea · CompletionMenu · PermissionPrompt · AgentWorkbench  
 
-## Complete application sketch
+## Complete application example
 
 ```text
-busy=agent.running
-key → composer.handle_key
-Submit → agent.run; clear per policy
-Queued → agent.queue.push
-open permission → composer.set_focused(false)
-close permission → set_focused(true)
+composer focused → type → Enter → Submit outcome → set_busy(true)
+while busy: Enter → Queued; Stop → Cancel/Interrupt
+permission overlay: set_focused(false) — draft stays
+on run complete: drain queue FIFO → next Submit
 ```

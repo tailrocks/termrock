@@ -204,7 +204,12 @@ impl ScrollbarSpec {
 }
 
 /// Paints a themed full-cell scrollbar into an explicit track rectangle.
-pub fn render_scrollbar(buffer: &mut Buffer, area: Rect, spec: ScrollbarSpec, system: &DesignSystem) {
+pub fn render_scrollbar(
+    buffer: &mut Buffer,
+    area: Rect,
+    spec: ScrollbarSpec,
+    system: &DesignSystem,
+) {
     Scrollbar { spec, system }.render(area, buffer);
 }
 
@@ -232,7 +237,10 @@ pub fn render_lines_with_offset_in_area(
         .take(viewport)
         .cloned()
         .collect();
-    frame.render_widget(Paragraph::new(visible).style(system.style(Role::Text)), area);
+    frame.render_widget(
+        Paragraph::new(visible).style(system.style(Role::Text)),
+        area,
+    );
     if scroll::is_scrollable(total, viewport) {
         render_scrollbar(
             frame.buffer_mut(),

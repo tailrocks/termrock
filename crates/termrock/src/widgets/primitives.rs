@@ -15,28 +15,14 @@ use ratatui_core::{
 
 use crate::{
     input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        KeyModifiers,
-        MouseButton,
-        MouseEvent,
-        MouseEventKind,
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::HitRegion,
     keymap::KeyChord,
     runtime::FrameTick,
-    style::{
-        DesignSystem,
-        Motion,
-        Role,
-    },
-    text::{
-        display_cols,
-        take_display_cols,
-    },
+    style::{DesignSystem, Motion, Role},
+    text::{display_cols, take_display_cols},
 };
-
 
 // ── Shared activation ───────────────────────────────────────────────────────
 
@@ -787,7 +773,7 @@ pub fn button_hit<Id: Clone>(id: Id, state: &ButtonState) -> Option<HitRegion<Id
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-        use ratatui_core::layout::Position;
+    use ratatui_core::layout::Position;
     use std::time::{Duration, Instant};
 
     fn press(code: KeyCode) -> KeyEvent {

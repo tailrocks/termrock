@@ -8,11 +8,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Span, widgets::Widget};
 use ratatui_widgets::block::Block;
 
-use crate::style::{
-        DesignSystem,
-        PanelChrome,
-        PanelRecipe,
-    };
+use crate::style::{DesignSystem, PanelChrome, PanelRecipe};
 use crate::text::display_cols;
 
 // PanelChrome lives in `style` (sole chrome enum). Re-exported from widgets::mod.

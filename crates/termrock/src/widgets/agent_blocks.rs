@@ -12,26 +12,12 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::Outcome,
-    style::{
-        DesignSystem,
-        Role,
-    },
+    style::{DesignSystem, Role},
     text::take_display_cols,
-    widgets::{
-        List,
-        ListRow,
-        ListState,
-        Panel,
-        PanelChrome,
-    },
+    widgets::{List, ListRow, ListState, Panel, PanelChrome},
 };
-
 
 // ── Mode ribbon ─────────────────────────────────────────────────────────────
 

@@ -1,11 +1,6 @@
 //! Integration coverage for visible-window Table rendering.
 
-use std::{
-    alloc::System,
-    hint::black_box,
-    num::NonZeroU16,
-    time::Instant,
-};
+use std::{alloc::System, hint::black_box, num::NonZeroU16, time::Instant};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};

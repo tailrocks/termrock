@@ -6,21 +6,10 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        MouseButton,
-        MouseEvent,
-        MouseEventKind,
-    },
-    style::{
-        DesignSystem,
-        Role,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    style::{DesignSystem, Role},
     text::take_display_cols,
 };
-
 
 /// Heading level (terminal typography weight/role).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -538,7 +527,7 @@ impl Alert<'_> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-        use crate::text::display_cols;
+    use crate::text::display_cols;
 
     #[test]
     fn section_toggle_collapse() {

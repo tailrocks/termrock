@@ -6,18 +6,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
+    style::{DesignSystem, Role, RolePalette},
 };
-
 
 const RATIO_SCALE: u16 = 10_000;
 const KEYBOARD_STEP: u16 = 250;

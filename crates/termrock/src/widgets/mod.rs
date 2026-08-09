@@ -51,11 +51,11 @@ mod view_state;
 mod viewport;
 mod virtual_grid;
 
+pub use crate::style::PanelChrome;
 pub use action_bar::{Action, ActionBar, ActionBarState};
 pub use agent::{
-    ApprovalCard, ApprovalCardOutcome, ApprovalCardState, ApprovalDecision, ApprovalDecisionRegion,
-    ApprovalRisk, PromptBox, PromptBoxOutcome, PromptBoxState, StreamItem, StreamItemKind,
-    StreamView, ThinkingBlock, Timeline, TimelineEvent, TokenMeter, ToolCard, ToolStatus,
+    StreamItem, StreamItemKind, StreamView, ThinkingBlock, Timeline, TimelineEvent, TokenMeter,
+    ToolCard, ToolStatus,
 };
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
@@ -104,8 +104,7 @@ pub use detail_table::{
 pub use dialog::{
     Backdrop, ChoiceDialog, ChoiceDialogState, DIALOG_OVERLAY_ID, Dialog, DialogSize,
     DialogVariant, MessageDialog, dismiss_dialog_overlay, open_alert_dialog_overlay,
-    open_dialog_overlay,
-    place_dialog,
+    open_dialog_overlay, place_dialog,
 };
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
@@ -128,7 +127,6 @@ pub use menu_nav::{
     open_popover_overlay, open_tooltip_overlay, place_drawer, place_popover, place_tooltip,
 };
 pub use panel::{Panel, PanelSlots};
-pub use crate::style::PanelChrome;
 pub use permission::{
     DataMovement, EditField, ExecutionLocation, InitiatorKind, PERMISSION_OVERLAY_ID,
     PermissionAction, PermissionActionKind, PermissionActionRegion, PermissionAuditEntry,

@@ -6,19 +6,11 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
-    style::{
-        DesignSystem,
-        Role,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
+    style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::scroll_area::ScrollAreaState,
 };
-
 
 // ── ObjectInspector ─────────────────────────────────────────────────────────
 

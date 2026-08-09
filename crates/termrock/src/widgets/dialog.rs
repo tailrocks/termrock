@@ -1,47 +1,23 @@
-use ratatui_core::{buffer::Buffer,
+use ratatui_core::{
+    buffer::Buffer,
     layout::Rect,
-    style::{
-        Color,
-        Style,
-    },
+    style::{Color, Style},
     text::Text,
     widgets::{StatefulWidget, Widget},
 };
 use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
-
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::{
-        HitRegion,
-        NavigationMove,
-        Outcome,
-        OverlayId,
-        OverlayKind,
-        OverlayOutcome,
-        OverlayPolicy,
-        OverlaySize,
-        OverlaySpec,
-        OverlayStack,
-        place_overlay,
-        UiIntent,
+        HitRegion, NavigationMove, Outcome, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy,
+        OverlaySize, OverlaySpec, OverlayStack, UiIntent, place_overlay,
     },
-    style::{
-        Density,
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    style::{Density, DesignSystem, Role, RolePalette},
 };
 
-
 use super::{
-    Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel,
-    PanelChrome,
+    Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel, PanelChrome,
 };
 
 /// Default overlay id for a modal dialog on an [`OverlayStack`].
@@ -258,14 +234,9 @@ mod backdrop_tests {
     use ratatui_core::{layout::Position, widgets::StatefulWidget};
 
     use crate::{
-    input::KeyModifiers,
-    interaction::{
-        OverlayId,
-        OverlayKind,
-        OverlayOutcome,
-        OverlayStack,
-    },
-};
+        input::KeyModifiers,
+        interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlayStack},
+    };
 
     #[test]
     fn default_backdrop_uses_terminal_background() {
@@ -384,8 +355,7 @@ mod backdrop_tests {
         }];
         let tokens = DesignSystem::default();
         let dialog = ChoiceDialog::new(
-            Dialog::new("Choose", Text::from("Continue?"), &tokens)
-                .emphasis(PanelChrome::Focused),
+            Dialog::new("Choose", Text::from("Continue?"), &tokens).emphasis(PanelChrome::Focused),
             &actions,
         );
         let area = Rect::new(3, 2, 30, 6);
@@ -429,8 +399,8 @@ mod backdrop_tests {
     #[test]
     fn dialog_uses_semantic_focused_panel_chrome() {
         let tokens = DesignSystem::default();
-        let dialog = Dialog::new(" Notice ", Text::from("Done"), &tokens)
-            .emphasis(PanelChrome::Focused);
+        let dialog =
+            Dialog::new(" Notice ", Text::from("Done"), &tokens).emphasis(PanelChrome::Focused);
         let area = Rect::new(0, 0, 18, 4);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);
@@ -457,10 +427,7 @@ mod backdrop_tests {
         let area = Rect::new(0, 0, 24, 5);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);
-        assert_eq!(
-            buffer[(0, 0)].fg,
-            tokens.style(Role::Danger).fg.unwrap()
-        );
+        assert_eq!(buffer[(0, 0)].fg, tokens.style(Role::Danger).fg.unwrap());
         let text: String = buffer.content().iter().map(|c| c.symbol()).collect();
         assert!(text.contains('!') || text.contains("Delete"), "{text:?}");
     }
@@ -489,8 +456,8 @@ mod backdrop_tests {
     #[test]
     fn empty_body_and_from_system() {
         let system = DesignSystem::phosphor();
-        let dialog = Dialog::from_system("Empty", Text::default(), &system)
-            .footer_hint("esc dismiss");
+        let dialog =
+            Dialog::from_system("Empty", Text::default(), &system).footer_hint("esc dismiss");
         let area = Rect::new(0, 0, 28, 6);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);
@@ -508,8 +475,10 @@ mod backdrop_tests {
 
     #[test]
     fn dialog_size_tracks_density() {
-        assert!(DialogSize::for_density(Density::Comfortable).width
-            >= DialogSize::for_density(Density::Dashboard).width);
+        assert!(
+            DialogSize::for_density(Density::Comfortable).width
+                >= DialogSize::for_density(Density::Dashboard).width
+        );
         assert!(DialogSize::min_width(Density::Comfortable) >= 32);
     }
 }

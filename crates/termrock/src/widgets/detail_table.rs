@@ -1,34 +1,17 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{
-        Modifier,
-        Style,
-    },
+    style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
 use crate::{
-    style::DesignSystem,
-
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
     osc::HyperlinkRegion,
-    scroll::{
-        DialogScroll,
-        effective_offset,
-        Measured,
-        UNCACHED_REVISION,
-    },
-    style::{
-        Role,
-        RolePalette,
-    },
+    scroll::{DialogScroll, Measured, UNCACHED_REVISION, effective_offset},
+    style::DesignSystem,
+    style::{Role, RolePalette},
 };
-
 
 const SELECTED_MARKER: &str = "▸ ";
 const NORMAL_MARKER: &str = "  ";

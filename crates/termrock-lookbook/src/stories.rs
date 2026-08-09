@@ -14,193 +14,44 @@ use ratatui::{
 };
 use termrock::{
     interaction::{
-        OverlayKind,
-        OverlayPolicy,
-        OverlaySize,
-        OverlaySpec,
-        OverlayStack,
-        place_overlay,
+        OverlayKind, OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, place_overlay,
     },
     scroll::DialogScroll,
-    style::{
-        RolePalette,
-        ColorCapability,
-        Density,
-        DesignSystem,
-        Role,
-    },
+    style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
     widgets::{
-        Action,
-        ActionBar,
-        ActionBarState,
-        Anchor,
-        ApprovalCard,
-        ApprovalCardState,
-        ApprovalRisk,
-        Backdrop,
-        Badge,
-        Banner,
-        BarDatum,
-        BarSeries,
-        BUILTIN_THEME_PRESETS,
-        Button,
-        ButtonState,
-        Callout,
-        CalloutTone,
-        CellAlignment,
-        Checkbox,
-        CheckboxState,
-        ChoiceDialog,
-        ChoiceDialogState,
-        CodeBlock,
-        Column,
-        ColumnWidth,
-        CommandPalette,
-        CommandPaletteState,
-        CompletionCandidate,
-        CompletionMenu,
-        CompletionMenuSize,
-        CompletionMenuState,
-        DataTable,
-        DataTableState,
-        DataTableToolbar,
-        DesignInspector,
-        DesignInspectorFrame,
-        DetailCapability,
-        DetailRow,
-        DetailTable,
-        DetailTableState,
-        Dialog,
-        DiffKind,
-        DiffLine,
-        DiffState,
-        DiffView,
-        Drawer,
-        EmptyState,
-        ErrorView,
-        Form,
-        FormField,
-        FormSection,
-        FormState,
-        FormWizardState,
-        GridCell,
-        GridColumn,
-        GridRow,
-        Heading,
-        HeadingLevel,
-        Hint,
-        HintBar,
-        ImageMeta,
-        ImageProtocol,
-        ImageSurface,
-        JumpOverlay,
-        JumpTarget,
-        Kbd,
-        List,
-        ListRow,
-        ListState,
-        LoadingView,
-        LogPane,
-        LogPaneState,
-        MarkdownBlock,
-        MarkdownBlockKind,
-        MarkdownView,
-        Menu,
-        MenuItem,
-        MenuState,
-        MessageDialog,
-        MeterSegment,
-        ModeRibbon,
-        Panel,
-        PanelChrome,
-        PermissionActionKind,
-        PermissionPrompt,
-        PermissionPromptState,
-        PermissionProvenance,
-        PermissionRequest,
-        PermissionRisk,
-        Picker,
-        PickerState,
-        PlanReview,
-        PlanReviewState,
-        PlanStep,
-        Popover,
-        Progress,
-        ProgressKind,
-        PromptBox,
-        PromptBoxState,
-        PromptComposer,
-        PromptComposerState,
-        QuestionFlow,
-        QuestionFlowState,
-        QuestionOption,
-        QuestionStep,
-        RowRole,
-        SegmentedMeter,
-        SeparatorLine,
-        SessionItem,
-        SessionPicker,
-        Severity,
-        Skeleton,
-        SortDirection,
-        Sparkline,
-        SplitDirection,
-        SplitPane,
-        SplitPaneState,
-        SplitRatio,
-        StatusBar,
-        StatusBarState,
-        StatusSlot,
-        StreamItem,
-        StreamItemKind,
-        StreamView,
-        Surface,
-        SurfaceElevation,
-        Switch,
-        SwitchState,
-        Tab,
-        Table,
-        TableRow,
-        TableState,
-        Tabs,
-        TabsState,
-        TaskRail,
-        TextArea,
-        TextAreaState,
-        TextCursor,
-        TextInput,
-        TextInputState,
-        ThemePicker,
-        ThemePickerState,
-        ThinkingBlock,
-        Timeline,
-        TimelineEvent,
-        Toast,
-        TokenMeter,
-        ToolCard,
-        ToolStatus,
-        Transcript,
-        TranscriptBlock,
-        TranscriptKind,
-        TranscriptState,
-        Tree,
-        TreeNode,
-        TreeNodeStatus,
-        TreeState,
-        Validation,
-        Viewport,
-        VirtualGrid,
-        VirtualGridState,
+        Action, ActionBar, ActionBarState, Anchor, BUILTIN_THEME_PRESETS, Backdrop, Badge, Banner,
+        BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
+        CheckboxState, ChoiceDialog, ChoiceDialogState, CodeBlock, Column, ColumnWidth,
+        CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
+        CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
+        DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
+        DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, Drawer, EmptyState,
+        ErrorView, Form, FormField, FormSection, FormState, FormWizardState, GridCell, GridColumn,
+        GridRow, Heading, HeadingLevel, Hint, HintBar, ImageMeta, ImageProtocol, ImageSurface,
+        JumpOverlay, JumpTarget, Kbd, List, ListRow, ListState, LoadingView, LogPane, LogPaneState,
+        MarkdownBlock, MarkdownBlockKind, MarkdownView, Menu, MenuItem, MenuState, MessageDialog,
+        MeterSegment, ModeRibbon, Panel, PanelChrome, PermissionActionKind, PermissionPrompt,
+        PermissionPromptState, PermissionProvenance, PermissionRequest, PermissionRisk, Picker,
+        PickerState, PlanReview, PlanReviewState, PlanStep, Popover, Progress, ProgressKind,
+        PromptComposer, PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption,
+        QuestionStep, RowRole, SegmentedMeter, SeparatorLine, SessionItem, SessionPicker, Severity,
+        Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio,
+        StatusBar, StatusBarState, StatusSlot, StreamItem, StreamItemKind, StreamView, Surface,
+        SurfaceElevation, Switch, SwitchState, Tab, Table, TableRow, TableState, Tabs, TabsState,
+        TaskRail, TextArea, TextAreaState, TextCursor, TextInput, TextInputState, ThemePicker,
+        ThemePickerState, ThinkingBlock, Timeline, TimelineEvent, Toast, TokenMeter, ToolCard,
+        ToolStatus, Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode,
+        TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
         WorkbenchMode,
     },
 };
 
 use crate::interactors::{
-    ApprovalCardInteractor, ChoiceDialogInteractor, CommandPaletteInteractor,
-    DesignInspectorInteractor, FormInteractor, ListInteractor, LogPaneInteractor, PickerInteractor,
-    PromptBoxInteractor, PromptComposerInteractor, SplitPaneInteractor, StaticStory,
-    StoryInteraction, TableInteractor, TabsInteractor, TextAreaInteractor, ThemePickerInteractor,
-    ToastInteractor, TranscriptInteractor, TreeInteractor, VirtualGridInteractor,
+    ChoiceDialogInteractor, CommandPaletteInteractor, DesignInspectorInteractor, FormInteractor,
+    ListInteractor, LogPaneInteractor, PickerInteractor, PromptComposerInteractor,
+    SplitPaneInteractor, StaticStory, StoryInteraction, TableInteractor, TabsInteractor,
+    TextAreaInteractor, ThemePickerInteractor, ToastInteractor, TranscriptInteractor,
+    TreeInteractor, VirtualGridInteractor,
 };
 
 type RenderFn = fn(&mut Frame<'_>, Rect, &DesignSystem);
@@ -313,20 +164,12 @@ fn command_palette_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(CommandPaletteInteractor::new())
 }
 
-fn approval_card_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
-    Box::new(ApprovalCardInteractor::new())
-}
-
 fn design_inspector_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(DesignInspectorInteractor::new())
 }
 
 fn transcript_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(TranscriptInteractor::new())
-}
-
-fn prompt_box_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
-    Box::new(PromptBoxInteractor::new())
 }
 
 fn prompt_composer_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
@@ -1173,43 +1016,6 @@ pub(crate) fn stories() -> Vec<Story> {
             tool_card,
         ),
         Story::new(
-            "approval-card/basic",
-            "Approval card",
-            "ApprovalCard",
-            "Permission card with safe Deny default.",
-            48,
-            6,
-            approval_card,
-        )
-        .with_interactor(approval_card_interactor),
-        Story::new(
-            "approval-card/narrow",
-            "Approval card narrow",
-            "ApprovalCard",
-            "Selected decision remains visible at narrow widths.",
-            24,
-            6,
-            approval_card,
-        ),
-        Story::new(
-            "approval-card/tiny",
-            "Approval card tiny",
-            "ApprovalCard",
-            "Selected-only fallback with non-color nav cue.",
-            18,
-            4,
-            approval_card,
-        ),
-        Story::new(
-            "approval-card/unicode",
-            "Approval card Unicode",
-            "ApprovalCard",
-            "CJK and emoji permission copy remains cell-safe.",
-            40,
-            6,
-            approval_card_unicode,
-        ),
-        Story::new(
             "stream-view/basic",
             "Stream view",
             "StreamView",
@@ -1255,16 +1061,6 @@ pub(crate) fn stories() -> Vec<Story> {
             4,
             timeline,
         ),
-        Story::new(
-            "prompt-box/basic",
-            "Prompt box",
-            "PromptBox",
-            "Agent prompt editor chrome.",
-            48,
-            5,
-            prompt_box,
-        )
-        .with_interactor(prompt_box_interactor),
         Story::new(
             "prompt-composer/basic",
             "Prompt composer",
@@ -1545,6 +1341,33 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             4,
             popover_story,
+        ),
+        Story::new(
+            "agent-workbench/basic",
+            "Agent workbench",
+            "AgentWorkbench",
+            "Canonical agent shell: task rail, transcript, PromptComposer, status.",
+            80,
+            24,
+            agent_workbench_basic,
+        ),
+        Story::new(
+            "agent-workbench/permission",
+            "Agent workbench permission",
+            "AgentWorkbench",
+            "PermissionPrompt overlay on workbench with default-deny focus.",
+            80,
+            24,
+            agent_workbench_permission,
+        ),
+        Story::new(
+            "agent-workbench/narrow",
+            "Agent workbench narrow",
+            "AgentWorkbench",
+            "Narrow-terminal geometry for the flagship workbench pattern.",
+            40,
+            16,
+            agent_workbench_basic,
         ),
         Story::new(
             "permission-prompt/basic",
@@ -2277,24 +2100,6 @@ pub(crate) fn stories() -> Vec<Story> {
             popover_unicode_story,
         ),
         Story::new(
-            "prompt-box/narrow",
-            "Narrow PromptBox",
-            "PromptBox",
-            "Narrow-terminal geometry for PromptBox (22 cols).",
-            22,
-            5,
-            prompt_box,
-        ),
-        Story::new(
-            "prompt-box/unicode",
-            "Unicode PromptBox",
-            "PromptBox",
-            "Unicode-safe paint path for PromptBox (CJK/emoji-capable layout).",
-            48,
-            5,
-            prompt_box_unicode_story,
-        ),
-        Story::new(
             "prompt-composer/narrow",
             "Narrow PromptComposer",
             "PromptComposer",
@@ -2804,7 +2609,11 @@ fn action_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         focused: Some("accept"),
         ..ActionBarState::default()
     };
-    frame.render_stateful_widget(&ActionBar::new(&actions, system).gap("  "), area, &mut state);
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system).gap("  "),
+        area,
+        &mut state,
+    );
 }
 
 pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
@@ -2940,7 +2749,9 @@ fn tree_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default())
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::default())
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = [
         TreeNode::new("root", Line::from("Workspace"), 0)
@@ -2950,7 +2761,9 @@ fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             .branch()
             .loading(),
         TreeNode::new("bad", Line::from("Permission denied"), 1).error(),
-        TreeNode::new("ok", Line::from("src"), 1).branch().expanded(),
+        TreeNode::new("ok", Line::from("src"), 1)
+            .branch()
+            .expanded(),
         TreeNode::new("leaf", Line::from("main.rs"), 2).badge(Line::from("rs")),
     ];
     let mut state = TreeState::new(Some("ok"));
@@ -2958,7 +2771,9 @@ fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 }
 
 fn tree_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default())
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::default())
         .glyphs(termrock::style::GlyphSet::Ascii)
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = tree_nodes();
@@ -2993,10 +2808,14 @@ fn tree_composed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::Compact)
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::Compact)
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = [
-        TreeNode::new("r", Line::from("Root"), 0).branch().expanded(),
+        TreeNode::new("r", Line::from("Root"), 0)
+            .branch()
+            .expanded(),
         TreeNode::new("c", Line::from("Child"), 1)
             .badge(Line::from("99"))
             .shortcut("⌘K"),
@@ -3006,13 +2825,23 @@ fn tree_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_deep(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::Comfortable)
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::Comfortable)
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = [
-        TreeNode::new("d0", Line::from("depth-0"), 0).branch().expanded(),
-        TreeNode::new("d1", Line::from("depth-1"), 1).branch().expanded(),
-        TreeNode::new("d2", Line::from("depth-2"), 2).branch().expanded(),
-        TreeNode::new("d3", Line::from("depth-3"), 3).branch().expanded(),
+        TreeNode::new("d0", Line::from("depth-0"), 0)
+            .branch()
+            .expanded(),
+        TreeNode::new("d1", Line::from("depth-1"), 1)
+            .branch()
+            .expanded(),
+        TreeNode::new("d2", Line::from("depth-2"), 2)
+            .branch()
+            .expanded(),
+        TreeNode::new("d3", Line::from("depth-3"), 3)
+            .branch()
+            .expanded(),
         TreeNode::new("d4", Line::from("depth-4 leaf"), 4).secondary(Line::from("file")),
         TreeNode::new("d4b", Line::from("depth-4 error"), 4).error(),
     ];
@@ -3101,7 +2930,9 @@ fn list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_multi(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default())
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::default())
         .selection(termrock::style::SelectionChrome::Gutter);
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
@@ -3144,7 +2975,9 @@ fn list_disabled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default())
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::default())
         .glyphs(termrock::style::GlyphSet::Ascii)
         .selection(termrock::style::SelectionChrome::Gutter);
     let rows = list_rows();
@@ -3167,7 +3000,9 @@ fn list_composed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             .secondary(Line::from("crates/termrock"))
             .badge(Line::from("12"))
             .shortcut("⌘T"),
-        ListRow::item("lint", Line::from("Lint")).loading().shortcut("⌘L"),
+        ListRow::item("lint", Line::from("Lint"))
+            .loading()
+            .shortcut("⌘L"),
     ];
     let mut state = ListState::new(Some("build"));
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
@@ -3439,10 +3274,12 @@ fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let anchor = Rect::new(area.x.saturating_add(4), area.y.saturating_add(2), 1, 1);
     let mut state = CompletionMenuState::new(Some("select"));
     frame.render_stateful_widget(
-        &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(CompletionMenuSize {
-            width: 28,
-            height: 6,
-        }),
+        &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(
+            CompletionMenuSize {
+                width: 28,
+                height: 6,
+            },
+        ),
         area,
         &mut state,
     );
@@ -3465,10 +3302,12 @@ fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     );
     let mut state = CompletionMenuState::new(Some("beta"));
     frame.render_stateful_widget(
-        &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(CompletionMenuSize {
-            width: 24,
-            height: 5,
-        }),
+        &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(
+            CompletionMenuSize {
+                width: 24,
+                height: 5,
+            },
+        ),
         area,
         &mut state,
     );
@@ -3793,8 +3632,15 @@ fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &Des
     let layers = ["root"];
     let recipes = ["role_swatch"];
     for (i, (cap, label)) in caps.iter().enumerate() {
-        let y = area.y.saturating_add(u16::try_from(i).unwrap_or(0).saturating_mul(h));
-        let row = Rect::new(area.x, y, area.width, h.min(area.bottom().saturating_sub(y)));
+        let y = area
+            .y
+            .saturating_add(u16::try_from(i).unwrap_or(0).saturating_mul(h));
+        let row = Rect::new(
+            area.x,
+            y,
+            area.width,
+            h.min(area.bottom().saturating_sub(y)),
+        );
         if row.is_empty() {
             continue;
         }
@@ -3829,7 +3675,10 @@ fn capability_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn capability_ascii_glyphs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::Compact).glyphs(termrock::style::GlyphSet::Ascii);
+    let tokens = system
+        .clone()
+        .density(Density::Compact)
+        .glyphs(termrock::style::GlyphSet::Ascii);
     let rows = [
         ListRow::item("a", Line::from("ASCII disclosure")),
         ListRow::item("b", Line::from("Selected row")).badge(Line::from("ok")),
@@ -3883,7 +3732,12 @@ fn overlay_edges(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         Rect::new(area.x, area.y, 4, 1),
         Rect::new(area.right().saturating_sub(6), area.y, 4, 1),
         Rect::new(area.x, area.bottom().saturating_sub(2), 4, 1),
-        Rect::new(area.right().saturating_sub(6), area.bottom().saturating_sub(2), 4, 1),
+        Rect::new(
+            area.right().saturating_sub(6),
+            area.bottom().saturating_sub(2),
+            4,
+            1,
+        ),
     ];
     for (i, anchor) in anchors.iter().enumerate() {
         let r = place_overlay(area, Some(*anchor), size, policy);
@@ -3944,7 +3798,10 @@ fn overlay_queued(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     );
     paint_stack_rects(frame, area, &stack, &tokens, system);
     frame.render_widget(
-        Paragraph::new(Line::from(format!("depth={} top owns Esc", stack.entries().len()))),
+        Paragraph::new(Line::from(format!(
+            "depth={} top owns Esc",
+            stack.entries().len()
+        ))),
         Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
     );
 }
@@ -4165,7 +4022,10 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     ];
     let border_style = system.style(Role::BorderFocused);
     let system = DesignSystem::from_palette(
-        system.palette().clone().with_role(Role::Border, border_style),
+        system
+            .palette()
+            .clone()
+            .with_role(Role::Border, border_style),
     );
     let mut state = DialogScroll::default();
     frame.render_stateful_widget(
@@ -4347,29 +4207,6 @@ fn tool_card(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     );
 }
 
-fn approval_card(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = ApprovalCardState::new();
-    frame.render_stateful_widget(
-        &ApprovalCard::new(
-            "Permission",
-            "Run cargo publish?",
-            ApprovalRisk::High,
-            system,
-        ),
-        area,
-        &mut state,
-    );
-}
-
-fn approval_card_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = ApprovalCardState::new();
-    frame.render_stateful_widget(
-        &ApprovalCard::new("権限 🔐", "本番へ公開しますか？", ApprovalRisk::High, system),
-        area,
-        &mut state,
-    );
-}
-
 fn transcript_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let user = ["Run the suite", "with unicode: 日本語 🚀"];
     let assistant = [
@@ -4438,18 +4275,11 @@ fn timeline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(Timeline::new(&events, system), area);
 }
 
-fn prompt_box(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = PromptBoxState::new();
-    frame.render_stateful_widget(
-        &PromptBox::new(system).placeholder("Message…"),
-        area,
-        &mut state,
-    );
-}
-
 fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator, ModelIndicator};
-    let tokens = system.clone().density(termrock::style::Density::Comfortable);
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
     state.set_text("Explain this module");
@@ -4497,7 +4327,9 @@ fn prompt_composer_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 
 fn prompt_composer_paste_chip(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator};
-    let tokens = system.clone().density(termrock::style::Density::Comfortable);
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_placeholder("Message…");
     state.set_mode(Some(ModeIndicator {
@@ -4520,7 +4352,9 @@ fn prompt_composer_paste_chip(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn prompt_composer_disconnected(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerConnection, ModeIndicator, ModelIndicator};
-    let tokens = system.clone().density(termrock::style::Density::Comfortable);
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_connection(ComposerConnection::Disconnected);
     state.set_text("cannot send while offline");
@@ -4541,7 +4375,9 @@ fn prompt_composer_disconnected(frame: &mut Frame<'_>, area: Rect, system: &Desi
 
 fn prompt_composer_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerPresentation, ModeIndicator, ModelIndicator};
-    let tokens = system.clone().density(termrock::style::Density::Comfortable);
+    let tokens = system
+        .clone()
+        .density(termrock::style::Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_presentation(ComposerPresentation::Fullscreen);
     state.set_placeholder("Long prompt…");
@@ -4575,7 +4411,7 @@ fn image_surface(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn button_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-   state.activation.set_focused(true);
+    state.activation.set_focused(true);
     Button::new("Save", &tokens)
         .primary(true)
         .render(area, frame.buffer_mut(), &mut state);
@@ -4742,9 +4578,11 @@ fn data_table_narrow_priority(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn data_table_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
-    let columns = termrock::widgets::ColumnModel::new(vec![
-        termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
-    ]);
+    let columns = termrock::widgets::ColumnModel::new(vec![termrock::widgets::DataColumn::new(
+        "id",
+        "ID",
+        termrock::widgets::DataColumnWidth::Min(4),
+    )]);
     let rows: [(u64, &[&str]); 0] = [];
     let mut state = DataTableState::<u64, &str>::new();
     state.load = termrock::widgets::LoadState::Loading {
@@ -4755,9 +4593,11 @@ fn data_table_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 
 fn data_table_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
-    let columns = termrock::widgets::ColumnModel::new(vec![
-        termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
-    ]);
+    let columns = termrock::widgets::ColumnModel::new(vec![termrock::widgets::DataColumn::new(
+        "id",
+        "ID",
+        termrock::widgets::DataColumnWidth::Min(4),
+    )]);
     let rows: [(u64, &[&str]); 0] = [];
     let mut state = DataTableState::<u64, &str>::new();
     state.load = termrock::widgets::LoadState::Error {
@@ -5047,7 +4887,7 @@ fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-   state.activation.set_focused(true);
+    state.activation.set_focused(true);
     state.activation.set_enabled(false);
     frame.render_stateful_widget(
         &Button::new("Save", &tokens).primary(true),
@@ -5059,7 +4899,7 @@ fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 fn button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-   state.activation.set_focused(true);
+    state.activation.set_focused(true);
     state.activation.set_loading(true);
     frame.render_stateful_widget(&Button::new("Save", &tokens), area, &mut state);
 }
@@ -5067,7 +4907,7 @@ fn button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-   state.activation.set_focused(true);
+    state.activation.set_focused(true);
     frame.render_stateful_widget(
         &Button::new("保存 ✨", &tokens).primary(true),
         area,
@@ -5181,7 +5021,11 @@ fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         focused: Some("accept"),
         ..ActionBarState::default()
     };
-    frame.render_stateful_widget(&ActionBar::new(&actions, system).gap("  "), area, &mut state);
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system).gap("  "),
+        area,
+        &mut state,
+    );
 }
 
 fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -5391,19 +5235,6 @@ fn permission_prompt_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &D
             "権限要求: シェル ⚠️",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Warning),
-        );
-    }
-}
-
-fn prompt_box_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    prompt_box(frame, area, system);
-    if area.width > 4 && area.height > 1 {
-        frame.buffer_mut().set_stringn(
-            area.x.saturating_add(1),
-            area.y.saturating_add(1),
-            "質問を入力… 💬",
-            usize::from(area.width.saturating_sub(2)),
-            system.style(Role::TextMuted),
         );
     }
 }
@@ -5944,4 +5775,109 @@ fn progress_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             system.style(Role::TextMuted),
         );
     }
+}
+
+fn agent_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{
+        AgentWorkbenchState, WorkbenchSurfaces, default_modes, render_agent_workbench,
+    };
+    use termrock::widgets::{
+        ListRow, PromptComposer, PromptComposerState, StatusBarState, StatusSlot, Transcript,
+        TranscriptBlock, TranscriptKind, TranscriptState,
+    };
+
+    let mut workbench = AgentWorkbenchState::new();
+    let lines = ["Plan the cutover", "Implement PermissionPrompt path"];
+    let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
+    let transcript = Transcript::new(&blocks, system);
+    let mut tstate = TranscriptState::new();
+    let prompt = PromptComposer::new(system);
+    let mut pstate = PromptComposerState::new();
+    pstate.set_text("ship the dual-chrome kill");
+    let tasks = [
+        ListRow::item("t1", Line::from("Plan review")),
+        ListRow::item("t2", Line::from("Tool: cargo test")),
+    ];
+    workbench.task_list.select(Some("t1"));
+    let modes = default_modes("plan");
+    let slots = [StatusSlot {
+        id: "s",
+        content: "ready",
+        priority: 0,
+        min_width: 0,
+        enabled: true,
+        style: Style::default(),
+        hover_style: None,
+    }];
+    let mut sstate = StatusBarState::default();
+    render_agent_workbench(
+        frame.buffer_mut(),
+        area,
+        WorkbenchSurfaces {
+            system,
+            state: &mut workbench,
+            tasks: &tasks,
+            modes: &modes,
+            transcript: &transcript,
+            transcript_state: &mut tstate,
+            prompt: &prompt,
+            prompt_state: &mut pstate,
+            status_slots: &slots,
+            status_state: &mut sstate,
+            permission: None,
+            question: None,
+        },
+    );
+}
+
+fn agent_workbench_permission(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{
+        AgentWorkbenchState, WorkbenchSurfaces, default_modes, render_agent_workbench,
+    };
+    use termrock::widgets::{
+        ListRow, PermissionPrompt, PermissionPromptState, PermissionRequest, PermissionRisk,
+        PromptComposer, PromptComposerState, StatusBarState, Transcript, TranscriptBlock,
+        TranscriptKind, TranscriptState,
+    };
+
+    let mut workbench = AgentWorkbenchState::new();
+    let lines = ["Need shell access"];
+    let blocks = [TranscriptBlock::new(
+        "b1",
+        TranscriptKind::Assistant,
+        &lines,
+    )];
+    let transcript = Transcript::new(&blocks, system);
+    let mut tstate = TranscriptState::new();
+    let prompt = PromptComposer::new(system);
+    let mut pstate = PromptComposerState::new();
+    let tasks = [ListRow::item("t1", Line::from("Awaiting permission"))];
+    let modes = default_modes("build");
+    let slots = [];
+    let mut sstate = StatusBarState::default();
+    let perm_w = PermissionPrompt::new(system);
+    let mut perm = PermissionPromptState::new();
+    let _ = perm.enqueue(
+        PermissionRequest::new("r1", "bash", "workspace")
+            .risk(PermissionRisk::High)
+            .command("cargo test --all-features"),
+    );
+    render_agent_workbench(
+        frame.buffer_mut(),
+        area,
+        WorkbenchSurfaces {
+            system,
+            state: &mut workbench,
+            tasks: &tasks,
+            modes: &modes,
+            transcript: &transcript,
+            transcript_state: &mut tstate,
+            prompt: &prompt,
+            prompt_state: &mut pstate,
+            status_slots: &slots,
+            status_state: &mut sstate,
+            permission: Some((&perm_w, &mut perm)),
+            question: None,
+        },
+    );
 }

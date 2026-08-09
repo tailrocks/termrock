@@ -76,6 +76,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0060 | `v0.13.0` | [Crate root re-export purge](migrations/0060-v0.13.0-root-reexport-purge.md) |
 | 0061 | `v0.13.0` | [DesignSystem sole paint](migrations/0061-v0.13.0-design-system-sole-paint.md) |
 | 0062 | `v0.13.0` | [InteractionScene sole focus (collections)](migrations/0062-v0.13.0-scene-sole-focus.md) |
+| 0063 | `v0.13.0` | [Agent dual chrome cutover](migrations/0063-v0.13.0-agent-dual-cutover.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

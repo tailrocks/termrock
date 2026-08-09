@@ -7,28 +7,11 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        Event,
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        KeyModifiers,
-        MouseButton,
-        MouseEventKind,
-    },
+    input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind},
     scroll::DialogScroll,
-    style::{
-        Density,
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
-    text::{
-        display_cols,
-        display_cols_slice_into,
-    },
+    style::{Density, DesignSystem, Role, RolePalette},
+    text::{display_cols, display_cols_slice_into},
 };
-
 
 use super::{Panel, PanelChrome, edit_core};
 
@@ -1207,7 +1190,7 @@ mod tests {
         );
         for case in cases {
             let mut state = TextAreaState::new(case.text);
-        state.set_focused(true);
+            state.set_focused(true);
             assert!(state.set_cursor(case.cursor), "{} cursor", case.name);
             let outcome = state.handle_key(KeyEvent::new(case.key, KeyModifiers::NONE));
             assert_eq!(
@@ -1315,7 +1298,11 @@ mod tests {
         assert_eq!(state.max_width, measured);
         for area in [Rect::new(0, 0, 0, 0), Rect::new(2, 2, 1, 1)] {
             let mut buffer = Buffer::empty(area);
-            (&TextArea::new(&crate::style::DesignSystem::default())).render(area, &mut buffer, &mut state);
+            (&TextArea::new(&crate::style::DesignSystem::default())).render(
+                area,
+                &mut buffer,
+                &mut state,
+            );
         }
     }
 }

@@ -7,14 +7,6 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
-  "ApprovalCard": {
-    "keyboard": "covered",
-    "mouse": "covered",
-    "focus": "covered",
-    "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
-  },
   "Backdrop": {
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
@@ -211,14 +203,6 @@
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
     "focus": "not-applicable",
-    "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
-  },
-  "PromptBox": {
-    "keyboard": "covered",
-    "mouse": "caller-owned",
-    "focus": "covered",
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"

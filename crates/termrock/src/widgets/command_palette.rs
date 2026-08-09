@@ -16,26 +16,11 @@ use ratatui_core::{
 use crate::{
     input::KeyEvent,
     interaction::{
-        OverlayId,
-        OverlayKind,
-        OverlayOutcome,
-        OverlayPolicy,
-        OverlaySize,
-        OverlaySpec,
-        OverlayStack,
-        place_overlay,
+        OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
+        OverlayStack, place_overlay,
     },
-    widgets::{
-        ListRow,
-        Panel,
-        PanelChrome,
-        Picker,
-        PickerOutcome,
-        PickerState,
-        TextInputState,
-    },
+    widgets::{ListRow, Panel, PanelChrome, Picker, PickerOutcome, PickerState, TextInputState},
 };
-
 
 /// Default overlay id for a command palette on an [`OverlayStack`].
 pub const COMMAND_PALETTE_OVERLAY_ID: &str = "termrock.command_palette";

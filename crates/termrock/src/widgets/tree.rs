@@ -10,11 +10,7 @@ use crate::{
     input::KeyEvent,
     interaction::HitRegion,
     scroll::max_offset,
-    style::{
-        DesignSystem,
-        ListRowVisualState,
-        Role,
-    },
+    style::{DesignSystem, ListRowVisualState, Role},
 };
 
 use super::{ComposedRow, Selection};
@@ -242,7 +238,6 @@ impl<Id> TreeState<Id> {
         }
     }
 
-
     #[must_use]
     /// Returns the currently selected stable identity.
     pub const fn selected(&self) -> Option<&Id> {
@@ -254,8 +249,6 @@ impl<Id> TreeState<Id> {
     pub const fn hovered(&self) -> Option<&Id> {
         self.hovered.as_ref()
     }
-
-
 
     #[must_use]
     /// Returns the zero-based first visible node index.
@@ -345,7 +338,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         nodes: &[TreeNode<'_, Id>],
         intent: crate::interaction::UiIntent,
     ) -> TreeOutcome<Id> {
-                use crate::interaction::{NavigationMove, PageMove, UiIntent};
+        use crate::interaction::{NavigationMove, PageMove, UiIntent};
         match intent {
             UiIntent::Move(NavigationMove::Previous) => self.move_selection(nodes, -1),
             UiIntent::Move(NavigationMove::Next) => self.move_selection(nodes, 1),
@@ -720,10 +713,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 // Reserve gutter column only when selection chrome uses a slot.
                 // For tree, reserve only if any selection likely — keep 2 cells when
                 // tokens use Gutter default (DesignSystem::phosphor).
-                if matches!(
-                    self.tokens.selection,
-                    crate::style::SelectionChrome::Gutter
-                ) {
+                if matches!(self.tokens.selection, crate::style::SelectionChrome::Gutter) {
                     x_cursor = x_cursor.saturating_add(2);
                 }
             }
@@ -732,10 +722,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 .right()
                 .saturating_sub(x_cursor)
                 .saturating_sub(4);
-            let indent = node
-                .depth
-                .saturating_mul(indent_step)
-                .min(max_indent);
+            let indent = node.depth.saturating_mul(indent_step).min(max_indent);
             let disclosure_x = x_cursor.saturating_add(indent);
             let glyph = if node.branch {
                 if node.expanded {
@@ -764,13 +751,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                     buffer.set_stringn(check_x, y, marker, usize::from(paint_w), style);
                     check_w = paint_w.saturating_add(u16::from(available > paint_w));
                     if available > paint_w {
-                        buffer.set_stringn(
-                            check_x.saturating_add(paint_w),
-                            y,
-                            " ",
-                            1,
-                            style,
-                        );
+                        buffer.set_stringn(check_x.saturating_add(paint_w), y, " ", 1, style);
                     }
                     if node.enabled {
                         state.check_regions.push(HitRegion {
@@ -903,13 +884,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                     let w = shortcut_w.min(cursor.saturating_sub(label_x));
                     if w > 0 {
                         cursor = cursor.saturating_sub(w);
-                        buffer.set_stringn(
-                            cursor,
-                            y,
-                            shortcut,
-                            usize::from(w),
-                            recipe.shortcut,
-                        );
+                        buffer.set_stringn(cursor, y, shortcut, usize::from(w), recipe.shortcut);
                     }
                 }
                 if show_badge && let Some(badge) = badge {
@@ -955,12 +930,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             let scrollbar = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
             state.scrollbar_region = Some(scrollbar);
             for y in scrollbar.top()..scrollbar.bottom() {
-                buffer.set_string(
-                    scrollbar.x,
-                    y,
-                    "│",
-                    self.tokens.style(Role::ScrollTrack),
-                );
+                buffer.set_string(scrollbar.x, y, "│", self.tokens.style(Role::ScrollTrack));
             }
             if let Some(thumb) = crate::scroll::full_cell_thumb(
                 self.nodes.len(),
@@ -994,11 +964,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyEvent, KeyModifiers};
     use crate::interaction::{NavigationMove, UiIntent};
-    use crate::style::{
-        DesignSystem,
-        GlyphSet,
-        SelectionChrome,
-    };
+    use crate::style::{DesignSystem, GlyphSet, SelectionChrome};
 
     fn sample() -> Vec<TreeNode<'static, &'static str>> {
         vec![

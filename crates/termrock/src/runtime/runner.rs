@@ -9,11 +9,7 @@ use ratatui_core::{terminal::Frame, terminal::Terminal};
 
 use super::{FrameTick, time::FrameClock};
 use crate::{
-    crossterm::{
-        CrosstermBackend,
-        Session,
-        SessionOptions,
-    },
+    crossterm::{CrosstermBackend, Session, SessionOptions},
     input::Event,
 };
 

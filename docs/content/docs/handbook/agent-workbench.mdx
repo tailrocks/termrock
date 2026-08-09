@@ -1,0 +1,97 @@
+---
+title: AgentWorkbench
+description: Flagship agent shell pattern — task rail, transcript, PromptComposer, PermissionPrompt.
+---
+
+# AgentWorkbench
+
+Composition pattern for an agent shell. **Not** a product agent — consumers own wording, tools, and policy.
+
+## When to use
+
+| Use AgentWorkbench | Prefer |
+|--------------------|--------|
+| Multi-pane agent UI (tasks + transcript + prompt) | Custom layout from Workspace + widgets |
+| Trust gates over the shell | [`PermissionPrompt`](/docs/handbook/permission-prompt) alone |
+| Free-form agent input only | [`PromptComposer`](/docs/handbook/prompt-composer) alone |
+
+## Canonical chrome (sole path)
+
+| Concern | Type |
+|---------|------|
+| Prompt | `PromptComposer` / `PromptComposerState` |
+| Permission | `PermissionPrompt` / `PermissionPromptState` |
+| Stream | `Transcript` |
+| Focus / Esc layers | `InteractionScene` via `AgentWorkbenchState` |
+
+**Deleted duals:** `ApprovalCard`, `PromptBox` (migration `0063`).
+
+## Anatomy
+
+```
+┌ Task rail ─┬ Transcript ──────────────┐
+│            │                          │
+│            │                          │
+├────────────┴──────────────────────────┤
+│ Mode ribbon + PromptComposer          │
+├───────────────────────────────────────┤
+│ Status                                │
+└───────────────────────────────────────┘
+        ┌ PermissionPrompt (overlay) ┐
+        └────────────────────────────┘
+```
+
+- Focus chrome: `PanelChrome::Focused` only on the pane that owns scene focus.
+- Permission overlay uses scene layer `permission` (dismissible Esc); host still cancels the queue via `PermissionPromptState` Esc / `UiIntent::Cancel`.
+
+## Minimal host loop
+
+```rust
+use termrock::patterns::{
+    AgentWorkbenchState, WorkbenchSurfaces, default_modes, render_agent_workbench,
+};
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    PermissionPrompt, PermissionPromptState, PromptComposer, PromptComposerState,
+    Transcript, TranscriptState, /* … */
+};
+
+let system = DesignSystem::default();
+let mut workbench = AgentWorkbenchState::new();
+let mut prompt_state = PromptComposerState::new();
+let mut permission_state = PermissionPromptState::new();
+
+// each frame:
+render_agent_workbench(buf, area, WorkbenchSurfaces {
+    system: &system,
+    state: &mut workbench,
+    tasks: &tasks,
+    modes: &modes,
+    transcript: &transcript,
+    transcript_state: &mut tstate,
+    prompt: &PromptComposer::new(&system),
+    prompt_state: &mut prompt_state,
+    status_slots: &slots,
+    status_state: &mut sstate,
+    permission: Some((&PermissionPrompt::new(&system), &mut permission_state)),
+    question: None,
+});
+
+// keys
+let _ = workbench.handle_key(key, &tasks, &mut prompt_state, Some(&mut permission_state));
+```
+
+## Intents
+
+Permission navigation: `default_permission_intent` → `PermissionPromptState::handle_intent`.
+
+Composer product chords remain on `PromptComposerState::handle_key` until a dedicated keymap pack lands.
+
+## Responsive
+
+Workspace collapses task rail first. Prompt band uses a real south split (~25%) so 24-row terminals keep a usable composer. Stories: `agent-workbench/basic`, `agent-workbench/permission`, `agent-workbench/narrow`.
+
+## Related
+
+PermissionPrompt · PromptComposer · Transcript · OverlayStack · InteractionScene  
+Migration `0063` · design `docs/design/agent-workbench-cutover.md`

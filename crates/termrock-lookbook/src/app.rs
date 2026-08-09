@@ -393,7 +393,8 @@ impl Lookbook {
             selection_chrome: "gutter",
         };
         frame.render_widget(
-            DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone())).panel(InspectorPanel::Focus),
+            DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone()))
+                .panel(InspectorPanel::Focus),
             area,
         );
     }

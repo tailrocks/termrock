@@ -10,25 +10,11 @@ use ratatui_core::{
 };
 
 use crate::{
-
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-    },
-    style::{
-        Density,
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind},
+    style::{Density, DesignSystem, Role, RolePalette},
     text::take_display_cols,
-    widgets::{
-        Panel,
-        PanelChrome,
-    },
+    widgets::{Panel, PanelChrome},
 };
-
 
 /// One selectable theme preset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -59,8 +59,7 @@ mod focus_authority_policy {
             "FocusRing must not be a public re-export (use InteractionScene)"
         );
         assert!(
-            interaction.contains("pub use scene::{")
-                && interaction.contains("InteractionScene"),
+            interaction.contains("pub use scene::{") && interaction.contains("InteractionScene"),
             "InteractionScene remains public"
         );
         assert!(

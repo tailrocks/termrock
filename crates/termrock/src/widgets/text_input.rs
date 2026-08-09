@@ -3,20 +3,10 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        KeyModifiers,
-    },
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    style::{DesignSystem, Role, RolePalette},
     text::take_display_cols,
 };
-
 
 use super::edit_core;
 

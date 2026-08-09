@@ -16,40 +16,14 @@ use ratatui_core::{
 };
 
 use crate::{
-
     input::{
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        KeyModifiers,
-        MouseButton,
-        MouseEvent,
-        MouseEventKind,
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    interaction::{
-        OverlayId,
-        OverlayKind,
-        OverlayOutcome,
-        OverlaySize,
-        OverlaySpec,
-        OverlayStack,
-    },
-    style::{
-        Density,
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
-    text::{
-        display_cols,
-        take_display_cols,
-    },
-    widgets::{
-        Panel,
-        PanelChrome,
-    },
+    interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
+    style::{Density, DesignSystem, Role, RolePalette},
+    text::{display_cols, take_display_cols},
+    widgets::{Panel, PanelChrome},
 };
-
 
 /// Overlay id for agent permission / trust surfaces (`OverlayStack`).
 pub const PERMISSION_OVERLAY_ID: &str = "termrock.permission";
@@ -1080,6 +1054,105 @@ impl PermissionPromptState {
         }
     }
 
+    /// Semantic intent routing (keymap-friendly alternative to raw keys).
+    ///
+    /// Product chords (`e`/`p`/`n`/`[`/`]`) stay on [`Self::handle_key`] until a
+    /// full permission keymap pack lands. Intents cover navigation, confirm,
+    /// cancel, and details expand/collapse.
+    pub fn handle_intent(&mut self, intent: crate::interaction::UiIntent) -> PermissionOutcome {
+        use crate::interaction::{NavigationMove, UiIntent};
+
+        if matches!(
+            self.mode,
+            SurfaceMode::EditCommand | SurfaceMode::EditPattern
+        ) {
+            return match intent {
+                UiIntent::Cancel => {
+                    self.mode = SurfaceMode::Navigate;
+                    self.edit_buffer.clear();
+                    PermissionOutcome::EditCancelled
+                }
+                UiIntent::Activate | UiIntent::Submit => {
+                    let generation = match self.queue.head() {
+                        Some(h) => h.generation,
+                        None => return PermissionOutcome::Ignored,
+                    };
+                    self.selected = if self.mode == SurfaceMode::EditCommand {
+                        PermissionAction::AllowEdited
+                    } else {
+                        PermissionAction::AllowRestricted
+                    };
+                    let edited = Some(self.edit_buffer.clone());
+                    self.mode = SurfaceMode::Navigate;
+                    self.confirm_with_edit(generation, edited)
+                }
+                _ => PermissionOutcome::Ignored,
+            };
+        }
+
+        let Some(head) = self.queue.head().cloned() else {
+            return PermissionOutcome::Ignored;
+        };
+
+        match intent {
+            UiIntent::Move(NavigationMove::Previous) => self.move_action(-1),
+            UiIntent::Move(NavigationMove::Next) => self.move_action(1),
+            UiIntent::Move(NavigationMove::First) => {
+                if let Some(first) = self.available.first().copied() {
+                    if first != self.selected {
+                        self.selected = first;
+                        return PermissionOutcome::SelectionChanged;
+                    }
+                }
+                PermissionOutcome::Ignored
+            }
+            UiIntent::Move(NavigationMove::Last) => {
+                if let Some(last) = self.available.last().copied() {
+                    if last != self.selected {
+                        self.selected = last;
+                        return PermissionOutcome::SelectionChanged;
+                    }
+                }
+                PermissionOutcome::Ignored
+            }
+            UiIntent::Activate | UiIntent::Submit => self.confirm(head.generation),
+            UiIntent::Cancel | UiIntent::Close => {
+                let generation = head.generation;
+                let id = head.id.clone();
+                let _ = self.queue.dismiss_head(generation);
+                self.sync_from_head();
+                PermissionOutcome::Cancelled {
+                    request_id: Some(id),
+                    generation,
+                }
+            }
+            UiIntent::Expand => {
+                if !self.details_expanded {
+                    self.details_expanded = true;
+                    PermissionOutcome::DetailsToggled { expanded: true }
+                } else {
+                    PermissionOutcome::Ignored
+                }
+            }
+            UiIntent::Collapse => {
+                if self.details_expanded {
+                    self.details_expanded = false;
+                    PermissionOutcome::DetailsToggled { expanded: false }
+                } else {
+                    PermissionOutcome::Ignored
+                }
+            }
+            // Toggle = details disclosure (permission intent map maps `d`).
+            UiIntent::Toggle => {
+                self.details_expanded = !self.details_expanded;
+                PermissionOutcome::DetailsToggled {
+                    expanded: self.details_expanded,
+                }
+            }
+            UiIntent::Open | UiIntent::Page(_) => PermissionOutcome::Ignored,
+        }
+    }
+
     fn handle_edit_key(&mut self, key: KeyEvent, is_press: bool) -> PermissionOutcome {
         match key.code {
             KeyCode::Esc if is_press => {
@@ -1543,6 +1616,44 @@ mod tests {
     }
 
     #[test]
+    #[test]
+    fn handle_intent_activates_deny_by_default() {
+        use crate::interaction::UiIntent;
+        let mut state = PermissionPromptState::new();
+        state.enqueue(destructive_shell());
+        assert!(!state.selected().grants());
+        let out = state.handle_intent(UiIntent::Activate);
+        assert!(
+            matches!(
+                out,
+                PermissionOutcome::Decided {
+                    action: PermissionAction::Deny,
+                    ..
+                }
+            ),
+            "{out:?}"
+        );
+    }
+
+    #[test]
+    fn handle_intent_cancel_dismisses_without_grant() {
+        use crate::interaction::UiIntent;
+        let mut state = PermissionPromptState::new();
+        state.enqueue(destructive_shell());
+        let out = state.handle_intent(UiIntent::Cancel);
+        assert!(
+            matches!(out, PermissionOutcome::Cancelled { .. }),
+            "{out:?}"
+        );
+        assert!(state.is_empty());
+    }
+
+    #[test]
+    fn default_permission_intent_has_no_y_grant() {
+        use crate::interaction::default_permission_intent;
+        assert_eq!(default_permission_intent(press(KeyCode::Char('y'))), None);
+    }
+
     fn default_focus_is_never_allow() {
         for risk in [
             PermissionRisk::Low,
@@ -1666,7 +1777,7 @@ mod tests {
 
     #[test]
     fn y_is_not_bound_to_allow_on_permission_prompt() {
-        // Unlike ApprovalCard shortcuts, trust surface does not grant on 'y'.
+        // Trust surface must not grant on 'y' (legacy dual chrome used to).
         let mut state = PermissionPromptState::new();
         state.enqueue(destructive_shell());
         let out = state.handle_key(press(KeyCode::Char('y')));
@@ -1947,10 +2058,7 @@ mod tests {
         let out = state.open_overlay(&mut stack, bounds, Some("composer"));
         assert!(matches!(out, OverlayOutcome::Opened { .. }));
         assert_eq!(stack.top().unwrap().kind, OverlayKind::AlertDialog);
-        assert_eq!(
-            stack.top().unwrap().id.as_str(),
-            PERMISSION_OVERLAY_ID
-        );
+        assert_eq!(stack.top().unwrap().id.as_str(), PERMISSION_OVERLAY_ID);
     }
 
     #[test]

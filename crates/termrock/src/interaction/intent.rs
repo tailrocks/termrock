@@ -113,6 +113,39 @@ pub fn default_table_intent(key: KeyEvent) -> Option<UiIntent> {
     })
 }
 
+/// Default intent map for [`crate::widgets::PermissionPrompt`] navigation.
+///
+/// Covers Activate / Cancel / Move / Expand-Collapse details. Product chords
+/// (`e` edit, `p` pattern, `n` deny, scope brackets) remain on
+/// [`crate::widgets::PermissionPromptState::handle_key`] until a dedicated
+/// keymap pack is adopted.
+#[must_use]
+pub fn default_permission_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    // Press-only for confirm/cancel to avoid held-key multi-fire.
+    let is_press = key.kind == KeyEventKind::Press;
+    match key.code {
+        KeyCode::Left | KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Right | KeyCode::Down | KeyCode::Tab
+            if !key.modifiers.contains(KeyModifiers::SHIFT) =>
+        {
+            Some(UiIntent::Move(NavigationMove::Next))
+        }
+        KeyCode::BackTab => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Tab if key.modifiers.contains(KeyModifiers::SHIFT) => {
+            Some(UiIntent::Move(NavigationMove::Previous))
+        }
+        KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
+        KeyCode::Char('d' | 'D') if is_press => Some(UiIntent::Toggle), // details — host maps Toggle→Expand/Collapse
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -133,6 +166,27 @@ mod tests {
         );
         assert_eq!(
             default_list_intent(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
+            None
+        );
+    }
+
+    #[test]
+    fn default_permission_intent_maps_nav_and_fail_safe_keys() {
+        assert_eq!(
+            default_permission_intent(KeyEvent::new(KeyCode::Left, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::Previous))
+        );
+        assert_eq!(
+            default_permission_intent(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            Some(UiIntent::Activate)
+        );
+        assert_eq!(
+            default_permission_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            Some(UiIntent::Cancel)
+        );
+        // No grant-on-y in the intent map.
+        assert_eq!(
+            default_permission_intent(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE)),
             None
         );
     }

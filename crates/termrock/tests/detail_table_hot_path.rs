@@ -6,12 +6,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
 use termrock::{
     style::{DesignSystem, RolePalette},
-    widgets::{
-        DetailCapability,
-        DetailRow,
-        DetailTable,
-        DetailTableState,
-    },
+    widgets::{DetailCapability, DetailRow, DetailTable, DetailTableState},
 };
 
 #[global_allocator]

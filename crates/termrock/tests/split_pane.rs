@@ -6,20 +6,9 @@ use ratatui_core::{
     widgets::StatefulWidget,
 };
 use termrock::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyModifiers,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, RolePalette},
-    widgets::{
-        SplitDirection,
-        SplitPane,
-        SplitPaneOutcome,
-        SplitPaneState,
-        SplitRatio,
-        SplitSide,
-    },
+    widgets::{SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, SplitSide},
 };
 
 #[test]

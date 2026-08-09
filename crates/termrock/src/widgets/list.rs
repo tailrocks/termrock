@@ -8,27 +8,11 @@ use ratatui_core::{
 use ratatui_core::style::Modifier;
 
 use crate::{
-
-    input::{
-        KeyEvent,
-        KeyEventKind,
-    },
-    interaction::{
-        default_list_intent,
-        HitRegion,
-        NavigationMove,
-        Outcome,
-        PageMove,
-        UiIntent,
-    },
+    input::{KeyEvent, KeyEventKind},
+    interaction::{HitRegion, NavigationMove, Outcome, PageMove, UiIntent, default_list_intent},
     scroll::max_offset,
-    style::{
-        DesignSystem,
-        ListRowVisualState,
-        Role,
-    },
+    style::{DesignSystem, ListRowVisualState, Role},
 };
-
 
 use super::{ComposedRow, Selection};
 
@@ -259,8 +243,6 @@ impl<Id> ListState<Id> {
     pub const fn hovered(&self) -> Option<&Id> {
         self.hovered.as_ref()
     }
-
-
 
     #[must_use]
     /// Returns the first visible row index.
@@ -737,15 +719,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     buffer.set_stringn(rect.x, rect.y, "  ", 2, style);
                 }
                 let check_x = rect.x.saturating_add(2);
-                let check_w = render_check_cell(
-                    buffer,
-                    state,
-                    row,
-                    rect,
-                    check_x,
-                    &recipe,
-                    style,
-                );
+                let check_w = render_check_cell(buffer, state, row, rect, check_x, &recipe, style);
                 let content_x = check_x.saturating_add(check_w);
                 if content_x < rect.right() {
                     let content_w = rect.right().saturating_sub(content_x);
@@ -950,13 +924,7 @@ fn render_check_cell<Id: Clone>(
     if paint_w == 0 {
         return 0;
     }
-    buffer.set_stringn(
-        check_x,
-        rect.y,
-        marker,
-        usize::from(paint_w),
-        style,
-    );
+    buffer.set_stringn(check_x, rect.y, marker, usize::from(paint_w), style);
     // Trailing gap after check for content separation.
     let gap = u16::from(available > paint_w);
     if gap > 0 {
@@ -1305,10 +1273,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
         let pos = state.regions()[0].area;
-        assert_eq!(
-            state.click(Position::new(pos.x, pos.y)),
-            Outcome::Changed
-        );
+        assert_eq!(state.click(Position::new(pos.x, pos.y)), Outcome::Changed);
         assert_eq!(state.selected(), Some(&"first"));
     }
 
@@ -1343,7 +1308,6 @@ mod tests {
         );
         assert!(text.contains("Build"), "{text:?}");
     }
-
 
     #[test]
     fn fluent_row_builder_and_from_system() {

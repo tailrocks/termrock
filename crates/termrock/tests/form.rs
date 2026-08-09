@@ -9,19 +9,9 @@ use ratatui_core::{
 };
 use termrock::style::Role;
 use termrock::{
-    input::{
-        KeyCode,
-        KeyEvent,
-        KeyModifiers,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, RolePalette},
-    widgets::{
-        Form,
-        FormField,
-        FormOutcome,
-        FormSection,
-        FormState,
-    },
+    widgets::{Form, FormField, FormOutcome, FormSection, FormState},
 };
 
 fn fields() -> Vec<FormField<'static, &'static str>> {

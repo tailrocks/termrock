@@ -1,11 +1,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    style::{DesignSystem, Role, RolePalette},
     text::display_cols,
 };
 
@@ -238,7 +234,8 @@ mod tests {
         let area = Rect::new(0, 0, 8, 1);
         let mut first = Buffer::empty(area);
         let mut second = Buffer::empty(area);
-        let progress = Progress::new(ProgressKind::Indeterminate { tick: 3 }, &system).label("Load");
+        let progress =
+            Progress::new(ProgressKind::Indeterminate { tick: 3 }, &system).label("Load");
         (&progress).render(area, &mut first);
         (&progress).render(area, &mut second);
 

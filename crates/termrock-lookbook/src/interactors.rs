@@ -8,87 +8,20 @@ use ratatui::{
 };
 use std::num::NonZeroU16;
 use termrock::{
-    input::{
-        Event,
-        KeyCode,
-        KeyEvent,
-        MouseButton,
-        MouseEvent,
-        MouseEventKind,
-    },
+    input::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::Outcome,
-    style::{
-        RolePalette,
-        ColorCapability,
-        Density,
-        DesignSystem,
-    },
+    style::{ColorCapability, Density, DesignSystem, RolePalette},
     widgets::{
-        Anchor,
-        ApprovalCard,
-        ApprovalCardState,
-        ApprovalRisk,
-        BUILTIN_THEME_PRESETS,
-        CellAlignment,
-        ChoiceDialogState,
-        Column,
-        ColumnWidth,
-        CommandPalette,
-        CommandPaletteState,
-        ComposerChip,
-        ContextEstimate,
-        DesignInspector,
-        DesignInspectorFrame,
-        Form,
-        FormOutcome,
-        FormSection,
-        FormState,
-        InspectorPanel,
-        List,
-        ListState,
-        LogPane,
-        LogPaneState,
-        ModeIndicator,
-        ModelIndicator,
-        Picker,
-        PickerOutcome,
-        PickerState,
-        PromptBox,
-        PromptBoxState,
-        PromptComposer,
-        PromptComposerOutcome,
-        PromptComposerState,
-        Severity,
-        SplitDirection,
-        SplitPane,
-        SplitPaneOutcome,
-        SplitPaneState,
-        SplitRatio,
-        Tab,
-        Table,
-        TableOutcome,
-        TableRow,
-        TableState,
-        Tabs,
-        TabsState,
-        TextArea,
-        TextAreaOutcome,
-        TextAreaState,
-        TextInput,
-        TextInputOutcome,
-        TextInputState,
-        ThemePicker,
-        ThemePickerState,
-        Toast,
-        Transcript,
-        TranscriptBlock,
-        TranscriptKind,
-        TranscriptState,
-        Tree,
-        TreeNode,
-        TreeOutcome,
-        TreeState,
-        VirtualGridState,
+        Anchor, BUILTIN_THEME_PRESETS, CellAlignment, ChoiceDialogState, Column, ColumnWidth,
+        CommandPalette, CommandPaletteState, ComposerChip, ContextEstimate, DesignInspector,
+        DesignInspectorFrame, Form, FormOutcome, FormSection, FormState, InspectorPanel, List,
+        ListState, LogPane, LogPaneState, ModeIndicator, ModelIndicator, Picker, PickerOutcome,
+        PickerState, PromptComposer, PromptComposerOutcome, PromptComposerState, Severity,
+        SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, Tab, Table,
+        TableOutcome, TableRow, TableState, Tabs, TabsState, TextArea, TextAreaOutcome,
+        TextAreaState, TextInput, TextInputOutcome, TextInputState, ThemePicker, ThemePickerState,
+        Toast, Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode,
+        TreeOutcome, TreeState, VirtualGridState,
     },
 };
 
@@ -229,7 +162,12 @@ impl ChoiceDialogInteractor {
 
 impl StoryInteraction for ChoiceDialogInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        render_choice_dialog(frame, area, &mut self.state, &DesignSystem::from_palette(self.theme.clone()));
+        render_choice_dialog(
+            frame,
+            area,
+            &mut self.state,
+            &DesignSystem::from_palette(self.theme.clone()),
+        );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -525,7 +463,11 @@ impl StoryInteraction for FormInteractor {
             title: ratatui::text::Line::from("General"),
             fields: &fields,
         }];
-        frame.render_stateful_widget(&Form::new(&sections, &DesignSystem::from_palette(self.theme.clone())), area, &mut self.state);
+        frame.render_stateful_widget(
+            &Form::new(&sections, &DesignSystem::from_palette(self.theme.clone())),
+            area,
+            &mut self.state,
+        );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -582,7 +524,12 @@ impl SplitPaneInteractor {
 
 impl StoryInteraction for SplitPaneInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        render_split_pane(frame, area, &mut self.state, &DesignSystem::from_palette(self.theme.clone()));
+        render_split_pane(
+            frame,
+            area,
+            &mut self.state,
+            &DesignSystem::from_palette(self.theme.clone()),
+        );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -688,7 +635,12 @@ impl ToastInteractor {
 impl StoryInteraction for ToastInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_widget(
-            Toast::new(&DesignSystem::from_palette(self.theme.clone()), self.message.value(), self.severity()).anchor(self.anchor()),
+            Toast::new(
+                &DesignSystem::from_palette(self.theme.clone()),
+                self.message.value(),
+                self.severity(),
+            )
+            .anchor(self.anchor()),
             area,
         );
     }
@@ -738,7 +690,8 @@ impl StoryInteraction for ToastInteractor {
     fn render_knob_editor(&mut self, selected: usize, frame: &mut Frame<'_>, area: Rect) {
         if selected == 2 {
             frame.render_stateful_widget(
-                &TextInput::new("Message", &DesignSystem::from_palette(self.theme.clone())).placeholder("Toast message"),
+                &TextInput::new("Message", &DesignSystem::from_palette(self.theme.clone()))
+                    .placeholder("Toast message"),
                 area,
                 &mut self.message,
             );
@@ -788,7 +741,11 @@ impl StoryInteraction for TabsInteractor {
                 enabled: true,
             },
         ];
-        frame.render_stateful_widget(&Tabs::new(&tabs, &DesignSystem::from_palette(self.theme.clone())).gap(1), area, &mut self.state);
+        frame.render_stateful_widget(
+            &Tabs::new(&tabs, &DesignSystem::from_palette(self.theme.clone())).gap(1),
+            area,
+            &mut self.state,
+        );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -879,7 +836,10 @@ impl ThemePickerInteractor {
 impl StoryInteraction for ThemePickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &ThemePicker::new(BUILTIN_THEME_PRESETS, &DesignSystem::from_palette(self.theme.clone())),
+            &ThemePicker::new(
+                BUILTIN_THEME_PRESETS,
+                &DesignSystem::from_palette(self.theme.clone()),
+            ),
             area,
             &mut self.state,
         );
@@ -949,50 +909,6 @@ impl StoryInteraction for CommandPaletteInteractor {
     }
 }
 
-pub(crate) struct ApprovalCardInteractor {
-    state: ApprovalCardState,
-    theme: RolePalette,
-}
-
-impl ApprovalCardInteractor {
-    pub(crate) fn new() -> Self {
-        Self {
-            state: ApprovalCardState::new(),
-            theme: RolePalette::default(),
-        }
-    }
-}
-
-impl StoryInteraction for ApprovalCardInteractor {
-    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        frame.render_stateful_widget(
-            &ApprovalCard::new(
-                "Write files",
-                "Agent requests write access to src/",
-                ApprovalRisk::High,
-                &DesignSystem::from_palette(self.theme.clone()),
-            ),
-            area,
-            &mut self.state,
-        );
-    }
-
-    fn handle_key(&mut self, key: KeyEvent) -> bool {
-        !matches!(
-            self.state.handle_key(key),
-            termrock::widgets::ApprovalCardOutcome::Ignored
-        )
-    }
-
-    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
-        false
-    }
-
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
-    }
-}
-
 pub(crate) struct DesignInspectorInteractor {
     panel: InspectorPanel,
     theme: RolePalette,
@@ -1021,7 +937,8 @@ impl StoryInteraction for DesignInspectorInteractor {
             selection_chrome: "gutter",
         };
         frame.render_widget(
-            DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone())).panel(self.panel),
+            DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone()))
+                .panel(self.panel),
             area,
         );
     }
@@ -1115,49 +1032,6 @@ impl StoryInteraction for TranscriptInteractor {
     }
 }
 
-pub(crate) struct PromptBoxInteractor {
-    state: PromptBoxState,
-    theme: RolePalette,
-}
-
-impl PromptBoxInteractor {
-    pub(crate) fn new() -> Self {
-        Self {
-            state: PromptBoxState::new(),
-            theme: RolePalette::default(),
-        }
-    }
-}
-
-impl StoryInteraction for PromptBoxInteractor {
-    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        frame.render_stateful_widget(
-            &PromptBox::new(&DesignSystem::from_palette(self.theme.clone())).placeholder("Ask anything…"),
-            area,
-            &mut self.state,
-        );
-    }
-
-    fn handle_key(&mut self, key: KeyEvent) -> bool {
-        !matches!(
-            self.state.handle_key(key),
-            termrock::widgets::PromptBoxOutcome::Ignored
-        )
-    }
-
-    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
-        false
-    }
-
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
-    }
-
-    fn captures_text_input(&self) -> bool {
-        true
-    }
-}
-
 pub(crate) struct PromptComposerInteractor {
     state: PromptComposerState,
     theme: RolePalette,
@@ -1193,11 +1067,7 @@ impl PromptComposerInteractor {
 
 impl StoryInteraction for PromptComposerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        frame.render_stateful_widget(
-            &PromptComposer::new(&self.tokens),
-            area,
-            &mut self.state,
-        );
+        frame.render_stateful_widget(&PromptComposer::new(&self.tokens), area, &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {

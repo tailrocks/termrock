@@ -1,24 +1,13 @@
 //! Integration coverage for the log-pane rendering hot path.
 
-use std::{
-    alloc::System,
-    hint::black_box,
-    sync::Mutex,
-    time::Instant,
-};
+use std::{alloc::System, hint::black_box, sync::Mutex, time::Instant};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
 use termrock::{
-    perf::{
-        check_batch_budget,
-        check_max_rows_touched,
-    },
+    perf::{check_batch_budget, check_max_rows_touched},
     style::{DesignSystem, RolePalette},
-    widgets::{
-        LogPane,
-        LogPaneState,
-    },
+    widgets::{LogPane, LogPaneState},
 };
 
 #[global_allocator]

@@ -6,15 +6,8 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
-    text::{
-        display_cols,
-        take_display_cols,
-    },
+    style::{DesignSystem, Role, RolePalette},
+    text::{display_cols, take_display_cols},
     widgets::Severity,
 };
 
@@ -336,7 +329,8 @@ mod tests {
         let theme = RolePalette::default();
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 1));
-        Banner::new("Saved", Severity::Success, &system).render(Rect::new(0, 0, 20, 1), &mut buffer);
+        Banner::new("Saved", Severity::Success, &system)
+            .render(Rect::new(0, 0, 20, 1), &mut buffer);
         assert_eq!(buffer[(0, 0)].symbol(), "✓");
     }
 }
