@@ -12,6 +12,14 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/terminal-design-system.md`](../docs/design/terminal-design-system.md) | Full token + recipe system (DesignSystem) |
 | [`docs/design/product-audit.md`](../docs/design/product-audit.md) | Product/architecture audit |
 | [`docs/design/component-anatomy-spec.md`](../docs/design/component-anatomy-spec.md) | Component anatomy/behavior/state catalog |
+| [`docs/design/component-prompt-library.md`](../docs/design/component-prompt-library.md) | **164 agent prompts** (global contract + per-component tasks) |
+
+### Using the component prompt library
+
+1. Paste the **Global implementation contract** from the library (top of the file).
+2. Paste **one** numbered component prompt (or a grouped pair, e.g. Tag+Chip).
+3. Prefer the library’s **Recommended build order**: foundation wave → representative components → developer tools → AI signature → application blocks.
+4. Plans **050–053** are the executable wave wrappers; the prompt library is the per-component task source.
 
 ## Open executable plans (do in order)
 
