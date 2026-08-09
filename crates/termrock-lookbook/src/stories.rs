@@ -19,8 +19,8 @@ use termrock::{
     scroll::DialogScroll,
     style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
     widgets::{
-        Action, ActionBar, ActionBarState, ActionLink, Anchor, BUILTIN_THEME_PRESETS, Backdrop,
-        Badge, Banner,
+        Action, ActionBar, ActionBarState, ActionLink, Anchor, AnsiParseOptions, AnsiText,
+        AnsiTextMode, AnsiTextState, BUILTIN_THEME_PRESETS, Backdrop, Badge, Banner,
         BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
         CheckboxState, ChoiceDialog, ChoiceDialogState, CodeBlock, CodeBlockState, CodeHighlight,
         CodeHighlightKind, CodeWrap, Column, ColumnWidth,
@@ -2601,6 +2601,42 @@ pub(crate) fn stories() -> Vec<Story> {
             action_link_story,
         ),
         Story::new(
+            "ansi-text/basic",
+            "AnsiText SGR",
+            "AnsiText",
+            "SGR colors and styles from command output.",
+            48,
+            5,
+            ansi_text_basic_story,
+        ),
+        Story::new(
+            "ansi-text/no-color",
+            "AnsiText no-color",
+            "AnsiText",
+            "No-color mode keeps bold/dim cues only.",
+            48,
+            4,
+            ansi_text_no_color_story,
+        ),
+        Story::new(
+            "ansi-text/cr-bs",
+            "AnsiText CR/BS",
+            "AnsiText",
+            "Carriage return overwrite and backspace erase.",
+            32,
+            3,
+            ansi_text_cr_bs_story,
+        ),
+        Story::new(
+            "ansi-text/hyperlink",
+            "AnsiText OSC-8",
+            "AnsiText",
+            "OSC 8 hyperlink styled as Link role.",
+            40,
+            2,
+            ansi_text_hyperlink_story,
+        ),
+        Story::new(
             "shortcut-hint/footer",
             "ShortcutHint footer",
             "ShortcutHint",
@@ -3356,6 +3392,24 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             6,
             jump_overlay_unicode_story,
+        ),
+        Story::new(
+            "ansi-text/narrow",
+            "Narrow AnsiText",
+            "AnsiText",
+            "Narrow-terminal geometry for AnsiText (16 cols).",
+            16,
+            4,
+            ansi_text_basic_story,
+        ),
+        Story::new(
+            "ansi-text/unicode",
+            "Unicode AnsiText",
+            "AnsiText",
+            "Unicode-safe paint path for AnsiText.",
+            40,
+            3,
+            ansi_text_unicode_story,
         ),
         Story::new(
             "kbd/narrow",
@@ -9547,6 +9601,54 @@ fn link_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     let mut state = LinkState::new();
     let _ = Link::url("文档 🔗", "https://example.invalid/文档", system)
         .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn ansi_text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::parse_lines;
+    let src = "\
+\x1b[1mbuild\x1b[0m \x1b[32mok\x1b[0m
+\x1b[33mwarn\x1b[0m unused
+\x1b[31merror\x1b[0m failed
+plain trailing
+";
+    let lines = parse_lines(src, &AnsiParseOptions::for_system(system));
+    let mut state = AnsiTextState::new();
+    AnsiText::lines(&lines, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn ansi_text_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::parse_lines;
+    let system = system.clone().no_color();
+    let src = "\x1b[31;1mRED bold\x1b[0m \x1b[32mgreen\x1b[0m\nplain\n";
+    let lines = parse_lines(src, &AnsiParseOptions::for_system(&system).no_color(true));
+    let mut state = AnsiTextState::new();
+    AnsiText::lines(&lines, &system)
+        .mode(AnsiTextMode::NoColor)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn ansi_text_cr_bs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::parse_lines;
+    let src = "loading....\rDONE   \nabc\x08\x08X\n";
+    let lines = parse_lines(src, &AnsiParseOptions::for_system(system));
+    let mut state = AnsiTextState::new();
+    AnsiText::lines(&lines, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn ansi_text_hyperlink_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::parse_lines;
+    let src = "see \x1b]8;;https://example.invalid\x1b\\docs\x1b]8;;\x1b\\ here\n";
+    let lines = parse_lines(src, &AnsiParseOptions::for_system(system));
+    let mut state = AnsiTextState::new();
+    AnsiText::lines(&lines, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn ansi_text_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::parse_lines;
+    let src = "\x1b[36m文档\x1b[0m 🔗 \x1b[1mOK\x1b[0m\n";
+    let lines = parse_lines(src, &AnsiParseOptions::for_system(system));
+    let mut state = AnsiTextState::new();
+    AnsiText::lines(&lines, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn action_link_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

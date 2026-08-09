@@ -1,5 +1,10 @@
 //! Product-neutral terminal widgets with borrowed render data and stable IDs.
 
+pub use crate::ansi_text::{
+    AnsiLine, AnsiParseOptions, AnsiSegment, AnsiStream, AnsiText, AnsiTextMode, AnsiTextState,
+    is_paint_safe, line_from_ansi, lines_for_log, parse_lines, parse_to_line, strip_bytes,
+    strip_str, styled_spans,
+};
 pub use crate::interaction::Outcome;
 
 mod action_bar;

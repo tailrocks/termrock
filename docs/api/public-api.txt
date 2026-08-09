@@ -1,7 +1,353 @@
 pub mod termrock
 pub mod termrock::ansi_text
+#[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
+pub termrock::ansi_text::AnsiTextMode::Color
+pub termrock::ansi_text::AnsiTextMode::NoColor
+pub termrock::ansi_text::AnsiTextMode::Plain
+impl termrock::ansi_text::AnsiTextMode
+pub const fn termrock::ansi_text::AnsiTextMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::clone(&self) -> termrock::ansi_text::AnsiTextMode
+impl core::cmp::Eq for termrock::ansi_text::AnsiTextMode
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::eq(&self, &termrock::ansi_text::AnsiTextMode) -> bool
+impl core::default::Default for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::default() -> termrock::ansi_text::AnsiTextMode
+impl core::fmt::Debug for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::ansi_text::AnsiTextMode
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiTextMode
+impl core::marker::Freeze for termrock::ansi_text::AnsiTextMode
+impl core::marker::Send for termrock::ansi_text::AnsiTextMode
+impl core::marker::Sync for termrock::ansi_text::AnsiTextMode
+impl core::marker::Unpin for termrock::ansi_text::AnsiTextMode
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiTextMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiTextMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiTextMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::ansi_text::AnsiTextMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiTextMode where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiTextMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiTextMode where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiTextMode::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiTextMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiTextMode where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiTextMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiTextMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiTextMode where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiTextMode::Owned = T
+pub fn termrock::ansi_text::AnsiTextMode::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiTextMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiTextMode where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiTextMode where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiTextMode where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiTextMode where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiTextMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiTextMode
+pub struct termrock::ansi_text::AnsiLine
+pub termrock::ansi_text::AnsiLine::plain: alloc::string::String
+pub termrock::ansi_text::AnsiLine::segments: alloc::vec::Vec<termrock::ansi_text::AnsiSegment>
+impl termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::empty(ratatui_core::style::Style) -> Self
+pub fn termrock::ansi_text::AnsiLine::has_hyperlinks(&self) -> bool
+pub fn termrock::ansi_text::AnsiLine::hyperlinks(&self) -> alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+pub fn termrock::ansi_text::AnsiLine::to_line(&self) -> ratatui_core::text::line::Line<'static>
+pub fn termrock::ansi_text::AnsiLine::to_spans(&self) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::ansi_text::AnsiLine::width(&self) -> usize
+impl core::clone::Clone for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::clone(&self) -> termrock::ansi_text::AnsiLine
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::eq(&self, &termrock::ansi_text::AnsiLine) -> bool
+impl core::fmt::Debug for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiLine
+impl core::marker::Freeze for termrock::ansi_text::AnsiLine
+impl core::marker::Send for termrock::ansi_text::AnsiLine
+impl core::marker::Sync for termrock::ansi_text::AnsiLine
+impl core::marker::Unpin for termrock::ansi_text::AnsiLine
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiLine
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiLine
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiLine
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiLine where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiLine::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiLine where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiLine::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiLine::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiLine where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiLine::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiLine::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiLine where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiLine::Owned = T
+pub fn termrock::ansi_text::AnsiLine::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiLine::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiLine where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiLine::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiLine where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiLine::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiLine where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiLine::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiLine where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiLine::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiLine
+pub struct termrock::ansi_text::AnsiParseOptions
+pub termrock::ansi_text::AnsiParseOptions::apply_cr_bs: bool
+pub termrock::ansi_text::AnsiParseOptions::default_style: ratatui_core::style::Style
+pub termrock::ansi_text::AnsiParseOptions::expand_tabs: bool
+pub termrock::ansi_text::AnsiParseOptions::hyperlinks: bool
+pub termrock::ansi_text::AnsiParseOptions::no_color: bool
+pub termrock::ansi_text::AnsiParseOptions::tab_width: u8
+impl termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::for_system(&termrock::style::DesignSystem) -> Self
+pub const fn termrock::ansi_text::AnsiParseOptions::no_color(self, bool) -> Self
+pub const fn termrock::ansi_text::AnsiParseOptions::strip_only(self) -> Self
+pub const fn termrock::ansi_text::AnsiParseOptions::with_default_style(self, ratatui_core::style::Style) -> Self
+impl core::clone::Clone for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::clone(&self) -> termrock::ansi_text::AnsiParseOptions
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::eq(&self, &termrock::ansi_text::AnsiParseOptions) -> bool
+impl core::default::Default for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::default() -> Self
+impl core::fmt::Debug for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Freeze for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Send for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Sync for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Unpin for termrock::ansi_text::AnsiParseOptions
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiParseOptions
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiParseOptions
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiParseOptions
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiParseOptions where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiParseOptions::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiParseOptions where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiParseOptions::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiParseOptions::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiParseOptions where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiParseOptions::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiParseOptions::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiParseOptions where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiParseOptions::Owned = T
+pub fn termrock::ansi_text::AnsiParseOptions::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiParseOptions::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiParseOptions where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiParseOptions::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiParseOptions where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiParseOptions::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiParseOptions where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiParseOptions::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiParseOptions where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiParseOptions::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiParseOptions
+pub struct termrock::ansi_text::AnsiSegment
+pub termrock::ansi_text::AnsiSegment::href: core::option::Option<alloc::string::String>
+pub termrock::ansi_text::AnsiSegment::style: ratatui_core::style::Style
+pub termrock::ansi_text::AnsiSegment::text: alloc::string::String
+impl termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::plain(impl core::convert::Into<alloc::string::String>, ratatui_core::style::Style) -> Self
+impl core::clone::Clone for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::clone(&self) -> termrock::ansi_text::AnsiSegment
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::eq(&self, &termrock::ansi_text::AnsiSegment) -> bool
+impl core::fmt::Debug for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiSegment
+impl core::marker::Freeze for termrock::ansi_text::AnsiSegment
+impl core::marker::Send for termrock::ansi_text::AnsiSegment
+impl core::marker::Sync for termrock::ansi_text::AnsiSegment
+impl core::marker::Unpin for termrock::ansi_text::AnsiSegment
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiSegment
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiSegment
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiSegment
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiSegment where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiSegment::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiSegment where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiSegment::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiSegment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiSegment where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiSegment::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiSegment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiSegment where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiSegment::Owned = T
+pub fn termrock::ansi_text::AnsiSegment::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiSegment::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiSegment where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiSegment::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiSegment where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiSegment::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiSegment where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiSegment::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiSegment where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiSegment::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiSegment
+pub struct termrock::ansi_text::AnsiStream
+impl termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::clear(&mut self)
+pub fn termrock::ansi_text::AnsiStream::drain_into_lines<F>(&mut self, F) where F: core::ops::function::FnMut(ratatui_core::text::line::Line<'static>)
+pub fn termrock::ansi_text::AnsiStream::drain_lines(&mut self) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::AnsiStream::feed(&mut self, &[u8])
+pub fn termrock::ansi_text::AnsiStream::feed_str(&mut self, &str)
+pub fn termrock::ansi_text::AnsiStream::finish_line(&mut self)
+pub fn termrock::ansi_text::AnsiStream::has_partial(&self) -> bool
+pub fn termrock::ansi_text::AnsiStream::into_lines(self) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::AnsiStream::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::AnsiStream::new(termrock::ansi_text::AnsiParseOptions) -> Self
+pub const fn termrock::ansi_text::AnsiStream::options(&self) -> &termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiStream::pending_plain(&self) -> alloc::string::String
+pub fn termrock::ansi_text::AnsiStream::plain(&self) -> alloc::string::String
+pub fn termrock::ansi_text::AnsiStream::reset_style(&mut self)
+pub fn termrock::ansi_text::AnsiStream::with_max_lines(self, usize) -> Self
+impl core::clone::Clone for termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::clone(&self) -> termrock::ansi_text::AnsiStream
+impl core::fmt::Debug for termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for termrock::ansi_text::AnsiStream
+impl core::marker::Send for termrock::ansi_text::AnsiStream
+impl core::marker::Sync for termrock::ansi_text::AnsiStream
+impl core::marker::Unpin for termrock::ansi_text::AnsiStream
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiStream
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiStream
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiStream
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiStream where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiStream::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiStream where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiStream::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiStream::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiStream where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiStream::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiStream::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiStream where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiStream::Owned = T
+pub fn termrock::ansi_text::AnsiStream::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiStream::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiStream where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiStream::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiStream where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiStream::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiStream where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiStream::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiStream where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiStream::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiStream
+pub struct termrock::ansi_text::AnsiText<'a>
+impl<'a> termrock::ansi_text::AnsiText<'a>
+pub const fn termrock::ansi_text::AnsiText<'a>::first(self, usize) -> Self
+pub const fn termrock::ansi_text::AnsiText<'a>::is_empty(&self) -> bool
+pub const fn termrock::ansi_text::AnsiText<'a>::len(&self) -> usize
+pub const fn termrock::ansi_text::AnsiText<'a>::lines(&'a [termrock::ansi_text::AnsiLine], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::ansi_text::AnsiText<'a>::mode(self, termrock::ansi_text::AnsiTextMode) -> Self
+pub fn termrock::ansi_text::AnsiText<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::ansi_text::AnsiTextState)
+pub fn termrock::ansi_text::AnsiText<'a>::plain(&self) -> alloc::string::String
+impl ratatui_core::widgets::widget::Widget for &termrock::ansi_text::AnsiText<'_>
+pub fn &termrock::ansi_text::AnsiText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::ansi_text::AnsiText<'_>
+pub fn termrock::ansi_text::AnsiText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::ansi_text::AnsiText<'a>
+pub fn termrock::ansi_text::AnsiText<'a>::clone(&self) -> termrock::ansi_text::AnsiText<'a>
+impl<'a> core::fmt::Debug for termrock::ansi_text::AnsiText<'a>
+pub fn termrock::ansi_text::AnsiText<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Freeze for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Send for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Sync for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Unpin for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiText<'a>
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiText<'a> where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiText<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiText<'a> where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiText<'a>::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiText<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiText<'a> where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiText<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiText<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiText<'a> where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiText<'a>::Owned = T
+pub fn termrock::ansi_text::AnsiText<'a>::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiText<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiText<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiText<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiText<'a> where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiText<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiText<'a> where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiText<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiText<'a> where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiText<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiText<'a>
+pub fn termrock::ansi_text::AnsiText<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiText<'a>
+pub struct termrock::ansi_text::AnsiTextState
+pub termrock::ansi_text::AnsiTextState::focused: bool
+pub termrock::ansi_text::AnsiTextState::scroll_y: usize
+impl termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::clamp(&mut self)
+pub const fn termrock::ansi_text::AnsiTextState::new() -> Self
+pub fn termrock::ansi_text::AnsiTextState::scroll_by(&mut self, isize) -> bool
+pub const fn termrock::ansi_text::AnsiTextState::set_focused(&mut self, bool)
+impl core::clone::Clone for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::clone(&self) -> termrock::ansi_text::AnsiTextState
+impl core::cmp::Eq for termrock::ansi_text::AnsiTextState
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::eq(&self, &termrock::ansi_text::AnsiTextState) -> bool
+impl core::default::Default for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::default() -> termrock::ansi_text::AnsiTextState
+impl core::fmt::Debug for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiTextState
+impl core::marker::Freeze for termrock::ansi_text::AnsiTextState
+impl core::marker::Send for termrock::ansi_text::AnsiTextState
+impl core::marker::Sync for termrock::ansi_text::AnsiTextState
+impl core::marker::Unpin for termrock::ansi_text::AnsiTextState
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiTextState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiTextState
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiTextState
+impl<Q, K> equivalent::Equivalent<K> for termrock::ansi_text::AnsiTextState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiTextState where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiTextState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiTextState where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiTextState::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiTextState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiTextState where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiTextState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiTextState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiTextState where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiTextState::Owned = T
+pub fn termrock::ansi_text::AnsiTextState::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiTextState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiTextState where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiTextState where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiTextState where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiTextState where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiTextState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::is_paint_safe(&str) -> bool
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
+pub fn termrock::ansi_text::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
+pub fn termrock::ansi_text::parse_lines(&str, &termrock::ansi_text::AnsiParseOptions) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::parse_to_line(&str, &termrock::ansi_text::AnsiParseOptions) -> termrock::ansi_text::AnsiLine
 pub fn termrock::ansi_text::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
+pub fn termrock::ansi_text::strip_str(&str) -> alloc::string::String
 pub fn termrock::ansi_text::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub mod termrock::capability
 #[non_exhaustive] pub enum termrock::capability::CapabilityKind
@@ -13772,6 +14118,57 @@ pub fn termrock::style::quantize_color(ratatui_core::style::color::Color, termro
 pub fn termrock::style::quantize_palette(&termrock::style::RolePalette, termrock::style::ColorCapability) -> termrock::style::RolePalette
 pub fn termrock::style::rgb_to_xterm256(u8, u8, u8) -> u8
 pub mod termrock::text
+#[non_exhaustive] pub enum termrock::text::AnsiTextMode
+pub termrock::text::AnsiTextMode::Color
+pub termrock::text::AnsiTextMode::NoColor
+pub termrock::text::AnsiTextMode::Plain
+impl termrock::ansi_text::AnsiTextMode
+pub const fn termrock::ansi_text::AnsiTextMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::clone(&self) -> termrock::ansi_text::AnsiTextMode
+impl core::cmp::Eq for termrock::ansi_text::AnsiTextMode
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::eq(&self, &termrock::ansi_text::AnsiTextMode) -> bool
+impl core::default::Default for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::default() -> termrock::ansi_text::AnsiTextMode
+impl core::fmt::Debug for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::ansi_text::AnsiTextMode
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiTextMode
+impl core::marker::Freeze for termrock::ansi_text::AnsiTextMode
+impl core::marker::Send for termrock::ansi_text::AnsiTextMode
+impl core::marker::Sync for termrock::ansi_text::AnsiTextMode
+impl core::marker::Unpin for termrock::ansi_text::AnsiTextMode
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiTextMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiTextMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiTextMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::ansi_text::AnsiTextMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiTextMode where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiTextMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiTextMode where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiTextMode::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiTextMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiTextMode where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiTextMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiTextMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiTextMode where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiTextMode::Owned = T
+pub fn termrock::ansi_text::AnsiTextMode::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiTextMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiTextMode where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiTextMode where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiTextMode where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiTextMode where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiTextMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiTextMode
 #[non_exhaustive] pub enum termrock::text::TruncateMode
 pub termrock::text::TruncateMode::End
 pub termrock::text::TruncateMode::Middle
@@ -13821,6 +14218,296 @@ pub unsafe fn termrock::text::TruncateMode::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::text::TruncateMode
 pub fn termrock::text::TruncateMode::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::text::TruncateMode
+pub struct termrock::text::AnsiLine
+pub termrock::text::AnsiLine::plain: alloc::string::String
+pub termrock::text::AnsiLine::segments: alloc::vec::Vec<termrock::ansi_text::AnsiSegment>
+impl termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::empty(ratatui_core::style::Style) -> Self
+pub fn termrock::ansi_text::AnsiLine::has_hyperlinks(&self) -> bool
+pub fn termrock::ansi_text::AnsiLine::hyperlinks(&self) -> alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+pub fn termrock::ansi_text::AnsiLine::to_line(&self) -> ratatui_core::text::line::Line<'static>
+pub fn termrock::ansi_text::AnsiLine::to_spans(&self) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::ansi_text::AnsiLine::width(&self) -> usize
+impl core::clone::Clone for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::clone(&self) -> termrock::ansi_text::AnsiLine
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::eq(&self, &termrock::ansi_text::AnsiLine) -> bool
+impl core::fmt::Debug for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiLine
+impl core::marker::Freeze for termrock::ansi_text::AnsiLine
+impl core::marker::Send for termrock::ansi_text::AnsiLine
+impl core::marker::Sync for termrock::ansi_text::AnsiLine
+impl core::marker::Unpin for termrock::ansi_text::AnsiLine
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiLine
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiLine
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiLine
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiLine where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiLine::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiLine where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiLine::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiLine::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiLine where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiLine::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiLine::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiLine where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiLine::Owned = T
+pub fn termrock::ansi_text::AnsiLine::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiLine::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiLine where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiLine::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiLine where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiLine::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiLine where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiLine::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiLine where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiLine::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiLine
+pub struct termrock::text::AnsiParseOptions
+pub termrock::text::AnsiParseOptions::apply_cr_bs: bool
+pub termrock::text::AnsiParseOptions::default_style: ratatui_core::style::Style
+pub termrock::text::AnsiParseOptions::expand_tabs: bool
+pub termrock::text::AnsiParseOptions::hyperlinks: bool
+pub termrock::text::AnsiParseOptions::no_color: bool
+pub termrock::text::AnsiParseOptions::tab_width: u8
+impl termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::for_system(&termrock::style::DesignSystem) -> Self
+pub const fn termrock::ansi_text::AnsiParseOptions::no_color(self, bool) -> Self
+pub const fn termrock::ansi_text::AnsiParseOptions::strip_only(self) -> Self
+pub const fn termrock::ansi_text::AnsiParseOptions::with_default_style(self, ratatui_core::style::Style) -> Self
+impl core::clone::Clone for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::clone(&self) -> termrock::ansi_text::AnsiParseOptions
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::eq(&self, &termrock::ansi_text::AnsiParseOptions) -> bool
+impl core::default::Default for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::default() -> Self
+impl core::fmt::Debug for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Freeze for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Send for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Sync for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Unpin for termrock::ansi_text::AnsiParseOptions
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiParseOptions
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiParseOptions
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiParseOptions
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiParseOptions where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiParseOptions::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiParseOptions where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiParseOptions::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiParseOptions::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiParseOptions where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiParseOptions::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiParseOptions::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiParseOptions where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiParseOptions::Owned = T
+pub fn termrock::ansi_text::AnsiParseOptions::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiParseOptions::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiParseOptions where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiParseOptions::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiParseOptions where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiParseOptions::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiParseOptions where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiParseOptions::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiParseOptions where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiParseOptions::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiParseOptions
+pub struct termrock::text::AnsiSegment
+pub termrock::text::AnsiSegment::href: core::option::Option<alloc::string::String>
+pub termrock::text::AnsiSegment::style: ratatui_core::style::Style
+pub termrock::text::AnsiSegment::text: alloc::string::String
+impl termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::plain(impl core::convert::Into<alloc::string::String>, ratatui_core::style::Style) -> Self
+impl core::clone::Clone for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::clone(&self) -> termrock::ansi_text::AnsiSegment
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::eq(&self, &termrock::ansi_text::AnsiSegment) -> bool
+impl core::fmt::Debug for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiSegment
+impl core::marker::Freeze for termrock::ansi_text::AnsiSegment
+impl core::marker::Send for termrock::ansi_text::AnsiSegment
+impl core::marker::Sync for termrock::ansi_text::AnsiSegment
+impl core::marker::Unpin for termrock::ansi_text::AnsiSegment
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiSegment
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiSegment
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiSegment
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiSegment where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiSegment::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiSegment where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiSegment::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiSegment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiSegment where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiSegment::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiSegment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiSegment where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiSegment::Owned = T
+pub fn termrock::ansi_text::AnsiSegment::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiSegment::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiSegment where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiSegment::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiSegment where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiSegment::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiSegment where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiSegment::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiSegment where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiSegment::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiSegment
+pub struct termrock::text::AnsiStream
+impl termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::clear(&mut self)
+pub fn termrock::ansi_text::AnsiStream::drain_into_lines<F>(&mut self, F) where F: core::ops::function::FnMut(ratatui_core::text::line::Line<'static>)
+pub fn termrock::ansi_text::AnsiStream::drain_lines(&mut self) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::AnsiStream::feed(&mut self, &[u8])
+pub fn termrock::ansi_text::AnsiStream::feed_str(&mut self, &str)
+pub fn termrock::ansi_text::AnsiStream::finish_line(&mut self)
+pub fn termrock::ansi_text::AnsiStream::has_partial(&self) -> bool
+pub fn termrock::ansi_text::AnsiStream::into_lines(self) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::AnsiStream::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::AnsiStream::new(termrock::ansi_text::AnsiParseOptions) -> Self
+pub const fn termrock::ansi_text::AnsiStream::options(&self) -> &termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiStream::pending_plain(&self) -> alloc::string::String
+pub fn termrock::ansi_text::AnsiStream::plain(&self) -> alloc::string::String
+pub fn termrock::ansi_text::AnsiStream::reset_style(&mut self)
+pub fn termrock::ansi_text::AnsiStream::with_max_lines(self, usize) -> Self
+impl core::clone::Clone for termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::clone(&self) -> termrock::ansi_text::AnsiStream
+impl core::fmt::Debug for termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for termrock::ansi_text::AnsiStream
+impl core::marker::Send for termrock::ansi_text::AnsiStream
+impl core::marker::Sync for termrock::ansi_text::AnsiStream
+impl core::marker::Unpin for termrock::ansi_text::AnsiStream
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiStream
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiStream
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiStream
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiStream where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiStream::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiStream where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiStream::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiStream::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiStream where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiStream::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiStream::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiStream where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiStream::Owned = T
+pub fn termrock::ansi_text::AnsiStream::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiStream::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiStream where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiStream::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiStream where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiStream::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiStream where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiStream::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiStream where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiStream::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiStream
+pub struct termrock::text::AnsiText<'a>
+impl<'a> termrock::ansi_text::AnsiText<'a>
+pub const fn termrock::ansi_text::AnsiText<'a>::first(self, usize) -> Self
+pub const fn termrock::ansi_text::AnsiText<'a>::is_empty(&self) -> bool
+pub const fn termrock::ansi_text::AnsiText<'a>::len(&self) -> usize
+pub const fn termrock::ansi_text::AnsiText<'a>::lines(&'a [termrock::ansi_text::AnsiLine], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::ansi_text::AnsiText<'a>::mode(self, termrock::ansi_text::AnsiTextMode) -> Self
+pub fn termrock::ansi_text::AnsiText<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::ansi_text::AnsiTextState)
+pub fn termrock::ansi_text::AnsiText<'a>::plain(&self) -> alloc::string::String
+impl ratatui_core::widgets::widget::Widget for &termrock::ansi_text::AnsiText<'_>
+pub fn &termrock::ansi_text::AnsiText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::ansi_text::AnsiText<'_>
+pub fn termrock::ansi_text::AnsiText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::ansi_text::AnsiText<'a>
+pub fn termrock::ansi_text::AnsiText<'a>::clone(&self) -> termrock::ansi_text::AnsiText<'a>
+impl<'a> core::fmt::Debug for termrock::ansi_text::AnsiText<'a>
+pub fn termrock::ansi_text::AnsiText<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Freeze for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Send for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Sync for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Unpin for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiText<'a>
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiText<'a> where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiText<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiText<'a> where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiText<'a>::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiText<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiText<'a> where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiText<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiText<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiText<'a> where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiText<'a>::Owned = T
+pub fn termrock::ansi_text::AnsiText<'a>::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiText<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiText<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiText<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiText<'a> where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiText<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiText<'a> where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiText<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiText<'a> where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiText<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiText<'a>
+pub fn termrock::ansi_text::AnsiText<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiText<'a>
+pub struct termrock::text::AnsiTextState
+pub termrock::text::AnsiTextState::focused: bool
+pub termrock::text::AnsiTextState::scroll_y: usize
+impl termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::clamp(&mut self)
+pub const fn termrock::ansi_text::AnsiTextState::new() -> Self
+pub fn termrock::ansi_text::AnsiTextState::scroll_by(&mut self, isize) -> bool
+pub const fn termrock::ansi_text::AnsiTextState::set_focused(&mut self, bool)
+impl core::clone::Clone for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::clone(&self) -> termrock::ansi_text::AnsiTextState
+impl core::cmp::Eq for termrock::ansi_text::AnsiTextState
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::eq(&self, &termrock::ansi_text::AnsiTextState) -> bool
+impl core::default::Default for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::default() -> termrock::ansi_text::AnsiTextState
+impl core::fmt::Debug for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiTextState
+impl core::marker::Freeze for termrock::ansi_text::AnsiTextState
+impl core::marker::Send for termrock::ansi_text::AnsiTextState
+impl core::marker::Sync for termrock::ansi_text::AnsiTextState
+impl core::marker::Unpin for termrock::ansi_text::AnsiTextState
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiTextState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiTextState
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiTextState
+impl<Q, K> equivalent::Equivalent<K> for termrock::ansi_text::AnsiTextState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiTextState where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiTextState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiTextState where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiTextState::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiTextState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiTextState where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiTextState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiTextState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiTextState where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiTextState::Owned = T
+pub fn termrock::ansi_text::AnsiTextState::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiTextState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiTextState where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiTextState where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiTextState where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiTextState where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiTextState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiTextState
 pub struct termrock::text::FixedPrefixSegment
 pub termrock::text::FixedPrefixSegment::display_cols: usize
 pub termrock::text::FixedPrefixSegment::end_byte: usize
@@ -13872,11 +14559,17 @@ pub fn termrock::text::display_cols_slice(&str, usize, usize) -> alloc::string::
 pub fn termrock::text::display_cols_slice_into(&str, usize, usize, &mut alloc::string::String)
 pub fn termrock::text::expand_tabs(&str, usize) -> alloc::string::String
 pub fn termrock::text::fixed_prefix_scroll_segments(&str, usize, usize, usize, usize) -> alloc::vec::Vec<termrock::text::FixedPrefixSegment>
+pub fn termrock::text::is_paint_safe(&str) -> bool
 pub fn termrock::text::is_terminal_control_char(char) -> bool
 pub fn termrock::text::leading_space_cols<S>(impl core::iter::traits::collect::IntoIterator<Item = S>) -> usize where S: core::convert::AsRef<str>
+pub fn termrock::text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
+pub fn termrock::text::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub fn termrock::text::padded_line_display_cols<I, S>(I) -> usize where I: core::iter::traits::collect::IntoIterator<Item = S> + core::clone::Clone, S: core::convert::AsRef<str>
+pub fn termrock::text::parse_lines(&str, &termrock::ansi_text::AnsiParseOptions) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::text::parse_to_line(&str, &termrock::ansi_text::AnsiParseOptions) -> termrock::ansi_text::AnsiLine
 pub fn termrock::text::sanitize_terminal_title(&str) -> alloc::string::String
 pub fn termrock::text::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
+pub fn termrock::text::strip_str(&str) -> alloc::string::String
 pub fn termrock::text::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub fn termrock::text::take_display_cols(&str, usize) -> alloc::string::String
 pub fn termrock::text::truncate_display_cols(&str, usize, termrock::text::TruncateMode, &str) -> alloc::string::String
@@ -14238,6 +14931,57 @@ pub unsafe fn termrock::widgets::Anchor::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Anchor
 pub fn termrock::widgets::Anchor::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Anchor
+#[non_exhaustive] pub enum termrock::widgets::AnsiTextMode
+pub termrock::widgets::AnsiTextMode::Color
+pub termrock::widgets::AnsiTextMode::NoColor
+pub termrock::widgets::AnsiTextMode::Plain
+impl termrock::ansi_text::AnsiTextMode
+pub const fn termrock::ansi_text::AnsiTextMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::clone(&self) -> termrock::ansi_text::AnsiTextMode
+impl core::cmp::Eq for termrock::ansi_text::AnsiTextMode
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::eq(&self, &termrock::ansi_text::AnsiTextMode) -> bool
+impl core::default::Default for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::default() -> termrock::ansi_text::AnsiTextMode
+impl core::fmt::Debug for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::ansi_text::AnsiTextMode
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiTextMode
+impl core::marker::Freeze for termrock::ansi_text::AnsiTextMode
+impl core::marker::Send for termrock::ansi_text::AnsiTextMode
+impl core::marker::Sync for termrock::ansi_text::AnsiTextMode
+impl core::marker::Unpin for termrock::ansi_text::AnsiTextMode
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiTextMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiTextMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiTextMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::ansi_text::AnsiTextMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiTextMode where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiTextMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiTextMode where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiTextMode::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiTextMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiTextMode where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiTextMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiTextMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiTextMode where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiTextMode::Owned = T
+pub fn termrock::ansi_text::AnsiTextMode::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiTextMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiTextMode where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiTextMode where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiTextMode where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiTextMode where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiTextMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiTextMode
+pub fn termrock::ansi_text::AnsiTextMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiTextMode
 #[non_exhaustive] pub enum termrock::widgets::BadgeFill
 pub termrock::widgets::BadgeFill::None
 pub termrock::widgets::BadgeFill::Soft
@@ -22343,6 +23087,198 @@ pub unsafe fn termrock::widgets::AlertState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::AlertState
 pub fn termrock::widgets::AlertState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::AlertState
+pub struct termrock::widgets::AnsiLine
+pub termrock::widgets::AnsiLine::plain: alloc::string::String
+pub termrock::widgets::AnsiLine::segments: alloc::vec::Vec<termrock::ansi_text::AnsiSegment>
+impl termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::empty(ratatui_core::style::Style) -> Self
+pub fn termrock::ansi_text::AnsiLine::has_hyperlinks(&self) -> bool
+pub fn termrock::ansi_text::AnsiLine::hyperlinks(&self) -> alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+pub fn termrock::ansi_text::AnsiLine::to_line(&self) -> ratatui_core::text::line::Line<'static>
+pub fn termrock::ansi_text::AnsiLine::to_spans(&self) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::ansi_text::AnsiLine::width(&self) -> usize
+impl core::clone::Clone for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::clone(&self) -> termrock::ansi_text::AnsiLine
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::eq(&self, &termrock::ansi_text::AnsiLine) -> bool
+impl core::fmt::Debug for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiLine
+impl core::marker::Freeze for termrock::ansi_text::AnsiLine
+impl core::marker::Send for termrock::ansi_text::AnsiLine
+impl core::marker::Sync for termrock::ansi_text::AnsiLine
+impl core::marker::Unpin for termrock::ansi_text::AnsiLine
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiLine
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiLine
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiLine
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiLine where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiLine::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiLine where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiLine::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiLine::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiLine where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiLine::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiLine::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiLine where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiLine::Owned = T
+pub fn termrock::ansi_text::AnsiLine::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiLine::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiLine where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiLine::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiLine where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiLine::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiLine where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiLine::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiLine where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiLine::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiLine
+pub fn termrock::ansi_text::AnsiLine::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiLine
+pub struct termrock::widgets::AnsiParseOptions
+pub termrock::widgets::AnsiParseOptions::apply_cr_bs: bool
+pub termrock::widgets::AnsiParseOptions::default_style: ratatui_core::style::Style
+pub termrock::widgets::AnsiParseOptions::expand_tabs: bool
+pub termrock::widgets::AnsiParseOptions::hyperlinks: bool
+pub termrock::widgets::AnsiParseOptions::no_color: bool
+pub termrock::widgets::AnsiParseOptions::tab_width: u8
+impl termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::for_system(&termrock::style::DesignSystem) -> Self
+pub const fn termrock::ansi_text::AnsiParseOptions::no_color(self, bool) -> Self
+pub const fn termrock::ansi_text::AnsiParseOptions::strip_only(self) -> Self
+pub const fn termrock::ansi_text::AnsiParseOptions::with_default_style(self, ratatui_core::style::Style) -> Self
+impl core::clone::Clone for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::clone(&self) -> termrock::ansi_text::AnsiParseOptions
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::eq(&self, &termrock::ansi_text::AnsiParseOptions) -> bool
+impl core::default::Default for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::default() -> Self
+impl core::fmt::Debug for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Freeze for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Send for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Sync for termrock::ansi_text::AnsiParseOptions
+impl core::marker::Unpin for termrock::ansi_text::AnsiParseOptions
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiParseOptions
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiParseOptions
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiParseOptions
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiParseOptions where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiParseOptions::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiParseOptions where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiParseOptions::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiParseOptions::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiParseOptions where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiParseOptions::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiParseOptions::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiParseOptions where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiParseOptions::Owned = T
+pub fn termrock::ansi_text::AnsiParseOptions::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiParseOptions::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiParseOptions where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiParseOptions::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiParseOptions where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiParseOptions::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiParseOptions where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiParseOptions::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiParseOptions where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiParseOptions::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiParseOptions::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiParseOptions
+pub struct termrock::widgets::AnsiSegment
+pub termrock::widgets::AnsiSegment::href: core::option::Option<alloc::string::String>
+pub termrock::widgets::AnsiSegment::style: ratatui_core::style::Style
+pub termrock::widgets::AnsiSegment::text: alloc::string::String
+impl termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::plain(impl core::convert::Into<alloc::string::String>, ratatui_core::style::Style) -> Self
+impl core::clone::Clone for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::clone(&self) -> termrock::ansi_text::AnsiSegment
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::eq(&self, &termrock::ansi_text::AnsiSegment) -> bool
+impl core::fmt::Debug for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiSegment
+impl core::marker::Freeze for termrock::ansi_text::AnsiSegment
+impl core::marker::Send for termrock::ansi_text::AnsiSegment
+impl core::marker::Sync for termrock::ansi_text::AnsiSegment
+impl core::marker::Unpin for termrock::ansi_text::AnsiSegment
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiSegment
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiSegment
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiSegment
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiSegment where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiSegment::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiSegment where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiSegment::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiSegment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiSegment where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiSegment::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiSegment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiSegment where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiSegment::Owned = T
+pub fn termrock::ansi_text::AnsiSegment::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiSegment::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiSegment where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiSegment::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiSegment where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiSegment::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiSegment where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiSegment::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiSegment where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiSegment::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiSegment
+pub fn termrock::ansi_text::AnsiSegment::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiSegment
+pub struct termrock::widgets::AnsiStream
+impl termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::clear(&mut self)
+pub fn termrock::ansi_text::AnsiStream::drain_into_lines<F>(&mut self, F) where F: core::ops::function::FnMut(ratatui_core::text::line::Line<'static>)
+pub fn termrock::ansi_text::AnsiStream::drain_lines(&mut self) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::AnsiStream::feed(&mut self, &[u8])
+pub fn termrock::ansi_text::AnsiStream::feed_str(&mut self, &str)
+pub fn termrock::ansi_text::AnsiStream::finish_line(&mut self)
+pub fn termrock::ansi_text::AnsiStream::has_partial(&self) -> bool
+pub fn termrock::ansi_text::AnsiStream::into_lines(self) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::AnsiStream::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::ansi_text::AnsiLine>
+pub fn termrock::ansi_text::AnsiStream::new(termrock::ansi_text::AnsiParseOptions) -> Self
+pub const fn termrock::ansi_text::AnsiStream::options(&self) -> &termrock::ansi_text::AnsiParseOptions
+pub fn termrock::ansi_text::AnsiStream::pending_plain(&self) -> alloc::string::String
+pub fn termrock::ansi_text::AnsiStream::plain(&self) -> alloc::string::String
+pub fn termrock::ansi_text::AnsiStream::reset_style(&mut self)
+pub fn termrock::ansi_text::AnsiStream::with_max_lines(self, usize) -> Self
+impl core::clone::Clone for termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::clone(&self) -> termrock::ansi_text::AnsiStream
+impl core::fmt::Debug for termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for termrock::ansi_text::AnsiStream
+impl core::marker::Send for termrock::ansi_text::AnsiStream
+impl core::marker::Sync for termrock::ansi_text::AnsiStream
+impl core::marker::Unpin for termrock::ansi_text::AnsiStream
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiStream
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiStream
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiStream
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiStream where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiStream::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiStream where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiStream::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiStream::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiStream where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiStream::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiStream::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiStream where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiStream::Owned = T
+pub fn termrock::ansi_text::AnsiStream::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiStream::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiStream where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiStream::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiStream where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiStream::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiStream where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiStream::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiStream where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiStream::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiStream
+pub fn termrock::ansi_text::AnsiStream::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiStream
 pub struct termrock::widgets::AnsiSyntax
 impl core::clone::Clone for termrock::widgets::AnsiSyntax
 pub fn termrock::widgets::AnsiSyntax::clone(&self) -> termrock::widgets::AnsiSyntax
@@ -22383,6 +23319,104 @@ pub unsafe fn termrock::widgets::AnsiSyntax::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::AnsiSyntax
 pub fn termrock::widgets::AnsiSyntax::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::AnsiSyntax
+pub struct termrock::widgets::AnsiText<'a>
+impl<'a> termrock::ansi_text::AnsiText<'a>
+pub const fn termrock::ansi_text::AnsiText<'a>::first(self, usize) -> Self
+pub const fn termrock::ansi_text::AnsiText<'a>::is_empty(&self) -> bool
+pub const fn termrock::ansi_text::AnsiText<'a>::len(&self) -> usize
+pub const fn termrock::ansi_text::AnsiText<'a>::lines(&'a [termrock::ansi_text::AnsiLine], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::ansi_text::AnsiText<'a>::mode(self, termrock::ansi_text::AnsiTextMode) -> Self
+pub fn termrock::ansi_text::AnsiText<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::ansi_text::AnsiTextState)
+pub fn termrock::ansi_text::AnsiText<'a>::plain(&self) -> alloc::string::String
+impl ratatui_core::widgets::widget::Widget for &termrock::ansi_text::AnsiText<'_>
+pub fn &termrock::ansi_text::AnsiText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::ansi_text::AnsiText<'_>
+pub fn termrock::ansi_text::AnsiText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::ansi_text::AnsiText<'a>
+pub fn termrock::ansi_text::AnsiText<'a>::clone(&self) -> termrock::ansi_text::AnsiText<'a>
+impl<'a> core::fmt::Debug for termrock::ansi_text::AnsiText<'a>
+pub fn termrock::ansi_text::AnsiText<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Freeze for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Send for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Sync for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::Unpin for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiText<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiText<'a>
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiText<'a> where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiText<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiText<'a> where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiText<'a>::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiText<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiText<'a> where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiText<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiText<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiText<'a> where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiText<'a>::Owned = T
+pub fn termrock::ansi_text::AnsiText<'a>::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiText<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiText<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiText<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiText<'a> where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiText<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiText<'a> where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiText<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiText<'a> where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiText<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiText<'a>
+pub fn termrock::ansi_text::AnsiText<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiText<'a>
+pub struct termrock::widgets::AnsiTextState
+pub termrock::widgets::AnsiTextState::focused: bool
+pub termrock::widgets::AnsiTextState::scroll_y: usize
+impl termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::clamp(&mut self)
+pub const fn termrock::ansi_text::AnsiTextState::new() -> Self
+pub fn termrock::ansi_text::AnsiTextState::scroll_by(&mut self, isize) -> bool
+pub const fn termrock::ansi_text::AnsiTextState::set_focused(&mut self, bool)
+impl core::clone::Clone for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::clone(&self) -> termrock::ansi_text::AnsiTextState
+impl core::cmp::Eq for termrock::ansi_text::AnsiTextState
+impl core::cmp::PartialEq for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::eq(&self, &termrock::ansi_text::AnsiTextState) -> bool
+impl core::default::Default for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::default() -> termrock::ansi_text::AnsiTextState
+impl core::fmt::Debug for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::ansi_text::AnsiTextState
+impl core::marker::Freeze for termrock::ansi_text::AnsiTextState
+impl core::marker::Send for termrock::ansi_text::AnsiTextState
+impl core::marker::Sync for termrock::ansi_text::AnsiTextState
+impl core::marker::Unpin for termrock::ansi_text::AnsiTextState
+impl core::marker::UnsafeUnpin for termrock::ansi_text::AnsiTextState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::ansi_text::AnsiTextState
+impl core::panic::unwind_safe::UnwindSafe for termrock::ansi_text::AnsiTextState
+impl<Q, K> equivalent::Equivalent<K> for termrock::ansi_text::AnsiTextState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::ansi_text::AnsiTextState where U: core::convert::From<T>
+pub fn termrock::ansi_text::AnsiTextState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::ansi_text::AnsiTextState where U: core::convert::Into<T>
+pub type termrock::ansi_text::AnsiTextState::Error = core::convert::Infallible
+pub fn termrock::ansi_text::AnsiTextState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::ansi_text::AnsiTextState where U: core::convert::TryFrom<T>
+pub type termrock::ansi_text::AnsiTextState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::ansi_text::AnsiTextState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::ansi_text::AnsiTextState where T: core::clone::Clone
+pub type termrock::ansi_text::AnsiTextState::Owned = T
+pub fn termrock::ansi_text::AnsiTextState::clone_into(&self, &mut T)
+pub fn termrock::ansi_text::AnsiTextState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::ansi_text::AnsiTextState where T: 'static + ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::ansi_text::AnsiTextState where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::ansi_text::AnsiTextState where T: ?core::marker::Sized
+pub fn termrock::ansi_text::AnsiTextState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::ansi_text::AnsiTextState where T: core::clone::Clone
+pub unsafe fn termrock::ansi_text::AnsiTextState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::ansi_text::AnsiTextState
+pub fn termrock::ansi_text::AnsiTextState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiTextState
 pub struct termrock::widgets::Backdrop
 impl termrock::widgets::Backdrop
 pub fn termrock::widgets::Backdrop::dim_wash(bool) -> Self
@@ -36588,9 +37622,12 @@ pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termr
 pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat, &str) -> alloc::string::String
 pub fn termrock::widgets::hint_row_cols(&[termrock::widgets::HintSpan<'_>]) -> usize
+pub fn termrock::widgets::is_paint_safe(&str) -> bool
 pub fn termrock::widgets::kbd_from_chord<'a>(termrock::keymap::KeyChord, &'a mut alloc::string::String, &'a termrock::style::DesignSystem) -> termrock::widgets::Kbd<'a>
 pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>
+pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
 pub fn termrock::widgets::line_plain(&ratatui_core::text::line::Line<'_>) -> alloc::string::String
+pub fn termrock::widgets::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub fn termrock::widgets::open_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -36600,6 +37637,8 @@ pub fn termrock::widgets::open_jump_overlay<FocusId: core::clone::Clone>(&mut te
 pub fn termrock::widgets::open_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::PickerSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_popover_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::parse_lines(&str, &termrock::ansi_text::AnsiParseOptions) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::widgets::parse_to_line(&str, &termrock::ansi_text::AnsiParseOptions) -> termrock::ansi_text::AnsiLine
 pub fn termrock::widgets::place_command_palette(ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_dialog(ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize) -> ratatui_core::layout::rect::Rect
@@ -36615,7 +37654,10 @@ pub fn termrock::widgets::remove_label(&str) -> alloc::string::String
 pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem)
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
+pub fn termrock::widgets::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
+pub fn termrock::widgets::strip_str(&str) -> alloc::string::String
 pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::widgets::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub fn termrock::widgets::syntax_role_style(&termrock::style::DesignSystem, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::widgets::system_from_preset_id(&str) -> core::option::Option<termrock::style::DesignSystem>
 pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>

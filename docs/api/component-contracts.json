@@ -630,5 +630,13 @@
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"
+  },
+  "AnsiText": {
+    "keyboard": "caller-owned",
+    "mouse": "not-applicable",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
   }
 }
