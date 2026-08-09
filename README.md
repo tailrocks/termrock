@@ -1,15 +1,20 @@
 # TermRock
 
-Product-neutral Ratatui components, interaction foundations, styles, a
-lookbook, and generated component documentation for building terminal
-applications quickly.
+**Beautiful, inspectable terminal components you own.**
 
-TermRock is a **hybrid terminal design system**: a stable interaction kernel
+TermRock is the **source-owned design system for building exceptional terminal
+software** on [Ratatui](https://ratatui.rs/)—not merely another widget dump.
+Category direction (kernel + registry + Studio + agent pack):
+[`docs/design/shadcn-tui-strategic-brief.md`](docs/design/shadcn-tui-strategic-brief.md).
+
+It is a **hybrid terminal design system**: a stable interaction kernel
 (session lifecycle, focus, overlays, semantic intents, design tokens), product-
 neutral widgets, and composition patterns—inspired by the open, inspectable
 source model of [shadcn/ui](https://ui.shadcn.com/docs), adapted to Rust,
-Ratatui, and terminal constraints. See
+Ratatui, and terminal constraints. Architecture foundation:
 [`docs/design/architecture-foundation.md`](docs/design/architecture-foundation.md).
+Experience research:
+[`docs/design/experience-research-2026.md`](docs/design/experience-research-2026.md).
 
 Reusable visual and interaction behavior belongs here. Applications keep only
 their domain state and wording, effects, process policy, secrets, executor
