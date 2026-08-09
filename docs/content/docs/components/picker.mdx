@@ -11,13 +11,13 @@ description: A filterable stable-ID list composition with caller-owned matching 
 
 ```rust
 use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState}};
 
 let theme = Theme::default();
 let candidates = [("open", "Open file"), ("logs", "Show logs")];
 let project = |query: &str| candidates.iter()
     .filter(|(_, label)| label.to_lowercase().contains(&query.to_lowercase()))
-    .map(|(id, label)| ListRow { id: *id, label: Line::from(*label), trailing: None, role: RowRole::Item, enabled: true })
+    .map(|(id, label)| ListRow::item(*id, Line::from(*label)))
     .collect::<Vec<_>>();
 let mut state = PickerState::new(Some("open"));
 let mut rows = project(state.query_text());

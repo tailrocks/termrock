@@ -17,7 +17,7 @@ use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifie
 let theme = Theme::default();
 let columns = [Column { id: "name", title: Line::from("Name"), width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()), alignment: CellAlignment::Left, sortable: true, sort: None }];
 let cells = [Line::from("termrock")];
-let rows = [TableRow { id: "termrock", cells: &cells, enabled: true, emphasis: false, style: None }];
+let rows = [TableRow::new("termrock", &cells)];
 let tokens = DesignTokens::default();
 let table = Table::new(&columns, &rows, &tokens);
 let mut state = TableState::<&str, &str>::new(Some("termrock"));

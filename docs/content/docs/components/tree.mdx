@@ -11,10 +11,10 @@ description: A navigable flattened hierarchy with disclosure and multi-select su
 
 ```rust
 use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeNodeStatus, TreeState}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeState}};
 
 let theme = Theme::default();
-let nodes = [TreeNode { id: "src", label: Line::from("src"), trailing: None, depth: 0, branch: true, expanded: true, enabled: true, status: TreeNodeStatus::Ready }];
+let nodes = [TreeNode::new("src", Line::from("src"), 0)];
 let tokens = DesignTokens::default();
 let tree = Tree::new(&nodes, &tokens);
 let mut state = TreeState::new(Some("src"));

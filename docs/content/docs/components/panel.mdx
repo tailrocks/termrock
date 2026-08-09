@@ -11,10 +11,10 @@ description: A themed bordered container with semantic focus emphasis.
 
 ```rust
 use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{Panel, PanelEmphasis}};
+use termrock::{style::DesignTokens, widgets::{Panel, PanelEmphasis}};
 
-let theme = Theme::default();
-let panel = Panel::new(&theme).title("Files").emphasis(PanelEmphasis::Focused);
+let tokens = DesignTokens::default();
+let panel = Panel::new(&tokens).title("Files").emphasis(PanelEmphasis::Focused);
 let inner = panel.inner(Rect::new(0, 0, 80, 24));
 ```
 

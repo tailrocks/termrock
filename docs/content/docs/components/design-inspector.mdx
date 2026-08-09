@@ -18,6 +18,7 @@ let frame = DesignInspectorFrame {
     layer: Some("root"),
     capability: ColorCapability::Truecolor,
     density: "comfortable",
+    ..DesignInspectorFrame::default()
 };
 let _inspector = DesignInspector::new(frame, &theme);
 ```

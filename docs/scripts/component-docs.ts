@@ -67,6 +67,7 @@ let frame = DesignInspectorFrame {
     layer: Some("root"),
     capability: ColorCapability::Truecolor,
     density: "comfortable",
+    ..DesignInspectorFrame::default()
 };
 let _inspector = DesignInspector::new(frame, &theme);`,
   },
@@ -91,7 +92,7 @@ use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifie
 let theme = Theme::default();
 let columns = [Column { id: "name", title: Line::from("Name"), width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()), alignment: CellAlignment::Left, sortable: true, sort: None }];
 let cells = [Line::from("termrock")];
-let rows = [TableRow { id: "termrock", cells: &cells, enabled: true, emphasis: false, style: None }];
+let rows = [TableRow::new("termrock", &cells)];
 let tokens = DesignTokens::default();
 let table = Table::new(&columns, &rows, &tokens);
 let mut state = TableState::<&str, &str>::new(Some("termrock"));
@@ -151,10 +152,10 @@ bar.render(area, &mut Buffer::empty(area));`,
     description: 'A selectable, scrollable list over borrowed rows and stable identities.',
     primaryStory: 'list/selection',
     usage: `use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, widgets::{List, ListRow, ListState, RowRole}};
+use termrock::{style::DesignTokens, Theme, widgets::{List, ListRow, ListState}};
 
 let theme = Theme::default();
-let rows = [ListRow { id: "alpha", label: Line::from("Alpha"), trailing: None, role: RowRole::Item, enabled: true }];
+let rows = [ListRow::item("alpha", Line::from("Alpha"))];
 let tokens = DesignTokens::default();
 let list = List::new(&rows, &tokens);
 let mut state = ListState::new(Some("alpha"));
@@ -204,23 +205,23 @@ let outcome = state.select_next(&details);`,
     description: 'A themed bordered container with semantic focus emphasis.',
     primaryStory: 'panel/focused',
     usage: `use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{Panel, PanelEmphasis}};
+use termrock::{style::DesignTokens, widgets::{Panel, PanelEmphasis}};
 
-let theme = Theme::default();
-let panel = Panel::new(&theme).title("Files").emphasis(PanelEmphasis::Focused);
+let tokens = DesignTokens::default();
+let panel = Panel::new(&tokens).title("Files").emphasis(PanelEmphasis::Focused);
 let inner = panel.inner(Rect::new(0, 0, 80, 24));`,
   },
   Picker: {
     description: 'A filterable stable-ID list composition with caller-owned matching and ordering.',
     primaryStory: 'picker/basic',
     usage: `use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState}};
 
 let theme = Theme::default();
 let candidates = [("open", "Open file"), ("logs", "Show logs")];
 let project = |query: &str| candidates.iter()
     .filter(|(_, label)| label.to_lowercase().contains(&query.to_lowercase()))
-    .map(|(id, label)| ListRow { id: *id, label: Line::from(*label), trailing: None, role: RowRole::Item, enabled: true })
+    .map(|(id, label)| ListRow::item(*id, Line::from(*label)))
     .collect::<Vec<_>>();
 let mut state = PickerState::new(Some("open"));
 let mut rows = project(state.query_text());
@@ -324,10 +325,10 @@ let rect = toast.rect(Rect::new(0, 0, 80, 24));`,
     description: 'A navigable flattened hierarchy with disclosure and multi-select support.',
     primaryStory: 'tree/navigation',
     usage: `use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeNodeStatus, TreeState}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeState}};
 
 let theme = Theme::default();
-let nodes = [TreeNode { id: "src", label: Line::from("src"), trailing: None, depth: 0, branch: true, expanded: true, enabled: true, status: TreeNodeStatus::Ready }];
+let nodes = [TreeNode::new("src", Line::from("src"), 0)];
 let tokens = DesignTokens::default();
 let tree = Tree::new(&nodes, &tokens);
 let mut state = TreeState::new(Some("src"));
@@ -406,10 +407,10 @@ let block = CodeBlock::new(&lines, &theme).language("rust").line_numbers(true);`
     description: 'Filterable command list chrome over the picker contract.',
     primaryStory: 'command-palette/basic',
     usage: `use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, widgets::{CommandPalette, CommandPaletteState, ListRow, RowRole}};
+use termrock::{style::DesignTokens, Theme, widgets::{CommandPalette, CommandPaletteState, ListRow}};
 
 let theme = Theme::default();
-let rows = [ListRow { id: "quit", label: Line::from("Quit"), trailing: None, enabled: true, role: RowRole::Item }];
+let rows = [ListRow::item("quit", Line::from("Quit"))];
 let tokens = DesignTokens::default();
 let palette = CommandPalette::new("Commands", &rows, &tokens);
 let state = CommandPaletteState::new(Some("quit"));`,
@@ -565,7 +566,11 @@ let preview = theme_from_preset_id("slate");`,
     usage: `use termrock::{Theme, widgets::{ImageMeta, ImageProtocol, ImageSurface}};
 
 let theme = Theme::default();
-let meta = ImageMeta { label: "shot.png", pixel_width: Some(64), pixel_height: Some(64), protocol: ImageProtocol::Placeholder };
+let meta = ImageMeta {
+    pixel_width: Some(64),
+    pixel_height: Some(64),
+    ..ImageMeta::new("shot.png", ImageProtocol::Placeholder)
+};
 let surface = ImageSurface::new(meta, &theme);`,
   },
 } as const satisfies Record<string, ComponentDoc>
