@@ -8,6 +8,7 @@ cd "$ROOT"
 
 PRIMARY="$ROOT/docs/design/experience-research-2026.md"
 COMPETITIVE="$ROOT/docs/design/competitive-tui-research.md"
+STRATEGIC="$ROOT/docs/design/shadcn-tui-strategic-brief.md"
 
 fail() {
   echo "check-experience-research: FAIL: $*" >&2
@@ -16,9 +17,10 @@ fail() {
 
 [[ -f "$PRIMARY" ]] || fail "missing $PRIMARY"
 [[ -f "$COMPETITIVE" ]] || fail "missing $COMPETITIVE"
+[[ -f "$STRATEGIC" ]] || fail "missing $STRATEGIC"
 
 # Combined corpus so either SoT may host depth, but primary must exist and carry core thesis.
-CORPUS=$(cat "$PRIMARY" "$COMPETITIVE")
+CORPUS=$(cat "$PRIMARY" "$COMPETITIVE" "$STRATEGIC")
 
 require() {
   local label="$1"
@@ -77,6 +79,12 @@ rg -q 'Concept catalog|Think-big roadmap|Roadmap' "$PRIMARY" \
 rg -q 'Grok Build' "$PRIMARY" || fail "primary missing Grok Build discussion"
 rg -q 'Amp' "$PRIMARY" || fail "primary missing Amp discussion"
 
+# Strategic brief must name hybrid kernel+registry ambition and agent flagship pack
+rg -q 'source-own|source.own|registry' "$STRATEGIC" || fail "strategic brief missing source-owned registry framing"
+rg -q '@termrock/agent|agent pack|PromptComposer' "$STRATEGIC" || fail "strategic brief missing agent pack framing"
+rg -q 'DesignSystem|Quiet canvas|Phosphor Obsidian' "$STRATEGIC" || fail "strategic brief missing design-system framing"
+
 echo "check-experience-research: OK"
 echo "  primary: $PRIMARY ($(wc -l < "$PRIMARY") lines)"
 echo "  competitive: $COMPETITIVE ($(wc -l < "$COMPETITIVE") lines)"
+echo "  strategic: $STRATEGIC ($(wc -l < "$STRATEGIC") lines)"

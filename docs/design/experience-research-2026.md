@@ -7,7 +7,8 @@
 **Method:** TermRock tree audit + agent product analysis + hero-app consensus
 ([rothgar/awesome-tuis](https://github.com/rothgar/awesome-tuis), awesometui.com) +
 cross-language library patterns + design-standard research (Monospace Design TUI et al.)  
-**Related:** `competitive-tui-research.md`, `pre-1.0-api-redesign.md`,
+**Related:** `competitive-tui-research.md`, `shadcn-tui-strategic-brief.md` (full
+architecture + flagship packs + first-PR sequence), `pre-1.0-api-redesign.md`,
 `termrock-agent.md`, `termrock-studio.md`, `source-owned-registry.md`,
 `shadcn-tui-direction.md`
 

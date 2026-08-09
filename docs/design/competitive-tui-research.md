@@ -20,7 +20,8 @@ Most TUI “ecosystems” are either:
 
 **2026 research refresh (this doc §9–12):** Grok Build as primary agent TUI grammar; Amp for thread/mode/MCP-as-panel; OpenCode for plan/multi-session/client-server; hero-app DNA from awesome-tuis; multi-lang port map; think-big breaking roadmap.
 
-**Full experience research (concepts + packs + roadmap):** [`experience-research-2026.md`](./experience-research-2026.md).
+**Full experience research (concepts + packs + roadmap):** [`experience-research-2026.md`](./experience-research-2026.md).  
+**Strategic architecture brief (kernel + registry + Studio + agent pack + first PRs):** [`shadcn-tui-strategic-brief.md`](./shadcn-tui-strategic-brief.md).
 
 ---
 
