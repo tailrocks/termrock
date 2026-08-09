@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Design-system tokens beyond role colors: spacing, glyphs, recipes.
+//! Design-system tokens beyond role colors: spacing, glyphs, recipes, packages.
 
 use super::{ColorCapability, Density, Motion, Role, RolePalette};
-use ratatui_core::style::Style;
+use ratatui_core::style::{Modifier, Style};
 
 /// Glyph policy for borders, disclosure, and status markers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -169,10 +169,178 @@ pub struct PanelRecipe {
     pub surface: ratatui_core::style::Style,
 }
 
+/// Elevation token → surface role mapping (not border weight).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum Elevation {
+    /// Terminal underlay / canvas.
+    Canvas,
+    /// Default component surface.
+    #[default]
+    Surface,
+    /// Raised card / dialog body.
+    Raised,
+    /// Overlay host above backdrop.
+    Overlay,
+}
+
+impl Elevation {
+    /// Maps elevation onto a semantic role.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Canvas => Role::Canvas,
+            Self::Surface => Role::Surface,
+            Self::Raised | Self::Overlay => Role::Elevated,
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Canvas => "canvas",
+            Self::Surface => "surface",
+            Self::Raised => "raised",
+            Self::Overlay => "overlay",
+        }
+    }
+}
+
+/// Width breakpoints for density/contraction hosts (cells).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BreakpointScale {
+    /// Essential-only / line mode (≤ this width).
+    pub tiny: u16,
+    /// Single-pane / drawer pressure.
+    pub narrow: u16,
+    /// Comfortable multi-pane.
+    pub comfortable: u16,
+    /// Wide workbench.
+    pub wide: u16,
+}
+
+impl Default for BreakpointScale {
+    fn default() -> Self {
+        Self {
+            tiny: 20,
+            narrow: 40,
+            comfortable: 80,
+            wide: 120,
+        }
+    }
+}
+
+/// Button visual variant for recipes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ButtonRecipeVariant {
+    /// Brand primary.
+    Primary,
+    /// Default secondary.
+    #[default]
+    Secondary,
+    /// Destructive / danger.
+    Destructive,
+    /// Quiet text-like.
+    Quiet,
+    /// Outline border only.
+    Outline,
+    /// Link style.
+    Link,
+}
+
+/// Interaction state for button/input recipes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ControlState {
+    /// Idle.
+    #[default]
+    Default,
+    /// Pointer hover.
+    Hovered,
+    /// Focus-visible.
+    Focused,
+    /// Pressed / active.
+    Pressed,
+    /// Disabled.
+    Disabled,
+    /// Loading / busy.
+    Loading,
+}
+
+/// Resolved button paint plan.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ButtonRecipe {
+    /// Label style.
+    pub label: Style,
+    /// Fill / surface style (may be empty).
+    pub fill: Style,
+    /// Border style when outlined.
+    pub border: Style,
+    /// Whether to paint a box border.
+    pub bordered: bool,
+    /// Leading/trailing pad cells.
+    pub pad_x: u16,
+}
+
+/// Resolved text-input paint plan.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InputRecipe {
+    /// Value text style.
+    pub value: Style,
+    /// Placeholder style.
+    pub placeholder: Style,
+    /// Border / underline style.
+    pub border: Style,
+    /// Fill style.
+    pub fill: Style,
+    /// Cursor style.
+    pub cursor: Style,
+    /// Horizontal pad.
+    pub pad_x: u16,
+}
+
+/// User-owned theme package (source-install / product brand).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ThemePackage {
+    /// Stable package id (`phosphor`, `acme-brand`, …).
+    pub id: String,
+    /// Human label.
+    pub label: String,
+    /// Full design system snapshot.
+    pub system: DesignSystem,
+}
+
+impl ThemePackage {
+    /// Creates a package from an id, label, and system.
+    #[must_use]
+    pub fn new(id: impl Into<String>, label: impl Into<String>, system: DesignSystem) -> Self {
+        Self {
+            id: id.into(),
+            label: label.into(),
+            system,
+        }
+    }
+
+    /// Built-in packages shipped by TermRock.
+    #[must_use]
+    pub fn builtins() -> Vec<Self> {
+        vec![
+            Self::new("phosphor", "Phosphor Obsidian", DesignSystem::phosphor()),
+            Self::new("slate", "Slate", DesignSystem::slate()),
+            Self::new("paper", "Paper", DesignSystem::paper()),
+            Self::new("ansi", "ANSI 16", DesignSystem::ansi()),
+            Self::new("high-contrast", "High Contrast", DesignSystem::high_contrast()),
+            Self::new("adaptive", "Terminal Adaptive", DesignSystem::adaptive()),
+        ]
+    }
+}
+
 /// Sole paint authority for a frame or app shell (pre-1.0 Break B).
 ///
-/// One object owns palette, density, glyphs, spacing, selection, and capability.
-/// Widgets take `&DesignSystem` only — never a bare palette or legacy token bundle.
+/// One object owns palette, density, glyphs, spacing, selection, capability,
+/// motion, and breakpoints. Widgets take `&DesignSystem` only.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DesignSystem {
     /// Role → Style map.
@@ -189,6 +357,8 @@ pub struct DesignSystem {
     pub selection: SelectionChrome,
     /// Color depth used for quantize-at-edge.
     pub capability: ColorCapability,
+    /// Width breakpoints for contraction hosts.
+    pub breakpoints: BreakpointScale,
 }
 
 impl Default for DesignSystem {
@@ -201,7 +371,52 @@ impl DesignSystem {
     /// Default phosphor Obsidian system (quiet gutter selection).
     #[must_use]
     pub fn phosphor() -> Self {
-        Self::from_palette(RolePalette::default()).selection(SelectionChrome::Gutter)
+        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Gutter)
+    }
+
+    /// Alias for [`Self::phosphor`] (marketing name).
+    #[must_use]
+    pub fn obsidian() -> Self {
+        Self::phosphor()
+    }
+
+    /// Cool-gray slate system.
+    #[must_use]
+    pub fn slate() -> Self {
+        Self::from_palette(RolePalette::slate()).selection(SelectionChrome::Gutter)
+    }
+
+    /// Light paper system.
+    #[must_use]
+    pub fn paper() -> Self {
+        Self::from_palette(RolePalette::paper()).selection(SelectionChrome::Fill)
+    }
+
+    /// ANSI 16-color native system (no truecolor dependency).
+    #[must_use]
+    pub fn ansi() -> Self {
+        Self::from_palette(RolePalette::ansi())
+            .capability(ColorCapability::Ansi16)
+            .selection(SelectionChrome::Gutter)
+    }
+
+    /// High-contrast accessibility system.
+    #[must_use]
+    pub fn high_contrast() -> Self {
+        Self::from_palette(RolePalette::high_contrast())
+            .selection(SelectionChrome::Fill)
+            .glyphs(GlyphSet::Unicode)
+    }
+
+    /// Adaptive: phosphor base quantized to env capability; mono → ASCII glyphs.
+    #[must_use]
+    pub fn adaptive() -> Self {
+        let cap = ColorCapability::detect_from_env();
+        let mut system = Self::phosphor().quantize(cap);
+        if matches!(cap, ColorCapability::Monochrome) {
+            system = system.glyphs(GlyphSet::Ascii).no_color();
+        }
+        system
     }
 
     /// Builds from palette + density-derived spacing.
@@ -215,6 +430,7 @@ impl DesignSystem {
             spacing: SpacingScale::from_density(density),
             selection: SelectionChrome::default(),
             capability: ColorCapability::default(),
+            breakpoints: BreakpointScale::default(),
         }
     }
 
@@ -246,6 +462,12 @@ impl DesignSystem {
         self
     }
 
+    /// ASCII glyph set only.
+    #[must_use]
+    pub const fn ascii(self) -> Self {
+        self.glyphs(GlyphSet::Ascii)
+    }
+
     /// Overrides selection chrome recipe.
     #[must_use]
     pub const fn selection(mut self, selection: SelectionChrome) -> Self {
@@ -260,10 +482,47 @@ impl DesignSystem {
         self
     }
 
+    /// Breakpoint scale.
+    #[must_use]
+    pub const fn breakpoints(mut self, breakpoints: BreakpointScale) -> Self {
+        self.breakpoints = breakpoints;
+        self
+    }
+
+    /// Force monochrome capability + quantize (NO_COLOR path).
+    #[must_use]
+    pub fn no_color(self) -> Self {
+        self.quantize(ColorCapability::Monochrome)
+            .glyphs(GlyphSet::Ascii)
+    }
+
+    /// Override one role style (partial theme package).
+    #[must_use]
+    pub fn with_role(mut self, role: Role, style: Style) -> Self {
+        self.palette = self.palette.with_role(role, style);
+        self
+    }
+
+    /// Merge non-empty styles from `other` onto this palette (inheritance).
+    ///
+    /// A style is applied when it has any fg, bg, or modifier — empty styles
+    /// leave the base role untouched.
+    #[must_use]
+    pub fn merge(mut self, other: &RolePalette) -> Self {
+        self.palette = self.palette.merge(other);
+        self
+    }
+
     /// Role style lookup.
     #[must_use]
-    pub fn style(&self, role: Role) -> ratatui_core::style::Style {
+    pub fn style(&self, role: Role) -> Style {
         self.palette.style(role)
+    }
+
+    /// Elevation → style.
+    #[must_use]
+    pub fn elevation(&self, elevation: Elevation) -> Style {
+        self.style(elevation.role())
     }
 
     /// Palette borrow.
@@ -295,6 +554,106 @@ impl DesignSystem {
             pad_x: self.spacing.pad_x,
             pad_y: self.spacing.pad_y,
             surface: self.style(Role::Surface),
+        }
+    }
+
+    /// Button part×state recipe (no hard-coded RGB).
+    #[must_use]
+    pub fn button_recipe(
+        &self,
+        variant: ButtonRecipeVariant,
+        state: ControlState,
+    ) -> ButtonRecipe {
+        let disabled = matches!(state, ControlState::Disabled | ControlState::Loading);
+        let base_role = match variant {
+            ButtonRecipeVariant::Primary => Role::ActionFocused,
+            ButtonRecipeVariant::Destructive => Role::Danger,
+            ButtonRecipeVariant::Link => Role::Link,
+            ButtonRecipeVariant::Secondary
+            | ButtonRecipeVariant::Quiet
+            | ButtonRecipeVariant::Outline => Role::Text,
+        };
+        let mut label = self.style(base_role);
+        let mut fill = Style::new();
+        let mut border = self.style(Role::Border);
+        let mut bordered = matches!(
+            variant,
+            ButtonRecipeVariant::Outline | ButtonRecipeVariant::Primary | ButtonRecipeVariant::Destructive
+        );
+
+        if matches!(variant, ButtonRecipeVariant::Primary) {
+            fill = self.style(Role::ActionFocused);
+            label = self.style(Role::ActionFocused);
+            border = self.style(Role::BorderFocused);
+        }
+        if matches!(variant, ButtonRecipeVariant::Destructive) {
+            fill = self.style(Role::Danger);
+            border = self.style(Role::Danger);
+        }
+        if matches!(variant, ButtonRecipeVariant::Quiet | ButtonRecipeVariant::Link) {
+            bordered = false;
+        }
+        match state {
+            ControlState::Focused => {
+                border = self.style(Role::BorderFocused);
+                if !matches!(variant, ButtonRecipeVariant::Quiet | ButtonRecipeVariant::Link) {
+                    bordered = true;
+                }
+                label = label.add_modifier(Modifier::BOLD);
+            }
+            ControlState::Hovered => {
+                label = self.style(Role::LinkHover);
+            }
+            ControlState::Pressed => {
+                label = label.add_modifier(Modifier::BOLD);
+            }
+            ControlState::Disabled | ControlState::Loading => {
+                label = self.style(Role::ActionDisabled);
+                fill = Style::new();
+                border = self.style(Role::Border);
+            }
+            ControlState::Default => {}
+        }
+        if disabled {
+            label = self.style(Role::ActionDisabled);
+        }
+        ButtonRecipe {
+            label,
+            fill,
+            border,
+            bordered,
+            pad_x: self.spacing.pad_x.max(1),
+        }
+    }
+
+    /// Text input part×state recipe.
+    #[must_use]
+    pub fn input_recipe(&self, state: ControlState, invalid: bool) -> InputRecipe {
+        let mut border = self.style(Role::Border);
+        let mut value = self.style(Role::Input);
+        let placeholder = self.style(Role::TextMuted);
+        let fill = self.style(Role::Input);
+        let cursor = self.style(Role::Focus);
+        if invalid {
+            border = self.style(Role::InputInvalid);
+            value = self.style(Role::InputInvalid);
+        }
+        match state {
+            ControlState::Focused => border = self.style(Role::BorderFocused),
+            ControlState::Disabled => {
+                value = self.style(Role::TextDisabled);
+                border = self.style(Role::Border);
+            }
+            ControlState::Hovered => border = self.style(Role::Focus),
+            _ => {}
+        }
+        InputRecipe {
+            value,
+            placeholder,
+            border,
+            fill,
+            cursor,
+            pad_x: self.spacing.pad_x,
         }
     }
 
@@ -451,5 +810,80 @@ mod tests {
         assert!(full.motion.animate_spinners());
         assert!(!Motion::Off.animate_spinners());
         assert_ne!(full.motion, reduced.motion);
+    }
+
+    #[test]
+    fn presets_are_distinct() {
+        let phosphor = DesignSystem::phosphor();
+        let slate = DesignSystem::slate();
+        let paper = DesignSystem::paper();
+        let ansi = DesignSystem::ansi();
+        let hc = DesignSystem::high_contrast();
+        assert_ne!(phosphor.style(Role::Accent), slate.style(Role::Accent));
+        assert_ne!(paper.style(Role::Text).fg, phosphor.style(Role::Text).fg);
+        assert_eq!(ansi.capability, ColorCapability::Ansi16);
+        assert!(hc.style(Role::TextStrong).add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn with_role_and_merge_partial_package() {
+        let base = DesignSystem::phosphor();
+        let patched = base
+            .clone()
+            .with_role(Role::Accent, Style::new().fg(ratatui_core::style::Color::Cyan));
+        assert_ne!(base.style(Role::Accent), patched.style(Role::Accent));
+        let package = RolePalette::from_fn(|_| Style::new()); // empty → no change
+        let merged = base.merge(&package);
+        assert_eq!(merged.style(Role::Text), DesignSystem::phosphor().style(Role::Text));
+    }
+
+    #[test]
+    fn no_color_forces_mono_and_ascii() {
+        let system = DesignSystem::phosphor().no_color();
+        assert_eq!(system.capability, ColorCapability::Monochrome);
+        assert_eq!(system.glyphs, GlyphSet::Ascii);
+    }
+
+    #[test]
+    fn button_recipe_focus_uses_border_focused() {
+        let system = DesignSystem::phosphor();
+        let focused = system.button_recipe(ButtonRecipeVariant::Secondary, ControlState::Focused);
+        let idle = system.button_recipe(ButtonRecipeVariant::Secondary, ControlState::Default);
+        assert_ne!(focused.border, idle.border);
+        assert!(focused.bordered);
+    }
+
+    #[test]
+    fn input_recipe_invalid_uses_input_invalid() {
+        let system = DesignSystem::slate();
+        let bad = system.input_recipe(ControlState::Default, true);
+        let ok = system.input_recipe(ControlState::Default, false);
+        assert_ne!(bad.border, ok.border);
+    }
+
+    #[test]
+    fn elevation_maps_roles() {
+        let system = DesignSystem::slate();
+        assert_eq!(
+            system.elevation(Elevation::Raised),
+            system.style(Role::Elevated)
+        );
+        assert_eq!(Elevation::Canvas.role(), Role::Canvas);
+    }
+
+    #[test]
+    fn theme_package_builtins_cover_presets() {
+        let packs = ThemePackage::builtins();
+        assert!(packs.iter().any(|p| p.id == "phosphor"));
+        assert!(packs.iter().any(|p| p.id == "paper"));
+        assert!(packs.iter().any(|p| p.id == "adaptive"));
+        assert_eq!(packs.len(), 6);
+    }
+
+    #[test]
+    fn quantize_ansi_preserves_structure() {
+        let system = DesignSystem::paper().quantize(ColorCapability::Ansi16);
+        let _ = system.style(Role::Accent);
+        assert_eq!(system.capability, ColorCapability::Ansi16);
     }
 }

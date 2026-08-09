@@ -186,6 +186,33 @@ fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 pub(crate) fn stories() -> Vec<Story> {
     vec![
         Story::new(
+            "design-system/presets",
+            "DesignSystem presets",
+            "DesignSystem",
+            "Phosphor · Slate · Paper · ANSI · High Contrast ladder.",
+            72,
+            18,
+            design_system_presets_story,
+        ),
+        Story::new(
+            "design-system/no-color",
+            "DesignSystem no-color",
+            "DesignSystem",
+            "Monochrome + ASCII glyphs; roles still carry meaning.",
+            48,
+            8,
+            design_system_no_color_story,
+        ),
+        Story::new(
+            "design-system/button-recipes",
+            "Button recipes",
+            "DesignSystem",
+            "Primary/secondary/destructive × default/focused/disabled.",
+            56,
+            10,
+            design_system_button_recipes_story,
+        ),
+        Story::new(
             "center/both",
             "Center both axes",
             "Center",
@@ -3081,6 +3108,114 @@ pub(crate) fn stories() -> Vec<Story> {
 /// Catalog generation deliberately uses [`stories`] instead.
 pub(crate) fn gallery_stories() -> Vec<Story> {
     stories()
+}
+
+fn design_system_presets_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Stack};
+    use termrock::style::{DesignSystem, Role};
+    use termrock::widgets::Panel;
+    let presets = [
+        ("phosphor", DesignSystem::phosphor()),
+        ("slate", DesignSystem::slate()),
+        ("paper", DesignSystem::paper()),
+        ("ansi", DesignSystem::ansi()),
+        ("hi-con", DesignSystem::high_contrast()),
+    ];
+    let sizes: Vec<FlexSize> = presets.iter().map(|_| FlexSize::Weight(1)).collect();
+    let layout = Stack::new().gap(0).layout(area, &sizes);
+    for (i, (name, ds)) in presets.iter().enumerate() {
+        if let Some(r) = layout.get(i) {
+            let body = Panel::new(ds)
+                .title(name)
+                .paint(r, frame.buffer_mut(), None);
+            if body.width > 2 {
+                frame.buffer_mut().set_stringn(
+                    body.x,
+                    body.y,
+                    "Aa 01",
+                    usize::from(body.width),
+                    ds.style(Role::Accent),
+                );
+            }
+        }
+    }
+    let _ = system;
+}
+
+fn design_system_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::{ControlState, DesignSystem, ButtonRecipeVariant, Role};
+    use termrock::widgets::Panel;
+    let ds = DesignSystem::phosphor().no_color();
+    let body = Panel::new(&ds)
+        .title("no-color")
+        .paint(area, frame.buffer_mut(), None);
+    let recipe = ds.button_recipe(ButtonRecipeVariant::Primary, ControlState::Focused);
+    if body.width > 2 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "[ primary focused ]",
+            usize::from(body.width),
+            recipe.label,
+        );
+    }
+    if body.height > 1 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y.saturating_add(1),
+            "glyphs: ascii",
+            usize::from(body.width),
+            ds.style(Role::TextMuted),
+        );
+    }
+    let _ = system;
+}
+
+fn design_system_button_recipes_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Stack};
+    use termrock::style::{ButtonRecipeVariant, ControlState};
+    let variants = [
+        ButtonRecipeVariant::Primary,
+        ButtonRecipeVariant::Secondary,
+        ButtonRecipeVariant::Destructive,
+    ];
+    let states = [
+        ControlState::Default,
+        ControlState::Focused,
+        ControlState::Disabled,
+    ];
+    let layout = Stack::new().gap(0).layout(
+        area,
+        &[
+            FlexSize::Fixed(1),
+            FlexSize::Fixed(1),
+            FlexSize::Fixed(1),
+            FlexSize::Weight(1),
+        ],
+    );
+    for (row, &state) in states.iter().enumerate() {
+        if let Some(r) = layout.get(row) {
+            let mut x = r.x;
+            for &variant in &variants {
+                let recipe = system.button_recipe(variant, state);
+                let label = match variant {
+                    ButtonRecipeVariant::Primary => "prim",
+                    ButtonRecipeVariant::Secondary => "sec",
+                    ButtonRecipeVariant::Destructive => "dest",
+                    _ => "btn",
+                };
+                let text = format!(" {label} ");
+                frame.buffer_mut().set_stringn(
+                    x,
+                    r.y,
+                    &text,
+                    usize::from(r.width.saturating_sub(x.saturating_sub(r.x))),
+                    recipe.label,
+                );
+                x = x.saturating_add(text.len() as u16 + 1);
+            }
+        }
+    }
 }
 
 fn center_both_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

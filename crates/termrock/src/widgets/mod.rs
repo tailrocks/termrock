@@ -182,7 +182,7 @@ pub use text_input::{
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,
-    theme_from_preset_id,
+    system_from_preset_id, theme_from_preset_id,
 };
 pub use toast::{Anchor, Severity, Toast, ToastLifetime, ToastState};
 pub use transcript::{

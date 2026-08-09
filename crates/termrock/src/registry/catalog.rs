@@ -352,6 +352,83 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
+            id: "DesignSystem".into(),
+            title: "DesignSystem".into(),
+            description: "Complete terminal design system: roles, recipes, presets, packages, capability ladders.".into(),
+            kind: RegistryItemKind::Theme,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::style::DesignSystem".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![
+                file(
+                    "crates/termrock/src/style/tokens.rs",
+                    ContractFileRole::Primary,
+                ),
+                file(
+                    "crates/termrock/src/style/mod.rs",
+                    ContractFileRole::Primary,
+                ),
+            ],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "palette".into(),
+                    label: "Role palette".into(),
+                },
+                AnatomyPartRef {
+                    id: "recipes".into(),
+                    label: "Component recipes".into(),
+                },
+                AnatomyPartRef {
+                    id: "presets".into(),
+                    label: "Theme presets".into(),
+                },
+            ],
+            semantic_roles: vec![SemanticRoleRef {
+                id: "Role::*".into(),
+            }],
+            variants: vec![
+                VariantRef {
+                    id: "phosphor".into(),
+                    description: "Phosphor Obsidian default".into(),
+                },
+                VariantRef {
+                    id: "slate".into(),
+                    description: "Cool gray".into(),
+                },
+                VariantRef {
+                    id: "paper".into(),
+                    description: "Light paper".into(),
+                },
+                VariantRef {
+                    id: "ansi".into(),
+                    description: "ANSI 16".into(),
+                },
+                VariantRef {
+                    id: "high-contrast".into(),
+                    description: "A11y high contrast".into(),
+                },
+                VariantRef {
+                    id: "adaptive".into(),
+                    description: "Env capability ladder".into(),
+                },
+            ],
+            outcomes: vec![],
+            stories: vec![
+                "design-system/presets".into(),
+                "design-system/no-color".into(),
+                "design-system/button-recipes".into(),
+            ],
+            tests: vec!["style".into()],
+            migration: Some("migrations/0100-v0.13.0-design-system-recipes.md".into()),
+            provenance: prov("crates/termrock/src/style"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
             id: "Center".into(),
             title: "Center".into(),
             description: "Axis-aware constrained centering; pure geometry, no fake focus node.".into(),

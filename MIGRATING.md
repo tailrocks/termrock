@@ -113,6 +113,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0097 | `v0.13.0` | [Stack / Inline](migrations/0097-v0.13.0-stack-inline.md) |
 | 0098 | `v0.13.0` | [Grid](migrations/0098-v0.13.0-grid.md) |
 | 0099 | `v0.13.0` | [Center](migrations/0099-v0.13.0-center.md) |
+| 0100 | `v0.13.0` | [DesignSystem recipes & presets](migrations/0100-v0.13.0-design-system-recipes.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

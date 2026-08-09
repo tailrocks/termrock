@@ -35,8 +35,9 @@ pub use preview_host::{
 };
 pub use quantize::{ColorCapability, quantize_color, quantize_palette, rgb_to_xterm256};
 pub use tokens::{
-    DesignSystem, GlyphSet, ListRowRecipe, ListRowVisualState, PanelChrome, PanelRecipe,
-    SelectionChrome, SpacingScale,
+    BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ControlState, DesignSystem, Elevation,
+    GlyphSet, InputRecipe, ListRowRecipe, ListRowVisualState, PanelChrome, PanelRecipe,
+    SelectionChrome, SpacingScale, ThemePackage,
 };
 
 #[must_use]
@@ -451,10 +452,229 @@ impl RolePalette {
         }
     }
 
+    /// Light paper / daylight system (dark ink on warm canvas).
+    #[must_use]
+    pub fn paper() -> Self {
+        let canvas = Color::Rgb(250, 248, 245);
+        let surface = Color::Rgb(255, 255, 255);
+        let elevated = Color::Rgb(244, 241, 236);
+        let text = Color::Rgb(28, 25, 23);
+        let muted = Color::Rgb(87, 83, 78);
+        let disabled = Color::Rgb(168, 162, 158);
+        let border = Color::Rgb(214, 211, 209);
+        let accent = Color::Rgb(37, 99, 235);
+        let selection = Color::Rgb(219, 234, 254);
+        let success = Color::Rgb(22, 163, 74);
+        let warning = Color::Rgb(202, 138, 4);
+        let danger = Color::Rgb(220, 38, 38);
+        let info = Color::Rgb(2, 132, 199);
+        Self {
+            roles: [
+                Style::new().bg(canvas),
+                Style::new().bg(surface),
+                Style::new().bg(elevated),
+                Style::new().bg(Color::Rgb(231, 229, 228)),
+                Style::new().fg(text),
+                Style::new().fg(text).bold(),
+                Style::new().fg(muted),
+                Style::new().fg(disabled),
+                Style::new().fg(border),
+                Style::new().fg(accent),
+                Style::new().fg(text).bg(selection),
+                Style::new().fg(accent),
+                Style::new().fg(accent),
+                Style::new().fg(success),
+                Style::new().fg(warning),
+                Style::new().fg(danger).bold(),
+                Style::new().fg(info),
+                Style::new().fg(accent),
+                Style::new().fg(accent).underlined(),
+                Style::new().fg(text).bg(surface),
+                Style::new().fg(danger).bg(Color::Rgb(254, 226, 226)),
+                Style::new().fg(border),
+                Style::new().fg(accent),
+                Style::new().fg(text).bg(elevated),
+                Style::new().fg(muted).bg(surface),
+                Style::new().fg(text).bg(Color::Rgb(226, 232, 240)),
+                Style::new().fg(text).bg(elevated),
+                Style::new().fg(accent),
+                Style::new().fg(muted),
+                Style::new().fg(text).bold(),
+                Style::new().fg(accent),
+                Style::new().fg(muted),
+                Style::new().fg(border),
+                Style::new().fg(Color::Rgb(255, 255, 255)).bg(accent).bold(),
+                Style::new().fg(disabled),
+                Style::new().fg(text).bg(surface),
+                Style::new().fg(success).bg(Color::Rgb(220, 252, 231)),
+                Style::new().fg(danger).bg(Color::Rgb(254, 226, 226)),
+                Style::new().fg(Color::Rgb(126, 34, 206)),
+                Style::new().fg(success),
+                Style::new().fg(muted),
+                Style::new().fg(warning),
+                Style::new().fg(info),
+                Style::new().fg(accent),
+                Style::new().fg(info),
+                Style::new().fg(warning),
+                Style::new().fg(Color::Rgb(147, 51, 234)),
+                Style::new().fg(muted),
+                Style::new().fg(border),
+            ],
+        }
+    }
+
+    /// ANSI 16-color native palette (no RGB truecolor dependency).
+    #[must_use]
+    pub fn ansi() -> Self {
+        Self {
+            roles: [
+                Style::new(), // Canvas — terminal default
+                Style::new(),
+                Style::new(),
+                Style::new(),
+                Style::new().fg(Color::White),
+                Style::new().fg(Color::White).bold(),
+                Style::new().fg(Color::Gray).dim(),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Black).bg(Color::Green),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Cyan),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Yellow),
+                Style::new().fg(Color::Red).bold(),
+                Style::new().fg(Color::Cyan),
+                Style::new().fg(Color::Blue),
+                Style::new().fg(Color::Blue).underlined(),
+                Style::new().fg(Color::White),
+                Style::new().fg(Color::Red),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::White),
+                Style::new().fg(Color::Black).bg(Color::White),
+                Style::new().fg(Color::White).bg(Color::DarkGray),
+                Style::new().fg(Color::Black).bg(Color::Gray),
+                Style::new().fg(Color::White).bg(Color::DarkGray),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::White),
+                Style::new().fg(Color::White).bold(),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Gray).dim(),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::Black).bg(Color::Green).bold(),
+                Style::new().fg(Color::DarkGray),
+                Style::new(),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Red),
+                Style::new().fg(Color::Magenta),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Gray).dim(),
+                Style::new().fg(Color::Yellow),
+                Style::new().fg(Color::Cyan),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Cyan),
+                Style::new().fg(Color::Yellow),
+                Style::new().fg(Color::Magenta),
+                Style::new().fg(Color::Gray),
+                Style::new().fg(Color::DarkGray),
+            ],
+        }
+    }
+
+    /// High-contrast accessibility palette (strong fg/bg pairs, bold cues).
+    #[must_use]
+    pub fn high_contrast() -> Self {
+        let ink = Color::Rgb(255, 255, 255);
+        let paper = Color::Rgb(0, 0, 0);
+        let accent = Color::Rgb(0, 255, 255);
+        let danger = Color::Rgb(255, 64, 64);
+        let warn = Color::Rgb(255, 255, 0);
+        let ok = Color::Rgb(0, 255, 0);
+        Self {
+            roles: [
+                Style::new().bg(paper),
+                Style::new().bg(paper),
+                Style::new().bg(Color::Rgb(20, 20, 20)),
+                Style::new().bg(paper),
+                Style::new().fg(ink).bold(),
+                Style::new().fg(ink).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(Color::Rgb(180, 180, 180)),
+                Style::new().fg(ink),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(paper).bg(ink).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(ok).bold(),
+                Style::new().fg(warn).bold(),
+                Style::new().fg(danger).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(accent).underlined(),
+                Style::new().fg(accent).underlined().bold(),
+                Style::new().fg(ink).bg(paper),
+                Style::new().fg(danger).bg(paper).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(ink).bold(),
+                Style::new().fg(paper).bg(ink).bold(),
+                Style::new().fg(ink).bg(paper),
+                Style::new().fg(paper).bg(accent).bold(),
+                Style::new().fg(ink).bg(paper),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(ink).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(ink),
+                Style::new().fg(paper).bg(accent).bold(),
+                Style::new().fg(Color::Rgb(180, 180, 180)),
+                Style::new().fg(ink).bg(paper),
+                Style::new().fg(ok).bg(paper).bold(),
+                Style::new().fg(danger).bg(paper).bold(),
+                Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
+                Style::new().fg(ok).bold(),
+                Style::new().fg(Color::Rgb(180, 180, 180)),
+                Style::new().fg(warn).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(ok).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(warn).bold(),
+                Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(Color::Rgb(120, 120, 120)),
+            ],
+        }
+    }
+
+    /// Alias for [`Self::tailrocks_phosphor`].
+    #[must_use]
+    pub fn phosphor() -> Self {
+        Self::tailrocks_phosphor()
+    }
+
+    /// Alias for phosphor (marketing name).
+    #[must_use]
+    pub fn obsidian() -> Self {
+        Self::tailrocks_phosphor()
+    }
+
     /// Start from an existing theme and override one semantic role.
     #[must_use]
     pub fn with_role(mut self, role: Role, style: Style) -> Self {
         self.roles[role as usize] = style;
+        self
+    }
+
+    /// Merge non-empty styles from `other` (partial package inheritance).
+    ///
+    /// Empty styles (no fg/bg/modifiers) leave the base role unchanged.
+    #[must_use]
+    pub fn merge(mut self, other: &Self) -> Self {
+        for role in Self::roles() {
+            let s = other.style(role);
+            if s.fg.is_some() || s.bg.is_some() || s.add_modifier != Modifier::empty() {
+                self.roles[role as usize] = s;
+            }
+        }
         self
     }
 

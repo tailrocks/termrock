@@ -11717,6 +11717,58 @@ pub unsafe fn termrock::style::Appearance::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Appearance
 pub fn termrock::style::Appearance::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Appearance
+#[non_exhaustive] pub enum termrock::style::ButtonRecipeVariant
+pub termrock::style::ButtonRecipeVariant::Destructive
+pub termrock::style::ButtonRecipeVariant::Link
+pub termrock::style::ButtonRecipeVariant::Outline
+pub termrock::style::ButtonRecipeVariant::Primary
+pub termrock::style::ButtonRecipeVariant::Quiet
+pub termrock::style::ButtonRecipeVariant::Secondary
+impl core::clone::Clone for termrock::style::ButtonRecipeVariant
+pub fn termrock::style::ButtonRecipeVariant::clone(&self) -> termrock::style::ButtonRecipeVariant
+impl core::cmp::Eq for termrock::style::ButtonRecipeVariant
+impl core::cmp::PartialEq for termrock::style::ButtonRecipeVariant
+pub fn termrock::style::ButtonRecipeVariant::eq(&self, &termrock::style::ButtonRecipeVariant) -> bool
+impl core::default::Default for termrock::style::ButtonRecipeVariant
+pub fn termrock::style::ButtonRecipeVariant::default() -> termrock::style::ButtonRecipeVariant
+impl core::fmt::Debug for termrock::style::ButtonRecipeVariant
+pub fn termrock::style::ButtonRecipeVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::ButtonRecipeVariant
+pub fn termrock::style::ButtonRecipeVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::ButtonRecipeVariant
+impl core::marker::StructuralPartialEq for termrock::style::ButtonRecipeVariant
+impl core::marker::Freeze for termrock::style::ButtonRecipeVariant
+impl core::marker::Send for termrock::style::ButtonRecipeVariant
+impl core::marker::Sync for termrock::style::ButtonRecipeVariant
+impl core::marker::Unpin for termrock::style::ButtonRecipeVariant
+impl core::marker::UnsafeUnpin for termrock::style::ButtonRecipeVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::ButtonRecipeVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::ButtonRecipeVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::ButtonRecipeVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::ButtonRecipeVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::ButtonRecipeVariant where U: core::convert::From<T>
+pub fn termrock::style::ButtonRecipeVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::ButtonRecipeVariant where U: core::convert::Into<T>
+pub type termrock::style::ButtonRecipeVariant::Error = core::convert::Infallible
+pub fn termrock::style::ButtonRecipeVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::ButtonRecipeVariant where U: core::convert::TryFrom<T>
+pub type termrock::style::ButtonRecipeVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::ButtonRecipeVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::ButtonRecipeVariant where T: core::clone::Clone
+pub type termrock::style::ButtonRecipeVariant::Owned = T
+pub fn termrock::style::ButtonRecipeVariant::clone_into(&self, &mut T)
+pub fn termrock::style::ButtonRecipeVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::ButtonRecipeVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::style::ButtonRecipeVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::ButtonRecipeVariant where T: ?core::marker::Sized
+pub fn termrock::style::ButtonRecipeVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::ButtonRecipeVariant where T: ?core::marker::Sized
+pub fn termrock::style::ButtonRecipeVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::ButtonRecipeVariant where T: core::clone::Clone
+pub unsafe fn termrock::style::ButtonRecipeVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::ButtonRecipeVariant
+pub fn termrock::style::ButtonRecipeVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::ButtonRecipeVariant
 #[non_exhaustive] pub enum termrock::style::ColorCapability
 pub termrock::style::ColorCapability::Ansi16
 pub termrock::style::ColorCapability::Indexed256
@@ -11769,6 +11821,58 @@ pub unsafe fn termrock::style::ColorCapability::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::ColorCapability
 pub fn termrock::style::ColorCapability::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::ColorCapability
+#[non_exhaustive] pub enum termrock::style::ControlState
+pub termrock::style::ControlState::Default
+pub termrock::style::ControlState::Disabled
+pub termrock::style::ControlState::Focused
+pub termrock::style::ControlState::Hovered
+pub termrock::style::ControlState::Loading
+pub termrock::style::ControlState::Pressed
+impl core::clone::Clone for termrock::style::ControlState
+pub fn termrock::style::ControlState::clone(&self) -> termrock::style::ControlState
+impl core::cmp::Eq for termrock::style::ControlState
+impl core::cmp::PartialEq for termrock::style::ControlState
+pub fn termrock::style::ControlState::eq(&self, &termrock::style::ControlState) -> bool
+impl core::default::Default for termrock::style::ControlState
+pub fn termrock::style::ControlState::default() -> termrock::style::ControlState
+impl core::fmt::Debug for termrock::style::ControlState
+pub fn termrock::style::ControlState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::ControlState
+pub fn termrock::style::ControlState::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::ControlState
+impl core::marker::StructuralPartialEq for termrock::style::ControlState
+impl core::marker::Freeze for termrock::style::ControlState
+impl core::marker::Send for termrock::style::ControlState
+impl core::marker::Sync for termrock::style::ControlState
+impl core::marker::Unpin for termrock::style::ControlState
+impl core::marker::UnsafeUnpin for termrock::style::ControlState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::ControlState
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::ControlState
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::ControlState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::ControlState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::ControlState where U: core::convert::From<T>
+pub fn termrock::style::ControlState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::ControlState where U: core::convert::Into<T>
+pub type termrock::style::ControlState::Error = core::convert::Infallible
+pub fn termrock::style::ControlState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::ControlState where U: core::convert::TryFrom<T>
+pub type termrock::style::ControlState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::ControlState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::ControlState where T: core::clone::Clone
+pub type termrock::style::ControlState::Owned = T
+pub fn termrock::style::ControlState::clone_into(&self, &mut T)
+pub fn termrock::style::ControlState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::ControlState where T: 'static + ?core::marker::Sized
+pub fn termrock::style::ControlState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::ControlState where T: ?core::marker::Sized
+pub fn termrock::style::ControlState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::ControlState where T: ?core::marker::Sized
+pub fn termrock::style::ControlState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::ControlState where T: core::clone::Clone
+pub unsafe fn termrock::style::ControlState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::ControlState
+pub fn termrock::style::ControlState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::ControlState
 #[non_exhaustive] pub enum termrock::style::Density
 pub termrock::style::Density::Comfortable
 pub termrock::style::Density::Compact
@@ -11824,6 +11928,59 @@ pub unsafe fn termrock::style::Density::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Density
 pub fn termrock::style::Density::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Density
+#[non_exhaustive] pub enum termrock::style::Elevation
+pub termrock::style::Elevation::Canvas
+pub termrock::style::Elevation::Overlay
+pub termrock::style::Elevation::Raised
+pub termrock::style::Elevation::Surface
+impl termrock::style::Elevation
+pub const fn termrock::style::Elevation::id(self) -> &'static str
+pub const fn termrock::style::Elevation::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::style::Elevation
+pub fn termrock::style::Elevation::clone(&self) -> termrock::style::Elevation
+impl core::cmp::Eq for termrock::style::Elevation
+impl core::cmp::PartialEq for termrock::style::Elevation
+pub fn termrock::style::Elevation::eq(&self, &termrock::style::Elevation) -> bool
+impl core::default::Default for termrock::style::Elevation
+pub fn termrock::style::Elevation::default() -> termrock::style::Elevation
+impl core::fmt::Debug for termrock::style::Elevation
+pub fn termrock::style::Elevation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::Elevation
+pub fn termrock::style::Elevation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::Elevation
+impl core::marker::StructuralPartialEq for termrock::style::Elevation
+impl core::marker::Freeze for termrock::style::Elevation
+impl core::marker::Send for termrock::style::Elevation
+impl core::marker::Sync for termrock::style::Elevation
+impl core::marker::Unpin for termrock::style::Elevation
+impl core::marker::UnsafeUnpin for termrock::style::Elevation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::Elevation
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::Elevation
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::Elevation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::Elevation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::Elevation where U: core::convert::From<T>
+pub fn termrock::style::Elevation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::Elevation where U: core::convert::Into<T>
+pub type termrock::style::Elevation::Error = core::convert::Infallible
+pub fn termrock::style::Elevation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::Elevation where U: core::convert::TryFrom<T>
+pub type termrock::style::Elevation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::Elevation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::Elevation where T: core::clone::Clone
+pub type termrock::style::Elevation::Owned = T
+pub fn termrock::style::Elevation::clone_into(&self, &mut T)
+pub fn termrock::style::Elevation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::Elevation where T: 'static + ?core::marker::Sized
+pub fn termrock::style::Elevation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::Elevation where T: ?core::marker::Sized
+pub fn termrock::style::Elevation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::Elevation where T: ?core::marker::Sized
+pub fn termrock::style::Elevation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::Elevation where T: core::clone::Clone
+pub unsafe fn termrock::style::Elevation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::Elevation
+pub fn termrock::style::Elevation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::Elevation
 #[non_exhaustive] pub enum termrock::style::GlyphSet
 pub termrock::style::GlyphSet::Ascii
 pub termrock::style::GlyphSet::Unicode
@@ -12315,6 +12472,103 @@ pub unsafe fn termrock::style::AppearanceThemeMap::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::style::AppearanceThemeMap
 pub fn termrock::style::AppearanceThemeMap::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::AppearanceThemeMap
+pub struct termrock::style::BreakpointScale
+pub termrock::style::BreakpointScale::comfortable: u16
+pub termrock::style::BreakpointScale::narrow: u16
+pub termrock::style::BreakpointScale::tiny: u16
+pub termrock::style::BreakpointScale::wide: u16
+impl core::clone::Clone for termrock::style::BreakpointScale
+pub fn termrock::style::BreakpointScale::clone(&self) -> termrock::style::BreakpointScale
+impl core::cmp::Eq for termrock::style::BreakpointScale
+impl core::cmp::PartialEq for termrock::style::BreakpointScale
+pub fn termrock::style::BreakpointScale::eq(&self, &termrock::style::BreakpointScale) -> bool
+impl core::default::Default for termrock::style::BreakpointScale
+pub fn termrock::style::BreakpointScale::default() -> Self
+impl core::fmt::Debug for termrock::style::BreakpointScale
+pub fn termrock::style::BreakpointScale::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::BreakpointScale
+pub fn termrock::style::BreakpointScale::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::BreakpointScale
+impl core::marker::StructuralPartialEq for termrock::style::BreakpointScale
+impl core::marker::Freeze for termrock::style::BreakpointScale
+impl core::marker::Send for termrock::style::BreakpointScale
+impl core::marker::Sync for termrock::style::BreakpointScale
+impl core::marker::Unpin for termrock::style::BreakpointScale
+impl core::marker::UnsafeUnpin for termrock::style::BreakpointScale
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::BreakpointScale
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::BreakpointScale
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::BreakpointScale where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::BreakpointScale::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::BreakpointScale where U: core::convert::From<T>
+pub fn termrock::style::BreakpointScale::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::BreakpointScale where U: core::convert::Into<T>
+pub type termrock::style::BreakpointScale::Error = core::convert::Infallible
+pub fn termrock::style::BreakpointScale::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::BreakpointScale where U: core::convert::TryFrom<T>
+pub type termrock::style::BreakpointScale::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::BreakpointScale::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::BreakpointScale where T: core::clone::Clone
+pub type termrock::style::BreakpointScale::Owned = T
+pub fn termrock::style::BreakpointScale::clone_into(&self, &mut T)
+pub fn termrock::style::BreakpointScale::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::BreakpointScale where T: 'static + ?core::marker::Sized
+pub fn termrock::style::BreakpointScale::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::BreakpointScale where T: ?core::marker::Sized
+pub fn termrock::style::BreakpointScale::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::BreakpointScale where T: ?core::marker::Sized
+pub fn termrock::style::BreakpointScale::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::BreakpointScale where T: core::clone::Clone
+pub unsafe fn termrock::style::BreakpointScale::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::BreakpointScale
+pub fn termrock::style::BreakpointScale::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::BreakpointScale
+pub struct termrock::style::ButtonRecipe
+pub termrock::style::ButtonRecipe::border: ratatui_core::style::Style
+pub termrock::style::ButtonRecipe::bordered: bool
+pub termrock::style::ButtonRecipe::fill: ratatui_core::style::Style
+pub termrock::style::ButtonRecipe::label: ratatui_core::style::Style
+pub termrock::style::ButtonRecipe::pad_x: u16
+impl core::clone::Clone for termrock::style::ButtonRecipe
+pub fn termrock::style::ButtonRecipe::clone(&self) -> termrock::style::ButtonRecipe
+impl core::cmp::Eq for termrock::style::ButtonRecipe
+impl core::cmp::PartialEq for termrock::style::ButtonRecipe
+pub fn termrock::style::ButtonRecipe::eq(&self, &termrock::style::ButtonRecipe) -> bool
+impl core::fmt::Debug for termrock::style::ButtonRecipe
+pub fn termrock::style::ButtonRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::style::ButtonRecipe
+impl core::marker::StructuralPartialEq for termrock::style::ButtonRecipe
+impl core::marker::Freeze for termrock::style::ButtonRecipe
+impl core::marker::Send for termrock::style::ButtonRecipe
+impl core::marker::Sync for termrock::style::ButtonRecipe
+impl core::marker::Unpin for termrock::style::ButtonRecipe
+impl core::marker::UnsafeUnpin for termrock::style::ButtonRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::ButtonRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::ButtonRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::ButtonRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::ButtonRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::ButtonRecipe where U: core::convert::From<T>
+pub fn termrock::style::ButtonRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::ButtonRecipe where U: core::convert::Into<T>
+pub type termrock::style::ButtonRecipe::Error = core::convert::Infallible
+pub fn termrock::style::ButtonRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::ButtonRecipe where U: core::convert::TryFrom<T>
+pub type termrock::style::ButtonRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::ButtonRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::ButtonRecipe where T: core::clone::Clone
+pub type termrock::style::ButtonRecipe::Owned = T
+pub fn termrock::style::ButtonRecipe::clone_into(&self, &mut T)
+pub fn termrock::style::ButtonRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::ButtonRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::style::ButtonRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::ButtonRecipe where T: ?core::marker::Sized
+pub fn termrock::style::ButtonRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::ButtonRecipe where T: ?core::marker::Sized
+pub fn termrock::style::ButtonRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::ButtonRecipe where T: core::clone::Clone
+pub unsafe fn termrock::style::ButtonRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::ButtonRecipe
+pub fn termrock::style::ButtonRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::ButtonRecipe
 pub struct termrock::style::CapabilityPreviewHost
 pub termrock::style::CapabilityPreviewHost::capability: termrock::style::ColorCapability
 pub termrock::style::CapabilityPreviewHost::iterm2: bool
@@ -12382,6 +12636,7 @@ impl<T> core::convert::From<T> for termrock::style::CapabilityPreviewHost
 pub fn termrock::style::CapabilityPreviewHost::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::CapabilityPreviewHost
 pub struct termrock::style::DesignSystem
+pub termrock::style::DesignSystem::breakpoints: termrock::style::BreakpointScale
 pub termrock::style::DesignSystem::capability: termrock::style::ColorCapability
 pub termrock::style::DesignSystem::density: termrock::style::Density
 pub termrock::style::DesignSystem::glyphs: termrock::style::GlyphSet
@@ -12390,20 +12645,34 @@ pub termrock::style::DesignSystem::palette: termrock::style::RolePalette
 pub termrock::style::DesignSystem::selection: termrock::style::SelectionChrome
 pub termrock::style::DesignSystem::spacing: termrock::style::SpacingScale
 impl termrock::style::DesignSystem
+pub fn termrock::style::DesignSystem::adaptive() -> Self
+pub fn termrock::style::DesignSystem::ansi() -> Self
+pub const fn termrock::style::DesignSystem::ascii(self) -> Self
+pub const fn termrock::style::DesignSystem::breakpoints(self, termrock::style::BreakpointScale) -> Self
+pub fn termrock::style::DesignSystem::button_recipe(&self, termrock::style::ButtonRecipeVariant, termrock::style::ControlState) -> termrock::style::ButtonRecipe
 pub const fn termrock::style::DesignSystem::capability(self, termrock::style::ColorCapability) -> Self
 pub fn termrock::style::DesignSystem::density(self, termrock::style::Density) -> Self
+pub fn termrock::style::DesignSystem::elevation(&self, termrock::style::Elevation) -> ratatui_core::style::Style
 pub fn termrock::style::DesignSystem::from_palette(termrock::style::RolePalette) -> Self
 pub const fn termrock::style::DesignSystem::glyphs(self, termrock::style::GlyphSet) -> Self
+pub fn termrock::style::DesignSystem::high_contrast() -> Self
+pub fn termrock::style::DesignSystem::input_recipe(&self, termrock::style::ControlState, bool) -> termrock::style::InputRecipe
 pub fn termrock::style::DesignSystem::list_row_recipe(&self, bool, bool, bool) -> termrock::style::ListRowRecipe
+pub fn termrock::style::DesignSystem::merge(self, &termrock::style::RolePalette) -> Self
 pub const fn termrock::style::DesignSystem::motion(self, termrock::style::Motion) -> Self
 pub fn termrock::style::DesignSystem::new(termrock::style::RolePalette, termrock::style::Density) -> Self
+pub fn termrock::style::DesignSystem::no_color(self) -> Self
+pub fn termrock::style::DesignSystem::obsidian() -> Self
 pub const fn termrock::style::DesignSystem::palette(&self) -> &termrock::style::RolePalette
 pub fn termrock::style::DesignSystem::panel_recipe(&self, termrock::style::PanelChrome) -> termrock::style::PanelRecipe
+pub fn termrock::style::DesignSystem::paper() -> Self
 pub fn termrock::style::DesignSystem::phosphor() -> Self
 pub fn termrock::style::DesignSystem::quantize(self, termrock::style::ColorCapability) -> Self
 pub fn termrock::style::DesignSystem::resolve_list_row(&self, termrock::style::ListRowVisualState) -> termrock::style::ListRowRecipe
 pub const fn termrock::style::DesignSystem::selection(self, termrock::style::SelectionChrome) -> Self
+pub fn termrock::style::DesignSystem::slate() -> Self
 pub fn termrock::style::DesignSystem::style(&self, termrock::style::Role) -> ratatui_core::style::Style
+pub fn termrock::style::DesignSystem::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl termrock::style::DesignSystem
 pub fn termrock::style::DesignSystem::surface_recipe(&self, termrock::widgets::SurfaceRecipe) -> termrock::widgets::SurfacePaintPlan
 impl core::clone::Clone for termrock::style::DesignSystem
@@ -12448,6 +12717,54 @@ pub unsafe fn termrock::style::DesignSystem::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::DesignSystem
 pub fn termrock::style::DesignSystem::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::DesignSystem
+pub struct termrock::style::InputRecipe
+pub termrock::style::InputRecipe::border: ratatui_core::style::Style
+pub termrock::style::InputRecipe::cursor: ratatui_core::style::Style
+pub termrock::style::InputRecipe::fill: ratatui_core::style::Style
+pub termrock::style::InputRecipe::pad_x: u16
+pub termrock::style::InputRecipe::placeholder: ratatui_core::style::Style
+pub termrock::style::InputRecipe::value: ratatui_core::style::Style
+impl core::clone::Clone for termrock::style::InputRecipe
+pub fn termrock::style::InputRecipe::clone(&self) -> termrock::style::InputRecipe
+impl core::cmp::Eq for termrock::style::InputRecipe
+impl core::cmp::PartialEq for termrock::style::InputRecipe
+pub fn termrock::style::InputRecipe::eq(&self, &termrock::style::InputRecipe) -> bool
+impl core::fmt::Debug for termrock::style::InputRecipe
+pub fn termrock::style::InputRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::style::InputRecipe
+impl core::marker::StructuralPartialEq for termrock::style::InputRecipe
+impl core::marker::Freeze for termrock::style::InputRecipe
+impl core::marker::Send for termrock::style::InputRecipe
+impl core::marker::Sync for termrock::style::InputRecipe
+impl core::marker::Unpin for termrock::style::InputRecipe
+impl core::marker::UnsafeUnpin for termrock::style::InputRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::InputRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::InputRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::InputRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::InputRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::InputRecipe where U: core::convert::From<T>
+pub fn termrock::style::InputRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::InputRecipe where U: core::convert::Into<T>
+pub type termrock::style::InputRecipe::Error = core::convert::Infallible
+pub fn termrock::style::InputRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::InputRecipe where U: core::convert::TryFrom<T>
+pub type termrock::style::InputRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::InputRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::InputRecipe where T: core::clone::Clone
+pub type termrock::style::InputRecipe::Owned = T
+pub fn termrock::style::InputRecipe::clone_into(&self, &mut T)
+pub fn termrock::style::InputRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::InputRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::style::InputRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::InputRecipe where T: ?core::marker::Sized
+pub fn termrock::style::InputRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::InputRecipe where T: ?core::marker::Sized
+pub fn termrock::style::InputRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::InputRecipe where T: core::clone::Clone
+pub unsafe fn termrock::style::InputRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::InputRecipe
+pub fn termrock::style::InputRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::InputRecipe
 pub struct termrock::style::ListRowRecipe
 pub termrock::style::ListRowRecipe::check_off: &'static str
 pub termrock::style::ListRowRecipe::check_on: &'static str
@@ -12706,7 +13023,13 @@ pub fn termrock::style::Rgb::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Rgb
 pub struct termrock::style::RolePalette
 impl termrock::style::RolePalette
+pub fn termrock::style::RolePalette::ansi() -> Self
 pub fn termrock::style::RolePalette::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
+pub fn termrock::style::RolePalette::high_contrast() -> Self
+pub fn termrock::style::RolePalette::merge(self, &Self) -> Self
+pub fn termrock::style::RolePalette::obsidian() -> Self
+pub fn termrock::style::RolePalette::paper() -> Self
+pub fn termrock::style::RolePalette::phosphor() -> Self
 pub const fn termrock::style::RolePalette::roles() -> [termrock::style::Role; 49]
 pub fn termrock::style::RolePalette::slate() -> Self
 pub const fn termrock::style::RolePalette::style(&self, termrock::style::Role) -> ratatui_core::style::Style
@@ -12806,6 +13129,53 @@ pub unsafe fn termrock::style::SpacingScale::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::SpacingScale
 pub fn termrock::style::SpacingScale::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::SpacingScale
+pub struct termrock::style::ThemePackage
+pub termrock::style::ThemePackage::id: alloc::string::String
+pub termrock::style::ThemePackage::label: alloc::string::String
+pub termrock::style::ThemePackage::system: termrock::style::DesignSystem
+impl termrock::style::ThemePackage
+pub fn termrock::style::ThemePackage::builtins() -> alloc::vec::Vec<Self>
+pub fn termrock::style::ThemePackage::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, termrock::style::DesignSystem) -> Self
+impl core::clone::Clone for termrock::style::ThemePackage
+pub fn termrock::style::ThemePackage::clone(&self) -> termrock::style::ThemePackage
+impl core::cmp::Eq for termrock::style::ThemePackage
+impl core::cmp::PartialEq for termrock::style::ThemePackage
+pub fn termrock::style::ThemePackage::eq(&self, &termrock::style::ThemePackage) -> bool
+impl core::fmt::Debug for termrock::style::ThemePackage
+pub fn termrock::style::ThemePackage::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::style::ThemePackage
+impl core::marker::Freeze for termrock::style::ThemePackage
+impl core::marker::Send for termrock::style::ThemePackage
+impl core::marker::Sync for termrock::style::ThemePackage
+impl core::marker::Unpin for termrock::style::ThemePackage
+impl core::marker::UnsafeUnpin for termrock::style::ThemePackage
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::ThemePackage
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::ThemePackage
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::ThemePackage where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::ThemePackage::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::ThemePackage where U: core::convert::From<T>
+pub fn termrock::style::ThemePackage::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::ThemePackage where U: core::convert::Into<T>
+pub type termrock::style::ThemePackage::Error = core::convert::Infallible
+pub fn termrock::style::ThemePackage::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::ThemePackage where U: core::convert::TryFrom<T>
+pub type termrock::style::ThemePackage::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::ThemePackage::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::ThemePackage where T: core::clone::Clone
+pub type termrock::style::ThemePackage::Owned = T
+pub fn termrock::style::ThemePackage::clone_into(&self, &mut T)
+pub fn termrock::style::ThemePackage::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::ThemePackage where T: 'static + ?core::marker::Sized
+pub fn termrock::style::ThemePackage::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::ThemePackage where T: ?core::marker::Sized
+pub fn termrock::style::ThemePackage::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::ThemePackage where T: ?core::marker::Sized
+pub fn termrock::style::ThemePackage::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::ThemePackage where T: core::clone::Clone
+pub unsafe fn termrock::style::ThemePackage::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::ThemePackage
+pub fn termrock::style::ThemePackage::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::ThemePackage
 pub const termrock::style::PHOSPHOR_DARK: ratatui_core::style::color::Color
 pub const termrock::style::PHOSPHOR_GREEN: ratatui_core::style::color::Color
 pub const termrock::style::PREVIEW_CARD: ratatui_core::style::color::Color
@@ -29315,6 +29685,7 @@ pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Fr
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
 pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::widgets::system_from_preset_id(&str) -> core::option::Option<termrock::style::DesignSystem>
 pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>
 pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<termrock::style::RolePalette>
 pub fn termrock::widgets::wrapped_hint_lines(&[termrock::widgets::HintSpan<'_>], u16, &termrock::style::DesignSystem) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>

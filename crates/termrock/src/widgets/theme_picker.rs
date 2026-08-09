@@ -34,7 +34,7 @@ pub struct ThemePreset {
 pub const BUILTIN_THEME_PRESETS: &[ThemePreset] = &[
     ThemePreset {
         id: "phosphor",
-        label: "Phosphor",
+        label: "Phosphor Obsidian",
         requires_truecolor: false,
     },
     ThemePreset {
@@ -42,14 +42,54 @@ pub const BUILTIN_THEME_PRESETS: &[ThemePreset] = &[
         label: "Slate",
         requires_truecolor: true,
     },
+    ThemePreset {
+        id: "paper",
+        label: "Paper",
+        requires_truecolor: true,
+    },
+    ThemePreset {
+        id: "ansi",
+        label: "ANSI 16",
+        requires_truecolor: false,
+    },
+    ThemePreset {
+        id: "high-contrast",
+        label: "High Contrast",
+        requires_truecolor: false,
+    },
+    ThemePreset {
+        id: "adaptive",
+        label: "Terminal Adaptive",
+        requires_truecolor: false,
+    },
 ];
 
 /// Resolves a built-in theme by preset id.
 #[must_use]
 pub fn theme_from_preset_id(id: &str) -> Option<RolePalette> {
     match id {
-        "phosphor" | "tailrocks_phosphor" | "dark" => Some(RolePalette::tailrocks_phosphor()),
-        "slate" | "light" => Some(RolePalette::slate()),
+        "phosphor" | "tailrocks_phosphor" | "obsidian" | "dark" => {
+            Some(RolePalette::tailrocks_phosphor())
+        }
+        "slate" => Some(RolePalette::slate()),
+        "paper" | "light" => Some(RolePalette::paper()),
+        "ansi" | "ansi16" => Some(RolePalette::ansi()),
+        "high-contrast" | "hc" | "high_contrast" => Some(RolePalette::high_contrast()),
+        "adaptive" => Some(DesignSystem::adaptive().palette),
+        _ => None,
+    }
+}
+
+/// Resolves a full [`DesignSystem`] for a preset id.
+#[must_use]
+pub fn system_from_preset_id(id: &str) -> Option<DesignSystem> {
+    match id {
+        "phosphor" | "tailrocks_phosphor" | "obsidian" | "dark" => Some(DesignSystem::phosphor()),
+        "slate" => Some(DesignSystem::slate()),
+        "paper" | "light" => Some(DesignSystem::paper()),
+        "ansi" | "ansi16" => Some(DesignSystem::ansi()),
+        "high-contrast" | "hc" | "high_contrast" => Some(DesignSystem::high_contrast()),
+        "adaptive" => Some(DesignSystem::adaptive()),
         _ => None,
     }
 }
