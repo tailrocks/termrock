@@ -1,0 +1,73 @@
+---
+title: ResizablePanelGroup
+description: 'Multi-panel resizable layout with handles, collapse, presets, and drawer recipes — content stays host-owned.'
+---
+
+## Previews
+
+### `resizable-panel-group/workbench`
+
+![Workbench](/component-previews/resizable-panel-group-workbench.svg)
+
+### `resizable-panel-group/dashboard`
+
+![Dashboard](/component-previews/resizable-panel-group-dashboard.svg)
+
+### `resizable-panel-group/drawers`
+
+![Drawers](/component-previews/resizable-panel-group-drawers.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    ResizablePanelGroup, ResizablePanelGroupState, workbench_panels,
+};
+
+let panels = workbench_panels();
+let group = ResizablePanelGroup::new(&panels, &system).workbench();
+let mut state = ResizablePanelGroupState::new();
+
+let layout = group.layout(area, &mut state);
+group.paint_handles(area, buf, &mut state);
+
+for panel in &layout.panels {
+    if panel.drawer { /* host drawer overlay */ continue; }
+    if panel.area.is_empty() { continue; }
+    // paint into panel.area — keep your scroll/focus state across resizes
+}
+```
+
+## Specs
+
+| Helper | Panels |
+|--------|--------|
+| `workbench_panels()` | start sidebar · main · end inspector |
+| `dashboard_panels()` | main · log |
+
+Each `ResizablePanelSpec` has weight, min/max, collapsible, collapse threshold, dock.
+
+## Interaction
+
+| Input | Outcome |
+|-------|---------|
+| Focus handle + arrows | `Resized` |
+| Drag handle | `Resized` |
+| Home/End on handle | collapse neighbor |
+| `collapse` / `expand` | typed outcomes |
+| `save_preset` / `apply_preset` | restore sizes |
+
+## Responsive drawers
+
+`workbench()` / `side_drawers` when outer axis &lt; threshold: Start/End docks are
+flagged `drawer: true` and leave the in-flow group. Host presents drawers;
+group keeps main content.
+
+## vs SplitPane
+
+Use **SplitPane** for a single binary split. Use **ResizablePanelGroup** for
+N panels, presets, and drawer recipes.
+
+## Migration
+
+See `migrations/0111-v0.13.0-resizable-panel-group.md`.

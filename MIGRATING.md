@@ -124,6 +124,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0108 | `v0.13.0` | [Separator](migrations/0108-v0.13.0-separator.md) |
 | 0109 | `v0.13.0` | [Toolbar](migrations/0109-v0.13.0-toolbar.md) |
 | 0110 | `v0.13.0` | [StatusBar premium](migrations/0110-v0.13.0-status-bar.md) |
+| 0111 | `v0.13.0` | [ResizablePanelGroup](migrations/0111-v0.13.0-resizable-panel-group.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

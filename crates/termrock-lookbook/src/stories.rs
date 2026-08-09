@@ -786,6 +786,33 @@ pub(crate) fn stories() -> Vec<Story> {
         )
         .with_interactor(split_pane_interactor),
         Story::new(
+            "resizable-panel-group/workbench",
+            "ResizablePanelGroup workbench",
+            "ResizablePanelGroup",
+            "Sidebar | main | inspector with resize handles.",
+            80,
+            16,
+            resizable_workbench_story,
+        ),
+        Story::new(
+            "resizable-panel-group/dashboard",
+            "ResizablePanelGroup dashboard",
+            "ResizablePanelGroup",
+            "Main | log horizontal dashboard split.",
+            72,
+            14,
+            resizable_dashboard_story,
+        ),
+        Story::new(
+            "resizable-panel-group/drawers",
+            "ResizablePanelGroup drawers",
+            "ResizablePanelGroup",
+            "Narrow workbench: side docks flagged as drawers.",
+            48,
+            12,
+            resizable_drawers_story,
+        ),
+        Story::new(
             "picker/basic",
             "Filterable picker",
             "Picker",
@@ -4801,6 +4828,89 @@ pub(crate) fn render_split_pane(
 fn split_pane(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = SplitPaneState::new(SplitRatio::from_percent(38));
     render_split_pane(frame, area, &mut state, system);
+}
+
+fn resizable_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        workbench_panels, Panel, ResizablePanelGroup, ResizablePanelGroupState,
+    };
+    let panels = workbench_panels();
+    let group = ResizablePanelGroup::new(&panels, system).workbench();
+    let mut state = ResizablePanelGroupState::new();
+    let layout = group.layout(area, &mut state);
+    group.paint_handles(area, frame.buffer_mut(), &mut state);
+    for p in &layout.panels {
+        if p.drawer || p.collapsed || p.area.width < 3 || p.area.height < 2 {
+            continue;
+        }
+        let _ = Panel::new(system)
+            .title(p.id.0.as_str())
+            .paint(p.area, frame.buffer_mut(), None);
+    }
+}
+
+fn resizable_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        dashboard_panels, Panel, ResizablePanelGroup, ResizablePanelGroupState,
+    };
+    let panels = dashboard_panels();
+    let group = ResizablePanelGroup::new(&panels, system).dashboard();
+    let mut state = ResizablePanelGroupState::new();
+    let layout = group.layout(area, &mut state);
+    group.paint_handles(area, frame.buffer_mut(), &mut state);
+    for p in &layout.panels {
+        if p.area.width < 3 || p.area.height < 2 {
+            continue;
+        }
+        let _ = Panel::new(system)
+            .title(p.id.0.as_str())
+            .paint(p.area, frame.buffer_mut(), None);
+    }
+}
+
+fn resizable_drawers_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        workbench_panels, Panel, ResizablePanelGroup, ResizablePanelGroupState,
+    };
+    let panels = workbench_panels();
+    let group = ResizablePanelGroup::new(&panels, system)
+        .workbench()
+        .drawer_threshold(90);
+    let mut state = ResizablePanelGroupState::new();
+    let layout = group.layout(area, &mut state);
+    group.paint_handles(area, frame.buffer_mut(), &mut state);
+    for p in &layout.panels {
+        if p.drawer {
+            // Mark drawer candidates in footer of remaining main
+            continue;
+        }
+        if p.area.width < 4 || p.area.height < 2 {
+            continue;
+        }
+        let title = if state.drawer_ids().is_empty() {
+            p.id.0.as_str()
+        } else {
+            "main (+drawers)"
+        };
+        let body = Panel::new(system)
+            .title(title)
+            .paint(p.area, frame.buffer_mut(), None);
+        if body.width > 2 && !state.drawer_ids().is_empty() {
+            let names: String = state
+                .drawer_ids()
+                .iter()
+                .map(|d| d.0.as_str())
+                .collect::<Vec<_>>()
+                .join(",");
+            frame.buffer_mut().set_stringn(
+                body.x,
+                body.y,
+                &format!("drawer:{names}"),
+                usize::from(body.width),
+                system.style(Role::Warning),
+            );
+        }
+    }
 }
 
 fn tree_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

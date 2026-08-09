@@ -42,6 +42,7 @@ mod review;
 mod scroll_area;
 mod selection;
 mod split_pane;
+mod resizable_panel_group;
 mod status_bar;
 mod surface;
 mod table;
@@ -182,6 +183,11 @@ pub use selection::Selection;
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,
     SplitSide,
+};
+pub use resizable_panel_group::{
+    dashboard_panels, workbench_panels, PanelDock, PanelId, PanelLayoutPreset, PanelGroupRecipe,
+    PanelRect, ResizablePanelGroup, ResizablePanelGroupLayout, ResizablePanelGroupState,
+    ResizablePanelOutcome, ResizablePanelSpec,
 };
 pub use status_bar::{
     StatusBar, StatusBarRecipe, StatusBarState, StatusKind, StatusRegion, StatusSlot,
