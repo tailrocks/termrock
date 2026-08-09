@@ -497,17 +497,35 @@ compatibility facades; exhaustive awesome-tuis catalog implementation.
 
 ## 16. Baseline verification (tree drift check)
 
-Checked against local tree at research session (HEAD `855a049` class):
+### Research-session baseline (HEAD ~`855a049`)
 
-| Claim in this brief | Live evidence | Drift |
-|---------------------|---------------|-------|
-| 25 public widgets in COMPONENTS.md | Exact inventory sentence lists 25 names | None |
-| Widget modules under `crates/termrock/src/widgets/` | 22 `*.rs` modules excluding `mod`/`tests`/`edit_core`/`selection`; composite widgets (Backdrop, ChoiceDialog, MessageDialog) live in `dialog.rs` | None material |
-| `Theme::tailrocks_phosphor` + `Theme::slate` | `crates/termrock/src/style/mod.rs` | None |
-| FocusRing | `crates/termrock/src/interaction/focus.rs` | None |
-| Lookbook crate | `crates/termrock-lookbook/` | None |
-| Component contracts | `docs/api/component-contracts.json` | None |
-| Plans 001–037 foundation track | `plans/README.md` status DONE rows | None |
+| Claim at research time | Evidence then | Drift then |
+|------------------------|---------------|------------|
+| 25 public widgets in COMPONENTS.md | Inventory sentence | None |
+| Widget modules under `crates/termrock/src/widgets/` | 22 `*.rs` excl. helpers; dialog composites shared file | None material |
+| `Theme::tailrocks_phosphor` + `Theme::slate` | `style/mod.rs` | None |
+| FocusRing | `interaction/focus.rs` | None |
+| Lookbook + contracts | present | None |
+| Plans 001–037 | DONE | None |
 
-If a later commit renames widgets or themes, re-run this table before promoting
-`039+` implementation plans.
+### Post-implementation note (PR #6, branch `feat/experience-layer-shadcn-tui`)
+
+The ranked opportunities in §15 were **implemented additively** in the same PR
+as this research brief (migration `0029-v0.12.0-experience-layer.md`):
+
+| Research ID | Shipped surface (non-exhaustive) |
+|-------------|----------------------------------|
+| D2 | `EscCascade`, `OverlayHost` |
+| D3 (partial) | `Density`, `Motion` tokens (live theme preview / quantize still open) |
+| D0 | `EmptyState`, `LoadingView`, `ErrorView`, `Banner`, `Skeleton` |
+| D6 | `JumpOverlay`, `CommandPalette` |
+| D5 (partial) | `MarkdownView`, `CodeBlock`, `SyntaxHighlighter` |
+| D1 | `StreamView`, `ToolCard`, `ApprovalCard`, `PromptBox`, `Timeline`, `TokenMeter`, `ThinkingBlock` |
+| D4 | `WorkSurface` + `patterns::layout_agent_shell` |
+| D7 | `Sparkline`, `BarSeries`, `SegmentedMeter` |
+
+**Still open after 0029:** Theme live-preview + OS auto + quantize (D3 rest),
+image/graphics protocols (D8), fuller `patterns/` blocks (D9), density-axis
+story coverage, and deeper markdown/syntax backends. Re-rank those as follow-on
+work on the **same** PR branch or a later sequential migration — do not fork
+parallel PRs for the same initiative unless policy changes.
