@@ -441,35 +441,34 @@ fn vertical_rule_col(sep: Separator<'_>, area: Rect) -> Rect {
 
 fn rule_style(sep: Separator<'_>, vertical: bool) -> (&'static str, ratatui_core::style::Style) {
     let glyphs = sep.system.glyphs;
-    let (glyph, role) = match (sep.variant, vertical, glyphs) {
-        (SeparatorVariant::Quiet, false, GlyphSet::Unicode) => ("─", Role::Border),
-        (SeparatorVariant::Quiet, true, GlyphSet::Unicode) => ("│", Role::Border),
-        (SeparatorVariant::Quiet, false, GlyphSet::Ascii) => ("-", Role::Border),
-        (SeparatorVariant::Quiet, true, GlyphSet::Ascii) => ("|", Role::Border),
+    let ascii = glyphs.is_ascii();
+    let (glyph, role) = match (sep.variant, vertical, ascii) {
+        (SeparatorVariant::Quiet, false, false) => (glyphs.rule(), Role::Border),
+        (SeparatorVariant::Quiet, true, false) => (glyphs.rule_v(), Role::Border),
+        (SeparatorVariant::Quiet, false, true) => (glyphs.rule(), Role::Border),
+        (SeparatorVariant::Quiet, true, true) => (glyphs.rule_v(), Role::Border),
 
-        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, false, GlyphSet::Unicode) => {
+        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, false, false) => {
             ("━", Role::TextMuted)
         }
-        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, true, GlyphSet::Unicode) => {
+        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, true, false) => {
             ("┃", Role::TextMuted)
         }
-        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, false, GlyphSet::Ascii) => {
-            ("=", Role::TextMuted)
+        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, false, true) => {
+            (glyphs.rule_strong(), Role::TextMuted)
         }
-        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, true, GlyphSet::Ascii) => {
-            ("|", Role::TextMuted)
+        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, true, true) => {
+            (glyphs.rule_v(), Role::TextMuted)
         }
 
-        (SeparatorVariant::Labeled, false, GlyphSet::Unicode) => ("─", Role::Border),
-        (SeparatorVariant::Labeled, true, GlyphSet::Unicode) => ("│", Role::Border),
-        (SeparatorVariant::Labeled, false, GlyphSet::Ascii) => ("-", Role::Border),
-        (SeparatorVariant::Labeled, true, GlyphSet::Ascii) => ("|", Role::Border),
+        (SeparatorVariant::Labeled, false, _) => (glyphs.rule(), Role::Border),
+        (SeparatorVariant::Labeled, true, _) => (glyphs.rule_v(), Role::Border),
 
         // Focus zone: distinct double/dash pattern without BorderFocused (focus ≠ chrome).
-        (SeparatorVariant::FocusZone, false, GlyphSet::Unicode) => ("═", Role::Border),
-        (SeparatorVariant::FocusZone, true, GlyphSet::Unicode) => ("║", Role::Border),
-        (SeparatorVariant::FocusZone, false, GlyphSet::Ascii) => ("=", Role::Border),
-        (SeparatorVariant::FocusZone, true, GlyphSet::Ascii) => (":", Role::Border),
+        (SeparatorVariant::FocusZone, false, false) => (glyphs.rule_strong(), Role::Border),
+        (SeparatorVariant::FocusZone, true, false) => ("║", Role::Border),
+        (SeparatorVariant::FocusZone, false, true) => (glyphs.rule_strong(), Role::Border),
+        (SeparatorVariant::FocusZone, true, true) => (":", Role::Border),
     };
     // Prefer muted for quiet if palette has TextDisabled contrast for no-color
     // terminals; still Border for structural rules.

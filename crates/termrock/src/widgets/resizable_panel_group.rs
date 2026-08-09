@@ -896,19 +896,28 @@ impl<'a> ResizablePanelGroup<'a> {
             }
             let focused = state.focused_handle == Some(i);
             let hovered = state.hovered_handle == Some(i);
-            let (glyph, role) = match (self.direction, focused, hovered, self.system.glyphs) {
-                (SplitDirection::Horizontal, true, _, GlyphSet::Unicode) => ("┃", Role::Focus),
-                (SplitDirection::Horizontal, false, true, GlyphSet::Unicode) => ("┋", Role::Focus),
-                (SplitDirection::Horizontal, false, false, GlyphSet::Unicode) => ("│", Role::Border),
-                (SplitDirection::Vertical, true, _, GlyphSet::Unicode) => ("━", Role::Focus),
-                (SplitDirection::Vertical, false, true, GlyphSet::Unicode) => ("┅", Role::Focus),
-                (SplitDirection::Vertical, false, false, GlyphSet::Unicode) => ("─", Role::Border),
-                (SplitDirection::Horizontal, true, _, GlyphSet::Ascii)
-                | (SplitDirection::Horizontal, false, true, GlyphSet::Ascii) => ("|", Role::Focus),
-                (SplitDirection::Horizontal, false, false, GlyphSet::Ascii) => ("|", Role::Border),
-                (SplitDirection::Vertical, true, _, GlyphSet::Ascii)
-                | (SplitDirection::Vertical, false, true, GlyphSet::Ascii) => ("=", Role::Focus),
-                (SplitDirection::Vertical, false, false, GlyphSet::Ascii) => ("-", Role::Border),
+            let ascii = self.system.glyphs.is_ascii();
+            let (glyph, role) = match (self.direction, focused, hovered, ascii) {
+                (SplitDirection::Horizontal, true, _, false) => ("┃", Role::Focus),
+                (SplitDirection::Horizontal, false, true, false) => ("┋", Role::Focus),
+                (SplitDirection::Horizontal, false, false, false) => {
+                    (self.system.glyphs.rule_v(), Role::Border)
+                }
+                (SplitDirection::Vertical, true, _, false) => ("━", Role::Focus),
+                (SplitDirection::Vertical, false, true, false) => ("┅", Role::Focus),
+                (SplitDirection::Vertical, false, false, false) => {
+                    (self.system.glyphs.rule(), Role::Border)
+                }
+                (SplitDirection::Horizontal, true, _, true)
+                | (SplitDirection::Horizontal, false, true, true) => ("|", Role::Focus),
+                (SplitDirection::Horizontal, false, false, true) => {
+                    (self.system.glyphs.rule_v(), Role::Border)
+                }
+                (SplitDirection::Vertical, true, _, true)
+                | (SplitDirection::Vertical, false, true, true) => ("=", Role::Focus),
+                (SplitDirection::Vertical, false, false, true) => {
+                    (self.system.glyphs.rule(), Role::Border)
+                }
             };
             let mut style = self.system.style(role);
             if focused {

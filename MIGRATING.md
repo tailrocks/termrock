@@ -130,6 +130,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0114 | `v0.13.0` | [Text](migrations/0114-v0.13.0-text.md) |
 | 0115 | `v0.13.0` | [Heading & Paragraph](migrations/0115-v0.13.0-heading-paragraph.md) |
 | 0116 | `v0.13.0` | [Label & Description](migrations/0116-v0.13.0-label-description.md) |
+| 0117 | `v0.13.0` | [Icon & Glyph](migrations/0117-v0.13.0-icon-glyph.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

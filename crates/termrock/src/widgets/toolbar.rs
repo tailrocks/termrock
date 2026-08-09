@@ -777,10 +777,7 @@ fn plan_items<Id>(
 }
 
 fn overflow_chip_width(glyphs: GlyphSet, variant: ToolbarVariant) -> u16 {
-    let g = match glyphs {
-        GlyphSet::Unicode => "⋯",
-        GlyphSet::Ascii => "...",
-    };
+    let g = glyphs.ellipsis();
     let pad = match variant {
         ToolbarVariant::Default => 2,
         ToolbarVariant::Compact => 0,
@@ -1026,11 +1023,10 @@ fn paint_item<Id: Clone + PartialEq>(
         return;
     }
     if matches!(item.kind, ToolbarItemKind::Separator) {
-        let glyph = match (horizontal, bar.system.glyphs) {
-            (true, GlyphSet::Unicode) => "│",
-            (true, GlyphSet::Ascii) => "|",
-            (false, GlyphSet::Unicode) => "─",
-            (false, GlyphSet::Ascii) => "-",
+        let glyph = if horizontal {
+            bar.system.glyphs.rule_v()
+        } else {
+            bar.system.glyphs.rule()
         };
         let w = if horizontal { 1.min(slot.width) } else { slot.width };
         let h = if horizontal { slot.height } else { 1.min(slot.height) };
@@ -1116,10 +1112,7 @@ fn paint_overflow_chip<Id: Clone + PartialEq>(
     if slot.is_empty() {
         return;
     }
-    let g = match bar.system.glyphs {
-        GlyphSet::Unicode => "⋯",
-        GlyphSet::Ascii => "...",
-    };
+    let g = bar.system.glyphs.ellipsis();
     let on = state.roving.active() == Some(id);
     let label = if on && state.surface_focused && bar.ascii {
         format!("[{g}]")

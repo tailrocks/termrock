@@ -342,10 +342,10 @@ impl<'a> Heading<'a> {
         if parts.rule.height > 0 && parts.rule.width > 0 {
             let unit = self.system.glyphs.rule();
             // H1 uses a heavier visual in Unicode when available (double line).
-            let unit = match (self.level, self.system.glyphs) {
-                (HeadingLevel::H1, GlyphSet::Unicode) => "═",
-                (HeadingLevel::H1, GlyphSet::Ascii) => "=",
-                _ => unit,
+            let unit = if matches!(self.level, HeadingLevel::H1) {
+                self.system.glyphs.rule_strong()
+            } else {
+                unit
             };
             let fill = unit.repeat(usize::from(parts.rule.width));
             let clipped = take_display_cols(&fill, usize::from(parts.rule.width));
@@ -584,22 +584,13 @@ impl<'a> Paragraph<'a> {
         if let Some(p) = self.prefix {
             return p.to_string();
         }
-        let ascii = matches!(self.system.glyphs, GlyphSet::Ascii);
         match self.kind {
             ParagraphKind::Body => String::new(),
             ParagraphKind::Quote => {
-                if ascii {
-                    "| ".into()
-                } else {
-                    "│ ".into()
-                }
+                format!("{} ", self.system.glyphs.rule_v())
             }
             ParagraphKind::ListItem => {
-                if ascii {
-                    "* ".into()
-                } else {
-                    "• ".into()
-                }
+                format!("{} ", self.system.glyphs.bullet())
             }
             ParagraphKind::OrderedItem => format!("{}. ", self.list_index),
         }

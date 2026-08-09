@@ -11,6 +11,7 @@ use ratatui_core::style::{Color, Modifier, Style};
 
 mod appearance;
 mod density;
+mod glyph;
 mod palette;
 mod preview_host;
 mod quantize;
@@ -33,6 +34,7 @@ pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
     PreviewSurfaceKind,
 };
+pub use glyph::{Glyph, GlyphGroup, GlyphResolved, glyph_by_id};
 pub use quantize::{ColorCapability, quantize_color, quantize_palette, rgb_to_xterm256};
 pub use tokens::{
     BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ControlState, DesignSystem, Elevation,

@@ -2309,6 +2309,42 @@ pub(crate) fn stories() -> Vec<Story> {
             heading_compact_story,
         ),
         Story::new(
+            "icon/browser",
+            "Icon glyph browser",
+            "Icon",
+            "Semantic glyph catalog by group (Unicode).",
+            56,
+            18,
+            icon_browser_story,
+        ),
+        Story::new(
+            "icon/ascii",
+            "Icon ASCII fallback",
+            "Icon",
+            "Same semantic names under GlyphSet::Ascii.",
+            48,
+            10,
+            icon_ascii_story,
+        ),
+        Story::new(
+            "icon/enhanced",
+            "Icon enhanced",
+            "Icon",
+            "Enhanced profile (richer file/status cells).",
+            48,
+            6,
+            icon_enhanced_story,
+        ),
+        Story::new(
+            "icon/labeled",
+            "Icon with labels",
+            "Icon",
+            "Glyph + text so meaning is not glyph-only.",
+            40,
+            5,
+            icon_labeled_story,
+        ),
+        Story::new(
             "label/basic",
             "Label basic",
             "Label",
@@ -8671,6 +8707,136 @@ fn heading_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         .h3()
         .compact()
         .paint(chunks[2], frame.buffer_mut());
+}
+
+fn icon_browser_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::{Glyph, GlyphGroup, Role};
+    use termrock::widgets::Icon;
+    let mut y = area.y;
+    for group in GlyphGroup::ALL {
+        if y >= area.bottom() {
+            break;
+        }
+        frame.buffer_mut().set_stringn(
+            area.x,
+            y,
+            group.id(),
+            usize::from(area.width),
+            system.style(Role::TextMuted),
+        );
+        y = y.saturating_add(1);
+        let mut x = area.x;
+        for g in Glyph::in_group(group) {
+            if y >= area.bottom() {
+                break;
+            }
+            let w = 4u16;
+            if x.saturating_add(w) > area.right() {
+                x = area.x;
+                y = y.saturating_add(1);
+                if y >= area.bottom() {
+                    break;
+                }
+            }
+            let _ = Icon::new(g, system).min_width(w).paint(
+                Rect {
+                    x,
+                    y,
+                    width: w,
+                    height: 1,
+                },
+                frame.buffer_mut(),
+            );
+            x = x.saturating_add(w);
+        }
+        y = y.saturating_add(1);
+    }
+}
+
+fn icon_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::{Glyph, GlyphSet, Role};
+    use termrock::widgets::Icon;
+    let ascii = system.clone().glyphs(GlyphSet::Ascii);
+    let samples = [
+        Glyph::DisclosureClosed,
+        Glyph::DisclosureOpen,
+        Glyph::CheckOn,
+        Glyph::CheckOff,
+        Glyph::Success,
+        Glyph::Error,
+        Glyph::Ellipsis,
+        Glyph::Bullet,
+    ];
+    let mut y = area.y;
+    for g in samples {
+        if y >= area.bottom() {
+            break;
+        }
+        let r = g.resolve(GlyphSet::Ascii);
+        let line = format!("{} {} — {}", r.text, g.id(), g.meaning());
+        frame.buffer_mut().set_stringn(
+            area.x,
+            y,
+            &line,
+            usize::from(area.width),
+            ascii.style(Role::Text),
+        );
+        let _ = Icon::new(g, &ascii);
+        y = y.saturating_add(1);
+    }
+}
+
+fn icon_enhanced_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::{Glyph, GlyphSet};
+    use termrock::widgets::Icon;
+    let enhanced = system.clone().glyphs(GlyphSet::Enhanced);
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let _ = Icon::new(Glyph::Folder, &enhanced)
+        .label("folder")
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = Icon::new(Glyph::File, &enhanced)
+        .label("file")
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = Icon::new(Glyph::Search, &enhanced)
+        .label("search")
+        .paint(chunks[2], frame.buffer_mut());
+    let _ = Icon::new(Glyph::Warning, &enhanced)
+        .role(termrock::style::Role::Warning)
+        .label("warning")
+        .paint(chunks[3], frame.buffer_mut());
+}
+
+fn icon_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::{Glyph, Role};
+    use termrock::widgets::Icon;
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let _ = Icon::new(Glyph::Success, system)
+        .role(Role::Success)
+        .label("ready")
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = Icon::new(Glyph::Error, system)
+        .role(Role::Danger)
+        .label("failed")
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = Icon::new(Glyph::Play, system)
+        .role(Role::Accent)
+        .label("run")
+        .paint(chunks[2], frame.buffer_mut());
+    let _ = Icon::new(Glyph::Settings, system)
+        .label("settings")
+        .paint(chunks[3], frame.buffer_mut());
 }
 
 fn label_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

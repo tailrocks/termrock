@@ -15,6 +15,7 @@ mod content;
 mod accordion;
 mod collapsible;
 mod section;
+mod icon;
 mod label;
 mod text;
 mod separator;
@@ -93,6 +94,7 @@ pub use content::{
     Alert, AlertOutcome, AlertState, AlertTone, Callout, CalloutTone, Heading, HeadingLevel,
     HeadingParts, HeadingRecipe, Paragraph, ParagraphKind, ParagraphParts, ParagraphRecipe,
 };
+pub use icon::{Icon, IconParts};
 pub use label::{
     CaptionLayout, CaptionParts, DROP_DESCRIPTION_WIDTH, DROP_MARK_WIDTH, Description,
     DescriptionKind, DescriptionParts, FieldCaption, Label, LabelMark, LabelParts, LabelTone,

@@ -89,24 +89,22 @@ impl StatusKind {
         }
     }
 
-    /// Default non-color glyph (Unicode); empty means none.
+    /// Default non-color glyph; empty means none. Resolves via semantic [`crate::style::Glyph`].
     #[must_use]
     pub const fn default_glyph(self, glyphs: GlyphSet) -> &'static str {
-        match (self, glyphs) {
-            (Self::Mode, GlyphSet::Unicode) => "●",
-            (Self::Mode, GlyphSet::Ascii) => "*",
-            (Self::Connection, GlyphSet::Unicode) => "◉",
-            (Self::Connection, GlyphSet::Ascii) => "o",
-            (Self::Selection, GlyphSet::Unicode) => "▣",
-            (Self::Selection, GlyphSet::Ascii) => "#",
-            (Self::Context, GlyphSet::Unicode) => "▸",
-            (Self::Context, GlyphSet::Ascii) => ">",
-            (Self::Shortcut, _) => "",
-            (Self::FocusZone, GlyphSet::Unicode) => "◇",
-            (Self::FocusZone, GlyphSet::Ascii) => "+",
-            (Self::Transient, GlyphSet::Unicode) => "…",
-            (Self::Transient, GlyphSet::Ascii) => "...",
-            (Self::Text, _) => "",
+        use crate::style::Glyph;
+        let g = match self {
+            Self::Mode => Some(Glyph::ModeDot),
+            Self::Connection => Some(Glyph::Connection),
+            Self::Selection => Some(Glyph::SelectionMark),
+            Self::Context => Some(Glyph::DisclosureClosed),
+            Self::Shortcut | Self::Text => None,
+            Self::FocusZone => Some(Glyph::FocusDiamond),
+            Self::Transient => Some(Glyph::Ellipsis),
+        };
+        match g {
+            Some(glyph) => glyphs.resolve(glyph).text,
+            None => "",
         }
     }
 

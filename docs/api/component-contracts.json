@@ -159,6 +159,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "Icon": {
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "focus": "not-applicable",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "ImageSurface": {
     "keyboard": "not-applicable",
     "mouse": "not-applicable",

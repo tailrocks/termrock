@@ -6,7 +6,12 @@
 use super::{ColorCapability, Density, Motion, Role, RolePalette};
 use ratatui_core::style::{Modifier, Style};
 
-/// Glyph policy for borders, disclosure, and status markers.
+/// Glyph encoding profile for borders, disclosure, and status markers.
+///
+/// Prefer semantic [`crate::style::Glyph`] names via [`GlyphSet::resolve`] over
+/// scattering Unicode literals. [`GlyphSet::Enhanced`] may use wider emoji /
+/// richer cells; always keep [`crate::style::Glyph::meaning`] as the accessible
+/// name so glyphs are never the only representation of critical meaning.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum GlyphSet {
@@ -15,70 +20,103 @@ pub enum GlyphSet {
     Unicode,
     /// ASCII-safe substitutes.
     Ascii,
+    /// Richer / emoji-enhanced cells where helpful (file types, some status).
+    Enhanced,
 }
 
 impl GlyphSet {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Unicode => "unicode",
+            Self::Ascii => "ascii",
+            Self::Enhanced => "enhanced",
+        }
+    }
+
+    /// True for ASCII profile.
+    #[must_use]
+    pub const fn is_ascii(self) -> bool {
+        matches!(self, Self::Ascii)
+    }
+
+    /// Resolve a semantic glyph under this profile.
+    #[must_use]
+    pub const fn resolve(self, glyph: super::glyph::Glyph) -> super::glyph::GlyphResolved {
+        glyph.resolve(self)
+    }
+
     /// Expansion / disclosure open marker.
     #[must_use]
     pub const fn disclosure_open(self) -> &'static str {
-        match self {
-            Self::Unicode => "▾",
-            Self::Ascii => "v",
-        }
+        self.resolve(super::glyph::Glyph::DisclosureOpen).text
     }
 
     /// Expansion / disclosure closed marker.
     #[must_use]
     pub const fn disclosure_closed(self) -> &'static str {
-        match self {
-            Self::Unicode => "▸",
-            Self::Ascii => ">",
-        }
+        self.resolve(super::glyph::Glyph::DisclosureClosed).text
     }
 
     /// Selected-row gutter marker (non-color cue).
     #[must_use]
     pub const fn selection_gutter(self) -> &'static str {
-        match self {
-            Self::Unicode => "▌",
-            Self::Ascii => ">",
-        }
+        self.resolve(super::glyph::Glyph::SelectionGutter).text
     }
 
     /// Horizontal rule unit.
     #[must_use]
     pub const fn rule(self) -> &'static str {
-        match self {
-            Self::Unicode => "─",
-            Self::Ascii => "-",
-        }
+        self.resolve(super::glyph::Glyph::RuleH).text
+    }
+
+    /// Strong horizontal rule (H1 underlines, focus zones).
+    #[must_use]
+    pub const fn rule_strong(self) -> &'static str {
+        self.resolve(super::glyph::Glyph::RuleHStrong).text
+    }
+
+    /// Vertical rule unit.
+    #[must_use]
+    pub const fn rule_v(self) -> &'static str {
+        self.resolve(super::glyph::Glyph::RuleV).text
     }
 
     /// Multi-select checked marker (without trailing space).
     #[must_use]
     pub const fn check_on(self) -> &'static str {
-        match self {
-            Self::Unicode => "☑",
-            Self::Ascii => "[x]",
-        }
+        self.resolve(super::glyph::Glyph::CheckOn).text
     }
 
     /// Multi-select unchecked marker (without trailing space).
     #[must_use]
     pub const fn check_off(self) -> &'static str {
-        match self {
-            Self::Unicode => "☐",
-            Self::Ascii => "[ ]",
-        }
+        self.resolve(super::glyph::Glyph::CheckOff).text
     }
 
     /// Loading / busy glyph for composed leading slots.
     #[must_use]
     pub const fn loading(self) -> &'static str {
-        match self {
-            Self::Unicode => "…",
-            Self::Ascii => "...",
-        }
+        self.resolve(super::glyph::Glyph::Loading).text
+    }
+
+    /// Overflow / more ellipsis.
+    #[must_use]
+    pub const fn ellipsis(self) -> &'static str {
+        self.resolve(super::glyph::Glyph::Ellipsis).text
+    }
+
+    /// Bullet for lists.
+    #[must_use]
+    pub const fn bullet(self) -> &'static str {
+        self.resolve(super::glyph::Glyph::Bullet).text
+    }
+
+    /// Disabled mark (label suffix).
+    #[must_use]
+    pub const fn disabled_mark(self) -> &'static str {
+        self.resolve(super::glyph::Glyph::DisabledMark).text
     }
 }
 

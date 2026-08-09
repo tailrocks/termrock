@@ -685,11 +685,10 @@ impl<'a> Panel<'a> {
     fn title_line(&self, slots: PanelSlots<'a>, collapsed: Option<bool>) -> Option<String> {
         let mut base = slots.title_text()?;
         if self.collapsible {
-            let glyph = match (collapsed.unwrap_or(false), self.tokens.glyphs) {
-                (true, GlyphSet::Unicode) => "▸",
-                (false, GlyphSet::Unicode) => "▾",
-                (true, GlyphSet::Ascii) => ">",
-                (false, GlyphSet::Ascii) => "v",
+            let glyph = if collapsed.unwrap_or(false) {
+                self.tokens.glyphs.disclosure_closed()
+            } else {
+                self.tokens.glyphs.disclosure_open()
             };
             base = format!("{glyph} {base}");
         }
@@ -938,10 +937,7 @@ impl<'a> Panel<'a> {
                 PanelBody::Host => {}
                 PanelBody::Loading => {
                     let label = self.slots.body_detail.unwrap_or("Loading");
-                    let frame = match self.tokens.glyphs {
-                        GlyphSet::Unicode => "…",
-                        GlyphSet::Ascii => "...",
-                    };
+                    let frame = self.tokens.glyphs.loading();
                     Widget::render(
                         &LoadingView::new(label, frame, self.tokens),
                         parts.body,
@@ -954,10 +950,7 @@ impl<'a> Panel<'a> {
                     if let Some(d) = self.slots.body_detail {
                         empty = empty.detail(d);
                     }
-                    let glyph = match self.tokens.glyphs {
-                        GlyphSet::Unicode => "○",
-                        GlyphSet::Ascii => "o",
-                    };
+                    let glyph = self.tokens.glyphs.resolve(crate::style::Glyph::EmptyCircle).text;
                     empty = empty.glyph(glyph);
                     Widget::render(&empty, parts.body, buffer);
                 }

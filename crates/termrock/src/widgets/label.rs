@@ -341,11 +341,9 @@ impl<'a, Id> Label<'a, Id> {
             }
         }
         if matches!(self.tone, LabelTone::Disabled) {
-            let g = match self.system.glyphs {
-                GlyphSet::Ascii => " x",
-                GlyphSet::Unicode => " ⊘",
-            };
-            out.push_str(g);
+            let mark = self.system.glyphs.disabled_mark();
+            out.push(' ');
+            out.push_str(mark);
         }
         out
     }

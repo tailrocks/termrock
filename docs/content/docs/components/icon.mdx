@@ -1,0 +1,61 @@
+---
+title: Icon
+description: 'Semantic glyph paint with Unicode/ASCII/Enhanced profiles, width alignment, and text labels.'
+---
+
+## Previews
+
+### `icon/browser`
+
+![Catalog browser](/component-previews/icon-browser.svg)
+
+### `icon/ascii`
+
+![ASCII fallback](/component-previews/icon-ascii.svg)
+
+### `icon/enhanced`
+
+![Enhanced](/component-previews/icon-enhanced.svg)
+
+### `icon/labeled`
+
+![Labeled icons](/component-previews/icon-labeled.svg)
+
+## Usage
+
+```rust
+use termrock::style::{Glyph, GlyphSet, Role};
+use termrock::widgets::Icon;
+
+Icon::new(Glyph::Success, &system)
+    .role(Role::Success)
+    .label("ready") // meaning is not glyph-only
+    .paint(area, buf);
+
+let r = Glyph::CheckOn.resolve(GlyphSet::Ascii);
+// r.text == "[x]", r.cols == 3, r.meaning == "checked"
+```
+
+## Glyph groups
+
+Directional · Status · FileType · Action · Disclosure · Chrome
+
+Browse with `Glyph::in_group(GlyphGroup::Status)` or `Glyph::ALL`.
+
+## Profiles (`GlyphSet`)
+
+| Profile | Notes |
+|---------|-------|
+| Unicode | Default |
+| Ascii | Capability fallback |
+| Enhanced | Richer file/status (wider cells possible) |
+
+## Critical meaning
+
+- `Glyph::meaning()` is always non-empty English.
+- Prefer `Icon::label` for status and actions.
+- Do not branch product policy only on painted codepoints.
+
+## Migration
+
+See `migrations/0117-v0.13.0-icon-glyph.md`.

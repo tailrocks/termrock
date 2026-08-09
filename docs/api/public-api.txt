@@ -12356,16 +12356,173 @@ pub unsafe fn termrock::style::Elevation::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Elevation
 pub fn termrock::style::Elevation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Elevation
+#[non_exhaustive] pub enum termrock::style::Glyph
+pub termrock::style::Glyph::Add
+pub termrock::style::Glyph::ArrowDown
+pub termrock::style::Glyph::ArrowLeft
+pub termrock::style::Glyph::ArrowRight
+pub termrock::style::Glyph::ArrowUp
+pub termrock::style::Glyph::Bullet
+pub termrock::style::Glyph::Busy
+pub termrock::style::Glyph::CheckOff
+pub termrock::style::Glyph::CheckOn
+pub termrock::style::Glyph::ChevronDown
+pub termrock::style::Glyph::ChevronLeft
+pub termrock::style::Glyph::ChevronRight
+pub termrock::style::Glyph::ChevronUp
+pub termrock::style::Glyph::Close
+pub termrock::style::Glyph::Connection
+pub termrock::style::Glyph::Copy
+pub termrock::style::Glyph::DisabledMark
+pub termrock::style::Glyph::DisclosureClosed
+pub termrock::style::Glyph::DisclosureOpen
+pub termrock::style::Glyph::Edit
+pub termrock::style::Glyph::Ellipsis
+pub termrock::style::Glyph::EmptyCircle
+pub termrock::style::Glyph::Error
+pub termrock::style::Glyph::File
+pub termrock::style::Glyph::FocusDiamond
+pub termrock::style::Glyph::Folder
+pub termrock::style::Glyph::FolderOpen
+pub termrock::style::Glyph::Info
+pub termrock::style::Glyph::Loading
+pub termrock::style::Glyph::ModeDot
+pub termrock::style::Glyph::Play
+pub termrock::style::Glyph::RadioOff
+pub termrock::style::Glyph::RadioOn
+pub termrock::style::Glyph::Remove
+pub termrock::style::Glyph::RuleH
+pub termrock::style::Glyph::RuleHStrong
+pub termrock::style::Glyph::RuleV
+pub termrock::style::Glyph::Search
+pub termrock::style::Glyph::SelectionGutter
+pub termrock::style::Glyph::SelectionMark
+pub termrock::style::Glyph::Settings
+pub termrock::style::Glyph::Stop
+pub termrock::style::Glyph::Success
+pub termrock::style::Glyph::Warning
+impl termrock::style::Glyph
+pub const termrock::style::Glyph::ALL: &'static [Self]
+pub const fn termrock::style::Glyph::group(self) -> termrock::style::GlyphGroup
+pub const fn termrock::style::Glyph::id(self) -> &'static str
+pub fn termrock::style::Glyph::in_group(termrock::style::GlyphGroup) -> impl core::iter::traits::iterator::Iterator<Item = Self>
+pub const fn termrock::style::Glyph::meaning(self) -> &'static str
+pub const fn termrock::style::Glyph::resolve(self, termrock::style::GlyphSet) -> termrock::style::GlyphResolved
+impl core::clone::Clone for termrock::style::Glyph
+pub fn termrock::style::Glyph::clone(&self) -> termrock::style::Glyph
+impl core::cmp::Eq for termrock::style::Glyph
+impl core::cmp::PartialEq for termrock::style::Glyph
+pub fn termrock::style::Glyph::eq(&self, &termrock::style::Glyph) -> bool
+impl core::fmt::Debug for termrock::style::Glyph
+pub fn termrock::style::Glyph::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::Glyph
+pub fn termrock::style::Glyph::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::Glyph
+impl core::marker::StructuralPartialEq for termrock::style::Glyph
+impl core::marker::Freeze for termrock::style::Glyph
+impl core::marker::Send for termrock::style::Glyph
+impl core::marker::Sync for termrock::style::Glyph
+impl core::marker::Unpin for termrock::style::Glyph
+impl core::marker::UnsafeUnpin for termrock::style::Glyph
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::Glyph
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::Glyph
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::Glyph where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::Glyph::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::Glyph where U: core::convert::From<T>
+pub fn termrock::style::Glyph::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::Glyph where U: core::convert::Into<T>
+pub type termrock::style::Glyph::Error = core::convert::Infallible
+pub fn termrock::style::Glyph::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::Glyph where U: core::convert::TryFrom<T>
+pub type termrock::style::Glyph::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::Glyph::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::Glyph where T: core::clone::Clone
+pub type termrock::style::Glyph::Owned = T
+pub fn termrock::style::Glyph::clone_into(&self, &mut T)
+pub fn termrock::style::Glyph::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::Glyph where T: 'static + ?core::marker::Sized
+pub fn termrock::style::Glyph::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::Glyph where T: ?core::marker::Sized
+pub fn termrock::style::Glyph::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::Glyph where T: ?core::marker::Sized
+pub fn termrock::style::Glyph::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::Glyph where T: core::clone::Clone
+pub unsafe fn termrock::style::Glyph::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::Glyph
+pub fn termrock::style::Glyph::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::Glyph
+#[non_exhaustive] pub enum termrock::style::GlyphGroup
+pub termrock::style::GlyphGroup::Action
+pub termrock::style::GlyphGroup::Chrome
+pub termrock::style::GlyphGroup::Directional
+pub termrock::style::GlyphGroup::Disclosure
+pub termrock::style::GlyphGroup::FileType
+pub termrock::style::GlyphGroup::Status
+impl termrock::style::GlyphGroup
+pub const termrock::style::GlyphGroup::ALL: [Self; 6]
+pub const fn termrock::style::GlyphGroup::id(self) -> &'static str
+impl core::clone::Clone for termrock::style::GlyphGroup
+pub fn termrock::style::GlyphGroup::clone(&self) -> termrock::style::GlyphGroup
+impl core::cmp::Eq for termrock::style::GlyphGroup
+impl core::cmp::PartialEq for termrock::style::GlyphGroup
+pub fn termrock::style::GlyphGroup::eq(&self, &termrock::style::GlyphGroup) -> bool
+impl core::fmt::Debug for termrock::style::GlyphGroup
+pub fn termrock::style::GlyphGroup::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::GlyphGroup
+pub fn termrock::style::GlyphGroup::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::GlyphGroup
+impl core::marker::StructuralPartialEq for termrock::style::GlyphGroup
+impl core::marker::Freeze for termrock::style::GlyphGroup
+impl core::marker::Send for termrock::style::GlyphGroup
+impl core::marker::Sync for termrock::style::GlyphGroup
+impl core::marker::Unpin for termrock::style::GlyphGroup
+impl core::marker::UnsafeUnpin for termrock::style::GlyphGroup
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::GlyphGroup
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::GlyphGroup
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::GlyphGroup where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::GlyphGroup::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::GlyphGroup where U: core::convert::From<T>
+pub fn termrock::style::GlyphGroup::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::GlyphGroup where U: core::convert::Into<T>
+pub type termrock::style::GlyphGroup::Error = core::convert::Infallible
+pub fn termrock::style::GlyphGroup::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::GlyphGroup where U: core::convert::TryFrom<T>
+pub type termrock::style::GlyphGroup::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::GlyphGroup::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::GlyphGroup where T: core::clone::Clone
+pub type termrock::style::GlyphGroup::Owned = T
+pub fn termrock::style::GlyphGroup::clone_into(&self, &mut T)
+pub fn termrock::style::GlyphGroup::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::GlyphGroup where T: 'static + ?core::marker::Sized
+pub fn termrock::style::GlyphGroup::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::GlyphGroup where T: ?core::marker::Sized
+pub fn termrock::style::GlyphGroup::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::GlyphGroup where T: ?core::marker::Sized
+pub fn termrock::style::GlyphGroup::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::GlyphGroup where T: core::clone::Clone
+pub unsafe fn termrock::style::GlyphGroup::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::GlyphGroup
+pub fn termrock::style::GlyphGroup::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::GlyphGroup
 #[non_exhaustive] pub enum termrock::style::GlyphSet
 pub termrock::style::GlyphSet::Ascii
+pub termrock::style::GlyphSet::Enhanced
 pub termrock::style::GlyphSet::Unicode
 impl termrock::style::GlyphSet
+pub const fn termrock::style::GlyphSet::bullet(self) -> &'static str
 pub const fn termrock::style::GlyphSet::check_off(self) -> &'static str
 pub const fn termrock::style::GlyphSet::check_on(self) -> &'static str
+pub const fn termrock::style::GlyphSet::disabled_mark(self) -> &'static str
 pub const fn termrock::style::GlyphSet::disclosure_closed(self) -> &'static str
 pub const fn termrock::style::GlyphSet::disclosure_open(self) -> &'static str
+pub const fn termrock::style::GlyphSet::ellipsis(self) -> &'static str
+pub const fn termrock::style::GlyphSet::id(self) -> &'static str
+pub const fn termrock::style::GlyphSet::is_ascii(self) -> bool
 pub const fn termrock::style::GlyphSet::loading(self) -> &'static str
+pub const fn termrock::style::GlyphSet::resolve(self, termrock::style::Glyph) -> termrock::style::GlyphResolved
 pub const fn termrock::style::GlyphSet::rule(self) -> &'static str
+pub const fn termrock::style::GlyphSet::rule_strong(self) -> &'static str
+pub const fn termrock::style::GlyphSet::rule_v(self) -> &'static str
 pub const fn termrock::style::GlyphSet::selection_gutter(self) -> &'static str
 impl core::clone::Clone for termrock::style::GlyphSet
 pub fn termrock::style::GlyphSet::clone(&self) -> termrock::style::GlyphSet
@@ -13092,6 +13249,58 @@ pub unsafe fn termrock::style::DesignSystem::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::DesignSystem
 pub fn termrock::style::DesignSystem::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::DesignSystem
+pub struct termrock::style::GlyphResolved
+pub termrock::style::GlyphResolved::cols: u16
+pub termrock::style::GlyphResolved::glyph: termrock::style::Glyph
+pub termrock::style::GlyphResolved::meaning: &'static str
+pub termrock::style::GlyphResolved::set: termrock::style::GlyphSet
+pub termrock::style::GlyphResolved::text: &'static str
+impl termrock::style::GlyphResolved
+pub fn termrock::style::GlyphResolved::aligned(&self, u16) -> alloc::string::String
+pub fn termrock::style::GlyphResolved::display_width(&self) -> u16
+impl core::clone::Clone for termrock::style::GlyphResolved
+pub fn termrock::style::GlyphResolved::clone(&self) -> termrock::style::GlyphResolved
+impl core::cmp::Eq for termrock::style::GlyphResolved
+impl core::cmp::PartialEq for termrock::style::GlyphResolved
+pub fn termrock::style::GlyphResolved::eq(&self, &termrock::style::GlyphResolved) -> bool
+impl core::fmt::Debug for termrock::style::GlyphResolved
+pub fn termrock::style::GlyphResolved::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::GlyphResolved
+pub fn termrock::style::GlyphResolved::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::GlyphResolved
+impl core::marker::StructuralPartialEq for termrock::style::GlyphResolved
+impl core::marker::Freeze for termrock::style::GlyphResolved
+impl core::marker::Send for termrock::style::GlyphResolved
+impl core::marker::Sync for termrock::style::GlyphResolved
+impl core::marker::Unpin for termrock::style::GlyphResolved
+impl core::marker::UnsafeUnpin for termrock::style::GlyphResolved
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::GlyphResolved
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::GlyphResolved
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::GlyphResolved where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::GlyphResolved::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::GlyphResolved where U: core::convert::From<T>
+pub fn termrock::style::GlyphResolved::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::GlyphResolved where U: core::convert::Into<T>
+pub type termrock::style::GlyphResolved::Error = core::convert::Infallible
+pub fn termrock::style::GlyphResolved::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::GlyphResolved where U: core::convert::TryFrom<T>
+pub type termrock::style::GlyphResolved::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::GlyphResolved::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::GlyphResolved where T: core::clone::Clone
+pub type termrock::style::GlyphResolved::Owned = T
+pub fn termrock::style::GlyphResolved::clone_into(&self, &mut T)
+pub fn termrock::style::GlyphResolved::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::GlyphResolved where T: 'static + ?core::marker::Sized
+pub fn termrock::style::GlyphResolved::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::GlyphResolved where T: ?core::marker::Sized
+pub fn termrock::style::GlyphResolved::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::GlyphResolved where T: ?core::marker::Sized
+pub fn termrock::style::GlyphResolved::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::GlyphResolved where T: core::clone::Clone
+pub unsafe fn termrock::style::GlyphResolved::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::GlyphResolved
+pub fn termrock::style::GlyphResolved::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::GlyphResolved
 pub struct termrock::style::InputRecipe
 pub termrock::style::InputRecipe::border: ratatui_core::style::Style
 pub termrock::style::InputRecipe::cursor: ratatui_core::style::Style
@@ -13557,6 +13766,7 @@ pub const termrock::style::PREVIEW_CARD: ratatui_core::style::color::Color
 pub const termrock::style::ROLE_COUNT: usize
 pub const fn termrock::style::color(termrock::style::Rgb) -> ratatui_core::style::color::Color
 pub fn termrock::style::faded(ratatui_core::style::color::Color, f32) -> ratatui_core::style::color::Color
+pub fn termrock::style::glyph_by_id(&str) -> core::option::Option<termrock::style::Glyph>
 pub fn termrock::style::palette_for_appearance(termrock::style::Appearance) -> termrock::style::RolePalette
 pub fn termrock::style::quantize_color(ratatui_core::style::color::Color, termrock::style::ColorCapability) -> ratatui_core::style::color::Color
 pub fn termrock::style::quantize_palette(&termrock::style::RolePalette, termrock::style::ColorCapability) -> termrock::style::RolePalette
@@ -25048,6 +25258,58 @@ pub unsafe fn termrock::widgets::HintBar<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HintBar<'a>
 pub fn termrock::widgets::HintBar<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HintBar<'a>
+pub struct termrock::widgets::Icon<'a>
+impl<'a> termrock::widgets::Icon<'a>
+pub const fn termrock::widgets::Icon<'a>::gap(self, u16) -> Self
+pub const fn termrock::widgets::Icon<'a>::glyph_of(&self) -> termrock::style::Glyph
+pub const fn termrock::widgets::Icon<'a>::label(self, &'a str) -> Self
+pub fn termrock::widgets::Icon<'a>::layout(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::IconParts
+pub const fn termrock::widgets::Icon<'a>::meaning(&self) -> &'static str
+pub const fn termrock::widgets::Icon<'a>::min_width(self, u16) -> Self
+pub const fn termrock::widgets::Icon<'a>::new(termrock::style::Glyph, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Icon<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> termrock::widgets::IconParts
+pub fn termrock::widgets::Icon<'a>::plain(&self) -> alloc::string::String
+pub fn termrock::widgets::Icon<'a>::resolved(&self) -> termrock::style::GlyphResolved
+pub const fn termrock::widgets::Icon<'a>::role(self, termrock::style::Role) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Icon<'_>
+pub fn &termrock::widgets::Icon<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Icon<'_>
+pub fn termrock::widgets::Icon<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::Icon<'a>
+pub fn termrock::widgets::Icon<'a>::clone(&self) -> termrock::widgets::Icon<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Icon<'a>
+pub fn termrock::widgets::Icon<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::Icon<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::Icon<'a>
+impl<'a> core::marker::Send for termrock::widgets::Icon<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Icon<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Icon<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Icon<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Icon<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Icon<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Icon<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Icon<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Icon<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Icon<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Icon<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Icon<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Icon<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Icon<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Icon<'a> where T: core::clone::Clone
+pub type termrock::widgets::Icon<'a>::Owned = T
+pub fn termrock::widgets::Icon<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Icon<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Icon<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Icon<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Icon<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Icon<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Icon<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Icon<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Icon<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Icon<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Icon<'a>
+pub fn termrock::widgets::Icon<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Icon<'a>
 pub struct termrock::widgets::IconButton<'a>
 impl termrock::widgets::IconButton<'_>
 pub fn termrock::widgets::IconButton<'_>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::IconButtonState)
@@ -25092,6 +25354,55 @@ pub unsafe fn termrock::widgets::IconButton<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::IconButton<'a>
 pub fn termrock::widgets::IconButton<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::IconButton<'a>
+pub struct termrock::widgets::IconParts
+pub termrock::widgets::IconParts::glyph: ratatui_core::layout::rect::Rect
+pub termrock::widgets::IconParts::label: ratatui_core::layout::rect::Rect
+pub termrock::widgets::IconParts::root: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::IconParts
+pub fn termrock::widgets::IconParts::clone(&self) -> termrock::widgets::IconParts
+impl core::cmp::Eq for termrock::widgets::IconParts
+impl core::cmp::PartialEq for termrock::widgets::IconParts
+pub fn termrock::widgets::IconParts::eq(&self, &termrock::widgets::IconParts) -> bool
+impl core::default::Default for termrock::widgets::IconParts
+pub fn termrock::widgets::IconParts::default() -> termrock::widgets::IconParts
+impl core::fmt::Debug for termrock::widgets::IconParts
+pub fn termrock::widgets::IconParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::IconParts
+pub fn termrock::widgets::IconParts::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::IconParts
+impl core::marker::StructuralPartialEq for termrock::widgets::IconParts
+impl core::marker::Freeze for termrock::widgets::IconParts
+impl core::marker::Send for termrock::widgets::IconParts
+impl core::marker::Sync for termrock::widgets::IconParts
+impl core::marker::Unpin for termrock::widgets::IconParts
+impl core::marker::UnsafeUnpin for termrock::widgets::IconParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::IconParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::IconParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::IconParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::IconParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::IconParts where U: core::convert::From<T>
+pub fn termrock::widgets::IconParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::IconParts where U: core::convert::Into<T>
+pub type termrock::widgets::IconParts::Error = core::convert::Infallible
+pub fn termrock::widgets::IconParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::IconParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::IconParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::IconParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::IconParts where T: core::clone::Clone
+pub type termrock::widgets::IconParts::Owned = T
+pub fn termrock::widgets::IconParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::IconParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::IconParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::IconParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::IconParts where T: ?core::marker::Sized
+pub fn termrock::widgets::IconParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::IconParts where T: ?core::marker::Sized
+pub fn termrock::widgets::IconParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::IconParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::IconParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::IconParts
+pub fn termrock::widgets::IconParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::IconParts
 pub struct termrock::widgets::ImageMeta<'a>
 pub termrock::widgets::ImageMeta::generation: u64
 pub termrock::widgets::ImageMeta::label: &'a str
