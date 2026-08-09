@@ -260,6 +260,28 @@ pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for [`crate::widgets::PromptComposer`] surface chords.
+///
+/// Enter → [`UiIntent::Submit`] (composer applies submit-vs-newline policy).
+/// Esc → [`UiIntent::Cancel`] (completion / fullscreen / dismiss peel).
+/// Editor caret, history, and product Ctrl chords stay on
+/// [`crate::widgets::PromptComposerState::handle_key`].
+#[must_use]
+pub fn default_prompt_composer_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let is_press = key.kind == KeyEventKind::Press;
+    if !key.modifiers.is_empty() {
+        return None;
+    }
+    match key.code {
+        KeyCode::Enter if is_press => Some(UiIntent::Submit),
+        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::ChoiceDialog`] action bar.
 ///
 /// - Left/Right (and j/k) move **local action cursor**
@@ -443,6 +465,22 @@ mod tests {
         assert_eq!(
             default_choice_dialog_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             Some(UiIntent::Cancel)
+        );
+    }
+
+    #[test]
+    fn default_prompt_composer_intent_submit_cancel() {
+        assert_eq!(
+            default_prompt_composer_intent(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            Some(UiIntent::Submit)
+        );
+        assert_eq!(
+            default_prompt_composer_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            Some(UiIntent::Cancel)
+        );
+        assert_eq!(
+            default_prompt_composer_intent(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE)),
+            None
         );
     }
 

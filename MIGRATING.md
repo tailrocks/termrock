@@ -88,6 +88,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0072 | `v0.13.0` | [DiffReview hunk cursor](migrations/0072-v0.13.0-diff-review-cursor.md) |
 | 0073 | `v0.13.0` | [Dialog/ChoiceDialog action cursor](migrations/0073-v0.13.0-dialog-action-cursor.md) |
 | 0074 | `v0.13.0` | [CommandPalette / Picker premium](migrations/0074-v0.13.0-command-palette-premium.md) |
+| 0075 | `v0.13.0` | [PromptComposer accepts_input](migrations/0075-v0.13.0-prompt-composer-accepts-input.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

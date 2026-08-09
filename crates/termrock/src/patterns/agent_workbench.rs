@@ -238,7 +238,7 @@ impl AgentWorkbenchState {
 
         match self.scene.focused().copied() {
             Some("prompt") => {
-                prompt.set_focused(true);
+                prompt.set_accepts_input(true);
                 let out = prompt.handle_key(key);
                 if matches!(out, PromptComposerOutcome::Ignored) {
                     WorkbenchKeyOutcome::Ignored
@@ -497,7 +497,7 @@ pub fn render_agent_workbench(
     );
 
     let focused = state.scene.focused().copied();
-    prompt_state.set_focused(focused == Some("prompt") && !state.permission_open);
+    prompt_state.set_accepts_input(focused == Some("prompt") && !state.permission_open);
 
     for pane in &panes {
         if pane.collapsed || pane.area.is_empty() {

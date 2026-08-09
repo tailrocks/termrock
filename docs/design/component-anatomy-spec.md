@@ -1748,28 +1748,28 @@ Every component below uses sections **1–24**:
 ## PromptComposer
 
 1. **Purpose:** Multi-line prompt + attachments chrome + send (PromptBox evolution).  
-2. **Anatomy:** `root` · `editor` · `attach_chip[]` · `mode_badge` · `send` · `footer_hints`  
-3. **Public properties:** text state, mode (`plan`/`build`/…), placeholder, `design`  
-4. **State:** editor state + focus; mode controlled.  
-5. **Variants:** `simple` · `with_mode`  
-6. **Sizes/density:** min height 3 comfortable.  
-7. **Visual states:** empty/nonempty; streaming-locked.  
-8. **Interaction states:** editing · send.  
-9. **Keyboard:** Enter submit (configurable); Alt/Ctrl+Enter newline; Esc cancel policy.  
-10. **Mouse:** click editor/send/chips.  
-11. **Focus:** editor default.  
-12. **Disabled:** read-only while agent running if consumer sets.  
-13. **Loading:** disable send while streaming; spinner on send.  
-14. **Error:** N/A (Callout above).  
-15. **Narrow:** drop chips → mode → hints.  
-16. **Tiny:** single-line input fallback.  
-17. **Unicode/ASCII:** editor grapheme cursor; attach chip remove `×`/`x`.  
-18. **Colorless:** cursor reverse; mode badge bold prefix; send focus underline.  
-19. **Composition:** AgentWorkbench south.  
-20. **Outcomes:** `Submitted { text }` · `Changed` · `Cancelled` · `ModeChanged` · `Detach(Id)`  
-21. **Stories:** `prompt-composer/submit`, `prompt-composer/newline`, `prompt-composer/streaming-locked`  
-22. **Snapshots:** with mode badge.  
-23. **Interaction tests:** Enter vs newline; locked ignores submit.  
+2. **Anatomy:** `root` · `editor` · `attach_chip[]` · `mode_badge` · `send` · status  
+3. **Public properties:** presentation, density, ascii/colorless, placeholders  
+4. **State:** editor + chips + queue + `accepts_input` + `chip_cursor`.  
+5. **Variants:** compact / normal / expanded / fullscreen.  
+6. **Sizes/density:** min height 3 comfortable; contract_for_width.  
+7. **Visual states:** empty/nonempty; busy; disconnected; validation.  
+8. **Interaction states:** editing · submit · chip cursor · completion peel.  
+9. **Keyboard:** Enter submit (policy); Alt/Ctrl/Shift+Enter newline; Esc peel; Ctrl chords.  
+10. **Mouse:** click editor/chips/mode/model.  
+11. **Focus:** host `accepts_input`; not scene field focus.  
+12. **Disabled:** connection Disabled or accepts_input false.  
+13. **Loading:** busy + queue_when_busy.  
+14. **Error:** ValidationFailed + status line.  
+15. **Narrow:** contract_for_width drops chrome.  
+16. **Tiny:** compact presentation.  
+17. **Unicode/ASCII:** grapheme editor; chip `×`/`x`.  
+18. **Colorless:** forces ASCII marks.  
+19. **Composition:** AgentWorkbench south; OverlayStack completion.  
+20. **Outcomes:** `Submit` · `Queued` · `Changed` · `DismissRequest` · chips/completion…  
+21. **Stories:** prompt-composer/* lookbook.  
+22. **Snapshots:** mode badge; busy queue.  
+23. **Interaction tests:** Enter submit; accepts_input gate; draft preserved.  
 24. **Perf:** O(visible editor lines).
 
 ## PermissionPrompt

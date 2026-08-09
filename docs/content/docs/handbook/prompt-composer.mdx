@@ -8,7 +8,7 @@ description: Flagship agent input — draft-preserving multiline composer with q
 **Purpose.** Primary human → agent input: grapheme-safe multiline editing,
 attachments, slash/@ completion, mode/model chrome, and **queue while busy** —
 without embedding provider SDKs or clearing the draft when permission/plan
-overlays take focus.
+overlays take input.
 
 ## When to use / when not
 
@@ -19,30 +19,45 @@ overlays take focus.
 | Modal confirm | Dialog |
 | Trust gates | [PermissionPrompt](/docs/handbook/permission-prompt) |
 
-## Installation
+## Focus law
 
-```toml
-termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
-```
+| Concern | Owner |
+|---------|--------|
+| Surface input gate | Host `set_accepts_input` (false when overlay tops) |
+| Editor caret | `TextAreaState` inside composer |
+| Chip cursor | `chip_cursor` (local) |
+| Completion candidates | Consumer list + OverlayStack |
+| Draft lifetime | Never cleared by accepts_input alone |
 
-Design: `docs/design/prompt-composer.md`.
+## Outcomes (selected)
 
-## Source files
+- `Submit` / `Queued` / `Cancel` / `Interrupt`
+- `Changed` / `DismissRequest` / `Blur`
+- `Completion` / `CompletionClosed` / `CompletionCommitted`
+- `ChipRemoved` / `ChipActivated` / `AttachRequest`
+- `ValidationFailed` / `PresentationChanged` / fullscreen
 
-`PromptComposer`, `PromptComposerState`, `PromptComposerOutcome`, chips,
-completion query, overlay helpers (`PROMPT_COMPLETION_OVERLAY_ID`, fullscreen)
+## Intents
+
+`default_prompt_composer_intent` — bare Enter → Submit, Esc → Cancel.
+Product chords (Ctrl+Z/Y, history, attach) stay on `handle_key`.
+
+## Non-color
+
+- ASCII badges via `set_ascii_fallback` / `set_colorless`
+- Chip remove `×` / `x`
+- Panel Focused only when `accepts_input`
 
 ## Basic example
 
 ```rust
 use termrock::{
-    style::{Density, DesignTokens},
+    style::{Density, DesignSystem, RolePalette},
     widgets::{ModeIndicator, ModelIndicator, PromptComposer, PromptComposerState},
-    Theme,
 };
 
-let theme = Theme::default();
-let tokens = DesignTokens::new(theme.clone(), Density::Comfortable);
+let theme = RolePalette::default();
+let tokens = DesignSystem::new(theme, Density::Comfortable);
 let mut state = PromptComposerState::new();
 state.set_placeholder("Ask anything…");
 state.set_mode(Some(ModeIndicator {
@@ -52,7 +67,7 @@ state.set_mode(Some(ModeIndicator {
 state.set_model(Some(ModelIndicator {
     label: "model".into(),
 }));
-let _composer = PromptComposer::new(&tokens, &theme);
+let _composer = PromptComposer::new(&tokens);
 ```
 
 ## Interactive example
@@ -72,120 +87,25 @@ assert!(matches!(
 ));
 // Overlay takeover: draft preserved
 state.set_text("keep");
-state.set_focused(false);
+state.set_accepts_input(false);
 assert_eq!(state.text(), "keep");
+assert!(matches!(
+    state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+    PromptComposerOutcome::Ignored
+));
 ```
-
-## Anatomy
-
-`chip_row` · multiline `editor` · mode/model badges · busy/queue chrome ·
-context meter · validation · send/stop affordances  
 
 ## Public API
 
 | API | Why |
 |-----|-----|
-| `set_focused(false)` | Permission/plan takeover **without** clearing draft |
+| `set_accepts_input(false)` | Permission/plan takeover **without** clearing draft |
 | `set_busy` + queue policy | Enter enqueues while agent runs |
 | `handle_paste` | Large paste → chip |
 | `commit_completion` | Slash/@ insert without owning candidates |
 | Overlay helpers | Completion + fullscreen |
 
-## State ownership
-
-| TermRock | Consumer |
-|----------|----------|
-| Text edit, undo, chips, queue chrome | Model routing, attachments meaning |
-| Completion query detect | Candidate search |
-| | Run/cancel agent on Submit / Cancel |
-
-## Typed outcomes
-
-`Submit` · `Queued` · `Cancel` · `Interrupt` · `Completion` · `ExternalEditor` ·
-`ValidationFailed` · … — pure; effects outside.
-
-## Variants
-
-Presentation: Compact / Normal / Expanded / Fullscreen. Connection: Ready /
-Disabled / Disconnected.
-
-## Sizes
-
-Compact ~2–3 editor rows; expand with content; fullscreen overlay on tiny
-terminals.
-
-## Density
-
-Comfortable default; Compact for dense workbenches.
-
-## Keyboard
-
-Enter submit · Mod+Enter newline · Ctrl+C interrupt when busy · Ctrl+U cancel ·
-Esc peels completion/fullscreen first · `/` `@` `#` completion triggers.
-
-## Mouse
-
-Editor click positions caret; chip × removes; mode/model hits open menus.
-
-## Focus
-
-Blur keeps draft; chip strip via BackTab; completion overlay owns keys when open.
-
-## Responsive
-
-`contract_for_width`; ASCII fallback on very narrow.
-
-## Accessibility / colorless
-
-Busy/queue/offline as words; chip type letters `F`/`P` in ASCII mode.
-
-## Unicode
-
-Grapheme TextArea; large paste chips avoid multi-MB wrap thrash.
-
-## Composition
-
-AgentWorkbench · OverlayStack (permission/plan) · CompletionMenu · ContextMeter.
-
-## Theming
-
-Panel focus border · warning mode badge · danger validation · TokenMeter roles.
-
-## Custom recipe
-
-`SubmitPolicy` for newline/queue/clear; never put provider keys in the composer.
-
-## Common mistakes
-
-- `clear_draft` on permission open.  
-- Dual-submit while busy (disable queue policy).  
-- Binding `y` globally for allow (trust surface, not composer).
-
-## Performance
-
-Undo snapshots bounded; paste chips; see streaming-performance for token stream
-(coalesce on host).
-
-## Testing
-
-- Stories: `prompt-composer/basic`, `busy-queue`, `paste-chip`, `fullscreen`  
-- `documentation_examples::handbook_prompt_composer_example`  
-- Unit: draft blur, queue, undo  
-
-## Migration
-
-Canonical agent prompt surface; see prompt-composer design and agent
-migrations.
-
 ## Related
 
-TextArea · CompletionMenu · PermissionPrompt · AgentWorkbench  
-
-## Complete application example
-
-```text
-composer focused → type → Enter → Submit outcome → set_busy(true)
-while busy: Enter → Queued; Stop → Cancel/Interrupt
-permission overlay: set_focused(false) — draft stays
-on run complete: drain queue FIFO → next Submit
-```
+PermissionPrompt · OverlayStack · AgentWorkbench · migration `0075` ·
+design `prompt-composer-accepts-input.md`

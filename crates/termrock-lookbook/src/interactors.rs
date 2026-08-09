@@ -1096,7 +1096,7 @@ impl PromptComposerInteractor {
         let theme = RolePalette::default();
         let tokens = DesignSystem::new(theme.clone(), Density::Comfortable);
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_placeholder("Ask anything…");
         state.set_mode(Some(ModeIndicator {
             label: "EDIT".into(),

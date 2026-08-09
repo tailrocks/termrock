@@ -351,7 +351,7 @@ pub enum PromptComposerOutcome {
 /// Flagship prompt composer state.
 ///
 /// Draft lives in [`Self::editor`] and is preserved across temporary overlays
-/// (permission, plan, palette, …). Call [`Self::set_focused`]` (false)` when
+/// (permission, plan, palette, …). Call [`Self::set_accepts_input`]`(false)` when
 /// another layer owns input; do not clear text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PromptComposerState {
@@ -370,7 +370,7 @@ pub struct PromptComposerState {
 
     // —— tokens & attachments ——
     chips: Vec<ComposerChip>,
-    chip_focus: Option<usize>,
+    chip_cursor: Option<usize>,
 
     // —— completion ——
     completion: CompletionQuery,
@@ -395,7 +395,7 @@ pub struct PromptComposerState {
     next_queue_id: u64,
     next_chip_id: u64,
     validation_error: Option<String>,
-    focused: bool,
+    accepts_input: bool,
 }
 
 impl Default for PromptComposerState {
@@ -418,7 +418,7 @@ impl PromptComposerState {
             history_draft: None,
             select_anchor: None,
             chips: Vec::new(),
-            chip_focus: None,
+            chip_cursor: None,
             completion: CompletionQuery::default(),
             presentation: ComposerPresentation::Normal,
             mode: None,
@@ -435,7 +435,7 @@ impl PromptComposerState {
             next_queue_id: 1,
             next_chip_id: 1,
             validation_error: None,
-            focused: true,
+            accepts_input: true,
         }
     }
 
@@ -453,15 +453,28 @@ impl PromptComposerState {
         !self.text().trim().is_empty()
     }
 
-    /// Focused for keyboard.
+    /// Whether host granted keyboard/pointer input (overlay/scene ownership).
     #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
     }
 
-    /// Sets keyboard focus without clearing draft.
+    /// Host input gate without clearing draft (permission/plan/palette takeover).
+    pub fn set_accepts_input(&mut self, accepts: bool) {
+        self.accepts_input = accepts;
+    }
+
+    /// Deprecated name for [`Self::accepts_input`].
+    #[deprecated(note = "use accepts_input")]
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Deprecated name for [`Self::set_accepts_input`].
+    #[deprecated(note = "use set_accepts_input")]
     pub fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
+        self.accepts_input = focused;
     }
 
     /// Agent busy flag.
@@ -627,8 +640,8 @@ impl PromptComposerState {
     pub fn remove_chip(&mut self, id: &str) -> bool {
         let before = self.chips.len();
         self.chips.retain(|c| c.id != id);
-        if self.chip_focus.is_some_and(|i| i >= self.chips.len()) {
-            self.chip_focus = self.chips.len().checked_sub(1);
+        if self.chip_cursor.is_some_and(|i| i >= self.chips.len()) {
+            self.chip_cursor = self.chips.len().checked_sub(1);
         }
         before != self.chips.len()
     }
@@ -825,13 +838,62 @@ impl PromptComposerState {
 
     // —— input ——
 
+    /// Semantic intent routing for surface chords (submit / cancel peel).
+    ///
+    /// Editor caret, history, chips, and product Ctrl chords stay on [`Self::handle_key`].
+    pub fn handle_intent(&mut self, intent: crate::interaction::UiIntent) -> PromptComposerOutcome {
+        use crate::interaction::UiIntent;
+        if self.connection == ComposerConnection::Disabled || !self.accepts_input {
+            return PromptComposerOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Submit | UiIntent::Activate => {
+                if self.policy.submit_on_enter {
+                    self.try_submit_or_queue()
+                } else {
+                    // Newline-only policy: host should inject newline via handle_key.
+                    PromptComposerOutcome::Ignored
+                }
+            }
+            UiIntent::Cancel | UiIntent::Close => {
+                if self.completion.kind != CompletionKind::None {
+                    return self.close_completion();
+                }
+                if self.presentation == ComposerPresentation::Fullscreen {
+                    return self.exit_fullscreen();
+                }
+                if self.select_anchor.take().is_some() {
+                    return PromptComposerOutcome::Changed;
+                }
+                PromptComposerOutcome::DismissRequest
+            }
+            _ => PromptComposerOutcome::Ignored,
+        }
+    }
+
     /// Routes a key event.
     pub fn handle_key(&mut self, key: KeyEvent) -> PromptComposerOutcome {
         if self.connection == ComposerConnection::Disabled {
             return PromptComposerOutcome::Ignored;
         }
-        if !self.focused || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.kind == KeyEventKind::Release {
             return PromptComposerOutcome::Ignored;
+        }
+
+        // Bare Enter/Esc via intent map (modifiers still use product paths below).
+        if key.modifiers.is_empty()
+            && let Some(intent) = crate::interaction::default_prompt_composer_intent(key)
+        {
+            let out = self.handle_intent(intent);
+            // When submit_on_enter is false, Enter falls through to newline path.
+            if !matches!(out, PromptComposerOutcome::Ignored)
+                || matches!(
+                    intent,
+                    crate::interaction::UiIntent::Cancel | crate::interaction::UiIntent::Close
+                )
+            {
+                return out;
+            }
         }
 
         // Completion open: Esc closes one layer; navigation left to consumer list.
@@ -937,7 +999,7 @@ impl PromptComposerState {
             return PromptComposerOutcome::Changed;
         }
 
-        // Chip focus strip: when chip_focus set, left/right/delete
+        // Chip focus strip: when chip_cursor set, left/right/delete
         if let Some(out) = self.handle_chip_keys(&key) {
             return out;
         }
@@ -989,7 +1051,7 @@ impl PromptComposerState {
 
     /// Paste (bracketed paste arrives as [`Event::Paste`]).
     pub fn handle_paste(&mut self, text: &str) -> PromptComposerOutcome {
-        if self.connection == ComposerConnection::Disabled || !self.focused {
+        if self.connection == ComposerConnection::Disabled || !self.accepts_input {
             return PromptComposerOutcome::Ignored;
         }
         if self.policy.large_paste_as_chip && text.len() >= LARGE_PASTE_THRESHOLD {
@@ -1333,24 +1395,24 @@ impl PromptComposerState {
         if self.chips.is_empty() {
             return None;
         }
-        // Focus chips with Shift+Tab from empty? Keep simple: when chip_focus set.
-        let Some(idx) = self.chip_focus else {
+        // Focus chips with Shift+Tab from empty? Keep simple: when chip_cursor set.
+        let Some(idx) = self.chip_cursor else {
             if key.code == KeyCode::BackTab {
-                self.chip_focus = Some(self.chips.len() - 1);
+                self.chip_cursor = Some(self.chips.len() - 1);
                 return Some(PromptComposerOutcome::Changed);
             }
             return None;
         };
         match key.code {
             KeyCode::Left => {
-                self.chip_focus = Some(idx.saturating_sub(1));
+                self.chip_cursor = Some(idx.saturating_sub(1));
                 Some(PromptComposerOutcome::Changed)
             }
             KeyCode::Right => {
                 if idx + 1 >= self.chips.len() {
-                    self.chip_focus = None;
+                    self.chip_cursor = None;
                 } else {
-                    self.chip_focus = Some(idx + 1);
+                    self.chip_cursor = Some(idx + 1);
                 }
                 Some(PromptComposerOutcome::Changed)
             }
@@ -1364,7 +1426,7 @@ impl PromptComposerState {
                 Some(PromptComposerOutcome::ChipActivated { id })
             }
             KeyCode::Esc => {
-                self.chip_focus = None;
+                self.chip_cursor = None;
                 Some(PromptComposerOutcome::Changed)
             }
             _ => None,
@@ -1627,7 +1689,7 @@ impl StatefulWidget for &PromptComposer<'_> {
 
         // Panel border only in normal+ when height allows
         if state.presentation != ComposerPresentation::Compact && area.height >= 3 {
-            let emphasis = if state.focused {
+            let emphasis = if state.accepts_input {
                 PanelChrome::Focused
             } else {
                 PanelChrome::Normal
@@ -1639,7 +1701,7 @@ impl StatefulWidget for &PromptComposer<'_> {
         // Chips
         for (i, (id, rect)) in layout.chip_hits.iter().enumerate() {
             if let Some(chip) = state.chips.iter().find(|c| c.id == *id) {
-                let focused = state.chip_focus == Some(i);
+                let focused = state.chip_cursor == Some(i);
                 let style = if focused {
                     self.system.style(Role::Selection)
                 } else {
@@ -1786,19 +1848,32 @@ mod tests {
     }
 
     #[test]
-    fn draft_survives_blur_for_overlay_takeover() {
+    fn draft_survives_accepts_input_gate_for_overlay_takeover() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("keep me");
-        // permission / plan / palette
+        state.set_accepts_input(false);
+        // permission / plan / palette — keys ignored, draft intact
+        assert_eq!(
+            state.handle_key(press(KeyCode::Enter)),
+            PromptComposerOutcome::Ignored
+        );
         assert_eq!(state.text(), "keep me");
-        assert_eq!(state.text(), "keep me");
+        assert!(!state.accepts_input());
+    }
+
+    #[test]
+    fn accepts_input_gate_blocks_paste() {
+        let mut state = PromptComposerState::new();
+        state.set_accepts_input(false);
+        assert_eq!(state.handle_paste("hello"), PromptComposerOutcome::Ignored);
+        assert!(state.text().is_empty());
     }
 
     #[test]
     fn empty_submit_validates() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         let out = state.handle_key(press(KeyCode::Enter));
         assert!(matches!(
             out,
@@ -1809,7 +1884,7 @@ mod tests {
     #[test]
     fn submit_returns_text_and_clears() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("hello agent");
         let out = state.handle_key(press(KeyCode::Enter));
         assert!(matches!(
@@ -1822,7 +1897,7 @@ mod tests {
     #[test]
     fn busy_enqueues_instead_of_submit() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_busy(true);
         state.set_text("later");
         let out = state.handle_key(press(KeyCode::Enter));
@@ -1833,7 +1908,7 @@ mod tests {
     #[test]
     fn disconnected_blocks_submit() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_connection(ComposerConnection::Disconnected);
         state.set_text("x");
         let out = state.handle_key(press(KeyCode::Enter));
@@ -1846,7 +1921,7 @@ mod tests {
     #[test]
     fn large_paste_becomes_chip() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         let big = "a".repeat(LARGE_PASTE_THRESHOLD);
         let out = state.handle_paste(&big);
         assert_eq!(out, PromptComposerOutcome::Changed);
@@ -1858,7 +1933,7 @@ mod tests {
     #[test]
     fn slash_detects_completion() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("/pl");
         // cursor at end after set_text
         let q = detect_completion(&state.text(), state.editor.cursor());
@@ -1888,7 +1963,7 @@ mod tests {
     #[test]
     fn undo_redo_restores_text() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("one");
         state.insert_text(" two");
         assert_eq!(state.text(), "one two");
@@ -1902,7 +1977,7 @@ mod tests {
     #[test]
     fn alt_enter_inserts_newline_when_submit_on_enter() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("a");
         let key = KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT);
         let out = state.handle_key(key);
@@ -1913,7 +1988,7 @@ mod tests {
     #[test]
     fn history_up_recalls_submit() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("first");
         let _ = state.handle_key(press(KeyCode::Enter));
         state.set_text("draft");
@@ -1926,7 +2001,7 @@ mod tests {
     #[test]
     fn apply_completion_replaces_trigger_span() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("/plan");
         state.completion = CompletionQuery {
             kind: CompletionKind::Slash,
@@ -1943,7 +2018,7 @@ mod tests {
     #[test]
     fn preferred_rows_contract_with_presentation() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_presentation(ComposerPresentation::Compact);
         assert!(state.preferred_editor_rows(10) <= 2);
         state.set_presentation(ComposerPresentation::Expanded);
@@ -1982,7 +2057,7 @@ mod tests {
     #[test]
     fn large_paste_stores_payload() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         let big = "b".repeat(LARGE_PASTE_THRESHOLD);
         let _ = state.handle_paste(&big);
         assert_eq!(state.chips()[0].payload.as_deref(), Some(big.as_str()));
@@ -1991,7 +2066,7 @@ mod tests {
     #[test]
     fn selection_delete_and_typeover() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("abcdef");
         state.select_anchor = Some(TextCursor { line: 0, byte: 1 });
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 4 }));
@@ -2007,7 +2082,7 @@ mod tests {
     #[test]
     fn select_all_and_copy_outcome() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("hello");
         state.select_all();
         assert!(state.has_selection());
@@ -2021,7 +2096,7 @@ mod tests {
     #[test]
     fn busy_ctrl_c_interrupts_ctrl_u_cancels() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_busy(true);
         state.set_text("keep");
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
@@ -2034,7 +2109,7 @@ mod tests {
     #[test]
     fn disabled_ignores_keys() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_connection(ComposerConnection::Disabled);
         state.set_text("x");
         assert_eq!(
@@ -2046,7 +2121,7 @@ mod tests {
     #[test]
     fn external_editor_applies_text() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("old");
         let out = state.apply_external_editor_text("from $EDITOR");
         assert!(matches!(out, PromptComposerOutcome::Changed));
@@ -2056,7 +2131,7 @@ mod tests {
     #[test]
     fn contract_for_narrow_width() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_presentation(ComposerPresentation::Expanded);
         let out = state.contract_for_width(36);
         assert!(matches!(
@@ -2069,7 +2144,7 @@ mod tests {
     #[test]
     fn fullscreen_request_and_esc_exit() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         assert!(matches!(
             state.request_fullscreen(),
             PromptComposerOutcome::FullscreenRequested
@@ -2083,7 +2158,7 @@ mod tests {
     #[test]
     fn queue_fifo_pop_and_remove() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_busy(true);
         state.set_text("a");
         let _ = state.handle_key(press(KeyCode::Enter));
@@ -2100,7 +2175,7 @@ mod tests {
     #[test]
     fn draft_survives_busy_and_connection_flip() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("draft under overlays");
         state.set_busy(true);
         state.set_connection(ComposerConnection::Disconnected);
@@ -2111,7 +2186,7 @@ mod tests {
     #[test]
     fn commit_completion_emits_committed() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("/pl");
         state.completion = CompletionQuery {
             kind: CompletionKind::Slash,
@@ -2134,7 +2209,7 @@ mod tests {
     #[test]
     fn colorless_forces_ascii() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_colorless(true);
         assert!(state.is_colorless());
         assert!(state.ascii_fallback);
@@ -2143,7 +2218,7 @@ mod tests {
     #[test]
     fn mode_model_status_hits() {
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_mode(Some(ModeIndicator {
             label: "PLAN".into(),
             warning: false,
@@ -2173,7 +2248,7 @@ mod tests {
         use ratatui_core::widgets::StatefulWidget;
         let system = crate::style::DesignSystem::new(RolePalette::default(), Density::Comfortable);
         let mut state = PromptComposerState::new();
-        state.set_focused(true);
+        state.set_accepts_input(true);
         state.set_text("hello world");
         state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));

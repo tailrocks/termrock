@@ -187,7 +187,12 @@ fn handbook_prompt_composer_example() {
         PromptComposerOutcome::Submit { ref text, .. } if text == "ship it"
     ));
     state.set_text("keep");
+    state.set_accepts_input(false);
     assert_eq!(state.text(), "keep");
+    assert_eq!(
+        state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+        PromptComposerOutcome::Ignored
+    );
 }
 
 #[test]

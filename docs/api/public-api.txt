@@ -2860,6 +2860,7 @@ pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> 
 pub fn termrock::interaction::default_log_stream_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_menu_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
+pub fn termrock::interaction::default_prompt_composer_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_transcript_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -18864,6 +18865,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::PromptComposerLay
 pub struct termrock::widgets::PromptComposerState
 pub termrock::widgets::PromptComposerState::editor: termrock::widgets::TextAreaState
 impl termrock::widgets::PromptComposerState
+pub const fn termrock::widgets::PromptComposerState::accepts_input(&self) -> bool
 pub fn termrock::widgets::PromptComposerState::add_chip(&mut self, termrock::widgets::ComposerChip)
 pub fn termrock::widgets::PromptComposerState::apply_completion_insert(&mut self, &str) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::apply_external_editor_text(&mut self, &str) -> termrock::widgets::PromptComposerOutcome
@@ -18881,6 +18883,7 @@ pub fn termrock::widgets::PromptComposerState::dismiss_completion_overlay<FocusI
 pub fn termrock::widgets::PromptComposerState::dismiss_fullscreen_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::PromptComposerState::exit_fullscreen(&mut self) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::handle_event(&mut self, termrock::input::Event, ratatui_core::layout::rect::Rect, &[(alloc::string::String, ratatui_core::layout::rect::Rect)]) -> termrock::widgets::PromptComposerOutcome
+pub fn termrock::widgets::PromptComposerState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::handle_mouse(&mut self, termrock::input::MouseEvent, ratatui_core::layout::rect::Rect, &[(alloc::string::String, ratatui_core::layout::rect::Rect)]) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::handle_mouse_at(&mut self, termrock::input::MouseEvent, &termrock::widgets::PromptComposerLayout) -> termrock::widgets::PromptComposerOutcome
@@ -18906,6 +18909,7 @@ pub fn termrock::widgets::PromptComposerState::remove_queue_entry(&mut self, &st
 pub fn termrock::widgets::PromptComposerState::request_fullscreen(&mut self) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::select_all(&mut self)
 pub fn termrock::widgets::PromptComposerState::selected_text(&self) -> core::option::Option<alloc::string::String>
+pub fn termrock::widgets::PromptComposerState::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::PromptComposerState::set_ascii_fallback(&mut self, bool)
 pub fn termrock::widgets::PromptComposerState::set_busy(&mut self, bool)
 pub fn termrock::widgets::PromptComposerState::set_colorless(&mut self, bool)
