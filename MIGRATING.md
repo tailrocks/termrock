@@ -117,6 +117,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0101 | `v0.13.0` | [UiContext](migrations/0101-v0.13.0-ui-context.md) |
 | 0102 | `v0.13.0` | [SemanticScene premium](migrations/0102-v0.13.0-semantic-scene-premium.md) |
 | 0103 | `v0.13.0` | [Panel / Card anatomy](migrations/0103-v0.13.0-panel-card-anatomy.md) |
+| 0104 | `v0.13.0` | [Stack / Inline premium](migrations/0104-v0.13.0-stack-inline-premium.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -366,6 +366,24 @@ pub(crate) fn stories() -> Vec<Story> {
             stack_narrow_story,
         ),
         Story::new(
+            "stack/overflow-clip",
+            "Stack overflow clip-tail",
+            "Stack",
+            "ClipTail keeps head children; tail collapses to zero.",
+            16,
+            5,
+            stack_overflow_clip_story,
+        ),
+        Story::new(
+            "stack/justify",
+            "Inline space-around",
+            "Inline",
+            "Justify::SpaceAround distributes free main-axis cells.",
+            40,
+            4,
+            stack_justify_story,
+        ),
+        Story::new(
             "panel/focused",
             "Focused panel",
             "Panel",
@@ -3658,23 +3676,61 @@ fn stack_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     }
 }
 
-fn stack_responsive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::layout::{
-        direction_for_width, layout_stack, FlexSize, StackDirection, StackSpec,
-    };
+fn stack_overflow_clip_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, OverflowPolicy, Stack};
     use termrock::widgets::Panel;
-    let dir = direction_for_width(area.width, 50);
-    let mut spec = match dir {
-        StackDirection::Horizontal => StackSpec::horizontal(),
-        StackDirection::Vertical | _ => StackSpec::vertical(),
-    };
-    spec.gap = 1;
-    let layout = layout_stack(
-        area,
-        &spec,
-        &[FlexSize::Weight(1), FlexSize::Weight(1)],
-    );
-    let labels = [dir.id(), "child"];
+    let layout = Stack::new()
+        .overflow(OverflowPolicy::ClipTail)
+        .layout(
+            area,
+            &[
+                FlexSize::Fixed(3),
+                FlexSize::Fixed(3),
+                FlexSize::Fixed(3),
+            ],
+        );
+    for (i, label) in ["keep", "partial", "drop"].iter().enumerate() {
+        if let Some(r) = layout.get(i) {
+            if r.height == 0 {
+                continue;
+            }
+            let _ = Panel::new(system)
+                .title(label)
+                .paint(r, frame.buffer_mut(), None);
+        }
+    }
+}
+
+fn stack_justify_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Inline, Justify};
+    let layout = Inline::new()
+        .justify(Justify::SpaceAround)
+        .layout(
+            area,
+            &[FlexSize::Fixed(6), FlexSize::Fixed(6), FlexSize::Fixed(6)],
+        );
+    for (i, r) in layout.children.iter().enumerate() {
+        if r.width == 0 {
+            continue;
+        }
+        frame.buffer_mut().set_stringn(
+            r.x,
+            r.y,
+            &format!("[{i}]"),
+            usize::from(r.width),
+            system.style(Role::Accent),
+        );
+    }
+}
+
+fn stack_responsive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Stack};
+    use termrock::widgets::Panel;
+    let layout = Stack::new()
+        .responsive(area.width, 50)
+        .gap(1)
+        .layout(area, &[FlexSize::Weight(1), FlexSize::Weight(1)]);
+    let labels = [layout.direction.id(), "child"];
     for (i, label) in labels.iter().enumerate() {
         if let Some(r) = layout.get(i) {
             let _ = Panel::new(system)

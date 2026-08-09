@@ -32,7 +32,8 @@ pub use responsive::{
     table_row_shows_optional, tabs_show_status_glyphs,
 };
 pub use stack::{
-    direction_for_width, layout_stack, layout_stack_into, Align, FlexSize, Inline, Justify, Stack,
+    direction_for_width, layout_stack, layout_stack_into, layout_stack_into_cross,
+    layout_stack_with_cross, Align, FlexSize, Inline, Justify, OverflowPolicy, Stack,
     StackDirection, StackLayout, StackSpec,
 };
 pub use work_surface::{RegionId, RegionLayout, RegionSize, RegionSpec, SurfaceAxis, WorkSurface};

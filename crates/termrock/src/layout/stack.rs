@@ -4,20 +4,24 @@
 //! Stack and Inline: cell-accurate flex-ish packing for component anatomy.
 //!
 //! **Stateless.** Pure functions over [`Rect`] + child size specs — no retained
-//! layout tree, no allocation beyond the output `Vec` (callers can use
-//! [`layout_stack_into`] to reuse a buffer).
+//! layout tree. Output is one rect per child (stable index). Prefer
+//! [`layout_stack_into`] to reuse a buffer and avoid per-frame allocation of
+//! the result `Vec` (internal size scratch uses a stack buffer for ≤64 children).
 //!
 //! - [`Stack`] — vertical main axis (default)
 //! - [`Inline`] — horizontal main axis (wrap optional)
 //!
-//! Cross-axis alignment, main-axis justify, density gaps, and overflow rules
-//! are explicit. When children exceed the main axis: **fixed/preferred mins
-//! win first**, then weight shares residual; trailing children may collapse to
-//! zero. This is deterministic and Studio-debuggable (each child gets a rect).
+//! Cross-axis alignment, main-axis justify, density gaps, overflow policy, and
+//! responsive direction are explicit. When children exceed the main axis the
+//! active [`OverflowPolicy`] decides shrink/clip behavior; `StackLayout::overflowed`
+//! is set for Studio and hosts.
 
 use ratatui_core::layout::Rect;
 
 use crate::style::{Density, SpacingScale};
+
+/// Soft cap for stack-allocated main-size scratch (above → heap `Vec`).
+const INLINE_SCRATCH: usize = 64;
 
 /// Main axis direction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -78,7 +82,9 @@ pub enum Justify {
     End,
     /// Equal free space between children (not before/after).
     SpaceBetween,
-    /// Equal free space around each child.
+    /// Equal free space around each child (half-gap at ends).
+    SpaceAround,
+    /// Equal free space before, between, and after children.
     SpaceEvenly,
 }
 
@@ -86,11 +92,11 @@ pub enum Justify {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum FlexSize {
-    /// Exact main-axis size (clamped to remaining).
+    /// Exact main-axis size (clamped under overflow).
     Fixed(u16),
     /// Share of residual after fixed/preferred mins (weight ≥ 1).
     Weight(u16),
-    /// Preferred size clamped to [min, max].
+    /// Preferred size clamped to [min, max]; may grow toward max when free residual.
     Preferred {
         /// Minimum cells.
         min: u16,
@@ -116,6 +122,12 @@ impl FlexSize {
         Self::Weight(w)
     }
 
+    /// Fill residual equally (weight 1).
+    #[must_use]
+    pub const fn fill() -> Self {
+        Self::Weight(1)
+    }
+
     /// Preferred helper.
     #[must_use]
     pub const fn preferred(min: u16, preferred: u16, max: u16) -> Self {
@@ -134,6 +146,67 @@ impl FlexSize {
             Self::Weight(_) => 0,
             Self::Preferred { min, .. } => min,
             Self::Collapsed => 0,
+        }
+    }
+
+    /// Ideal main-axis claim (preferred or fixed; weight → 0).
+    #[must_use]
+    pub const fn ideal_main(self) -> u16 {
+        match self {
+            Self::Fixed(n) => n,
+            Self::Weight(_) => 0,
+            Self::Preferred {
+                min,
+                preferred,
+                max,
+            } => {
+                let lo = min;
+                let hi = if max < min { min } else { max };
+                if preferred < lo {
+                    lo
+                } else if preferred > hi {
+                    hi
+                } else {
+                    preferred
+                }
+            }
+            Self::Collapsed => 0,
+        }
+    }
+
+    /// Maximum main-axis claim (fixed = exact; weight unbounded as 0 meaning flex).
+    #[must_use]
+    pub const fn max_main(self) -> Option<u16> {
+        match self {
+            Self::Fixed(n) => Some(n),
+            Self::Weight(_) => None,
+            Self::Preferred { min, max, .. } => Some(if max < min { min } else { max }),
+            Self::Collapsed => Some(0),
+        }
+    }
+}
+
+/// Behavior when fixed/preferred children exceed the main axis.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum OverflowPolicy {
+    /// Shrink fixed/preferred from the **end** until they fit (default).
+    #[default]
+    ShrinkFromEnd,
+    /// Keep earlier children at claim; later children collapse to zero.
+    ClipTail,
+    /// Reduce fixed/preferred toward min, from the end, one cell at a time.
+    EqualShare,
+}
+
+impl OverflowPolicy {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::ShrinkFromEnd => "shrink-from-end",
+            Self::ClipTail => "clip-tail",
+            Self::EqualShare => "equal-share",
         }
     }
 }
@@ -155,6 +228,8 @@ pub struct StackSpec {
     pub pad_x: u16,
     /// Inner padding before packing children.
     pub pad_y: u16,
+    /// Overflow policy when fixed/preferred exceed main axis.
+    pub overflow: OverflowPolicy,
 }
 
 impl Default for StackSpec {
@@ -167,6 +242,7 @@ impl Default for StackSpec {
             wrap: false,
             pad_x: 0,
             pad_y: 0,
+            overflow: OverflowPolicy::ShrinkFromEnd,
         }
     }
 }
@@ -183,6 +259,7 @@ impl StackSpec {
             wrap: false,
             pad_x: 0,
             pad_y: 0,
+            overflow: OverflowPolicy::ShrinkFromEnd,
         }
     }
 
@@ -197,6 +274,7 @@ impl StackSpec {
             wrap: false,
             pad_x: 0,
             pad_y: 0,
+            overflow: OverflowPolicy::ShrinkFromEnd,
         }
     }
 
@@ -217,6 +295,13 @@ impl StackSpec {
         self.pad_y = spacing.pad_y;
         self
     }
+
+    /// Responsive direction from outer width.
+    #[must_use]
+    pub const fn responsive(mut self, width: u16, inline_min_width: u16) -> Self {
+        self.direction = direction_for_width(width, inline_min_width);
+        self
+    }
 }
 
 /// Resolved layout: one rect per child (same order), plus hit/overflow metadata.
@@ -235,10 +320,27 @@ pub struct StackLayout {
 }
 
 impl StackLayout {
+    /// Child count.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.children.len()
+    }
+
+    /// Empty layout.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.children.is_empty()
+    }
+
     /// Child rect by index.
     #[must_use]
     pub fn get(&self, index: usize) -> Option<Rect> {
         self.children.get(index).copied()
+    }
+
+    /// Iterate child rects with stable indices.
+    pub fn iter(&self) -> impl Iterator<Item = (usize, Rect)> + '_ {
+        self.children.iter().copied().enumerate()
     }
 
     /// Hit-test: first child containing the cell, if any.
@@ -255,6 +357,52 @@ impl StackLayout {
     pub fn contains_group(&self, col: u16, row: u16) -> bool {
         self.content
             .contains(ratatui_core::layout::Position { x: col, y: row })
+    }
+
+    /// Project non-empty children into hit regions (id = stable index).
+    #[must_use]
+    pub fn hit_regions(&self) -> Vec<crate::interaction::HitRegion<usize>> {
+        self.children
+            .iter()
+            .enumerate()
+            .filter(|(_, r)| r.width > 0 && r.height > 0)
+            .map(|(id, area)| crate::interaction::HitRegion { id, area: *area })
+            .collect()
+    }
+
+    /// Register this group + non-empty children into a semantic scene.
+    ///
+    /// Group is non-focusable content; children are non-focusable content nodes
+    /// (hosts re-register interactive descendants with real ids).
+    pub fn register_semantic_group<Id, Action, F>(
+        &self,
+        scene: &mut crate::interaction::SemanticScene<Id, Action>,
+        group_id: Id,
+        label: &str,
+        mut child_id: F,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+        F: FnMut(usize) -> Id,
+    {
+        use crate::interaction::{SemanticNode, SemanticRole};
+        let _ = scene.register(
+            SemanticNode::content(group_id.clone(), self.content)
+                .role(SemanticRole::Content)
+                .label(label),
+        );
+        for (i, rect) in self.children.iter().enumerate() {
+            if rect.width == 0 || rect.height == 0 {
+                continue;
+            }
+            let id = child_id(i);
+            let _ = scene.register_child(
+                group_id.clone(),
+                SemanticNode::content(id, *rect)
+                    .role(SemanticRole::Content)
+                    .label(format!("{label}[{i}]")),
+            );
+        }
     }
 }
 
@@ -281,6 +429,20 @@ impl Stack {
         }
     }
 
+    /// Main-axis direction (for responsive flip without rebuilding).
+    #[must_use]
+    pub const fn direction(mut self, direction: StackDirection) -> Self {
+        self.spec.direction = direction;
+        self
+    }
+
+    /// Responsive direction from outer width.
+    #[must_use]
+    pub const fn responsive(mut self, width: u16, inline_min_width: u16) -> Self {
+        self.spec = self.spec.responsive(width, inline_min_width);
+        self
+    }
+
     /// Gap override.
     #[must_use]
     pub const fn gap(mut self, gap: u16) -> Self {
@@ -302,6 +464,13 @@ impl Stack {
         self
     }
 
+    /// Overflow policy.
+    #[must_use]
+    pub const fn overflow(mut self, policy: OverflowPolicy) -> Self {
+        self.spec.overflow = policy;
+        self
+    }
+
     /// Padding.
     #[must_use]
     pub const fn padding(mut self, pad_x: u16, pad_y: u16) -> Self {
@@ -310,10 +479,21 @@ impl Stack {
         self
     }
 
-    /// Layout children in `area`.
+    /// Layout children in `area` (stretch cross-axis).
     #[must_use]
     pub fn layout(self, area: Rect, children: &[FlexSize]) -> StackLayout {
         layout_stack(area, &self.spec, children)
+    }
+
+    /// Layout with per-child cross-axis preferred sizes (ignored under [`Align::Stretch`]).
+    #[must_use]
+    pub fn layout_with_cross(
+        self,
+        area: Rect,
+        children: &[FlexSize],
+        cross: &[u16],
+    ) -> StackLayout {
+        layout_stack_with_cross(area, &self.spec, children, Some(cross))
     }
 }
 
@@ -346,6 +526,20 @@ impl Inline {
         }
     }
 
+    /// Main-axis direction.
+    #[must_use]
+    pub const fn direction(mut self, direction: StackDirection) -> Self {
+        self.spec.direction = direction;
+        self
+    }
+
+    /// Responsive direction from outer width.
+    #[must_use]
+    pub const fn responsive(mut self, width: u16, inline_min_width: u16) -> Self {
+        self.spec = self.spec.responsive(width, inline_min_width);
+        self
+    }
+
     /// Enable wrapping (fixed/preferred sizes only; weights treated as preferred=1).
     #[must_use]
     pub const fn wrap(mut self, wrap: bool) -> Self {
@@ -374,6 +568,13 @@ impl Inline {
         self
     }
 
+    /// Overflow policy.
+    #[must_use]
+    pub const fn overflow(mut self, policy: OverflowPolicy) -> Self {
+        self.spec.overflow = policy;
+        self
+    }
+
     /// Padding.
     #[must_use]
     pub const fn padding(mut self, pad_x: u16, pad_y: u16) -> Self {
@@ -386,6 +587,17 @@ impl Inline {
     #[must_use]
     pub fn layout(self, area: Rect, children: &[FlexSize]) -> StackLayout {
         layout_stack(area, &self.spec, children)
+    }
+
+    /// Layout with per-child cross-axis preferred sizes.
+    #[must_use]
+    pub fn layout_with_cross(
+        self,
+        area: Rect,
+        children: &[FlexSize],
+        cross: &[u16],
+    ) -> StackLayout {
+        layout_stack_with_cross(area, &self.spec, children, Some(cross))
     }
 }
 
@@ -408,8 +620,19 @@ pub const fn direction_for_width(width: u16, inline_min_width: u16) -> StackDire
 /// Layout children into `area` using `spec`.
 #[must_use]
 pub fn layout_stack(area: Rect, spec: &StackSpec, children: &[FlexSize]) -> StackLayout {
+    layout_stack_with_cross(area, spec, children, None)
+}
+
+/// Layout with optional per-child cross-axis sizes (cells).
+#[must_use]
+pub fn layout_stack_with_cross(
+    area: Rect,
+    spec: &StackSpec,
+    children: &[FlexSize],
+    cross: Option<&[u16]>,
+) -> StackLayout {
     let mut out = Vec::with_capacity(children.len());
-    layout_stack_into(area, spec, children, &mut out);
+    layout_stack_into_cross(area, spec, children, cross, &mut out);
     let content = padded_content(area, spec);
     let content_main = estimate_content_main(spec, children, &out);
     let overflowed = out.iter().zip(children.iter()).any(|(r, c)| {
@@ -435,6 +658,17 @@ pub fn layout_stack_into(
     children: &[FlexSize],
     out: &mut Vec<Rect>,
 ) {
+    layout_stack_into_cross(area, spec, children, None, out);
+}
+
+/// Layout into caller buffer with optional cross-axis sizes.
+pub fn layout_stack_into_cross(
+    area: Rect,
+    spec: &StackSpec,
+    children: &[FlexSize],
+    cross: Option<&[u16]>,
+    out: &mut Vec<Rect>,
+) {
     out.clear();
     if children.is_empty() {
         return;
@@ -458,18 +692,14 @@ pub fn layout_stack_into(
         return;
     }
 
-    layout_single_line(content, spec, children, out);
+    layout_single_line(content, spec, children, cross, out);
 }
 
 fn padded_content(area: Rect, spec: &StackSpec) -> Rect {
     let x = area.x.saturating_add(spec.pad_x);
     let y = area.y.saturating_add(spec.pad_y);
-    let width = area
-        .width
-        .saturating_sub(spec.pad_x.saturating_mul(2));
-    let height = area
-        .height
-        .saturating_sub(spec.pad_y.saturating_mul(2));
+    let width = area.width.saturating_sub(spec.pad_x.saturating_mul(2));
+    let height = area.height.saturating_sub(spec.pad_y.saturating_mul(2));
     if width == 0 || height == 0 {
         Rect {
             x,
@@ -505,6 +735,7 @@ fn layout_single_line(
     content: Rect,
     spec: &StackSpec,
     children: &[FlexSize],
+    cross: Option<&[u16]>,
     out: &mut Vec<Rect>,
 ) {
     let main_total = main_len(content, spec.direction);
@@ -512,8 +743,15 @@ fn layout_single_line(
     let n = children.len();
     let gaps = spec.gap.saturating_mul(n.saturating_sub(1) as u16);
 
-    // First pass: resolve mins for fixed/preferred; collect weights.
-    let mut main_sizes = vec![0u16; n];
+    let mut scratch = [0u16; INLINE_SCRATCH];
+    let mut heap: Vec<u16> = Vec::new();
+    let main_sizes: &mut [u16] = if n <= INLINE_SCRATCH {
+        &mut scratch[..n]
+    } else {
+        heap.resize(n, 0);
+        heap.as_mut_slice()
+    };
+
     let mut weight_sum = 0u32;
     let mut fixed_sum = 0u16;
     for (i, child) in children.iter().enumerate() {
@@ -528,7 +766,8 @@ fn layout_single_line(
                 preferred,
                 max,
             } => {
-                let p = preferred.clamp(min, max.max(min));
+                let hi = max.max(min);
+                let p = preferred.clamp(min, hi);
                 main_sizes[i] = p;
                 fixed_sum = fixed_sum.saturating_add(p);
             }
@@ -542,24 +781,11 @@ fn layout_single_line(
     let mut overflowed = false;
 
     if fixed_sum > available {
-        // Shrink fixed/preferred proportionally from the end.
         overflowed = true;
-        let mut remaining = available;
-        for i in (0..n).rev() {
-            if matches!(children[i], FlexSize::Weight(_)) {
-                main_sizes[i] = 0;
-                continue;
-            }
-            let take = main_sizes[i].min(remaining);
-            main_sizes[i] = take;
-            remaining = remaining.saturating_sub(take);
-        }
+        apply_overflow(spec.overflow, children, main_sizes, available);
     } else {
-        // Distribute residual to weights.
         let mut residual = available.saturating_sub(fixed_sum);
-        if weight_sum == 0 {
-            // No weights: apply justify free space as leading offset later.
-        } else {
+        if weight_sum > 0 {
             let mut rem_w = weight_sum;
             let mut rem_flex = residual;
             for i in 0..n {
@@ -570,7 +796,6 @@ fn layout_single_line(
                     } else {
                         (u32::from(rem_flex) * w / rem_w) as u16
                     };
-                    // Last weight gets remainder.
                     let is_last_weight = children[i + 1..]
                         .iter()
                         .all(|c| !matches!(c, FlexSize::Weight(_)));
@@ -581,8 +806,12 @@ fn layout_single_line(
                 }
             }
             residual = rem_flex;
-            let _ = residual;
         }
+        // Grow preferred toward max with leftover residual (after weights).
+        if residual > 0 {
+            grow_preferred(children, main_sizes, &mut residual);
+        }
+        let _ = residual;
     }
 
     let used_main: u16 = main_sizes.iter().copied().sum::<u16>().saturating_add(gaps);
@@ -594,29 +823,25 @@ fn layout_single_line(
         StackDirection::Horizontal => content.x.saturating_add(leading),
     };
 
+    out.reserve(n);
     for i in 0..n {
         let main = main_sizes[i];
-        let (cross_off, cross_size) = cross_place(spec.align, cross_total, cross_total);
+        let child_cross = cross
+            .and_then(|c| c.get(i).copied())
+            .unwrap_or(cross_total);
+        let (cross_off, cross_size) = cross_place(spec.align, cross_total, child_cross);
         let rect = match spec.direction {
             StackDirection::Vertical => Rect {
                 x: content.x.saturating_add(cross_off),
                 y: cursor,
-                width: if matches!(spec.align, Align::Stretch) {
-                    cross_total
-                } else {
-                    cross_size
-                },
+                width: cross_size,
                 height: main,
             },
             StackDirection::Horizontal => Rect {
                 x: cursor,
                 y: content.y.saturating_add(cross_off),
                 width: main,
-                height: if matches!(spec.align, Align::Stretch) {
-                    cross_total
-                } else {
-                    cross_size
-                },
+                height: cross_size,
             },
         };
         out.push(rect);
@@ -630,6 +855,102 @@ fn layout_single_line(
     let _ = overflowed;
 }
 
+fn apply_overflow(
+    policy: OverflowPolicy,
+    children: &[FlexSize],
+    main_sizes: &mut [u16],
+    available: u16,
+) {
+    let n = children.len();
+    match policy {
+        OverflowPolicy::ShrinkFromEnd => {
+            let mut remaining = available;
+            for i in (0..n).rev() {
+                if matches!(children[i], FlexSize::Weight(_)) {
+                    main_sizes[i] = 0;
+                    continue;
+                }
+                let take = main_sizes[i].min(remaining);
+                main_sizes[i] = take;
+                remaining = remaining.saturating_sub(take);
+            }
+        }
+        OverflowPolicy::ClipTail => {
+            let mut remaining = available;
+            for i in 0..n {
+                if matches!(children[i], FlexSize::Weight(_) | FlexSize::Collapsed) {
+                    main_sizes[i] = 0;
+                    continue;
+                }
+                let take = main_sizes[i].min(remaining);
+                main_sizes[i] = take;
+                remaining = remaining.saturating_sub(take);
+            }
+        }
+        OverflowPolicy::EqualShare => {
+            // Zero weights first; then peel cells from the end while sum > available.
+            for i in 0..n {
+                if matches!(children[i], FlexSize::Weight(_)) {
+                    main_sizes[i] = 0;
+                }
+            }
+            loop {
+                let sum: u16 = main_sizes.iter().copied().sum();
+                if sum <= available {
+                    break;
+                }
+                let mut peeled = false;
+                for i in (0..n).rev() {
+                    let floor = children[i].min_main().min(main_sizes[i]);
+                    // Under hard overflow, min may also shrink: floor to 0.
+                    let floor = if sum.saturating_sub(1) < available {
+                        floor
+                    } else {
+                        0
+                    };
+                    if main_sizes[i] > floor {
+                        main_sizes[i] -= 1;
+                        peeled = true;
+                        break;
+                    }
+                }
+                if !peeled {
+                    // Force zero from end.
+                    for i in (0..n).rev() {
+                        if main_sizes[i] > 0 {
+                            main_sizes[i] = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn grow_preferred(children: &[FlexSize], main_sizes: &mut [u16], residual: &mut u16) {
+    // Round-robin grow Preferred up to max.
+    while *residual > 0 {
+        let mut grew = false;
+        for (i, child) in children.iter().enumerate() {
+            if *residual == 0 {
+                break;
+            }
+            if let FlexSize::Preferred { min, max, .. } = *child {
+                let hi = max.max(min);
+                if main_sizes[i] < hi {
+                    main_sizes[i] += 1;
+                    *residual -= 1;
+                    grew = true;
+                }
+            }
+        }
+        if !grew {
+            break;
+        }
+    }
+}
+
 fn justify_offsets(justify: Justify, free: u16, n: usize, overflowed: bool) -> (u16, u16) {
     if free == 0 || n == 0 || overflowed {
         return (0, 0);
@@ -640,6 +961,18 @@ fn justify_offsets(justify: Justify, free: u16, n: usize, overflowed: bool) -> (
         Justify::Center => (free / 2, 0),
         Justify::SpaceBetween if n > 1 => (0, free / (n as u16 - 1)),
         Justify::SpaceBetween => (0, 0),
+        Justify::SpaceAround if n > 0 => {
+            // CSS-like: free / n around each; leading = half unit.
+            let unit = free / n as u16;
+            let leading = unit / 2;
+            let between = if n > 1 {
+                free.saturating_sub(leading.saturating_mul(2)) / (n as u16 - 1)
+            } else {
+                0
+            };
+            (leading, between)
+        }
+        Justify::SpaceAround => (0, 0),
         Justify::SpaceEvenly => {
             let slots = n as u16 + 1;
             let each = free / slots;
@@ -651,7 +984,13 @@ fn justify_offsets(justify: Justify, free: u16, n: usize, overflowed: bool) -> (
 fn cross_place(align: Align, cross_total: u16, child_cross: u16) -> (u16, u16) {
     let size = match align {
         Align::Stretch => cross_total,
-        _ => child_cross.min(cross_total),
+        _ => child_cross.min(cross_total).max(1).min(cross_total),
+    };
+    // If child_cross is 0 under non-stretch, still paint 0 height/width.
+    let size = if child_cross == 0 && !matches!(align, Align::Stretch) {
+        0
+    } else {
+        size
     };
     let off = match align {
         Align::Start | Align::Stretch => 0,
@@ -667,7 +1006,6 @@ fn layout_wrap_horizontal(
     children: &[FlexSize],
     out: &mut Vec<Rect>,
 ) {
-    // Pre-size: use preferred/fixed; weight → 1 cell min for wrapping chips.
     let sizes: Vec<u16> = children
         .iter()
         .map(|c| match *c {
@@ -692,10 +1030,9 @@ fn layout_wrap_horizontal(
         },
     );
 
-    let row_h: u16 = 1; // wrap rows are 1 cell tall; hosts that need multi-row children use nested Stack
+    let row_h: u16 = 1;
     let mut x = content.x;
     let mut y = content.y;
-    let mut row_max_x = content.x;
 
     for (i, &w) in sizes.iter().enumerate() {
         if w == 0 {
@@ -708,11 +1045,9 @@ fn layout_wrap_horizontal(
             continue;
         }
         if x > content.x && x.saturating_add(w) > content.right() {
-            // wrap
             y = y.saturating_add(row_h).saturating_add(spec.gap);
             x = content.x;
             if y >= content.bottom() {
-                // overflow remaining
                 for j in i..children.len() {
                     out[j] = Rect {
                         x: content.x,
@@ -733,8 +1068,6 @@ fn layout_wrap_horizontal(
             height: h,
         };
         x = x.saturating_add(place_w).saturating_add(spec.gap);
-        row_max_x = row_max_x.max(x);
-        let _ = row_max_x;
     }
 }
 
@@ -754,7 +1087,6 @@ fn estimate_content_main(spec: &StackSpec, _children: &[FlexSize], rects: &[Rect
             right.saturating_sub(left)
         }
         StackDirection::Horizontal => {
-            // wrapped: height of packed block
             let top = rects.iter().map(|r| r.y).min().unwrap_or(0);
             let bottom = rects.iter().map(|r| r.bottom()).max().unwrap_or(0);
             bottom.saturating_sub(top)
@@ -771,15 +1103,11 @@ mod tests {
         let area = Rect::new(0, 0, 20, 10);
         let layout = Stack::new().gap(0).layout(
             area,
-            &[FlexSize::Fixed(2), FlexSize::Weight(1), FlexSize::Fixed(1)],
+            &[FlexSize::Fixed(2), FlexSize::fill(), FlexSize::Fixed(1)],
         );
         assert_eq!(layout.children[0].height, 2);
         assert_eq!(layout.children[2].height, 1);
         assert_eq!(layout.children[1].height, 7);
-        assert_eq!(
-            layout.children[0].height + layout.children[1].height + layout.children[2].height,
-            10
-        );
     }
 
     #[test]
@@ -819,6 +1147,29 @@ mod tests {
         assert!(layout.overflowed);
         let sum: u16 = layout.children.iter().map(|r| r.height).sum();
         assert_eq!(sum, 5);
+        // End child takes remainder first under shrink-from-end reverse walk
+        // (last keeps up to claim while remaining lasts from end).
+        assert_eq!(layout.children[2].height, 3);
+        assert_eq!(layout.children[1].height, 2);
+        assert_eq!(layout.children[0].height, 0);
+    }
+
+    #[test]
+    fn overflow_clip_tail_keeps_head() {
+        let layout = Stack::new()
+            .overflow(OverflowPolicy::ClipTail)
+            .layout(
+                Rect::new(0, 0, 10, 5),
+                &[
+                    FlexSize::Fixed(3),
+                    FlexSize::Fixed(3),
+                    FlexSize::Fixed(3),
+                ],
+            );
+        assert!(layout.overflowed);
+        assert_eq!(layout.children[0].height, 3);
+        assert_eq!(layout.children[1].height, 2);
+        assert_eq!(layout.children[2].height, 0);
     }
 
     #[test]
@@ -830,12 +1181,28 @@ mod tests {
     }
 
     #[test]
-    fn align_center_on_cross_axis() {
-        // Non-stretch: child cross size = full for Stretch default; use Start with pad
+    fn justify_space_around() {
         let layout = Inline::new()
-            .align(Align::Stretch)
-            .layout(Rect::new(0, 0, 20, 6), &[FlexSize::Fixed(4)]);
-        assert_eq!(layout.children[0].height, 6);
+            .justify(Justify::SpaceAround)
+            .layout(
+                Rect::new(0, 0, 20, 3),
+                &[FlexSize::Fixed(4), FlexSize::Fixed(4)],
+            );
+        // free = 12, unit = 6, leading = 3
+        assert_eq!(layout.children[0].x, 3);
+    }
+
+    #[test]
+    fn align_center_with_cross_hint() {
+        let layout = Inline::new()
+            .align(Align::Center)
+            .layout_with_cross(
+                Rect::new(0, 0, 20, 6),
+                &[FlexSize::Fixed(4)],
+                &[2],
+            );
+        assert_eq!(layout.children[0].height, 2);
+        assert_eq!(layout.children[0].y, 2);
     }
 
     #[test]
@@ -857,16 +1224,28 @@ mod tests {
     fn direction_for_width_responsive() {
         assert_eq!(direction_for_width(40, 60), StackDirection::Vertical);
         assert_eq!(direction_for_width(80, 60), StackDirection::Horizontal);
+        let layout = Stack::new()
+            .responsive(80, 60)
+            .gap(0)
+            .layout(
+                Rect::new(0, 0, 80, 4),
+                &[FlexSize::Weight(1), FlexSize::Weight(1)],
+            );
+        assert_eq!(layout.direction, StackDirection::Horizontal);
+        assert_eq!(layout.children[0].width, 40);
     }
 
     #[test]
-    fn hit_child_index() {
+    fn hit_child_and_regions() {
         let layout = Inline::new().layout(
             Rect::new(0, 0, 30, 3),
             &[FlexSize::Fixed(10), FlexSize::Fixed(10), FlexSize::Fixed(10)],
         );
         assert_eq!(layout.hit_child(15, 1), Some(1));
         assert_eq!(layout.hit_child(5, 1), Some(0));
+        let hits = layout.hit_regions();
+        assert_eq!(hits.len(), 3);
+        assert_eq!(hits[1].id, 1);
     }
 
     #[test]
@@ -889,12 +1268,18 @@ mod tests {
     }
 
     #[test]
-    fn preferred_clamped() {
+    fn preferred_clamped_and_grows() {
         let layout = Stack::new().layout(
             Rect::new(0, 0, 10, 10),
             &[FlexSize::preferred(2, 100, 4), FlexSize::Weight(1)],
         );
         assert_eq!(layout.children[0].height, 4);
+        // No weight residual to preferred-only: preferred 2..6 with free space grows
+        let grow = Stack::new().layout(
+            Rect::new(0, 0, 10, 10),
+            &[FlexSize::preferred(2, 2, 6)],
+        );
+        assert_eq!(grow.children[0].height, 6);
     }
 
     #[test]
@@ -919,7 +1304,6 @@ mod tests {
             Rect::new(0, 0, 10, 10),
             &[FlexSize::Weight(1), FlexSize::Weight(1)],
         );
-        // Comfortable: pad_y=1 each side + gap=1 → content height 8, children sum 7.
         assert_eq!(layout.content.height, 8);
         assert_eq!(
             layout.children[0].height + layout.children[1].height,
@@ -937,5 +1321,30 @@ mod tests {
             layout.children[0].height + layout.children[1].height,
             9
         );
+    }
+
+    #[test]
+    fn semantic_group_registers() {
+        use crate::interaction::SemanticScene;
+        let layout = Stack::new().layout(
+            Rect::new(0, 0, 10, 6),
+            &[FlexSize::Fixed(2), FlexSize::fill()],
+        );
+        let mut scene = SemanticScene::<String, ()>::new();
+        scene.begin_frame();
+        layout.register_semantic_group(&mut scene, "g".into(), "stack", |i| format!("c{i}"));
+        assert!(scene.len() >= 2);
+    }
+
+    #[test]
+    fn builder_direction_flip() {
+        let layout = Inline::new()
+            .direction(StackDirection::Vertical)
+            .layout(
+                Rect::new(0, 0, 10, 6),
+                &[FlexSize::Fixed(2), FlexSize::fill()],
+            );
+        assert_eq!(layout.direction, StackDirection::Vertical);
+        assert_eq!(layout.children[0].height, 2);
     }
 }

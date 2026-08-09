@@ -142,23 +142,36 @@ impl Widget for &ThinkingBlock<'_> {
         if area.is_empty() {
             return;
         }
+        use crate::layout::{FlexSize, Stack};
+
+        let show_body = self.expanded && !self.body.is_empty() && area.height > 1;
+        let layout = if show_body {
+            Stack::new().layout(area, &[FlexSize::Fixed(1), FlexSize::fill()])
+        } else {
+            Stack::new().layout(area, &[FlexSize::Fixed(1)])
+        };
         let marker = if self.expanded { "▾" } else { "▸" };
         let header = format!("{} {} {}", marker, self.frame, self.summary);
-        let clipped = take_display_cols(&header, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &clipped,
-            usize::from(area.width),
-            self.system.style(Role::TextMuted),
-        );
-        if self.expanded && area.height > 1 && !self.body.is_empty() {
-            let body = take_display_cols(self.body, usize::from(area.width));
+        if let Some(header_r) = layout.get(0) {
+            let clipped = take_display_cols(&header, usize::from(header_r.width));
             buffer.set_stringn(
-                area.x,
-                area.y.saturating_add(1),
+                header_r.x,
+                header_r.y,
+                &clipped,
+                usize::from(header_r.width),
+                self.system.style(Role::TextMuted),
+            );
+        }
+        if show_body
+            && let Some(body_r) = layout.get(1)
+            && body_r.height > 0
+        {
+            let body = take_display_cols(self.body, usize::from(body_r.width));
+            buffer.set_stringn(
+                body_r.x,
+                body_r.y,
                 &body,
-                usize::from(area.width),
+                usize::from(body_r.width),
                 self.system.style(Role::TextDisabled),
             );
         }

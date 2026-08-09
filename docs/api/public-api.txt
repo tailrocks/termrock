@@ -6227,7 +6227,10 @@ pub termrock::layout::FlexSize::Preferred::min: u16
 pub termrock::layout::FlexSize::Preferred::preferred: u16
 pub termrock::layout::FlexSize::Weight(u16)
 impl termrock::layout::FlexSize
+pub const fn termrock::layout::FlexSize::fill() -> Self
 pub const fn termrock::layout::FlexSize::fixed(u16) -> Self
+pub const fn termrock::layout::FlexSize::ideal_main(self) -> u16
+pub const fn termrock::layout::FlexSize::max_main(self) -> core::option::Option<u16>
 pub const fn termrock::layout::FlexSize::min_main(self) -> u16
 pub const fn termrock::layout::FlexSize::preferred(u16, u16, u16) -> Self
 pub const fn termrock::layout::FlexSize::weight(u16) -> Self
@@ -6325,6 +6328,7 @@ impl<T> either::into_either::IntoEither for termrock::layout::GridAutoFlow
 #[non_exhaustive] pub enum termrock::layout::Justify
 pub termrock::layout::Justify::Center
 pub termrock::layout::Justify::End
+pub termrock::layout::Justify::SpaceAround
 pub termrock::layout::Justify::SpaceBetween
 pub termrock::layout::Justify::SpaceEvenly
 pub termrock::layout::Justify::Start
@@ -6478,6 +6482,57 @@ pub unsafe fn termrock::layout::OverflowBehavior::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::layout::OverflowBehavior
 pub fn termrock::layout::OverflowBehavior::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::OverflowBehavior
+#[non_exhaustive] pub enum termrock::layout::OverflowPolicy
+pub termrock::layout::OverflowPolicy::ClipTail
+pub termrock::layout::OverflowPolicy::EqualShare
+pub termrock::layout::OverflowPolicy::ShrinkFromEnd
+impl termrock::layout::OverflowPolicy
+pub const fn termrock::layout::OverflowPolicy::id(self) -> &'static str
+impl core::clone::Clone for termrock::layout::OverflowPolicy
+pub fn termrock::layout::OverflowPolicy::clone(&self) -> termrock::layout::OverflowPolicy
+impl core::cmp::Eq for termrock::layout::OverflowPolicy
+impl core::cmp::PartialEq for termrock::layout::OverflowPolicy
+pub fn termrock::layout::OverflowPolicy::eq(&self, &termrock::layout::OverflowPolicy) -> bool
+impl core::default::Default for termrock::layout::OverflowPolicy
+pub fn termrock::layout::OverflowPolicy::default() -> termrock::layout::OverflowPolicy
+impl core::fmt::Debug for termrock::layout::OverflowPolicy
+pub fn termrock::layout::OverflowPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::OverflowPolicy
+pub fn termrock::layout::OverflowPolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::OverflowPolicy
+impl core::marker::StructuralPartialEq for termrock::layout::OverflowPolicy
+impl core::marker::Freeze for termrock::layout::OverflowPolicy
+impl core::marker::Send for termrock::layout::OverflowPolicy
+impl core::marker::Sync for termrock::layout::OverflowPolicy
+impl core::marker::Unpin for termrock::layout::OverflowPolicy
+impl core::marker::UnsafeUnpin for termrock::layout::OverflowPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::OverflowPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::OverflowPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::OverflowPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::OverflowPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::OverflowPolicy where U: core::convert::From<T>
+pub fn termrock::layout::OverflowPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::OverflowPolicy where U: core::convert::Into<T>
+pub type termrock::layout::OverflowPolicy::Error = core::convert::Infallible
+pub fn termrock::layout::OverflowPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::OverflowPolicy where U: core::convert::TryFrom<T>
+pub type termrock::layout::OverflowPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::OverflowPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::OverflowPolicy where T: core::clone::Clone
+pub type termrock::layout::OverflowPolicy::Owned = T
+pub fn termrock::layout::OverflowPolicy::clone_into(&self, &mut T)
+pub fn termrock::layout::OverflowPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::OverflowPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::OverflowPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::OverflowPolicy where T: ?core::marker::Sized
+pub fn termrock::layout::OverflowPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::OverflowPolicy where T: ?core::marker::Sized
+pub fn termrock::layout::OverflowPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::OverflowPolicy where T: core::clone::Clone
+pub unsafe fn termrock::layout::OverflowPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::OverflowPolicy
+pub fn termrock::layout::OverflowPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::OverflowPolicy
 #[non_exhaustive] pub enum termrock::layout::PaneConstraint
 pub termrock::layout::PaneConstraint::Fixed(u16)
 pub termrock::layout::PaneConstraint::Min(u16)
@@ -7574,11 +7629,15 @@ impl<T> either::into_either::IntoEither for termrock::interaction::HitRegion<Id>
 pub struct termrock::layout::Inline
 impl termrock::layout::Inline
 pub const fn termrock::layout::Inline::align(self, termrock::layout::Align) -> Self
+pub const fn termrock::layout::Inline::direction(self, termrock::layout::StackDirection) -> Self
 pub const fn termrock::layout::Inline::gap(self, u16) -> Self
 pub const fn termrock::layout::Inline::justify(self, termrock::layout::Justify) -> Self
 pub fn termrock::layout::Inline::layout(self, ratatui_core::layout::rect::Rect, &[termrock::layout::FlexSize]) -> termrock::layout::StackLayout
+pub fn termrock::layout::Inline::layout_with_cross(self, ratatui_core::layout::rect::Rect, &[termrock::layout::FlexSize], &[u16]) -> termrock::layout::StackLayout
 pub const fn termrock::layout::Inline::new() -> Self
+pub const fn termrock::layout::Inline::overflow(self, termrock::layout::OverflowPolicy) -> Self
 pub const fn termrock::layout::Inline::padding(self, u16, u16) -> Self
+pub const fn termrock::layout::Inline::responsive(self, u16, u16) -> Self
 pub const fn termrock::layout::Inline::with_density(termrock::style::Density) -> Self
 pub const fn termrock::layout::Inline::wrap(self, bool) -> Self
 impl core::clone::Clone for termrock::layout::Inline
@@ -8049,11 +8108,15 @@ impl<T> either::into_either::IntoEither for termrock::layout::Slots
 pub struct termrock::layout::Stack
 impl termrock::layout::Stack
 pub const fn termrock::layout::Stack::align(self, termrock::layout::Align) -> Self
+pub const fn termrock::layout::Stack::direction(self, termrock::layout::StackDirection) -> Self
 pub const fn termrock::layout::Stack::gap(self, u16) -> Self
 pub const fn termrock::layout::Stack::justify(self, termrock::layout::Justify) -> Self
 pub fn termrock::layout::Stack::layout(self, ratatui_core::layout::rect::Rect, &[termrock::layout::FlexSize]) -> termrock::layout::StackLayout
+pub fn termrock::layout::Stack::layout_with_cross(self, ratatui_core::layout::rect::Rect, &[termrock::layout::FlexSize], &[u16]) -> termrock::layout::StackLayout
 pub const fn termrock::layout::Stack::new() -> Self
+pub const fn termrock::layout::Stack::overflow(self, termrock::layout::OverflowPolicy) -> Self
 pub const fn termrock::layout::Stack::padding(self, u16, u16) -> Self
+pub const fn termrock::layout::Stack::responsive(self, u16, u16) -> Self
 pub const fn termrock::layout::Stack::with_density(termrock::style::Density) -> Self
 impl core::clone::Clone for termrock::layout::Stack
 pub fn termrock::layout::Stack::clone(&self) -> termrock::layout::Stack
@@ -8108,6 +8171,11 @@ impl termrock::layout::StackLayout
 pub fn termrock::layout::StackLayout::contains_group(&self, u16, u16) -> bool
 pub fn termrock::layout::StackLayout::get(&self, usize) -> core::option::Option<ratatui_core::layout::rect::Rect>
 pub fn termrock::layout::StackLayout::hit_child(&self, u16, u16) -> core::option::Option<usize>
+pub fn termrock::layout::StackLayout::hit_regions(&self) -> alloc::vec::Vec<termrock::interaction::HitRegion<usize>>
+pub fn termrock::layout::StackLayout::is_empty(&self) -> bool
+pub fn termrock::layout::StackLayout::iter(&self) -> impl core::iter::traits::iterator::Iterator<Item = (usize, ratatui_core::layout::rect::Rect)> + '_
+pub fn termrock::layout::StackLayout::len(&self) -> usize
+pub fn termrock::layout::StackLayout::register_semantic_group<Id, Action, F>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, &str, F) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone, F: core::ops::function::FnMut(usize) -> Id
 impl core::clone::Clone for termrock::layout::StackLayout
 pub fn termrock::layout::StackLayout::clone(&self) -> termrock::layout::StackLayout
 impl core::cmp::Eq for termrock::layout::StackLayout
@@ -8153,11 +8221,13 @@ pub termrock::layout::StackSpec::align: termrock::layout::Align
 pub termrock::layout::StackSpec::direction: termrock::layout::StackDirection
 pub termrock::layout::StackSpec::gap: u16
 pub termrock::layout::StackSpec::justify: termrock::layout::Justify
+pub termrock::layout::StackSpec::overflow: termrock::layout::OverflowPolicy
 pub termrock::layout::StackSpec::pad_x: u16
 pub termrock::layout::StackSpec::pad_y: u16
 pub termrock::layout::StackSpec::wrap: bool
 impl termrock::layout::StackSpec
 pub const fn termrock::layout::StackSpec::horizontal() -> Self
+pub const fn termrock::layout::StackSpec::responsive(self, u16, u16) -> Self
 pub const fn termrock::layout::StackSpec::vertical() -> Self
 pub const fn termrock::layout::StackSpec::with_density(self, termrock::style::Density) -> Self
 pub const fn termrock::layout::StackSpec::with_spacing(self, termrock::style::SpacingScale) -> Self
@@ -8483,6 +8553,8 @@ pub fn termrock::layout::layout_center(ratatui_core::layout::rect::Rect, &termro
 pub fn termrock::layout::layout_grid(ratatui_core::layout::rect::Rect, &termrock::layout::GridSpec, &[termrock::layout::GridItem]) -> termrock::layout::GridLayout
 pub fn termrock::layout::layout_stack(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize]) -> termrock::layout::StackLayout
 pub fn termrock::layout::layout_stack_into(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)
+pub fn termrock::layout::layout_stack_into_cross(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], core::option::Option<&[u16]>, &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)
+pub fn termrock::layout::layout_stack_with_cross(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], core::option::Option<&[u16]>) -> termrock::layout::StackLayout
 pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::style::PanelChrome, &termrock::style::DesignSystem) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::scroll::DialogScroll, &termrock::style::DesignSystem) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect

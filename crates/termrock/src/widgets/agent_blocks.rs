@@ -149,16 +149,39 @@ impl<Id: Clone + PartialEq> Widget for &ModeRibbon<'_, Id> {
         if area.is_empty() {
             return;
         }
-        let mut x = area.x;
-        for mode in self.modes {
-            if x >= area.right() {
+        use crate::layout::{FlexSize, Inline};
+        use crate::text::display_cols;
+
+        // Fixed chip widths from labels; Inline wrap drops overflow under policy.
+        let labels: Vec<String> = self
+            .modes
+            .iter()
+            .map(|mode| {
+                if mode.active {
+                    format!("[{}]", mode.label)
+                } else {
+                    format!(" {} ", mode.label)
+                }
+            })
+            .collect();
+        let sizes: Vec<FlexSize> = labels
+            .iter()
+            .map(|label| {
+                let w = u16::try_from(display_cols(label).min(16)).unwrap_or(16);
+                FlexSize::Fixed(w.max(1))
+            })
+            .collect();
+        let layout = Inline::new()
+            .gap(1)
+            .wrap(area.height > 1)
+            .layout(area, &sizes);
+        for (i, mode) in self.modes.iter().enumerate() {
+            let Some(rect) = layout.get(i) else {
                 break;
-            }
-            let label = if mode.active {
-                format!("[{}]", mode.label)
-            } else {
-                format!(" {} ", mode.label)
             };
+            if rect.width == 0 || rect.height == 0 {
+                continue;
+            }
             let style = if !mode.enabled {
                 self.tokens.style(Role::TextDisabled)
             } else if mode.active {
@@ -166,11 +189,14 @@ impl<Id: Clone + PartialEq> Widget for &ModeRibbon<'_, Id> {
             } else {
                 self.tokens.style(Role::TextMuted)
             };
-            let clipped = take_display_cols(&label, usize::from(area.right().saturating_sub(x)));
-            let w = u16::try_from(clipped.chars().count().max(clipped.len().min(12))).unwrap_or(12);
-            let w = w.min(area.right().saturating_sub(x));
-            buffer.set_stringn(x, area.y, &clipped, usize::from(w), style);
-            x = x.saturating_add(w).saturating_add(1);
+            let clipped = take_display_cols(&labels[i], usize::from(rect.width));
+            buffer.set_stringn(
+                rect.x,
+                rect.y,
+                &clipped,
+                usize::from(rect.width),
+                style,
+            );
         }
     }
 }
@@ -385,28 +411,59 @@ impl<Id: Clone + PartialEq> StatefulWidget for &QuestionFlow<'_, Id> {
         if inner.is_empty() {
             return;
         }
-        let progress = format!("{}/{}", state.step_index + 1, self.steps.len());
-        buffer.set_stringn(
-            inner.x,
-            inner.y,
-            &progress,
-            usize::from(inner.width),
-            self.tokens.style(Role::TextMuted),
+        use crate::layout::{FlexSize, Stack};
+
+        let layout = Stack::new().layout(
+            inner,
+            &[
+                FlexSize::Fixed(1),
+                FlexSize::Fixed(1),
+                FlexSize::fill(),
+            ],
         );
-        if inner.height > 1 {
-            let prompt = take_display_cols(step.prompt, usize::from(inner.width));
+        let progress = format!("{}/{}", state.step_index + 1, self.steps.len());
+        if let Some(r) = layout.get(0) {
             buffer.set_stringn(
-                inner.x,
-                inner.y + 1,
+                r.x,
+                r.y,
+                &progress,
+                usize::from(r.width),
+                self.tokens.style(Role::TextMuted),
+            );
+        }
+        if let Some(r) = layout.get(1)
+            && r.height > 0
+        {
+            let prompt = take_display_cols(step.prompt, usize::from(r.width));
+            buffer.set_stringn(
+                r.x,
+                r.y,
                 &prompt,
-                usize::from(inner.width),
+                usize::from(r.width),
                 self.tokens.style(Role::Text),
             );
         }
-        let mut y = inner.y.saturating_add(2);
+        let Some(opts) = layout.get(2) else {
+            return;
+        };
+        if opts.height == 0 {
+            return;
+        }
+        // One fixed row per option inside the options band.
+        let opt_sizes: Vec<FlexSize> = step
+            .options
+            .iter()
+            .map(|_| FlexSize::Fixed(1))
+            .collect();
+        let opt_layout = Stack::new()
+            .overflow(crate::layout::OverflowPolicy::ClipTail)
+            .layout(opts, &opt_sizes);
         for (i, opt) in step.options.iter().enumerate() {
-            if y >= inner.bottom() {
+            let Some(r) = opt_layout.get(i) else {
                 break;
+            };
+            if r.height == 0 {
+                continue;
             }
             let marker = if i == state.option_index {
                 "› "
@@ -419,9 +476,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &QuestionFlow<'_, Id> {
             } else {
                 self.tokens.style(Role::Text)
             };
-            let clipped = take_display_cols(&line, usize::from(inner.width));
-            buffer.set_stringn(inner.x, y, &clipped, usize::from(inner.width), style);
-            y = y.saturating_add(1);
+            let clipped = take_display_cols(&line, usize::from(r.width));
+            buffer.set_stringn(r.x, r.y, &clipped, usize::from(r.width), style);
         }
     }
 }
