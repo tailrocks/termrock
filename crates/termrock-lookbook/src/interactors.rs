@@ -986,6 +986,7 @@ impl StoryInteraction for DesignInspectorInteractor {
             recipes: &recipes,
             selection_chrome: "gutter",
         semantics: &[],
+        focus_graph: &[],
         };
         frame.render_widget(
             DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone()))

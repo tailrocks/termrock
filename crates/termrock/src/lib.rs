@@ -71,6 +71,10 @@ mod focus_authority_policy {
             interaction.contains("SemanticScene"),
             "SemanticScene is public frame-local semantic tree (migration 0079)"
         );
+        assert!(
+            interaction.contains("FocusGraph"),
+            "FocusGraph is sole public focus graph (migration 0081)"
+        );
     }
 }
 

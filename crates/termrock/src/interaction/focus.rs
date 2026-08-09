@@ -20,22 +20,7 @@ pub struct FocusTarget<Id, ScopeId> {
     pub enabled: bool,
 }
 
-/// Result of a focus operation.
-#[must_use]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FocusOutcome<Id> {
-    /// Input or request did not belong to the focus ring.
-    Ignored,
-    /// The ring consumed the operation without changing focus.
-    Unchanged,
-    /// Focus changed between stable identities.
-    Changed {
-        /// Previous focused identity.
-        from: Option<Id>,
-        /// New focused identity.
-        to: Option<Id>,
-    },
-}
+pub(crate) use super::focus_graph::FocusOutcome;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct FocusScope<Id, ScopeId> {

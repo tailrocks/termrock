@@ -94,6 +94,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0078 | `v0.13.0` | [TextArea accepts_input](migrations/0078-v0.13.0-text-area-accepts-input.md) |
 | 0079 | `v0.13.0` | [SemanticScene public tree](migrations/0079-v0.13.0-semantic-scene.md) |
 | 0080 | `v0.13.0` | [EventResult + typed outcomes](migrations/0080-v0.13.0-event-result.md) |
+| 0081 | `v0.13.0` | [FocusGraph](migrations/0081-v0.13.0-focus-graph.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

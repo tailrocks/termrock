@@ -736,6 +736,15 @@ pub(crate) fn stories() -> Vec<Story> {
             event_result_compose_story,
         ),
         Story::new(
+            "focus-graph/workbench",
+            "FocusGraph workbench zones",
+            "FocusGraph",
+            "Linear tab order, roving list, trap, Focus Lens markers.",
+            56,
+            12,
+            focus_graph_workbench_story,
+        ),
+        Story::new(
             "capability/color-ladder",
             "Capability color ladder",
             "DesignInspector",
@@ -4036,6 +4045,78 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 
+
+fn focus_graph_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{
+        FocusGraph, FocusLens, FocusNavMode, FocusNode, FocusOutcome,
+    };
+    use termrock::widgets::{Panel, PanelChrome};
+
+    let mut g = FocusGraph::new().mode(FocusNavMode::Hybrid);
+    let sidebar = Rect::new(area.x, area.y.saturating_add(1), 12, area.height.saturating_sub(2));
+    let list = Rect::new(
+        area.x.saturating_add(13),
+        area.y.saturating_add(1),
+        18,
+        area.height.saturating_sub(2),
+    );
+    let editor = Rect::new(
+        area.x.saturating_add(32),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(33),
+        area.height.saturating_sub(2),
+    );
+    g.register(
+        FocusNode::leaf("sidebar", sidebar)
+            .zone("sidebar")
+            .tab_index(0),
+    );
+    g.register(
+        FocusNode::roving_collection("files", list)
+            .zone("main")
+            .tab_index(1),
+    );
+    g.register(
+        FocusNode::leaf("editor", editor)
+            .zone("main")
+            .tab_index(2),
+    );
+    let _ = g.reconcile();
+    let _ = g.request_focus("files");
+
+    frame.render_widget(
+        Panel::new(system)
+            .title("FocusGraph")
+            .chrome(g.panel_chrome_for(&"files")),
+        area,
+    );
+    // Zone panels
+    for (title, r, id) in [
+        ("sidebar", sidebar, "sidebar"),
+        ("files*", list, "files"),
+        ("editor", editor, "editor"),
+    ] {
+        frame.render_widget(
+            Panel::new(system)
+                .title(title)
+                .chrome(g.panel_chrome_for(&id)),
+            r,
+        );
+    }
+    frame.render_widget(FocusLens::new(&g, system), area);
+    let snap = g.debug_snapshot();
+    let lines = snap.summary_lines(3);
+    let status_y = area.bottom().saturating_sub(1);
+    if status_y >= area.y {
+        let msg = lines.first().cloned().unwrap_or_default();
+        frame.render_widget(
+            Paragraph::new(msg),
+            Rect::new(area.x.saturating_add(1), status_y, area.width.saturating_sub(2), 1),
+        );
+    }
+    let _ = FocusOutcome::Unchanged::<&str>;
+}
+
 fn event_result_compose_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{EventResult, compose_bubble};
     use termrock::widgets::{Panel, PanelChrome};
@@ -4113,6 +4194,7 @@ fn design_inspector(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         recipes: &recipes,
         selection_chrome: "gutter",
         semantics: &semantics,
+    focus_graph: &[],
     };
     frame.render_widget(
         DesignInspector::new(snap, system).panel(InspectorPanel::Semantics),
@@ -4174,6 +4256,7 @@ fn semantic_scene_tree_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         recipes: &recipes,
         selection_chrome: "gutter",
         semantics: &semantics,
+    focus_graph: &[],
     };
     // Panel chrome + semantics body.
     frame.render_widget(
@@ -4228,6 +4311,7 @@ fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &Des
             recipes: &recipes,
             selection_chrome: "gutter",
         semantics: &[],
+        focus_graph: &[],
         };
         frame.render_widget(DesignInspector::new(snap, &q), row);
     }
@@ -4246,6 +4330,7 @@ fn capability_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         recipes: &recipes,
         selection_chrome: "gutter",
     semantics: &[],
+    focus_graph: &[],
     };
     frame.render_widget(DesignInspector::new(snap, &mono), area);
 }
@@ -4277,6 +4362,7 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         recipes: &recipes,
         selection_chrome: "none",
     semantics: &[],
+    focus_graph: &[],
     };
     frame.render_widget(DesignInspector::new(snap, &mono), area);
 }

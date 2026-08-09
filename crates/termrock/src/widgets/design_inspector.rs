@@ -28,6 +28,8 @@ pub enum InspectorPanel {
     Recipes,
     /// Frame-local semantic tree summary.
     Semantics,
+    /// Focus graph / Focus Lens summary.
+    FocusGraph,
 }
 
 /// Read-only inspector snapshot for one frame.
@@ -49,6 +51,8 @@ pub struct DesignInspectorFrame<'a> {
     pub selection_chrome: &'a str,
     /// Optional semantic-tree summary lines (from [`crate::interaction::SemanticSnapshot`]).
     pub semantics: &'a [&'a str],
+    /// Optional FocusGraph / Focus Lens summary lines.
+    pub focus_graph: &'a [&'a str],
 }
 
 impl Default for DesignInspectorFrame<'_> {
@@ -62,6 +66,7 @@ impl Default for DesignInspectorFrame<'_> {
             recipes: &[],
             selection_chrome: "gutter",
             semantics: &[],
+            focus_graph: &[],
         }
     }
 }
@@ -113,7 +118,7 @@ impl Widget for &DesignInspector<'_> {
 
         // Tab strip on row 0 when height >= 2.
         let body_y = if area.height >= 2 {
-            let tabs = " F:focus L:layers T:tokens R:recipes S:sem ";
+            let tabs = " F:focus L:layers T:tokens R:recipes S:sem G:graph ";
             let clipped = take_display_cols(tabs, usize::from(area.width));
             buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), strong);
             area.y.saturating_add(1)
@@ -175,6 +180,17 @@ impl Widget for &DesignInspector<'_> {
                         .collect()
                 }
             }
+            InspectorPanel::FocusGraph => {
+                if self.frame.focus_graph.is_empty() {
+                    vec!["focus_graph: (register FocusGraph)".into()]
+                } else {
+                    self.frame
+                        .focus_graph
+                        .iter()
+                        .map(|line| (*line).to_string())
+                        .collect()
+                }
+            }
         };
 
         for (i, line) in lines.into_iter().take(usize::from(body_h)).enumerate() {
@@ -210,6 +226,7 @@ mod tests {
             recipes: &["list_row", "panel"],
             selection_chrome: "gutter",
             semantics: &["list@list [f] Files", "row0@list_item [fs] a.rs"],
+            focus_graph: &["focus:list trap:—"],
         };
         let area = Rect::new(0, 0, 40, 4);
         let mut buffer = Buffer::empty(area);

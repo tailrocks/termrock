@@ -4,13 +4,13 @@
 //! Production-shaped host shell for lookbook (Break K partial).
 //!
 //! Uses **only** public TermRock authorities: [`DesignSystem`], [`InteractionScene`],
-//! [`OverlayStack`]. No FocusRing fork.
+//! [`OverlayStack`], [`FocusGraph`]. No FocusRing fork.
 
 use ratatui::layout::Rect;
 use termrock::{
     interaction::{
-        InteractionElement, InteractionLayer, InteractionScene, LayerDismissPolicy, LayerKind,
-        OverlayId, OverlaySize, OverlaySpec, OverlayStack, SemanticRole,
+        FocusGraph, InteractionElement, InteractionLayer, InteractionScene, LayerDismissPolicy,
+        LayerKind, OverlayId, OverlaySize, OverlaySpec, OverlayStack, SemanticRole,
     },
     style::{DesignSystem, RolePalette},
 };
@@ -25,8 +25,10 @@ pub(crate) const FOCUS_TRAP_OVERLAY_ID: &str = "lookbook.focus_trap";
 pub(crate) struct HostFrame {
     /// Role palette (lookbook theme toggle).
     pub theme: RolePalette,
-    /// Sole focus / hit / layer authority.
+    /// Sole hit / layer / Esc authority.
     pub scene: InteractionScene<FocusId, LayerId, ()>,
+    /// Sole public focus graph (tab / spatial / traps); synced from scene.
+    pub focus: FocusGraph<FocusId>,
     /// Sole floating UI authority.
     pub overlays: OverlayStack<()>,
     /// Last full-frame bounds for overlay placement.
@@ -46,9 +48,12 @@ impl HostFrame {
             focus_return: None,
         });
         let _ = scene.focus(FocusId::Sidebar);
+        let mut focus = FocusGraph::new();
+        let _ = focus.request_focus(FocusId::Sidebar);
         Self {
             theme,
             scene,
+            focus,
             overlays: OverlayStack::new(),
             frame_bounds: Rect::default(),
         }
@@ -125,14 +130,23 @@ impl HostFrame {
 
     pub(crate) fn reconcile(&mut self) {
         self.scene.reconcile();
+        // Project scene elements into FocusGraph and keep ids aligned.
+        self.focus = FocusGraph::from_interaction(&self.scene);
+        self.focus.sync_from_scene(&self.scene);
+        let _ = self.focus.reconcile();
+        self.focus.apply_to_scene(&mut self.scene);
     }
 
     pub(crate) fn focused(&self) -> Option<FocusId> {
-        self.scene.focused().copied()
+        self.focus
+            .focused()
+            .copied()
+            .or_else(|| self.scene.focused().copied())
     }
 
     pub(crate) fn focus(&mut self, id: FocusId) {
         let _ = self.scene.focus(id);
+        let _ = self.focus.request_focus(id);
     }
 
     /// Tab / BackTab / Esc through the scene (host keys map here).
@@ -140,6 +154,21 @@ impl HostFrame {
         &mut self,
         key: termrock::input::KeyEvent,
     ) -> termrock::interaction::InteractionOutcome<FocusId, LayerId, ()> {
+        // Prefer FocusGraph for Tab when it has nodes this frame.
+        if !self.focus.nodes().is_empty() {
+            use termrock::interaction::FocusOutcome;
+            match self.focus.handle_key(key) {
+                FocusOutcome::Changed { from, to } => {
+                    self.focus.apply_to_scene(&mut self.scene);
+                    return termrock::interaction::InteractionOutcome::FocusChanged { from, to };
+                }
+                FocusOutcome::Unchanged => {
+                    return termrock::interaction::InteractionOutcome::Ignored;
+                }
+                FocusOutcome::Ignored => {}
+                _ => {}
+            }
+        }
         self.scene.handle_key_tab_esc(key)
     }
 

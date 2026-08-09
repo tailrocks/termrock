@@ -64,9 +64,10 @@ This supersedes the README line that claimed “no reduced-color or `NO_COLOR` d
 
 1. **Immediate mode:** per-frame registration; no retained widget DOM.
 2. **Semantic intents:** widgets consume `UiIntent` where practical; raw keys map via `default_list_intents` / application keymaps.
-3. **Overlay stack:** `OverlayHost` + `EscCascade` peel one layer; focus scopes restore via `FocusRing`.
-4. **Semantic scene:** `SemanticScene` rebuilds a parented tree each frame (id, parent, role, label, description, state, actions, rect, focusable/disabled) for hit discovery, help, jump, Studio snapshots, and AI-readable UI — without replacing Ratatui or owning focus (`InteractionScene` remains sole input authority). See `semantic-scene.md` / migration `0079`.
-5. **Ownership:** domain state, effects, secrets, and process policy stay application-owned.
+3. **Overlay stack:** `OverlayStack` peels one layer; focus traps restore openers via `FocusGraph` (not public `FocusRing`).
+4. **Semantic scene:** `SemanticScene` rebuilds a parented tree each frame (id, parent, role, label, description, state, actions, rect, focusable/disabled) for hit discovery, help, jump, Studio snapshots, and AI-readable UI — without replacing Ratatui or owning focus (`InteractionScene` remains sole input layer authority). See `semantic-scene.md` / migration `0079`.
+5. **Focus graph:** `FocusGraph` is the sole public focus-graph authority (tab, spatial, zones, traps, history, roving). Collection **selection** stays widget-local. See `focus-graph.md` / migration `0081`.
+6. **Ownership:** domain state, effects, secrets, and process policy stay application-owned.
 
 ## Forward-only API
 
