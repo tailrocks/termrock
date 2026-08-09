@@ -220,14 +220,14 @@ impl<Id: Clone + Eq, ScopeId: Clone + Eq> FocusRing<Id, ScopeId> {
             return;
         }
         modals.pop();
-        self.pop_scope();
+        let _ = self.pop_scope();
     }
 
     /// Clears the full modal chain and restores the root opener atomically.
     pub fn clear_modals<M>(&mut self, modals: &mut ModalStack<M>) {
         modals.clear_chain();
         while self.scopes.len() > 1 {
-            self.pop_scope();
+            let _ = self.pop_scope();
         }
     }
 
