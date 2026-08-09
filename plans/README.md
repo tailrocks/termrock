@@ -10,6 +10,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/architecture-foundation.md`](../docs/design/architecture-foundation.md) | Hybrid kernel + progressive capability (0031) |
 | [`docs/design/shadcn-quality-roadmap.md`](../docs/design/shadcn-quality-roadmap.md) | Full R1–R8 recommendations |
 | [`docs/design/terminal-design-system.md`](../docs/design/terminal-design-system.md) | Full token + recipe system (DesignSystem) |
+| [`docs/design/phosphor-obsidian-visual-direction.md`](../docs/design/phosphor-obsidian-visual-direction.md) | Visual audit + Phosphor Obsidian paint direction |
 | [`docs/design/product-audit.md`](../docs/design/product-audit.md) | Product/architecture audit |
 | [`docs/design/component-anatomy-spec.md`](../docs/design/component-anatomy-spec.md) | Component anatomy/behavior/state catalog |
 | [`docs/design/component-prompt-library.md`](../docs/design/component-prompt-library.md) | **164 agent prompts** (global contract + per-component tasks) |
