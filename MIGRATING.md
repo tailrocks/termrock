@@ -56,6 +56,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0040 | `v0.12.0` | [Agent Workbench pattern](migrations/0040-v0.12.0-agent-workbench.md) |
 | 0041 | `v0.12.0` | [Design inspector](migrations/0041-v0.12.0-design-inspector.md) |
 | 0042 | `v0.12.0` | [Capability preview host](migrations/0042-v0.12.0-capability-preview-host.md) |
+| 0043 | `v0.12.0` | [Unified OverlayStack](migrations/0043-v0.12.0-overlay-stack.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -54,17 +54,25 @@ pub use agent_blocks::{
 };
 pub use charts::{BarDatum, BarSeries, MeterSegment, SegmentedMeter, Sparkline};
 pub use code_block::{CodeBlock, PlainSyntax, SyntaxHighlighter};
-pub use command_palette::{CommandPalette, CommandPaletteOutcome, CommandPaletteState};
+pub use command_palette::{
+    COMMAND_PALETTE_OVERLAY_ID, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
+    CommandPaletteState, dismiss_command_palette_overlay, open_command_palette_overlay,
+    place_command_palette,
+};
 pub use completion_menu::{
-    CompletionCandidate, CompletionMenu, CompletionMenuOutcome, CompletionMenuSize,
-    CompletionMenuState, place_completion_menu,
+    COMPLETION_OVERLAY_ID, CompletionCandidate, CompletionMenu, CompletionMenuOutcome,
+    CompletionMenuSize, CompletionMenuState, dismiss_completion_overlay, open_completion_overlay,
+    place_completion_menu,
 };
 pub use composed_row::{ComposedRow, ComposedRowParts};
 pub use design_inspector::{DesignInspector, DesignInspectorFrame, InspectorPanel};
 pub use detail_table::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState,
 };
-pub use dialog::{Backdrop, ChoiceDialog, ChoiceDialogState, Dialog, MessageDialog};
+pub use dialog::{
+    Backdrop, ChoiceDialog, ChoiceDialogState, DIALOG_OVERLAY_ID, Dialog, DialogSize, MessageDialog,
+    dismiss_dialog_overlay, open_alert_dialog_overlay, open_dialog_overlay, place_dialog,
+};
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{Form, FormField, FormFieldRegion, FormOutcome, FormSection, FormState};
 pub use hint_bar::{

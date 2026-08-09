@@ -9,7 +9,10 @@ use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::{HitRegion, Outcome},
+    interaction::{
+        HitRegion, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
+        OverlayStack, Outcome, place_overlay,
+    },
     style::{Density, DesignTokens, Theme},
 };
 
@@ -17,6 +20,84 @@ use super::{
     Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel,
     PanelEmphasis,
 };
+
+/// Default overlay id for a modal dialog on an [`OverlayStack`].
+pub const DIALOG_OVERLAY_ID: &str = "termrock.dialog";
+
+/// Preferred dialog size before clamp / narrow promotion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DialogSize {
+    /// Preferred width in cells.
+    pub width: u16,
+    /// Preferred height in rows.
+    pub height: u16,
+}
+
+impl Default for DialogSize {
+    fn default() -> Self {
+        Self {
+            width: 48,
+            height: 12,
+        }
+    }
+}
+
+impl From<DialogSize> for OverlaySize {
+    fn from(value: DialogSize) -> Self {
+        OverlaySize::dialog(value.width, value.height)
+    }
+}
+
+/// Centered dialog rectangle using [`OverlayKind::Dialog`] policy.
+#[must_use]
+pub fn place_dialog(bounds: Rect, preferred: DialogSize) -> Rect {
+    if bounds.is_empty() || preferred.width == 0 || preferred.height == 0 {
+        return Rect::default();
+    }
+    place_overlay(
+        bounds,
+        None,
+        OverlaySize::from(preferred),
+        OverlayPolicy::for_kind(OverlayKind::Dialog),
+    )
+}
+
+/// Opens (or replaces) a dismissible dialog overlay.
+pub fn open_dialog_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    preferred: DialogSize,
+    opener_focus: Option<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.open(
+        bounds,
+        OverlaySpec::dialog(DIALOG_OVERLAY_ID, OverlaySize::from(preferred), opener_focus),
+    )
+}
+
+/// Opens an alert dialog that traps Esc until an explicit action.
+pub fn open_alert_dialog_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    preferred: DialogSize,
+    opener_focus: Option<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.open(
+        bounds,
+        OverlaySpec::alert_dialog(
+            DIALOG_OVERLAY_ID,
+            OverlaySize::from(preferred),
+            opener_focus,
+        ),
+    )
+}
+
+/// Dismisses the default dialog overlay when present.
+pub fn dismiss_dialog_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.dismiss(&OverlayId::from_static(DIALOG_OVERLAY_ID))
+}
 
 #[derive(Debug, Clone, Copy)]
 /// A themed fill painted behind modal content.
@@ -83,7 +164,10 @@ mod backdrop_tests {
     use super::*;
     use ratatui_core::{layout::Position, widgets::StatefulWidget};
 
-    use crate::input::KeyModifiers;
+    use crate::{
+        input::KeyModifiers,
+        interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlayStack},
+    };
 
     #[test]
     fn default_backdrop_uses_terminal_background() {
@@ -91,6 +175,63 @@ mod backdrop_tests {
         assert_eq!(backdrop.symbol, ' ');
         assert_eq!(backdrop.style.fg, Some(Color::Reset));
         assert_eq!(backdrop.style.bg, Some(Color::Reset));
+    }
+
+    #[test]
+    fn dialog_opens_on_overlay_stack_with_opener_restore() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<&'static str>::new();
+        let out = open_dialog_overlay(
+            &mut stack,
+            bounds,
+            DialogSize {
+                width: 40,
+                height: 10,
+            },
+            Some("trigger"),
+        );
+        assert!(matches!(out, OverlayOutcome::Opened { .. }));
+        assert_eq!(stack.top().unwrap().kind, OverlayKind::Dialog);
+        let placed = place_dialog(
+            bounds,
+            DialogSize {
+                width: 40,
+                height: 10,
+            },
+        );
+        assert_eq!(stack.top().unwrap().rect, placed);
+        // Outside click is trapped for dialogs
+        assert_eq!(
+            stack.handle_outside_click(Position::new(0, 0)),
+            OverlayOutcome::Ignored
+        );
+        assert!(matches!(
+            stack.handle_escape(),
+            OverlayOutcome::Dismissed {
+                focus: Some("trigger"),
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn alert_dialog_traps_escape() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<()>::new();
+        let _ = open_alert_dialog_overlay(&mut stack, bounds, DialogSize::default(), None);
+        assert_eq!(stack.handle_escape(), OverlayOutcome::Ignored);
+        assert!(stack.contains(&OverlayId::from_static(DIALOG_OVERLAY_ID)));
+        let _ = dismiss_dialog_overlay(&mut stack);
+        assert!(stack.is_empty());
+    }
+
+    #[test]
+    fn dialog_narrow_promotes_fullscreen() {
+        let bounds = Rect::new(0, 0, 32, 10);
+        let mut stack = OverlayStack::<()>::new();
+        let _ = open_dialog_overlay(&mut stack, bounds, DialogSize::default(), None);
+        assert!(stack.top().unwrap().fullscreen_promoted);
+        assert_eq!(stack.top().unwrap().rect, bounds);
     }
 
     #[test]

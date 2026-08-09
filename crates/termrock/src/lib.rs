@@ -20,10 +20,12 @@ pub mod widgets;
 pub mod crossterm;
 
 pub use interaction::{
-    InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
-    LayerKind, NavigationMove, PageMove, SceneError, SemanticElement, SemanticRole, SemanticScene,
-    UiIntent, default_list_intent, default_table_intent, default_tree_intent,
-    dispatch_keymap_action,
+    BackdropPolicy, InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene,
+    LayerDismissPolicy, LayerKind, NarrowFallback, NavigationMove, OverlayEntry, OverlayId,
+    OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove,
+    PlacementPrefer, SceneError, SemanticElement, SemanticRole, SemanticScene, UiIntent,
+    default_list_intent, default_table_intent, default_tree_intent, dispatch_keymap_action,
+    place_overlay,
 };
 pub use style::{
     Appearance, AppearanceThemeMap, CapabilityPreviewHost, ColorCapability, Density, DesignSystem,

@@ -7,11 +7,12 @@ mod keymap_bridge;
 mod modal;
 mod overlay;
 mod overlay_controller;
+mod overlay_stack;
 mod scene;
 
 // FocusRing remains for lookbook until fully migrated onto InteractionScene.
 // EscCascade / OverlayController / OverlayHost are crate-private; use
-// InteractionScene as the single public authority.
+// InteractionScene + OverlayStack as the public authorities.
 pub use focus::{FocusOutcome, FocusRing, FocusTarget};
 pub use intent::{
     NavigationMove, PageMove, UiIntent, default_list_intent, default_table_intent,
@@ -19,6 +20,10 @@ pub use intent::{
 };
 pub use keymap_bridge::dispatch_keymap_action;
 pub use modal::{ModalClickResult, ModalStack, classify_click, render_backdrop};
+pub use overlay_stack::{
+    BackdropPolicy, NarrowFallback, OverlayEntry, OverlayId, OverlayKind, OverlayOutcome,
+    OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, place_overlay,
+};
 pub use scene::{
     InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
     LayerKind, SceneError, SemanticElement, SemanticRole, SemanticScene,

@@ -14,6 +14,10 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    interaction::{
+        OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
+        place_overlay,
+    },
     style::{Role, Theme},
     text::{display_cols, take_display_cols},
 };
@@ -396,96 +400,63 @@ impl Default for CompletionMenuSize {
     }
 }
 
+impl From<CompletionMenuSize> for OverlaySize {
+    fn from(value: CompletionMenuSize) -> Self {
+        Self {
+            width: value.width,
+            height: value.height,
+            min_width: 8,
+            min_height: 1,
+            max_width: 0,
+            max_height: 0,
+        }
+    }
+}
+
+/// Default stable overlay id for a completion menu open on an [`OverlayStack`].
+pub const COMPLETION_OVERLAY_ID: &str = "termrock.completion";
+
 /// Compute a menu rectangle that never covers the anchor cell and stays inside
 /// `bounds`. Prefers below-right of the anchor; flips above or left when needed.
+///
+/// Placement is owned by [`place_overlay`] with [`OverlayKind::Completion`] policy.
 #[must_use]
 pub fn place_completion_menu(bounds: Rect, anchor: Rect, preferred: CompletionMenuSize) -> Rect {
     if bounds.is_empty() || preferred.width == 0 || preferred.height == 0 {
         return Rect::default();
     }
-    let width = preferred.width.min(bounds.width).max(1);
-    let height = preferred.height.min(bounds.height).max(1);
-
-    // Prefer below the anchor row.
-    let below_y = anchor.y.saturating_add(1);
-    let space_below = bounds
-        .y
-        .saturating_add(bounds.height)
-        .saturating_sub(below_y);
-    let above_y_end = anchor.y;
-    let space_above = above_y_end.saturating_sub(bounds.y);
-
-    let y = if space_below >= height {
-        below_y
-    } else if space_above >= height {
-        above_y_end.saturating_sub(height)
-    } else if space_below >= space_above {
-        below_y.min(
-            bounds
-                .y
-                .saturating_add(bounds.height)
-                .saturating_sub(height),
-        )
-    } else {
-        bounds.y
-    };
-
-    // Prefer aligned to anchor.x; flip left if overflowing right edge.
-    let right_limit = bounds.x.saturating_add(bounds.width);
-    let x = if anchor.x.saturating_add(width) <= right_limit {
-        anchor.x.max(bounds.x)
-    } else {
-        right_limit.saturating_sub(width).max(bounds.x)
-    };
-
-    // Final clamp inside bounds.
-    let x = x.clamp(bounds.x, right_limit.saturating_sub(width));
-    let y = y.clamp(
-        bounds.y,
-        bounds
-            .y
-            .saturating_add(bounds.height)
-            .saturating_sub(height),
-    );
-    let rect = Rect::new(x, y, width, height);
-
-    // Never cover the anchor cell: if still overlapping, shift vertically.
-    if rect_intersects(rect, anchor) {
-        if anchor.y > bounds.y {
-            let flipped = Rect::new(
-                rect.x,
-                anchor.y.saturating_sub(height).max(bounds.y),
-                width,
-                height,
-            );
-            if !rect_intersects(flipped, anchor) {
-                return flipped;
-            }
-        }
-        let pushed = Rect::new(
-            rect.x,
-            anchor.y.saturating_add(1).min(
-                bounds
-                    .y
-                    .saturating_add(bounds.height)
-                    .saturating_sub(height),
-            ),
-            width,
-            height,
-        );
-        if !rect_intersects(pushed, anchor) {
-            return pushed;
-        }
-    }
-    rect
+    place_overlay(
+        bounds,
+        Some(anchor),
+        OverlaySize::from(preferred),
+        crate::interaction::OverlayPolicy::for_kind(OverlayKind::Completion),
+    )
 }
 
-fn rect_intersects(a: Rect, b: Rect) -> bool {
-    let a_x2 = a.x.saturating_add(a.width);
-    let a_y2 = a.y.saturating_add(a.height);
-    let b_x2 = b.x.saturating_add(b.width);
-    let b_y2 = b.y.saturating_add(b.height);
-    a.x < b_x2 && b.x < a_x2 && a.y < b_y2 && b.y < a_y2
+/// Opens (or replaces) a completion overlay on `stack` and returns its rect.
+pub fn open_completion_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    anchor: Rect,
+    preferred: CompletionMenuSize,
+    opener_focus: Option<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.open(
+        bounds,
+        OverlaySpec::completion(
+            COMPLETION_OVERLAY_ID,
+            anchor,
+            OverlaySize::from(preferred),
+            opener_focus,
+        ),
+    )
+}
+
+/// Dismisses the default completion overlay when present.
+pub fn dismiss_completion_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.dismiss(&OverlayId::from_static(COMPLETION_OVERLAY_ID))
 }
 
 /// Popup completion list widget.
@@ -704,10 +675,46 @@ mod tests {
     use crate::input::KeyModifiers;
     use ratatui_core::layout::Rect;
 
+    fn rect_intersects(a: Rect, b: Rect) -> bool {
+        let a_x2 = a.x.saturating_add(a.width);
+        let a_y2 = a.y.saturating_add(a.height);
+        let b_x2 = b.x.saturating_add(b.width);
+        let b_y2 = b.y.saturating_add(b.height);
+        a.x < b_x2 && b.x < a_x2 && a.y < b_y2 && b.y < a_y2
+    }
+
     fn candidates(ids: &[&'static str]) -> Vec<CompletionCandidate<'static, &'static str>> {
         ids.iter()
             .map(|id| CompletionCandidate::new(*id, id))
             .collect()
+    }
+
+    #[test]
+    fn open_on_overlay_stack_and_dismiss() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let anchor = Rect::new(10, 5, 1, 1);
+        let mut stack = OverlayStack::<&'static str>::new();
+        let out = open_completion_overlay(
+            &mut stack,
+            bounds,
+            anchor,
+            CompletionMenuSize {
+                width: 20,
+                height: 6,
+            },
+            Some("editor"),
+        );
+        assert!(matches!(out, OverlayOutcome::Opened { .. }));
+        assert_eq!(stack.top().unwrap().kind, OverlayKind::Completion);
+        let rect = stack.top().unwrap().rect;
+        assert!(!rect_intersects(rect, anchor));
+        assert!(matches!(
+            dismiss_completion_overlay(&mut stack),
+            OverlayOutcome::Dismissed {
+                focus: Some("editor"),
+                ..
+            }
+        ));
     }
 
     #[test]
