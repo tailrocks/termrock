@@ -22,7 +22,8 @@ use termrock::{
         Action, ActionBar, ActionBarState, ActionLink, Anchor, BUILTIN_THEME_PRESETS, Backdrop,
         Badge, Banner,
         BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
-        CheckboxState, ChoiceDialog, ChoiceDialogState, CodeBlock, Column, ColumnWidth,
+        CheckboxState, ChoiceDialog, ChoiceDialogState, CodeBlock, CodeBlockState, CodeHighlight,
+        CodeHighlightKind, CodeWrap, Column, ColumnWidth,
         CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
         CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
@@ -1825,10 +1826,46 @@ pub(crate) fn stories() -> Vec<Story> {
             "code-block/basic",
             "Code block",
             "CodeBlock",
-            "Source listing with line numbers.",
+            "Source listing with line numbers, path meta, and role syntax.",
+            48,
+            6,
+            code_block,
+        ),
+        Story::new(
+            "code-block/no-color",
+            "CodeBlock no-color",
+            "CodeBlock",
+            "Monochrome syntax fallback — bold/dim/underline roles.",
+            48,
+            6,
+            code_block_no_color_story,
+        ),
+        Story::new(
+            "code-block/streaming",
+            "CodeBlock streaming",
+            "CodeBlock",
+            "Unfinished fence with streaming cue.",
             40,
             5,
-            code_block,
+            code_block_streaming_story,
+        ),
+        Story::new(
+            "code-block/wrap",
+            "CodeBlock wrap",
+            "CodeBlock",
+            "Soft-wrap policy for long lines.",
+            28,
+            6,
+            code_block_wrap_story,
+        ),
+        Story::new(
+            "code-block/highlights",
+            "CodeBlock highlights",
+            "CodeBlock",
+            "Diagnostic / selection highlight ranges and gutter marks.",
+            48,
+            6,
+            code_block_highlights_story,
         ),
         Story::new(
             "markdown-view/basic",
@@ -8196,13 +8233,71 @@ fn command_palette_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn code_block(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::RoleTokenSyntax;
     let lines = ["fn main() {", "    println!(\"hi\");", "}"];
-    frame.render_widget(
-        CodeBlock::new(&lines, system)
-            .language("rust")
-            .line_numbers(true),
-        area,
-    );
+    let hi = RoleTokenSyntax::rust(system);
+    let mut state = CodeBlockState::new();
+    let _ = CodeBlock::new(&lines, system)
+        .language("rust")
+        .path("src/main.rs")
+        .line_numbers(true)
+        .highlighter(&hi)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn code_block_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::RoleTokenSyntax;
+    let system = system.clone().no_color();
+    let lines = ["fn main() {", "    // comment", "    let x = 1;", "}"];
+    let hi = RoleTokenSyntax::rust(&system);
+    let mut state = CodeBlockState::new();
+    let _ = CodeBlock::new(&lines, &system)
+        .language("rust")
+        .line_numbers(true)
+        .highlighter(&hi)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn code_block_streaming_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let lines = ["```rust", "fn partial() {"];
+    let mut state = CodeBlockState::new();
+    let _ = CodeBlock::new(&lines, system)
+        .language("rust")
+        .streaming(true)
+        .line_numbers(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn code_block_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let lines = [
+        "let very_long_identifier_that_should_wrap_when_narrow = 42;",
+    ];
+    let mut state = CodeBlockState::new();
+    let _ = CodeBlock::new(&lines, system)
+        .wrap(CodeWrap::Wrap)
+        .line_numbers(true)
+        .language("rust")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn code_block_highlights_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{CodeGutterMark, RoleTokenSyntax};
+    let lines = ["ok line", "error here", "ok line"];
+    let marks = [CodeGutterMark::new(1, '!', Role::Danger)];
+    let highs = [
+        CodeHighlight::line(1, CodeHighlightKind::Diagnostic),
+        CodeHighlight::line(0, CodeHighlightKind::Selection),
+    ];
+    let hi = RoleTokenSyntax::rust(system);
+    let mut state = CodeBlockState::new();
+    state.set_focused(true);
+    state.set_cursor_line(Some(1));
+    let _ = CodeBlock::new(&lines, system)
+        .line_numbers(true)
+        .highlighter(&hi)
+        .gutter_marks(&marks)
+        .highlights(&highs)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn markdown_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

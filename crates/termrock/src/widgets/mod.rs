@@ -82,7 +82,11 @@ pub use blocks::{
     SettingsShellOutcome, SettingsShellState,
 };
 pub use charts::{BarDatum, BarSeries, MeterSegment, SegmentedMeter, Sparkline};
-pub use code_block::{CodeBlock, PlainSyntax, SyntaxHighlighter};
+pub use code_block::{
+    AnsiSyntax, CodeBlock, CodeBlockOutcome, CodeBlockParts, CodeBlockState, CodeGutterMark,
+    CodeHighlight, CodeHighlightKind, CodeSourceMeta, CodeWrap, ControlRender, PlainSyntax,
+    RoleTokenSyntax, SyntaxHighlighter, TokenSyntax, prepare_code_display, syntax_role_style,
+};
 pub use command_palette::{
     COMMAND_PALETTE_OVERLAY_ID, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
     CommandPaletteState, dismiss_command_palette_overlay, open_command_palette_overlay,

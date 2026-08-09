@@ -135,6 +135,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0119 | `v0.13.0` | [Tag & Chip](migrations/0119-v0.13.0-tag-chip.md) |
 | 0120 | `v0.13.0` | [Kbd & ShortcutHint](migrations/0120-v0.13.0-kbd-shortcut-hint.md) |
 | 0121 | `v0.13.0` | [Link & ActionLink](migrations/0121-v0.13.0-link-action-link.md) |
+| 0122 | `v0.13.0` | [CodeBlock premium](migrations/0122-v0.13.0-code-block.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

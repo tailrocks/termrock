@@ -14828,6 +14828,163 @@ pub unsafe fn termrock::widgets::ChipOutcome<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ChipOutcome<Id>
 pub fn termrock::widgets::ChipOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChipOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::CodeBlockOutcome
+pub termrock::widgets::CodeBlockOutcome::Copy
+pub termrock::widgets::CodeBlockOutcome::Copy::text: alloc::string::String
+pub termrock::widgets::CodeBlockOutcome::CursorMoved
+pub termrock::widgets::CodeBlockOutcome::CursorMoved::line: usize
+pub termrock::widgets::CodeBlockOutcome::Ignored
+pub termrock::widgets::CodeBlockOutcome::LineActivated
+pub termrock::widgets::CodeBlockOutcome::LineActivated::line: usize
+pub termrock::widgets::CodeBlockOutcome::Scrolled
+pub termrock::widgets::CodeBlockOutcome::Scrolled::scroll_x: u16
+pub termrock::widgets::CodeBlockOutcome::Scrolled::scroll_y: usize
+pub termrock::widgets::CodeBlockOutcome::SelectionChanged
+pub termrock::widgets::CodeBlockOutcome::SelectionChanged::range: (usize, usize)
+impl core::clone::Clone for termrock::widgets::CodeBlockOutcome
+pub fn termrock::widgets::CodeBlockOutcome::clone(&self) -> termrock::widgets::CodeBlockOutcome
+impl core::cmp::Eq for termrock::widgets::CodeBlockOutcome
+impl core::cmp::PartialEq for termrock::widgets::CodeBlockOutcome
+pub fn termrock::widgets::CodeBlockOutcome::eq(&self, &termrock::widgets::CodeBlockOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::CodeBlockOutcome
+pub fn termrock::widgets::CodeBlockOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CodeBlockOutcome
+impl core::marker::Freeze for termrock::widgets::CodeBlockOutcome
+impl core::marker::Send for termrock::widgets::CodeBlockOutcome
+impl core::marker::Sync for termrock::widgets::CodeBlockOutcome
+impl core::marker::Unpin for termrock::widgets::CodeBlockOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::CodeBlockOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CodeBlockOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CodeBlockOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CodeBlockOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CodeBlockOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::CodeBlockOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CodeBlockOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::CodeBlockOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::CodeBlockOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CodeBlockOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CodeBlockOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CodeBlockOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CodeBlockOutcome where T: core::clone::Clone
+pub type termrock::widgets::CodeBlockOutcome::Owned = T
+pub fn termrock::widgets::CodeBlockOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::CodeBlockOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CodeBlockOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CodeBlockOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CodeBlockOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CodeBlockOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CodeBlockOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CodeBlockOutcome
+pub fn termrock::widgets::CodeBlockOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CodeBlockOutcome
+#[non_exhaustive] pub enum termrock::widgets::CodeHighlightKind
+pub termrock::widgets::CodeHighlightKind::Diagnostic
+pub termrock::widgets::CodeHighlightKind::DiffAdd
+pub termrock::widgets::CodeHighlightKind::DiffRemove
+pub termrock::widgets::CodeHighlightKind::Emphasis
+pub termrock::widgets::CodeHighlightKind::Search
+pub termrock::widgets::CodeHighlightKind::Selection
+impl termrock::widgets::CodeHighlightKind
+pub const fn termrock::widgets::CodeHighlightKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::CodeHighlightKind
+pub fn termrock::widgets::CodeHighlightKind::clone(&self) -> termrock::widgets::CodeHighlightKind
+impl core::cmp::Eq for termrock::widgets::CodeHighlightKind
+impl core::cmp::PartialEq for termrock::widgets::CodeHighlightKind
+pub fn termrock::widgets::CodeHighlightKind::eq(&self, &termrock::widgets::CodeHighlightKind) -> bool
+impl core::default::Default for termrock::widgets::CodeHighlightKind
+pub fn termrock::widgets::CodeHighlightKind::default() -> termrock::widgets::CodeHighlightKind
+impl core::fmt::Debug for termrock::widgets::CodeHighlightKind
+pub fn termrock::widgets::CodeHighlightKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CodeHighlightKind
+pub fn termrock::widgets::CodeHighlightKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CodeHighlightKind
+impl core::marker::StructuralPartialEq for termrock::widgets::CodeHighlightKind
+impl core::marker::Freeze for termrock::widgets::CodeHighlightKind
+impl core::marker::Send for termrock::widgets::CodeHighlightKind
+impl core::marker::Sync for termrock::widgets::CodeHighlightKind
+impl core::marker::Unpin for termrock::widgets::CodeHighlightKind
+impl core::marker::UnsafeUnpin for termrock::widgets::CodeHighlightKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CodeHighlightKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CodeHighlightKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CodeHighlightKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CodeHighlightKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CodeHighlightKind where U: core::convert::From<T>
+pub fn termrock::widgets::CodeHighlightKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CodeHighlightKind where U: core::convert::Into<T>
+pub type termrock::widgets::CodeHighlightKind::Error = core::convert::Infallible
+pub fn termrock::widgets::CodeHighlightKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CodeHighlightKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CodeHighlightKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CodeHighlightKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CodeHighlightKind where T: core::clone::Clone
+pub type termrock::widgets::CodeHighlightKind::Owned = T
+pub fn termrock::widgets::CodeHighlightKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::CodeHighlightKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CodeHighlightKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CodeHighlightKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CodeHighlightKind where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeHighlightKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CodeHighlightKind where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeHighlightKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CodeHighlightKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CodeHighlightKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CodeHighlightKind
+pub fn termrock::widgets::CodeHighlightKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CodeHighlightKind
+#[non_exhaustive] pub enum termrock::widgets::CodeWrap
+pub termrock::widgets::CodeWrap::Clip
+pub termrock::widgets::CodeWrap::Wrap
+impl termrock::widgets::CodeWrap
+pub const fn termrock::widgets::CodeWrap::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::CodeWrap
+pub fn termrock::widgets::CodeWrap::clone(&self) -> termrock::widgets::CodeWrap
+impl core::cmp::Eq for termrock::widgets::CodeWrap
+impl core::cmp::PartialEq for termrock::widgets::CodeWrap
+pub fn termrock::widgets::CodeWrap::eq(&self, &termrock::widgets::CodeWrap) -> bool
+impl core::default::Default for termrock::widgets::CodeWrap
+pub fn termrock::widgets::CodeWrap::default() -> termrock::widgets::CodeWrap
+impl core::fmt::Debug for termrock::widgets::CodeWrap
+pub fn termrock::widgets::CodeWrap::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CodeWrap
+pub fn termrock::widgets::CodeWrap::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CodeWrap
+impl core::marker::StructuralPartialEq for termrock::widgets::CodeWrap
+impl core::marker::Freeze for termrock::widgets::CodeWrap
+impl core::marker::Send for termrock::widgets::CodeWrap
+impl core::marker::Sync for termrock::widgets::CodeWrap
+impl core::marker::Unpin for termrock::widgets::CodeWrap
+impl core::marker::UnsafeUnpin for termrock::widgets::CodeWrap
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CodeWrap
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CodeWrap
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CodeWrap where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CodeWrap::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CodeWrap where U: core::convert::From<T>
+pub fn termrock::widgets::CodeWrap::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CodeWrap where U: core::convert::Into<T>
+pub type termrock::widgets::CodeWrap::Error = core::convert::Infallible
+pub fn termrock::widgets::CodeWrap::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CodeWrap where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CodeWrap::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CodeWrap::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CodeWrap where T: core::clone::Clone
+pub type termrock::widgets::CodeWrap::Owned = T
+pub fn termrock::widgets::CodeWrap::clone_into(&self, &mut T)
+pub fn termrock::widgets::CodeWrap::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CodeWrap where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CodeWrap::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CodeWrap where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeWrap::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CodeWrap where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeWrap::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CodeWrap where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CodeWrap::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CodeWrap
+pub fn termrock::widgets::CodeWrap::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CodeWrap
 #[non_exhaustive] pub enum termrock::widgets::CollapsedContentPolicy
 pub termrock::widgets::CollapsedContentPolicy::KeepMounted
 pub termrock::widgets::CollapsedContentPolicy::Unmount
@@ -15364,6 +15521,57 @@ pub unsafe fn termrock::widgets::ComposerPresentation::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::ComposerPresentation
 pub fn termrock::widgets::ComposerPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ComposerPresentation
+#[non_exhaustive] pub enum termrock::widgets::ControlRender
+pub termrock::widgets::ControlRender::ExpandTabs
+pub termrock::widgets::ControlRender::Placeholder
+pub termrock::widgets::ControlRender::Visible
+impl termrock::widgets::ControlRender
+pub const fn termrock::widgets::ControlRender::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ControlRender
+pub fn termrock::widgets::ControlRender::clone(&self) -> termrock::widgets::ControlRender
+impl core::cmp::Eq for termrock::widgets::ControlRender
+impl core::cmp::PartialEq for termrock::widgets::ControlRender
+pub fn termrock::widgets::ControlRender::eq(&self, &termrock::widgets::ControlRender) -> bool
+impl core::default::Default for termrock::widgets::ControlRender
+pub fn termrock::widgets::ControlRender::default() -> termrock::widgets::ControlRender
+impl core::fmt::Debug for termrock::widgets::ControlRender
+pub fn termrock::widgets::ControlRender::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ControlRender
+pub fn termrock::widgets::ControlRender::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ControlRender
+impl core::marker::StructuralPartialEq for termrock::widgets::ControlRender
+impl core::marker::Freeze for termrock::widgets::ControlRender
+impl core::marker::Send for termrock::widgets::ControlRender
+impl core::marker::Sync for termrock::widgets::ControlRender
+impl core::marker::Unpin for termrock::widgets::ControlRender
+impl core::marker::UnsafeUnpin for termrock::widgets::ControlRender
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ControlRender
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ControlRender
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ControlRender where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ControlRender::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ControlRender where U: core::convert::From<T>
+pub fn termrock::widgets::ControlRender::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ControlRender where U: core::convert::Into<T>
+pub type termrock::widgets::ControlRender::Error = core::convert::Infallible
+pub fn termrock::widgets::ControlRender::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ControlRender where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ControlRender::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ControlRender::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ControlRender where T: core::clone::Clone
+pub type termrock::widgets::ControlRender::Owned = T
+pub fn termrock::widgets::ControlRender::clone_into(&self, &mut T)
+pub fn termrock::widgets::ControlRender::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ControlRender where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ControlRender::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ControlRender where T: ?core::marker::Sized
+pub fn termrock::widgets::ControlRender::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ControlRender where T: ?core::marker::Sized
+pub fn termrock::widgets::ControlRender::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ControlRender where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ControlRender::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ControlRender
+pub fn termrock::widgets::ControlRender::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ControlRender
 #[non_exhaustive] pub enum termrock::widgets::CopyPayload
 pub termrock::widgets::CopyPayload::Cell
 pub termrock::widgets::CopyPayload::Cell::text: alloc::string::String
@@ -22022,6 +22230,46 @@ pub unsafe fn termrock::widgets::AlertState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::AlertState
 pub fn termrock::widgets::AlertState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::AlertState
+pub struct termrock::widgets::AnsiSyntax
+impl core::clone::Clone for termrock::widgets::AnsiSyntax
+pub fn termrock::widgets::AnsiSyntax::clone(&self) -> termrock::widgets::AnsiSyntax
+impl core::default::Default for termrock::widgets::AnsiSyntax
+pub fn termrock::widgets::AnsiSyntax::default() -> termrock::widgets::AnsiSyntax
+impl core::fmt::Debug for termrock::widgets::AnsiSyntax
+pub fn termrock::widgets::AnsiSyntax::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::AnsiSyntax
+impl termrock::widgets::SyntaxHighlighter for termrock::widgets::AnsiSyntax
+pub fn termrock::widgets::AnsiSyntax::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
+impl core::marker::Freeze for termrock::widgets::AnsiSyntax
+impl core::marker::Send for termrock::widgets::AnsiSyntax
+impl core::marker::Sync for termrock::widgets::AnsiSyntax
+impl core::marker::Unpin for termrock::widgets::AnsiSyntax
+impl core::marker::UnsafeUnpin for termrock::widgets::AnsiSyntax
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AnsiSyntax
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AnsiSyntax
+impl<T, U> core::convert::Into<U> for termrock::widgets::AnsiSyntax where U: core::convert::From<T>
+pub fn termrock::widgets::AnsiSyntax::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AnsiSyntax where U: core::convert::Into<T>
+pub type termrock::widgets::AnsiSyntax::Error = core::convert::Infallible
+pub fn termrock::widgets::AnsiSyntax::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AnsiSyntax where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AnsiSyntax::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AnsiSyntax::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AnsiSyntax where T: core::clone::Clone
+pub type termrock::widgets::AnsiSyntax::Owned = T
+pub fn termrock::widgets::AnsiSyntax::clone_into(&self, &mut T)
+pub fn termrock::widgets::AnsiSyntax::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AnsiSyntax where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AnsiSyntax::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AnsiSyntax where T: ?core::marker::Sized
+pub fn termrock::widgets::AnsiSyntax::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AnsiSyntax where T: ?core::marker::Sized
+pub fn termrock::widgets::AnsiSyntax::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AnsiSyntax where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AnsiSyntax::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AnsiSyntax
+pub fn termrock::widgets::AnsiSyntax::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AnsiSyntax
 pub struct termrock::widgets::Backdrop
 impl termrock::widgets::Backdrop
 pub fn termrock::widgets::Backdrop::dim_wash(bool) -> Self
@@ -23272,10 +23520,31 @@ pub fn termrock::widgets::ChordFormat::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChordFormat
 pub struct termrock::widgets::CodeBlock<'a, H: termrock::widgets::SyntaxHighlighter>
 impl<'a, H: termrock::widgets::SyntaxHighlighter> termrock::widgets::CodeBlock<'a, H>
+pub const fn termrock::widgets::CodeBlock<'a, H>::controls(self, termrock::widgets::ControlRender) -> Self
+pub fn termrock::widgets::CodeBlock<'a, H>::copy_range(&self, usize, usize) -> alloc::string::String
+pub fn termrock::widgets::CodeBlock<'a, H>::copy_text(&self, &termrock::widgets::CodeBlockState) -> alloc::string::String
+pub fn termrock::widgets::CodeBlock<'a, H>::document_len(&self) -> usize
 pub const fn termrock::widgets::CodeBlock<'a, H>::first_line(self, usize) -> Self
-pub const fn termrock::widgets::CodeBlock<'a, H>::highlighter(self, &'a H) -> Self
+pub const fn termrock::widgets::CodeBlock<'a, H>::gutter_marks(self, &'a [termrock::widgets::CodeGutterMark]) -> Self
+pub fn termrock::widgets::CodeBlock<'a, H>::handle_intent(&self, &mut termrock::widgets::CodeBlockState, termrock::context::ContextUiIntent, usize) -> termrock::widgets::CodeBlockOutcome
+pub fn termrock::widgets::CodeBlock<'a, H>::handle_key(&self, &mut termrock::widgets::CodeBlockState, termrock::input::KeyEvent) -> termrock::widgets::CodeBlockOutcome
+pub fn termrock::widgets::CodeBlock<'a, H>::handle_key_result(&self, &mut termrock::widgets::CodeBlockState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::CodeBlockOutcome>
+pub fn termrock::widgets::CodeBlock<'a, H>::handle_mouse(&self, &mut termrock::widgets::CodeBlockState, termrock::input::MouseEvent) -> termrock::widgets::CodeBlockOutcome
+pub const fn termrock::widgets::CodeBlock<'a, H>::highlighter<H2: termrock::widgets::SyntaxHighlighter>(self, &'a H2) -> termrock::widgets::CodeBlock<'a, H2>
+pub const fn termrock::widgets::CodeBlock<'a, H>::highlights(self, &'a [termrock::widgets::CodeHighlight]) -> Self
 pub const fn termrock::widgets::CodeBlock<'a, H>::language(self, &'a str) -> Self
+pub fn termrock::widgets::CodeBlock<'a, H>::layout(&self, ratatui_core::layout::rect::Rect, &termrock::widgets::CodeBlockState) -> termrock::widgets::CodeBlockParts
+pub const fn termrock::widgets::CodeBlock<'a, H>::line_base(self, usize) -> Self
 pub const fn termrock::widgets::CodeBlock<'a, H>::line_numbers(self, bool) -> Self
+pub const fn termrock::widgets::CodeBlock<'a, H>::logical_len(self, usize) -> Self
+pub const fn termrock::widgets::CodeBlock<'a, H>::meta(self, termrock::widgets::CodeSourceMeta<'a>) -> Self
+pub fn termrock::widgets::CodeBlock<'a, H>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CodeBlockState) -> termrock::widgets::CodeBlockParts
+pub const fn termrock::widgets::CodeBlock<'a, H>::path(self, &'a str) -> Self
+pub fn termrock::widgets::CodeBlock<'a, H>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::CodeBlockState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::CodeBlock<'a, H>::streaming(self, bool) -> Self
+pub const fn termrock::widgets::CodeBlock<'a, H>::tab_width(self, u8) -> Self
+pub fn termrock::widgets::CodeBlock<'a, H>::window_index(&self, usize) -> core::option::Option<usize>
+pub const fn termrock::widgets::CodeBlock<'a, H>::wrap(self, termrock::widgets::CodeWrap) -> Self
 impl<'a> termrock::widgets::CodeBlock<'a, termrock::widgets::PlainSyntax>
 pub const fn termrock::widgets::CodeBlock<'a, termrock::widgets::PlainSyntax>::new(&'a [&'a str], &'a termrock::style::DesignSystem) -> Self
 impl<'a, H: core::clone::Clone + termrock::widgets::SyntaxHighlighter> core::clone::Clone for termrock::widgets::CodeBlock<'a, H>
@@ -23317,6 +23586,268 @@ pub unsafe fn termrock::widgets::CodeBlock<'a, H>::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::CodeBlock<'a, H>
 pub fn termrock::widgets::CodeBlock<'a, H>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CodeBlock<'a, H>
+pub struct termrock::widgets::CodeBlockParts
+pub termrock::widgets::CodeBlockParts::body: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CodeBlockParts::first_line: usize
+pub termrock::widgets::CodeBlockParts::gutter: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CodeBlockParts::header: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CodeBlockParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CodeBlockParts::streaming: bool
+pub termrock::widgets::CodeBlockParts::visible_lines: usize
+impl core::clone::Clone for termrock::widgets::CodeBlockParts
+pub fn termrock::widgets::CodeBlockParts::clone(&self) -> termrock::widgets::CodeBlockParts
+impl core::cmp::Eq for termrock::widgets::CodeBlockParts
+impl core::cmp::PartialEq for termrock::widgets::CodeBlockParts
+pub fn termrock::widgets::CodeBlockParts::eq(&self, &termrock::widgets::CodeBlockParts) -> bool
+impl core::fmt::Debug for termrock::widgets::CodeBlockParts
+pub fn termrock::widgets::CodeBlockParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CodeBlockParts
+impl core::marker::Freeze for termrock::widgets::CodeBlockParts
+impl core::marker::Send for termrock::widgets::CodeBlockParts
+impl core::marker::Sync for termrock::widgets::CodeBlockParts
+impl core::marker::Unpin for termrock::widgets::CodeBlockParts
+impl core::marker::UnsafeUnpin for termrock::widgets::CodeBlockParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CodeBlockParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CodeBlockParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CodeBlockParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CodeBlockParts where U: core::convert::From<T>
+pub fn termrock::widgets::CodeBlockParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CodeBlockParts where U: core::convert::Into<T>
+pub type termrock::widgets::CodeBlockParts::Error = core::convert::Infallible
+pub fn termrock::widgets::CodeBlockParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CodeBlockParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CodeBlockParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CodeBlockParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CodeBlockParts where T: core::clone::Clone
+pub type termrock::widgets::CodeBlockParts::Owned = T
+pub fn termrock::widgets::CodeBlockParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::CodeBlockParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CodeBlockParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CodeBlockParts where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CodeBlockParts where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CodeBlockParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CodeBlockParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CodeBlockParts
+pub fn termrock::widgets::CodeBlockParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CodeBlockParts
+pub struct termrock::widgets::CodeBlockState
+pub termrock::widgets::CodeBlockState::cursor_line: core::option::Option<usize>
+pub termrock::widgets::CodeBlockState::focused: bool
+pub termrock::widgets::CodeBlockState::hovered_line: core::option::Option<usize>
+pub termrock::widgets::CodeBlockState::parts: core::option::Option<termrock::widgets::CodeBlockParts>
+pub termrock::widgets::CodeBlockState::scroll_x: u16
+pub termrock::widgets::CodeBlockState::scroll_y: usize
+pub termrock::widgets::CodeBlockState::selection: core::option::Option<(usize, usize)>
+impl termrock::widgets::CodeBlockState
+pub fn termrock::widgets::CodeBlockState::clamp(&mut self, usize)
+pub fn termrock::widgets::CodeBlockState::max_scroll_y(&self, usize) -> usize
+pub const fn termrock::widgets::CodeBlockState::new() -> Self
+pub fn termrock::widgets::CodeBlockState::reveal_line(&mut self, usize, usize)
+pub fn termrock::widgets::CodeBlockState::scroll_by_cols(&mut self, i16) -> bool
+pub fn termrock::widgets::CodeBlockState::scroll_by_lines(&mut self, isize, usize) -> bool
+pub const fn termrock::widgets::CodeBlockState::set_cursor_line(&mut self, core::option::Option<usize>)
+pub const fn termrock::widgets::CodeBlockState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::CodeBlockState::set_selection(&mut self, core::option::Option<(usize, usize)>)
+pub const fn termrock::widgets::CodeBlockState::with_scroll_y(self, usize) -> Self
+impl core::clone::Clone for termrock::widgets::CodeBlockState
+pub fn termrock::widgets::CodeBlockState::clone(&self) -> termrock::widgets::CodeBlockState
+impl core::cmp::Eq for termrock::widgets::CodeBlockState
+impl core::cmp::PartialEq for termrock::widgets::CodeBlockState
+pub fn termrock::widgets::CodeBlockState::eq(&self, &termrock::widgets::CodeBlockState) -> bool
+impl core::default::Default for termrock::widgets::CodeBlockState
+pub fn termrock::widgets::CodeBlockState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::CodeBlockState
+pub fn termrock::widgets::CodeBlockState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CodeBlockState
+impl core::marker::Freeze for termrock::widgets::CodeBlockState
+impl core::marker::Send for termrock::widgets::CodeBlockState
+impl core::marker::Sync for termrock::widgets::CodeBlockState
+impl core::marker::Unpin for termrock::widgets::CodeBlockState
+impl core::marker::UnsafeUnpin for termrock::widgets::CodeBlockState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CodeBlockState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CodeBlockState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CodeBlockState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CodeBlockState where U: core::convert::From<T>
+pub fn termrock::widgets::CodeBlockState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CodeBlockState where U: core::convert::Into<T>
+pub type termrock::widgets::CodeBlockState::Error = core::convert::Infallible
+pub fn termrock::widgets::CodeBlockState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CodeBlockState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CodeBlockState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CodeBlockState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CodeBlockState where T: core::clone::Clone
+pub type termrock::widgets::CodeBlockState::Owned = T
+pub fn termrock::widgets::CodeBlockState::clone_into(&self, &mut T)
+pub fn termrock::widgets::CodeBlockState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CodeBlockState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CodeBlockState where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CodeBlockState where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeBlockState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CodeBlockState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CodeBlockState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CodeBlockState
+pub fn termrock::widgets::CodeBlockState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CodeBlockState
+pub struct termrock::widgets::CodeGutterMark
+pub termrock::widgets::CodeGutterMark::glyph: char
+pub termrock::widgets::CodeGutterMark::line: usize
+pub termrock::widgets::CodeGutterMark::role: termrock::style::Role
+impl termrock::widgets::CodeGutterMark
+pub const fn termrock::widgets::CodeGutterMark::new(usize, char, termrock::style::Role) -> Self
+impl core::clone::Clone for termrock::widgets::CodeGutterMark
+pub fn termrock::widgets::CodeGutterMark::clone(&self) -> termrock::widgets::CodeGutterMark
+impl core::cmp::Eq for termrock::widgets::CodeGutterMark
+impl core::cmp::PartialEq for termrock::widgets::CodeGutterMark
+pub fn termrock::widgets::CodeGutterMark::eq(&self, &termrock::widgets::CodeGutterMark) -> bool
+impl core::fmt::Debug for termrock::widgets::CodeGutterMark
+pub fn termrock::widgets::CodeGutterMark::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::CodeGutterMark
+impl core::marker::StructuralPartialEq for termrock::widgets::CodeGutterMark
+impl core::marker::Freeze for termrock::widgets::CodeGutterMark
+impl core::marker::Send for termrock::widgets::CodeGutterMark
+impl core::marker::Sync for termrock::widgets::CodeGutterMark
+impl core::marker::Unpin for termrock::widgets::CodeGutterMark
+impl core::marker::UnsafeUnpin for termrock::widgets::CodeGutterMark
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CodeGutterMark
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CodeGutterMark
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CodeGutterMark where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CodeGutterMark::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CodeGutterMark where U: core::convert::From<T>
+pub fn termrock::widgets::CodeGutterMark::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CodeGutterMark where U: core::convert::Into<T>
+pub type termrock::widgets::CodeGutterMark::Error = core::convert::Infallible
+pub fn termrock::widgets::CodeGutterMark::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CodeGutterMark where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CodeGutterMark::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CodeGutterMark::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CodeGutterMark where T: core::clone::Clone
+pub type termrock::widgets::CodeGutterMark::Owned = T
+pub fn termrock::widgets::CodeGutterMark::clone_into(&self, &mut T)
+pub fn termrock::widgets::CodeGutterMark::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CodeGutterMark where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CodeGutterMark::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CodeGutterMark where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeGutterMark::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CodeGutterMark where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeGutterMark::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CodeGutterMark where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CodeGutterMark::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CodeGutterMark
+pub fn termrock::widgets::CodeGutterMark::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CodeGutterMark
+pub struct termrock::widgets::CodeHighlight
+pub termrock::widgets::CodeHighlight::end_col: core::option::Option<u16>
+pub termrock::widgets::CodeHighlight::kind: termrock::widgets::CodeHighlightKind
+pub termrock::widgets::CodeHighlight::line: usize
+pub termrock::widgets::CodeHighlight::start_col: core::option::Option<u16>
+impl termrock::widgets::CodeHighlight
+pub const fn termrock::widgets::CodeHighlight::line(usize, termrock::widgets::CodeHighlightKind) -> Self
+pub const fn termrock::widgets::CodeHighlight::span(usize, u16, u16, termrock::widgets::CodeHighlightKind) -> Self
+impl core::clone::Clone for termrock::widgets::CodeHighlight
+pub fn termrock::widgets::CodeHighlight::clone(&self) -> termrock::widgets::CodeHighlight
+impl core::cmp::Eq for termrock::widgets::CodeHighlight
+impl core::cmp::PartialEq for termrock::widgets::CodeHighlight
+pub fn termrock::widgets::CodeHighlight::eq(&self, &termrock::widgets::CodeHighlight) -> bool
+impl core::fmt::Debug for termrock::widgets::CodeHighlight
+pub fn termrock::widgets::CodeHighlight::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CodeHighlight
+pub fn termrock::widgets::CodeHighlight::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CodeHighlight
+impl core::marker::StructuralPartialEq for termrock::widgets::CodeHighlight
+impl core::marker::Freeze for termrock::widgets::CodeHighlight
+impl core::marker::Send for termrock::widgets::CodeHighlight
+impl core::marker::Sync for termrock::widgets::CodeHighlight
+impl core::marker::Unpin for termrock::widgets::CodeHighlight
+impl core::marker::UnsafeUnpin for termrock::widgets::CodeHighlight
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CodeHighlight
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CodeHighlight
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CodeHighlight where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CodeHighlight::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CodeHighlight where U: core::convert::From<T>
+pub fn termrock::widgets::CodeHighlight::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CodeHighlight where U: core::convert::Into<T>
+pub type termrock::widgets::CodeHighlight::Error = core::convert::Infallible
+pub fn termrock::widgets::CodeHighlight::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CodeHighlight where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CodeHighlight::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CodeHighlight::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CodeHighlight where T: core::clone::Clone
+pub type termrock::widgets::CodeHighlight::Owned = T
+pub fn termrock::widgets::CodeHighlight::clone_into(&self, &mut T)
+pub fn termrock::widgets::CodeHighlight::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CodeHighlight where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CodeHighlight::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CodeHighlight where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeHighlight::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CodeHighlight where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeHighlight::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CodeHighlight where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CodeHighlight::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CodeHighlight
+pub fn termrock::widgets::CodeHighlight::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CodeHighlight
+pub struct termrock::widgets::CodeSourceMeta<'a>
+pub termrock::widgets::CodeSourceMeta::language: core::option::Option<&'a str>
+pub termrock::widgets::CodeSourceMeta::path: core::option::Option<&'a str>
+pub termrock::widgets::CodeSourceMeta::start_line_number: usize
+impl<'a> termrock::widgets::CodeSourceMeta<'a>
+pub fn termrock::widgets::CodeSourceMeta<'a>::header_text(&self) -> alloc::string::String
+pub const fn termrock::widgets::CodeSourceMeta<'a>::language(&'a str) -> Self
+pub const fn termrock::widgets::CodeSourceMeta<'a>::new() -> Self
+pub const fn termrock::widgets::CodeSourceMeta<'a>::start_line_number(self, usize) -> Self
+pub const fn termrock::widgets::CodeSourceMeta<'a>::with_path(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::CodeSourceMeta<'a>
+pub fn termrock::widgets::CodeSourceMeta<'a>::clone(&self) -> termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::CodeSourceMeta<'a>
+pub fn termrock::widgets::CodeSourceMeta<'a>::eq(&self, &termrock::widgets::CodeSourceMeta<'a>) -> bool
+impl<'a> core::default::Default for termrock::widgets::CodeSourceMeta<'a>
+pub fn termrock::widgets::CodeSourceMeta<'a>::default() -> termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::CodeSourceMeta<'a>
+pub fn termrock::widgets::CodeSourceMeta<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::hash::Hash for termrock::widgets::CodeSourceMeta<'a>
+pub fn termrock::widgets::CodeSourceMeta<'a>::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl<'a> core::marker::Copy for termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::marker::Send for termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::marker::Sync for termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CodeSourceMeta<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::CodeSourceMeta<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CodeSourceMeta<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CodeSourceMeta<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CodeSourceMeta<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::CodeSourceMeta<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CodeSourceMeta<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::CodeSourceMeta<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::CodeSourceMeta<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CodeSourceMeta<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CodeSourceMeta<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CodeSourceMeta<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CodeSourceMeta<'a> where T: core::clone::Clone
+pub type termrock::widgets::CodeSourceMeta<'a>::Owned = T
+pub fn termrock::widgets::CodeSourceMeta<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::CodeSourceMeta<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CodeSourceMeta<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CodeSourceMeta<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CodeSourceMeta<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeSourceMeta<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CodeSourceMeta<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::CodeSourceMeta<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CodeSourceMeta<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CodeSourceMeta<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CodeSourceMeta<'a>
+pub fn termrock::widgets::CodeSourceMeta<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CodeSourceMeta<'a>
 pub struct termrock::widgets::Collapsible<'a>
 impl<'a> termrock::widgets::Collapsible<'a>
 pub const fn termrock::widgets::Collapsible<'a>::content_policy(self, termrock::widgets::CollapsedContentPolicy) -> Self
@@ -29485,7 +30016,7 @@ impl core::fmt::Debug for termrock::widgets::PlainSyntax
 pub fn termrock::widgets::PlainSyntax::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for termrock::widgets::PlainSyntax
 impl termrock::widgets::SyntaxHighlighter for termrock::widgets::PlainSyntax
-pub fn termrock::widgets::PlainSyntax::highlight_line<'a>(&'a self, &'a str, usize) -> alloc::vec::Vec<(&'a str, ratatui_core::style::Style)>
+pub fn termrock::widgets::PlainSyntax::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
 impl core::marker::Freeze for termrock::widgets::PlainSyntax
 impl core::marker::Send for termrock::widgets::PlainSyntax
 impl core::marker::Sync for termrock::widgets::PlainSyntax
@@ -30607,6 +31138,47 @@ pub unsafe fn termrock::widgets::ResourceBrowserState<Id>::clone_to_uninit(&self
 impl<T> core::convert::From<T> for termrock::widgets::ResourceBrowserState<Id>
 pub fn termrock::widgets::ResourceBrowserState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ResourceBrowserState<Id>
+pub struct termrock::widgets::RoleTokenSyntax<'a>
+impl<'a> termrock::widgets::RoleTokenSyntax<'a>
+pub const fn termrock::widgets::RoleTokenSyntax<'a>::new(&'a termrock::style::DesignSystem, core::option::Option<&'a str>, &'a [&'a str]) -> Self
+pub const fn termrock::widgets::RoleTokenSyntax<'a>::rust(&'a termrock::style::DesignSystem) -> Self
+impl termrock::widgets::SyntaxHighlighter for termrock::widgets::RoleTokenSyntax<'_>
+pub fn termrock::widgets::RoleTokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
+impl<'a> core::clone::Clone for termrock::widgets::RoleTokenSyntax<'a>
+pub fn termrock::widgets::RoleTokenSyntax<'a>::clone(&self) -> termrock::widgets::RoleTokenSyntax<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::RoleTokenSyntax<'a>
+pub fn termrock::widgets::RoleTokenSyntax<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::RoleTokenSyntax<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::RoleTokenSyntax<'a>
+impl<'a> core::marker::Send for termrock::widgets::RoleTokenSyntax<'a>
+impl<'a> core::marker::Sync for termrock::widgets::RoleTokenSyntax<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::RoleTokenSyntax<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::RoleTokenSyntax<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RoleTokenSyntax<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::RoleTokenSyntax<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::RoleTokenSyntax<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::RoleTokenSyntax<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RoleTokenSyntax<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::RoleTokenSyntax<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::RoleTokenSyntax<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RoleTokenSyntax<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RoleTokenSyntax<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RoleTokenSyntax<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RoleTokenSyntax<'a> where T: core::clone::Clone
+pub type termrock::widgets::RoleTokenSyntax<'a>::Owned = T
+pub fn termrock::widgets::RoleTokenSyntax<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::RoleTokenSyntax<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RoleTokenSyntax<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RoleTokenSyntax<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RoleTokenSyntax<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::RoleTokenSyntax<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RoleTokenSyntax<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::RoleTokenSyntax<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RoleTokenSyntax<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RoleTokenSyntax<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RoleTokenSyntax<'a>
+pub fn termrock::widgets::RoleTokenSyntax<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RoleTokenSyntax<'a>
 pub struct termrock::widgets::ScrollArea<'a>
 impl<'a> termrock::widgets::ScrollArea<'a>
 pub const fn termrock::widgets::ScrollArea<'a>::bar(self, termrock::widgets::ScrollBarVisibility) -> Self
@@ -34200,6 +34772,48 @@ pub unsafe fn termrock::widgets::TokenStripState<Id>::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::TokenStripState<Id>
 pub fn termrock::widgets::TokenStripState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TokenStripState<Id>
+pub struct termrock::widgets::TokenSyntax<'a>
+impl<'a> termrock::widgets::TokenSyntax<'a>
+pub const fn termrock::widgets::TokenSyntax<'a>::new(core::option::Option<&'a str>, &'a [&'a str]) -> Self
+pub const fn termrock::widgets::TokenSyntax<'a>::rust() -> Self
+pub const fn termrock::widgets::TokenSyntax<'a>::shell() -> Self
+impl termrock::widgets::SyntaxHighlighter for termrock::widgets::TokenSyntax<'_>
+pub fn termrock::widgets::TokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
+impl<'a> core::clone::Clone for termrock::widgets::TokenSyntax<'a>
+pub fn termrock::widgets::TokenSyntax<'a>::clone(&self) -> termrock::widgets::TokenSyntax<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::TokenSyntax<'a>
+pub fn termrock::widgets::TokenSyntax<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::TokenSyntax<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::TokenSyntax<'a>
+impl<'a> core::marker::Send for termrock::widgets::TokenSyntax<'a>
+impl<'a> core::marker::Sync for termrock::widgets::TokenSyntax<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TokenSyntax<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TokenSyntax<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TokenSyntax<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TokenSyntax<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::TokenSyntax<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TokenSyntax<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TokenSyntax<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TokenSyntax<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TokenSyntax<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TokenSyntax<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TokenSyntax<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TokenSyntax<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TokenSyntax<'a> where T: core::clone::Clone
+pub type termrock::widgets::TokenSyntax<'a>::Owned = T
+pub fn termrock::widgets::TokenSyntax<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TokenSyntax<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TokenSyntax<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TokenSyntax<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TokenSyntax<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TokenSyntax<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TokenSyntax<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TokenSyntax<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TokenSyntax<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TokenSyntax<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TokenSyntax<'a>
+pub fn termrock::widgets::TokenSyntax<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TokenSyntax<'a>
 pub struct termrock::widgets::ToolCard<'a>
 impl<'a> termrock::widgets::ToolCard<'a>
 pub const fn termrock::widgets::ToolCard<'a>::detail(self, &'a str) -> Self
@@ -35549,9 +36163,15 @@ pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::TAB_GAP: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str
 pub trait termrock::widgets::SyntaxHighlighter
-pub fn termrock::widgets::SyntaxHighlighter::highlight_line<'a>(&'a self, &'a str, usize) -> alloc::vec::Vec<(&'a str, ratatui_core::style::Style)>
+pub fn termrock::widgets::SyntaxHighlighter::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
+impl termrock::widgets::SyntaxHighlighter for termrock::widgets::AnsiSyntax
+pub fn termrock::widgets::AnsiSyntax::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
 impl termrock::widgets::SyntaxHighlighter for termrock::widgets::PlainSyntax
-pub fn termrock::widgets::PlainSyntax::highlight_line<'a>(&'a self, &'a str, usize) -> alloc::vec::Vec<(&'a str, ratatui_core::style::Style)>
+pub fn termrock::widgets::PlainSyntax::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
+impl termrock::widgets::SyntaxHighlighter for termrock::widgets::RoleTokenSyntax<'_>
+pub fn termrock::widgets::RoleTokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
+impl termrock::widgets::SyntaxHighlighter for termrock::widgets::TokenSyntax<'_>
+pub fn termrock::widgets::TokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
 pub fn termrock::widgets::ascii_ellipsis() -> &'static str
 pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock::interaction::HitRegion<Id>]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone
@@ -35588,6 +36208,7 @@ pub fn termrock::widgets::place_drawer(ratatui_core::layout::rect::Rect, termroc
 pub fn termrock::widgets::place_picker(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::PickerSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_popover(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_tooltip(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::prepare_code_display(&str, usize, termrock::widgets::ControlRender) -> alloc::string::String
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
 pub fn termrock::widgets::remove_label(&str) -> alloc::string::String
@@ -35595,6 +36216,7 @@ pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Fr
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
 pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::widgets::syntax_role_style(&termrock::style::DesignSystem, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::widgets::system_from_preset_id(&str) -> core::option::Option<termrock::style::DesignSystem>
 pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>
 pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<termrock::style::RolePalette>
