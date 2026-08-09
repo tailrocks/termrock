@@ -27,6 +27,11 @@ pub use interaction::{
     default_list_intent, default_table_intent, default_tree_intent, dispatch_keymap_action,
     place_overlay,
 };
+pub use layout::{
+    AdaptiveAnatomy, AnatomyPart, ContentPriority, ContractionStage, OverflowBehavior,
+    ResponsiveSurface, SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER,
+    contract_parts, essential_survives,
+};
 pub use style::{
     Appearance, AppearanceThemeMap, CapabilityPreviewHost, ColorCapability, Density, DesignSystem,
     DesignTokens, GlyphSet, Motion, SelectionChrome, SpacingScale, Theme, theme_for_appearance,

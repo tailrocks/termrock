@@ -1,6 +1,7 @@
 //! Responsive layout specifications and caller-defined bottom slots.
 
 mod dialog;
+mod responsive;
 mod work_surface;
 mod workspace;
 
@@ -8,6 +9,11 @@ use ratatui_core::layout::Rect;
 
 pub use crate::interaction::HitRegion;
 pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
+pub use responsive::{
+    AdaptiveAnatomy, AnatomyPart, ContentPriority, ContractionStage, OverflowBehavior,
+    ResponsiveSurface, SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER,
+    composed_row_anatomy, contract_parts, dialog_anatomy, essential_survives, status_bar_anatomy,
+};
 pub use work_surface::{RegionId, RegionLayout, RegionSize, RegionSpec, SurfaceAxis, WorkSurface};
 pub use workspace::{
     PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,

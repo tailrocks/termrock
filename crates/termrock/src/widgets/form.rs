@@ -9,6 +9,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::HitRegion,
+    layout::ResponsiveSurface,
     scroll::max_offset,
     style::{Role, Theme},
 };
@@ -562,11 +563,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for Form<'_, Id> {
 }
 
 fn columns_for(width: u16) -> u8 {
-    if width
+    // Responsive policy + hard cell floor: two columns only when both allow it.
+    let policy_cols = ResponsiveSurface::Form.form_columns(width);
+    let fits = width
         >= MIN_COLUMN_WIDTH
             .saturating_mul(2)
-            .saturating_add(COLUMN_GAP)
-    {
+            .saturating_add(COLUMN_GAP);
+    if policy_cols >= 2 && fits {
         2
     } else {
         1
