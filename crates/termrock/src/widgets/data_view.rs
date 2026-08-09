@@ -198,20 +198,33 @@ impl VirtualWindow {
     }
 
     /// Inclusive start / exclusive end of visible logical indices.
+    ///
+    /// Prefer [`crate::widgets::Virtualizer`] when you need overscan, sticky
+    /// regions, variable extents, or semantic budgets.
     #[must_use]
     pub const fn visible_range(self) -> (u64, u64) {
-        let start = self.offset;
-        let end = if self.logical_len == 0 {
-            start.saturating_add(self.viewport as u64)
-        } else {
-            let e = start.saturating_add(self.viewport as u64);
-            if e > self.logical_len {
-                self.logical_len
-            } else {
-                e
-            }
-        };
-        (start, end)
+        super::virtualizer::fixed_visible_range(self.offset, self.viewport, self.logical_len)
+    }
+
+    /// Lift into the canonical [`crate::widgets::Virtualizer`] (fixed extent 1).
+    #[must_use]
+    pub fn to_virtualizer(self) -> super::virtualizer::Virtualizer {
+        super::virtualizer::Virtualizer::from_fixed_slots(
+            self.offset,
+            self.viewport,
+            self.logical_len,
+        )
+    }
+
+    /// Project from a fixed-extent virtualizer.
+    #[must_use]
+    pub fn from_virtualizer(v: &super::virtualizer::Virtualizer) -> Self {
+        let (offset, viewport, logical_len) = v.to_fixed_slots();
+        Self {
+            offset,
+            viewport,
+            logical_len,
+        }
     }
 }
 

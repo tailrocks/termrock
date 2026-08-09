@@ -781,6 +781,15 @@ pub(crate) fn stories() -> Vec<Story> {
             scroll_area_follow_story,
         ),
         Story::new(
+            "virtualizer/million-fixed",
+            "Virtualizer 1M fixed slots",
+            "Virtualizer",
+            "O(viewport) window over 1_000_000 logical rows; semantic budget tiny.",
+            48,
+            12,
+            virtualizer_million_story,
+        ),
+        Story::new(
             "capability/color-ladder",
             "Capability color ladder",
             "DesignInspector",
@@ -4084,6 +4093,77 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 
 
+
+fn virtualizer_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        Panel, PanelChrome, StickyRegion, Virtualizer, data_view_bench,
+    };
+
+    let mut v = Virtualizer::fixed(1)
+        .with_len(data_view_bench::ROWS_1M)
+        .with_viewport(area.height.saturating_sub(2).max(1))
+        .with_overscan(3)
+        .with_sticky(StickyRegion {
+            leading: 1,
+            trailing: 0,
+        });
+    v.set_offset(250_000);
+    let slice = v.visible_slice();
+    let semantic = v.semantic_count();
+
+    frame.render_widget(
+        Panel::new(system)
+            .title("Virtualizer · 1M logical · O(viewport)")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    let mut y = inner.y;
+    let meta = format!(
+        "len={} off={} vis={}..{} sem={} (<<1M)",
+        v.logical_len(),
+        v.offset(),
+        slice.start,
+        slice.end,
+        semantic
+    );
+    frame.buffer_mut().set_stringn(
+        inner.x,
+        y,
+        &meta,
+        usize::from(inner.width),
+        system.style(termrock::style::Role::TextMuted),
+    );
+    y = y.saturating_add(1);
+    // Sticky row 0 always in set.
+    frame.buffer_mut().set_stringn(
+        inner.x,
+        y,
+        "★ sticky header (semantic always)",
+        usize::from(inner.width),
+        system.style(termrock::style::Role::TextStrong),
+    );
+    y = y.saturating_add(1);
+    for row in slice.start..slice.end {
+        if y >= inner.bottom() {
+            break;
+        }
+        let line = format!("row {row:>9} · projected only");
+        frame.buffer_mut().set_stringn(
+            inner.x,
+            y,
+            &line,
+            usize::from(inner.width),
+            system.style(termrock::style::Role::Text),
+        );
+        y = y.saturating_add(1);
+    }
+}
 
 fn scroll_area_follow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{

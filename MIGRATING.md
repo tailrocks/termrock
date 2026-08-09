@@ -99,6 +99,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0083 | `v0.13.0` | [CollectionState](migrations/0083-v0.13.0-collection-state.md) |
 | 0084 | `v0.13.0` | [SelectionModel](migrations/0084-v0.13.0-selection-model.md) |
 | 0085 | `v0.13.0` | [ScrollArea](migrations/0085-v0.13.0-scroll-area.md) |
+| 0086 | `v0.13.0` | [Virtualizer](migrations/0086-v0.13.0-virtualizer.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

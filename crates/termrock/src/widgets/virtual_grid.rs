@@ -13,6 +13,7 @@ use crate::{
     },
     style::{DesignSystem, Role, RolePalette},
     text::{display_cols, take_display_cols},
+    widgets::virtualizer::Virtualizer2D,
 };
 
 /// Width policy for one grid column.
@@ -203,13 +204,15 @@ pub struct GridHeaderRegion<ColId> {
 }
 
 /// Interaction and viewport state for [`VirtualGrid`].
+///
+/// Row/column windows use [`Virtualizer2D`] (canonical large-grid math).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VirtualGridState<RowId, ColId> {
     cursor_row: u64,
     cursor_col: usize,
     anchor: Option<(u64, usize)>,
-    first_row: u64,
-    first_col: usize,
+    /// Shared row/col virtualizer (offset, capacity, overscan, anchors).
+    virt: Virtualizer2D,
     column_widths: Vec<u16>,
     body_rows: u16,
     body_cols_visible: usize,
@@ -229,8 +232,7 @@ impl<RowId, ColId> Default for VirtualGridState<RowId, ColId> {
             cursor_row: 0,
             cursor_col: 0,
             anchor: None,
-            first_row: 0,
-            first_col: 0,
+            virt: Virtualizer2D::fixed_cells(),
             column_widths: Vec::new(),
             body_rows: 0,
             body_cols_visible: 0,
@@ -250,11 +252,6 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     pub fn new() -> Self {
         Self::default()
     }
-
-    /// Sets keyboard focus ownership.
-
-    /// Returns whether this grid owns keyboard focus.
-    #[must_use]
 
     /// Absolute cursor row.
     #[must_use]
@@ -277,13 +274,24 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     /// First absolute body row in the viewport.
     #[must_use]
     pub const fn first_row(&self) -> u64 {
-        self.first_row
+        self.virt.rows.offset()
     }
 
     /// First column list index in the horizontal viewport.
     #[must_use]
     pub const fn first_col(&self) -> usize {
-        self.first_col
+        self.virt.cols.offset() as usize
+    }
+
+    /// Canonical 2D virtualizer (row/col windows, semantic budget).
+    #[must_use]
+    pub const fn virtualizer(&self) -> &Virtualizer2D {
+        &self.virt
+    }
+
+    /// Mutable virtualizer (overscan, sticky, anchors).
+    pub fn virtualizer_mut(&mut self) -> &mut Virtualizer2D {
+        &mut self.virt
     }
 
     /// Caller-persisted column widths (display columns).
@@ -318,35 +326,41 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     }
 
     fn ensure_cursor_visible(&mut self) {
-        let body = u64::from(self.body_rows.max(1));
-        if self.cursor_row < self.first_row {
-            self.first_row = self.cursor_row;
-        } else if self.cursor_row >= self.first_row.saturating_add(body) {
-            self.first_row = self.cursor_row.saturating_sub(body.saturating_sub(1));
+        let _ = self.virt.rows.reveal(self.cursor_row);
+        if self.body_cols_visible > 0 {
+            let first = self.virt.cols.offset() as usize;
+            if self.cursor_col < first {
+                self.virt.cols.set_offset(self.cursor_col as u64);
+            } else if self.cursor_col >= first.saturating_add(self.body_cols_visible) {
+                let next = self
+                    .cursor_col
+                    .saturating_sub(self.body_cols_visible.saturating_sub(1));
+                self.virt.cols.set_offset(next as u64);
+            }
         }
-        if self.cursor_col < self.first_col {
-            self.first_col = self.cursor_col;
-        } else if self.body_cols_visible > 0
-            && self.cursor_col >= self.first_col.saturating_add(self.body_cols_visible)
-        {
-            self.first_col = self
-                .cursor_col
-                .saturating_sub(self.body_cols_visible.saturating_sub(1));
+        self.sync_virt_bounds();
+    }
+
+    /// Push total_rows/cols into the virtualizer and clamp.
+    fn sync_virt_bounds(&mut self) {
+        let rows = match self.total_rows {
+            Some(total) => total,
+            // Unknown total: enough headroom for cursor + viewport + scroll.
+            None => self
+                .cursor_row
+                .max(self.virt.rows.offset())
+                .saturating_add(u64::from(self.body_rows.max(1)))
+                .saturating_add(4_096),
+        };
+        self.virt.rows.set_len(rows);
+        self.virt.cols.set_len(self.total_cols as u64);
+        if self.body_rows > 0 {
+            self.virt.rows.set_viewport_extent(self.body_rows);
         }
-        if let Some(total) = self.total_rows
-            && total > 0
-        {
-            let max_first = total.saturating_sub(body);
-            self.first_row = self.first_row.min(max_first);
-        }
-        if self.total_cols > 0 {
-            let max_first = self
-                .total_cols
-                .saturating_sub(self.body_cols_visible.max(1));
-            self.first_col = self.first_col.min(max_first);
-        } else {
-            self.first_col = 0;
-        }
+        // Column viewport is in "items" with fixed extent 1; visible count
+        // is refined after width layout — use at least body_cols_visible.
+        let col_vp = self.body_cols_visible.max(1) as u16;
+        self.virt.cols.set_viewport_extent(col_vp);
     }
 
     fn resolve_widths_from_policy(columns: &[GridColumn<'_, ColId>], available: u16) -> Vec<u16> {
@@ -426,7 +440,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         }
         let extend = event.modifiers.contains(KeyModifiers::SHIFT);
         let control = event.modifiers.contains(KeyModifiers::CONTROL);
-        let before = (self.first_row, self.first_col);
+        let before = (self.first_row(), self.first_col());
         // Prefer universal intents for shared collection actions.
         if !control && let Some(intent) = crate::interaction::default_table_intent(event) {
             if matches!(intent, crate::interaction::UiIntent::Activate)
@@ -444,12 +458,12 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
                 KeyCode::Up | KeyCode::Down | KeyCode::Char('k' | 'j')
             ) {
                 let outcome = self.handle_intent(intent, extend, columns, rows);
-                if (self.first_row, self.first_col) != before
+                if (self.first_row(), self.first_col()) != before
                     && !matches!(outcome, VirtualGridOutcome::Ignored)
                 {
                     return VirtualGridOutcome::ViewportChanged {
-                        first_row: self.first_row,
-                        first_col: self.first_col,
+                        first_row: self.first_row(),
+                        first_col: self.first_col(),
                     };
                 }
                 return outcome;
@@ -506,13 +520,13 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
             }
             _ => VirtualGridOutcome::Ignored,
         };
-        if (self.first_row, self.first_col) != before
+        if (self.first_row(), self.first_col()) != before
             && !matches!(outcome, VirtualGridOutcome::Ignored)
         {
             // Prefer viewport notice when the window moved; cursor still valid.
             return VirtualGridOutcome::ViewportChanged {
-                first_row: self.first_row,
-                first_col: self.first_col,
+                first_row: self.first_row(),
+                first_col: self.first_col(),
             };
         }
         outcome
@@ -591,40 +605,35 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         let position = event.position;
         match event.kind {
             MouseEventKind::ScrollDown => {
-                self.first_row = self.first_row.saturating_add(1);
-                if let Some(total) = self.total_rows {
-                    let max_first = total.saturating_sub(u64::from(self.body_rows.max(1)));
-                    self.first_row = self.first_row.min(max_first);
-                }
+                self.sync_virt_bounds();
+                let _ = self.virt.rows.scroll_by(1);
                 VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row,
-                    first_col: self.first_col,
+                    first_row: self.first_row(),
+                    first_col: self.first_col(),
                 }
             }
             MouseEventKind::ScrollUp => {
-                self.first_row = self.first_row.saturating_sub(1);
+                self.sync_virt_bounds();
+                let _ = self.virt.rows.scroll_by(-1);
                 VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row,
-                    first_col: self.first_col,
+                    first_row: self.first_row(),
+                    first_col: self.first_col(),
                 }
             }
             MouseEventKind::ScrollRight => {
-                if self.total_cols > 0 {
-                    let max_first = self
-                        .total_cols
-                        .saturating_sub(self.body_cols_visible.max(1));
-                    self.first_col = (self.first_col + 1).min(max_first);
-                }
+                self.sync_virt_bounds();
+                let _ = self.virt.cols.scroll_by(1);
                 VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row,
-                    first_col: self.first_col,
+                    first_row: self.first_row(),
+                    first_col: self.first_col(),
                 }
             }
             MouseEventKind::ScrollLeft => {
-                self.first_col = self.first_col.saturating_sub(1);
+                self.sync_virt_bounds();
+                let _ = self.virt.cols.scroll_by(-1);
                 VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row,
-                    first_col: self.first_col,
+                    first_row: self.first_row(),
+                    first_col: self.first_col(),
                 }
             }
             MouseEventKind::Down(MouseButton::Left) => {
@@ -903,10 +912,15 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
             );
         }
 
-        // Visible column window from first_col.
+        // Visible column window from virtualizer first_col.
         let mut visible: Vec<(usize, u16)> = Vec::new();
         let mut used = 0u16;
-        for (index, width) in state.column_widths.iter().enumerate().skip(state.first_col) {
+        for (index, width) in state
+            .column_widths
+            .iter()
+            .enumerate()
+            .skip(state.first_col())
+        {
             if used >= content_width {
                 break;
             }
@@ -915,13 +929,19 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
             used = used.saturating_add(take);
         }
         state.body_cols_visible = visible.len();
+        state.sync_virt_bounds();
         state.clamp_cursor();
         state.ensure_cursor_visible();
 
         // Recompute visible after clamp may have changed first_col.
         visible.clear();
         used = 0;
-        for (index, width) in state.column_widths.iter().enumerate().skip(state.first_col) {
+        for (index, width) in state
+            .column_widths
+            .iter()
+            .enumerate()
+            .skip(state.first_col())
+        {
             if used >= content_width {
                 break;
             }
@@ -974,7 +994,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
         let body_y = area.y.saturating_add(header_rows);
         for row_slot in 0..body_height {
             let y = body_y.saturating_add(row_slot);
-            let abs_row = state.first_row.saturating_add(u64::from(row_slot));
+            let abs_row = state.first_row().saturating_add(u64::from(row_slot));
             // Known totals are authoritative: never paint or hit-test past total.
             if let Some(total) = self.total_rows
                 && abs_row >= total
@@ -1202,7 +1222,7 @@ mod tests {
         let rows = [GridRow::new(0, 5, &pending)];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(1_000_000);
         let mut state = VirtualGridState::new();
-        state.first_row = 5;
+        state.virtualizer_mut().rows.set_offset(5);
         let mut terminal = Terminal::new(TestBackend::new(50, 10)).unwrap();
         terminal
             .draw(|frame| {

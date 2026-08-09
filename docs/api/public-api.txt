@@ -37,7 +37,7 @@ warning: unresolved link to `Theme`
     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
 
 warning: `termrock` (lib doc) generated 5 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.70s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.64s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -11180,6 +11180,57 @@ pub unsafe fn termrock::widgets::EditField::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::EditField
 pub fn termrock::widgets::EditField::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::EditField
+#[non_exhaustive] pub enum termrock::widgets::ExtentPolicy
+pub termrock::widgets::ExtentPolicy::Fixed(u16)
+pub termrock::widgets::ExtentPolicy::Variable
+pub termrock::widgets::ExtentPolicy::Variable::estimated: u16
+impl termrock::widgets::ExtentPolicy
+pub const fn termrock::widgets::ExtentPolicy::unit(self) -> u16
+impl core::clone::Clone for termrock::widgets::ExtentPolicy
+pub fn termrock::widgets::ExtentPolicy::clone(&self) -> termrock::widgets::ExtentPolicy
+impl core::cmp::Eq for termrock::widgets::ExtentPolicy
+impl core::cmp::PartialEq for termrock::widgets::ExtentPolicy
+pub fn termrock::widgets::ExtentPolicy::eq(&self, &termrock::widgets::ExtentPolicy) -> bool
+impl core::default::Default for termrock::widgets::ExtentPolicy
+pub fn termrock::widgets::ExtentPolicy::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ExtentPolicy
+pub fn termrock::widgets::ExtentPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ExtentPolicy
+pub fn termrock::widgets::ExtentPolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ExtentPolicy
+impl core::marker::StructuralPartialEq for termrock::widgets::ExtentPolicy
+impl core::marker::Freeze for termrock::widgets::ExtentPolicy
+impl core::marker::Send for termrock::widgets::ExtentPolicy
+impl core::marker::Sync for termrock::widgets::ExtentPolicy
+impl core::marker::Unpin for termrock::widgets::ExtentPolicy
+impl core::marker::UnsafeUnpin for termrock::widgets::ExtentPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ExtentPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ExtentPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ExtentPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ExtentPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ExtentPolicy where U: core::convert::From<T>
+pub fn termrock::widgets::ExtentPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ExtentPolicy where U: core::convert::Into<T>
+pub type termrock::widgets::ExtentPolicy::Error = core::convert::Infallible
+pub fn termrock::widgets::ExtentPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ExtentPolicy where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ExtentPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ExtentPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ExtentPolicy where T: core::clone::Clone
+pub type termrock::widgets::ExtentPolicy::Owned = T
+pub fn termrock::widgets::ExtentPolicy::clone_into(&self, &mut T)
+pub fn termrock::widgets::ExtentPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ExtentPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ExtentPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ExtentPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::ExtentPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ExtentPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::ExtentPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ExtentPolicy where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ExtentPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ExtentPolicy
+pub fn termrock::widgets::ExtentPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ExtentPolicy
 #[non_exhaustive] pub enum termrock::widgets::FormOutcome<Id>
 pub termrock::widgets::FormOutcome::Activated(Id)
 pub termrock::widgets::FormOutcome::Ignored
@@ -22743,6 +22794,54 @@ pub unsafe fn termrock::widgets::StatusSlot<'a, Id>::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::StatusSlot<'a, Id>
 pub fn termrock::widgets::StatusSlot<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StatusSlot<'a, Id>
+pub struct termrock::widgets::StickyRegion
+pub termrock::widgets::StickyRegion::leading: u64
+pub termrock::widgets::StickyRegion::trailing: u64
+impl core::clone::Clone for termrock::widgets::StickyRegion
+pub fn termrock::widgets::StickyRegion::clone(&self) -> termrock::widgets::StickyRegion
+impl core::cmp::Eq for termrock::widgets::StickyRegion
+impl core::cmp::PartialEq for termrock::widgets::StickyRegion
+pub fn termrock::widgets::StickyRegion::eq(&self, &termrock::widgets::StickyRegion) -> bool
+impl core::default::Default for termrock::widgets::StickyRegion
+pub fn termrock::widgets::StickyRegion::default() -> termrock::widgets::StickyRegion
+impl core::fmt::Debug for termrock::widgets::StickyRegion
+pub fn termrock::widgets::StickyRegion::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::StickyRegion
+pub fn termrock::widgets::StickyRegion::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::StickyRegion
+impl core::marker::StructuralPartialEq for termrock::widgets::StickyRegion
+impl core::marker::Freeze for termrock::widgets::StickyRegion
+impl core::marker::Send for termrock::widgets::StickyRegion
+impl core::marker::Sync for termrock::widgets::StickyRegion
+impl core::marker::Unpin for termrock::widgets::StickyRegion
+impl core::marker::UnsafeUnpin for termrock::widgets::StickyRegion
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StickyRegion
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StickyRegion
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StickyRegion where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StickyRegion::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StickyRegion where U: core::convert::From<T>
+pub fn termrock::widgets::StickyRegion::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StickyRegion where U: core::convert::Into<T>
+pub type termrock::widgets::StickyRegion::Error = core::convert::Infallible
+pub fn termrock::widgets::StickyRegion::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StickyRegion where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StickyRegion::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StickyRegion::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StickyRegion where T: core::clone::Clone
+pub type termrock::widgets::StickyRegion::Owned = T
+pub fn termrock::widgets::StickyRegion::clone_into(&self, &mut T)
+pub fn termrock::widgets::StickyRegion::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StickyRegion where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StickyRegion::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StickyRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::StickyRegion::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StickyRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::StickyRegion::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StickyRegion where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StickyRegion::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StickyRegion
+pub fn termrock::widgets::StickyRegion::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StickyRegion
 pub struct termrock::widgets::SubmitPolicy
 pub termrock::widgets::SubmitPolicy::allow_empty: bool
 pub termrock::widgets::SubmitPolicy::clear_on_submit: bool
@@ -24720,6 +24819,112 @@ pub unsafe fn termrock::widgets::Viewport<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Viewport<'a>
+pub struct termrock::widgets::VirtRange
+pub termrock::widgets::VirtRange::end: u64
+pub termrock::widgets::VirtRange::start: u64
+impl termrock::widgets::VirtRange
+pub const fn termrock::widgets::VirtRange::is_empty(self) -> bool
+pub const fn termrock::widgets::VirtRange::len(self) -> u64
+impl core::clone::Clone for termrock::widgets::VirtRange
+pub fn termrock::widgets::VirtRange::clone(&self) -> termrock::widgets::VirtRange
+impl core::cmp::Eq for termrock::widgets::VirtRange
+impl core::cmp::PartialEq for termrock::widgets::VirtRange
+pub fn termrock::widgets::VirtRange::eq(&self, &termrock::widgets::VirtRange) -> bool
+impl core::default::Default for termrock::widgets::VirtRange
+pub fn termrock::widgets::VirtRange::default() -> termrock::widgets::VirtRange
+impl core::fmt::Debug for termrock::widgets::VirtRange
+pub fn termrock::widgets::VirtRange::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::VirtRange
+pub fn termrock::widgets::VirtRange::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::VirtRange
+impl core::marker::StructuralPartialEq for termrock::widgets::VirtRange
+impl core::marker::Freeze for termrock::widgets::VirtRange
+impl core::marker::Send for termrock::widgets::VirtRange
+impl core::marker::Sync for termrock::widgets::VirtRange
+impl core::marker::Unpin for termrock::widgets::VirtRange
+impl core::marker::UnsafeUnpin for termrock::widgets::VirtRange
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::VirtRange
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::VirtRange
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::VirtRange where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::VirtRange::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::VirtRange where U: core::convert::From<T>
+pub fn termrock::widgets::VirtRange::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::VirtRange where U: core::convert::Into<T>
+pub type termrock::widgets::VirtRange::Error = core::convert::Infallible
+pub fn termrock::widgets::VirtRange::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::VirtRange where U: core::convert::TryFrom<T>
+pub type termrock::widgets::VirtRange::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::VirtRange::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::VirtRange where T: core::clone::Clone
+pub type termrock::widgets::VirtRange::Owned = T
+pub fn termrock::widgets::VirtRange::clone_into(&self, &mut T)
+pub fn termrock::widgets::VirtRange::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::VirtRange where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::VirtRange::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::VirtRange where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtRange::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::VirtRange where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtRange::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::VirtRange where T: core::clone::Clone
+pub unsafe fn termrock::widgets::VirtRange::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::VirtRange
+pub fn termrock::widgets::VirtRange::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::VirtRange
+pub struct termrock::widgets::VirtSlice
+pub termrock::widgets::VirtSlice::end: u64
+pub termrock::widgets::VirtSlice::measure_end: u64
+pub termrock::widgets::VirtSlice::measure_start: u64
+pub termrock::widgets::VirtSlice::start: u64
+impl termrock::widgets::VirtSlice
+pub const fn termrock::widgets::VirtSlice::is_empty(self) -> bool
+pub const fn termrock::widgets::VirtSlice::len(self) -> u64
+pub const fn termrock::widgets::VirtSlice::measure_len(self) -> u64
+pub const fn termrock::widgets::VirtSlice::visible(self) -> termrock::widgets::VirtRange
+impl core::clone::Clone for termrock::widgets::VirtSlice
+pub fn termrock::widgets::VirtSlice::clone(&self) -> termrock::widgets::VirtSlice
+impl core::cmp::Eq for termrock::widgets::VirtSlice
+impl core::cmp::PartialEq for termrock::widgets::VirtSlice
+pub fn termrock::widgets::VirtSlice::eq(&self, &termrock::widgets::VirtSlice) -> bool
+impl core::default::Default for termrock::widgets::VirtSlice
+pub fn termrock::widgets::VirtSlice::default() -> termrock::widgets::VirtSlice
+impl core::fmt::Debug for termrock::widgets::VirtSlice
+pub fn termrock::widgets::VirtSlice::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::VirtSlice
+pub fn termrock::widgets::VirtSlice::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::VirtSlice
+impl core::marker::StructuralPartialEq for termrock::widgets::VirtSlice
+impl core::marker::Freeze for termrock::widgets::VirtSlice
+impl core::marker::Send for termrock::widgets::VirtSlice
+impl core::marker::Sync for termrock::widgets::VirtSlice
+impl core::marker::Unpin for termrock::widgets::VirtSlice
+impl core::marker::UnsafeUnpin for termrock::widgets::VirtSlice
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::VirtSlice
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::VirtSlice
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::VirtSlice where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::VirtSlice::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::VirtSlice where U: core::convert::From<T>
+pub fn termrock::widgets::VirtSlice::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::VirtSlice where U: core::convert::Into<T>
+pub type termrock::widgets::VirtSlice::Error = core::convert::Infallible
+pub fn termrock::widgets::VirtSlice::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::VirtSlice where U: core::convert::TryFrom<T>
+pub type termrock::widgets::VirtSlice::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::VirtSlice::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::VirtSlice where T: core::clone::Clone
+pub type termrock::widgets::VirtSlice::Owned = T
+pub fn termrock::widgets::VirtSlice::clone_into(&self, &mut T)
+pub fn termrock::widgets::VirtSlice::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::VirtSlice where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::VirtSlice::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::VirtSlice where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtSlice::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::VirtSlice where T: ?core::marker::Sized
+pub fn termrock::widgets::VirtSlice::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::VirtSlice where T: core::clone::Clone
+pub unsafe fn termrock::widgets::VirtSlice::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::VirtSlice
+pub fn termrock::widgets::VirtSlice::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::VirtSlice
 pub struct termrock::widgets::VirtualGrid<'a, RowId, ColId>
 impl<'a, RowId, ColId> termrock::widgets::VirtualGrid<'a, RowId, ColId>
 pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::focused(self, bool) -> Self
@@ -24777,6 +24982,8 @@ pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::first_col(&self)
 pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::first_row(&self) -> u64
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::new() -> Self
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_column_widths(&mut self, alloc::vec::Vec<u16>)
+pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::virtualizer(&self) -> &termrock::widgets::Virtualizer2D
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::virtualizer_mut(&mut self) -> &mut termrock::widgets::Virtualizer2D
 impl<RowId: core::clone::Clone + core::cmp::Eq, ColId: core::clone::Clone + core::cmp::Eq> termrock::widgets::VirtualGridState<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_intent(&mut self, termrock::interaction::UiIntent, bool, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
@@ -24829,10 +25036,12 @@ pub termrock::widgets::VirtualWindow::offset: u64
 pub termrock::widgets::VirtualWindow::viewport: u16
 impl termrock::widgets::VirtualWindow
 pub fn termrock::widgets::VirtualWindow::clamp(&mut self)
+pub fn termrock::widgets::VirtualWindow::from_virtualizer(&termrock::widgets::Virtualizer) -> Self
 pub const fn termrock::widgets::VirtualWindow::max_offset(self) -> u64
 pub const fn termrock::widgets::VirtualWindow::new(u64, u16) -> Self
 pub fn termrock::widgets::VirtualWindow::reveal(&mut self, u64) -> bool
 pub fn termrock::widgets::VirtualWindow::scroll_by(&mut self, i64) -> bool
+pub fn termrock::widgets::VirtualWindow::to_virtualizer(self) -> termrock::widgets::Virtualizer
 pub const fn termrock::widgets::VirtualWindow::visible_range(self) -> (u64, u64)
 impl core::clone::Clone for termrock::widgets::VirtualWindow
 pub fn termrock::widgets::VirtualWindow::clone(&self) -> termrock::widgets::VirtualWindow
@@ -24879,6 +25088,143 @@ pub unsafe fn termrock::widgets::VirtualWindow::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::VirtualWindow
 pub fn termrock::widgets::VirtualWindow::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::VirtualWindow
+pub struct termrock::widgets::Virtualizer
+impl termrock::widgets::Virtualizer
+pub const fn termrock::widgets::Virtualizer::anchor(&self) -> core::option::Option<&termrock::perf::ScrollAnchor>
+pub fn termrock::widgets::Virtualizer::apply_anchor(&mut self, &termrock::perf::ScrollAnchor, impl core::ops::function::FnOnce(&str) -> core::option::Option<u64>)
+pub fn termrock::widgets::Virtualizer::body_capacity_items(&self) -> u64
+pub fn termrock::widgets::Virtualizer::body_end(&self) -> u64
+pub const fn termrock::widgets::Virtualizer::body_start(&self) -> u64
+pub fn termrock::widgets::Virtualizer::capture_from_end_anchor(&mut self)
+pub fn termrock::widgets::Virtualizer::capture_index_anchor(&mut self)
+pub fn termrock::widgets::Virtualizer::clamp(&mut self)
+pub fn termrock::widgets::Virtualizer::extent_of(&self, u64) -> u16
+pub fn termrock::widgets::Virtualizer::fixed(u16) -> Self
+pub fn termrock::widgets::Virtualizer::forget_measured_outside(&mut self, u64)
+pub fn termrock::widgets::Virtualizer::from_fixed_slots(u64, u16, u64) -> Self
+pub const fn termrock::widgets::Virtualizer::logical_len(&self) -> u64
+pub fn termrock::widgets::Virtualizer::max_offset(&self) -> u64
+pub fn termrock::widgets::Virtualizer::measure_slice(&self) -> termrock::widgets::VirtSlice
+pub fn termrock::widgets::Virtualizer::measured_count(&self) -> usize
+pub fn termrock::widgets::Virtualizer::note_measured(&mut self, u64, u16)
+pub const fn termrock::widgets::Virtualizer::offset(&self) -> u64
+pub fn termrock::widgets::Virtualizer::on_items_changed(&mut self, u64)
+pub const fn termrock::widgets::Virtualizer::overscan(&self) -> u16
+pub const fn termrock::widgets::Virtualizer::policy(&self) -> termrock::widgets::ExtentPolicy
+pub fn termrock::widgets::Virtualizer::reveal(&mut self, u64) -> bool
+pub fn termrock::widgets::Virtualizer::scroll_by(&mut self, i64) -> bool
+pub fn termrock::widgets::Virtualizer::scrollable_len(&self) -> u64
+pub fn termrock::widgets::Virtualizer::semantic_count(&self) -> u64
+pub fn termrock::widgets::Virtualizer::semantic_indices(&self, &mut alloc::vec::Vec<u64>)
+pub fn termrock::widgets::Virtualizer::set_len(&mut self, u64)
+pub fn termrock::widgets::Virtualizer::set_offset(&mut self, u64)
+pub fn termrock::widgets::Virtualizer::set_overscan(&mut self, u16)
+pub fn termrock::widgets::Virtualizer::set_sticky(&mut self, termrock::widgets::StickyRegion)
+pub fn termrock::widgets::Virtualizer::set_viewport_extent(&mut self, u16)
+pub const fn termrock::widgets::Virtualizer::sticky(&self) -> termrock::widgets::StickyRegion
+pub fn termrock::widgets::Virtualizer::sticky_indices(&self, &mut alloc::vec::Vec<u64>)
+pub fn termrock::widgets::Virtualizer::to_fixed_slots(&self) -> (u64, u16, u64)
+pub fn termrock::widgets::Virtualizer::total_extent_estimate(&self) -> u64
+pub fn termrock::widgets::Virtualizer::variable(u16) -> Self
+pub const fn termrock::widgets::Virtualizer::viewport_extent(&self) -> u16
+pub fn termrock::widgets::Virtualizer::visible_slice(&self) -> termrock::widgets::VirtSlice
+pub const fn termrock::widgets::Virtualizer::with_len(self, u64) -> Self
+pub const fn termrock::widgets::Virtualizer::with_overscan(self, u16) -> Self
+pub const fn termrock::widgets::Virtualizer::with_sticky(self, termrock::widgets::StickyRegion) -> Self
+pub const fn termrock::widgets::Virtualizer::with_viewport(self, u16) -> Self
+impl core::clone::Clone for termrock::widgets::Virtualizer
+pub fn termrock::widgets::Virtualizer::clone(&self) -> termrock::widgets::Virtualizer
+impl core::cmp::Eq for termrock::widgets::Virtualizer
+impl core::cmp::PartialEq for termrock::widgets::Virtualizer
+pub fn termrock::widgets::Virtualizer::eq(&self, &termrock::widgets::Virtualizer) -> bool
+impl core::default::Default for termrock::widgets::Virtualizer
+pub fn termrock::widgets::Virtualizer::default() -> Self
+impl core::fmt::Debug for termrock::widgets::Virtualizer
+pub fn termrock::widgets::Virtualizer::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::Virtualizer
+impl core::marker::Freeze for termrock::widgets::Virtualizer
+impl core::marker::Send for termrock::widgets::Virtualizer
+impl core::marker::Sync for termrock::widgets::Virtualizer
+impl core::marker::Unpin for termrock::widgets::Virtualizer
+impl core::marker::UnsafeUnpin for termrock::widgets::Virtualizer
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Virtualizer
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::Virtualizer
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::Virtualizer where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::Virtualizer::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::Virtualizer where U: core::convert::From<T>
+pub fn termrock::widgets::Virtualizer::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Virtualizer where U: core::convert::Into<T>
+pub type termrock::widgets::Virtualizer::Error = core::convert::Infallible
+pub fn termrock::widgets::Virtualizer::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Virtualizer where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Virtualizer::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Virtualizer::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Virtualizer where T: core::clone::Clone
+pub type termrock::widgets::Virtualizer::Owned = T
+pub fn termrock::widgets::Virtualizer::clone_into(&self, &mut T)
+pub fn termrock::widgets::Virtualizer::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Virtualizer where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Virtualizer::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Virtualizer where T: ?core::marker::Sized
+pub fn termrock::widgets::Virtualizer::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Virtualizer where T: ?core::marker::Sized
+pub fn termrock::widgets::Virtualizer::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Virtualizer where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Virtualizer::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Virtualizer
+pub fn termrock::widgets::Virtualizer::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Virtualizer
+pub struct termrock::widgets::Virtualizer2D
+pub termrock::widgets::Virtualizer2D::cols: termrock::widgets::Virtualizer
+pub termrock::widgets::Virtualizer2D::rows: termrock::widgets::Virtualizer
+impl termrock::widgets::Virtualizer2D
+pub fn termrock::widgets::Virtualizer2D::fixed_cells() -> Self
+pub fn termrock::widgets::Virtualizer2D::semantic_count(&self) -> u64
+pub fn termrock::widgets::Virtualizer2D::set_shape(&mut self, u64, u64)
+pub fn termrock::widgets::Virtualizer2D::set_viewport(&mut self, u16, u16)
+pub fn termrock::widgets::Virtualizer2D::visible_cells_budget(&self) -> u64
+impl core::clone::Clone for termrock::widgets::Virtualizer2D
+pub fn termrock::widgets::Virtualizer2D::clone(&self) -> termrock::widgets::Virtualizer2D
+impl core::cmp::Eq for termrock::widgets::Virtualizer2D
+impl core::cmp::PartialEq for termrock::widgets::Virtualizer2D
+pub fn termrock::widgets::Virtualizer2D::eq(&self, &termrock::widgets::Virtualizer2D) -> bool
+impl core::default::Default for termrock::widgets::Virtualizer2D
+pub fn termrock::widgets::Virtualizer2D::default() -> termrock::widgets::Virtualizer2D
+impl core::fmt::Debug for termrock::widgets::Virtualizer2D
+pub fn termrock::widgets::Virtualizer2D::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::Virtualizer2D
+impl core::marker::Freeze for termrock::widgets::Virtualizer2D
+impl core::marker::Send for termrock::widgets::Virtualizer2D
+impl core::marker::Sync for termrock::widgets::Virtualizer2D
+impl core::marker::Unpin for termrock::widgets::Virtualizer2D
+impl core::marker::UnsafeUnpin for termrock::widgets::Virtualizer2D
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Virtualizer2D
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::Virtualizer2D
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::Virtualizer2D where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::Virtualizer2D::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::Virtualizer2D where U: core::convert::From<T>
+pub fn termrock::widgets::Virtualizer2D::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Virtualizer2D where U: core::convert::Into<T>
+pub type termrock::widgets::Virtualizer2D::Error = core::convert::Infallible
+pub fn termrock::widgets::Virtualizer2D::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Virtualizer2D where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Virtualizer2D::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Virtualizer2D::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Virtualizer2D where T: core::clone::Clone
+pub type termrock::widgets::Virtualizer2D::Owned = T
+pub fn termrock::widgets::Virtualizer2D::clone_into(&self, &mut T)
+pub fn termrock::widgets::Virtualizer2D::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Virtualizer2D where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Virtualizer2D::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Virtualizer2D where T: ?core::marker::Sized
+pub fn termrock::widgets::Virtualizer2D::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Virtualizer2D where T: ?core::marker::Sized
+pub fn termrock::widgets::Virtualizer2D::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Virtualizer2D where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Virtualizer2D::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Virtualizer2D
+pub fn termrock::widgets::Virtualizer2D::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Virtualizer2D
 pub struct termrock::widgets::VisibleRange
 pub termrock::widgets::VisibleRange::end: u64
 pub termrock::widgets::VisibleRange::start: u64
@@ -25002,6 +25348,7 @@ pub fn termrock::widgets::dismiss_completion_overlay<FocusId: core::clone::Clone
 pub fn termrock::widgets::dismiss_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub const fn termrock::widgets::fixed_visible_range(u64, u16, u64) -> (u64, u64)
 pub fn termrock::widgets::hint_row_cols(&[termrock::widgets::HintSpan<'_>]) -> usize
 pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>
 pub fn termrock::widgets::open_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>

@@ -9,6 +9,11 @@ virtualization. Specialized `scroll::TailScroll` / `DialogScroll` helpers remain
 for buffer-local and dialog dual-axis math; new surfaces should prefer
 `ScrollAreaState`.
 
+`Virtualizer` / `Virtualizer2D` is the canonical large-collection window engine:
+fixed or sparse variable extents, overscan, sticky regions, anchors, and
+semantic budgets that never allocate O(logical_len). `VirtualWindow` remains the
+fixed unit-slot facade for DataTable; `VirtualGridState` embeds `Virtualizer2D`.
+
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,
 bracketed paste, disabled line wrapping, and hidden cursor state. Failed entry
