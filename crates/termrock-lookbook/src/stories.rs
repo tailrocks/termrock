@@ -186,6 +186,51 @@ fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 pub(crate) fn stories() -> Vec<Story> {
     vec![
         Story::new(
+            "stack/vertical",
+            "Stack vertical",
+            "Stack",
+            "Fixed + weight + fixed vertical packing with gap.",
+            40,
+            12,
+            stack_vertical_story,
+        ),
+        Story::new(
+            "stack/inline",
+            "Inline horizontal",
+            "Inline",
+            "Equal-weight horizontal columns.",
+            48,
+            6,
+            stack_inline_story,
+        ),
+        Story::new(
+            "stack/wrap",
+            "Inline wrap",
+            "Inline",
+            "Wrapping chips when children exceed width.",
+            24,
+            6,
+            stack_wrap_story,
+        ),
+        Story::new(
+            "stack/responsive",
+            "Stack responsive direction",
+            "Stack",
+            "direction_for_width: stack narrow, inline wide.",
+            60,
+            8,
+            stack_responsive_story,
+        ),
+        Story::new(
+            "stack/narrow",
+            "Stack narrow overflow",
+            "Stack",
+            "Fixed children shrink from end when area too small.",
+            16,
+            5,
+            stack_narrow_story,
+        ),
+        Story::new(
             "panel/focused",
             "Focused panel",
             "Panel",
@@ -2946,6 +2991,136 @@ pub(crate) fn stories() -> Vec<Story> {
 /// Catalog generation deliberately uses [`stories`] instead.
 pub(crate) fn gallery_stories() -> Vec<Story> {
     stories()
+}
+
+fn stack_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Stack};
+    use termrock::widgets::{Panel, PanelChrome};
+    let layout = Stack::new().gap(1).layout(
+        area,
+        &[FlexSize::Fixed(2), FlexSize::Weight(1), FlexSize::Fixed(2)],
+    );
+    for (i, label) in ["header", "body", "footer"].iter().enumerate() {
+        if let Some(r) = layout.get(i) {
+            let chrome = if *label == "body" {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            };
+            let _ = Panel::new(system)
+                .title(label)
+                .emphasis(chrome)
+                .paint(r, frame.buffer_mut(), None);
+        }
+    }
+}
+
+fn stack_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Inline};
+    use termrock::widgets::Panel;
+    let layout = Inline::new().gap(1).layout(
+        area,
+        &[FlexSize::Weight(1), FlexSize::Weight(1), FlexSize::Weight(1)],
+    );
+    for (i, label) in ["A", "B", "C"].iter().enumerate() {
+        if let Some(r) = layout.get(i) {
+            let body = Panel::new(system)
+                .title(label)
+                .paint(r, frame.buffer_mut(), None);
+            if body.width > 1 {
+                frame.buffer_mut().set_stringn(
+                    body.x,
+                    body.y,
+                    label,
+                    usize::from(body.width),
+                    system.style(Role::TextStrong),
+                );
+            }
+        }
+    }
+}
+
+fn stack_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Inline};
+    let chips = [
+        FlexSize::Fixed(5),
+        FlexSize::Fixed(5),
+        FlexSize::Fixed(5),
+        FlexSize::Fixed(5),
+        FlexSize::Fixed(5),
+        FlexSize::Fixed(5),
+    ];
+    let layout = Inline::new().wrap(true).gap(1).layout(area, &chips);
+    for (i, r) in layout.children.iter().enumerate() {
+        if r.width == 0 {
+            continue;
+        }
+        let label = format!("c{i}");
+        frame.buffer_mut().set_stringn(
+            r.x,
+            r.y,
+            &label,
+            usize::from(r.width),
+            system.style(Role::Accent),
+        );
+    }
+}
+
+fn stack_responsive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{
+        direction_for_width, layout_stack, FlexSize, StackDirection, StackSpec,
+    };
+    use termrock::widgets::Panel;
+    let dir = direction_for_width(area.width, 50);
+    let mut spec = match dir {
+        StackDirection::Horizontal => StackSpec::horizontal(),
+        StackDirection::Vertical | _ => StackSpec::vertical(),
+    };
+    spec.gap = 1;
+    let layout = layout_stack(
+        area,
+        &spec,
+        &[FlexSize::Weight(1), FlexSize::Weight(1)],
+    );
+    let labels = [dir.id(), "child"];
+    for (i, label) in labels.iter().enumerate() {
+        if let Some(r) = layout.get(i) {
+            let _ = Panel::new(system)
+                .title(label)
+                .paint(r, frame.buffer_mut(), None);
+        }
+    }
+}
+
+fn stack_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Stack};
+    use termrock::widgets::Panel;
+    let layout = Stack::new().layout(
+        area,
+        &[
+            FlexSize::Fixed(3),
+            FlexSize::Fixed(3),
+            FlexSize::Fixed(3),
+        ],
+    );
+    const LABELS: [&str; 3] = ["0", "1", "2"];
+    for (i, r) in layout.children.iter().enumerate() {
+        if r.height == 0 {
+            continue;
+        }
+        let _ = Panel::new(system)
+            .title(LABELS.get(i).copied().unwrap_or("x"))
+            .paint(*r, frame.buffer_mut(), None);
+    }
+    if layout.overflowed && area.height > 0 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.bottom().saturating_sub(1),
+            "overflow",
+            usize::from(area.width),
+            system.style(Role::Warning),
+        );
+    }
 }
 
 fn panel_variants_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -396,19 +396,32 @@ impl Widget for &Callout<'_> {
         if area.is_empty() {
             return;
         }
+        use crate::layout::{FlexSize, Stack};
+
         let style = self.tokens.style(self.tone.role());
         let head = format!("{} {}", self.tone.glyph(), self.title);
-        let text = take_display_cols(&head, usize::from(area.width));
-        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
-        if let Some(body) = self.body
-            && area.height > 1
-        {
-            let b = take_display_cols(body, usize::from(area.width));
+        let rows = if self.body.is_some() && area.height > 1 {
+            Stack::new().layout(area, &[FlexSize::Fixed(1), FlexSize::Weight(1)])
+        } else {
+            Stack::new().layout(area, &[FlexSize::Weight(1)])
+        };
+        if let Some(title_r) = rows.get(0) {
+            let text = take_display_cols(&head, usize::from(title_r.width));
             buffer.set_stringn(
-                area.x,
-                area.y + 1,
+                title_r.x,
+                title_r.y,
+                &text,
+                usize::from(title_r.width),
+                style,
+            );
+        }
+        if let (Some(body), Some(body_r)) = (self.body, rows.get(1)) {
+            let b = take_display_cols(body, usize::from(body_r.width));
+            buffer.set_stringn(
+                body_r.x,
+                body_r.y,
                 &b,
-                usize::from(area.width),
+                usize::from(body_r.width),
                 self.tokens.style(Role::TextMuted),
             );
         }

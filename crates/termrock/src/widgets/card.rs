@@ -223,9 +223,11 @@ impl<'a> Card<'a> {
         p
     }
 
-    /// Layout with optional description row carved from body.
+    /// Layout with optional description row carved from body via [`Stack`].
     #[must_use]
     pub fn layout(&self, area: Rect, state: Option<&PanelState>) -> CardParts {
+        use crate::layout::{FlexSize, Stack};
+
         let panel = self.panel();
         let parts = panel.layout(area, state);
         let mut card = CardParts::from(parts);
@@ -234,18 +236,12 @@ impl<'a> Card<'a> {
             && card.body.height > 1
             && !state.is_some_and(|s| s.collapsed)
         {
-            card.description = Some(Rect {
-                x: card.body.x,
-                y: card.body.y,
-                width: card.body.width,
-                height: 1,
-            });
-            card.body = Rect {
-                x: card.body.x,
-                y: card.body.y.saturating_add(1),
-                width: card.body.width,
-                height: card.body.height.saturating_sub(1),
-            };
+            let stacked = Stack::new().gap(0).layout(
+                card.body,
+                &[FlexSize::Fixed(1), FlexSize::Weight(1)],
+            );
+            card.description = stacked.get(0);
+            card.body = stacked.get(1).unwrap_or(card.body);
             card.clip = card.body;
         }
         card

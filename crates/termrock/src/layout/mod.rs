@@ -1,7 +1,11 @@
 //! Responsive layout specifications and caller-defined bottom slots.
+//!
+//! Component-local packing: [`Stack`] / [`Inline`] / [`layout_stack`].
+//! Multi-pane shells: [`WorkSurface`] / [`Workspace`].
 
 mod dialog;
 mod responsive;
+mod stack;
 mod work_surface;
 mod workspace;
 
@@ -15,6 +19,10 @@ pub use responsive::{
     SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER, composed_row_anatomy,
     contract_parts, dialog_anatomy, dialog_stack_actions, essential_survives, status_bar_anatomy,
     table_row_shows_optional, tabs_show_status_glyphs,
+};
+pub use stack::{
+    direction_for_width, layout_stack, layout_stack_into, Align, FlexSize, Inline, Justify, Stack,
+    StackDirection, StackLayout, StackSpec,
 };
 pub use work_surface::{RegionId, RegionLayout, RegionSize, RegionSpec, SurfaceAxis, WorkSurface};
 pub use workspace::{

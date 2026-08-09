@@ -352,6 +352,65 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
+            id: "Stack".into(),
+            title: "Stack / Inline".into(),
+            description: "Stateless vertical/horizontal packing: FlexSize, gap, align, justify, wrap, overflow.".into(),
+            kind: RegistryItemKind::Primitive,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::layout::Stack".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/layout/stack.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: {
+                let mut c = caps_basic();
+                c.min_width = Some(1);
+                c.min_height = Some(1);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "content".into(),
+                    label: "Padded content".into(),
+                },
+                AnatomyPartRef {
+                    id: "children".into(),
+                    label: "Child rects".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "vertical".into(),
+                    description: "Stack".into(),
+                },
+                VariantRef {
+                    id: "horizontal".into(),
+                    description: "Inline".into(),
+                },
+                VariantRef {
+                    id: "wrap".into(),
+                    description: "Inline wrap".into(),
+                },
+            ],
+            outcomes: vec![],
+            stories: vec![
+                "stack/vertical".into(),
+                "stack/inline".into(),
+                "stack/wrap".into(),
+                "stack/responsive".into(),
+            ],
+            tests: vec!["layout::stack".into()],
+            migration: Some("migrations/0097-v0.13.0-stack-inline.md".into()),
+            provenance: prov("crates/termrock/src/layout/stack.rs"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
             id: "Card".into(),
             title: "Card".into(),
             description: "Raised Panel composition with description band for metrics/tool cards.".into(),

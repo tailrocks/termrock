@@ -5718,6 +5718,56 @@ pub static termrock::keymap::SCROLL_HINT_KEYMAP: termrock::keymap::Keymap<termro
 pub fn termrock::keymap::chord_glyph(core::option::Option<termrock::keymap::KeyChord>) -> &'static str
 pub fn termrock::keymap::raw_bytes_to_chord(&[u8]) -> core::option::Option<termrock::keymap::KeyChord>
 pub mod termrock::layout
+#[non_exhaustive] pub enum termrock::layout::Align
+pub termrock::layout::Align::Center
+pub termrock::layout::Align::End
+pub termrock::layout::Align::Start
+pub termrock::layout::Align::Stretch
+impl core::clone::Clone for termrock::layout::Align
+pub fn termrock::layout::Align::clone(&self) -> termrock::layout::Align
+impl core::cmp::Eq for termrock::layout::Align
+impl core::cmp::PartialEq for termrock::layout::Align
+pub fn termrock::layout::Align::eq(&self, &termrock::layout::Align) -> bool
+impl core::default::Default for termrock::layout::Align
+pub fn termrock::layout::Align::default() -> termrock::layout::Align
+impl core::fmt::Debug for termrock::layout::Align
+pub fn termrock::layout::Align::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::Align
+pub fn termrock::layout::Align::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::Align
+impl core::marker::StructuralPartialEq for termrock::layout::Align
+impl core::marker::Freeze for termrock::layout::Align
+impl core::marker::Send for termrock::layout::Align
+impl core::marker::Sync for termrock::layout::Align
+impl core::marker::Unpin for termrock::layout::Align
+impl core::marker::UnsafeUnpin for termrock::layout::Align
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::Align
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::Align
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::Align where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::Align::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::Align where U: core::convert::From<T>
+pub fn termrock::layout::Align::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::Align where U: core::convert::Into<T>
+pub type termrock::layout::Align::Error = core::convert::Infallible
+pub fn termrock::layout::Align::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::Align where U: core::convert::TryFrom<T>
+pub type termrock::layout::Align::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::Align::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::Align where T: core::clone::Clone
+pub type termrock::layout::Align::Owned = T
+pub fn termrock::layout::Align::clone_into(&self, &mut T)
+pub fn termrock::layout::Align::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::Align where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::Align::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::Align where T: ?core::marker::Sized
+pub fn termrock::layout::Align::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::Align where T: ?core::marker::Sized
+pub fn termrock::layout::Align::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::Align where T: core::clone::Clone
+pub unsafe fn termrock::layout::Align::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::Align
+pub fn termrock::layout::Align::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::Align
 #[non_exhaustive] pub enum termrock::layout::ContentPriority
 pub termrock::layout::ContentPriority::Decorative = 0
 pub termrock::layout::ContentPriority::Essential = 3
@@ -5841,6 +5891,113 @@ pub unsafe fn termrock::layout::ContractionStage::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::layout::ContractionStage
 pub fn termrock::layout::ContractionStage::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::ContractionStage
+#[non_exhaustive] pub enum termrock::layout::FlexSize
+pub termrock::layout::FlexSize::Collapsed
+pub termrock::layout::FlexSize::Fixed(u16)
+pub termrock::layout::FlexSize::Preferred
+pub termrock::layout::FlexSize::Preferred::max: u16
+pub termrock::layout::FlexSize::Preferred::min: u16
+pub termrock::layout::FlexSize::Preferred::preferred: u16
+pub termrock::layout::FlexSize::Weight(u16)
+impl termrock::layout::FlexSize
+pub const fn termrock::layout::FlexSize::fixed(u16) -> Self
+pub const fn termrock::layout::FlexSize::min_main(self) -> u16
+pub const fn termrock::layout::FlexSize::preferred(u16, u16, u16) -> Self
+pub const fn termrock::layout::FlexSize::weight(u16) -> Self
+impl core::clone::Clone for termrock::layout::FlexSize
+pub fn termrock::layout::FlexSize::clone(&self) -> termrock::layout::FlexSize
+impl core::cmp::Eq for termrock::layout::FlexSize
+impl core::cmp::PartialEq for termrock::layout::FlexSize
+pub fn termrock::layout::FlexSize::eq(&self, &termrock::layout::FlexSize) -> bool
+impl core::fmt::Debug for termrock::layout::FlexSize
+pub fn termrock::layout::FlexSize::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::FlexSize
+pub fn termrock::layout::FlexSize::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::FlexSize
+impl core::marker::StructuralPartialEq for termrock::layout::FlexSize
+impl core::marker::Freeze for termrock::layout::FlexSize
+impl core::marker::Send for termrock::layout::FlexSize
+impl core::marker::Sync for termrock::layout::FlexSize
+impl core::marker::Unpin for termrock::layout::FlexSize
+impl core::marker::UnsafeUnpin for termrock::layout::FlexSize
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::FlexSize
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::FlexSize
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::FlexSize where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::FlexSize::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::FlexSize where U: core::convert::From<T>
+pub fn termrock::layout::FlexSize::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::FlexSize where U: core::convert::Into<T>
+pub type termrock::layout::FlexSize::Error = core::convert::Infallible
+pub fn termrock::layout::FlexSize::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::FlexSize where U: core::convert::TryFrom<T>
+pub type termrock::layout::FlexSize::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::FlexSize::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::FlexSize where T: core::clone::Clone
+pub type termrock::layout::FlexSize::Owned = T
+pub fn termrock::layout::FlexSize::clone_into(&self, &mut T)
+pub fn termrock::layout::FlexSize::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::FlexSize where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::FlexSize::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::FlexSize where T: ?core::marker::Sized
+pub fn termrock::layout::FlexSize::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::FlexSize where T: ?core::marker::Sized
+pub fn termrock::layout::FlexSize::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::FlexSize where T: core::clone::Clone
+pub unsafe fn termrock::layout::FlexSize::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::FlexSize
+pub fn termrock::layout::FlexSize::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::FlexSize
+#[non_exhaustive] pub enum termrock::layout::Justify
+pub termrock::layout::Justify::Center
+pub termrock::layout::Justify::End
+pub termrock::layout::Justify::SpaceBetween
+pub termrock::layout::Justify::SpaceEvenly
+pub termrock::layout::Justify::Start
+impl core::clone::Clone for termrock::layout::Justify
+pub fn termrock::layout::Justify::clone(&self) -> termrock::layout::Justify
+impl core::cmp::Eq for termrock::layout::Justify
+impl core::cmp::PartialEq for termrock::layout::Justify
+pub fn termrock::layout::Justify::eq(&self, &termrock::layout::Justify) -> bool
+impl core::default::Default for termrock::layout::Justify
+pub fn termrock::layout::Justify::default() -> termrock::layout::Justify
+impl core::fmt::Debug for termrock::layout::Justify
+pub fn termrock::layout::Justify::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::Justify
+pub fn termrock::layout::Justify::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::Justify
+impl core::marker::StructuralPartialEq for termrock::layout::Justify
+impl core::marker::Freeze for termrock::layout::Justify
+impl core::marker::Send for termrock::layout::Justify
+impl core::marker::Sync for termrock::layout::Justify
+impl core::marker::Unpin for termrock::layout::Justify
+impl core::marker::UnsafeUnpin for termrock::layout::Justify
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::Justify
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::Justify
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::Justify where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::Justify::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::Justify where U: core::convert::From<T>
+pub fn termrock::layout::Justify::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::Justify where U: core::convert::Into<T>
+pub type termrock::layout::Justify::Error = core::convert::Infallible
+pub fn termrock::layout::Justify::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::Justify where U: core::convert::TryFrom<T>
+pub type termrock::layout::Justify::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::Justify::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::Justify where T: core::clone::Clone
+pub type termrock::layout::Justify::Owned = T
+pub fn termrock::layout::Justify::clone_into(&self, &mut T)
+pub fn termrock::layout::Justify::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::Justify where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::Justify::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::Justify where T: ?core::marker::Sized
+pub fn termrock::layout::Justify::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::Justify where T: ?core::marker::Sized
+pub fn termrock::layout::Justify::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::Justify where T: core::clone::Clone
+pub unsafe fn termrock::layout::Justify::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::Justify
+pub fn termrock::layout::Justify::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::Justify
 #[non_exhaustive] pub enum termrock::layout::OverflowAction
 pub termrock::layout::OverflowAction::CollapsePane
 pub termrock::layout::OverflowAction::Drop
@@ -6147,6 +6304,57 @@ pub unsafe fn termrock::layout::ResponsiveSurface::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::layout::ResponsiveSurface
 pub fn termrock::layout::ResponsiveSurface::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::ResponsiveSurface
+#[non_exhaustive] pub enum termrock::layout::StackDirection
+pub termrock::layout::StackDirection::Horizontal
+pub termrock::layout::StackDirection::Vertical
+impl termrock::layout::StackDirection
+pub const fn termrock::layout::StackDirection::flipped(self) -> Self
+pub const fn termrock::layout::StackDirection::id(self) -> &'static str
+impl core::clone::Clone for termrock::layout::StackDirection
+pub fn termrock::layout::StackDirection::clone(&self) -> termrock::layout::StackDirection
+impl core::cmp::Eq for termrock::layout::StackDirection
+impl core::cmp::PartialEq for termrock::layout::StackDirection
+pub fn termrock::layout::StackDirection::eq(&self, &termrock::layout::StackDirection) -> bool
+impl core::default::Default for termrock::layout::StackDirection
+pub fn termrock::layout::StackDirection::default() -> termrock::layout::StackDirection
+impl core::fmt::Debug for termrock::layout::StackDirection
+pub fn termrock::layout::StackDirection::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::StackDirection
+pub fn termrock::layout::StackDirection::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::StackDirection
+impl core::marker::StructuralPartialEq for termrock::layout::StackDirection
+impl core::marker::Freeze for termrock::layout::StackDirection
+impl core::marker::Send for termrock::layout::StackDirection
+impl core::marker::Sync for termrock::layout::StackDirection
+impl core::marker::Unpin for termrock::layout::StackDirection
+impl core::marker::UnsafeUnpin for termrock::layout::StackDirection
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::StackDirection
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::StackDirection
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::StackDirection where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::StackDirection::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::StackDirection where U: core::convert::From<T>
+pub fn termrock::layout::StackDirection::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::StackDirection where U: core::convert::Into<T>
+pub type termrock::layout::StackDirection::Error = core::convert::Infallible
+pub fn termrock::layout::StackDirection::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::StackDirection where U: core::convert::TryFrom<T>
+pub type termrock::layout::StackDirection::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::StackDirection::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::StackDirection where T: core::clone::Clone
+pub type termrock::layout::StackDirection::Owned = T
+pub fn termrock::layout::StackDirection::clone_into(&self, &mut T)
+pub fn termrock::layout::StackDirection::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::StackDirection where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::StackDirection::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::StackDirection where T: ?core::marker::Sized
+pub fn termrock::layout::StackDirection::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::StackDirection where T: ?core::marker::Sized
+pub fn termrock::layout::StackDirection::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::StackDirection where T: core::clone::Clone
+pub unsafe fn termrock::layout::StackDirection::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::StackDirection
+pub fn termrock::layout::StackDirection::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::StackDirection
 #[non_exhaustive] pub enum termrock::layout::SurfaceAxis
 pub termrock::layout::SurfaceAxis::Horizontal
 pub termrock::layout::SurfaceAxis::Vertical
@@ -6548,6 +6756,59 @@ pub unsafe fn termrock::interaction::HitRegion<Id>::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::interaction::HitRegion<Id>
 pub fn termrock::interaction::HitRegion<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::HitRegion<Id>
+pub struct termrock::layout::Inline
+impl termrock::layout::Inline
+pub const fn termrock::layout::Inline::align(self, termrock::layout::Align) -> Self
+pub const fn termrock::layout::Inline::gap(self, u16) -> Self
+pub const fn termrock::layout::Inline::justify(self, termrock::layout::Justify) -> Self
+pub fn termrock::layout::Inline::layout(self, ratatui_core::layout::rect::Rect, &[termrock::layout::FlexSize]) -> termrock::layout::StackLayout
+pub const fn termrock::layout::Inline::new() -> Self
+pub const fn termrock::layout::Inline::padding(self, u16, u16) -> Self
+pub const fn termrock::layout::Inline::with_density(termrock::style::Density) -> Self
+pub const fn termrock::layout::Inline::wrap(self, bool) -> Self
+impl core::clone::Clone for termrock::layout::Inline
+pub fn termrock::layout::Inline::clone(&self) -> termrock::layout::Inline
+impl core::cmp::Eq for termrock::layout::Inline
+impl core::cmp::PartialEq for termrock::layout::Inline
+pub fn termrock::layout::Inline::eq(&self, &termrock::layout::Inline) -> bool
+impl core::default::Default for termrock::layout::Inline
+pub fn termrock::layout::Inline::default() -> Self
+impl core::fmt::Debug for termrock::layout::Inline
+pub fn termrock::layout::Inline::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::layout::Inline
+impl core::marker::StructuralPartialEq for termrock::layout::Inline
+impl core::marker::Freeze for termrock::layout::Inline
+impl core::marker::Send for termrock::layout::Inline
+impl core::marker::Sync for termrock::layout::Inline
+impl core::marker::Unpin for termrock::layout::Inline
+impl core::marker::UnsafeUnpin for termrock::layout::Inline
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::Inline
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::Inline
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::Inline where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::Inline::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::Inline where U: core::convert::From<T>
+pub fn termrock::layout::Inline::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::Inline where U: core::convert::Into<T>
+pub type termrock::layout::Inline::Error = core::convert::Infallible
+pub fn termrock::layout::Inline::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::Inline where U: core::convert::TryFrom<T>
+pub type termrock::layout::Inline::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::Inline::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::Inline where T: core::clone::Clone
+pub type termrock::layout::Inline::Owned = T
+pub fn termrock::layout::Inline::clone_into(&self, &mut T)
+pub fn termrock::layout::Inline::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::Inline where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::Inline::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::Inline where T: ?core::marker::Sized
+pub fn termrock::layout::Inline::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::Inline where T: ?core::marker::Sized
+pub fn termrock::layout::Inline::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::Inline where T: core::clone::Clone
+pub unsafe fn termrock::layout::Inline::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::Inline
+pub fn termrock::layout::Inline::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::Inline
 pub struct termrock::layout::PaneGeom
 pub termrock::layout::PaneGeom::area: ratatui_core::layout::rect::Rect
 pub termrock::layout::PaneGeom::collapsed: bool
@@ -6970,6 +7231,166 @@ pub unsafe fn termrock::layout::Slots::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::layout::Slots
 pub fn termrock::layout::Slots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::Slots
+pub struct termrock::layout::Stack
+impl termrock::layout::Stack
+pub const fn termrock::layout::Stack::align(self, termrock::layout::Align) -> Self
+pub const fn termrock::layout::Stack::gap(self, u16) -> Self
+pub const fn termrock::layout::Stack::justify(self, termrock::layout::Justify) -> Self
+pub fn termrock::layout::Stack::layout(self, ratatui_core::layout::rect::Rect, &[termrock::layout::FlexSize]) -> termrock::layout::StackLayout
+pub const fn termrock::layout::Stack::new() -> Self
+pub const fn termrock::layout::Stack::padding(self, u16, u16) -> Self
+pub const fn termrock::layout::Stack::with_density(termrock::style::Density) -> Self
+impl core::clone::Clone for termrock::layout::Stack
+pub fn termrock::layout::Stack::clone(&self) -> termrock::layout::Stack
+impl core::cmp::Eq for termrock::layout::Stack
+impl core::cmp::PartialEq for termrock::layout::Stack
+pub fn termrock::layout::Stack::eq(&self, &termrock::layout::Stack) -> bool
+impl core::default::Default for termrock::layout::Stack
+pub fn termrock::layout::Stack::default() -> Self
+impl core::fmt::Debug for termrock::layout::Stack
+pub fn termrock::layout::Stack::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::layout::Stack
+impl core::marker::StructuralPartialEq for termrock::layout::Stack
+impl core::marker::Freeze for termrock::layout::Stack
+impl core::marker::Send for termrock::layout::Stack
+impl core::marker::Sync for termrock::layout::Stack
+impl core::marker::Unpin for termrock::layout::Stack
+impl core::marker::UnsafeUnpin for termrock::layout::Stack
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::Stack
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::Stack
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::Stack where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::Stack::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::Stack where U: core::convert::From<T>
+pub fn termrock::layout::Stack::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::Stack where U: core::convert::Into<T>
+pub type termrock::layout::Stack::Error = core::convert::Infallible
+pub fn termrock::layout::Stack::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::Stack where U: core::convert::TryFrom<T>
+pub type termrock::layout::Stack::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::Stack::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::Stack where T: core::clone::Clone
+pub type termrock::layout::Stack::Owned = T
+pub fn termrock::layout::Stack::clone_into(&self, &mut T)
+pub fn termrock::layout::Stack::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::Stack where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::Stack::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::Stack where T: ?core::marker::Sized
+pub fn termrock::layout::Stack::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::Stack where T: ?core::marker::Sized
+pub fn termrock::layout::Stack::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::Stack where T: core::clone::Clone
+pub unsafe fn termrock::layout::Stack::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::Stack
+pub fn termrock::layout::Stack::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::Stack
+pub struct termrock::layout::StackLayout
+pub termrock::layout::StackLayout::children: alloc::vec::Vec<ratatui_core::layout::rect::Rect>
+pub termrock::layout::StackLayout::content: ratatui_core::layout::rect::Rect
+pub termrock::layout::StackLayout::content_main: u16
+pub termrock::layout::StackLayout::direction: termrock::layout::StackDirection
+pub termrock::layout::StackLayout::overflowed: bool
+impl termrock::layout::StackLayout
+pub fn termrock::layout::StackLayout::contains_group(&self, u16, u16) -> bool
+pub fn termrock::layout::StackLayout::get(&self, usize) -> core::option::Option<ratatui_core::layout::rect::Rect>
+pub fn termrock::layout::StackLayout::hit_child(&self, u16, u16) -> core::option::Option<usize>
+impl core::clone::Clone for termrock::layout::StackLayout
+pub fn termrock::layout::StackLayout::clone(&self) -> termrock::layout::StackLayout
+impl core::cmp::Eq for termrock::layout::StackLayout
+impl core::cmp::PartialEq for termrock::layout::StackLayout
+pub fn termrock::layout::StackLayout::eq(&self, &termrock::layout::StackLayout) -> bool
+impl core::fmt::Debug for termrock::layout::StackLayout
+pub fn termrock::layout::StackLayout::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::layout::StackLayout
+impl core::marker::Freeze for termrock::layout::StackLayout
+impl core::marker::Send for termrock::layout::StackLayout
+impl core::marker::Sync for termrock::layout::StackLayout
+impl core::marker::Unpin for termrock::layout::StackLayout
+impl core::marker::UnsafeUnpin for termrock::layout::StackLayout
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::StackLayout
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::StackLayout
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::StackLayout where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::StackLayout::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::StackLayout where U: core::convert::From<T>
+pub fn termrock::layout::StackLayout::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::StackLayout where U: core::convert::Into<T>
+pub type termrock::layout::StackLayout::Error = core::convert::Infallible
+pub fn termrock::layout::StackLayout::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::StackLayout where U: core::convert::TryFrom<T>
+pub type termrock::layout::StackLayout::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::StackLayout::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::StackLayout where T: core::clone::Clone
+pub type termrock::layout::StackLayout::Owned = T
+pub fn termrock::layout::StackLayout::clone_into(&self, &mut T)
+pub fn termrock::layout::StackLayout::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::StackLayout where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::StackLayout::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::StackLayout where T: ?core::marker::Sized
+pub fn termrock::layout::StackLayout::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::StackLayout where T: ?core::marker::Sized
+pub fn termrock::layout::StackLayout::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::StackLayout where T: core::clone::Clone
+pub unsafe fn termrock::layout::StackLayout::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::StackLayout
+pub fn termrock::layout::StackLayout::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::StackLayout
+pub struct termrock::layout::StackSpec
+pub termrock::layout::StackSpec::align: termrock::layout::Align
+pub termrock::layout::StackSpec::direction: termrock::layout::StackDirection
+pub termrock::layout::StackSpec::gap: u16
+pub termrock::layout::StackSpec::justify: termrock::layout::Justify
+pub termrock::layout::StackSpec::pad_x: u16
+pub termrock::layout::StackSpec::pad_y: u16
+pub termrock::layout::StackSpec::wrap: bool
+impl termrock::layout::StackSpec
+pub const fn termrock::layout::StackSpec::horizontal() -> Self
+pub const fn termrock::layout::StackSpec::vertical() -> Self
+pub const fn termrock::layout::StackSpec::with_density(self, termrock::style::Density) -> Self
+pub const fn termrock::layout::StackSpec::with_spacing(self, termrock::style::SpacingScale) -> Self
+impl core::clone::Clone for termrock::layout::StackSpec
+pub fn termrock::layout::StackSpec::clone(&self) -> termrock::layout::StackSpec
+impl core::cmp::Eq for termrock::layout::StackSpec
+impl core::cmp::PartialEq for termrock::layout::StackSpec
+pub fn termrock::layout::StackSpec::eq(&self, &termrock::layout::StackSpec) -> bool
+impl core::default::Default for termrock::layout::StackSpec
+pub fn termrock::layout::StackSpec::default() -> Self
+impl core::fmt::Debug for termrock::layout::StackSpec
+pub fn termrock::layout::StackSpec::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::StackSpec
+pub fn termrock::layout::StackSpec::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::StackSpec
+impl core::marker::StructuralPartialEq for termrock::layout::StackSpec
+impl core::marker::Freeze for termrock::layout::StackSpec
+impl core::marker::Send for termrock::layout::StackSpec
+impl core::marker::Sync for termrock::layout::StackSpec
+impl core::marker::Unpin for termrock::layout::StackSpec
+impl core::marker::UnsafeUnpin for termrock::layout::StackSpec
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::StackSpec
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::StackSpec
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::StackSpec where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::StackSpec::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::StackSpec where U: core::convert::From<T>
+pub fn termrock::layout::StackSpec::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::StackSpec where U: core::convert::Into<T>
+pub type termrock::layout::StackSpec::Error = core::convert::Infallible
+pub fn termrock::layout::StackSpec::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::StackSpec where U: core::convert::TryFrom<T>
+pub type termrock::layout::StackSpec::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::StackSpec::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::StackSpec where T: core::clone::Clone
+pub type termrock::layout::StackSpec::Owned = T
+pub fn termrock::layout::StackSpec::clone_into(&self, &mut T)
+pub fn termrock::layout::StackSpec::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::StackSpec where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::StackSpec::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::StackSpec where T: ?core::marker::Sized
+pub fn termrock::layout::StackSpec::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::StackSpec where T: ?core::marker::Sized
+pub fn termrock::layout::StackSpec::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::StackSpec where T: core::clone::Clone
+pub unsafe fn termrock::layout::StackSpec::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::StackSpec
+pub fn termrock::layout::StackSpec::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::StackSpec
 pub struct termrock::layout::SurfaceResponsivePolicy
 pub termrock::layout::SurfaceResponsivePolicy::collapse_actions_max_width: u16
 pub termrock::layout::SurfaceResponsivePolicy::compact_max_width: u16
@@ -7233,7 +7654,10 @@ pub fn termrock::layout::composed_row_anatomy() -> [termrock::layout::AnatomyPar
 pub fn termrock::layout::contract_parts(&[termrock::layout::AnatomyPart], u16, termrock::layout::AdaptiveAnatomy) -> alloc::vec::Vec<termrock::layout::AnatomyPart>
 pub fn termrock::layout::dialog_anatomy() -> [termrock::layout::AnatomyPart; 4]
 pub fn termrock::layout::dialog_stack_actions(u16, u16) -> bool
+pub const fn termrock::layout::direction_for_width(u16, u16) -> termrock::layout::StackDirection
 pub fn termrock::layout::essential_survives(termrock::layout::ResponsiveSurface, u16) -> bool
+pub fn termrock::layout::layout_stack(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize]) -> termrock::layout::StackLayout
+pub fn termrock::layout::layout_stack_into(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)
 pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::style::PanelChrome, &termrock::style::DesignSystem) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::scroll::DialogScroll, &termrock::style::DesignSystem) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect

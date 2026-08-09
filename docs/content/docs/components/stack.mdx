@@ -1,0 +1,70 @@
+---
+title: Stack / Inline
+description: 'Stateless vertical and horizontal packing with FlexSize, gap, align, justify, and wrap.'
+---
+
+## Previews
+
+### `stack/vertical`
+
+![Stack vertical](/component-previews/stack-vertical.svg)
+
+### `stack/inline`
+
+![Inline](/component-previews/stack-inline.svg)
+
+### `stack/wrap`
+
+![Wrap](/component-previews/stack-wrap.svg)
+
+### `stack/responsive`
+
+![Responsive](/component-previews/stack-responsive.svg)
+
+### `stack/narrow`
+
+![Narrow overflow](/component-previews/stack-narrow.svg)
+
+## Anatomy
+
+`content` (padded) · `children[]` (stable index) · optional `overflowed` flag
+
+## Usage
+
+```rust
+use termrock::layout::{Stack, Inline, FlexSize, direction_for_width};
+
+let layout = Stack::new().gap(1).layout(area, &[
+    FlexSize::Fixed(2),
+    FlexSize::Weight(1),
+    FlexSize::Fixed(1),
+]);
+let body = layout.get(1).unwrap();
+
+let chips = Inline::new().wrap(true).gap(1).layout(area, &[
+    FlexSize::Fixed(6),
+    FlexSize::Fixed(6),
+]);
+
+let dir = direction_for_width(area.width, 60);
+```
+
+## Overflow
+
+Fixed/preferred children that exceed the main axis shrink from the **end**.
+`StackLayout::overflowed` is set. Weight children share residual after mins.
+
+## vs WorkSurface
+
+Use **Stack/Inline** for component-local anatomy (card body, callout lines, chip rows).  
+Use **WorkSurface/Workspace** for named multi-pane app chrome.
+
+## Common mistakes
+
+- Nesting Stack for padding only — use `padding()` once
+- Using WorkSurface for two-line title/body — prefer Stack
+- Ignoring `overflowed` on tiny terminals
+
+## Migration
+
+`migrations/0097-v0.13.0-stack-inline.md`
