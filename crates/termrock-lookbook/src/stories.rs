@@ -25,6 +25,7 @@ use termrock::{
         CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
         CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
+        InspectorPanel,
         DetailTableState, Dialog, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
         DiffState, DiffView, Drawer, EmptyState, ErrorView, Form, FormField, FormSection,
         FormState, FormWizardState, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
@@ -710,12 +711,21 @@ pub(crate) fn stories() -> Vec<Story> {
             "design-inspector/basic",
             "Design inspector",
             "DesignInspector",
-            "Studio focus/layer/capability strip.",
+            "Studio focus/layer/capability strip with Semantics panel.",
             48,
             4,
             design_inspector,
         )
         .with_interactor(design_inspector_interactor),
+        Story::new(
+            "semantic-scene/tree",
+            "Semantic scene tree",
+            "SemanticScene",
+            "Frame-local parent tree, labels, and snapshot lines for Studio/AI.",
+            48,
+            8,
+            semantic_scene_tree_story,
+        ),
         Story::new(
             "capability/color-ladder",
             "Capability color ladder",
@@ -4019,16 +4029,111 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn design_inspector(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let layers = ["root"];
     let recipes = ["list_row", "panel"];
+    let mut semantic = termrock::interaction::SemanticScene::<&str>::new();
+    let _ = semantic.register(
+        termrock::interaction::SemanticNode::content("list", area)
+            .role(termrock::interaction::SemanticRole::List)
+            .label("Files"),
+    );
+    let _ = semantic.register_child(
+        "list",
+        termrock::interaction::SemanticNode::control(
+            "row0",
+            Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+        )
+        .role(termrock::interaction::SemanticRole::ListItem)
+        .label("a.rs"),
+    );
+    let summary = semantic.snapshot().summary_lines(8);
+    let semantics: Vec<&str> = summary.iter().map(String::as_str).collect();
     let snap = DesignInspectorFrame {
-        focused: Some("list"),
+        focused: Some("row0"),
         layer: Some("root"),
         capability: ColorCapability::Truecolor,
         density: "comfortable",
         layers: &layers,
         recipes: &recipes,
         selection_chrome: "gutter",
+        semantics: &semantics,
     };
-    frame.render_widget(DesignInspector::new(snap, system), area);
+    frame.render_widget(
+        DesignInspector::new(snap, system).panel(InspectorPanel::Semantics),
+        area,
+    );
+}
+
+fn semantic_scene_tree_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState};
+    use termrock::widgets::{Panel, PanelChrome};
+
+    let mut scene = SemanticScene::<&str, &str>::new();
+    let _ = scene.register(
+        SemanticNode::content("app", area)
+            .role(SemanticRole::Chrome)
+            .label("Workbench"),
+    );
+    let list_area = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    let _ = scene.register_child(
+        "app",
+        SemanticNode::content("files", list_area)
+            .role(SemanticRole::List)
+            .label("Files"),
+    );
+    for (i, name) in ["main.rs", "lib.rs", "scene.rs"].iter().enumerate() {
+        let y = list_area
+            .y
+            .saturating_add(u16::try_from(i).unwrap_or(0).saturating_add(1));
+        let _ = scene.register_child(
+            "files",
+            SemanticNode::control(
+                *name,
+                Rect::new(list_area.x, y, list_area.width, 1),
+            )
+            .role(SemanticRole::ListItem)
+            .label(*name)
+            .state(SemanticState {
+                selected: i == 0,
+                ..SemanticState::default()
+            })
+            .actions(vec!["open", "copy"]),
+        );
+    }
+    let summary = scene.snapshot_with(|a| (*a).to_string()).summary_lines(12);
+    let semantics: Vec<&str> = summary.iter().map(String::as_str).collect();
+    let layers = ["root"];
+    let recipes = ["semantic_tree"];
+    let snap = DesignInspectorFrame {
+        focused: Some("main.rs"),
+        layer: Some("root"),
+        capability: ColorCapability::Truecolor,
+        density: "compact",
+        layers: &layers,
+        recipes: &recipes,
+        selection_chrome: "gutter",
+        semantics: &semantics,
+    };
+    // Panel chrome + semantics body.
+    frame.render_widget(
+        Panel::new(system)
+            .title("SemanticScene")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    frame.render_widget(
+        DesignInspector::new(snap, system).panel(InspectorPanel::Semantics),
+        inner,
+    );
 }
 
 fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -4064,6 +4169,7 @@ fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &Des
             layers: &layers,
             recipes: &recipes,
             selection_chrome: "gutter",
+        semantics: &[],
         };
         frame.render_widget(DesignInspector::new(snap, &q), row);
     }
@@ -4081,6 +4187,7 @@ fn capability_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         layers: &layers,
         recipes: &recipes,
         selection_chrome: "gutter",
+    semantics: &[],
     };
     frame.render_widget(DesignInspector::new(snap, &mono), area);
 }
@@ -4111,6 +4218,7 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         layers: &layers,
         recipes: &recipes,
         selection_chrome: "none",
+    semantics: &[],
     };
     frame.render_widget(DesignInspector::new(snap, &mono), area);
 }

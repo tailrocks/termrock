@@ -192,6 +192,19 @@ pub fn assign_jump_badges<Id: Clone>(regions: &[HitRegion<Id>]) -> Vec<JumpTarge
         .collect()
 }
 
+/// Builds jump targets from a frame-local [`crate::interaction::SemanticScene`].
+///
+/// Only focusable, enabled, visible nodes with non-empty geometry participate.
+#[must_use]
+pub fn assign_jump_badges_from_semantics<Id, Action>(
+    scene: &crate::interaction::SemanticScene<Id, Action>,
+) -> Vec<JumpTarget<Id>>
+where
+    Id: Clone,
+{
+    assign_jump_badges(&scene.jump_regions())
+}
+
 /// Renders letter badges for open jump mode.
 #[derive(Debug, Clone, Copy)]
 pub struct JumpOverlay<'a, Id> {
@@ -290,5 +303,27 @@ mod tests {
         state.close();
         assert!(!state.is_open());
         assert!(stack.is_empty());
+    }
+
+    #[test]
+    fn jump_targets_from_semantic_scene() {
+        use crate::interaction::{SemanticNode, SemanticRole, SemanticScene};
+        let mut scene = SemanticScene::<&str>::new();
+        scene
+            .register(
+                SemanticNode::control("a", Rect::new(0, 0, 2, 1)).role(SemanticRole::Button),
+            )
+            .unwrap();
+        scene
+            .register(
+                SemanticNode::control("b", Rect::new(3, 0, 2, 1))
+                    .role(SemanticRole::Button)
+                    .disabled(true),
+            )
+            .unwrap();
+        let targets = assign_jump_badges_from_semantics(&scene);
+        assert_eq!(targets.len(), 1);
+        assert_eq!(targets[0].id, "a");
+        assert_eq!(targets[0].badge, 'a');
     }
 }

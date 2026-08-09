@@ -2099,11 +2099,119 @@ pub unsafe fn termrock::interaction::SceneError::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::SceneError
 pub fn termrock::interaction::SceneError::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SceneError
+#[non_exhaustive] pub enum termrock::interaction::SemanticDiagnostic
+pub termrock::interaction::SemanticDiagnostic::DuplicateId
+pub termrock::interaction::SemanticDiagnostic::DuplicateId::id: alloc::string::String
+pub termrock::interaction::SemanticDiagnostic::EmptyArea
+pub termrock::interaction::SemanticDiagnostic::EmptyArea::id: alloc::string::String
+pub termrock::interaction::SemanticDiagnostic::UnknownParent
+pub termrock::interaction::SemanticDiagnostic::UnknownParent::id: alloc::string::String
+pub termrock::interaction::SemanticDiagnostic::UnknownParent::parent: alloc::string::String
+impl core::clone::Clone for termrock::interaction::SemanticDiagnostic
+pub fn termrock::interaction::SemanticDiagnostic::clone(&self) -> termrock::interaction::SemanticDiagnostic
+impl core::cmp::Eq for termrock::interaction::SemanticDiagnostic
+impl core::cmp::PartialEq for termrock::interaction::SemanticDiagnostic
+pub fn termrock::interaction::SemanticDiagnostic::eq(&self, &termrock::interaction::SemanticDiagnostic) -> bool
+impl core::fmt::Debug for termrock::interaction::SemanticDiagnostic
+pub fn termrock::interaction::SemanticDiagnostic::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::interaction::SemanticDiagnostic
+impl core::marker::Freeze for termrock::interaction::SemanticDiagnostic
+impl core::marker::Send for termrock::interaction::SemanticDiagnostic
+impl core::marker::Sync for termrock::interaction::SemanticDiagnostic
+impl core::marker::Unpin for termrock::interaction::SemanticDiagnostic
+impl core::marker::UnsafeUnpin for termrock::interaction::SemanticDiagnostic
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SemanticDiagnostic
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::SemanticDiagnostic
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SemanticDiagnostic where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SemanticDiagnostic::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SemanticDiagnostic where U: core::convert::From<T>
+pub fn termrock::interaction::SemanticDiagnostic::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SemanticDiagnostic where U: core::convert::Into<T>
+pub type termrock::interaction::SemanticDiagnostic::Error = core::convert::Infallible
+pub fn termrock::interaction::SemanticDiagnostic::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SemanticDiagnostic where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SemanticDiagnostic::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SemanticDiagnostic::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SemanticDiagnostic where T: core::clone::Clone
+pub type termrock::interaction::SemanticDiagnostic::Owned = T
+pub fn termrock::interaction::SemanticDiagnostic::clone_into(&self, &mut T)
+pub fn termrock::interaction::SemanticDiagnostic::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SemanticDiagnostic where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SemanticDiagnostic::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SemanticDiagnostic where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticDiagnostic::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SemanticDiagnostic where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticDiagnostic::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SemanticDiagnostic where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SemanticDiagnostic::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SemanticDiagnostic
+pub fn termrock::interaction::SemanticDiagnostic::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SemanticDiagnostic
+#[non_exhaustive] pub enum termrock::interaction::SemanticError
+pub termrock::interaction::SemanticError::DuplicateId
+pub termrock::interaction::SemanticError::SelfParent
+pub termrock::interaction::SemanticError::UnknownParent
+impl core::clone::Clone for termrock::interaction::SemanticError
+pub fn termrock::interaction::SemanticError::clone(&self) -> termrock::interaction::SemanticError
+impl core::cmp::Eq for termrock::interaction::SemanticError
+impl core::cmp::PartialEq for termrock::interaction::SemanticError
+pub fn termrock::interaction::SemanticError::eq(&self, &termrock::interaction::SemanticError) -> bool
+impl core::fmt::Debug for termrock::interaction::SemanticError
+pub fn termrock::interaction::SemanticError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::interaction::SemanticError
+impl core::marker::Freeze for termrock::interaction::SemanticError
+impl core::marker::Send for termrock::interaction::SemanticError
+impl core::marker::Sync for termrock::interaction::SemanticError
+impl core::marker::Unpin for termrock::interaction::SemanticError
+impl core::marker::UnsafeUnpin for termrock::interaction::SemanticError
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SemanticError
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::SemanticError
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SemanticError where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SemanticError::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SemanticError where U: core::convert::From<T>
+pub fn termrock::interaction::SemanticError::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SemanticError where U: core::convert::Into<T>
+pub type termrock::interaction::SemanticError::Error = core::convert::Infallible
+pub fn termrock::interaction::SemanticError::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SemanticError where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SemanticError::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SemanticError::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SemanticError where T: core::clone::Clone
+pub type termrock::interaction::SemanticError::Owned = T
+pub fn termrock::interaction::SemanticError::clone_into(&self, &mut T)
+pub fn termrock::interaction::SemanticError::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SemanticError where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SemanticError::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SemanticError where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticError::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SemanticError where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticError::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SemanticError where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SemanticError::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SemanticError
+pub fn termrock::interaction::SemanticError::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SemanticError
 #[non_exhaustive] pub enum termrock::interaction::SemanticRole
+pub termrock::interaction::SemanticRole::Button
 pub termrock::interaction::SemanticRole::Chrome
 pub termrock::interaction::SemanticRole::Content
 pub termrock::interaction::SemanticRole::Control
+pub termrock::interaction::SemanticRole::Custom
+pub termrock::interaction::SemanticRole::Dialog
+pub termrock::interaction::SemanticRole::Heading
+pub termrock::interaction::SemanticRole::Image
+pub termrock::interaction::SemanticRole::Input
+pub termrock::interaction::SemanticRole::List
+pub termrock::interaction::SemanticRole::ListItem
+pub termrock::interaction::SemanticRole::Menu
 pub termrock::interaction::SemanticRole::Overlay
+pub termrock::interaction::SemanticRole::Progress
+pub termrock::interaction::SemanticRole::Status
+pub termrock::interaction::SemanticRole::Tab
+pub termrock::interaction::SemanticRole::Table
+pub termrock::interaction::SemanticRole::Tree
+impl termrock::interaction::SemanticRole
+pub const fn termrock::interaction::SemanticRole::as_str(self) -> &'static str
 impl core::clone::Clone for termrock::interaction::SemanticRole
 pub fn termrock::interaction::SemanticRole::clone(&self) -> termrock::interaction::SemanticRole
 impl core::cmp::Eq for termrock::interaction::SemanticRole
@@ -2805,52 +2913,292 @@ pub unsafe fn termrock::interaction::OverlayStack<FocusId>::clone_to_uninit(&sel
 impl<T> core::convert::From<T> for termrock::interaction::OverlayStack<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::OverlayStack<FocusId>
-pub struct termrock::interaction::SemanticElement<Id>
-pub termrock::interaction::SemanticElement::area: ratatui_core::layout::rect::Rect
-pub termrock::interaction::SemanticElement::enabled: bool
-pub termrock::interaction::SemanticElement::focusable: bool
-pub termrock::interaction::SemanticElement::id: Id
-pub termrock::interaction::SemanticElement::role: termrock::interaction::SemanticRole
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::SemanticElement<Id>
-pub fn termrock::interaction::SemanticElement<Id>::clone(&self) -> termrock::interaction::SemanticElement<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::SemanticElement<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::SemanticElement<Id>
-pub fn termrock::interaction::SemanticElement<Id>::eq(&self, &termrock::interaction::SemanticElement<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::SemanticElement<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::SemanticElement<Id>
-pub fn termrock::interaction::SemanticElement<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::interaction::SemanticElement<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::interaction::SemanticElement<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::interaction::SemanticElement<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::interaction::SemanticElement<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::interaction::SemanticElement<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SemanticElement<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::SemanticElement<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SemanticElement<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::SemanticElement<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::SemanticElement<Id> where U: core::convert::From<T>
-pub fn termrock::interaction::SemanticElement<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SemanticElement<Id> where U: core::convert::Into<T>
-pub type termrock::interaction::SemanticElement<Id>::Error = core::convert::Infallible
-pub fn termrock::interaction::SemanticElement<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::SemanticElement<Id> where U: core::convert::TryFrom<T>
-pub type termrock::interaction::SemanticElement<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::SemanticElement<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::SemanticElement<Id> where T: core::clone::Clone
-pub type termrock::interaction::SemanticElement<Id>::Owned = T
-pub fn termrock::interaction::SemanticElement<Id>::clone_into(&self, &mut T)
-pub fn termrock::interaction::SemanticElement<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::SemanticElement<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::SemanticElement<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::SemanticElement<Id> where T: ?core::marker::Sized
-pub fn termrock::interaction::SemanticElement<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SemanticElement<Id> where T: ?core::marker::Sized
-pub fn termrock::interaction::SemanticElement<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::SemanticElement<Id> where T: core::clone::Clone
-pub unsafe fn termrock::interaction::SemanticElement<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::SemanticElement<Id>
-pub fn termrock::interaction::SemanticElement<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::SemanticElement<Id>
+pub struct termrock::interaction::SemanticNode<Id, Action>
+pub termrock::interaction::SemanticNode::actions: alloc::vec::Vec<Action>
+pub termrock::interaction::SemanticNode::area: ratatui_core::layout::rect::Rect
+pub termrock::interaction::SemanticNode::description: core::option::Option<alloc::string::String>
+pub termrock::interaction::SemanticNode::disabled: bool
+pub termrock::interaction::SemanticNode::focusable: bool
+pub termrock::interaction::SemanticNode::hidden: bool
+pub termrock::interaction::SemanticNode::id: Id
+pub termrock::interaction::SemanticNode::label: core::option::Option<alloc::string::String>
+pub termrock::interaction::SemanticNode::parent: core::option::Option<Id>
+pub termrock::interaction::SemanticNode::role: termrock::interaction::SemanticRole
+pub termrock::interaction::SemanticNode::state: termrock::interaction::SemanticState
+impl<Id, Action> termrock::interaction::SemanticNode<Id, Action>
+pub fn termrock::interaction::SemanticNode<Id, Action>::actions(self, alloc::vec::Vec<Action>) -> Self
+pub fn termrock::interaction::SemanticNode<Id, Action>::content(Id, ratatui_core::layout::rect::Rect) -> Self where Action: core::clone::Clone
+pub fn termrock::interaction::SemanticNode<Id, Action>::control(Id, ratatui_core::layout::rect::Rect) -> Self where Action: core::clone::Clone
+pub fn termrock::interaction::SemanticNode<Id, Action>::description(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::interaction::SemanticNode<Id, Action>::disabled(self, bool) -> Self
+pub const fn termrock::interaction::SemanticNode<Id, Action>::focusable(self, bool) -> Self
+pub const fn termrock::interaction::SemanticNode<Id, Action>::hidden(self, bool) -> Self
+pub fn termrock::interaction::SemanticNode<Id, Action>::label(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::interaction::SemanticNode<Id, Action>::parent(self, Id) -> Self
+pub const fn termrock::interaction::SemanticNode<Id, Action>::role(self, termrock::interaction::SemanticRole) -> Self
+pub const fn termrock::interaction::SemanticNode<Id, Action>::state(self, termrock::interaction::SemanticState) -> Self
+impl<Id: core::clone::Clone, Action: core::clone::Clone> core::clone::Clone for termrock::interaction::SemanticNode<Id, Action>
+pub fn termrock::interaction::SemanticNode<Id, Action>::clone(&self) -> termrock::interaction::SemanticNode<Id, Action>
+impl<Id: core::cmp::Eq, Action: core::cmp::Eq> core::cmp::Eq for termrock::interaction::SemanticNode<Id, Action>
+impl<Id: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::SemanticNode<Id, Action>
+pub fn termrock::interaction::SemanticNode<Id, Action>::eq(&self, &termrock::interaction::SemanticNode<Id, Action>) -> bool
+impl<Id: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::SemanticNode<Id, Action>
+impl<Id: core::fmt::Debug, Action: core::fmt::Debug> core::fmt::Debug for termrock::interaction::SemanticNode<Id, Action>
+pub fn termrock::interaction::SemanticNode<Id, Action>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id, Action> core::marker::Freeze for termrock::interaction::SemanticNode<Id, Action> where Id: core::marker::Freeze
+impl<Id, Action> core::marker::Send for termrock::interaction::SemanticNode<Id, Action> where Id: core::marker::Send, Action: core::marker::Send
+impl<Id, Action> core::marker::Sync for termrock::interaction::SemanticNode<Id, Action> where Id: core::marker::Sync, Action: core::marker::Sync
+impl<Id, Action> core::marker::Unpin for termrock::interaction::SemanticNode<Id, Action> where Id: core::marker::Unpin, Action: core::marker::Unpin
+impl<Id, Action> core::marker::UnsafeUnpin for termrock::interaction::SemanticNode<Id, Action> where Id: core::marker::UnsafeUnpin
+impl<Id, Action> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SemanticNode<Id, Action> where Id: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe
+impl<Id, Action> core::panic::unwind_safe::UnwindSafe for termrock::interaction::SemanticNode<Id, Action> where Id: core::panic::unwind_safe::UnwindSafe, Action: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SemanticNode<Id, Action> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SemanticNode<Id, Action>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SemanticNode<Id, Action> where U: core::convert::From<T>
+pub fn termrock::interaction::SemanticNode<Id, Action>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SemanticNode<Id, Action> where U: core::convert::Into<T>
+pub type termrock::interaction::SemanticNode<Id, Action>::Error = core::convert::Infallible
+pub fn termrock::interaction::SemanticNode<Id, Action>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SemanticNode<Id, Action> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SemanticNode<Id, Action>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SemanticNode<Id, Action>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SemanticNode<Id, Action> where T: core::clone::Clone
+pub type termrock::interaction::SemanticNode<Id, Action>::Owned = T
+pub fn termrock::interaction::SemanticNode<Id, Action>::clone_into(&self, &mut T)
+pub fn termrock::interaction::SemanticNode<Id, Action>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SemanticNode<Id, Action> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SemanticNode<Id, Action>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SemanticNode<Id, Action> where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticNode<Id, Action>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SemanticNode<Id, Action> where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticNode<Id, Action>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SemanticNode<Id, Action> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SemanticNode<Id, Action>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SemanticNode<Id, Action>
+pub fn termrock::interaction::SemanticNode<Id, Action>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SemanticNode<Id, Action>
+pub struct termrock::interaction::SemanticScene<Id, Action>
+impl<Id, Action> termrock::interaction::SemanticScene<Id, Action>
+pub fn termrock::interaction::SemanticScene<Id, Action>::begin_frame(&mut self)
+pub fn termrock::interaction::SemanticScene<Id, Action>::children_of(&self, &Id) -> alloc::vec::Vec<&termrock::interaction::SemanticNode<Id, Action>> where Id: core::cmp::PartialEq
+pub fn termrock::interaction::SemanticScene<Id, Action>::diagnostics(&self) -> &[termrock::interaction::SemanticDiagnostic]
+pub fn termrock::interaction::SemanticScene<Id, Action>::elements(&self) -> &[termrock::interaction::SemanticNode<Id, Action>]
+pub fn termrock::interaction::SemanticScene<Id, Action>::focus_order(&self) -> alloc::vec::Vec<&Id>
+pub fn termrock::interaction::SemanticScene<Id, Action>::from_interaction<LayerId>(&termrock::interaction::InteractionScene<Id, LayerId, Action>) -> Self where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub fn termrock::interaction::SemanticScene<Id, Action>::get(&self, &Id) -> core::option::Option<&termrock::interaction::SemanticNode<Id, Action>> where Id: core::cmp::PartialEq
+pub fn termrock::interaction::SemanticScene<Id, Action>::help_lines(&self) -> alloc::vec::Vec<alloc::string::String> where Id: core::fmt::Display
+pub fn termrock::interaction::SemanticScene<Id, Action>::hit_test(&self, ratatui_core::layout::position::Position) -> core::option::Option<&termrock::interaction::SemanticNode<Id, Action>>
+pub fn termrock::interaction::SemanticScene<Id, Action>::hit_test_interactive(&self, ratatui_core::layout::position::Position) -> core::option::Option<&termrock::interaction::SemanticNode<Id, Action>>
+pub fn termrock::interaction::SemanticScene<Id, Action>::jump_regions(&self) -> alloc::vec::Vec<termrock::interaction::HitRegion<Id>> where Id: core::clone::Clone
+pub const fn termrock::interaction::SemanticScene<Id, Action>::new() -> Self
+pub fn termrock::interaction::SemanticScene<Id, Action>::nodes(&self) -> &[termrock::interaction::SemanticNode<Id, Action>]
+pub fn termrock::interaction::SemanticScene<Id, Action>::path_to(&self, &Id) -> alloc::vec::Vec<&Id> where Id: core::cmp::PartialEq
+pub fn termrock::interaction::SemanticScene<Id, Action>::register(&mut self, termrock::interaction::SemanticNode<Id, Action>) -> core::result::Result<(), termrock::interaction::SemanticError> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display
+pub fn termrock::interaction::SemanticScene<Id, Action>::register_child(&mut self, Id, termrock::interaction::SemanticNode<Id, Action>) -> core::result::Result<(), termrock::interaction::SemanticError> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display
+pub fn termrock::interaction::SemanticScene<Id, Action>::reserve(&mut self, usize)
+pub fn termrock::interaction::SemanticScene<Id, Action>::snapshot(&self) -> termrock::interaction::SemanticSnapshot where Id: core::fmt::Display
+pub fn termrock::interaction::SemanticScene<Id, Action>::snapshot_with<F>(&self, F) -> termrock::interaction::SemanticSnapshot where Id: core::fmt::Display, F: core::ops::function::FnMut(&Action) -> alloc::string::String
+impl<Id, Action> core::default::Default for termrock::interaction::SemanticScene<Id, Action>
+pub fn termrock::interaction::SemanticScene<Id, Action>::default() -> Self
+impl<Id: core::clone::Clone, Action: core::clone::Clone> core::clone::Clone for termrock::interaction::SemanticScene<Id, Action>
+pub fn termrock::interaction::SemanticScene<Id, Action>::clone(&self) -> termrock::interaction::SemanticScene<Id, Action>
+impl<Id: core::cmp::Eq, Action: core::cmp::Eq> core::cmp::Eq for termrock::interaction::SemanticScene<Id, Action>
+impl<Id: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::SemanticScene<Id, Action>
+pub fn termrock::interaction::SemanticScene<Id, Action>::eq(&self, &termrock::interaction::SemanticScene<Id, Action>) -> bool
+impl<Id: core::cmp::PartialEq, Action: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::SemanticScene<Id, Action>
+impl<Id: core::fmt::Debug, Action: core::fmt::Debug> core::fmt::Debug for termrock::interaction::SemanticScene<Id, Action>
+pub fn termrock::interaction::SemanticScene<Id, Action>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id, Action> core::marker::Freeze for termrock::interaction::SemanticScene<Id, Action>
+impl<Id, Action> core::marker::Send for termrock::interaction::SemanticScene<Id, Action> where Id: core::marker::Send, Action: core::marker::Send
+impl<Id, Action> core::marker::Sync for termrock::interaction::SemanticScene<Id, Action> where Id: core::marker::Sync, Action: core::marker::Sync
+impl<Id, Action> core::marker::Unpin for termrock::interaction::SemanticScene<Id, Action> where Id: core::marker::Unpin, Action: core::marker::Unpin
+impl<Id, Action> core::marker::UnsafeUnpin for termrock::interaction::SemanticScene<Id, Action>
+impl<Id, Action> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SemanticScene<Id, Action> where Id: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe
+impl<Id, Action> core::panic::unwind_safe::UnwindSafe for termrock::interaction::SemanticScene<Id, Action> where Id: core::panic::unwind_safe::UnwindSafe, Action: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SemanticScene<Id, Action> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SemanticScene<Id, Action>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SemanticScene<Id, Action> where U: core::convert::From<T>
+pub fn termrock::interaction::SemanticScene<Id, Action>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SemanticScene<Id, Action> where U: core::convert::Into<T>
+pub type termrock::interaction::SemanticScene<Id, Action>::Error = core::convert::Infallible
+pub fn termrock::interaction::SemanticScene<Id, Action>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SemanticScene<Id, Action> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SemanticScene<Id, Action>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SemanticScene<Id, Action>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SemanticScene<Id, Action> where T: core::clone::Clone
+pub type termrock::interaction::SemanticScene<Id, Action>::Owned = T
+pub fn termrock::interaction::SemanticScene<Id, Action>::clone_into(&self, &mut T)
+pub fn termrock::interaction::SemanticScene<Id, Action>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SemanticScene<Id, Action> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SemanticScene<Id, Action>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SemanticScene<Id, Action> where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticScene<Id, Action>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SemanticScene<Id, Action> where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticScene<Id, Action>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SemanticScene<Id, Action> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SemanticScene<Id, Action>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SemanticScene<Id, Action>
+pub fn termrock::interaction::SemanticScene<Id, Action>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SemanticScene<Id, Action>
+pub struct termrock::interaction::SemanticSnapshot
+pub termrock::interaction::SemanticSnapshot::diagnostics: alloc::vec::Vec<alloc::string::String>
+pub termrock::interaction::SemanticSnapshot::nodes: alloc::vec::Vec<termrock::interaction::SemanticSnapshotNode>
+impl termrock::interaction::SemanticSnapshot
+pub fn termrock::interaction::SemanticSnapshot::summary_lines(&self, usize) -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::interaction::SemanticSnapshot::to_text(&self) -> alloc::string::String
+impl core::clone::Clone for termrock::interaction::SemanticSnapshot
+pub fn termrock::interaction::SemanticSnapshot::clone(&self) -> termrock::interaction::SemanticSnapshot
+impl core::cmp::Eq for termrock::interaction::SemanticSnapshot
+impl core::cmp::PartialEq for termrock::interaction::SemanticSnapshot
+pub fn termrock::interaction::SemanticSnapshot::eq(&self, &termrock::interaction::SemanticSnapshot) -> bool
+impl core::default::Default for termrock::interaction::SemanticSnapshot
+pub fn termrock::interaction::SemanticSnapshot::default() -> termrock::interaction::SemanticSnapshot
+impl core::fmt::Debug for termrock::interaction::SemanticSnapshot
+pub fn termrock::interaction::SemanticSnapshot::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::interaction::SemanticSnapshot
+impl core::marker::Freeze for termrock::interaction::SemanticSnapshot
+impl core::marker::Send for termrock::interaction::SemanticSnapshot
+impl core::marker::Sync for termrock::interaction::SemanticSnapshot
+impl core::marker::Unpin for termrock::interaction::SemanticSnapshot
+impl core::marker::UnsafeUnpin for termrock::interaction::SemanticSnapshot
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SemanticSnapshot
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::SemanticSnapshot
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SemanticSnapshot where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SemanticSnapshot::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SemanticSnapshot where U: core::convert::From<T>
+pub fn termrock::interaction::SemanticSnapshot::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SemanticSnapshot where U: core::convert::Into<T>
+pub type termrock::interaction::SemanticSnapshot::Error = core::convert::Infallible
+pub fn termrock::interaction::SemanticSnapshot::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SemanticSnapshot where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SemanticSnapshot::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SemanticSnapshot::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SemanticSnapshot where T: core::clone::Clone
+pub type termrock::interaction::SemanticSnapshot::Owned = T
+pub fn termrock::interaction::SemanticSnapshot::clone_into(&self, &mut T)
+pub fn termrock::interaction::SemanticSnapshot::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SemanticSnapshot where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SemanticSnapshot::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SemanticSnapshot where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticSnapshot::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SemanticSnapshot where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticSnapshot::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SemanticSnapshot where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SemanticSnapshot::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SemanticSnapshot
+pub fn termrock::interaction::SemanticSnapshot::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SemanticSnapshot
+pub struct termrock::interaction::SemanticSnapshotNode
+pub termrock::interaction::SemanticSnapshotNode::actions: alloc::vec::Vec<alloc::string::String>
+pub termrock::interaction::SemanticSnapshotNode::busy: bool
+pub termrock::interaction::SemanticSnapshotNode::checked: bool
+pub termrock::interaction::SemanticSnapshotNode::description: core::option::Option<alloc::string::String>
+pub termrock::interaction::SemanticSnapshotNode::disabled: bool
+pub termrock::interaction::SemanticSnapshotNode::expanded: bool
+pub termrock::interaction::SemanticSnapshotNode::focusable: bool
+pub termrock::interaction::SemanticSnapshotNode::height: u16
+pub termrock::interaction::SemanticSnapshotNode::hidden: bool
+pub termrock::interaction::SemanticSnapshotNode::id: alloc::string::String
+pub termrock::interaction::SemanticSnapshotNode::invalid: bool
+pub termrock::interaction::SemanticSnapshotNode::label: core::option::Option<alloc::string::String>
+pub termrock::interaction::SemanticSnapshotNode::parent: core::option::Option<alloc::string::String>
+pub termrock::interaction::SemanticSnapshotNode::role: &'static str
+pub termrock::interaction::SemanticSnapshotNode::selected: bool
+pub termrock::interaction::SemanticSnapshotNode::width: u16
+pub termrock::interaction::SemanticSnapshotNode::x: u16
+pub termrock::interaction::SemanticSnapshotNode::y: u16
+impl core::clone::Clone for termrock::interaction::SemanticSnapshotNode
+pub fn termrock::interaction::SemanticSnapshotNode::clone(&self) -> termrock::interaction::SemanticSnapshotNode
+impl core::cmp::Eq for termrock::interaction::SemanticSnapshotNode
+impl core::cmp::PartialEq for termrock::interaction::SemanticSnapshotNode
+pub fn termrock::interaction::SemanticSnapshotNode::eq(&self, &termrock::interaction::SemanticSnapshotNode) -> bool
+impl core::fmt::Debug for termrock::interaction::SemanticSnapshotNode
+pub fn termrock::interaction::SemanticSnapshotNode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::interaction::SemanticSnapshotNode
+impl core::marker::Freeze for termrock::interaction::SemanticSnapshotNode
+impl core::marker::Send for termrock::interaction::SemanticSnapshotNode
+impl core::marker::Sync for termrock::interaction::SemanticSnapshotNode
+impl core::marker::Unpin for termrock::interaction::SemanticSnapshotNode
+impl core::marker::UnsafeUnpin for termrock::interaction::SemanticSnapshotNode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SemanticSnapshotNode
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::SemanticSnapshotNode
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SemanticSnapshotNode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SemanticSnapshotNode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SemanticSnapshotNode where U: core::convert::From<T>
+pub fn termrock::interaction::SemanticSnapshotNode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SemanticSnapshotNode where U: core::convert::Into<T>
+pub type termrock::interaction::SemanticSnapshotNode::Error = core::convert::Infallible
+pub fn termrock::interaction::SemanticSnapshotNode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SemanticSnapshotNode where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SemanticSnapshotNode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SemanticSnapshotNode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SemanticSnapshotNode where T: core::clone::Clone
+pub type termrock::interaction::SemanticSnapshotNode::Owned = T
+pub fn termrock::interaction::SemanticSnapshotNode::clone_into(&self, &mut T)
+pub fn termrock::interaction::SemanticSnapshotNode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SemanticSnapshotNode where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SemanticSnapshotNode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SemanticSnapshotNode where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticSnapshotNode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SemanticSnapshotNode where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticSnapshotNode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SemanticSnapshotNode where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SemanticSnapshotNode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SemanticSnapshotNode
+pub fn termrock::interaction::SemanticSnapshotNode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SemanticSnapshotNode
+pub struct termrock::interaction::SemanticState
+pub termrock::interaction::SemanticState::busy: bool
+pub termrock::interaction::SemanticState::checked: bool
+pub termrock::interaction::SemanticState::expanded: bool
+pub termrock::interaction::SemanticState::invalid: bool
+pub termrock::interaction::SemanticState::pressed: bool
+pub termrock::interaction::SemanticState::selected: bool
+impl core::clone::Clone for termrock::interaction::SemanticState
+pub fn termrock::interaction::SemanticState::clone(&self) -> termrock::interaction::SemanticState
+impl core::cmp::Eq for termrock::interaction::SemanticState
+impl core::cmp::PartialEq for termrock::interaction::SemanticState
+pub fn termrock::interaction::SemanticState::eq(&self, &termrock::interaction::SemanticState) -> bool
+impl core::default::Default for termrock::interaction::SemanticState
+pub fn termrock::interaction::SemanticState::default() -> termrock::interaction::SemanticState
+impl core::fmt::Debug for termrock::interaction::SemanticState
+pub fn termrock::interaction::SemanticState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::SemanticState
+pub fn termrock::interaction::SemanticState::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::SemanticState
+impl core::marker::StructuralPartialEq for termrock::interaction::SemanticState
+impl core::marker::Freeze for termrock::interaction::SemanticState
+impl core::marker::Send for termrock::interaction::SemanticState
+impl core::marker::Sync for termrock::interaction::SemanticState
+impl core::marker::Unpin for termrock::interaction::SemanticState
+impl core::marker::UnsafeUnpin for termrock::interaction::SemanticState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SemanticState
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::SemanticState
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SemanticState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SemanticState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SemanticState where U: core::convert::From<T>
+pub fn termrock::interaction::SemanticState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SemanticState where U: core::convert::Into<T>
+pub type termrock::interaction::SemanticState::Error = core::convert::Infallible
+pub fn termrock::interaction::SemanticState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SemanticState where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SemanticState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SemanticState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SemanticState where T: core::clone::Clone
+pub type termrock::interaction::SemanticState::Owned = T
+pub fn termrock::interaction::SemanticState::clone_into(&self, &mut T)
+pub fn termrock::interaction::SemanticState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SemanticState where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SemanticState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SemanticState where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SemanticState where T: ?core::marker::Sized
+pub fn termrock::interaction::SemanticState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SemanticState where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SemanticState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SemanticState
+pub fn termrock::interaction::SemanticState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SemanticState
 pub fn termrock::interaction::default_button_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_choice_dialog_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -2869,6 +3217,7 @@ pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> 
 pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::interaction::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::interaction::place_overlay(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> ratatui_core::layout::rect::Rect
 pub fn termrock::interaction::render_backdrop(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect)
+pub type termrock::interaction::SemanticElement<Id, Action> = termrock::interaction::SemanticNode<Id, Action>
 pub mod termrock::keymap
 pub mod termrock::keymap::glyph
 pub const termrock::keymap::glyph::ALL_ARROWS: &str
@@ -7082,6 +7431,12 @@ pub termrock::style::Role::Backdrop
 pub termrock::style::Role::Border
 pub termrock::style::Role::BorderFocused
 pub termrock::style::Role::Canvas
+pub termrock::style::Role::ChartAxis
+pub termrock::style::Role::ChartGrid
+pub termrock::style::Role::ChartSeries1
+pub termrock::style::Role::ChartSeries2
+pub termrock::style::Role::ChartSeries3
+pub termrock::style::Role::ChartSeries4
 pub termrock::style::Role::Danger
 pub termrock::style::Role::DiffAdded
 pub termrock::style::Role::DiffRemoved
@@ -7102,6 +7457,11 @@ pub termrock::style::Role::Selection
 pub termrock::style::Role::StatusBar
 pub termrock::style::Role::Success
 pub termrock::style::Role::Surface
+pub termrock::style::Role::SyntaxComment
+pub termrock::style::Role::SyntaxFunction
+pub termrock::style::Role::SyntaxKeyword
+pub termrock::style::Role::SyntaxNumber
+pub termrock::style::Role::SyntaxString
 pub termrock::style::Role::TabActive
 pub termrock::style::Role::TabActiveHovered
 pub termrock::style::Role::TabInactive
@@ -7641,7 +8001,7 @@ impl<T> either::into_either::IntoEither for termrock::style::Rgb
 pub struct termrock::style::RolePalette
 impl termrock::style::RolePalette
 pub fn termrock::style::RolePalette::from_fn(impl core::ops::function::Fn(termrock::style::Role) -> ratatui_core::style::Style) -> Self
-pub const fn termrock::style::RolePalette::roles() -> [termrock::style::Role; 38]
+pub const fn termrock::style::RolePalette::roles() -> [termrock::style::Role; 49]
 pub fn termrock::style::RolePalette::slate() -> Self
 pub const fn termrock::style::RolePalette::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::RolePalette::tailrocks_phosphor() -> Self
@@ -7743,6 +8103,7 @@ impl<T> either::into_either::IntoEither for termrock::style::SpacingScale
 pub const termrock::style::PHOSPHOR_DARK: ratatui_core::style::color::Color
 pub const termrock::style::PHOSPHOR_GREEN: ratatui_core::style::color::Color
 pub const termrock::style::PREVIEW_CARD: ratatui_core::style::color::Color
+pub const termrock::style::ROLE_COUNT: usize
 pub const fn termrock::style::color(termrock::style::Rgb) -> ratatui_core::style::color::Color
 pub fn termrock::style::faded(ratatui_core::style::color::Color, f32) -> ratatui_core::style::color::Color
 pub fn termrock::style::palette_for_appearance(termrock::style::Appearance) -> termrock::style::RolePalette
@@ -9723,6 +10084,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::InitiatorKind
 pub termrock::widgets::InspectorPanel::Focus
 pub termrock::widgets::InspectorPanel::Layers
 pub termrock::widgets::InspectorPanel::Recipes
+pub termrock::widgets::InspectorPanel::Semantics
 pub termrock::widgets::InspectorPanel::Tokens
 impl core::clone::Clone for termrock::widgets::InspectorPanel
 pub fn termrock::widgets::InspectorPanel::clone(&self) -> termrock::widgets::InspectorPanel
@@ -14734,6 +15096,7 @@ pub termrock::widgets::DesignInspectorFrame::layer: core::option::Option<&'a str
 pub termrock::widgets::DesignInspectorFrame::layers: &'a [&'a str]
 pub termrock::widgets::DesignInspectorFrame::recipes: &'a [&'a str]
 pub termrock::widgets::DesignInspectorFrame::selection_chrome: &'a str
+pub termrock::widgets::DesignInspectorFrame::semantics: &'a [&'a str]
 impl core::default::Default for termrock::widgets::DesignInspectorFrame<'_>
 pub fn termrock::widgets::DesignInspectorFrame<'_>::default() -> Self
 impl<'a> core::clone::Clone for termrock::widgets::DesignInspectorFrame<'a>
@@ -23004,6 +23367,7 @@ pub fn termrock::widgets::SyntaxHighlighter::highlight_line<'a>(&'a self, &'a st
 impl termrock::widgets::SyntaxHighlighter for termrock::widgets::PlainSyntax
 pub fn termrock::widgets::PlainSyntax::highlight_line<'a>(&'a self, &'a str, usize) -> alloc::vec::Vec<(&'a str, ratatui_core::style::Style)>
 pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock::interaction::HitRegion<Id>]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
+pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
 pub fn termrock::widgets::dismiss_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>

@@ -26,6 +26,8 @@ pub enum InspectorPanel {
     Tokens,
     /// Recipe summary.
     Recipes,
+    /// Frame-local semantic tree summary.
+    Semantics,
 }
 
 /// Read-only inspector snapshot for one frame.
@@ -45,6 +47,8 @@ pub struct DesignInspectorFrame<'a> {
     pub recipes: &'a [&'a str],
     /// Selection chrome label.
     pub selection_chrome: &'a str,
+    /// Optional semantic-tree summary lines (from [`crate::interaction::SemanticSnapshot`]).
+    pub semantics: &'a [&'a str],
 }
 
 impl Default for DesignInspectorFrame<'_> {
@@ -57,6 +61,7 @@ impl Default for DesignInspectorFrame<'_> {
             layers: &[],
             recipes: &[],
             selection_chrome: "gutter",
+            semantics: &[],
         }
     }
 }
@@ -108,7 +113,7 @@ impl Widget for &DesignInspector<'_> {
 
         // Tab strip on row 0 when height >= 2.
         let body_y = if area.height >= 2 {
-            let tabs = " F:focus L:layers T:tokens R:recipes ";
+            let tabs = " F:focus L:layers T:tokens R:recipes S:sem ";
             let clipped = take_display_cols(tabs, usize::from(area.width));
             buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), strong);
             area.y.saturating_add(1)
@@ -156,6 +161,20 @@ impl Widget for &DesignInspector<'_> {
                         .collect()
                 }
             }
+            InspectorPanel::Semantics => {
+                if self.frame.semantics.is_empty() {
+                    vec![format!(
+                        "semantics: {} nodes (register SemanticScene)",
+                        self.frame.semantics.len()
+                    )]
+                } else {
+                    self.frame
+                        .semantics
+                        .iter()
+                        .map(|line| (*line).to_string())
+                        .collect()
+                }
+            }
         };
 
         for (i, line) in lines.into_iter().take(usize::from(body_h)).enumerate() {
@@ -190,6 +209,7 @@ mod tests {
             layers: &layers,
             recipes: &["list_row", "panel"],
             selection_chrome: "gutter",
+            semantics: &["list@list [f] Files", "row0@list_item [fs] a.rs"],
         };
         let area = Rect::new(0, 0, 40, 4);
         let mut buffer = Buffer::empty(area);
@@ -205,5 +225,29 @@ mod tests {
             .collect();
         assert!(text.contains("layers") || text.contains("root") || text.contains("F:focus"));
         assert!(text.contains("approval") || text.contains("0:root"));
+    }
+
+    #[test]
+    fn studio_semantics_panel_paints_snapshot_lines() {
+        let system = crate::style::DesignSystem::phosphor();
+        let lines = ["list@list [f] Files", "row0@list_item [fs] a.rs"];
+        let frame = DesignInspectorFrame {
+            semantics: &lines,
+            ..DesignInspectorFrame::default()
+        };
+        let area = Rect::new(0, 0, 48, 4);
+        let mut buffer = Buffer::empty(area);
+        Widget::render(
+            DesignInspector::new(frame, &system).panel(InspectorPanel::Semantics),
+            area,
+            &mut buffer,
+        );
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(text.contains("list") || text.contains("sem") || text.contains("S:sem"));
+        assert!(text.contains("row0") || text.contains("Files"));
     }
 }

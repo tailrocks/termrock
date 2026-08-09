@@ -25,10 +25,10 @@ pub use overlay_stack::{
     BackdropPolicy, NarrowFallback, OverlayEntry, OverlayId, OverlayKind, OverlayOutcome,
     OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, place_overlay,
 };
-pub(crate) use scene::SemanticScene;
 pub use scene::{
     InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
-    LayerKind, SceneError, SemanticElement, SemanticRole,
+    LayerKind, SceneError, SemanticDiagnostic, SemanticElement, SemanticError, SemanticNode,
+    SemanticRole, SemanticScene, SemanticSnapshot, SemanticSnapshotNode, SemanticState,
 };
 
 use ratatui_core::layout::{Position, Rect};

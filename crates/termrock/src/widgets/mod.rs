@@ -111,6 +111,7 @@ pub use hint_bar::{
 pub use image_surface::{ImageMeta, ImageProtocol, ImageSurface, protocol_emission_hint};
 pub use jump_overlay::{
     JUMP_OVERLAY_ID, JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges,
+    assign_jump_badges_from_semantics,
     dismiss_jump_overlay, open_jump_overlay,
 };
 pub use list::{List, ListClickPolicy, ListRow, ListState, RowRole};

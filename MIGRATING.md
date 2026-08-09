@@ -92,6 +92,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0076 | `v0.13.0` | [Button premium redesign](migrations/0076-v0.13.0-button-premium.md) |
 | 0077 | `v0.13.0` | [PermissionPrompt premium](migrations/0077-v0.13.0-permission-prompt-premium.md) |
 | 0078 | `v0.13.0` | [TextArea accepts_input](migrations/0078-v0.13.0-text-area-accepts-input.md) |
+| 0079 | `v0.13.0` | [SemanticScene public tree](migrations/0079-v0.13.0-semantic-scene.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

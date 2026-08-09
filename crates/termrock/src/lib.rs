@@ -63,11 +63,8 @@ mod focus_authority_policy {
             "InteractionScene remains public"
         );
         assert!(
-            !interaction.lines().any(|l| {
-                let t = l.trim();
-                t.starts_with("pub use scene::{") && t.contains("SemanticScene")
-            }),
-            "SemanticScene must not ride public scene re-export"
+            interaction.contains("SemanticScene"),
+            "SemanticScene is public frame-local semantic tree (migration 0079)"
         );
     }
 }

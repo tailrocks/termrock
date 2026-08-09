@@ -47,7 +47,7 @@ This supersedes the README line that claimed “no reduced-color or `NO_COLOR` d
 1. **Immediate mode:** per-frame registration; no retained widget DOM.
 2. **Semantic intents:** widgets consume `UiIntent` where practical; raw keys map via `default_list_intents` / application keymaps.
 3. **Overlay stack:** `OverlayHost` + `EscCascade` peel one layer; focus scopes restore via `FocusRing`.
-4. **Semantic scene:** `SemanticScene` registers id + rect + role for hit/focus discovery without replacing Ratatui.
+4. **Semantic scene:** `SemanticScene` rebuilds a parented tree each frame (id, parent, role, label, description, state, actions, rect, focusable/disabled) for hit discovery, help, jump, Studio snapshots, and AI-readable UI — without replacing Ratatui or owning focus (`InteractionScene` remains sole input authority). See `semantic-scene.md` / migration `0079`.
 5. **Ownership:** domain state, effects, secrets, and process policy stay application-owned.
 
 ## Forward-only API

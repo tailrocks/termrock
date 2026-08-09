@@ -184,7 +184,32 @@ pub enum Role {
     DiffAdded,
     /// Removed line or segment in a diff.
     DiffRemoved,
+    /// Syntax: language keyword.
+    SyntaxKeyword,
+    /// Syntax: string literal.
+    SyntaxString,
+    /// Syntax: comment.
+    SyntaxComment,
+    /// Syntax: numeric literal.
+    SyntaxNumber,
+    /// Syntax: function / method name.
+    SyntaxFunction,
+    /// Chart series 1 (primary series).
+    ChartSeries1,
+    /// Chart series 2.
+    ChartSeries2,
+    /// Chart series 3.
+    ChartSeries3,
+    /// Chart series 4.
+    ChartSeries4,
+    /// Chart axis labels and ticks.
+    ChartAxis,
+    /// Chart grid / guide lines.
+    ChartGrid,
 }
+
+/// Number of [`Role`] variants (stable for palette array sizing).
+pub const ROLE_COUNT: usize = 49;
 
 macro_rules! every_role {
     ($macro:ident) => {
@@ -226,7 +251,18 @@ macro_rules! every_role {
             ActionDisabled,
             StatusBar,
             DiffAdded,
-            DiffRemoved
+            DiffRemoved,
+            SyntaxKeyword,
+            SyntaxString,
+            SyntaxComment,
+            SyntaxNumber,
+            SyntaxFunction,
+            ChartSeries1,
+            ChartSeries2,
+            ChartSeries3,
+            ChartSeries4,
+            ChartAxis,
+            ChartGrid
         }
     };
 }
@@ -264,7 +300,7 @@ every_role!(define_role_exhaustiveness_guard);
 /// assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
 /// ```
 pub struct RolePalette {
-    roles: [Style; 38],
+    roles: [Style; ROLE_COUNT],
 }
 
 impl RolePalette {
@@ -317,6 +353,19 @@ impl RolePalette {
                 Style::new(),
                 Style::new().fg(DIFF_ADDED_FG).bg(DIFF_ADDED_BG),
                 Style::new().fg(DIFF_REMOVED_FG).bg(DIFF_REMOVED_BG),
+                // Syntax
+                Style::new().fg(Color::Rgb(200, 120, 255)), // keyword
+                Style::new().fg(Color::Rgb(180, 240, 160)), // string
+                Style::new().fg(PHOSPHOR_DIM),              // comment
+                Style::new().fg(Color::Rgb(255, 200, 100)), // number
+                Style::new().fg(Color::Rgb(120, 220, 255)), // function
+                // Chart series + axis/grid
+                Style::new().fg(PHOSPHOR_GREEN),
+                Style::new().fg(CYAN),
+                Style::new().fg(WARNING_YELLOW),
+                Style::new().fg(Color::Rgb(180, 120, 255)),
+                Style::new().fg(BORDER_GRAY),
+                Style::new().fg(Color::Rgb(50, 50, 50)),
             ],
         }
     }
@@ -385,6 +434,19 @@ impl RolePalette {
                 Style::new()
                     .fg(Color::Rgb(252, 165, 165))
                     .bg(Color::Rgb(127, 29, 29)),
+                // Syntax
+                Style::new().fg(Color::Rgb(192, 132, 252)),
+                Style::new().fg(Color::Rgb(134, 239, 172)),
+                Style::new().fg(muted),
+                Style::new().fg(Color::Rgb(253, 186, 116)),
+                Style::new().fg(Color::Rgb(125, 211, 252)),
+                // Chart
+                Style::new().fg(accent),
+                Style::new().fg(info),
+                Style::new().fg(warning),
+                Style::new().fg(Color::Rgb(192, 132, 252)),
+                Style::new().fg(muted),
+                Style::new().fg(border),
             ],
         }
     }
@@ -399,7 +461,7 @@ impl RolePalette {
     /// Build a theme by answering every semantic role from a function.
     #[must_use]
     pub fn from_fn(f: impl Fn(Role) -> Style) -> Self {
-        let mut roles = [Style::new(); 38];
+        let mut roles = [Style::new(); ROLE_COUNT];
         for role in Self::roles() {
             roles[role as usize] = f(role);
         }
@@ -408,7 +470,7 @@ impl RolePalette {
 
     /// Return every semantic role in stable positional order.
     #[must_use]
-    pub const fn roles() -> [Role; 38] {
+    pub const fn roles() -> [Role; ROLE_COUNT] {
         every_role!(role_array)
     }
 
@@ -432,8 +494,8 @@ mod tests {
     #[test]
     fn roles_cover_the_positional_theme_array() {
         let roles = RolePalette::roles();
-        assert_eq!(roles.len(), 38);
-        assert_eq!(Role::DiffRemoved as usize, roles.len() - 1);
+        assert_eq!(roles.len(), ROLE_COUNT);
+        assert_eq!(Role::ChartGrid as usize, roles.len() - 1);
         for (index, role) in roles.into_iter().enumerate() {
             role_is_declared(role);
             assert_eq!(role as usize, index);
