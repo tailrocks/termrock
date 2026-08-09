@@ -13,13 +13,31 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        MouseButton,
+        MouseEvent,
+        MouseEventKind,
+    },
     interaction::{
-        OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
+        OverlayId,
+        OverlayKind,
+        OverlayOutcome,
+        OverlaySize,
+        OverlaySpec,
+        OverlayStack,
         place_overlay,
     },
-    style::{Role, Theme},
-    text::{display_cols, take_display_cols},
+    style::{
+        Role,
+        Theme,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
 };
 
 /// One borrowed completion candidate.
@@ -258,10 +276,10 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
             }
             return self.commit(candidates);
         }
-        let Some(intent) = crate::default_list_intent(key) else {
+        let Some(intent) = crate::interaction::default_list_intent(key) else {
             return CompletionMenuOutcome::Ignored;
         };
-        if matches!(intent, crate::UiIntent::Activate) && key.kind != KeyEventKind::Press {
+        if matches!(intent, crate::interaction::UiIntent::Activate) && key.kind != KeyEventKind::Press {
             return CompletionMenuOutcome::Ignored;
         }
         self.handle_intent(candidates, intent)
@@ -271,7 +289,7 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
     pub fn handle_intent(
         &mut self,
         candidates: &[CompletionCandidate<'_, Id>],
-        intent: crate::UiIntent,
+        intent: crate::interaction::UiIntent,
     ) -> CompletionMenuOutcome<Id> {
         if !self.open {
             return CompletionMenuOutcome::Ignored;

@@ -4,9 +4,20 @@ use ratatui_core::{layout::Rect, terminal::Frame, text::Line, widgets::Widget};
 use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
-    scroll::{DialogScroll, effective_offset},
-    style::{Density, DesignTokens, Role, Theme},
-    widgets::{Panel, PanelEmphasis},
+    scroll::{
+        DialogScroll,
+        effective_offset,
+    },
+    style::{
+        Density,
+        DesignTokens,
+        Role,
+        Theme,
+    },
+    widgets::{
+        Panel,
+        PanelEmphasis,
+    },
 };
 
 /// Minimal dialog shell: clear area, paint bordered block, return inner area.

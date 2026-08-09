@@ -8,8 +8,17 @@ use ratatui_core::{
 use ratatui_widgets::{block::Block, borders::Borders, paragraph::Paragraph};
 
 use crate::{
-    scroll::{DialogScroll, UNCACHED_REVISION, full_cell_thumb, is_scrollable, max_line_width},
-    style::{Role, Theme},
+    scroll::{
+        DialogScroll,
+        full_cell_thumb,
+        is_scrollable,
+        max_line_width,
+        UNCACHED_REVISION,
+    },
+    style::{
+        Role,
+        Theme,
+    },
 };
 
 use super::PanelEmphasis;

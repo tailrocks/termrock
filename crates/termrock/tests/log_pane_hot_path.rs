@@ -1,12 +1,24 @@
 //! Integration coverage for the log-pane rendering hot path.
 
-use std::{alloc::System, hint::black_box, sync::Mutex};
+use std::{
+    alloc::System,
+    hint::black_box,
+    sync::Mutex,
+    time::Instant,
+};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
 use termrock::{
-    Theme,
-    widgets::{LogPane, LogPaneState},
+    perf::{
+        check_batch_budget,
+        check_max_rows_touched,
+    },
+    style::Theme,
+    widgets::{
+        LogPane,
+        LogPaneState,
+    },
 };
 
 #[global_allocator]
@@ -35,19 +47,34 @@ fn warmed_tail_render_allocations_scale_with_visible_rows() {
 
     pane.render(area, &mut buffer, &mut state);
     let allocations = Region::new(GLOBAL);
+    let started = Instant::now();
     for _ in 0..SAMPLES {
         pane.render(area, black_box(&mut buffer), black_box(&mut state));
     }
+    let elapsed = started.elapsed();
     let change = allocations.change();
 
     assert!(state.is_following());
     assert_eq!(state.len(), LINE_COUNT);
+    let per_render = change.allocations.div_ceil(SAMPLES);
+    check_max_rows_touched(
+        "log_append_follow_alloc",
+        u32::try_from(per_render).unwrap_or(u32::MAX),
+    )
+    .unwrap_or_else(|e| {
+        panic!(
+            "{e}; total_allocs={}; samples={SAMPLES}; visible={VISIBLE_ROWS}; history={LINE_COUNT}; {change:?}",
+            change.allocations
+        )
+    });
     assert!(
         change.allocations < MAX_ALLOCATIONS_PER_RENDER * SAMPLES,
         "log-pane allocations must scale with {VISIBLE_ROWS} visible rows, not {LINE_COUNT} buffered lines: {change:?}"
     );
+    check_batch_budget("log_append_follow", SAMPLES as u32, elapsed)
+        .unwrap_or_else(|e| panic!("{e}"));
     eprintln!(
-        "log-pane hot path: {SAMPLES} renders, {LINE_COUNT} lines, {VISIBLE_ROWS} visible, {change:?}"
+        "log-pane hot path: {SAMPLES} renders, {LINE_COUNT} lines, {VISIBLE_ROWS} visible, {elapsed:?}, {change:?}"
     );
 }
 

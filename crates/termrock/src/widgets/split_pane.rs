@@ -6,8 +6,15 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
-    style::{Role, Theme},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+    },
+    style::{
+        Role,
+        Theme,
+    },
 };
 
 const RATIO_SCALE: u16 = 10_000;

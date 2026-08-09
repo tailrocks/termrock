@@ -10,11 +10,22 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::{
-        HitRegion, OverlayId, OverlayOutcome, OverlaySpec, OverlayStack,
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
     },
-    style::{Role, Theme},
+    interaction::{
+        HitRegion,
+        OverlayId,
+        OverlayOutcome,
+        OverlaySpec,
+        OverlayStack,
+    },
+    style::{
+        Role,
+        Theme,
+    },
 };
 
 /// Default overlay id for jump mode (fullscreen-class, owns input).

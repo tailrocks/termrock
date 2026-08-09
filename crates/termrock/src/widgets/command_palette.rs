@@ -16,10 +16,24 @@ use ratatui_core::{
 use crate::{
     input::KeyEvent,
     interaction::{
-        OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
-        OverlayStack, place_overlay,
+        OverlayId,
+        OverlayKind,
+        OverlayOutcome,
+        OverlayPolicy,
+        OverlaySize,
+        OverlaySpec,
+        OverlayStack,
+        place_overlay,
     },
-    widgets::{ListRow, Panel, PanelEmphasis, Picker, PickerOutcome, PickerState, TextInputState},
+    widgets::{
+        ListRow,
+        Panel,
+        PanelEmphasis,
+        Picker,
+        PickerOutcome,
+        PickerState,
+        TextInputState,
+    },
 };
 
 /// Default overlay id for a command palette on an [`OverlayStack`].

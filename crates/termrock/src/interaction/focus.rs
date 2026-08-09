@@ -3,7 +3,11 @@
 use ratatui_core::layout::{Position, Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+    },
     widgets::PanelEmphasis,
 };
 

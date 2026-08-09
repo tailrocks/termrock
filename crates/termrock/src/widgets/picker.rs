@@ -5,9 +5,16 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+    },
     interaction::Outcome,
-    style::{DesignTokens, Role},
+    style::{
+        DesignTokens,
+        Role,
+    },
     text::take_display_cols,
 };
 
@@ -151,7 +158,7 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         }
         // Collection intents target the results list when unshifted navigation.
         if key.modifiers.is_empty()
-            && let Some(intent) = crate::default_list_intent(key)
+            && let Some(intent) = crate::interaction::default_list_intent(key)
         {
             return self.handle_intent(visible, intent);
         }
@@ -166,9 +173,9 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
     pub fn handle_intent(
         &mut self,
         visible: &[ListRow<'_, Id>],
-        intent: crate::UiIntent,
+        intent: crate::interaction::UiIntent,
     ) -> PickerOutcome<Id> {
-        use crate::UiIntent;
+        use crate::interaction::UiIntent;
         match intent {
             UiIntent::Cancel | UiIntent::Close => {
                 if !self.query.value().is_empty() {

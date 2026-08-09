@@ -7,9 +7,22 @@ use ratatui_core::{
     widgets::StatefulWidget,
 };
 use termrock::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
-    style::{DesignTokens, Role},
-    widgets::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyModifiers,
+    },
+    style::{
+        DesignTokens,
+        Role,
+    },
+    widgets::{
+        Tree,
+        TreeNode,
+        TreeNodeStatus,
+        TreeOutcome,
+        TreeState,
+    },
 };
 
 fn nodes() -> Vec<TreeNode<'static, &'static str>> {

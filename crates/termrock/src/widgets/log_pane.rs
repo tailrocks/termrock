@@ -9,10 +9,21 @@ use std::fmt::Write as _;
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+    },
     interaction::Outcome,
-    scroll::{DialogScroll, TailScroll, max_offset},
-    style::{Role, Theme},
+    scroll::{
+        DialogScroll,
+        max_offset,
+        TailScroll,
+    },
+    style::{
+        Role,
+        Theme,
+    },
     text::display_cols,
 };
 

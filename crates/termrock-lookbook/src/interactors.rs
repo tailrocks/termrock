@@ -8,22 +8,87 @@ use ratatui::{
 };
 use std::num::NonZeroU16;
 use termrock::{
-    Theme,
-    input::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        Event,
+        KeyCode,
+        KeyEvent,
+        MouseButton,
+        MouseEvent,
+        MouseEventKind,
+    },
     interaction::Outcome,
-    style::{ColorCapability, Density, DesignTokens},
+    style::{
+        ColorCapability,
+        Density,
+        DesignTokens,
+        Theme,
+    },
     widgets::{
-        Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk, BUILTIN_THEME_PRESETS,
-        CellAlignment, ChoiceDialogState, Column, ColumnWidth, CommandPalette, CommandPaletteState,
-        ComposerChip, ContextEstimate, DesignInspector, DesignInspectorFrame, Form, FormOutcome,
-        FormSection, FormState, InspectorPanel, List, ListState, LogPane, LogPaneState,
-        ModeIndicator, ModelIndicator, Picker, PickerOutcome, PickerState, PromptBox,
-        PromptBoxState, PromptComposer, PromptComposerOutcome, PromptComposerState, Severity,
-        SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, Tab, Table,
-        TableOutcome, TableRow, TableState, Tabs, TabsState, TextArea, TextAreaOutcome,
-        TextAreaState, TextInput, TextInputOutcome, TextInputState, ThemePicker, ThemePickerState,
-        Toast, Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode,
-        TreeOutcome, TreeState, VirtualGridState,
+        Anchor,
+        ApprovalCard,
+        ApprovalCardState,
+        ApprovalRisk,
+        BUILTIN_THEME_PRESETS,
+        CellAlignment,
+        ChoiceDialogState,
+        Column,
+        ColumnWidth,
+        CommandPalette,
+        CommandPaletteState,
+        ComposerChip,
+        ContextEstimate,
+        DesignInspector,
+        DesignInspectorFrame,
+        Form,
+        FormOutcome,
+        FormSection,
+        FormState,
+        InspectorPanel,
+        List,
+        ListState,
+        LogPane,
+        LogPaneState,
+        ModeIndicator,
+        ModelIndicator,
+        Picker,
+        PickerOutcome,
+        PickerState,
+        PromptBox,
+        PromptBoxState,
+        PromptComposer,
+        PromptComposerOutcome,
+        PromptComposerState,
+        Severity,
+        SplitDirection,
+        SplitPane,
+        SplitPaneOutcome,
+        SplitPaneState,
+        SplitRatio,
+        Tab,
+        Table,
+        TableOutcome,
+        TableRow,
+        TableState,
+        Tabs,
+        TabsState,
+        TextArea,
+        TextAreaOutcome,
+        TextAreaState,
+        TextInput,
+        TextInputOutcome,
+        TextInputState,
+        ThemePicker,
+        ThemePickerState,
+        Toast,
+        Transcript,
+        TranscriptBlock,
+        TranscriptKind,
+        TranscriptState,
+        Tree,
+        TreeNode,
+        TreeOutcome,
+        TreeState,
+        VirtualGridState,
     },
 };
 
@@ -398,7 +463,7 @@ impl TreeInteractor {
 
 impl StoryInteraction for TreeInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let tokens = DesignTokens::new(self.theme.clone(), termrock::Density::default());
+        let tokens = DesignTokens::new(self.theme.clone(), termrock::style::Density::default());
         frame.render_stateful_widget(&Tree::new(&self.nodes, &tokens), area, &mut self.state);
     }
 
@@ -1140,8 +1205,7 @@ impl StoryInteraction for PromptComposerInteractor {
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
         let layout = self.state.layout_in(preview_area);
         !matches!(
-            self.state
-                .handle_mouse(mouse, layout.editor, &layout.chip_hits),
+            self.state.handle_mouse_at(mouse, &layout),
             PromptComposerOutcome::Ignored
         )
     }

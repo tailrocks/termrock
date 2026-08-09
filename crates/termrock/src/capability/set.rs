@@ -150,6 +150,28 @@ pub fn fallback_policies() -> &'static [FallbackPolicy] {
     &FALLBACKS
 }
 
+#[cfg(test)]
+mod fallback_tests {
+    use super::*;
+
+    #[test]
+    fn every_capability_kind_has_fallback_policy() {
+        let policies = fallback_policies();
+        assert_eq!(policies.len(), CapabilityKind::ALL.len());
+        for kind in CapabilityKind::ALL {
+            assert!(
+                policies.iter().any(|p| p.kind == kind),
+                "missing FallbackPolicy for {:?}",
+                kind
+            );
+            let p = policies.iter().find(|p| p.kind == kind).unwrap();
+            assert!(!p.fallback.is_empty());
+            assert!(p.story.starts_with("capability/"));
+            assert!(!p.contract_test.is_empty());
+        }
+    }
+}
+
 const FALLBACKS: [FallbackPolicy; 20] = [
     FallbackPolicy {
         kind: CapabilityKind::Truecolor,

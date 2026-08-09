@@ -4,11 +4,12 @@ use std::{
     alloc::System,
     hint::black_box,
     num::NonZeroU16,
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
+use termrock::perf::{check_batch_budget, check_zero_alloc_steady};
 use termrock::style::DesignTokens;
 use termrock::widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState};
 
@@ -84,17 +85,13 @@ fn warmed_large_table_paints_only_the_viewport_without_allocating() {
     }
     let elapsed = started.elapsed();
     let change = allocations.change();
-    assert_eq!(
-        change.allocations, 0,
-        "warmed renders allocated: {change:?}"
-    );
-    assert_eq!(
-        change.reallocations, 0,
-        "warmed renders reallocated: {change:?}"
-    );
+    check_zero_alloc_steady(
+        "table_viewport_10k_alloc",
+        change.allocations,
+        change.reallocations,
+    )
+    .unwrap_or_else(|e| panic!("{e}; stats={change:?}"));
     assert_eq!(state.row_regions.len(), usize::from(HEIGHT - 1));
-    assert!(
-        elapsed <= Duration::from_millis(250),
-        "table hot path exceeded budget: {elapsed:?}"
-    );
+    check_batch_budget("table_viewport_10k", SAMPLES as u32, elapsed)
+        .unwrap_or_else(|e| panic!("{e}"));
 }

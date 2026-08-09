@@ -11,7 +11,13 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyEvent,
+        KeyEventKind,
+        MouseButton,
+        MouseEvent,
+        MouseEventKind,
+    },
     style::Role,
 };
 
@@ -353,7 +359,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
 
     /// Handles focused keyboard navigation and semantic activation.
     ///
-    /// Keys are mapped through [`crate::default_table_intent`]; activation is
+    /// Keys are mapped through [`crate::interaction::default_table_intent`]; activation is
     /// Press-only so held Enter cannot multi-fire.
     pub fn handle_key(
         &mut self,
@@ -363,10 +369,10 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         if !self.focused || key.kind == KeyEventKind::Release || !key.modifiers.is_empty() {
             return TableOutcome::Ignored;
         }
-        let Some(intent) = crate::default_table_intent(key) else {
+        let Some(intent) = crate::interaction::default_table_intent(key) else {
             return TableOutcome::Ignored;
         };
-        if matches!(intent, crate::UiIntent::Activate) && key.kind != KeyEventKind::Press {
+        if matches!(intent, crate::interaction::UiIntent::Activate) && key.kind != KeyEventKind::Press {
             return TableOutcome::Ignored;
         }
         self.handle_intent(rows, intent)
@@ -376,7 +382,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
     pub fn handle_intent(
         &mut self,
         rows: &[TableRow<'_, RowId>],
-        intent: crate::UiIntent,
+        intent: crate::interaction::UiIntent,
     ) -> TableOutcome<RowId, ColumnId> {
         if !self.focused {
             return TableOutcome::Ignored;

@@ -9,10 +9,22 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::Stateful
 
 use crate::{
     input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseButton,
+        MouseEvent,
+        MouseEventKind,
     },
-    style::{Role, Theme},
-    text::{display_cols, take_display_cols},
+    style::{
+        Role,
+        Theme,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
 };
 
 /// Width policy for one grid column.
@@ -418,7 +430,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
     /// Handles a key event. Call only when focused.
     ///
     /// Vertical navigation/page/activate/cancel route through
-    /// [`crate::default_table_intent`]. Horizontal arrows and Shift range
+    /// [`crate::interaction::default_table_intent`]. Horizontal arrows and Shift range
     /// remain grid geometry (2-axis). Activate is Press-only.
     ///
     /// `rows` is the current borrowed resident projection used to resolve
@@ -436,15 +448,15 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         let control = event.modifiers.contains(KeyModifiers::CONTROL);
         let before = (self.first_row, self.first_col);
         // Prefer universal intents for shared collection actions.
-        if !control && let Some(intent) = crate::default_table_intent(event) {
-            if matches!(intent, crate::UiIntent::Activate) && event.kind != KeyEventKind::Press {
+        if !control && let Some(intent) = crate::interaction::default_table_intent(event) {
+            if matches!(intent, crate::interaction::UiIntent::Activate) && event.kind != KeyEventKind::Press {
                 return VirtualGridOutcome::Ignored;
             }
             // Page/Activate/Cancel/vertical Move via intent; Left/Right not in table map.
             if !matches!(
                 intent,
-                crate::UiIntent::Move(crate::NavigationMove::Previous)
-                    | crate::UiIntent::Move(crate::NavigationMove::Next)
+                crate::interaction::UiIntent::Move(crate::interaction::NavigationMove::Previous)
+                    | crate::interaction::UiIntent::Move(crate::interaction::NavigationMove::Next)
             ) || matches!(
                 event.code,
                 KeyCode::Up | KeyCode::Down | KeyCode::Char('k' | 'j')
@@ -527,7 +539,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
     /// Applies a semantic collection intent (row axis + activate/cancel).
     pub fn handle_intent(
         &mut self,
-        intent: crate::UiIntent,
+        intent: crate::interaction::UiIntent,
         extend: bool,
         columns: &[GridColumn<'_, ColId>],
         rows: &[GridRow<'_, RowId>],

@@ -18,9 +18,15 @@ use json::json_escape;
 use stories::stories;
 use svg::{check_svgs, write_story_svgs};
 use termrock::{
-    Theme,
     input::KeyCode,
-    keymap::{KeyBinding, KeyChord, Keymap, Visibility, glyph},
+    keymap::{
+        glyph,
+        KeyBinding,
+        KeyChord,
+        Keymap,
+        Visibility,
+    },
+    style::Theme,
 };
 
 const USAGE: &str = "usage: termrock-lookbook <terminal|list|render|check>";

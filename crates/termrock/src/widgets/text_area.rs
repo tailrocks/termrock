@@ -7,11 +7,26 @@ use ratatui_core::{
 };
 
 use crate::{
-    Theme,
-    input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind},
+    input::{
+        Event,
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseButton,
+        MouseEventKind,
+    },
     scroll::DialogScroll,
-    style::{Density, DesignTokens, Role},
-    text::{display_cols, display_cols_slice_into},
+    style::{
+        Density,
+        DesignTokens,
+        Role,
+        Theme,
+    },
+    text::{
+        display_cols,
+        display_cols_slice_into,
+    },
 };
 
 use super::{Panel, PanelEmphasis, edit_core};
@@ -160,6 +175,87 @@ impl TextAreaState {
     #[must_use]
     pub const fn cursor(&self) -> TextCursor {
         self.cursor
+    }
+
+    /// Absolute UTF-8 byte offset of `cursor` in LF-joined document text.
+    #[must_use]
+    pub fn absolute_byte(&self, cursor: TextCursor) -> Option<usize> {
+        if cursor.line >= self.lines.len()
+            || !edit_core::is_boundary(&self.lines[cursor.line], cursor.byte)
+        {
+            return None;
+        }
+        let mut abs = 0usize;
+        for (i, line) in self.lines.iter().enumerate() {
+            if i == cursor.line {
+                return Some(abs.saturating_add(cursor.byte.min(line.len())));
+            }
+            abs = abs.saturating_add(line.len()).saturating_add(1);
+        }
+        None
+    }
+
+    /// Cursor at absolute byte in LF-joined document (clamped to grapheme boundary).
+    #[must_use]
+    pub fn cursor_at_byte(&self, abs: usize) -> TextCursor {
+        let mut remaining = abs;
+        let last = self.lines.len().saturating_sub(1);
+        for (i, line) in self.lines.iter().enumerate() {
+            if remaining <= line.len() {
+                let byte = edit_core::boundary_at_or_before(line, remaining);
+                return TextCursor { line: i, byte };
+            }
+            if i == last {
+                return TextCursor {
+                    line: i,
+                    byte: line.len(),
+                };
+            }
+            remaining = remaining.saturating_sub(line.len().saturating_add(1));
+        }
+        TextCursor {
+            line: last,
+            byte: self.lines.last().map_or(0, String::len),
+        }
+    }
+
+    /// Text between two cursors (order-independent). Empty range → empty string.
+    #[must_use]
+    pub fn extract_between(&self, a: TextCursor, b: TextCursor) -> Option<String> {
+        let (start, end) = order_cursors(a, b);
+        self.extract_range(start, end)
+    }
+
+    /// Replaces the span between two cursors with `replacement`, places cursor after it.
+    pub fn replace_between(
+        &mut self,
+        a: TextCursor,
+        b: TextCursor,
+        replacement: &str,
+    ) -> TextAreaOutcome {
+        let Some(start_abs) = self.absolute_byte(a) else {
+            return TextAreaOutcome::Ignored;
+        };
+        let Some(end_abs) = self.absolute_byte(b) else {
+            return TextAreaOutcome::Ignored;
+        };
+        let (lo, hi) = if start_abs <= end_abs {
+            (start_abs, end_abs)
+        } else {
+            (end_abs, start_abs)
+        };
+        let text = self.text();
+        let lo = lo.min(text.len());
+        let hi = hi.min(text.len()).max(lo);
+        let mut next = String::with_capacity(text.len() - (hi - lo) + replacement.len());
+        next.push_str(&text[..lo]);
+        next.push_str(replacement);
+        next.push_str(&text[hi..]);
+        let cursor_abs = lo.saturating_add(replacement.len());
+        self.set_text(&next);
+        let cursor = self.cursor_at_byte(cursor_abs);
+        let _ = self.set_cursor(cursor);
+        TextAreaOutcome::Changed
     }
 
     /// Sets a cursor only when it names an existing grapheme boundary.
@@ -504,7 +600,17 @@ impl TextAreaState {
         out.push_str(&self.lines[end.line][..end.byte]);
         Some(out)
     }
+}
 
+fn order_cursors(a: TextCursor, b: TextCursor) -> (TextCursor, TextCursor) {
+    if a.line < b.line || (a.line == b.line && a.byte <= b.byte) {
+        (a, b)
+    } else {
+        (b, a)
+    }
+}
+
+impl TextAreaState {
     #[cfg(test)]
     fn apply_inverse(&mut self, edit: TextEditDelta) {
         match edit {

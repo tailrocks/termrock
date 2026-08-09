@@ -4,7 +4,10 @@ use ratatui_core::{
 
 use crate::{
     interaction::HitRegion,
-    style::{Role, Theme},
+    style::{
+        Role,
+        Theme,
+    },
 };
 use unicode_width::UnicodeWidthStr;
 

@@ -8,10 +8,25 @@ use ratatui_core::{
 use ratatui_core::style::Modifier;
 
 use crate::{
-    input::{KeyEvent, KeyEventKind},
-    interaction::{HitRegion, NavigationMove, Outcome, PageMove, UiIntent, default_list_intent},
+    input::{
+        KeyEvent,
+        KeyEventKind,
+    },
+    interaction::{
+        default_list_intent,
+        HitRegion,
+        NavigationMove,
+        Outcome,
+        PageMove,
+        UiIntent,
+    },
     scroll::max_offset,
-    style::{DesignSystem, DesignTokens, ListRowVisualState, Role},
+    style::{
+        DesignSystem,
+        DesignTokens,
+        ListRowVisualState,
+        Role,
+    },
 };
 
 use super::{ComposedRow, Selection};
@@ -565,12 +580,9 @@ impl ListState<usize> {
 ///
 /// ```
 /// use ratatui_core::text::Line;
-/// use termrock::{
-///     Theme,
-///     input::{KeyCode, KeyEvent, KeyModifiers},
-///     interaction::Outcome,
-///     widgets::{List, ListRow, ListState, RowRole},
-/// };
+/// use termrock::input::{KeyCode, KeyEvent, KeyModifiers};
+/// use termrock::interaction::Outcome;
+/// use termrock::widgets::{List, ListRow, ListState, RowRole};
 ///
 /// let rows = [
 ///     ListRow { id: "a", label: Line::from("Alpha"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true , loading: false },

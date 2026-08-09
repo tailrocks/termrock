@@ -8,12 +8,32 @@ use ratatui_core::{
 use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::{
-        HitRegion, Outcome, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize,
-        OverlaySpec, OverlayStack, place_overlay,
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
     },
-    style::{Density, DesignTokens, Theme},
+    interaction::{
+        HitRegion,
+        NavigationMove,
+        Outcome,
+        OverlayId,
+        OverlayKind,
+        OverlayOutcome,
+        OverlayPolicy,
+        OverlaySize,
+        OverlaySpec,
+        OverlayStack,
+        place_overlay,
+        UiIntent,
+    },
+    style::{
+        Density,
+        DesignSystem,
+        DesignTokens,
+        Role,
+        Theme,
+    },
 };
 
 use super::{
@@ -35,11 +55,52 @@ pub struct DialogSize {
 
 impl Default for DialogSize {
     fn default() -> Self {
-        Self {
-            width: 48,
-            height: 12,
+        Self::for_density(Density::Comfortable)
+    }
+}
+
+impl DialogSize {
+    /// Preferred size for a density mode (cells).
+    #[must_use]
+    pub const fn for_density(density: Density) -> Self {
+        match density {
+            Density::Comfortable => Self {
+                width: 48,
+                height: 12,
+            },
+            Density::Compact => Self {
+                width: 40,
+                height: 10,
+            },
+            Density::Dashboard => Self {
+                width: 36,
+                height: 8,
+            },
         }
     }
+
+    /// Minimum usable width before fullscreen promotion (policy elsewhere).
+    #[must_use]
+    pub const fn min_width(density: Density) -> u16 {
+        match density {
+            Density::Comfortable => 40,
+            Density::Compact => 36,
+            Density::Dashboard => 32,
+        }
+    }
+}
+
+/// Visual / semantic dialog chrome variant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum DialogVariant {
+    /// Neutral elevated dialog.
+    #[default]
+    Default,
+    /// Destructive / risk surface (`PanelEmphasis::Danger`).
+    Danger,
+    /// Informational emphasis (focused border, info title tone).
+    Info,
 }
 
 impl From<DialogSize> for OverlaySize {
@@ -128,6 +189,31 @@ impl Backdrop {
         Self::default()
     }
 
+    /// Terminal-default background (Reset) — preferred modal scrim.
+    #[must_use]
+    pub fn reset() -> Self {
+        Self::default()
+    }
+
+    /// Optional dim wash using a glyph field (ASCII-safe `.` fallback).
+    #[must_use]
+    pub fn dim_wash(ascii: bool) -> Self {
+        Self {
+            symbol: if ascii { '.' } else { '░' },
+            style: Style::new()
+                .fg(Color::DarkGray)
+                .bg(crate::style::DIALOG_BACKDROP)
+                .add_modifier(ratatui_core::style::Modifier::DIM),
+        }
+    }
+
+    /// Resolves backdrop from design tokens (Reset by default; no hard black).
+    #[must_use]
+    pub fn from_tokens(tokens: &DesignTokens) -> Self {
+        let _ = tokens;
+        Self::reset()
+    }
+
     #[must_use]
     /// Sets the fill symbol used across the backdrop.
     pub const fn symbol(mut self, symbol: char) -> Self {
@@ -169,9 +255,14 @@ mod backdrop_tests {
     use ratatui_core::{layout::Position, widgets::StatefulWidget};
 
     use crate::{
-        input::KeyModifiers,
-        interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlayStack},
-    };
+    input::KeyModifiers,
+    interaction::{
+        OverlayId,
+        OverlayKind,
+        OverlayOutcome,
+        OverlayStack,
+    },
+};
 
     #[test]
     fn default_backdrop_uses_terminal_background() {
@@ -262,13 +353,17 @@ mod backdrop_tests {
         ];
         let mut state = ChoiceDialogState::new(Some("accept"));
         assert_eq!(
-            state.handle_key(&actions, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
+            state.handle_intent(&actions, UiIntent::Move(NavigationMove::Next)),
             Outcome::Changed
         );
         assert_eq!(state.focused, Some("cancel"));
         assert_eq!(
-            state.handle_key(&actions, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            state.handle_intent(&actions, UiIntent::Activate),
             Outcome::Activated("cancel")
+        );
+        assert_eq!(
+            state.handle_intent(&actions, UiIntent::Cancel),
+            Outcome::Cancelled
         );
         assert_eq!(
             state.handle_key(&actions, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
@@ -284,9 +379,10 @@ mod backdrop_tests {
             enabled: true,
             style: None,
         }];
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
         let dialog = ChoiceDialog::new(
-            Dialog::new("Choose", Text::from("Continue?"), &theme).emphasis(PanelEmphasis::Focused),
+            Dialog::new("Choose", Text::from("Continue?"), &tokens)
+                .emphasis(PanelEmphasis::Focused),
             &actions,
         );
         let area = Rect::new(3, 2, 30, 6);
@@ -312,12 +408,12 @@ mod backdrop_tests {
             emphasis: false,
             style: None,
         }];
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
         let dialog = MessageDialog::new(
-            Dialog::new("Failure", Text::from("a message that wraps"), &theme)
+            Dialog::new("Failure", Text::from("a message that wraps"), &tokens)
                 .emphasis(PanelEmphasis::Focused),
             &details,
-            &theme,
+            &tokens.theme,
         )
         .wrap(true);
         let area = Rect::new(0, 0, 12, 8);
@@ -329,16 +425,16 @@ mod backdrop_tests {
 
     #[test]
     fn dialog_uses_semantic_focused_panel_chrome() {
-        let theme = Theme::default();
-        let dialog =
-            Dialog::new(" Notice ", Text::from("Done"), &theme).emphasis(PanelEmphasis::Focused);
+        let tokens = DesignTokens::default();
+        let dialog = Dialog::new(" Notice ", Text::from("Done"), &tokens)
+            .emphasis(PanelEmphasis::Focused);
         let area = Rect::new(0, 0, 18, 4);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);
 
         assert_eq!(
             buffer[(0, 0)].fg,
-            theme.style(crate::style::Role::BorderFocused).fg.unwrap()
+            tokens.theme.style(crate::style::Role::BorderFocused).fg.unwrap()
         );
         assert!(
             buffer
@@ -349,29 +445,121 @@ mod backdrop_tests {
                 .contains(" Notice ")
         );
     }
+
+    #[test]
+    fn danger_variant_uses_danger_border_and_title_cue() {
+        let tokens = DesignTokens::default();
+        let dialog = Dialog::new("Delete", Text::from("Irreversible"), &tokens)
+            .variant(DialogVariant::Danger);
+        let area = Rect::new(0, 0, 24, 5);
+        let mut buffer = Buffer::empty(area);
+        (&dialog).render(area, &mut buffer);
+        assert_eq!(
+            buffer[(0, 0)].fg,
+            tokens.theme.style(Role::Danger).fg.unwrap()
+        );
+        let text: String = buffer.content().iter().map(|c| c.symbol()).collect();
+        assert!(text.contains('!') || text.contains("Delete"), "{text:?}");
+    }
+
+    #[test]
+    fn loading_disables_choice_activation() {
+        let actions = [Action {
+            id: "ok",
+            label: "OK",
+            enabled: true,
+            style: None,
+        }];
+        let mut state = ChoiceDialogState::new(Some("ok"));
+        state.set_loading(true);
+        assert_eq!(
+            state.handle_intent(&actions, UiIntent::Activate),
+            Outcome::Ignored
+        );
+        state.set_loading(false);
+        assert_eq!(
+            state.handle_intent(&actions, UiIntent::Activate),
+            Outcome::Activated("ok")
+        );
+    }
+
+    #[test]
+    fn empty_body_and_from_system() {
+        let system = DesignSystem::phosphor();
+        let dialog = Dialog::from_system("Empty", Text::default(), &system)
+            .footer_hint("esc dismiss");
+        let area = Rect::new(0, 0, 28, 6);
+        let mut buffer = Buffer::empty(area);
+        (&dialog).render(area, &mut buffer);
+        let text: String = buffer.content().iter().map(|c| c.symbol()).collect();
+        assert!(text.contains("Empty"), "{text:?}");
+        assert!(text.contains("esc") || text.contains("dismiss"), "{text:?}");
+    }
+
+    #[test]
+    fn dim_wash_backdrop_is_not_hard_black() {
+        let wash = Backdrop::dim_wash(false);
+        assert_ne!(wash.symbol, '\0');
+        assert_eq!(wash.style.bg, Some(Color::Reset));
+    }
+
+    #[test]
+    fn dialog_size_tracks_density() {
+        assert!(DialogSize::for_density(Density::Comfortable).width
+            >= DialogSize::for_density(Density::Dashboard).width);
+        assert!(DialogSize::min_width(Density::Comfortable) >= 32);
+    }
 }
 
 #[derive(Debug, Clone)]
 /// A framed modal surface with resolved geometry.
+///
+/// Anatomy: frame (Panel) · title · body · optional footer hint · loading cue.
+/// Open/close and Esc trap live on [`OverlayStack`]; this widget is pure paint +
+/// geometry for the modal rect.
 pub struct Dialog<'a> {
     title: &'a str,
     body: Text<'a>,
     style: Style,
-    theme: &'a Theme,
+    tokens: &'a DesignTokens,
     emphasis: PanelEmphasis,
+    variant: DialogVariant,
+    footer_hint: Option<&'a str>,
+    loading: bool,
 }
 
 impl<'a> Dialog<'a> {
     #[must_use]
-    /// Creates a dialog from a geometry specification and semantic theme.
-    pub const fn new(title: &'a str, body: Text<'a>, theme: &'a Theme) -> Self {
+    /// Creates a dialog painted from design tokens / recipes.
+    pub const fn new(title: &'a str, body: Text<'a>, tokens: &'a DesignTokens) -> Self {
         Self {
             title,
             body,
             style: Style::new(),
-            theme,
+            tokens,
             emphasis: PanelEmphasis::Normal,
+            variant: DialogVariant::Default,
+            footer_hint: None,
+            loading: false,
         }
+    }
+
+    /// Preferred constructor from [`DesignSystem`].
+    #[must_use]
+    pub const fn from_system(title: &'a str, body: Text<'a>, system: &'a DesignSystem) -> Self {
+        Self::new(title, body, &system.tokens)
+    }
+
+    /// Theme borrow for child widgets that still take `&Theme`.
+    #[must_use]
+    pub const fn theme(&self) -> &Theme {
+        &self.tokens.theme
+    }
+
+    /// Design tokens used for panel recipes and density.
+    #[must_use]
+    pub const fn tokens(&self) -> &DesignTokens {
+        self.tokens
     }
 
     #[must_use]
@@ -382,23 +570,96 @@ impl<'a> Dialog<'a> {
     }
 
     #[must_use]
-    /// Sets the semantic panel emphasis.
+    /// Sets the semantic panel emphasis (overridden by danger variant).
     pub const fn emphasis(mut self, emphasis: PanelEmphasis) -> Self {
         self.emphasis = emphasis;
         self
     }
+
+    /// Sets chrome variant (default / danger / info).
+    #[must_use]
+    pub const fn variant(mut self, variant: DialogVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+
+    /// Optional footer hint row (keymap help); dropped on tiny heights.
+    #[must_use]
+    pub const fn footer_hint(mut self, hint: &'a str) -> Self {
+        self.footer_hint = Some(hint);
+        self
+    }
+
+    /// Loading chrome (title busy glyph); consumers disable actions separately.
+    #[must_use]
+    pub const fn loading(mut self, loading: bool) -> Self {
+        self.loading = loading;
+        self
+    }
+
+    fn resolved_emphasis(&self) -> PanelEmphasis {
+        match self.variant {
+            DialogVariant::Danger => PanelEmphasis::Danger,
+            DialogVariant::Default | DialogVariant::Info => self.emphasis,
+        }
+    }
+
+    fn title_for_paint(&self) -> String {
+        let mut title = self.title.to_string();
+        if matches!(self.variant, DialogVariant::Danger) && !title.contains('!') {
+            title = format!("! {title}");
+        }
+        if self.loading {
+            let glyph = self.tokens.glyphs.loading();
+            title = format!("{title} {glyph}");
+        }
+        title
+    }
 }
 impl Widget for &Dialog<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
+        if area.is_empty() {
+            return;
+        }
         Clear.render(area, buffer);
-        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
-        let panel = Panel::new(&tokens)
-            .title(self.title)
-            .emphasis(self.emphasis);
+        let emphasis = self.resolved_emphasis();
+        let title = self.title_for_paint();
+        let panel = Panel::new(self.tokens)
+            .title(title.as_str())
+            .emphasis(emphasis);
+        let mut body_style = self.style;
+        if body_style.fg.is_none() {
+            body_style = body_style.patch(self.tokens.theme.style(Role::Text));
+        }
+        // Tiny: border + title only.
+        if area.height < 3 {
+            panel.block().render(area, buffer);
+            return;
+        }
+        let footer_rows = u16::from(self.footer_hint.is_some() && area.height >= 5);
+        let body_area = if footer_rows > 0 {
+            Rect::new(
+                area.x,
+                area.y,
+                area.width,
+                area.height.saturating_sub(footer_rows),
+            )
+        } else {
+            area
+        };
         Paragraph::new(self.body.clone())
             .block(panel.block())
-            .style(self.style)
-            .render(area, buffer);
+            .style(body_style)
+            .render(body_area, buffer);
+        if let Some(hint) = self.footer_hint
+            && footer_rows > 0
+        {
+            let y = area.bottom().saturating_sub(2);
+            let x = area.x.saturating_add(1);
+            let w = area.width.saturating_sub(2);
+            let style = self.tokens.theme.style(Role::TextMuted);
+            buffer.set_stringn(x, y, hint, usize::from(w), style);
+        }
     }
 }
 
@@ -415,6 +676,8 @@ pub struct ChoiceDialogState<Id> {
     pub focused: Option<Id>,
     /// Hit regions produced by the most recent render.
     pub regions: Vec<HitRegion<Id>>,
+    /// When true, activation is ignored (async confirm in progress).
+    loading: bool,
 }
 
 impl<Id> Default for ChoiceDialogState<Id> {
@@ -422,6 +685,7 @@ impl<Id> Default for ChoiceDialogState<Id> {
         Self {
             focused: None,
             regions: Vec::new(),
+            loading: false,
         }
     }
 }
@@ -433,19 +697,71 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         Self {
             focused,
             regions: Vec::new(),
+            loading: false,
         }
     }
 
+    /// Marks the dialog as waiting on an async action (blocks activation).
+    pub const fn set_loading(&mut self, loading: bool) {
+        self.loading = loading;
+    }
+
+    #[must_use]
+    /// Returns whether activation is suppressed.
+    pub const fn is_loading(&self) -> bool {
+        self.loading
+    }
+
     /// Routes cancellation, cyclic action focus, and activation keys.
+    ///
+    /// Prefer [`Self::handle_intent`] when the app owns keymaps.
     pub fn handle_key(&mut self, actions: &[Action<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
         }
-        match key.code {
-            KeyCode::Esc => Outcome::Cancelled,
-            KeyCode::Enter => self.activate_selected(actions),
-            KeyCode::Left | KeyCode::Up | KeyCode::BackTab => self.select_relative(actions, -1),
-            KeyCode::Right | KeyCode::Down | KeyCode::Tab => self.select_relative(actions, 1),
+        let intent = match key.code {
+            KeyCode::Esc => UiIntent::Cancel,
+            KeyCode::Enter => UiIntent::Activate,
+            KeyCode::Left | KeyCode::Up | KeyCode::BackTab => {
+                UiIntent::Move(NavigationMove::Previous)
+            }
+            KeyCode::Right | KeyCode::Down | KeyCode::Tab => UiIntent::Move(NavigationMove::Next),
+            _ => return Outcome::Ignored,
+        };
+        self.handle_intent(actions, intent)
+    }
+
+    /// Semantic intent routing for footer actions.
+    pub fn handle_intent(&mut self, actions: &[Action<'_, Id>], intent: UiIntent) -> Outcome<Id> {
+        if self.loading
+            && matches!(
+                intent,
+                UiIntent::Activate | UiIntent::Submit | UiIntent::Open
+            )
+        {
+            return Outcome::Ignored;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => Outcome::Cancelled,
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Open => {
+                self.activate_selected(actions)
+            }
+            UiIntent::Move(NavigationMove::Previous) => self.select_relative(actions, -1),
+            UiIntent::Move(NavigationMove::Next) => self.select_relative(actions, 1),
+            UiIntent::Move(NavigationMove::First) => {
+                let enabled: Vec<_> = actions.iter().filter(|a| a.enabled).collect();
+                enabled.first().map_or(Outcome::Ignored, |a| {
+                    self.focused = Some(a.id.clone());
+                    Outcome::Changed
+                })
+            }
+            UiIntent::Move(NavigationMove::Last) => {
+                let enabled: Vec<_> = actions.iter().filter(|a| a.enabled).collect();
+                enabled.last().map_or(Outcome::Ignored, |a| {
+                    self.focused = Some(a.id.clone());
+                    Outcome::Changed
+                })
+            }
             _ => Outcome::Ignored,
         }
     }
@@ -484,6 +800,9 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     #[must_use]
     /// Returns the semantic outcome for the currently selected item.
     pub fn activate_selected(&self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
+        if self.loading {
+            return Outcome::Ignored;
+        }
         self.focused
             .as_ref()
             .and_then(|focused| {
@@ -499,6 +818,9 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     #[must_use]
     /// Maps a pointer position to the semantic outcome of the painted hit region.
     pub fn click(&mut self, position: ratatui_core::layout::Position) -> Outcome<Id> {
+        if self.loading {
+            return Outcome::Ignored;
+        }
         let Some(region) = self
             .regions
             .iter()
@@ -557,7 +879,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
             focused: state.focused.clone(),
             regions: Vec::new(),
         };
-        (&ActionBar::new(self.actions, self.dialog.theme).gap(self.gap)).render(
+        (&ActionBar::new(self.actions, self.dialog.theme()).gap(self.gap)).render(
             action_area,
             buffer,
             &mut action_state,

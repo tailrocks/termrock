@@ -22,17 +22,42 @@ use ratatui_core::{
 
 use crate::{
     input::{
-        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
+        Event,
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseButton,
+        MouseEvent,
         MouseEventKind,
     },
     interaction::{
-        OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
+        OverlayId,
+        OverlayKind,
+        OverlayOutcome,
+        OverlaySize,
+        OverlaySpec,
+        OverlayStack,
         place_overlay,
     },
-    style::{Density, DesignTokens, Role, Theme},
-    text::{display_cols, take_display_cols},
+    style::{
+        Density,
+        DesignTokens,
+        Role,
+        Theme,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
     widgets::{
-        Panel, PanelEmphasis, TextArea, TextAreaOutcome, TextAreaState, TextCursor, TokenMeter,
+        Panel,
+        PanelEmphasis,
+        TextArea,
+        TextAreaOutcome,
+        TextAreaState,
+        TextCursor,
+        TokenMeter,
     },
 };
 
@@ -67,7 +92,7 @@ pub enum ChipKind {
     Other,
 }
 
-/// Stable attachment / paste chip (consumer owns bytes/path meaning).
+/// Stable attachment / paste chip (consumer owns path meaning; paste may hold body).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComposerChip {
     /// Stable id.
@@ -80,6 +105,8 @@ pub struct ComposerChip {
     pub meta: Option<String>,
     /// Optional byte size for paste chips.
     pub bytes: Option<usize>,
+    /// Optional full payload (large paste body). Consumer may strip for privacy.
+    pub payload: Option<String>,
 }
 
 impl ComposerChip {
@@ -92,10 +119,11 @@ impl ComposerChip {
             label: label.into(),
             meta: None,
             bytes: None,
+            payload: None,
         }
     }
 
-    /// Large paste chip.
+    /// Large paste chip (preview label; full body in [`Self::payload`]).
     #[must_use]
     pub fn paste(id: impl Into<String>, preview: impl Into<String>, bytes: usize) -> Self {
         Self {
@@ -104,6 +132,26 @@ impl ComposerChip {
             label: preview.into(),
             meta: Some(format!("{bytes} B")),
             bytes: Some(bytes),
+            payload: None,
+        }
+    }
+
+    /// Large paste chip retaining full body for expand / submit.
+    #[must_use]
+    pub fn paste_with_body(
+        id: impl Into<String>,
+        preview: impl Into<String>,
+        body: impl Into<String>,
+    ) -> Self {
+        let body = body.into();
+        let bytes = body.len();
+        Self {
+            id: id.into(),
+            kind: ChipKind::Paste,
+            label: preview.into(),
+            meta: Some(format!("{bytes} B")),
+            bytes: Some(bytes),
+            payload: Some(body),
         }
     }
 }
@@ -312,6 +360,15 @@ pub enum PromptComposerOutcome {
     PresentationChanged(ComposerPresentation),
     /// Focus left the composer (consumer may move focus).
     Blur,
+    /// Selection copied (Ctrl+C with active selection when not busy).
+    SelectionCopied {
+        /// Selected text.
+        text: String,
+    },
+    /// Fullscreen overlay should open (presentation already set).
+    FullscreenRequested,
+    /// Fullscreen overlay should close.
+    FullscreenDismissed,
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -350,6 +407,8 @@ pub struct PromptComposerState {
     context: ContextEstimate,
     density: Density,
     ascii_fallback: bool,
+    /// Force word/glyph status (no emoji); pair with monochrome Theme for no-color.
+    colorless: bool,
     placeholder: String,
 
     // —— policy / session ——
@@ -393,6 +452,7 @@ impl PromptComposerState {
             context: ContextEstimate::default(),
             density: Density::Comfortable,
             ascii_fallback: false,
+            colorless: false,
             placeholder: "Message…".into(),
             policy: SubmitPolicy::default(),
             connection: ComposerConnection::Ready,
@@ -500,6 +560,21 @@ impl PromptComposerState {
         self.ascii_fallback = ascii;
     }
 
+    /// No-color / monochrome-friendly chrome (forces ASCII marks; host should also
+    /// pass a monochrome-quantized [`Theme`]).
+    pub fn set_colorless(&mut self, colorless: bool) {
+        self.colorless = colorless;
+        if colorless {
+            self.ascii_fallback = true;
+        }
+    }
+
+    /// Whether colorless chrome is active.
+    #[must_use]
+    pub const fn is_colorless(&self) -> bool {
+        self.colorless
+    }
+
     /// Placeholder when empty.
     pub fn set_placeholder(&mut self, placeholder: impl Into<String>) {
         self.placeholder = placeholder.into();
@@ -529,7 +604,7 @@ impl PromptComposerState {
         self.validation_error.as_deref()
     }
 
-    /// Clears draft text only (keeps chips unless `clear_chips`).
+    /// Clears draft text only (keeps chips).
     pub fn clear_draft(&mut self) {
         self.push_undo();
         self.editor.set_text("");
@@ -538,6 +613,36 @@ impl PromptComposerState {
         self.history_index = None;
         self.history_draft = None;
         self.validation_error = None;
+    }
+
+    /// Whether a non-empty selection is active.
+    #[must_use]
+    pub fn has_selection(&self) -> bool {
+        self.select_anchor
+            .is_some_and(|a| a != self.editor.cursor())
+    }
+
+    /// Selected text if any (order-independent).
+    #[must_use]
+    pub fn selected_text(&self) -> Option<String> {
+        let anchor = self.select_anchor?;
+        let cur = self.editor.cursor();
+        if anchor == cur {
+            return None;
+        }
+        self.editor.extract_between(anchor, cur)
+    }
+
+    /// Clears selection without moving the caret.
+    pub fn clear_selection(&mut self) {
+        self.select_anchor = None;
+    }
+
+    /// Selects entire draft.
+    pub fn select_all(&mut self) {
+        let end = self.editor.cursor_at_byte(self.text().len());
+        self.select_anchor = Some(TextCursor::default());
+        let _ = self.editor.set_cursor(end);
     }
 
     /// Adds a chip.
@@ -555,7 +660,34 @@ impl PromptComposerState {
         before != self.chips.len()
     }
 
-    /// Inserts text at cursor (records undo).
+    /// Chip by id (e.g. expand paste payload).
+    #[must_use]
+    pub fn chip(&self, id: &str) -> Option<&ComposerChip> {
+        self.chips.iter().find(|c| c.id == id)
+    }
+
+    /// Removes a queue entry by id.
+    pub fn remove_queue_entry(&mut self, id: &str) -> bool {
+        let before = self.queue.len();
+        self.queue.retain(|e| e.id != id);
+        before != self.queue.len()
+    }
+
+    /// Pops the front queued prompt (FIFO drain by host).
+    pub fn pop_queue_front(&mut self) -> Option<QueuedPrompt> {
+        if self.queue.is_empty() {
+            None
+        } else {
+            Some(self.queue.remove(0))
+        }
+    }
+
+    /// Clears the submit queue (does not touch draft).
+    pub fn clear_queue(&mut self) {
+        self.queue.clear();
+    }
+
+    /// Inserts text at cursor (records undo); replaces selection if any.
     pub fn insert_text(&mut self, text: &str) -> PromptComposerOutcome {
         if self.connection == ComposerConnection::Disabled {
             return PromptComposerOutcome::Ignored;
@@ -572,6 +704,20 @@ impl PromptComposerState {
         self.editor.set_text(text);
         self.select_anchor = None;
         self.completion = CompletionQuery::default();
+    }
+
+    /// Applies text returned from an external editor (draft preserved until this call).
+    pub fn apply_external_editor_text(&mut self, text: &str) -> PromptComposerOutcome {
+        if self.connection == ComposerConnection::Disabled {
+            return PromptComposerOutcome::Ignored;
+        }
+        self.push_undo();
+        self.editor.set_text(text);
+        self.select_anchor = None;
+        self.completion = CompletionQuery::default();
+        self.history_index = None;
+        self.history_draft = None;
+        self.after_edit()
     }
 
     /// Consumer commits a completion: replaces trigger..cursor with `insertion`.
@@ -593,6 +739,23 @@ impl PromptComposerState {
         PromptComposerOutcome::Changed
     }
 
+    /// Commit a completion candidate: insert token and emit [`PromptComposerOutcome::CompletionCommitted`].
+    pub fn commit_completion(
+        &mut self,
+        id: impl Into<String>,
+        insertion: &str,
+    ) -> PromptComposerOutcome {
+        let kind = self.completion.kind;
+        if kind == CompletionKind::None {
+            return PromptComposerOutcome::Ignored;
+        }
+        let id = id.into();
+        match self.apply_completion_insert(insertion) {
+            PromptComposerOutcome::Ignored => PromptComposerOutcome::Ignored,
+            _ => PromptComposerOutcome::CompletionCommitted { kind, id },
+        }
+    }
+
     /// Closes completion without editing.
     pub fn close_completion(&mut self) -> PromptComposerOutcome {
         if self.completion.kind == CompletionKind::None {
@@ -600,6 +763,61 @@ impl PromptComposerState {
         }
         self.completion = CompletionQuery::default();
         PromptComposerOutcome::CompletionClosed
+    }
+
+    /// Suggested presentation for terminal width (host may apply).
+    #[must_use]
+    pub const fn presentation_for_width(width: u16) -> ComposerPresentation {
+        if width < 40 {
+            ComposerPresentation::Compact
+        } else if width < 100 {
+            ComposerPresentation::Normal
+        } else {
+            ComposerPresentation::Expanded
+        }
+    }
+
+    /// Contracts presentation for narrow widths (never expands user Fullscreen).
+    pub fn contract_for_width(&mut self, width: u16) -> PromptComposerOutcome {
+        if self.presentation == ComposerPresentation::Fullscreen {
+            return PromptComposerOutcome::Ignored;
+        }
+        let target = Self::presentation_for_width(width);
+        let rank = |p: ComposerPresentation| match p {
+            ComposerPresentation::Compact => 0u8,
+            ComposerPresentation::Normal => 1,
+            ComposerPresentation::Expanded => 2,
+            ComposerPresentation::Fullscreen => 3,
+        };
+        if rank(target) < rank(self.presentation) {
+            self.presentation = target;
+            if width < 48 {
+                self.ascii_fallback = true;
+            }
+            return PromptComposerOutcome::PresentationChanged(target);
+        }
+        if width < 48 {
+            self.ascii_fallback = true;
+        }
+        PromptComposerOutcome::Ignored
+    }
+
+    /// Promotes to fullscreen presentation (host should open overlay).
+    pub fn request_fullscreen(&mut self) -> PromptComposerOutcome {
+        if self.presentation == ComposerPresentation::Fullscreen {
+            return PromptComposerOutcome::Ignored;
+        }
+        self.presentation = ComposerPresentation::Fullscreen;
+        PromptComposerOutcome::FullscreenRequested
+    }
+
+    /// Leaves fullscreen to normal (host should dismiss overlay).
+    pub fn exit_fullscreen(&mut self) -> PromptComposerOutcome {
+        if self.presentation != ComposerPresentation::Fullscreen {
+            return PromptComposerOutcome::Ignored;
+        }
+        self.presentation = ComposerPresentation::Normal;
+        PromptComposerOutcome::FullscreenDismissed
     }
 
     /// Preferred editor height in rows for presentation + area.
@@ -648,27 +866,49 @@ impl PromptComposerState {
             return self.close_completion();
         }
 
-        // Ctrl+Z / Ctrl+Y undo redo
-        if key.modifiers.contains(KeyModifiers::CONTROL) {
+        // Ctrl chords: undo/redo, interrupt/cancel, external editor, select-all, attach
+        if key.modifiers.contains(KeyModifiers::CONTROL)
+            && !key.modifiers.contains(KeyModifiers::ALT)
+        {
             match key.code {
                 KeyCode::Char('z') | KeyCode::Char('Z') => return self.undo(),
                 KeyCode::Char('y') | KeyCode::Char('Y') => return self.redo(),
-                KeyCode::Char('c') | KeyCode::Char('C') if self.busy => {
-                    return PromptComposerOutcome::Interrupt;
+                KeyCode::Char('a') | KeyCode::Char('A') => {
+                    self.select_all();
+                    return PromptComposerOutcome::Changed;
+                }
+                KeyCode::Char('c') | KeyCode::Char('C') => {
+                    if let Some(text) = self.selected_text().filter(|t| !t.is_empty()) {
+                        return PromptComposerOutcome::SelectionCopied { text };
+                    }
+                    if self.busy {
+                        // Soft interrupt — draft preserved
+                        return PromptComposerOutcome::Interrupt;
+                    }
+                    return PromptComposerOutcome::Ignored;
                 }
                 KeyCode::Char('e') | KeyCode::Char('E') => {
                     return PromptComposerOutcome::ExternalEditor;
                 }
+                KeyCode::Char('u') | KeyCode::Char('U') if self.busy => {
+                    // Hard cancel / stop when agent active
+                    return PromptComposerOutcome::Cancel;
+                }
+                KeyCode::Backspace if self.busy => {
+                    return PromptComposerOutcome::Cancel;
+                }
+                KeyCode::Char('o') | KeyCode::Char('O')
+                    if key.modifiers.contains(KeyModifiers::SHIFT) =>
+                {
+                    return PromptComposerOutcome::AttachRequest;
+                }
+                KeyCode::Char('f') | KeyCode::Char('F')
+                    if key.modifiers.contains(KeyModifiers::SHIFT) =>
+                {
+                    return self.request_fullscreen();
+                }
                 _ => {}
             }
-        }
-
-        // Stop / cancel when busy: Ctrl+Backspace or dedicated
-        if self.busy
-            && key.code == KeyCode::Char('c')
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-        {
-            return PromptComposerOutcome::Cancel;
         }
 
         // Submit / newline policy
@@ -682,6 +922,7 @@ impl PromptComposerState {
             }
             if mod_newline || !self.policy.submit_on_enter {
                 self.push_undo();
+                self.delete_selection_if_any();
                 let _ = self
                     .editor
                     .handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
@@ -693,14 +934,33 @@ impl PromptComposerState {
             if self.completion.kind != CompletionKind::None {
                 return self.close_completion();
             }
+            if self.presentation == ComposerPresentation::Fullscreen {
+                return self.exit_fullscreen();
+            }
             if self.select_anchor.take().is_some() {
                 return PromptComposerOutcome::Changed;
             }
             return PromptComposerOutcome::DismissRequest;
         }
 
-        // History: Up/Down on first/last line empty-ish
+        // Shift+arrows: extend selection
+        if key.modifiers.contains(KeyModifiers::SHIFT)
+            && matches!(
+                key.code,
+                KeyCode::Left
+                    | KeyCode::Right
+                    | KeyCode::Up
+                    | KeyCode::Down
+                    | KeyCode::Home
+                    | KeyCode::End
+            )
+        {
+            return self.extend_selection_with(key);
+        }
+
+        // History: Up/Down on first/last line (no modifiers)
         if key.modifiers.is_empty() && self.try_history_nav(key.code) {
+            self.select_anchor = None;
             return PromptComposerOutcome::Changed;
         }
 
@@ -709,7 +969,34 @@ impl PromptComposerState {
             return out;
         }
 
-        // Detect slash / @ triggers after plain char path below
+        // Typing / delete with selection replaces span
+        let replaces = matches!(
+            key.code,
+            KeyCode::Char(_) | KeyCode::Backspace | KeyCode::Delete | KeyCode::Tab
+        );
+        if replaces && self.has_selection() {
+            self.push_undo();
+            self.delete_selection_if_any();
+            if matches!(key.code, KeyCode::Backspace | KeyCode::Delete) {
+                return self.after_edit();
+            }
+        } else if !key.modifiers.contains(KeyModifiers::SHIFT) {
+            // Plain navigation clears selection
+            if matches!(
+                key.code,
+                KeyCode::Left
+                    | KeyCode::Right
+                    | KeyCode::Up
+                    | KeyCode::Down
+                    | KeyCode::Home
+                    | KeyCode::End
+                    | KeyCode::PageUp
+                    | KeyCode::PageDown
+            ) {
+                self.select_anchor = None;
+            }
+        }
+
         let before = self.text();
         match self.editor.handle_key(key) {
             TextAreaOutcome::Changed => {
@@ -742,10 +1029,34 @@ impl PromptComposerState {
                 preview
             };
             self.chips
-                .push(ComposerChip::paste(id, preview, text.len()));
+                .push(ComposerChip::paste_with_body(id, preview, text.to_string()));
             return PromptComposerOutcome::Changed;
         }
         self.insert_text(text)
+    }
+
+    /// Mouse using a full layout (chips, editor, mode/model status hits).
+    pub fn handle_mouse_at(
+        &mut self,
+        mouse: MouseEvent,
+        layout: &PromptComposerLayout,
+    ) -> PromptComposerOutcome {
+        if self.connection == ComposerConnection::Disabled {
+            return PromptComposerOutcome::Ignored;
+        }
+        if mouse.kind == MouseEventKind::Down(MouseButton::Left) {
+            if let Some(area) = layout.mode_hit
+                && area.contains(mouse.position)
+            {
+                return PromptComposerOutcome::ModeMenu;
+            }
+            if let Some(area) = layout.model_hit
+                && area.contains(mouse.position)
+            {
+                return PromptComposerOutcome::ModelMenu;
+            }
+        }
+        self.handle_mouse(mouse, layout.editor, &layout.chip_hits)
     }
 
     /// Mouse: click in editor positions cursor; chip hits remove/activate.
@@ -772,7 +1083,12 @@ impl PromptComposerState {
             }
             if editor_area.contains(mouse.position) {
                 self.set_focused(true);
-                // TextArea handles click via scroll_to / position — use event
+                if !mouse.modifiers.contains(KeyModifiers::SHIFT) {
+                    self.select_anchor = None;
+                } else if self.select_anchor.is_none() {
+                    self.select_anchor = Some(self.editor.cursor());
+                }
+                // TextArea handles click via scroll_to / position
                 let _ = self.editor.handle_event(Event::Mouse(mouse));
                 return PromptComposerOutcome::Changed;
             }
@@ -787,7 +1103,7 @@ impl PromptComposerState {
         }
     }
 
-    /// Unified event entry.
+    /// Unified event entry (editor + chips; use [`Self::handle_mouse_at`] for status hits).
     pub fn handle_event(
         &mut self,
         event: Event,
@@ -843,6 +1159,37 @@ impl PromptComposerState {
             OverlaySize::menu(width, height),
             crate::interaction::OverlayPolicy::for_kind(OverlayKind::Completion),
         )
+    }
+
+    /// Opens fullscreen editor overlay on the stack.
+    pub fn open_fullscreen_overlay<FocusId: Clone>(
+        &self,
+        stack: &mut OverlayStack<FocusId>,
+        bounds: Rect,
+        opener: Option<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        stack.open(
+            bounds,
+            OverlaySpec {
+                id: OverlayId::from_static(PROMPT_FULLSCREEN_OVERLAY_ID),
+                kind: OverlayKind::Dialog,
+                parent: None,
+                anchor: None,
+                size: OverlaySize::dialog(
+                    bounds.width.saturating_sub(2).max(20),
+                    bounds.height.saturating_sub(2).max(8),
+                ),
+                opener_focus: opener,
+                policy: None,
+            },
+        )
+    }
+
+    /// Dismisses fullscreen editor overlay.
+    pub fn dismiss_fullscreen_overlay<FocusId: Clone>(
+        stack: &mut OverlayStack<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        stack.dismiss(&OverlayId::from_static(PROMPT_FULLSCREEN_OVERLAY_ID))
     }
 
     // —— internals ——
@@ -933,13 +1280,37 @@ impl PromptComposerState {
     }
 
     fn delete_selection_if_any(&mut self) {
-        // Selection editing is caret-only until TextArea gains ranges;
-        // clear anchor so shift-nav can be layered later.
-        self.select_anchor = None;
+        let Some(anchor) = self.select_anchor.take() else {
+            return;
+        };
+        let cur = self.editor.cursor();
+        if anchor == cur {
+            return;
+        }
+        let _ = self.editor.replace_between(anchor, cur, "");
+    }
+
+    fn extend_selection_with(&mut self, key: KeyEvent) -> PromptComposerOutcome {
+        if self.select_anchor.is_none() {
+            self.select_anchor = Some(self.editor.cursor());
+        }
+        // Strip SHIFT so TextArea moves caret without treating as special.
+        let bare = KeyEvent::new(key.code, KeyModifiers::NONE);
+        match self.editor.handle_key(bare) {
+            TextAreaOutcome::Changed => {
+                if self.select_anchor == Some(self.editor.cursor()) {
+                    self.select_anchor = None;
+                }
+                PromptComposerOutcome::Changed
+            }
+            TextAreaOutcome::Ignored => PromptComposerOutcome::Ignored,
+            TextAreaOutcome::Cancelled => PromptComposerOutcome::DismissRequest,
+        }
     }
 
     fn after_edit(&mut self) -> PromptComposerOutcome {
         self.validation_error = None;
+        self.select_anchor = None;
         if let Some(q) = detect_completion(&self.text(), self.editor.cursor()) {
             self.completion = q.clone();
             return PromptComposerOutcome::Completion { query: q };
@@ -1113,6 +1484,10 @@ pub struct PromptComposerLayout {
     pub editor: Rect,
     /// Status / indicators row.
     pub status: Rect,
+    /// Mode badge hit target within status (if present).
+    pub mode_hit: Option<Rect>,
+    /// Model badge hit target within status (if present).
+    pub model_hit: Option<Rect>,
     /// Validation line.
     pub validation: Rect,
 }
@@ -1171,12 +1546,99 @@ fn layout_composer(area: Rect, state: &PromptComposerState) -> PromptComposerLay
     y = y.saturating_add(editor_h);
     if status_h > 0 {
         layout.status = Rect::new(area.x, y, area.width, 1);
+        // Mode / model hit targets (left-aligned segments).
+        let mut sx = area.x;
+        if let Some(mode) = &state.mode {
+            let w = (display_cols(&mode.label) as u16).saturating_add(1).max(1);
+            let w = w.min(layout.status.width);
+            layout.mode_hit = Some(Rect::new(sx, y, w, 1));
+            sx = sx.saturating_add(w.saturating_add(3)); // " · "
+        }
+        if let Some(model) = &state.model {
+            let w = (display_cols(&model.label) as u16).saturating_add(1).max(1);
+            let remaining = layout
+                .status
+                .width
+                .saturating_sub(sx.saturating_sub(area.x));
+            let w = w.min(remaining);
+            if w > 0 {
+                layout.model_hit = Some(Rect::new(sx, y, w, 1));
+            }
+        }
         y = y.saturating_add(1);
     }
     if valid_h > 0 {
         layout.validation = Rect::new(area.x, y, area.width, 1);
     }
     layout
+}
+
+fn order_text_cursors(a: TextCursor, b: TextCursor) -> (TextCursor, TextCursor) {
+    if a.line < b.line || (a.line == b.line && a.byte <= b.byte) {
+        (a, b)
+    } else {
+        (b, a)
+    }
+}
+
+/// Paint selection highlight over the editor viewport (style-only; mono uses reverse via theme).
+fn paint_editor_selection(
+    buffer: &mut Buffer,
+    area: Rect,
+    state: &PromptComposerState,
+    style: ratatui_core::style::Style,
+) {
+    let Some(anchor) = state.select_anchor else {
+        return;
+    };
+    let cur = state.editor.cursor();
+    if anchor == cur || area.is_empty() {
+        return;
+    }
+    let (start, end) = order_text_cursors(anchor, cur);
+    let scroll_y = usize::from(state.editor.scroll().scroll_y);
+    let scroll_x = usize::from(state.editor.scroll().scroll_x);
+    let lines: Vec<&str> = state.editor.lines().collect();
+    for line_idx in start.line..=end.line {
+        if line_idx < scroll_y {
+            continue;
+        }
+        let row = line_idx - scroll_y;
+        if row >= usize::from(area.height) {
+            break;
+        }
+        let line = lines.get(line_idx).copied().unwrap_or("");
+        let start_byte = if line_idx == start.line {
+            start.byte.min(line.len())
+        } else {
+            0
+        };
+        let end_byte = if line_idx == end.line {
+            end.byte.min(line.len())
+        } else {
+            line.len()
+        };
+        if start_byte >= end_byte {
+            continue;
+        }
+        let col0 = display_cols(&line[..start_byte]);
+        let col1 = display_cols(&line[..end_byte]);
+        if col1 <= scroll_x {
+            continue;
+        }
+        let vis0 = col0.saturating_sub(scroll_x);
+        let vis1 = col1.saturating_sub(scroll_x).min(usize::from(area.width));
+        if vis0 >= vis1 {
+            continue;
+        }
+        let x0 = area.x.saturating_add(u16::try_from(vis0).unwrap_or(u16::MAX));
+        let width = u16::try_from(vis1.saturating_sub(vis0)).unwrap_or(0);
+        if width == 0 {
+            continue;
+        }
+        let y = area.y.saturating_add(u16::try_from(row).unwrap_or(u16::MAX));
+        buffer.set_style(Rect::new(x0, y, width, 1), style);
+    }
 }
 
 impl StatefulWidget for &PromptComposer<'_> {
@@ -1241,10 +1703,22 @@ impl StatefulWidget for &PromptComposer<'_> {
                 buffer,
                 &mut state.editor,
             );
+            // Selection highlight (after TextArea paint)
+            if state.has_selection() {
+                let sel = if state.colorless {
+                    self.theme
+                        .style(Role::Selection)
+                        .add_modifier(ratatui_core::style::Modifier::REVERSED)
+                } else {
+                    self.theme.style(Role::Selection)
+                };
+                paint_editor_selection(buffer, layout.editor, state, sel);
+            }
         }
 
         // Status row: mode · model · context · queue · busy
         if !layout.status.is_empty() {
+            let ascii = state.ascii_fallback || state.colorless;
             let mut parts: Vec<String> = Vec::new();
             if let Some(mode) = &state.mode {
                 parts.push(mode.label.clone());
@@ -1253,14 +1727,21 @@ impl StatefulWidget for &PromptComposer<'_> {
                 parts.push(model.label.clone());
             }
             if state.busy {
-                parts.push(if state.ascii_fallback {
-                    "busy".into()
+                parts.push(if ascii {
+                    "BUSY ^C soft ^U stop".into()
                 } else {
-                    "● busy".into()
+                    "● busy  ^C interrupt  ^U stop".into()
                 });
             }
             if !state.queue.is_empty() {
                 parts.push(format!("queue:{}", state.queue.len()));
+            }
+            if state.presentation == ComposerPresentation::Fullscreen {
+                parts.push(if ascii {
+                    "FULL".into()
+                } else {
+                    "fullscreen".into()
+                });
             }
             match state.connection {
                 ComposerConnection::Disconnected => parts.push("offline".into()),
@@ -1497,5 +1978,219 @@ mod tests {
         );
         assert!(matches!(out, OverlayOutcome::Opened { .. }));
         assert_eq!(stack.top().unwrap().kind, OverlayKind::Completion);
+    }
+
+    #[test]
+    fn symbol_mention_detects_hash() {
+        let q = detect_completion("see #parse_", TextCursor { line: 0, byte: 11 });
+        assert!(matches!(
+            q,
+            Some(CompletionQuery {
+                kind: CompletionKind::SymbolMention,
+                ref query,
+                ..
+            }) if query == "parse_"
+        ));
+    }
+
+    #[test]
+    fn large_paste_stores_payload() {
+        let mut state = PromptComposerState::new();
+        let big = "b".repeat(LARGE_PASTE_THRESHOLD);
+        let _ = state.handle_paste(&big);
+        assert_eq!(state.chips()[0].payload.as_deref(), Some(big.as_str()));
+    }
+
+    #[test]
+    fn selection_delete_and_typeover() {
+        let mut state = PromptComposerState::new();
+        state.set_text("abcdef");
+        state.select_anchor = Some(TextCursor { line: 0, byte: 1 });
+        assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 4 }));
+        assert_eq!(state.selected_text().as_deref(), Some("bcd"));
+        let out = state.handle_key(press(KeyCode::Backspace));
+        assert!(matches!(
+            out,
+            PromptComposerOutcome::Changed | PromptComposerOutcome::CompletionClosed
+        ));
+        assert_eq!(state.text(), "aef");
+    }
+
+    #[test]
+    fn select_all_and_copy_outcome() {
+        let mut state = PromptComposerState::new();
+        state.set_text("hello");
+        state.select_all();
+        assert!(state.has_selection());
+        let out = state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
+        assert!(matches!(
+            out,
+            PromptComposerOutcome::SelectionCopied { ref text } if text == "hello"
+        ));
+    }
+
+    #[test]
+    fn busy_ctrl_c_interrupts_ctrl_u_cancels() {
+        let mut state = PromptComposerState::new();
+        state.set_busy(true);
+        state.set_text("keep");
+        let out = state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
+        assert_eq!(out, PromptComposerOutcome::Interrupt);
+        assert_eq!(state.text(), "keep");
+        let out = state.handle_key(KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL));
+        assert_eq!(out, PromptComposerOutcome::Cancel);
+    }
+
+    #[test]
+    fn disabled_ignores_keys() {
+        let mut state = PromptComposerState::new();
+        state.set_connection(ComposerConnection::Disabled);
+        state.set_text("x");
+        assert_eq!(
+            state.handle_key(press(KeyCode::Enter)),
+            PromptComposerOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn external_editor_applies_text() {
+        let mut state = PromptComposerState::new();
+        state.set_text("old");
+        let out = state.apply_external_editor_text("from $EDITOR");
+        assert!(matches!(out, PromptComposerOutcome::Changed));
+        assert_eq!(state.text(), "from $EDITOR");
+    }
+
+    #[test]
+    fn contract_for_narrow_width() {
+        let mut state = PromptComposerState::new();
+        state.set_presentation(ComposerPresentation::Expanded);
+        let out = state.contract_for_width(36);
+        assert!(matches!(
+            out,
+            PromptComposerOutcome::PresentationChanged(ComposerPresentation::Compact)
+        ));
+        assert!(state.ascii_fallback);
+    }
+
+    #[test]
+    fn fullscreen_request_and_esc_exit() {
+        let mut state = PromptComposerState::new();
+        assert!(matches!(
+            state.request_fullscreen(),
+            PromptComposerOutcome::FullscreenRequested
+        ));
+        assert_eq!(state.presentation(), ComposerPresentation::Fullscreen);
+        let out = state.handle_key(press(KeyCode::Esc));
+        assert_eq!(out, PromptComposerOutcome::FullscreenDismissed);
+        assert_eq!(state.presentation(), ComposerPresentation::Normal);
+    }
+
+    #[test]
+    fn queue_fifo_pop_and_remove() {
+        let mut state = PromptComposerState::new();
+        state.set_busy(true);
+        state.set_text("a");
+        let _ = state.handle_key(press(KeyCode::Enter));
+        state.set_text("b");
+        let _ = state.handle_key(press(KeyCode::Enter));
+        assert_eq!(state.queue().len(), 2);
+        let first = state.pop_queue_front().unwrap();
+        assert_eq!(first.text, "a");
+        let id = state.queue()[0].id.clone();
+        assert!(state.remove_queue_entry(&id));
+        assert!(state.queue().is_empty());
+    }
+
+    #[test]
+    fn draft_survives_busy_and_connection_flip() {
+        let mut state = PromptComposerState::new();
+        state.set_text("draft under overlays");
+        state.set_focused(false);
+        state.set_busy(true);
+        state.set_connection(ComposerConnection::Disconnected);
+        state.set_connection(ComposerConnection::Ready);
+        state.set_focused(true);
+        assert_eq!(state.text(), "draft under overlays");
+    }
+
+    #[test]
+    fn commit_completion_emits_committed() {
+        let mut state = PromptComposerState::new();
+        state.set_text("/pl");
+        state.completion = CompletionQuery {
+            kind: CompletionKind::Slash,
+            query: "pl".into(),
+            trigger_byte: 0,
+            cursor_byte: 3,
+        };
+        let out = state.commit_completion("plan", "/plan ");
+        assert!(matches!(
+            out,
+            PromptComposerOutcome::CompletionCommitted {
+                kind: CompletionKind::Slash,
+                ref id
+            } if id == "plan"
+        ));
+        assert!(state.text().starts_with("/plan"));
+        assert_eq!(state.completion.kind, CompletionKind::None);
+    }
+
+    #[test]
+    fn colorless_forces_ascii() {
+        let mut state = PromptComposerState::new();
+        state.set_colorless(true);
+        assert!(state.is_colorless());
+        assert!(state.ascii_fallback);
+    }
+
+    #[test]
+    fn mode_model_status_hits() {
+        let mut state = PromptComposerState::new();
+        state.set_mode(Some(ModeIndicator {
+            label: "PLAN".into(),
+            warning: false,
+        }));
+        state.set_model(Some(ModelIndicator {
+            label: "m1".into(),
+        }));
+        state.set_text("x");
+        let layout = state.layout_in(Rect::new(0, 0, 60, 10));
+        assert!(layout.mode_hit.is_some());
+        assert!(layout.model_hit.is_some());
+        let mode = layout.mode_hit.unwrap();
+        let mouse = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position {
+                x: mode.x,
+                y: mode.y,
+            },
+            modifiers: KeyModifiers::NONE,
+        };
+        assert_eq!(
+            state.handle_mouse_at(mouse, &layout),
+            PromptComposerOutcome::ModeMenu
+        );
+    }
+
+    #[test]
+    fn selection_paint_does_not_panic() {
+        use ratatui_core::widgets::StatefulWidget;
+        let tokens = crate::style::DesignTokens::new(
+            Theme::default(),
+            Density::Comfortable,
+        );
+        let theme = Theme::default();
+        let mut state = PromptComposerState::new();
+        state.set_text("hello world");
+        state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
+        assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
+        StatefulWidget::render(
+            &PromptComposer::new(&tokens, &theme),
+            Rect::new(0, 0, 40, 8),
+            &mut buf,
+            &mut state,
+        );
     }
 }

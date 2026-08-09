@@ -8,9 +8,16 @@ use std::{
     time::{Duration, Instant},
 };
 use termrock::{
-    Theme,
-    input::{KeyCode, KeyEvent, KeyModifiers},
-    widgets::{TextArea, TextAreaState},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyModifiers,
+    },
+    style::Theme,
+    widgets::{
+        TextArea,
+        TextAreaState,
+    },
 };
 
 #[global_allocator]

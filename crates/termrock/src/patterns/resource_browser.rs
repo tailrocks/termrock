@@ -9,8 +9,17 @@
 use ratatui_core::layout::Rect;
 
 use crate::{
-    layout::{RegionId, RegionSize, RegionSpec, SurfaceAxis, WorkSurface},
-    style::{CapabilityPreviewHost, Density},
+    layout::{
+        RegionId,
+        RegionSize,
+        RegionSpec,
+        SurfaceAxis,
+        WorkSurface,
+    },
+    style::{
+        CapabilityPreviewHost,
+        Density,
+    },
 };
 
 /// Slots for a resource browser (file manager / k8s / DB class).

@@ -6,8 +6,15 @@ use ratatui_core::{
 };
 
 use crate::{
-    interaction::{HitRegion, Outcome},
-    style::{Role, Theme, faded},
+    interaction::{
+        HitRegion,
+        Outcome,
+    },
+    style::{
+        faded,
+        Role,
+        Theme,
+    },
 };
 
 #[derive(Debug, Clone)]

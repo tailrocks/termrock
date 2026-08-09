@@ -12,22 +12,60 @@ use ratatui::{
     },
 };
 use termrock::{
-    Theme,
     input::{
-        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
+        Event,
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseButton,
+        MouseEvent,
         MouseEventKind,
     },
-    interaction::{FocusOutcome, FocusTarget, ModalStack, Outcome, render_backdrop},
+    interaction::{
+        FocusOutcome,
+        FocusTarget,
+        ModalStack,
+        Outcome,
+        render_backdrop,
+    },
     keymap::KeyChord,
     layout::centered_rect,
-    patterns::{StudioShellLayout, layout_studio_shell},
+    patterns::{
+        layout_studio_shell,
+        StudioShellLayout,
+    },
     runtime::FrameTick,
-    scroll::{self, ScrollSpan},
-    style::{ColorCapability, Density, DesignTokens, Role},
+    scroll::{
+        ScrollSpan,
+        self,
+    },
+    style::{
+        ColorCapability,
+        Density,
+        DesignTokens,
+        Role,
+        Theme,
+    },
     widgets::{
-        Action, ChoiceDialog, ChoiceDialogState, DesignInspector, DesignInspectorFrame, Dialog,
-        InspectorPanel, List as ComponentList, ListRow, ListState as ComponentListState, Panel,
-        PanelEmphasis, Progress, ProgressKind, Severity, Toast, ToastLifetime, ToastState,
+        Action,
+        ChoiceDialog,
+        ChoiceDialogState,
+        DesignInspector,
+        DesignInspectorFrame,
+        Dialog,
+        InspectorPanel,
+        List as ComponentList,
+        ListRow,
+        ListState as ComponentListState,
+        Panel,
+        PanelEmphasis,
+        Progress,
+        ProgressKind,
+        Severity,
+        Toast,
+        ToastLifetime,
+        ToastState,
     },
 };
 
@@ -743,12 +781,16 @@ impl Lookbook {
             return;
         };
         modal.state.focused = self.focus.focused().copied();
+        let tokens = termrock::style::DesignTokens::new(
+            self.theme.clone(),
+            termrock::style::Density::default(),
+        );
         frame.render_stateful_widget(
             &ChoiceDialog::new(
                 Dialog::new(
                     "Focus trap",
                     Line::from("Tab stays here; close restores the opener.").into(),
-                    &self.theme,
+                    &tokens,
                 )
                 .emphasis(PanelEmphasis::Focused),
                 &actions,

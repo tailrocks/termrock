@@ -6,10 +6,22 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+    },
     osc::HyperlinkRegion,
-    scroll::{DialogScroll, Measured, UNCACHED_REVISION, effective_offset},
-    style::{Role, Theme},
+    scroll::{
+        DialogScroll,
+        effective_offset,
+        Measured,
+        UNCACHED_REVISION,
+    },
+    style::{
+        Role,
+        Theme,
+    },
 };
 
 const SELECTED_MARKER: &str = "▸ ";

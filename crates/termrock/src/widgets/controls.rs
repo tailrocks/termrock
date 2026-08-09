@@ -7,10 +7,22 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseButton,
+        MouseEvent,
+        MouseEventKind,
     },
-    style::{DesignTokens, Role},
-    text::{display_cols, take_display_cols},
+    style::{
+        DesignTokens,
+        Role,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
 };
 
 // ── Checkbox ────────────────────────────────────────────────────────────────

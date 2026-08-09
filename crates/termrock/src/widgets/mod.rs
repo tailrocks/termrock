@@ -129,11 +129,11 @@ pub use menu_nav::{
 };
 pub use panel::{Panel, PanelEmphasis, PanelSlots};
 pub use permission::{
-    DataMovement, EditField, ExecutionLocation, InitiatorKind, PermissionAction,
-    PermissionActionKind, PermissionActionRegion, PermissionAuditEntry, PermissionOutcome,
-    PermissionPrompt, PermissionPromptState, PermissionProvenance, PermissionQueue,
-    PermissionRequest, PermissionRisk, PermissionScope, PermissionTarget, PriorGrant,
-    ProvenanceHop, StalePermission, StaleReason,
+    DataMovement, EditField, ExecutionLocation, InitiatorKind, PERMISSION_OVERLAY_ID,
+    PermissionAction, PermissionActionKind, PermissionActionRegion, PermissionAuditEntry,
+    PermissionOutcome, PermissionPrompt, PermissionPromptState, PermissionProvenance,
+    PermissionQueue, PermissionRequest, PermissionRisk, PermissionScope, PermissionTarget,
+    PriorGrant, ProvenanceHop, StalePermission, StaleReason,
 };
 pub use picker::{Picker, PickerOutcome, PickerState};
 pub use primitives::{

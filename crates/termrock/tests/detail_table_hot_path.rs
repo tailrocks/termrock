@@ -5,8 +5,13 @@ use std::{alloc::System, hint::black_box, time::Duration, time::Instant};
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
 use termrock::{
-    Theme,
-    widgets::{DetailCapability, DetailRow, DetailTable, DetailTableState},
+    style::Theme,
+    widgets::{
+        DetailCapability,
+        DetailRow,
+        DetailTable,
+        DetailTableState,
+    },
 };
 
 #[global_allocator]

@@ -13,9 +13,10 @@ use termrock_cli::{
 
 fn usage() -> ! {
     eprintln!(
-        "termrock — offline source registry CLI\n\
+        "termrock — offline source registry CLI + environment tools\n\
          \n\
          Usage:\n\
+           termrock doctor [--profile modern|compatible|minimal|inline|headless]\n\
            termrock plan  <entry-dir> [--workspace DIR]\n\
            termrock add   <entry-dir> [--workspace DIR] [--force]\n\
            termrock diff  <entry-dir> [--workspace DIR]\n\
@@ -27,12 +28,72 @@ fn usage() -> ! {
     std::process::exit(2);
 }
 
+fn run_doctor(args: &[String]) -> ExitCode {
+    use termrock::{
+    capability::{
+        build_doctor_report,
+        CapabilityOverrides,
+        CapabilityProfile,
+        format_doctor_text,
+    },
+};
+
+    let mut preferred: Option<CapabilityProfile> = None;
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--profile" => {
+                i += 1;
+                if i >= args.len() {
+                    eprintln!("error: --profile requires a value");
+                    return ExitCode::FAILURE;
+                }
+                preferred = CapabilityProfile::parse(&args[i]);
+                if preferred.is_none() {
+                    eprintln!(
+                        "error: unknown profile {:?} (modern|compatible|minimal|inline|headless)",
+                        args[i]
+                    );
+                    return ExitCode::FAILURE;
+                }
+            }
+            "-h" | "--help" => usage(),
+            other => {
+                eprintln!("error: unknown doctor flag {other}");
+                return ExitCode::FAILURE;
+            }
+        }
+        i += 1;
+    }
+
+    // Merge env overrides (TERMROCK_*, NO_COLOR) with optional profile preference.
+    let mut overrides = CapabilityOverrides::from_env_keys(
+        env::var("TERMROCK_COLOR").ok().as_deref(),
+        env::var("TERMROCK_GLYPHS").ok().as_deref(),
+        env::var("TERMROCK_PROFILE").ok().as_deref(),
+    );
+    if preferred.is_some() {
+        overrides.profile = preferred;
+    }
+    let report = build_doctor_report(preferred, overrides);
+    print!("{}", format_doctor_text(&report));
+    ExitCode::SUCCESS
+}
+
 fn main() -> ExitCode {
     let mut args: Vec<String> = env::args().skip(1).collect();
     if args.is_empty() {
         usage();
     }
     let cmd = args.remove(0);
+
+    if cmd == "doctor" {
+        return run_doctor(&args);
+    }
+    if matches!(cmd.as_str(), "-h" | "--help") {
+        usage();
+    }
+
     let mut workspace = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let mut force = false;
     let mut entry_dir: Option<PathBuf> = None;

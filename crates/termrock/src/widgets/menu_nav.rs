@@ -10,13 +10,29 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::{
-        OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
-        OverlayStack, place_overlay,
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
     },
-    style::{DesignTokens, Role},
-    text::{display_cols, take_display_cols},
+    interaction::{
+        OverlayId,
+        OverlayKind,
+        OverlayOutcome,
+        OverlayPolicy,
+        OverlaySize,
+        OverlaySpec,
+        OverlayStack,
+        place_overlay,
+    },
+    style::{
+        DesignTokens,
+        Role,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
 };
 
 /// Default overlay id for drawers opened via helpers.

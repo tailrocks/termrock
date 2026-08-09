@@ -1,7 +1,11 @@
-//! termrock: shared TUI widgets, theme, and render helpers.
+//! termrock: domain-neutral TUI kernel for Ratatui.
 //!
-//! **Architecture Invariant:** T1.
-//! Entry point: [`Theme`] — shared TUI theme tokens.
+//! **Architecture:** one paint authority ([`style::DesignSystem`]), one focus/hit
+//! authority ([`interaction::InteractionScene`]), one modal authority
+//! ([`interaction::OverlayStack`]), plus [`runtime::run`] for the host loop.
+//!
+//! Import from modules (`termrock::style::…`, `termrock::widgets::…`). The crate
+//! root does **not** re-export types (pre-1.0 Break A / migration 0060).
 
 pub mod ansi_text;
 pub mod capability;
@@ -21,32 +25,22 @@ pub mod widgets;
 #[cfg(feature = "crossterm")]
 pub mod crossterm;
 
-pub use capability::{
-    CapabilityKind, CapabilityOverrides, CapabilityProfile, CapabilitySet, CapabilitySource,
-    DetectionReport, DoctorFinding, DoctorReport, DoctorSeverity, EffectiveCapabilities, EnvHints,
-    FallbackPolicy, SessionFlags, build_doctor_report, detect_environment, fallback_policies,
-    format_doctor_text, resolve_capabilities,
-};
-pub use interaction::{
-    BackdropPolicy, InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene,
-    LayerDismissPolicy, LayerKind, NarrowFallback, NavigationMove, OverlayEntry, OverlayId,
-    OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove,
-    PlacementPrefer, SceneError, SemanticElement, SemanticRole, SemanticScene, UiIntent,
-    default_list_intent, default_table_intent, default_tree_intent, dispatch_keymap_action,
-    place_overlay,
-};
-pub use layout::{
-    AdaptiveAnatomy, AnatomyPart, ContentPriority, ContractionStage, OverflowBehavior,
-    ResponsiveSurface, SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER,
-    contract_parts, essential_survives,
-};
-pub use perf::{
-    BackpressureSignal, BudgetKind, ComponentBudget, DirtyFlags, FollowMode, NewContentIndicator,
-    PerfClass, ScrollAnchor, ScrollAnchorKind, StreamBatch, StreamCoalescer, UpdatePriority,
-    apply_follow_after_append, budget_for, budgets, check_batch_budget, check_zero_alloc_steady,
-    pause_follow_on_user_scroll,
-};
-pub use style::{
-    Appearance, AppearanceThemeMap, CapabilityPreviewHost, ColorCapability, Density, DesignSystem,
-    DesignTokens, GlyphSet, Motion, SelectionChrome, SpacingScale, Theme, theme_for_appearance,
-};
+#[cfg(test)]
+mod root_export_policy {
+    /// Break A / migration 0060: crate root must not re-export types.
+    #[test]
+    fn root_reexports_are_forbidden() {
+        let lib = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/lib.rs"));
+        for line in lib.lines() {
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("//") || trimmed.is_empty() {
+                continue;
+            }
+            assert!(
+                !trimmed.starts_with("pub use "),
+                "crate root must not re-export types (found: {trimmed}). \
+                 Import from modules (style::, interaction::, widgets::, …)."
+            );
+        }
+    }
+}

@@ -11,11 +11,31 @@ use ratatui_core::{
 
 use crate::{
     input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseButton,
+        MouseEvent,
+        MouseEventKind,
     },
-    style::{Density, DesignTokens, Role, Theme},
-    text::{display_cols, take_display_cols},
-    widgets::{Panel, PanelEmphasis, TextArea, TextAreaOutcome, TextAreaState},
+    style::{
+        Density,
+        DesignTokens,
+        Role,
+        Theme,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
+    widgets::{
+        Panel,
+        PanelEmphasis,
+        TextArea,
+        TextAreaOutcome,
+        TextAreaState,
+    },
 };
 
 // ── Token meter ─────────────────────────────────────────────────────────────

@@ -9,9 +9,22 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind},
-    style::{Role, Theme},
-    text::{display_cols, take_display_cols},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseEvent,
+        MouseEventKind,
+    },
+    style::{
+        Role,
+        Theme,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
 };
 
 /// Semantic kind of a transcript block.

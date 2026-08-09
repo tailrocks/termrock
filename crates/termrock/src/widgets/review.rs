@@ -6,8 +6,15 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
-    style::{DesignTokens, Role},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+    },
+    style::{
+        DesignTokens,
+        Role,
+    },
     text::take_display_cols,
     widgets::scroll_area::ScrollAreaState,
 };

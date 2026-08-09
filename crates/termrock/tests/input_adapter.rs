@@ -8,10 +8,24 @@ use crossterm::event::{
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 use termrock::style::DesignTokens;
 use termrock::{
-    input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind},
+    input::{
+        Event,
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseButton,
+        MouseEventKind,
+    },
     interaction::Outcome,
     widgets::{
-        Action, ChoiceDialogState, List, ListRow, ListState, RowRole, TextInputOutcome,
+        Action,
+        ChoiceDialogState,
+        List,
+        ListRow,
+        ListState,
+        RowRole,
+        TextInputOutcome,
         TextInputState,
     },
 };

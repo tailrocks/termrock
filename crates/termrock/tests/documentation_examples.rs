@@ -12,20 +12,73 @@ use ratatui_core::{
     text::{Line, Text},
 };
 use termrock::{
-    Theme,
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyModifiers,
+    },
     interaction::Outcome,
-    keymap::{KeyBinding, KeyChord, Keymap, Visibility},
-    osc::{PointerShape, Request, encode},
-    style::{Density, DesignTokens, Role},
+    keymap::{
+        KeyBinding,
+        KeyChord,
+        Keymap,
+        Visibility,
+    },
+    osc::{
+        encode,
+        PointerShape,
+        Request,
+    },
+    style::{
+        Density,
+        DesignTokens,
+        Role,
+        Theme,
+    },
     widgets::{
-        Action, ActionBar, ActionBarState, Anchor, CellAlignment, ChoiceDialog, ChoiceDialogState,
-        Column, ColumnWidth, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
-        CommandPaletteState, Dialog, DialogSize, InitiatorKind, List, ListRow, ListState,
-        ModeIndicator, ModelIndicator, PermissionAction, PermissionOutcome, PermissionPromptState,
-        PermissionProvenance, PermissionRequest, PermissionRisk, PromptComposer,
-        PromptComposerOutcome, PromptComposerState, ProvenanceHop, Severity, Table, TableRow,
-        TableState, Toast, VirtualWindow, data_view_bench, place_command_palette, place_dialog,
+        Action,
+        ActionBar,
+        ActionBarState,
+        ActivationOutcome,
+        Anchor,
+        Button,
+        ButtonState,
+        CellAlignment,
+        ChoiceDialog,
+        ChoiceDialogState,
+        Column,
+        ColumnWidth,
+        CommandPalette,
+        CommandPaletteOutcome,
+        CommandPaletteSize,
+        CommandPaletteState,
+        data_view_bench,
+        Dialog,
+        DialogSize,
+        InitiatorKind,
+        List,
+        ListRow,
+        ListState,
+        ModeIndicator,
+        ModelIndicator,
+        PermissionAction,
+        PermissionOutcome,
+        PermissionPromptState,
+        PermissionProvenance,
+        PermissionRequest,
+        PermissionRisk,
+        place_command_palette,
+        place_dialog,
+        PromptComposer,
+        PromptComposerOutcome,
+        PromptComposerState,
+        ProvenanceHop,
+        Severity,
+        Table,
+        TableRow,
+        TableState,
+        Toast,
+        VirtualWindow,
     },
 };
 
@@ -55,6 +108,16 @@ fn list_documentation_example() {
 #[test]
 fn handbook_button_action_bar_example() {
     let theme = Theme::default();
+    let tokens = DesignTokens::default();
+    // Flagship Button (handbook basic + interactive)
+    let button = Button::new("Save", &tokens).primary(true);
+    let mut button_state = ButtonState::new();
+    button_state.activation.set_focused(true);
+    let out = button_state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+    assert!(matches!(out, ActivationOutcome::Activated));
+    let _ = button;
+
+    // Toolbar group pattern remains ActionBar
     let actions = [
         Action {
             id: "save",
@@ -107,8 +170,8 @@ fn handbook_table_selection_example() {
 
 #[test]
 fn handbook_dialog_examples() {
-    let theme = Theme::default();
-    let dialog = Dialog::new("Notice", Text::from("Done."), &theme);
+    let tokens = DesignTokens::default();
+    let dialog = Dialog::new("Notice", Text::from("Done."), &tokens);
     let area = place_dialog(Rect::new(0, 0, 80, 24), DialogSize::default());
     assert!(area.width > 0);
 
@@ -127,7 +190,7 @@ fn handbook_dialog_examples() {
         },
     ];
     let choice = ChoiceDialog::new(
-        Dialog::new("Confirm", Text::from("Continue?"), &theme),
+        Dialog::new("Confirm", Text::from("Continue?"), &tokens),
         &actions,
     );
     let mut state = ChoiceDialogState::new(Some("cancel"));

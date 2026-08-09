@@ -85,10 +85,10 @@ impl Appearance {
 
 /// Builds a theme for the current appearance using standard presets.
 #[must_use]
-pub fn theme_for_appearance(appearance: Appearance) -> crate::Theme {
+pub fn theme_for_appearance(appearance: Appearance) -> crate::style::Theme {
     match appearance {
-        Appearance::Light => crate::Theme::slate(),
-        Appearance::Dark | Appearance::Unknown => crate::Theme::tailrocks_phosphor(),
+        Appearance::Light => crate::style::Theme::slate(),
+        Appearance::Dark | Appearance::Unknown => crate::style::Theme::tailrocks_phosphor(),
     }
 }
 

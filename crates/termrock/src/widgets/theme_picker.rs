@@ -10,10 +10,22 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
-    style::{Density, DesignTokens, Role, Theme},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+    },
+    style::{
+        Density,
+        DesignTokens,
+        Role,
+        Theme,
+    },
     text::take_display_cols,
-    widgets::{Panel, PanelEmphasis},
+    widgets::{
+        Panel,
+        PanelEmphasis,
+    },
 };
 
 /// One selectable theme preset.

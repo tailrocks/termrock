@@ -17,12 +17,40 @@ use ratatui_core::{
 
 use crate::{
     input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseButton,
+        MouseEvent,
+        MouseEventKind,
     },
-    style::{Density, DesignTokens, Role, Theme},
-    text::{display_cols, take_display_cols},
-    widgets::{Panel, PanelEmphasis},
+    interaction::{
+        OverlayId,
+        OverlayKind,
+        OverlayOutcome,
+        OverlaySize,
+        OverlaySpec,
+        OverlayStack,
+    },
+    style::{
+        Density,
+        DesignTokens,
+        Role,
+        Theme,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
+    widgets::{
+        Panel,
+        PanelEmphasis,
+    },
 };
+
+/// Overlay id for agent permission / trust surfaces (`OverlayStack`).
+pub const PERMISSION_OVERLAY_ID: &str = "termrock.permission";
 
 // ── Provenance ──────────────────────────────────────────────────────────────
 
@@ -532,6 +560,61 @@ impl PermissionRequest {
         self
     }
 
+    /// Expected result summary (what the agent intends to do with the outcome).
+    #[must_use]
+    pub fn expected(mut self, result: impl Into<String>) -> Self {
+        self.expected_result = result.into();
+        self
+    }
+
+    /// Execution location label (+ optional detail).
+    #[must_use]
+    pub fn location(mut self, label: impl Into<String>, detail: Option<String>) -> Self {
+        self.location = ExecutionLocation {
+            label: label.into(),
+            detail,
+        };
+        self
+    }
+
+    /// Editable path/pattern restriction preview.
+    #[must_use]
+    pub fn pattern(mut self, pattern: impl Into<String>) -> Self {
+        self.pattern_preview = Some(pattern.into());
+        self
+    }
+
+    /// Prior similar grant hint (consumer-supplied).
+    #[must_use]
+    pub fn prior(mut self, scope: PermissionScope, summary: impl Into<String>) -> Self {
+        self.prior_grant = Some(PriorGrant {
+            scope,
+            summary: summary.into(),
+        });
+        self
+    }
+
+    /// Requested default grant scope.
+    #[must_use]
+    pub fn scope(mut self, scope: PermissionScope) -> Self {
+        self.requested_scope = scope;
+        self
+    }
+
+    /// Extra detail lines for expanded inspect view.
+    #[must_use]
+    pub fn details(mut self, lines: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.detail_lines = lines.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Custom destructive / egress banner (overrides defaults).
+    #[must_use]
+    pub fn notice(mut self, notice: impl Into<String>) -> Self {
+        self.destructive_notice = Some(notice.into());
+        self
+    }
+
     /// Default action strip for this risk.
     #[must_use]
     pub fn actions_for_risk(&self) -> Vec<PermissionAction> {
@@ -871,6 +954,60 @@ impl PermissionPromptState {
     #[must_use]
     pub fn head_generation(&self) -> Option<u64> {
         self.queue.head().map(|r| r.generation)
+    }
+
+    /// Head request snapshot, if any.
+    #[must_use]
+    pub fn head(&self) -> Option<&PermissionRequest> {
+        self.queue.head()
+    }
+
+    /// Whether there are pending requests.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
+
+    /// Opens the permission overlay on the stack (Alert-class trap for High/Critical head).
+    ///
+    /// Host still owns paint + key routing into this state while the overlay is top.
+    pub fn open_overlay<FocusId: Clone>(
+        &self,
+        stack: &mut OverlayStack<FocusId>,
+        bounds: Rect,
+        opener: Option<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        let high_risk = self
+            .queue
+            .head()
+            .is_some_and(|r| r.risk >= PermissionRisk::High);
+        stack.open(
+            bounds,
+            OverlaySpec {
+                id: OverlayId::from_static(PERMISSION_OVERLAY_ID),
+                kind: if high_risk {
+                    OverlayKind::AlertDialog
+                } else {
+                    OverlayKind::Dialog
+                },
+                parent: None,
+                anchor: None,
+                size: OverlaySize::dialog(
+                    bounds.width.saturating_sub(4).clamp(28, 72),
+                    bounds.height.saturating_sub(4).clamp(8, 18),
+                ),
+                opener_focus: opener,
+                policy: None,
+            },
+        )
+    }
+
+    /// Dismisses the permission overlay (does **not** cancel the queue — host must
+    /// still run gate-cancel / [`Self::handle_key`] Esc / dismiss_head per KD-26).
+    pub fn dismiss_overlay<FocusId: Clone>(
+        stack: &mut OverlayStack<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        stack.dismiss(&OverlayId::from_static(PERMISSION_OVERLAY_ID))
     }
 
     /// Keyboard routing.
@@ -1661,5 +1798,182 @@ mod tests {
         q.resolve(g, PermissionAction::Deny, PermissionScope::Once, None)
             .unwrap();
         assert_eq!(q.audit()[0].initiator, "filesystem");
+    }
+
+    #[test]
+    fn pattern_edit_allow_restricted() {
+        let mut state = PermissionPromptState::new();
+        let req = PermissionRequest::new("pat", "write_file", "src/")
+            .risk(PermissionRisk::Medium)
+            .action_kind(PermissionActionKind::FileWrite)
+            .pattern("src/**")
+            .provenance(PermissionProvenance::main_agent("a", "agent"));
+        state.enqueue(req);
+        let out = state.handle_key(press(KeyCode::Char('p')));
+        assert!(matches!(
+            out,
+            PermissionOutcome::EditStarted {
+                field: EditField::Pattern
+            }
+        ));
+        let _ = state.handle_key(press(KeyCode::Char('!')));
+        let out = state.handle_key(press(KeyCode::Enter));
+        assert!(matches!(
+            out,
+            PermissionOutcome::Decided {
+                action: PermissionAction::AllowRestricted,
+                edited: Some(ref s),
+                ..
+            } if s.contains('!') || s.contains("src")
+        ));
+    }
+
+    #[test]
+    fn edit_esc_cancels_without_resolving() {
+        let mut state = PermissionPromptState::new();
+        state.enqueue(destructive_shell());
+        let _ = state.handle_key(press(KeyCode::Char('e')));
+        let out = state.handle_key(press(KeyCode::Esc));
+        assert_eq!(out, PermissionOutcome::EditCancelled);
+        assert_eq!(state.queue.len(), 1);
+        assert_eq!(state.selected(), PermissionAction::Deny);
+    }
+
+    #[test]
+    fn nested_subagent_queue_preserves_provenance_across_advance() {
+        let mut state = PermissionPromptState::new();
+        state.enqueue(low_read());
+        state.enqueue(destructive_shell());
+        state.enqueue(egress_request());
+        assert_eq!(state.queue.len(), 3);
+        // Deny low-risk head
+        let _ = state.handle_key(press(KeyCode::Enter));
+        let head = state.head().unwrap();
+        assert_eq!(head.id, "r2");
+        assert!(head.provenance.has_subagent());
+        assert_eq!(
+            head.provenance.leaf().unwrap().kind,
+            InitiatorKind::McpServer
+        );
+        // Deny destructive → egress head still nested
+        let _ = state.handle_key(press(KeyCode::Enter));
+        let head = state.head().unwrap();
+        assert_eq!(head.id, "r3");
+        assert!(head.data.egress);
+        assert_eq!(head.provenance.display_path().matches('>').count(), 2);
+    }
+
+    #[test]
+    fn allow_with_project_scope_records_audit() {
+        let mut state = PermissionPromptState::new();
+        state.enqueue(
+            low_read()
+                .scope(PermissionScope::Once)
+                .prior(PermissionScope::Session, "src/** previously Session"),
+        );
+        // Move to Allow (last in strip for low risk)
+        for _ in 0..8 {
+            let _ = state.handle_key(press(KeyCode::Right));
+            if state.selected() == PermissionAction::Allow {
+                break;
+            }
+        }
+        assert_eq!(state.selected(), PermissionAction::Allow);
+        // Scope Once → Session → Project
+        let _ = state.handle_key(press(KeyCode::Char(']')));
+        let _ = state.handle_key(press(KeyCode::Char(']')));
+        assert_eq!(state.scope(), PermissionScope::Project);
+        let out = state.handle_key(press(KeyCode::Enter));
+        assert!(matches!(
+            out,
+            PermissionOutcome::Decided {
+                action: PermissionAction::Allow,
+                scope: PermissionScope::Project,
+                ..
+            }
+        ));
+        assert_eq!(state.queue.audit().len(), 1);
+        assert_eq!(state.queue.audit()[0].scope, PermissionScope::Project);
+    }
+
+    #[test]
+    fn remove_id_invalidates_non_head_without_stale_grant() {
+        let mut state = PermissionPromptState::new();
+        let g1 = state.enqueue(low_read());
+        state.enqueue(destructive_shell());
+        assert!(state.queue.remove_id("r2"));
+        assert_eq!(state.queue.len(), 1);
+        assert!(state.queue.is_live(g1));
+        // Still cannot resolve a fake generation
+        assert!(matches!(
+            state.confirm(999),
+            PermissionOutcome::StaleIgnored { generation: 999 }
+        ));
+    }
+
+    #[test]
+    fn request_fields_cover_trust_checklist() {
+        let req = PermissionRequest::new("full", "bash", "workspace")
+            .risk(PermissionRisk::High)
+            .action_kind(PermissionActionKind::Shell)
+            .provenance(nested_provenance())
+            .command("rm -rf build/")
+            .expected("remove build artifacts")
+            .location("local", Some("sandbox:off".into()))
+            .irreversible()
+            .scope(PermissionScope::Once)
+            .prior(PermissionScope::Once, "similar shell once")
+            .details(["cwd=/tmp", "env=filtered"]);
+        assert!(!req.provenance.chain.is_empty());
+        assert_eq!(req.action, "bash");
+        assert_eq!(req.target.path, "workspace");
+        assert_eq!(req.location.label, "local");
+        assert!(req.expected_result.contains("build"));
+        assert!(!req.reversible);
+        assert!(req.prior_grant.is_some());
+        assert_eq!(req.detail_lines.len(), 2);
+        assert!(req.warning_text().unwrap().contains("DESTRUCTIVE"));
+    }
+
+    #[test]
+    fn permission_overlay_opens_alert_for_high_risk() {
+        let mut state = PermissionPromptState::new();
+        state.enqueue(destructive_shell());
+        let mut stack = OverlayStack::<&'static str>::new();
+        let bounds = Rect::new(0, 0, 80, 24);
+        let out = state.open_overlay(&mut stack, bounds, Some("composer"));
+        assert!(matches!(out, OverlayOutcome::Opened { .. }));
+        assert_eq!(stack.top().unwrap().kind, OverlayKind::AlertDialog);
+        assert_eq!(
+            stack.top().unwrap().id.as_str(),
+            PERMISSION_OVERLAY_ID
+        );
+    }
+
+    #[test]
+    fn three_queued_stale_after_head_resolved_externally() {
+        let mut state = PermissionPromptState::new();
+        let g1 = state.enqueue(low_read());
+        let g2 = state.enqueue(destructive_shell());
+        let g3 = state.enqueue(egress_request());
+        // External host resolves g1
+        state
+            .queue
+            .resolve(g1, PermissionAction::Allow, PermissionScope::Once, None)
+            .unwrap();
+        state.sync_from_head();
+        assert_eq!(state.head_generation(), Some(g2));
+        assert!(matches!(
+            state.confirm(g1),
+            PermissionOutcome::StaleIgnored { generation } if generation == g1
+        ));
+        // Resolve g2 via UI deny
+        let _ = state.handle_key(press(KeyCode::Enter));
+        assert_eq!(state.head_generation(), Some(g3));
+        // g2 no longer live
+        assert!(matches!(
+            state.confirm(g2),
+            PermissionOutcome::StaleIgnored { generation } if generation == g2
+        ));
     }
 }

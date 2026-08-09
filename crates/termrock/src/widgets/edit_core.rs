@@ -35,6 +35,15 @@ pub(crate) fn boundary_at_or_after(line: &str, byte: usize) -> usize {
         .unwrap_or(line.len())
 }
 
+/// Closest grapheme boundary at or before `byte` (clamped to line).
+pub(crate) fn boundary_at_or_before(line: &str, byte: usize) -> usize {
+    let byte = byte.min(line.len());
+    if is_boundary(line, byte) {
+        return byte;
+    }
+    previous_boundary(line, byte).unwrap_or(0)
+}
+
 pub(crate) fn insert_char(
     line: &mut String,
     byte: &mut usize,

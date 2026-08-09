@@ -10,7 +10,12 @@ use crate::{
     input::KeyEvent,
     interaction::HitRegion,
     scroll::max_offset,
-    style::{DesignSystem, DesignTokens, ListRowVisualState, Role},
+    style::{
+        DesignSystem,
+        DesignTokens,
+        ListRowVisualState,
+        Role,
+    },
 };
 
 use super::{ComposedRow, Selection};

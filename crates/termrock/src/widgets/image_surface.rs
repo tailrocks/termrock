@@ -11,7 +11,11 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{PreviewPresentation, Role, Theme},
+    style::{
+        PreviewPresentation,
+        Role,
+        Theme,
+    },
     text::take_display_cols,
 };
 

@@ -4,7 +4,11 @@ use std::{alloc::System, hint::black_box};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
-use termrock::{Theme, scroll::DialogScroll, widgets::Viewport};
+use termrock::{
+    scroll::DialogScroll,
+    style::Theme,
+    widgets::Viewport,
+};
 
 #[global_allocator]
 static GLOBAL: &StatsAlloc<System> = &INSTRUMENTED_SYSTEM;

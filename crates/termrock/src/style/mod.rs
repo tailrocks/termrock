@@ -258,7 +258,7 @@ every_role!(define_role_exhaustiveness_guard);
 ///
 /// ```
 /// use ratatui_core::style::{Color, Style};
-/// use termrock::{Theme, style::Role};
+/// use termrock::style::{Role, Theme};
 ///
 /// let theme = Theme::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
 /// assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));

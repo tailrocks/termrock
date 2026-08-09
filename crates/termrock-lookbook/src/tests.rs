@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use termrock::keymap::glyph;
-use termrock::{Theme, input::KeyCode, keymap::KeyChord};
+use termrock::{
+    input::KeyCode,
+    keymap::KeyChord,
+    style::Theme,
+};
 
 use crate::{
     PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction, stories::stories,

@@ -14,7 +14,7 @@ mod stream;
 
 pub use budget::{
     BudgetKind, ComponentBudget, PerfClass, budget_for, budgets, check_batch_budget,
-    check_zero_alloc_steady,
+    check_max_rows_touched, check_zero_alloc_steady,
 };
 pub use follow::{
     FollowMode, NewContentIndicator, ScrollAnchor, ScrollAnchorKind, apply_follow_after_append,

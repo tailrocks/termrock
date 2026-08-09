@@ -10,8 +10,14 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{Role, Theme},
-    text::{display_cols, take_display_cols},
+    style::{
+        Role,
+        Theme,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
 };
 
 /// Semantic block kinds in a markdown-like stream.

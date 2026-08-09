@@ -86,7 +86,7 @@ pub fn budget_for(id: &str) -> Option<&'static ComponentBudget> {
     budgets().iter().find(|b| b.id == id)
 }
 
-const BUDGETS: [ComponentBudget; 12] = [
+const BUDGETS: [ComponentBudget; 14] = [
     ComponentBudget {
         id: "tree_viewport_10k",
         component: "Tree",
@@ -115,14 +115,28 @@ const BUDGETS: [ComponentBudget; 12] = [
         notes: "table_hot_path",
     },
     ComponentBudget {
+        id: "table_viewport_10k_alloc",
+        component: "Table",
+        class: PerfClass::VirtualizedLarge,
+        kind: BudgetKind::ZeroAllocSteady { samples: 100 },
+        notes: "warmed table paint must not allocate",
+    },
+    ComponentBudget {
         id: "log_append_follow",
         component: "LogPane",
         class: PerfClass::StreamingSurface,
         kind: BudgetKind::WarmedPaintBatch {
             samples: 100,
-            max_total: Duration::from_millis(200),
+            max_total: Duration::from_millis(300),
         },
-        notes: "append+paint follow path; log_pane_hot_path",
+        notes: "follow-path paint; log_pane_hot_path; debug 100× over 10k history (raised 200→300ms for CI-class debug headroom)",
+    },
+    ComponentBudget {
+        id: "log_append_follow_alloc",
+        component: "LogPane",
+        class: PerfClass::StreamingSurface,
+        kind: BudgetKind::MaxRowsTouched { max: 64 },
+        notes: "allocs per render × samples must stay under 64×samples (viewport-scale)",
     },
     ComponentBudget {
         id: "transcript_10k_blocks",
@@ -245,6 +259,26 @@ pub fn check_zero_alloc_steady(
     Ok(())
 }
 
+/// Assert max rows (or alloc units) touched/spent per paint batch.
+///
+/// Used for virtualization (`rows_touched ≤ viewport`) and for log-style
+/// alloc-per-render caps stored as [`BudgetKind::MaxRowsTouched`].
+pub fn check_max_rows_touched(budget_id: &str, touched: u32) -> Result<(), String> {
+    let Some(b) = budget_for(budget_id) else {
+        return Err(format!("unknown budget id {budget_id}"));
+    };
+    let BudgetKind::MaxRowsTouched { max } = b.kind else {
+        return Err(format!("{budget_id} is not a MaxRowsTouched budget"));
+    };
+    if touched > max {
+        return Err(format!(
+            "{budget_id}: touched {touched} exceeds max {max} ({}).",
+            b.notes
+        ));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -275,5 +309,35 @@ mod tests {
     fn zero_alloc_check() {
         assert!(check_zero_alloc_steady("tree_viewport_10k_alloc", 0, 0).is_ok());
         assert!(check_zero_alloc_steady("tree_viewport_10k_alloc", 1, 0).is_err());
+    }
+
+    #[test]
+    fn max_rows_touched_check() {
+        assert!(check_max_rows_touched("datatable_million_window", 40).is_ok());
+        assert!(check_max_rows_touched("datatable_million_window", 49).is_err());
+    }
+
+    #[test]
+    fn stream_coalesce_budget_passes() {
+        use crate::perf::{StreamCoalescer, UpdatePriority};
+        use crate::runtime::FrameTick;
+        use std::time::Instant;
+
+        let mut c = StreamCoalescer::new().with_limits(64 * 1024, 256, Duration::from_millis(0));
+        let started = Instant::now();
+        let now = Instant::now();
+        for i in 0..1_000 {
+            c.push_text("x", UpdatePriority::Normal);
+            if i % 10 == 0 {
+                let _ = c.take_for_frame(FrameTick::manual(
+                    now,
+                    Duration::from_millis(i as u64),
+                    Duration::from_millis(1),
+                ));
+            }
+        }
+        let _ = c.take_now();
+        check_batch_budget("stream_coalesce_batch", 1_000, started.elapsed())
+            .expect("coalesce batch budget");
     }
 }

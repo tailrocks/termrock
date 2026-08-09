@@ -1,7 +1,10 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{Role, Theme},
+    style::{
+        Role,
+        Theme,
+    },
     text::display_cols,
 };
 

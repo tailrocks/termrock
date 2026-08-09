@@ -15,13 +15,26 @@ use ratatui_core::{
 
 use crate::{
     input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+        MouseButton,
+        MouseEvent,
+        MouseEventKind,
     },
     interaction::HitRegion,
     keymap::KeyChord,
     runtime::FrameTick,
-    style::{DesignTokens, Motion, Role},
-    text::{display_cols, take_display_cols},
+    style::{
+        DesignTokens,
+        Motion,
+        Role,
+    },
+    text::{
+        display_cols,
+        take_display_cols,
+    },
 };
 
 // ── Shared activation ───────────────────────────────────────────────────────

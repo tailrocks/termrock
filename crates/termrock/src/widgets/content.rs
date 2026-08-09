@@ -6,8 +6,18 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    style::{DesignTokens, Role},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        MouseButton,
+        MouseEvent,
+        MouseEventKind,
+    },
+    style::{
+        DesignTokens,
+        Role,
+    },
     text::take_display_cols,
 };
 

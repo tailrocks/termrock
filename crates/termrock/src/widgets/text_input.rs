@@ -3,8 +3,16 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{Role, Theme},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+        KeyModifiers,
+    },
+    style::{
+        Role,
+        Theme,
+    },
     text::take_display_cols,
 };
 

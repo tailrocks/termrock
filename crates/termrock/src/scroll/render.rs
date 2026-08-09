@@ -7,9 +7,15 @@ use ratatui_core::{buffer::Buffer, layout::Rect, terminal::Frame, text::Line, wi
 use ratatui_widgets::paragraph::Paragraph;
 
 use crate::{
+    style::{
+        Role,
+        Theme,
+    },
+    text::{
+        display_cols,
+        fixed_prefix_scroll_segments,
+    },
     scroll,
-    style::{Role, Theme},
-    text::{display_cols, fixed_prefix_scroll_segments},
 };
 
 /// Dim track glyph shared by every scrollbar.

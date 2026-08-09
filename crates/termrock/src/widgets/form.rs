@@ -7,11 +7,18 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{
+        KeyCode,
+        KeyEvent,
+        KeyEventKind,
+    },
     interaction::HitRegion,
     layout::ResponsiveSurface,
     scroll::max_offset,
-    style::{Role, Theme},
+    style::{
+        Role,
+        Theme,
+    },
 };
 
 const FIELD_HEIGHT: usize = 4;

@@ -3,7 +3,10 @@ use ratatui_widgets::{block::Block, clear::Clear, paragraph::Paragraph};
 
 use crate::{
     runtime::FrameTick,
-    style::{Role, Theme},
+    style::{
+        Role,
+        Theme,
+    },
     text::display_cols,
 };
 
@@ -101,7 +104,8 @@ pub enum Anchor {
 ///
 /// ```
 /// use ratatui_core::layout::Rect;
-/// use termrock::{Theme, widgets::{Anchor, Severity, Toast}};
+/// use termrock::style::Theme;
+/// use termrock::widgets::{Anchor, Severity, Toast};
 ///
 /// let theme = Theme::default();
 /// let toast = Toast::new(&theme, "Saved", Severity::Success)
