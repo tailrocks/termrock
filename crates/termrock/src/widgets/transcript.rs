@@ -581,6 +581,7 @@ impl<Id: Clone + Eq> TranscriptState<Id> {
             }
             UiIntent::Cancel | UiIntent::Close => TranscriptOutcome::Cancelled,
             UiIntent::Open => TranscriptOutcome::Ignored,
+            _ => TranscriptOutcome::Ignored,
         }
     }
 

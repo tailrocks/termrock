@@ -323,6 +323,7 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
             UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse => {
                 CompletionMenuOutcome::Ignored
             }
+            _ => CompletionMenuOutcome::Ignored,
         }
     }
 

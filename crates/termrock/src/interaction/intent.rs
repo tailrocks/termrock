@@ -17,6 +17,14 @@ pub enum NavigationMove {
     First,
     /// Last item / end.
     Last,
+    /// Explicit upward spatial step (FocusGraph / 2D).
+    Up,
+    /// Explicit downward spatial step.
+    Down,
+    /// Explicit leftward spatial step.
+    Left,
+    /// Explicit rightward spatial step.
+    Right,
 }
 
 /// Page-scale movement.
@@ -29,7 +37,36 @@ pub enum PageMove {
     Forward,
 }
 
+/// Stable application command identity for palette / global maps.
+///
+/// Static only so [`UiIntent`] stays [`Copy`] and can sit in [`crate::keymap::Keymap`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AppCommandId(pub &'static str);
+
+impl AppCommandId {
+    /// Constructs a command id.
+    #[must_use]
+    pub const fn new(id: &'static str) -> Self {
+        Self(id)
+    }
+
+    /// Underlying static id.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        self.0
+    }
+}
+
+impl core::fmt::Display for AppCommandId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(self.0)
+    }
+}
+
 /// Semantic intent for collection and chrome surfaces.
+///
+/// Widgets consume intents; physical keys live only in [`crate::keymap::Keymap`]
+/// tables and `default_*_intent` bridges.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum UiIntent {
@@ -53,6 +90,77 @@ pub enum UiIntent {
     Expand,
     /// Collapse a tree node / disclosure.
     Collapse,
+    /// Linear focus next (Tab) — scene/FocusGraph owned when registered.
+    FocusNext,
+    /// Linear focus previous (BackTab / Shift+Tab).
+    FocusPrevious,
+    /// Enter jump-to-region mode.
+    JumpStart,
+    /// Activate a jump badge letter while jump mode is open.
+    JumpLabel(char),
+    /// Enter edit mode / focus the field editor.
+    Edit,
+    /// Forward delete.
+    Delete,
+    /// Backward delete.
+    Backspace,
+    /// Open find / filter / search surface.
+    Search,
+    /// Show keyboard help / bindings panel.
+    Help,
+    /// Promote current surface to fullscreen.
+    Fullscreen,
+    /// Open the command palette.
+    OpenCommandPalette,
+    /// Application-level command (palette / global map).
+    AppCommand(AppCommandId),
+}
+
+impl UiIntent {
+    /// Short stable token for help / palette rows.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Move(_) => "move",
+            Self::Page(_) => "page",
+            Self::Activate => "activate",
+            Self::Toggle => "toggle",
+            Self::Open => "open",
+            Self::Close => "close",
+            Self::Cancel => "cancel",
+            Self::Submit => "submit",
+            Self::Expand => "expand",
+            Self::Collapse => "collapse",
+            Self::FocusNext => "focus_next",
+            Self::FocusPrevious => "focus_previous",
+            Self::JumpStart => "jump_start",
+            Self::JumpLabel(_) => "jump_label",
+            Self::Edit => "edit",
+            Self::Delete => "delete",
+            Self::Backspace => "backspace",
+            Self::Search => "search",
+            Self::Help => "help",
+            Self::Fullscreen => "fullscreen",
+            Self::OpenCommandPalette => "command_palette",
+            Self::AppCommand(_) => "app_command",
+        }
+    }
+
+    /// Whether this intent is primarily chrome/global rather than leaf-widget.
+    #[must_use]
+    pub const fn is_global_chrome(self) -> bool {
+        matches!(
+            self,
+            Self::Help
+                | Self::Search
+                | Self::Fullscreen
+                | Self::OpenCommandPalette
+                | Self::JumpStart
+                | Self::AppCommand(_)
+                | Self::FocusNext
+                | Self::FocusPrevious
+        )
+    }
 }
 
 /// Maps a key event to a list-oriented intent using TermRock defaults.

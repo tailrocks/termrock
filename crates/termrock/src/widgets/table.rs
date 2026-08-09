@@ -397,6 +397,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
                 .unwrap_or(TableOutcome::Ignored),
             UiIntent::Cancel | UiIntent::Close => TableOutcome::Cancelled,
             UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse => TableOutcome::Ignored,
+            _ => TableOutcome::Ignored,
         }
     }
 

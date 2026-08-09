@@ -1185,6 +1185,7 @@ impl PermissionPromptState {
                 }
             }
             UiIntent::Open | UiIntent::Page(_) => PermissionOutcome::Ignored,
+            _ => PermissionOutcome::Ignored,
         }
     }
 

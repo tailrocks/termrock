@@ -574,6 +574,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
                 }
             }
             UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse => VirtualGridOutcome::Ignored,
+            _ => VirtualGridOutcome::Ignored,
         }
     }
 

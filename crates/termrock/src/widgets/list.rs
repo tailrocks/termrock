@@ -337,7 +337,27 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             UiIntent::Toggle => self.toggle_selected(rows),
             UiIntent::Cancel | UiIntent::Close => Outcome::Cancelled,
             UiIntent::Expand | UiIntent::Collapse => Outcome::Ignored,
+            // Global chrome / edit intents: host + specialized surfaces handle them.
+            _ => Outcome::Ignored,
         }
+    }
+
+    /// Intent path returning the standard [`crate::interaction::EventResult`] envelope.
+    pub fn handle_intent_result(
+        &mut self,
+        rows: &[ListRow<'_, Id>],
+        intent: UiIntent,
+    ) -> crate::interaction::EventResult<Outcome<Id>> {
+        self.handle_intent(rows, intent).into_event_result()
+    }
+
+    /// Key path returning [`crate::interaction::EventResult`].
+    pub fn handle_key_result(
+        &mut self,
+        rows: &[ListRow<'_, Id>],
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<Outcome<Id>> {
+        self.handle_key(rows, key).into_event_result()
     }
 
     fn toggle_selected(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {

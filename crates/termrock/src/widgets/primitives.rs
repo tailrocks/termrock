@@ -41,6 +41,17 @@ pub enum ActivationOutcome {
     Pressed,
 }
 
+impl ActivationOutcome {
+    /// Wraps in the standard [`crate::interaction::EventResult`] envelope.
+    #[must_use]
+    pub fn into_event_result(self) -> crate::interaction::EventResult<Self> {
+        match self {
+            Self::Ignored => crate::interaction::EventResult::ignored(),
+            other => crate::interaction::EventResult::emit(other),
+        }
+    }
+}
+
 /// Armed/loading/disabled activation model shared by Button and IconButton.
 ///
 /// **Input gate** is [`Self::set_accepts_input`] (host/scene ownership). Do not
@@ -212,6 +223,22 @@ impl ActivationState {
             return self.handle_intent(intent);
         }
         ActivationOutcome::Ignored
+    }
+
+    /// Key path with [`crate::interaction::EventResult`].
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<ActivationOutcome> {
+        self.handle_key(key).into_event_result()
+    }
+
+    /// Intent path with [`crate::interaction::EventResult`].
+    pub fn handle_intent_result(
+        &mut self,
+        intent: crate::interaction::UiIntent,
+    ) -> crate::interaction::EventResult<ActivationOutcome> {
+        self.handle_intent(intent).into_event_result()
     }
 
     /// Pointer activation: Down arms; Up inside region activates once.

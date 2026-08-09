@@ -727,6 +727,15 @@ pub(crate) fn stories() -> Vec<Story> {
             semantic_scene_tree_story,
         ),
         Story::new(
+            "event-result/compose",
+            "EventResult bubble compose",
+            "EventResult",
+            "Child Stop wins; parent only runs when child bubbles.",
+            48,
+            6,
+            event_result_compose_story,
+        ),
+        Story::new(
             "capability/color-ladder",
             "Capability color ladder",
             "DesignInspector",
@@ -4024,6 +4033,55 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
         &mut state,
     );
+}
+
+
+fn event_result_compose_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{EventResult, compose_bubble};
+    use termrock::widgets::{Panel, PanelChrome};
+
+    #[derive(Clone, Copy, Debug)]
+    enum DemoMsg {
+        Child,
+        Parent,
+    }
+
+    let child: EventResult<DemoMsg> = EventResult::emit(DemoMsg::Child);
+    let merged = compose_bubble(child, || EventResult::emit(DemoMsg::Parent));
+    let line = format!(
+        "bubble: child-stop → msg={:?} consumed={} redraw={:?}",
+        merged.message(),
+        merged.is_consumed(),
+        merged.redraw()
+    );
+    let bubbled = compose_bubble(EventResult::<DemoMsg>::ignored(), || {
+        EventResult::emit(DemoMsg::Parent)
+    });
+    let line2 = format!(
+        "bubble: child-ignore → msg={:?} consumed={}",
+        bubbled.message(),
+        bubbled.is_consumed()
+    );
+    frame.render_widget(
+        Panel::new(system)
+            .title("EventResult")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    frame.render_widget(Paragraph::new(line), Rect::new(inner.x, inner.y, inner.width, 1));
+    if inner.height > 1 {
+        frame.render_widget(
+            Paragraph::new(line2),
+            Rect::new(inner.x, inner.y.saturating_add(1), inner.width, 1),
+        );
+    }
+    let _ = system;
 }
 
 fn design_inspector(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

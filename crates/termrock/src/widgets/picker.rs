@@ -210,6 +210,31 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
                 }
             }
             UiIntent::Expand | UiIntent::Collapse => PickerOutcome::Ignored,
+            _ => PickerOutcome::Ignored,
+        }
+    }
+
+    /// Key path with [`crate::interaction::EventResult`] envelope.
+    pub fn handle_key_result(
+        &mut self,
+        visible: &[ListRow<'_, Id>],
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<PickerOutcome<Id>> {
+        match self.handle_key(visible, key) {
+            PickerOutcome::Ignored => crate::interaction::EventResult::ignored(),
+            other => crate::interaction::EventResult::emit(other),
+        }
+    }
+
+    /// Intent path with [`crate::interaction::EventResult`] envelope.
+    pub fn handle_intent_result(
+        &mut self,
+        visible: &[ListRow<'_, Id>],
+        intent: crate::interaction::UiIntent,
+    ) -> crate::interaction::EventResult<PickerOutcome<Id>> {
+        match self.handle_intent(visible, intent) {
+            PickerOutcome::Ignored => crate::interaction::EventResult::ignored(),
+            other => crate::interaction::EventResult::emit(other),
         }
     }
 

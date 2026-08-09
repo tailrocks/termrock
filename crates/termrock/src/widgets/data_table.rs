@@ -352,6 +352,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 }
             }
             UiIntent::Open | UiIntent::Close | UiIntent::Cancel => DataTableOutcome::Ignored,
+            _ => DataTableOutcome::Ignored,
         }
     }
 

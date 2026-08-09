@@ -6,7 +6,8 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    interaction::{EventResult, UiIntent, default_button_intent, default_list_intent},
     style::{DesignSystem, Role},
     text::take_display_cols,
 };
@@ -248,19 +249,44 @@ impl SectionState {
         self.focused = focused;
     }
 
-    /// Enter/Space toggles when focused.
+    /// Enter/Space toggles when focused (via intents; no raw key match).
     pub fn handle_key(&mut self, key: KeyEvent) -> SectionOutcome {
         if !self.focused || key.kind != KeyEventKind::Press {
             return SectionOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Enter | KeyCode::Char(' ') => {
-                self.collapsed = !self.collapsed;
-                SectionOutcome::ToggleCollapsed {
-                    collapsed: self.collapsed,
-                }
+        // Activate (button map: Enter/Space) or Toggle (list Space).
+        let intent = default_button_intent(key).or_else(|| default_list_intent(key));
+        match intent {
+            Some(UiIntent::Activate | UiIntent::Toggle) => self.toggle(),
+            _ => SectionOutcome::Ignored,
+        }
+    }
+
+    /// Semantic intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> SectionOutcome {
+        if !self.focused {
+            return SectionOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Activate | UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse => {
+                self.toggle()
             }
             _ => SectionOutcome::Ignored,
+        }
+    }
+
+    fn toggle(&mut self) -> SectionOutcome {
+        self.collapsed = !self.collapsed;
+        SectionOutcome::ToggleCollapsed {
+            collapsed: self.collapsed,
+        }
+    }
+
+    /// Key path with [`EventResult`].
+    pub fn handle_key_result(&mut self, key: KeyEvent) -> EventResult<SectionOutcome> {
+        match self.handle_key(key) {
+            SectionOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
         }
     }
 
@@ -497,15 +523,38 @@ pub struct AlertState {
 }
 
 impl AlertState {
-    /// Esc dismisses; Enter acknowledges.
+    /// Esc dismisses; Enter acknowledges (via intents; no raw key match).
     pub fn handle_key(&mut self, key: KeyEvent) -> AlertOutcome {
         if !self.focused || key.kind != KeyEventKind::Press {
             return AlertOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Esc => AlertOutcome::Dismissed,
-            KeyCode::Enter => AlertOutcome::Acknowledged,
+        let intent = default_button_intent(key).or_else(|| default_list_intent(key));
+        match intent {
+            Some(UiIntent::Cancel | UiIntent::Close) => AlertOutcome::Dismissed,
+            Some(UiIntent::Activate | UiIntent::Submit) => AlertOutcome::Acknowledged,
             _ => AlertOutcome::Ignored,
+        }
+    }
+
+    /// Semantic intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> AlertOutcome {
+        if !self.focused {
+            return AlertOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => AlertOutcome::Dismissed,
+            UiIntent::Activate | UiIntent::Submit => AlertOutcome::Acknowledged,
+            _ => AlertOutcome::Ignored,
+        }
+    }
+
+    /// Key path with [`EventResult`] (dismiss requests overlay peel).
+    pub fn handle_key_result(&mut self, key: KeyEvent) -> EventResult<AlertOutcome> {
+        match self.handle_key(key) {
+            AlertOutcome::Ignored => EventResult::ignored(),
+            AlertOutcome::Dismissed => EventResult::emit(AlertOutcome::Dismissed)
+                .with_overlay(crate::interaction::OverlayRequest::DismissTop),
+            other => EventResult::emit(other),
         }
     }
 }
@@ -526,7 +575,8 @@ impl Alert<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyCode, KeyModifiers};
+    use crate::interaction::OverlayRequest;
     use crate::text::display_cols;
 
     #[test]
@@ -562,5 +612,20 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             AlertOutcome::Dismissed
         );
+        let r = state.handle_key_result(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        assert_eq!(r.message(), Some(&AlertOutcome::Dismissed));
+        assert_eq!(r.overlay(), Some(&OverlayRequest::DismissTop));
+    }
+
+    #[test]
+    fn section_event_result_emits_toggle() {
+        let mut state = SectionState::new();
+        state.set_focused(true);
+        let r = state.handle_key_result(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        assert!(r.is_consumed());
+        assert!(matches!(
+            r.message(),
+            Some(SectionOutcome::ToggleCollapsed { collapsed: true })
+        ));
     }
 }

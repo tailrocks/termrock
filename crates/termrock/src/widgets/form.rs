@@ -332,6 +332,7 @@ impl<Id: Clone + PartialEq> FormState<Id> {
             | UiIntent::Cancel
             | UiIntent::Expand
             | UiIntent::Collapse => FormOutcome::Ignored,
+            _ => FormOutcome::Ignored,
         }
     }
 

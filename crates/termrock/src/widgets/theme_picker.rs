@@ -10,7 +10,10 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{KeyEvent, KeyEventKind},
+    interaction::{
+        EventResult, NavigationMove, OverlayRequest, UiIntent, default_list_intent,
+    },
     style::{Density, DesignSystem, Role, RolePalette},
     text::take_display_cols,
     widgets::{Panel, PanelChrome},
@@ -91,34 +94,72 @@ impl ThemePickerState {
         self.confirmed = None;
     }
 
-    /// Handles navigation / confirm / cancel.
+    /// Handles navigation / confirm / cancel via default list intents (no raw key match).
     pub fn handle_key(&mut self, key: KeyEvent, preset_count: usize) -> ThemePickerOutcome {
         if key.kind != KeyEventKind::Press || preset_count == 0 {
             return ThemePickerOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Up | KeyCode::Char('k') => {
+        match default_list_intent(key) {
+            Some(intent) => self.handle_intent(intent, preset_count),
+            None => ThemePickerOutcome::Ignored,
+        }
+    }
+
+    /// Semantic intent path (preferred when the host owns keymaps).
+    pub fn handle_intent(&mut self, intent: UiIntent, preset_count: usize) -> ThemePickerOutcome {
+        if preset_count == 0 {
+            return ThemePickerOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Move(NavigationMove::Previous | NavigationMove::Up) => {
                 self.selected = self.selected.saturating_sub(1);
                 ThemePickerOutcome::SelectionChanged
             }
-            KeyCode::Down | KeyCode::Char('j') => {
+            UiIntent::Move(NavigationMove::Next | NavigationMove::Down) => {
                 self.selected = (self.selected + 1).min(preset_count - 1);
                 ThemePickerOutcome::SelectionChanged
             }
-            KeyCode::Home => {
+            UiIntent::Move(NavigationMove::First) => {
                 self.selected = 0;
                 ThemePickerOutcome::SelectionChanged
             }
-            KeyCode::End => {
+            UiIntent::Move(NavigationMove::Last) => {
                 self.selected = preset_count - 1;
                 ThemePickerOutcome::SelectionChanged
             }
-            KeyCode::Enter => {
-                // Caller supplies presets at render; confirmation uses index only here.
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Open => {
                 ThemePickerOutcome::ConfirmIndex(self.selected)
             }
-            KeyCode::Esc => ThemePickerOutcome::Cancelled,
+            UiIntent::Cancel | UiIntent::Close => ThemePickerOutcome::Cancelled,
             _ => ThemePickerOutcome::Ignored,
+        }
+    }
+
+    /// Key path with standard [`EventResult`] envelope (domain = [`ThemePickerOutcome`]).
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+        preset_count: usize,
+    ) -> EventResult<ThemePickerOutcome> {
+        Self::outcome_to_result(self.handle_key(key, preset_count))
+    }
+
+    /// Intent path with [`EventResult`]. Cancel attaches dismiss-top overlay request.
+    pub fn handle_intent_result(
+        &mut self,
+        intent: UiIntent,
+        preset_count: usize,
+    ) -> EventResult<ThemePickerOutcome> {
+        Self::outcome_to_result(self.handle_intent(intent, preset_count))
+    }
+
+    fn outcome_to_result(outcome: ThemePickerOutcome) -> EventResult<ThemePickerOutcome> {
+        match outcome {
+            ThemePickerOutcome::Ignored => EventResult::ignored(),
+            ThemePickerOutcome::Cancelled => {
+                EventResult::emit(outcome).with_overlay(OverlayRequest::DismissTop)
+            }
+            other => EventResult::emit(other),
         }
     }
 
@@ -218,7 +259,8 @@ impl StatefulWidget for ThemePicker<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyCode, KeyModifiers};
+    use crate::interaction::{OverlayRequest, Propagation};
 
     #[test]
     fn navigation_and_confirm_index() {
@@ -239,5 +281,17 @@ mod tests {
             ThemePickerOutcome::ConfirmIndex(1)
         );
         assert_eq!(theme_from_preset_id("slate"), Some(RolePalette::slate()));
+    }
+
+    #[test]
+    fn event_result_cancel_requests_dismiss_top() {
+        let mut state = ThemePickerState::new(0);
+        let r = state.handle_key_result(
+            KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+            BUILTIN_THEME_PRESETS.len(),
+        );
+        assert_eq!(r.propagation(), Propagation::Stop);
+        assert_eq!(r.message(), Some(&ThemePickerOutcome::Cancelled));
+        assert_eq!(r.overlay(), Some(&OverlayRequest::DismissTop));
     }
 }
