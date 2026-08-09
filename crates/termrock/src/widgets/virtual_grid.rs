@@ -311,10 +311,12 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     }
 
     fn clamp_cursor(&mut self) {
-        if let Some(total) = self.total_rows
-            && total > 0
-        {
-            self.cursor_row = self.cursor_row.min(total.saturating_sub(1));
+        match self.total_rows {
+            Some(0) => self.cursor_row = 0,
+            Some(total) => {
+                self.cursor_row = self.cursor_row.min(total.saturating_sub(1));
+            }
+            None => {}
         }
         if self.total_cols > 0 {
             self.cursor_col = self.cursor_col.min(self.total_cols.saturating_sub(1));
@@ -389,42 +391,90 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     }
 }
 
+/// Resolves a resident row by absolute index.
+///
+/// Prefer ordered projections (`binary_search`); falls back to a linear scan
+/// when the slice is not sorted by `index`.
+fn resident_at<'a, RowId>(
+    rows: &'a [GridRow<'a, RowId>],
+    index: u64,
+) -> Option<&'a GridRow<'a, RowId>> {
+    match rows.binary_search_by_key(&index, |row| row.index) {
+        Ok(pos) => Some(&rows[pos]),
+        Err(_) => rows.iter().find(|row| row.index == index),
+    }
+}
+
+/// Whether an absolute row is inside the known dataset boundary.
+fn row_in_bounds(total_rows: Option<u64>, row: u64) -> bool {
+    match total_rows {
+        Some(0) => false,
+        Some(total) => row < total,
+        None => true,
+    }
+}
+
 impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
     /// Handles a key event. Call only when focused.
+    ///
+    /// Vertical navigation/page/activate/cancel route through
+    /// [`crate::default_table_intent`]. Horizontal arrows and Shift range
+    /// remain grid geometry (2-axis). Activate is Press-only.
+    ///
+    /// `rows` is the current borrowed resident projection used to resolve
+    /// stable IDs and enabled state. It is not stored.
     pub fn handle_key(
         &mut self,
         event: KeyEvent,
         columns: &[GridColumn<'_, ColId>],
+        rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
-        if !self.focused || event.kind != KeyEventKind::Press {
+        if !self.focused || event.kind == KeyEventKind::Release {
             return VirtualGridOutcome::Ignored;
         }
         let extend = event.modifiers.contains(KeyModifiers::SHIFT);
         let control = event.modifiers.contains(KeyModifiers::CONTROL);
         let before = (self.first_row, self.first_col);
+        // Prefer universal intents for shared collection actions.
+        if !control && let Some(intent) = crate::default_table_intent(event) {
+            if matches!(intent, crate::UiIntent::Activate) && event.kind != KeyEventKind::Press {
+                return VirtualGridOutcome::Ignored;
+            }
+            // Page/Activate/Cancel/vertical Move via intent; Left/Right not in table map.
+            if !matches!(
+                intent,
+                crate::UiIntent::Move(crate::NavigationMove::Previous)
+                    | crate::UiIntent::Move(crate::NavigationMove::Next)
+            ) || matches!(
+                event.code,
+                KeyCode::Up | KeyCode::Down | KeyCode::Char('k' | 'j')
+            ) {
+                let outcome = self.handle_intent(intent, extend, columns, rows);
+                if (self.first_row, self.first_col) != before
+                    && !matches!(outcome, VirtualGridOutcome::Ignored)
+                {
+                    return VirtualGridOutcome::ViewportChanged {
+                        first_row: self.first_row,
+                        first_col: self.first_col,
+                    };
+                }
+                return outcome;
+            }
+        }
         let outcome = match event.code {
-            KeyCode::Up => self.move_cursor(-1, 0, extend, columns),
-            KeyCode::Down => self.move_cursor(1, 0, extend, columns),
-            KeyCode::Left => self.move_cursor(0, -1, extend, columns),
-            KeyCode::Right => self.move_cursor(0, 1, extend, columns),
-            KeyCode::PageUp => {
-                let step = i64::from(self.body_rows.max(1));
-                self.move_cursor(-step, 0, extend, columns)
-            }
-            KeyCode::PageDown => {
-                let step = i64::from(self.body_rows.max(1));
-                self.move_cursor(step, 0, extend, columns)
-            }
+            KeyCode::Left => self.move_cursor(0, -1, extend, columns, rows),
+            KeyCode::Right => self.move_cursor(0, 1, extend, columns, rows),
             KeyCode::Home if control => {
                 self.cursor_row = 0;
                 self.cursor_col = 0;
+                self.skip_disabled_from(rows, 1);
                 if !extend {
                     self.anchor = None;
                 } else if self.anchor.is_none() {
                     self.anchor = Some((self.cursor_row, self.cursor_col));
                 }
                 self.ensure_cursor_visible();
-                self.cursor_outcome(columns)
+                self.cursor_outcome(columns, rows)
             }
             KeyCode::Home => {
                 self.cursor_col = 0;
@@ -432,7 +482,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
                     self.anchor = None;
                 }
                 self.ensure_cursor_visible();
-                self.cursor_outcome(columns)
+                self.cursor_outcome(columns, rows)
             }
             KeyCode::End if control => {
                 if let Some(total) = self.total_rows
@@ -443,11 +493,12 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
                 if self.total_cols > 0 {
                     self.cursor_col = self.total_cols - 1;
                 }
+                self.skip_disabled_from(rows, -1);
                 if !extend {
                     self.anchor = None;
                 }
                 self.ensure_cursor_visible();
-                self.cursor_outcome(columns)
+                self.cursor_outcome(columns, rows)
             }
             KeyCode::End => {
                 if self.total_cols > 0 {
@@ -457,29 +508,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
                     self.anchor = None;
                 }
                 self.ensure_cursor_visible();
-                self.cursor_outcome(columns)
-            }
-            KeyCode::Enter => {
-                if columns.is_empty() {
-                    VirtualGridOutcome::Ignored
-                } else {
-                    VirtualGridOutcome::Activated {
-                        row: self.cursor_row,
-                        col: self.cursor_col,
-                        row_id: None,
-                        col_id: columns[self.cursor_col.min(columns.len() - 1)].id.clone(),
-                    }
-                }
-            }
-            KeyCode::Esc => {
-                if self.anchor.take().is_some() {
-                    VirtualGridOutcome::RangeChanged {
-                        start: (self.cursor_row, self.cursor_col),
-                        end: (self.cursor_row, self.cursor_col),
-                    }
-                } else {
-                    VirtualGridOutcome::Cancelled
-                }
+                self.cursor_outcome(columns, rows)
             }
             _ => VirtualGridOutcome::Ignored,
         };
@@ -495,11 +524,74 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         outcome
     }
 
+    /// Applies a semantic collection intent (row axis + activate/cancel).
+    pub fn handle_intent(
+        &mut self,
+        intent: crate::UiIntent,
+        extend: bool,
+        columns: &[GridColumn<'_, ColId>],
+        rows: &[GridRow<'_, RowId>],
+    ) -> VirtualGridOutcome<RowId, ColId> {
+        if !self.focused {
+            return VirtualGridOutcome::Ignored;
+        }
+        use crate::interaction::{NavigationMove, PageMove, UiIntent};
+        match intent {
+            UiIntent::Move(NavigationMove::Previous) => {
+                self.move_cursor(-1, 0, extend, columns, rows)
+            }
+            UiIntent::Move(NavigationMove::Next) => self.move_cursor(1, 0, extend, columns, rows),
+            UiIntent::Move(NavigationMove::First) => {
+                self.cursor_row = 0;
+                self.skip_disabled_from(rows, 1);
+                if !extend {
+                    self.anchor = None;
+                }
+                self.ensure_cursor_visible();
+                self.cursor_outcome(columns, rows)
+            }
+            UiIntent::Move(NavigationMove::Last) => {
+                if let Some(total) = self.total_rows
+                    && total > 0
+                {
+                    self.cursor_row = total - 1;
+                }
+                self.skip_disabled_from(rows, -1);
+                if !extend {
+                    self.anchor = None;
+                }
+                self.ensure_cursor_visible();
+                self.cursor_outcome(columns, rows)
+            }
+            UiIntent::Page(PageMove::Backward) => {
+                let step = i64::from(self.body_rows.max(1));
+                self.move_cursor(-step, 0, extend, columns, rows)
+            }
+            UiIntent::Page(PageMove::Forward) => {
+                let step = i64::from(self.body_rows.max(1));
+                self.move_cursor(step, 0, extend, columns, rows)
+            }
+            UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self.activate(columns, rows),
+            UiIntent::Cancel | UiIntent::Close => {
+                if self.anchor.take().is_some() {
+                    VirtualGridOutcome::RangeChanged {
+                        start: (self.cursor_row, self.cursor_col),
+                        end: (self.cursor_row, self.cursor_col),
+                    }
+                } else {
+                    VirtualGridOutcome::Cancelled
+                }
+            }
+            UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse => VirtualGridOutcome::Ignored,
+        }
+    }
+
     /// Handles a mouse event against the last painted geometry.
     pub fn handle_mouse(
         &mut self,
         event: MouseEvent,
         columns: &[GridColumn<'_, ColId>],
+        rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
         if columns.is_empty() {
             return VirtualGridOutcome::Ignored;
@@ -544,41 +636,79 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
                 }
             }
             MouseEventKind::Down(MouseButton::Left) => {
-                if let Some(region) = self
+                let Some(region) = self
                     .cell_regions
                     .iter()
                     .find(|region| region.area.contains(position))
+                    .cloned()
+                else {
+                    return VirtualGridOutcome::Ignored;
+                };
+                if let Some(row) = resident_at(rows, region.row_index)
+                    && !row.enabled
                 {
-                    self.cursor_row = region.row_index;
-                    self.cursor_col = region.col_index;
-                    self.anchor = None;
-                    self.ensure_cursor_visible();
-                    self.cursor_outcome(columns)
-                } else {
-                    VirtualGridOutcome::Ignored
+                    return VirtualGridOutcome::Ignored;
                 }
+                if !row_in_bounds(self.total_rows, region.row_index) {
+                    return VirtualGridOutcome::Ignored;
+                }
+                self.cursor_row = region.row_index;
+                self.cursor_col = region.col_index;
+                self.anchor = None;
+                self.ensure_cursor_visible();
+                self.cursor_outcome(columns, rows)
             }
             MouseEventKind::Drag(MouseButton::Left) => {
-                if let Some(region) = self
+                let Some(region) = self
                     .cell_regions
                     .iter()
                     .find(|region| region.area.contains(position))
+                    .cloned()
+                else {
+                    return VirtualGridOutcome::Ignored;
+                };
+                if let Some(row) = resident_at(rows, region.row_index)
+                    && !row.enabled
                 {
-                    if self.anchor.is_none() {
-                        self.anchor = Some((self.cursor_row, self.cursor_col));
-                    }
-                    self.cursor_row = region.row_index;
-                    self.cursor_col = region.col_index;
-                    self.ensure_cursor_visible();
-                    VirtualGridOutcome::RangeChanged {
-                        start: self.anchor.unwrap_or((self.cursor_row, self.cursor_col)),
-                        end: (self.cursor_row, self.cursor_col),
-                    }
-                } else {
-                    VirtualGridOutcome::Ignored
+                    return VirtualGridOutcome::Ignored;
+                }
+                if !row_in_bounds(self.total_rows, region.row_index) {
+                    return VirtualGridOutcome::Ignored;
+                }
+                if self.anchor.is_none() {
+                    self.anchor = Some((self.cursor_row, self.cursor_col));
+                }
+                self.cursor_row = region.row_index;
+                self.cursor_col = region.col_index;
+                self.ensure_cursor_visible();
+                VirtualGridOutcome::RangeChanged {
+                    start: self.anchor.unwrap_or((self.cursor_row, self.cursor_col)),
+                    end: (self.cursor_row, self.cursor_col),
                 }
             }
             _ => VirtualGridOutcome::Ignored,
+        }
+    }
+
+    fn activate(
+        &self,
+        columns: &[GridColumn<'_, ColId>],
+        rows: &[GridRow<'_, RowId>],
+    ) -> VirtualGridOutcome<RowId, ColId> {
+        if columns.is_empty() || !row_in_bounds(self.total_rows, self.cursor_row) {
+            return VirtualGridOutcome::Ignored;
+        }
+        if let Some(row) = resident_at(rows, self.cursor_row)
+            && !row.enabled
+        {
+            return VirtualGridOutcome::Ignored;
+        }
+        let col = self.cursor_col.min(columns.len() - 1);
+        VirtualGridOutcome::Activated {
+            row: self.cursor_row,
+            col,
+            row_id: resident_at(rows, self.cursor_row).map(|row| row.id.clone()),
+            col_id: columns[col].id.clone(),
         }
     }
 
@@ -588,8 +718,12 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         d_col: i64,
         extend: bool,
         columns: &[GridColumn<'_, ColId>],
+        rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
         if columns.is_empty() {
+            return VirtualGridOutcome::Ignored;
+        }
+        if self.total_rows == Some(0) {
             return VirtualGridOutcome::Ignored;
         }
         if extend && self.anchor.is_none() {
@@ -609,6 +743,16 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
             self.cursor_col = self.cursor_col.saturating_add(d_col as usize);
         }
         self.clamp_cursor();
+        let row_dir = if d_row > 0 {
+            1
+        } else if d_row < 0 {
+            -1
+        } else {
+            0
+        };
+        if row_dir != 0 {
+            self.skip_disabled_from(rows, row_dir);
+        }
         self.ensure_cursor_visible();
         if extend {
             VirtualGridOutcome::RangeChanged {
@@ -616,24 +760,64 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
                 end: (self.cursor_row, self.cursor_col),
             }
         } else {
-            self.cursor_outcome(columns)
+            self.cursor_outcome(columns, rows)
+        }
+    }
+
+    /// Skips resident disabled rows in `direction` (+1 forward, -1 backward).
+    fn skip_disabled_from(&mut self, rows: &[GridRow<'_, RowId>], direction: i8) {
+        if direction == 0 {
+            return;
+        }
+        let max_steps = self.total_rows.unwrap_or(10_000).min(10_000) as usize + rows.len() + 1;
+        for _ in 0..max_steps {
+            if !row_in_bounds(self.total_rows, self.cursor_row) {
+                self.clamp_cursor();
+                return;
+            }
+            match resident_at(rows, self.cursor_row) {
+                Some(row) if !row.enabled => {
+                    if direction > 0 {
+                        self.cursor_row = self.cursor_row.saturating_add(1);
+                    } else if self.cursor_row == 0 {
+                        // Nowhere left; clamp will leave 0 — try forward for a
+                        // usable row if every lower row is disabled.
+                        break;
+                    } else {
+                        self.cursor_row = self.cursor_row.saturating_sub(1);
+                    }
+                    self.clamp_cursor();
+                }
+                _ => return,
+            }
         }
     }
 
     fn cursor_outcome(
         &self,
         columns: &[GridColumn<'_, ColId>],
+        rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
-        if columns.is_empty() {
+        if columns.is_empty() || !row_in_bounds(self.total_rows, self.cursor_row) {
             return VirtualGridOutcome::Ignored;
         }
         let col = self.cursor_col.min(columns.len() - 1);
         VirtualGridOutcome::CursorMoved {
             row: self.cursor_row,
             col,
-            row_id: None,
+            row_id: resident_at(rows, self.cursor_row).map(|row| row.id.clone()),
             col_id: columns[col].id.clone(),
         }
+    }
+
+    fn range_contains(&self, row: u64, col: usize) -> bool {
+        let Some((ar, ac)) = self.anchor else {
+            return false;
+        };
+        let (cr, cc) = (self.cursor_row, self.cursor_col);
+        let (r0, r1) = (ar.min(cr), ar.max(cr));
+        let (c0, c1) = (ac.min(cc), ac.max(cc));
+        row >= r0 && row <= r1 && col >= c0 && col <= c1
     }
 }
 
@@ -790,7 +974,13 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
         for row_slot in 0..body_height {
             let y = body_y.saturating_add(row_slot);
             let abs_row = state.first_row.saturating_add(u64::from(row_slot));
-            let resident = self.rows.iter().find(|row| row.index == abs_row);
+            // Known totals are authoritative: never paint or hit-test past total.
+            if let Some(total) = self.total_rows
+                && abs_row >= total
+            {
+                break;
+            }
+            let resident = resident_at(self.rows, abs_row);
             if self.show_gutter {
                 let label = format!("{abs_row}");
                 buffer.set_stringn(
@@ -814,21 +1004,12 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                     .and_then(|row| row.cells.get(col_index).copied())
                     .unwrap_or(GridCell::pending());
                 let is_cursor = abs_row == state.cursor_row && col_index == state.cursor_col;
-                let in_range = state.anchor.is_some_and(|(ar, ac)| {
-                    let (r0, r1) = if ar <= abs_row {
-                        (ar, abs_row)
-                    } else {
-                        (abs_row, ar)
-                    };
-                    let (c0, c1) = if ac <= col_index {
-                        (ac, col_index)
-                    } else {
-                        (col_index, ac)
-                    };
-                    abs_row >= r0 && abs_row <= r1 && col_index >= c0 && col_index <= c1
-                });
-                let style = if is_cursor {
+                let in_range = state.range_contains(abs_row, col_index);
+                let disabled = resident.is_some_and(|row| !row.enabled);
+                let style = if is_cursor && !disabled {
                     cursor_style
+                } else if disabled {
+                    self.theme.style(Role::TextMuted)
                 } else if cell.pending {
                     pending_style
                 } else if in_range {
@@ -916,7 +1097,11 @@ mod tests {
             .unwrap();
         assert!(state.body_rows > 0);
 
-        let outcome = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &columns);
+        let outcome = state.handle_key(
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+            &columns,
+            &rows,
+        );
         assert!(matches!(
             outcome,
             VirtualGridOutcome::CursorMoved { row: 1, .. }
@@ -924,7 +1109,11 @@ mod tests {
         ));
         assert_eq!(state.cursor_row(), 1);
 
-        let outcome = state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &columns);
+        let outcome = state.handle_key(
+            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+            &columns,
+            &rows,
+        );
         assert!(matches!(
             outcome,
             VirtualGridOutcome::CursorMoved { col: 1, .. }
@@ -935,15 +1124,24 @@ mod tests {
     #[test]
     fn shift_extends_range_and_escape_clears() {
         let columns = columns();
+        let rows: [GridRow<'_, u64>; 0] = [];
         let mut state = VirtualGridState::<u64, &str>::new();
         state.set_focused(true);
         state.total_rows = Some(50);
         state.total_cols = columns.len();
         state.body_rows = 10;
         state.body_cols_visible = 3;
-        let _ = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::SHIFT), &columns);
+        let _ = state.handle_key(
+            KeyEvent::new(KeyCode::Down, KeyModifiers::SHIFT),
+            &columns,
+            &rows,
+        );
         assert!(state.anchor().is_some());
-        let outcome = state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &columns);
+        let outcome = state.handle_key(
+            KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+            &columns,
+            &rows,
+        );
         assert!(matches!(
             outcome,
             VirtualGridOutcome::RangeChanged { .. } | VirtualGridOutcome::Cancelled
@@ -978,10 +1176,15 @@ mod tests {
                 modifiers: KeyModifiers::NONE,
             },
             &columns,
+            &rows,
         );
         assert!(matches!(
             outcome,
-            VirtualGridOutcome::CursorMoved { row: 0, .. }
+            VirtualGridOutcome::CursorMoved {
+                row: 0,
+                row_id: Some(10),
+                ..
+            }
         ));
     }
 
@@ -1026,10 +1229,206 @@ mod tests {
     #[test]
     fn unfocused_keys_are_ignored() {
         let columns = columns();
+        let rows: [GridRow<'_, u64>; 0] = [];
         let mut state = VirtualGridState::<u64, &str>::new();
         state.total_cols = 3;
         state.total_rows = Some(10);
-        let outcome = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &columns);
+        let outcome = state.handle_key(
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+            &columns,
+            &rows,
+        );
         assert_eq!(outcome, VirtualGridOutcome::Ignored);
+    }
+
+    #[test]
+    fn zero_total_has_no_body_hits_and_enter_ignored() {
+        let theme = Theme::default();
+        let columns = columns();
+        let rows: [GridRow<'_, u64>; 0] = [];
+        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(0);
+        let mut state = VirtualGridState::new();
+        state.set_focused(true);
+        let mut terminal = Terminal::new(TestBackend::new(40, 10)).unwrap();
+        terminal
+            .draw(|frame| {
+                frame.render_stateful_widget(&grid, Rect::new(0, 0, 40, 10), &mut state);
+            })
+            .unwrap();
+        assert!(
+            state.cell_regions.is_empty(),
+            "zero total must not publish body hit regions"
+        );
+        let outcome = state.handle_key(
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            &columns,
+            &rows,
+        );
+        assert_eq!(outcome, VirtualGridOutcome::Ignored);
+    }
+
+    #[test]
+    fn short_total_paints_only_existing_rows() {
+        let theme = Theme::default();
+        let columns = columns();
+        let cell0 = cells("a", "b", "c");
+        let cell1 = cells("d", "e", "f");
+        let rows = [GridRow::new(0, 0, &cell0), GridRow::new(1, 1, &cell1)];
+        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(2);
+        let mut state = VirtualGridState::new();
+        let mut terminal = Terminal::new(TestBackend::new(40, 12)).unwrap();
+        terminal
+            .draw(|frame| {
+                frame.render_stateful_widget(&grid, Rect::new(0, 0, 40, 12), &mut state);
+            })
+            .unwrap();
+        let painted_rows: Vec<u64> = state
+            .cell_regions
+            .iter()
+            .map(|region| region.row_index)
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        assert_eq!(painted_rows, vec![0, 1]);
+    }
+
+    #[test]
+    fn disabled_resident_rows_cannot_be_selected_or_activated() {
+        let theme = Theme::default();
+        let columns = columns();
+        let cell0 = cells("a", "b", "c");
+        let cell1 = cells("d", "e", "f");
+        let cell2 = cells("g", "h", "i");
+        let rows = [
+            GridRow::new(0, 0, &cell0),
+            GridRow::new(1, 1, &cell1).enabled(false),
+            GridRow::new(2, 2, &cell2),
+        ];
+        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(3);
+        let mut state = VirtualGridState::new();
+        state.set_focused(true);
+        let mut terminal = Terminal::new(TestBackend::new(40, 8)).unwrap();
+        terminal
+            .draw(|frame| {
+                frame.render_stateful_widget(&grid, Rect::new(0, 0, 40, 8), &mut state);
+            })
+            .unwrap();
+
+        let outcome = state.handle_key(
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+            &columns,
+            &rows,
+        );
+        assert!(matches!(
+            outcome,
+            VirtualGridOutcome::CursorMoved {
+                row: 2,
+                row_id: Some(2),
+                ..
+            } | VirtualGridOutcome::ViewportChanged { .. }
+        ));
+        assert_eq!(state.cursor_row(), 2);
+
+        // Land on disabled via direct cursor, activate must ignore.
+        state.cursor_row = 1;
+        let outcome = state.handle_key(
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            &columns,
+            &rows,
+        );
+        assert_eq!(outcome, VirtualGridOutcome::Ignored);
+
+        let disabled_region = state
+            .cell_regions
+            .iter()
+            .find(|region| region.row_index == 1)
+            .expect("disabled row painted");
+        let click = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: disabled_region.area.x,
+                    y: disabled_region.area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &columns,
+            &rows,
+        );
+        assert_eq!(click, VirtualGridOutcome::Ignored);
+    }
+
+    #[test]
+    fn range_paint_uses_anchor_to_cursor_rectangle() {
+        let theme = Theme::default();
+        let columns = columns();
+        let shared = cells("x", "y", "z");
+        let rows = [
+            GridRow::new(0, 0, &shared),
+            GridRow::new(1, 1, &shared),
+            GridRow::new(2, 2, &shared),
+            GridRow::new(3, 3, &shared),
+            GridRow::new(4, 4, &shared),
+        ];
+        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(5);
+        let mut state = VirtualGridState::new();
+        state.set_focused(true);
+        state.anchor = Some((0, 0));
+        state.cursor_row = 2;
+        state.cursor_col = 1;
+        let mut terminal = Terminal::new(TestBackend::new(40, 8)).unwrap();
+        terminal
+            .draw(|frame| {
+                frame.render_stateful_widget(&grid, Rect::new(0, 0, 40, 8), &mut state);
+            })
+            .unwrap();
+        // Rectangle rows 0..=2, cols 0..=1 — not the full viewport.
+        assert!(state.range_contains(0, 0));
+        assert!(state.range_contains(2, 1));
+        assert!(!state.range_contains(3, 0));
+        assert!(!state.range_contains(0, 2));
+    }
+
+    #[test]
+    fn resident_keyboard_outcomes_carry_row_id() {
+        let columns = columns();
+        let shared = cells("x", "y", "z");
+        let rows = [GridRow::new(99, 0, &shared)];
+        let mut state = VirtualGridState::<u64, &str>::new();
+        state.set_focused(true);
+        state.total_rows = Some(5);
+        state.total_cols = columns.len();
+        state.body_rows = 5;
+        state.body_cols_visible = 3;
+        let outcome = state.handle_key(
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            &columns,
+            &rows,
+        );
+        assert_eq!(
+            outcome,
+            VirtualGridOutcome::Activated {
+                row: 0,
+                col: 0,
+                row_id: Some(99),
+                col_id: "a",
+            }
+        );
+        // Non-resident in-bounds row keeps None id.
+        let empty: [GridRow<'_, u64>; 0] = [];
+        state.cursor_row = 3;
+        let outcome = state.handle_key(
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            &columns,
+            &empty,
+        );
+        assert!(matches!(
+            outcome,
+            VirtualGridOutcome::Activated {
+                row: 3,
+                row_id: None,
+                ..
+            }
+        ));
     }
 }

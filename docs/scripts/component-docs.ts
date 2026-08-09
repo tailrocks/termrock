@@ -56,6 +56,21 @@ let anchor = Rect::new(12, 6, 1, 1);
 let menu = CompletionMenu::new(&candidates, &theme, bounds, anchor);
 let state = CompletionMenuState::new(Some("select"));`,
   },
+  DesignInspector: {
+    description: 'Studio debug strip for focus, layer, density, and color capability.',
+    primaryStory: 'design-inspector/basic',
+    usage: `use termrock::{Theme, style::ColorCapability, widgets::{DesignInspector, DesignInspectorFrame}};
+
+let theme = Theme::default();
+let frame = DesignInspectorFrame {
+    focused: Some("list"),
+    layer: Some("root"),
+    capability: ColorCapability::Truecolor,
+    density: "comfortable",
+    ..DesignInspectorFrame::default()
+};
+let _inspector = DesignInspector::new(frame, &theme);`,
+  },
   DetailTable: {
     description: 'A selectable key/value table with stable rows and typed activation capabilities.',
     primaryStory: 'detail-table/basic',
@@ -72,13 +87,14 @@ let outcome = state.select_next(&rows);`,
     primaryStory: 'table/basic',
     usage: `use std::num::NonZeroU16;
 use ratatui_core::text::Line;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState}};
 
 let theme = Theme::default();
 let columns = [Column { id: "name", title: Line::from("Name"), width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()), alignment: CellAlignment::Left, sortable: true, sort: None }];
 let cells = [Line::from("termrock")];
-let rows = [TableRow { id: "termrock", cells: &cells, enabled: true, emphasis: false, style: None }];
-let table = Table::new(&columns, &rows, &theme);
+let rows = [TableRow::new("termrock", &cells)];
+let tokens = DesignTokens::default();
+let table = Table::new(&columns, &rows, &tokens);
 let mut state = TableState::<&str, &str>::new(Some("termrock"));
 state.set_focused(true);
 let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
@@ -136,11 +152,12 @@ bar.render(area, &mut Buffer::empty(area));`,
     description: 'A selectable, scrollable list over borrowed rows and stable identities.',
     primaryStory: 'list/selection',
     usage: `use ratatui_core::text::Line;
-use termrock::{Theme, widgets::{List, ListRow, ListState, RowRole}};
+use termrock::{style::DesignTokens, Theme, widgets::{List, ListRow, ListState}};
 
 let theme = Theme::default();
-let rows = [ListRow { id: "alpha", label: Line::from("Alpha"), trailing: None, role: RowRole::Item, enabled: true }];
-let list = List::new(&rows, &theme);
+let rows = [ListRow::item("alpha", Line::from("Alpha"))];
+let tokens = DesignTokens::default();
+let list = List::new(&rows, &tokens);
 let mut state = ListState::new(Some("alpha"));
 let outcome = state.select_next(&rows);`,
   },
@@ -188,23 +205,23 @@ let outcome = state.select_next(&details);`,
     description: 'A themed bordered container with semantic focus emphasis.',
     primaryStory: 'panel/focused',
     usage: `use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{Panel, PanelEmphasis}};
+use termrock::{style::DesignTokens, widgets::{Panel, PanelEmphasis}};
 
-let theme = Theme::default();
-let panel = Panel::new(&theme).title("Files").emphasis(PanelEmphasis::Focused);
+let tokens = DesignTokens::default();
+let panel = Panel::new(&tokens).title("Files").emphasis(PanelEmphasis::Focused);
 let inner = panel.inner(Rect::new(0, 0, 80, 24));`,
   },
   Picker: {
     description: 'A filterable stable-ID list composition with caller-owned matching and ordering.',
     primaryStory: 'picker/basic',
     usage: `use ratatui_core::text::Line;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState}};
 
 let theme = Theme::default();
 let candidates = [("open", "Open file"), ("logs", "Show logs")];
 let project = |query: &str| candidates.iter()
     .filter(|(_, label)| label.to_lowercase().contains(&query.to_lowercase()))
-    .map(|(id, label)| ListRow { id: *id, label: Line::from(*label), trailing: None, role: RowRole::Item, enabled: true })
+    .map(|(id, label)| ListRow::item(*id, Line::from(*label)))
     .collect::<Vec<_>>();
 let mut state = PickerState::new(Some("open"));
 let mut rows = project(state.query_text());
@@ -212,7 +229,8 @@ if matches!(state.handle_key(&rows, KeyEvent::new(KeyCode::Char('l'), KeyModifie
     rows = project(state.query_text());
     state.reconcile(&rows);
 }
-let picker = Picker::new(&rows, &theme);`,
+let tokens = DesignTokens::default();
+let picker = Picker::new(&rows, &tokens);`,
   },
   Progress: {
     description: 'A deterministic determinate bar or caller-ticked indeterminate indicator.',
@@ -307,11 +325,12 @@ let rect = toast.rect(Rect::new(0, 0, 80, 24));`,
     description: 'A navigable flattened hierarchy with disclosure and multi-select support.',
     primaryStory: 'tree/navigation',
     usage: `use ratatui_core::text::Line;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeNodeStatus, TreeState}};
+use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeState}};
 
 let theme = Theme::default();
-let nodes = [TreeNode { id: "src", label: Line::from("src"), trailing: None, depth: 0, branch: true, expanded: true, enabled: true, status: TreeNodeStatus::Ready }];
-let tree = Tree::new(&nodes, &theme);
+let nodes = [TreeNode::new("src", Line::from("src"), 0)];
+let tokens = DesignTokens::default();
+let tree = Tree::new(&nodes, &tokens);
 let mut state = TreeState::new(Some("src"));
 let outcome = state.handle_key(&nodes, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
   },
@@ -342,5 +361,216 @@ let viewport = Viewport::new(&lines, &theme).title("Output");
 let mut state = DialogScroll::default();
 state.scroll_y = 1;
 let _vertical_offset = state.scroll_y;`,
+  },
+
+  ApprovalCard: {
+    description: 'Fail-safe permission card with default Deny and typed outcomes (no side effects).',
+    primaryStory: 'approval-card/basic',
+    usage: `use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ApprovalCard, ApprovalCardOutcome, ApprovalCardState, ApprovalRisk}};
+
+let theme = Theme::default();
+let card = ApprovalCard::new("Permission", "Run cargo publish?", ApprovalRisk::High, &theme);
+let mut state = ApprovalCardState::new(); // selected = Deny
+match state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)) {
+    ApprovalCardOutcome::Confirmed(decision) => { let _ = decision; }
+    ApprovalCardOutcome::Cancelled => {}
+    _ => {}
+}`,
+  },
+  Banner: {
+    description: 'A single-line severity banner with non-color glyphs.',
+    primaryStory: 'banner/basic',
+    usage: `use termrock::{Theme, widgets::{Banner, Severity}};
+
+let theme = Theme::default();
+let banner = Banner::new("Deployed", Severity::Success, &theme);`,
+  },
+  BarSeries: {
+    description: 'Labeled horizontal bars for density dashboards.',
+    primaryStory: 'bar-series/basic',
+    usage: `use termrock::{Theme, widgets::{BarDatum, BarSeries}};
+
+let theme = Theme::default();
+let bars = [BarDatum { label: "cpu", fraction: 0.72 }];
+let series = BarSeries::new(&bars, &theme);`,
+  },
+  CodeBlock: {
+    description: 'Source listing with optional line numbers and pluggable syntax.',
+    primaryStory: 'code-block/basic',
+    usage: `use termrock::{Theme, widgets::CodeBlock};
+
+let theme = Theme::default();
+let lines = ["fn main() {}"];
+let block = CodeBlock::new(&lines, &theme).language("rust").line_numbers(true);`,
+  },
+  CommandPalette: {
+    description: 'Filterable command list chrome over the picker contract.',
+    primaryStory: 'command-palette/basic',
+    usage: `use ratatui_core::text::Line;
+use termrock::{style::DesignTokens, Theme, widgets::{CommandPalette, CommandPaletteState, ListRow}};
+
+let theme = Theme::default();
+let rows = [ListRow::item("quit", Line::from("Quit"))];
+let tokens = DesignTokens::default();
+let palette = CommandPalette::new("Commands", &rows, &tokens);
+let state = CommandPaletteState::new(Some("quit"));`,
+  },
+  EmptyState: {
+    description: 'Centered empty surface with a non-color glyph.',
+    primaryStory: 'empty-state/basic',
+    usage: `use termrock::{Theme, widgets::EmptyState};
+
+let theme = Theme::default();
+let empty = EmptyState::new("No results", &theme).detail("Try another query");`,
+  },
+  ErrorView: {
+    description: 'Centered failure surface with danger marker.',
+    primaryStory: 'error-view/basic',
+    usage: `use termrock::{Theme, widgets::ErrorView};
+
+let theme = Theme::default();
+let error = ErrorView::new("Failed", &theme).detail("Timed out");`,
+  },
+  JumpOverlay: {
+    description: 'Letter-badge jump navigation over registered rectangles.',
+    primaryStory: 'jump-overlay/basic',
+    usage: `use ratatui_core::layout::Rect;
+use termrock::{Theme, widgets::{JumpOverlay, JumpOverlayState, JumpTarget}};
+
+let theme = Theme::default();
+let targets = [JumpTarget { id: "files", area: Rect::new(0, 0, 10, 1), badge: 'f' }];
+let overlay = JumpOverlay::new(&targets, &theme);
+let mut state = JumpOverlayState::new();
+state.open();`,
+  },
+  LoadingView: {
+    description: 'Centered loading label with a caller-ticked spinner frame.',
+    primaryStory: 'loading-view/basic',
+    usage: `use termrock::{Theme, widgets::LoadingView};
+
+let theme = Theme::default();
+let loading = LoadingView::new("Loading…", "⠋", &theme);`,
+  },
+  MarkdownView: {
+    description: 'Projected markdown-like blocks with semantic roles.',
+    primaryStory: 'markdown-view/basic',
+    usage: `use termrock::{Theme, widgets::{MarkdownBlock, MarkdownBlockKind, MarkdownView}};
+
+let theme = Theme::default();
+let blocks = [MarkdownBlock { kind: MarkdownBlockKind::Heading, text: "Plan" }];
+let view = MarkdownView::new(&blocks, &theme);`,
+  },
+  PromptBox: {
+    description: 'Agent prompt chrome over the multi-line editor.',
+    primaryStory: 'prompt-box/basic',
+    usage: `use termrock::{Theme, widgets::{PromptBox, PromptBoxState}};
+
+let theme = Theme::default();
+let prompt = PromptBox::new(&theme).placeholder("Message…");
+let mut state = PromptBoxState::new();`,
+  },
+  SegmentedMeter: {
+    description: 'Single-row proportional meter for stacked shares.',
+    primaryStory: 'segmented-meter/basic',
+    usage: `use termrock::{Theme, style::Role, widgets::{MeterSegment, SegmentedMeter}};
+
+let theme = Theme::default();
+let segments = [MeterSegment { label: "used", weight: 1.0, role: Role::Success }];
+let meter = SegmentedMeter::new(&segments, &theme);`,
+  },
+  Skeleton: {
+    description: 'Placeholder loading lines for list surfaces.',
+    primaryStory: 'skeleton/basic',
+    usage: `use termrock::{Theme, widgets::Skeleton};
+
+let theme = Theme::default();
+let skeleton = Skeleton::new(4, &theme);`,
+  },
+  Sparkline: {
+    description: 'One-row sparkline over normalized samples.',
+    primaryStory: 'sparkline/basic',
+    usage: `use termrock::{Theme, widgets::Sparkline};
+
+let theme = Theme::default();
+let samples = [0.1, 0.5, 0.9];
+let spark = Sparkline::new(&samples, &theme);`,
+  },
+  StreamView: {
+    description: 'Stable-ID conversation stream with fold markers.',
+    primaryStory: 'stream-view/basic',
+    usage: `use termrock::{Theme, widgets::{StreamItem, StreamItemKind, StreamView}};
+
+let theme = Theme::default();
+let items = [StreamItem { id: "u1", kind: StreamItemKind::User, text: "Hello", folded: false }];
+let stream = StreamView::new(&items, &theme);`,
+  },
+  ThinkingBlock: {
+    description: 'Collapsible thinking/reasoning chrome.',
+    primaryStory: 'thinking-block/basic',
+    usage: `use termrock::{Theme, widgets::ThinkingBlock};
+
+let theme = Theme::default();
+let block = ThinkingBlock::new("Planning", &theme).expanded(true).body("Details");`,
+  },
+  Timeline: {
+    description: 'Vertical activity timeline with active markers.',
+    primaryStory: 'timeline/basic',
+    usage: `use termrock::{Theme, widgets::{Timeline, TimelineEvent}};
+
+let theme = Theme::default();
+let events = [TimelineEvent { when: "12:01", text: "Started", active: true }];
+let timeline = Timeline::new(&events, &theme);`,
+  },
+  TokenMeter: {
+    description: 'Token or cost usage meter with threshold roles.',
+    primaryStory: 'token-meter/basic',
+    usage: `use termrock::{Theme, widgets::TokenMeter};
+
+let theme = Theme::default();
+let meter = TokenMeter::new(128_000, 200_000, &theme);`,
+  },
+  Transcript: {
+    description: 'Variable-height streaming transcript with stable visual anchors.',
+    primaryStory: 'transcript/basic',
+    usage: `use termrock::{Theme, widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState}};
+
+let theme = Theme::default();
+let lines = ["hello", "world"];
+let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
+let mut state: TranscriptState<&str> = TranscriptState::new();
+let view = Transcript::new(&blocks, &theme);
+let _ = (&mut state, view);`,
+  },
+  ToolCard: {
+    description: 'Mutable tool invocation card with non-color status glyphs.',
+    primaryStory: 'tool-card/basic',
+    usage: `use termrock::{Theme, widgets::{ToolCard, ToolStatus}};
+
+let theme = Theme::default();
+let card = ToolCard::new("shell", "cargo test", ToolStatus::Running, &theme);`,
+  },
+
+  ThemePicker: {
+    description: 'A live theme preset list; selection changes drive caller re-render.',
+    primaryStory: 'theme-picker/basic',
+    usage: `use termrock::{Theme, widgets::{BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerState, theme_from_preset_id}};
+
+let theme = Theme::default();
+let picker = ThemePicker::new(BUILTIN_THEME_PRESETS, &theme);
+let mut state = ThemePickerState::new(0);
+let preview = theme_from_preset_id("slate");`,
+  },
+  ImageSurface: {
+    description: 'A framed image slot with protocol labels; pixels stay caller-owned.',
+    primaryStory: 'image-surface/basic',
+    usage: `use termrock::{Theme, widgets::{ImageMeta, ImageProtocol, ImageSurface}};
+
+let theme = Theme::default();
+let meta = ImageMeta {
+    pixel_width: Some(64),
+    pixel_height: Some(64),
+    ..ImageMeta::new("shot.png", ImageProtocol::Placeholder)
+};
+let surface = ImageSurface::new(meta, &theme);`,
   },
 } as const satisfies Record<string, ComponentDoc>

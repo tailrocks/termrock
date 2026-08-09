@@ -42,6 +42,20 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0026 | `v0.11.0` | [Scoped per-frame focus ring](migrations/0026-v0.11.0-scoped-focus-ring.md) |
 | 0027 | `v0.11.0` | [TextInput insertion boundary repair](migrations/0027-v0.11.0-text-input-boundary-repair.md) |
 | 0028 | `v0.11.0` | [VirtualGrid widget](migrations/0028-v0.11.0-virtual-grid.md) |
+| 0029 | `v0.12.0` | [Experience layer](migrations/0029-v0.12.0-experience-layer.md) |
+| 0030 | `v0.12.0` | [Theme system and patterns](migrations/0030-v0.12.0-theme-system-and-patterns.md) |
+| 0031 | `v0.12.0` | [Foundation kernel](migrations/0031-v0.12.0-foundation-kernel.md) |
+| 0032 | `v0.12.0` | [Fail-safe ApprovalCard interaction](migrations/0032-v0.12.0-fail-safe-approval-card.md) |
+| 0033 | `v0.12.0` | [VirtualGrid resident projection contract](migrations/0033-v0.12.0-virtual-grid-resident-projection.md) |
+| 0034 | `v0.12.0` | [Unified InteractionScene](migrations/0034-v0.12.0-unified-interaction-scene.md) |
+| 0035 | `v0.12.0` | [Variable-height transcript](migrations/0035-v0.12.0-variable-height-transcript.md) |
+| 0036 | `v0.12.0` | [Responsive workspace tree](migrations/0036-v0.12.0-responsive-workspace-tree.md) |
+| 0037 | `v0.12.0` | [DesignSystem quiet phosphor](migrations/0037-v0.12.0-design-system-quiet-phosphor.md) |
+| 0038 | `v0.12.0` | [Universal collection intents](migrations/0038-v0.12.0-universal-intents.md) |
+| 0039 | `v0.12.0` | [Composed row anatomy](migrations/0039-v0.12.0-composed-row-anatomy.md) |
+| 0040 | `v0.12.0` | [Agent Workbench pattern](migrations/0040-v0.12.0-agent-workbench.md) |
+| 0041 | `v0.12.0` | [Design inspector](migrations/0041-v0.12.0-design-inspector.md) |
+| 0042 | `v0.12.0` | [Capability preview host](migrations/0042-v0.12.0-capability-preview-host.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

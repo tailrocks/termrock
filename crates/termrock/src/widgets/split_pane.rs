@@ -410,7 +410,7 @@ impl StatefulWidget for SplitPane<'_> {
     type State = SplitPaneState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 

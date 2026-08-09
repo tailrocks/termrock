@@ -11,8 +11,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    Theme,
-    input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     style::Role,
 };
 
@@ -104,6 +103,10 @@ pub struct TableRow<'a, Id> {
     pub id: Id,
     /// Styled cells in column order.
     pub cells: &'a [Line<'a>],
+    /// Optional leading status/icon painted before the first cell.
+    pub leading: Option<Line<'a>>,
+    /// Optional trailing badge after the last cell (composed badge).
+    pub badge: Option<Line<'a>>,
     /// Whether selection, activation, and pointer input may reach this row.
     pub enabled: bool,
     /// Whether ordinary rendering uses the semantic accent role.
@@ -119,9 +122,37 @@ impl<'a, Id> TableRow<'a, Id> {
         Self {
             id,
             cells,
+            leading: None,
+            badge: None,
             enabled: true,
             emphasis: false,
             style: None,
+        }
+    }
+
+    /// Projects identity anatomy for narrow / status chrome.
+    #[must_use]
+    pub fn composed(&self) -> super::ComposedRow<'a, ()>
+    where
+        Id: Clone,
+    {
+        let primary = self
+            .cells
+            .first()
+            .cloned()
+            .unwrap_or_else(|| Line::from(""));
+        super::ComposedRow {
+            id: (),
+            leading: self.leading.clone(),
+            primary,
+            secondary: self.cells.get(1).cloned(),
+            badge: self
+                .badge
+                .clone()
+                .or_else(|| self.cells.last().filter(|_| self.cells.len() > 2).cloned()),
+            shortcut: None,
+            enabled: self.enabled,
+            loading: false,
         }
     }
 
@@ -321,6 +352,9 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
     }
 
     /// Handles focused keyboard navigation and semantic activation.
+    ///
+    /// Keys are mapped through [`crate::default_table_intent`]; activation is
+    /// Press-only so held Enter cannot multi-fire.
     pub fn handle_key(
         &mut self,
         rows: &[TableRow<'_, RowId>],
@@ -329,29 +363,48 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         if !self.focused || key.kind == KeyEventKind::Release || !key.modifiers.is_empty() {
             return TableOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Up | KeyCode::Char('k') => self.move_by(rows, -1, true),
-            KeyCode::Down | KeyCode::Char('j') => self.move_by(rows, 1, true),
-            KeyCode::Home => self.select_edge(rows, false),
-            KeyCode::End => self.select_edge(rows, true),
-            KeyCode::PageUp => self.move_by(
+        let Some(intent) = crate::default_table_intent(key) else {
+            return TableOutcome::Ignored;
+        };
+        if matches!(intent, crate::UiIntent::Activate) && key.kind != KeyEventKind::Press {
+            return TableOutcome::Ignored;
+        }
+        self.handle_intent(rows, intent)
+    }
+
+    /// Applies a semantic collection intent.
+    pub fn handle_intent(
+        &mut self,
+        rows: &[TableRow<'_, RowId>],
+        intent: crate::UiIntent,
+    ) -> TableOutcome<RowId, ColumnId> {
+        if !self.focused {
+            return TableOutcome::Ignored;
+        }
+        use crate::interaction::{NavigationMove, PageMove, UiIntent};
+        match intent {
+            UiIntent::Move(NavigationMove::Previous) => self.move_by(rows, -1, true),
+            UiIntent::Move(NavigationMove::Next) => self.move_by(rows, 1, true),
+            UiIntent::Move(NavigationMove::First) => self.select_edge(rows, false),
+            UiIntent::Move(NavigationMove::Last) => self.select_edge(rows, true),
+            UiIntent::Page(PageMove::Backward) => self.move_by(
                 rows,
                 -isize::try_from(self.viewport_rows.max(1)).unwrap_or(isize::MAX),
                 false,
             ),
-            KeyCode::PageDown => self.move_by(
+            UiIntent::Page(PageMove::Forward) => self.move_by(
                 rows,
                 isize::try_from(self.viewport_rows.max(1)).unwrap_or(isize::MAX),
                 false,
             ),
-            KeyCode::Enter => self
+            UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self
                 .selected
                 .as_ref()
                 .and_then(|id| rows.iter().find(|row| row.enabled && row.id == *id))
                 .map(|row| TableOutcome::Activated(row.id.clone()))
                 .unwrap_or(TableOutcome::Ignored),
-            KeyCode::Esc => TableOutcome::Cancelled,
-            _ => TableOutcome::Ignored,
+            UiIntent::Cancel | UiIntent::Close => TableOutcome::Cancelled,
+            UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse => TableOutcome::Ignored,
         }
     }
 
@@ -531,7 +584,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
 pub struct Table<'a, RowId, ColumnId> {
     columns: &'a [Column<'a, ColumnId>],
     rows: &'a [TableRow<'a, RowId>],
-    theme: &'a Theme,
+    tokens: &'a crate::style::DesignTokens,
     column_gap: u16,
 }
 
@@ -541,12 +594,12 @@ impl<'a, RowId, ColumnId> Table<'a, RowId, ColumnId> {
     pub const fn new(
         columns: &'a [Column<'a, ColumnId>],
         rows: &'a [TableRow<'a, RowId>],
-        theme: &'a Theme,
+        tokens: &'a crate::style::DesignTokens,
     ) -> Self {
         Self {
             columns,
             rows,
-            theme,
+            tokens,
             column_gap: 2,
         }
     }
@@ -628,19 +681,25 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 &column.title,
                 title_rect,
                 column.alignment,
-                self.theme.style(Role::TextStrong),
+                self.tokens.theme.style(Role::TextStrong),
                 buffer,
                 &mut state.scratch_text,
             );
             if let Some(direction) = sort {
                 let sort_x = rect.right().saturating_sub(sort_width);
-                buffer.set_stringn(sort_x, rect.y, " ", 1, self.theme.style(Role::TextStrong));
+                buffer.set_stringn(
+                    sort_x,
+                    rect.y,
+                    " ",
+                    1,
+                    self.tokens.theme.style(Role::TextStrong),
+                );
                 buffer.set_stringn(
                     sort_x.saturating_add(1),
                     rect.y,
                     sort_glyph(direction),
                     1,
-                    self.theme.style(Role::TextStrong),
+                    self.tokens.theme.style(Role::TextStrong),
                 );
             }
             if !state
@@ -691,7 +750,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             } else {
                 Role::Text
             };
-            let style = row.style.unwrap_or_else(|| self.theme.style(role));
+            let style = row.style.unwrap_or_else(|| self.tokens.theme.style(role));
             buffer.set_stringn(
                 area.x,
                 y,
@@ -699,9 +758,42 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 usize::from(MARKER_WIDTH),
                 style,
             );
+            // Shared contraction grammar without allocating Line clones on the
+            // warm paint path (badge/leading only — cells stay borrowed).
+            let show_leading = row.leading.is_some() && area.width >= 10;
+            let show_badge = row.badge.is_some() && area.width >= 14;
             let mut x = area.x.saturating_add(MARKER_WIDTH);
+            if show_leading && let Some(leading) = row.leading.as_ref() {
+                let lw = u16::try_from(leading.width())
+                    .unwrap_or(u16::MAX)
+                    .min(area.right().saturating_sub(x));
+                if lw > 0 {
+                    buffer.set_line(x, y, leading, lw);
+                    buffer.set_style(Rect::new(x, y, lw, 1), style);
+                    x = x.saturating_add(lw).saturating_add(1);
+                }
+            }
+            let badge_reserve = if show_badge {
+                row.badge
+                    .as_ref()
+                    .map(|b| {
+                        u16::try_from(b.width())
+                            .unwrap_or(u16::MAX)
+                            .saturating_add(1)
+                    })
+                    .unwrap_or(0)
+                    .min(area.right().saturating_sub(x))
+            } else {
+                0
+            };
+            let columns_right = area.right().saturating_sub(badge_reserve);
             for (visible_index, column_index) in state.visible_columns.iter().copied().enumerate() {
-                let rect = Rect::new(x, y, state.resolved_widths[column_index], 1);
+                if x >= columns_right {
+                    break;
+                }
+                let width =
+                    state.resolved_widths[column_index].min(columns_right.saturating_sub(x));
+                let rect = Rect::new(x, y, width, 1);
                 if let Some(value) = row.cells.get(column_index) {
                     render_line(
                         value,
@@ -717,6 +809,16 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 x = x.saturating_add(rect.width);
                 if visible_index + 1 < state.visible_columns.len() {
                     x = x.saturating_add(self.column_gap);
+                }
+            }
+            if show_badge && let Some(badge) = row.badge.as_ref() {
+                let bw = u16::try_from(badge.width())
+                    .unwrap_or(u16::MAX)
+                    .min(area.width);
+                if bw > 0 {
+                    let bx = area.right().saturating_sub(bw);
+                    buffer.set_line(bx, y, badge, bw);
+                    buffer.set_style(Rect::new(bx, y, bw, 1), style);
                 }
             }
             if owns_id && row.enabled {
@@ -942,9 +1044,10 @@ const fn sort_glyph(direction: SortDirection) -> &'static str {
 
 #[cfg(test)]
 mod tests {
+    use crate::style::DesignTokens;
     use ratatui_core::{style::Color, text::Span};
 
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyCode, KeyModifiers};
 
     use super::*;
     fn fill(weight: u16) -> ColumnWidth {
@@ -1081,6 +1184,8 @@ mod tests {
             TableRow {
                 id: 1,
                 cells: &cells[0],
+                leading: None,
+                badge: None,
                 enabled: true,
                 emphasis: false,
                 style: None,
@@ -1088,6 +1193,8 @@ mod tests {
             TableRow {
                 id: 2,
                 cells: &cells[1],
+                leading: None,
+                badge: None,
                 enabled: false,
                 emphasis: false,
                 style: None,
@@ -1095,6 +1202,8 @@ mod tests {
             TableRow {
                 id: 3,
                 cells: &cells[2],
+                leading: None,
+                badge: None,
                 enabled: true,
                 emphasis: true,
                 style: None,
@@ -1102,6 +1211,8 @@ mod tests {
             TableRow {
                 id: 4,
                 cells: &cells[3],
+                leading: None,
+                badge: None,
                 enabled: true,
                 emphasis: false,
                 style: None,
@@ -1111,6 +1222,7 @@ mod tests {
 
     #[test]
     fn render_preserves_styles_alignment_unicode_and_canonical_regions() {
+        let tokens = DesignTokens::default();
         let columns = columns();
         let cells = cells();
         let rows = rows(&cells);
@@ -1118,7 +1230,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 30, 4);
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &Theme::default())).render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
 
         assert_eq!(state.header_regions.len(), 3);
         assert_eq!(
@@ -1200,13 +1312,14 @@ mod tests {
 
     #[test]
     fn pointer_uses_only_painted_enabled_rows_and_sortable_headers() {
+        let tokens = DesignTokens::default();
         let columns = columns();
         let cells = cells();
         let rows = rows(&cells);
         let area = Rect::new(5, 7, 30, 5);
         let mut state = TableState::new(Some(1));
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &Theme::default())).render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
         let cpu = state
             .header_regions
             .iter()
@@ -1253,16 +1366,17 @@ mod tests {
         let columns = columns();
         let cells = cells();
         let rows = rows(&cells);
-        let theme = Theme::default();
+        let tokens = DesignTokens::default();
+        let theme = tokens.theme.clone();
         let area = Rect::new(0, 0, 30, 4);
         let mut state = TableState::new(None);
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &theme)).render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
         state.hover(Position::new(0, 3));
-        (&Table::new(&columns, &rows, &theme)).render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(0, 3)].fg, theme.style(Role::Focus).fg.unwrap());
         state.scroll_by(1, rows.len());
-        (&Table::new(&columns, &rows, &theme)).render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(state.hovered(), Some(&4));
         assert_eq!(buffer[(0, 3)].fg, theme.style(Role::Focus).fg.unwrap());
     }
@@ -1292,30 +1406,33 @@ mod tests {
     #[test]
     #[should_panic(expected = "sorted table column must be sortable")]
     fn rejects_sort_direction_on_inert_column_in_debug_builds() {
+        let tokens = DesignTokens::default();
         let mut columns = columns();
         columns[1].sort = Some(SortDirection::Ascending);
         let rows = [];
         let mut state = TableState::<u8, &str>::default();
         let area = Rect::new(0, 0, 30, 2);
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &Theme::default())).render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
     }
 
     #[test]
     #[should_panic(expected = "table column IDs must be unique")]
     fn rejects_duplicate_column_ids_in_debug_builds() {
+        let tokens = DesignTokens::default();
         let mut columns = columns();
         columns[1].id = "name";
         let rows = [];
         let mut state = TableState::<u8, &str>::default();
         let area = Rect::new(0, 0, 30, 2);
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &Theme::default())).render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
     }
 
     #[test]
     #[should_panic(expected = "table row IDs must be unique")]
     fn rejects_duplicate_painted_row_ids_in_debug_builds() {
+        let tokens = DesignTokens::default();
         let columns = columns();
         let cells = cells();
         let mut rows = rows(&cells);
@@ -1323,11 +1440,12 @@ mod tests {
         let mut state = TableState::default();
         let area = Rect::new(0, 0, 30, 5);
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &Theme::default())).render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
     }
 
     #[test]
     fn clipping_preserves_combining_clusters_and_rejects_partial_wide_graphemes() {
+        let tokens = DesignTokens::default();
         let columns = [Column {
             id: "value",
             title: Line::from("V"),
@@ -1349,7 +1467,7 @@ mod tests {
         let mut state = TableState::default();
         let area = Rect::new(0, 0, 3, 4);
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &Theme::default())).render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(2, 1)].symbol(), "e\u{301}");
         assert_eq!(buffer[(2, 2)].symbol(), " ");
         assert_eq!(buffer[(2, 3)].symbol(), "a");
@@ -1357,6 +1475,7 @@ mod tests {
 
     #[test]
     fn empty_zero_and_narrow_tables_are_safe_and_remove_phantom_gaps() {
+        let tokens = DesignTokens::default();
         let columns = [
             Column {
                 id: 0,
@@ -1379,7 +1498,7 @@ mod tests {
         for area in [Rect::new(0, 0, 0, 0), Rect::new(0, 0, 3, 1)] {
             let mut state = TableState::default();
             let mut buffer = Buffer::empty(area);
-            (&Table::new(&columns, &rows, &Theme::default())).render(area, &mut buffer, &mut state);
+            (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
             assert!(state.row_regions.is_empty());
             assert!(
                 state

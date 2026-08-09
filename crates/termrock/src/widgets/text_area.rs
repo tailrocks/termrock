@@ -10,7 +10,7 @@ use crate::{
     Theme,
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind},
     scroll::DialogScroll,
-    style::Role,
+    style::{Density, DesignTokens, Role},
     text::{display_cols, display_cols_slice_into},
 };
 
@@ -625,7 +625,8 @@ impl<'a> TextArea<'a> {
 impl StatefulWidget for &TextArea<'_> {
     type State = TextAreaState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let mut panel = Panel::new(self.theme).emphasis(if state.focused {
+        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let mut panel = Panel::new(&tokens).emphasis(if state.focused {
             PanelEmphasis::Focused
         } else {
             PanelEmphasis::Normal

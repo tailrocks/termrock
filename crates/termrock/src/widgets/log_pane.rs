@@ -334,7 +334,7 @@ impl StatefulWidget for LogPane<'_> {
     type State = LogPaneState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 

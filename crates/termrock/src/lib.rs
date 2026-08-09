@@ -9,6 +9,7 @@ pub mod interaction;
 pub mod keymap;
 pub mod layout;
 pub mod osc;
+pub mod patterns;
 pub mod runtime;
 pub mod scroll;
 pub mod style;
@@ -18,4 +19,13 @@ pub mod widgets;
 #[cfg(feature = "crossterm")]
 pub mod crossterm;
 
-pub use style::Theme;
+pub use interaction::{
+    InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
+    LayerKind, NavigationMove, PageMove, SceneError, SemanticElement, SemanticRole, SemanticScene,
+    UiIntent, default_list_intent, default_table_intent, default_tree_intent,
+    dispatch_keymap_action,
+};
+pub use style::{
+    Appearance, AppearanceThemeMap, CapabilityPreviewHost, ColorCapability, Density, DesignSystem,
+    DesignTokens, GlyphSet, Motion, SelectionChrome, SpacingScale, Theme, theme_for_appearance,
+};

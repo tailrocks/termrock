@@ -18,9 +18,14 @@ fn warmed_owned_projection_reconciliation_is_allocation_free() {
         .map(|index| ListRow {
             id: format!("command-{index}"),
             label: Line::from("resident command"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         })
         .collect::<Vec<_>>();
     let mut state = PickerState::new(Some("command-500".to_owned()));

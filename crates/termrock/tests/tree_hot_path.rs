@@ -8,16 +8,15 @@ use std::{
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
-use termrock::{
-    Theme,
-    widgets::{Tree, TreeNode, TreeNodeStatus, TreeState},
-};
+use termrock::style::DesignTokens;
+use termrock::widgets::{Tree, TreeNode, TreeNodeStatus, TreeState};
 
 #[global_allocator]
 static GLOBAL: &StatsAlloc<System> = &INSTRUMENTED_SYSTEM;
 
 #[test]
 fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
+    let tokens = DesignTokens::default();
     const NODE_COUNT: usize = 10_000;
     const VIEWPORT_HEIGHT: u16 = 40;
     const SAMPLES: usize = 100;
@@ -26,6 +25,10 @@ fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
         .map(|id| TreeNode {
             id,
             label: Line::from("resident node"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             depth: u16::try_from(id % 4).unwrap(),
             branch: id % 7 == 0,
@@ -34,8 +37,7 @@ fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
             status: TreeNodeStatus::Ready,
         })
         .collect::<Vec<_>>();
-    let theme = Theme::default();
-    let tree = Tree::new(&nodes, &theme);
+    let tree = Tree::new(&nodes, &tokens);
     let area = Rect::new(0, 0, 120, VIEWPORT_HEIGHT);
     let mut buffer = Buffer::empty(area);
     let mut state = TreeState::new(Some(NODE_COUNT - 1));

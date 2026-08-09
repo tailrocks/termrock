@@ -5,7 +5,7 @@ use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
     scroll::{DialogScroll, effective_offset},
-    style::{Role, Theme},
+    style::{Density, DesignTokens, Role, Theme},
     widgets::{Panel, PanelEmphasis},
 };
 
@@ -18,9 +18,10 @@ pub fn render_dialog_shell(
     emphasis: PanelEmphasis,
     theme: &Theme,
 ) -> Rect {
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
     Clear.render(area, frame.buffer_mut());
 
-    let mut panel = Panel::new(theme).emphasis(emphasis);
+    let mut panel = Panel::new(&panel_tokens).emphasis(emphasis);
     if let Some(title) = title {
         panel = panel.title(title);
     }

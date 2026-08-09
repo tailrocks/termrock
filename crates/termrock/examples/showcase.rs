@@ -20,10 +20,10 @@ use termrock::{
     interaction::Outcome,
     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
     layout::bottom_rows,
-    style::Role,
+    style::{Density, DesignTokens, Role},
     widgets::{
-        List, ListRow, ListState, Panel, PanelEmphasis, RowRole, Severity, StatusBar,
-        StatusBarState, StatusSlot, Tab, Tabs, TabsState, Toast, render_hint_bar,
+        List, ListRow, ListState, Panel, PanelEmphasis, Severity, StatusBar, StatusBarState,
+        StatusSlot, Tab, Tabs, TabsState, Toast, render_hint_bar,
     },
 };
 
@@ -101,6 +101,7 @@ fn main() -> io::Result<()> {
         } else {
             Theme::slate()
         };
+        let tokens = DesignTokens::new(theme.clone(), Density::default());
         terminal.draw(|frame| {
             let area = frame.area();
             let tabs_area = Rect::new(area.x, area.y, area.width, area.height.min(2));
@@ -113,12 +114,12 @@ fn main() -> io::Result<()> {
             let (content, [hints_area, status_area]) = bottom_rows(below_tabs, [1, 1]);
             render_tabs(frame, tabs_area, &theme, &mut tabs_state);
 
-            let panel = Panel::new(&theme)
+            let panel = Panel::new(&tokens)
                 .title("Components")
                 .emphasis(PanelEmphasis::Focused);
             let list_area = panel.inner(content);
             frame.render_widget(&panel, content);
-            frame.render_stateful_widget(List::new(&rows, &theme), list_area, &mut list_state);
+            frame.render_stateful_widget(List::new(&rows, &tokens), list_area, &mut list_state);
 
             render_hint_bar(frame, hints_area, &keymap.hint_spans(), &theme);
             render_status(frame, status_area, &theme, phosphor, &mut status_state);
@@ -172,12 +173,10 @@ fn main() -> io::Result<()> {
 }
 
 fn showcase_rows() -> [ListRow<'static, &'static str>; 6] {
-    ["list", "tree", "form", "tabs", "log-pane", "progress"].map(|id| ListRow {
-        id,
-        label: Line::from(id),
-        trailing: Some(Line::from("TermRock")),
-        role: RowRole::Item,
-        enabled: true,
+    ["list", "tree", "form", "tabs", "log-pane", "progress"].map(|id| {
+        let mut row = ListRow::item(id, Line::from(id));
+        row.trailing = Some(Line::from("TermRock"));
+        row
     })
 }
 

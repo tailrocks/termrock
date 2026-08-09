@@ -206,7 +206,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for Tabs<'_, Id> {
     type State = TabsState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 

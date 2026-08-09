@@ -6,8 +6,8 @@ use crossterm::event::{
     MouseEventKind as CrosstermMouseEventKind,
 };
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
+use termrock::style::DesignTokens;
 use termrock::{
-    Theme,
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind},
     interaction::Outcome,
     widgets::{
@@ -66,6 +66,7 @@ fn every_mouse_button_action_maps_to_the_neutral_vocabulary() {
 
 #[test]
 fn neutral_mouse_event_drives_list_activation() {
+    let tokens = DesignTokens::default();
     let backend = crossterm::event::Event::Mouse(crossterm::event::MouseEvent {
         kind: CrosstermMouseEventKind::Down(CrosstermMouseButton::Left),
         column: 2,
@@ -80,12 +81,16 @@ fn neutral_mouse_event_drives_list_activation() {
     let rows = [ListRow {
         id: "entry",
         label: Line::from("Entry"),
+        leading: None,
+        secondary: None,
+        badge: None,
+        shortcut: None,
         trailing: None,
         role: RowRole::Item,
         enabled: true,
+        loading: false,
     }];
-    let theme = Theme::default();
-    let list = List::new(&rows, &theme);
+    let list = List::new(&rows, &tokens);
     let area = Rect::new(0, 0, 12, 1);
     let mut buffer = Buffer::empty(area);
     let mut state = ListState::new(Some("entry"));
@@ -117,9 +122,14 @@ fn unknown_is_inert_in_widgets() {
     let rows = [ListRow {
         id: 1,
         label: Line::from("one"),
+        leading: None,
+        secondary: None,
+        badge: None,
+        shortcut: None,
         trailing: None,
         role: RowRole::Item,
         enabled: true,
+        loading: false,
     }];
     let mut list = ListState::new(Some(1));
     let actions = [Action {
@@ -145,9 +155,14 @@ fn release_events_are_ignored() {
     let rows = [ListRow {
         id: 1,
         label: Line::from("one"),
+        leading: None,
+        secondary: None,
+        badge: None,
+        shortcut: None,
         trailing: None,
         role: RowRole::Item,
         enabled: true,
+        loading: false,
     }];
     let mut list = ListState::new(Some(1));
     let actions = [Action {

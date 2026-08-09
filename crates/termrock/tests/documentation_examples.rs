@@ -14,7 +14,7 @@ use termrock::{
     interaction::Outcome,
     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
     osc::{PointerShape, Request, encode},
-    style::Role,
+    style::{DesignTokens, Role},
     widgets::{Anchor, List, ListRow, ListState, RowRole, Severity, Toast},
 };
 
@@ -29,24 +29,34 @@ fn toast_documentation_example() {
 
 #[test]
 fn list_documentation_example() {
+    let tokens = DesignTokens::default();
     let rows = [
         ListRow {
             id: "a",
             label: Line::from("Alpha"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: "b",
             label: Line::from("Beta"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
     ];
-    let theme = Theme::default();
-    let _widget = List::new(&rows, &theme);
+    let _widget = List::new(&rows, &tokens);
     let mut state = ListState::new(Some("a"));
     let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
     assert!(matches!(outcome, Outcome::Changed));

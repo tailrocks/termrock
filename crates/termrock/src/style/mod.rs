@@ -9,8 +9,15 @@
 
 use ratatui_core::style::{Color, Modifier, Style};
 
+mod appearance;
+mod density;
 mod palette;
+mod preview_host;
+mod quantize;
+mod tokens;
 
+pub use appearance::{Appearance, AppearanceThemeMap, theme_for_appearance};
+pub use density::{Density, Motion};
 pub use palette::Rgb;
 use palette::{
     BORDER_GRAY as BORDER_GRAY_RGB, CYAN as CYAN_RGB, DANGER_RED as DANGER_RED_RGB,
@@ -21,6 +28,15 @@ use palette::{
     TAB_BG_ACTIVE as TAB_BG_ACTIVE_RGB, TAB_BG_ACTIVE_HOVER as TAB_BG_ACTIVE_HOVER_RGB,
     TAB_BG_INACTIVE as TAB_BG_INACTIVE_RGB, TAB_BG_INACTIVE_HOVER as TAB_BG_INACTIVE_HOVER_RGB,
     WARNING_YELLOW as WARNING_YELLOW_RGB, WHITE as WHITE_RGB,
+};
+pub use preview_host::{
+    CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
+    PreviewSurfaceKind,
+};
+pub use quantize::{ColorCapability, quantize_color, quantize_theme, rgb_to_xterm256};
+pub use tokens::{
+    DesignSystem, DesignTokens, GlyphSet, ListRowRecipe, PanelChrome, PanelRecipe, SelectionChrome,
+    SpacingScale,
 };
 
 #[must_use]

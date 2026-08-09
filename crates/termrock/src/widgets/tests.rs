@@ -7,7 +7,7 @@ use ratatui_core::{
 };
 
 use super::*;
-use crate::style::{Role, Theme};
+use crate::style::{Density, DesignTokens, Role, Theme};
 
 #[cfg(feature = "serde")]
 #[test]
@@ -32,7 +32,8 @@ fn areas() -> [Rect; 5] {
 #[test]
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     let theme = Theme::default();
-    let panel = Panel::new(&theme)
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    let panel = Panel::new(&panel_tokens)
         .title("Title")
         .emphasis(PanelEmphasis::Focused);
     let hints = [Hint {
@@ -56,9 +57,10 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 #[test]
 fn focused_panel_preserves_plain_border_glyphs() {
     let theme = Theme::default();
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
-    let panel = Panel::new(&theme).emphasis(PanelEmphasis::Focused);
+    let panel = Panel::new(&panel_tokens).emphasis(PanelEmphasis::Focused);
     (&panel).render(area, &mut buffer);
     assert_panel_border(&buffer, area, theme.style(Role::BorderFocused));
 }
@@ -66,9 +68,10 @@ fn focused_panel_preserves_plain_border_glyphs() {
 #[test]
 fn inactive_panel_preserves_plain_gray_border() {
     let theme = Theme::default();
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
-    Panel::new(&theme).render(area, &mut buffer);
+    Panel::new(&panel_tokens).render(area, &mut buffer);
     assert_panel_border(&buffer, area, theme.style(Role::Border));
 }
 
@@ -97,29 +100,50 @@ fn assert_panel_border(buffer: &Buffer, area: Rect, expected: Style) {
 
 #[test]
 fn stable_ids_survive_reordering() {
+    let _tokens = DesignTokens::default();
     let first = [
         ListRow {
             id: "a",
             label: Line::from("Alpha"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: "b",
             label: Line::from("Beta"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
     ];
     let second = [first[1].clone(), first[0].clone()];
     let mut state = ListState::new(Some("b"));
     let area = Rect::new(0, 0, 20, 2);
     let mut buffer = Buffer::empty(area);
-    let theme = Theme::default();
-    StatefulWidget::render(&List::new(&first, &theme), area, &mut buffer, &mut state);
-    StatefulWidget::render(&List::new(&second, &theme), area, &mut buffer, &mut state);
+    let _theme = Theme::default();
+    StatefulWidget::render(
+        &List::new(&first, &DesignTokens::default()),
+        area,
+        &mut buffer,
+        &mut state,
+    );
+    StatefulWidget::render(
+        &List::new(&second, &DesignTokens::default()),
+        area,
+        &mut buffer,
+        &mut state,
+    );
     assert_eq!(state.selected(), Some(&"b"));
     assert_eq!(
         state
@@ -135,34 +159,55 @@ fn stable_ids_survive_reordering() {
 
 #[test]
 fn disabled_and_separator_rows_have_no_hit_regions() {
+    let _tokens = DesignTokens::default();
     let rows = [
         ListRow {
             id: 1,
             label: Line::from("Disabled"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: false,
+            loading: false,
         },
         ListRow {
             id: 2,
             label: Line::from("Section"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Separator,
             enabled: true,
+            loading: false,
         },
         ListRow {
             id: 3,
             label: Line::from("Enabled"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
             trailing: None,
             role: RowRole::Item,
             enabled: true,
+            loading: false,
         },
     ];
     let mut state = ListState::default();
     let area = Rect::new(4, 3, 20, 3);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 10));
-    let theme = Theme::default();
-    StatefulWidget::render(&List::new(&rows, &theme), area, &mut buffer, &mut state);
+    let _theme = Theme::default();
+    StatefulWidget::render(
+        &List::new(&rows, &DesignTokens::default()),
+        area,
+        &mut buffer,
+        &mut state,
+    );
     assert_eq!(state.regions().len(), 1);
     assert_eq!(state.regions()[0].id, 3);
     assert_eq!(state.regions()[0].area, Rect::new(4, 5, 20, 1));
@@ -310,12 +355,13 @@ fn theme_override_reaches_active_tab_cells() {
 #[test]
 fn owned_panel_render_matches_borrowed_render() {
     let theme = Theme::default();
+    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 12, 3);
     let mut owned = Buffer::empty(area);
     let mut borrowed = Buffer::empty(area);
 
-    Widget::render(Panel::new(&theme).title("Panel"), area, &mut owned);
-    let panel = Panel::new(&theme).title("Panel");
+    Widget::render(Panel::new(&panel_tokens).title("Panel"), area, &mut owned);
+    let panel = Panel::new(&panel_tokens).title("Panel");
     Widget::render(&panel, area, &mut borrowed);
 
     assert_eq!(owned, borrowed);

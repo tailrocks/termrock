@@ -20,13 +20,14 @@ use termrock::{
     interaction::{FocusOutcome, FocusTarget, ModalStack, Outcome, render_backdrop},
     keymap::KeyChord,
     layout::centered_rect,
+    patterns::{StudioShellLayout, layout_studio_shell},
     runtime::FrameTick,
     scroll::{self, ScrollSpan},
-    style::Role,
+    style::{ColorCapability, Density, DesignTokens, Role},
     widgets::{
-        Action, ChoiceDialog, ChoiceDialogState, Dialog, List as ComponentList, ListRow,
-        ListState as ComponentListState, Panel, PanelEmphasis, Progress, ProgressKind, RowRole,
-        Severity, Toast, ToastLifetime, ToastState,
+        Action, ChoiceDialog, ChoiceDialogState, DesignInspector, DesignInspectorFrame, Dialog,
+        InspectorPanel, List as ComponentList, ListRow, ListState as ComponentListState, Panel,
+        PanelEmphasis, Progress, ProgressKind, Severity, Toast, ToastLifetime, ToastState,
     },
 };
 
@@ -131,17 +132,22 @@ impl Lookbook {
         .areas(frame.area());
         let [sidebar_area, right_area] =
             Layout::horizontal([Constraint::Length(30), Constraint::Min(20)]).areas(main_area);
-        let [description_area, preview_area] =
+        let [description_area, studio_area] =
             Layout::vertical([Constraint::Length(6), Constraint::Min(4)]).areas(right_area);
+        // Studio shell: preview + multi-panel inspector + optional knobs (plan 048).
         let has_controls = !self.interactor.knobs().is_empty();
-        let (preview_area, controls_area) = if has_controls {
-            let [preview_area, controls_area] =
-                Layout::horizontal([Constraint::Min(20), Constraint::Length(32)])
-                    .areas(preview_area);
-            (preview_area, Some(controls_area))
-        } else {
-            (preview_area, None)
-        };
+        let studio = layout_studio_shell(
+            studio_area,
+            StudioShellLayout {
+                density: Density::Compact,
+                inspector_height: 4,
+                knobs_width: if has_controls { 28 } else { 0 },
+                status_height: 0,
+            },
+        );
+        let preview_area = studio.preview;
+        let inspector_area = studio.inspector;
+        let controls_area = studio.knobs;
         let modal_area = centered_rect(52, 9, frame.area());
 
         self.focus.begin_frame();
@@ -201,6 +207,7 @@ impl Lookbook {
         self.render_sidebar(frame, sidebar_area);
         self.render_description(frame, description_area);
         self.render_preview(frame, preview_area);
+        self.render_studio_inspector(frame, inspector_area);
         if let Some(controls_area) = controls_area {
             self.render_knobs(frame, controls_area);
         }
@@ -221,8 +228,9 @@ impl Lookbook {
     }
 
     fn render_sidebar(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
         let catalog = gallery_stories();
-        let block = Panel::new(&self.theme)
+        let block = Panel::new(&panel_tokens)
             .title("Stories")
             .emphasis(self.focus.panel_emphasis_for(&FocusId::Sidebar))
             .block();
@@ -266,8 +274,9 @@ impl Lookbook {
     }
 
     fn render_description(&self, frame: &mut Frame<'_>, area: Rect) {
+        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
         let story = gallery_stories()[self.selected];
-        let block = Panel::new(&self.theme).title("About").block();
+        let block = Panel::new(&panel_tokens).title("About").block();
         let inner = block.inner(area);
         frame.render_widget(block, area);
         let [title, _, description] = Layout::vertical([
@@ -300,8 +309,9 @@ impl Lookbook {
     }
 
     fn render_preview(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
         let story = gallery_stories()[self.selected];
-        let block = Panel::new(&self.theme)
+        let block = Panel::new(&panel_tokens)
             .title("Preview")
             .emphasis(self.focus.panel_emphasis_for(&FocusId::Preview))
             .block();
@@ -347,8 +357,51 @@ impl Lookbook {
         self.preview_panel_area = area;
     }
 
+    fn render_studio_inspector(&self, frame: &mut Frame<'_>, area: Rect) {
+        if area.height == 0 || area.width == 0 {
+            return;
+        }
+        let focused = match self.focus.focused() {
+            Some(FocusId::Sidebar) => "sidebar",
+            Some(FocusId::Preview) => "preview",
+            Some(FocusId::Controls) => "controls",
+            Some(FocusId::ModalContinue | FocusId::ModalDisabled | FocusId::ModalCancel) => "modal",
+            None => "—",
+        };
+        let layer = if self.modals.is_open() {
+            "modal"
+        } else {
+            "root"
+        };
+        let layers = if self.modals.is_open() {
+            ["root", "modal"]
+        } else {
+            ["root", ""]
+        };
+        let layers_slice: &[&str] = if self.modals.is_open() {
+            &layers
+        } else {
+            &layers[..1]
+        };
+        let recipes = ["list_row", "panel", "studio_shell"];
+        let snap = DesignInspectorFrame {
+            focused: Some(focused),
+            layer: Some(layer),
+            capability: ColorCapability::Truecolor,
+            density: "compact",
+            layers: layers_slice,
+            recipes: &recipes,
+            selection_chrome: "gutter",
+        };
+        frame.render_widget(
+            DesignInspector::new(snap, &self.theme).panel(InspectorPanel::Focus),
+            area,
+        );
+    }
+
     fn render_knobs(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let panel = Panel::new(&self.theme)
+        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let panel = Panel::new(&tokens)
             .title("Controls")
             .emphasis(self.focus.panel_emphasis_for(&FocusId::Controls));
         let inner = panel.inner(area);
@@ -363,21 +416,15 @@ impl Lookbook {
             .knobs()
             .iter()
             .enumerate()
-            .map(|(index, knob)| ListRow {
-                id: index,
-                label: Line::from(knob.label),
-                trailing: Some(Line::from(knob.display_value())),
-                role: RowRole::Item,
-                enabled: true,
+            .map(|(index, knob)| {
+                let mut row = ListRow::item(index, Line::from(knob.label));
+                row.trailing = Some(Line::from(knob.display_value()));
+                row
             })
             .collect::<Vec<_>>();
         let mut state = ComponentListState::new(Some(self.knob_selected));
         state.set_focused(self.focus.is_focused(&FocusId::Controls));
-        frame.render_stateful_widget(
-            &ComponentList::new(&rows, &self.theme),
-            list_area,
-            &mut state,
-        );
+        frame.render_stateful_widget(&ComponentList::new(&rows, &tokens), list_area, &mut state);
         self.interactor
             .render_knob_editor(self.knob_selected, frame, editor_area);
     }

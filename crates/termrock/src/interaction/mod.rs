@@ -1,10 +1,28 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
+mod esc_cascade;
 mod focus;
+mod intent;
+mod keymap_bridge;
 mod modal;
+mod overlay;
+mod overlay_controller;
+mod scene;
 
+// FocusRing remains for lookbook until fully migrated onto InteractionScene.
+// EscCascade / OverlayController / OverlayHost are crate-private; use
+// InteractionScene as the single public authority.
 pub use focus::{FocusOutcome, FocusRing, FocusTarget};
+pub use intent::{
+    NavigationMove, PageMove, UiIntent, default_list_intent, default_table_intent,
+    default_tree_intent,
+};
+pub use keymap_bridge::dispatch_keymap_action;
 pub use modal::{ModalClickResult, ModalStack, classify_click, render_backdrop};
+pub use scene::{
+    InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
+    LayerKind, SceneError, SemanticElement, SemanticRole, SemanticScene,
+};
 
 use ratatui_core::layout::{Position, Rect};
 
