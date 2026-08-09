@@ -17,6 +17,8 @@ fn usage() -> ! {
          \n\
          Usage:\n\
            termrock doctor [--profile modern|compatible|minimal|inline|headless]\n\
+           termrock contract list\n\
+           termrock contract check\n\
            termrock plan  <entry-dir> [--workspace DIR]\n\
            termrock add   <entry-dir> [--workspace DIR] [--force]\n\
            termrock diff  <entry-dir> [--workspace DIR]\n\
@@ -28,15 +30,64 @@ fn usage() -> ! {
     std::process::exit(2);
 }
 
+fn run_contract(args: &[String]) -> ExitCode {
+    use termrock::registry::{
+        official_kernel_contracts, validate_contracts, ContractIssueLevel,
+    };
+
+    let sub = args.first().map(String::as_str).unwrap_or("check");
+    match sub {
+        "list" => {
+            for c in official_kernel_contracts() {
+                println!(
+                    "{:<22} {:<10} complete={} stories={} {}",
+                    c.id,
+                    c.kind.id(),
+                    c.complete,
+                    c.stories.len(),
+                    c.module.as_deref().unwrap_or("-")
+                );
+            }
+            ExitCode::SUCCESS
+        }
+        "check" | _ if sub == "check" || args.is_empty() => {
+            let catalog = official_kernel_contracts();
+            let report = validate_contracts(&catalog);
+            for issue in &report.issues {
+                let tag = match issue.level {
+                    ContractIssueLevel::Error => "error",
+                    ContractIssueLevel::Warning => "warn",
+                    _ => "info",
+                };
+                eprintln!(
+                    "{tag}: {} [{}] {}",
+                    issue.contract_id, issue.code, issue.message
+                );
+            }
+            println!(
+                "contracts: {} items, {} errors, {} warnings",
+                catalog.len(),
+                report.error_count(),
+                report.issues.len().saturating_sub(report.error_count())
+            );
+            if report.ok() {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            }
+        }
+        "-h" | "--help" => usage(),
+        other => {
+            eprintln!("error: unknown contract subcommand {other} (list|check)");
+            ExitCode::FAILURE
+        }
+    }
+}
+
 fn run_doctor(args: &[String]) -> ExitCode {
-    use termrock::{
-    capability::{
-        build_doctor_report,
-        CapabilityOverrides,
-        CapabilityProfile,
-        format_doctor_text,
-    },
-};
+    use termrock::capability::{
+        CapabilityOverrides, CapabilityProfile, build_doctor_report, format_doctor_text,
+    };
 
     let mut preferred: Option<CapabilityProfile> = None;
     let mut i = 0;
@@ -89,6 +140,9 @@ fn main() -> ExitCode {
 
     if cmd == "doctor" {
         return run_doctor(&args);
+    }
+    if cmd == "contract" {
+        return run_contract(&args);
     }
     if matches!(cmd.as_str(), "-h" | "--help") {
         usage();

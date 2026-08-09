@@ -1,3 +1,4 @@
+    Blocking waiting for file lock on package cache
  Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
 warning: unresolved link to `DataTableState::handle_key`
    --> crates/termrock/src/interaction/intent.rs:272:7
@@ -37,7 +38,7 @@ warning: unresolved link to `Theme`
     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
 
 warning: `termrock` (lib doc) generated 5 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.64s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.42s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -8736,6 +8737,809 @@ pub fn termrock::perf::check_batch_budget(&str, u32, core::time::Duration) -> co
 pub fn termrock::perf::check_max_rows_touched(&str, u32) -> core::result::Result<(), alloc::string::String>
 pub fn termrock::perf::check_zero_alloc_steady(&str, usize, usize) -> core::result::Result<(), alloc::string::String>
 pub const fn termrock::perf::pause_follow_on_user_scroll(termrock::perf::FollowMode) -> termrock::perf::FollowMode
+pub mod termrock::registry
+#[non_exhaustive] pub enum termrock::registry::ContractFileRole
+pub termrock::registry::ContractFileRole::Docs
+pub termrock::registry::ContractFileRole::Fixture
+pub termrock::registry::ContractFileRole::Migration
+pub termrock::registry::ContractFileRole::Other
+pub termrock::registry::ContractFileRole::Primary
+pub termrock::registry::ContractFileRole::Story
+pub termrock::registry::ContractFileRole::Support
+impl termrock::registry::ContractFileRole
+pub const fn termrock::registry::ContractFileRole::id(self) -> &'static str
+pub fn termrock::registry::ContractFileRole::parse(&str) -> core::option::Option<Self>
+impl core::clone::Clone for termrock::registry::ContractFileRole
+pub fn termrock::registry::ContractFileRole::clone(&self) -> termrock::registry::ContractFileRole
+impl core::cmp::Eq for termrock::registry::ContractFileRole
+impl core::cmp::PartialEq for termrock::registry::ContractFileRole
+pub fn termrock::registry::ContractFileRole::eq(&self, &termrock::registry::ContractFileRole) -> bool
+impl core::fmt::Debug for termrock::registry::ContractFileRole
+pub fn termrock::registry::ContractFileRole::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::ContractFileRole
+pub fn termrock::registry::ContractFileRole::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::registry::ContractFileRole
+impl core::marker::StructuralPartialEq for termrock::registry::ContractFileRole
+impl serde_core::ser::Serialize for termrock::registry::ContractFileRole
+pub fn termrock::registry::ContractFileRole::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::ContractFileRole
+pub fn termrock::registry::ContractFileRole::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::ContractFileRole
+impl core::marker::Send for termrock::registry::ContractFileRole
+impl core::marker::Sync for termrock::registry::ContractFileRole
+impl core::marker::Unpin for termrock::registry::ContractFileRole
+impl core::marker::UnsafeUnpin for termrock::registry::ContractFileRole
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::ContractFileRole
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::ContractFileRole
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::ContractFileRole where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::ContractFileRole::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::ContractFileRole where U: core::convert::From<T>
+pub fn termrock::registry::ContractFileRole::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::ContractFileRole where U: core::convert::Into<T>
+pub type termrock::registry::ContractFileRole::Error = core::convert::Infallible
+pub fn termrock::registry::ContractFileRole::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::ContractFileRole where U: core::convert::TryFrom<T>
+pub type termrock::registry::ContractFileRole::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::ContractFileRole::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::ContractFileRole where T: core::clone::Clone
+pub type termrock::registry::ContractFileRole::Owned = T
+pub fn termrock::registry::ContractFileRole::clone_into(&self, &mut T)
+pub fn termrock::registry::ContractFileRole::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::ContractFileRole where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::ContractFileRole::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::ContractFileRole where T: ?core::marker::Sized
+pub fn termrock::registry::ContractFileRole::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::ContractFileRole where T: ?core::marker::Sized
+pub fn termrock::registry::ContractFileRole::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::ContractFileRole where T: core::clone::Clone
+pub unsafe fn termrock::registry::ContractFileRole::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::ContractFileRole
+pub fn termrock::registry::ContractFileRole::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::ContractFileRole
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::ContractFileRole where T: for<'de> serde_core::de::Deserialize<'de>
+#[non_exhaustive] pub enum termrock::registry::ContractIssueLevel
+pub termrock::registry::ContractIssueLevel::Error
+pub termrock::registry::ContractIssueLevel::Warning
+impl core::clone::Clone for termrock::registry::ContractIssueLevel
+pub fn termrock::registry::ContractIssueLevel::clone(&self) -> termrock::registry::ContractIssueLevel
+impl core::cmp::Eq for termrock::registry::ContractIssueLevel
+impl core::cmp::PartialEq for termrock::registry::ContractIssueLevel
+pub fn termrock::registry::ContractIssueLevel::eq(&self, &termrock::registry::ContractIssueLevel) -> bool
+impl core::fmt::Debug for termrock::registry::ContractIssueLevel
+pub fn termrock::registry::ContractIssueLevel::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::ContractIssueLevel
+pub fn termrock::registry::ContractIssueLevel::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::registry::ContractIssueLevel
+impl core::marker::StructuralPartialEq for termrock::registry::ContractIssueLevel
+impl core::marker::Freeze for termrock::registry::ContractIssueLevel
+impl core::marker::Send for termrock::registry::ContractIssueLevel
+impl core::marker::Sync for termrock::registry::ContractIssueLevel
+impl core::marker::Unpin for termrock::registry::ContractIssueLevel
+impl core::marker::UnsafeUnpin for termrock::registry::ContractIssueLevel
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::ContractIssueLevel
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::ContractIssueLevel
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::ContractIssueLevel where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::ContractIssueLevel::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::ContractIssueLevel where U: core::convert::From<T>
+pub fn termrock::registry::ContractIssueLevel::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::ContractIssueLevel where U: core::convert::Into<T>
+pub type termrock::registry::ContractIssueLevel::Error = core::convert::Infallible
+pub fn termrock::registry::ContractIssueLevel::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::ContractIssueLevel where U: core::convert::TryFrom<T>
+pub type termrock::registry::ContractIssueLevel::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::ContractIssueLevel::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::ContractIssueLevel where T: core::clone::Clone
+pub type termrock::registry::ContractIssueLevel::Owned = T
+pub fn termrock::registry::ContractIssueLevel::clone_into(&self, &mut T)
+pub fn termrock::registry::ContractIssueLevel::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::ContractIssueLevel where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::ContractIssueLevel::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::ContractIssueLevel where T: ?core::marker::Sized
+pub fn termrock::registry::ContractIssueLevel::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::ContractIssueLevel where T: ?core::marker::Sized
+pub fn termrock::registry::ContractIssueLevel::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::ContractIssueLevel where T: core::clone::Clone
+pub unsafe fn termrock::registry::ContractIssueLevel::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::ContractIssueLevel
+pub fn termrock::registry::ContractIssueLevel::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::ContractIssueLevel
+#[non_exhaustive] pub enum termrock::registry::RegistryItemKind
+pub termrock::registry::RegistryItemKind::Behavior
+pub termrock::registry::RegistryItemKind::Block
+pub termrock::registry::RegistryItemKind::Component
+pub termrock::registry::RegistryItemKind::Keymap
+pub termrock::registry::RegistryItemKind::Primitive
+pub termrock::registry::RegistryItemKind::Template
+pub termrock::registry::RegistryItemKind::Theme
+impl termrock::registry::RegistryItemKind
+pub const termrock::registry::RegistryItemKind::ALL: [Self; 7]
+pub const fn termrock::registry::RegistryItemKind::id(self) -> &'static str
+pub fn termrock::registry::RegistryItemKind::parse(&str) -> core::option::Option<Self>
+impl core::clone::Clone for termrock::registry::RegistryItemKind
+pub fn termrock::registry::RegistryItemKind::clone(&self) -> termrock::registry::RegistryItemKind
+impl core::cmp::Eq for termrock::registry::RegistryItemKind
+impl core::cmp::PartialEq for termrock::registry::RegistryItemKind
+pub fn termrock::registry::RegistryItemKind::eq(&self, &termrock::registry::RegistryItemKind) -> bool
+impl core::fmt::Debug for termrock::registry::RegistryItemKind
+pub fn termrock::registry::RegistryItemKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::RegistryItemKind
+pub fn termrock::registry::RegistryItemKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::registry::RegistryItemKind
+impl core::marker::StructuralPartialEq for termrock::registry::RegistryItemKind
+impl serde_core::ser::Serialize for termrock::registry::RegistryItemKind
+pub fn termrock::registry::RegistryItemKind::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::RegistryItemKind
+pub fn termrock::registry::RegistryItemKind::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::RegistryItemKind
+impl core::marker::Send for termrock::registry::RegistryItemKind
+impl core::marker::Sync for termrock::registry::RegistryItemKind
+impl core::marker::Unpin for termrock::registry::RegistryItemKind
+impl core::marker::UnsafeUnpin for termrock::registry::RegistryItemKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::RegistryItemKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::RegistryItemKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::RegistryItemKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::RegistryItemKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::RegistryItemKind where U: core::convert::From<T>
+pub fn termrock::registry::RegistryItemKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::RegistryItemKind where U: core::convert::Into<T>
+pub type termrock::registry::RegistryItemKind::Error = core::convert::Infallible
+pub fn termrock::registry::RegistryItemKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::RegistryItemKind where U: core::convert::TryFrom<T>
+pub type termrock::registry::RegistryItemKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::RegistryItemKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::RegistryItemKind where T: core::clone::Clone
+pub type termrock::registry::RegistryItemKind::Owned = T
+pub fn termrock::registry::RegistryItemKind::clone_into(&self, &mut T)
+pub fn termrock::registry::RegistryItemKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::RegistryItemKind where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::RegistryItemKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::RegistryItemKind where T: ?core::marker::Sized
+pub fn termrock::registry::RegistryItemKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::RegistryItemKind where T: ?core::marker::Sized
+pub fn termrock::registry::RegistryItemKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::RegistryItemKind where T: core::clone::Clone
+pub unsafe fn termrock::registry::RegistryItemKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::RegistryItemKind
+pub fn termrock::registry::RegistryItemKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::RegistryItemKind
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::RegistryItemKind where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::AnatomyPartRef
+pub termrock::registry::AnatomyPartRef::id: alloc::string::String
+pub termrock::registry::AnatomyPartRef::label: alloc::string::String
+impl core::clone::Clone for termrock::registry::AnatomyPartRef
+pub fn termrock::registry::AnatomyPartRef::clone(&self) -> termrock::registry::AnatomyPartRef
+impl core::cmp::Eq for termrock::registry::AnatomyPartRef
+impl core::cmp::PartialEq for termrock::registry::AnatomyPartRef
+pub fn termrock::registry::AnatomyPartRef::eq(&self, &termrock::registry::AnatomyPartRef) -> bool
+impl core::fmt::Debug for termrock::registry::AnatomyPartRef
+pub fn termrock::registry::AnatomyPartRef::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::AnatomyPartRef
+pub fn termrock::registry::AnatomyPartRef::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::AnatomyPartRef
+impl serde_core::ser::Serialize for termrock::registry::AnatomyPartRef
+pub fn termrock::registry::AnatomyPartRef::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::AnatomyPartRef
+pub fn termrock::registry::AnatomyPartRef::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::AnatomyPartRef
+impl core::marker::Send for termrock::registry::AnatomyPartRef
+impl core::marker::Sync for termrock::registry::AnatomyPartRef
+impl core::marker::Unpin for termrock::registry::AnatomyPartRef
+impl core::marker::UnsafeUnpin for termrock::registry::AnatomyPartRef
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::AnatomyPartRef
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::AnatomyPartRef
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::AnatomyPartRef where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::AnatomyPartRef::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::AnatomyPartRef where U: core::convert::From<T>
+pub fn termrock::registry::AnatomyPartRef::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::AnatomyPartRef where U: core::convert::Into<T>
+pub type termrock::registry::AnatomyPartRef::Error = core::convert::Infallible
+pub fn termrock::registry::AnatomyPartRef::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::AnatomyPartRef where U: core::convert::TryFrom<T>
+pub type termrock::registry::AnatomyPartRef::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::AnatomyPartRef::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::AnatomyPartRef where T: core::clone::Clone
+pub type termrock::registry::AnatomyPartRef::Owned = T
+pub fn termrock::registry::AnatomyPartRef::clone_into(&self, &mut T)
+pub fn termrock::registry::AnatomyPartRef::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::AnatomyPartRef where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::AnatomyPartRef::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::AnatomyPartRef where T: ?core::marker::Sized
+pub fn termrock::registry::AnatomyPartRef::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::AnatomyPartRef where T: ?core::marker::Sized
+pub fn termrock::registry::AnatomyPartRef::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::AnatomyPartRef where T: core::clone::Clone
+pub unsafe fn termrock::registry::AnatomyPartRef::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::AnatomyPartRef
+pub fn termrock::registry::AnatomyPartRef::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::AnatomyPartRef
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::AnatomyPartRef where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::CapabilityRequirements
+pub termrock::registry::CapabilityRequirements::color: alloc::vec::Vec<alloc::string::String>
+pub termrock::registry::CapabilityRequirements::glyphs: alloc::vec::Vec<alloc::string::String>
+pub termrock::registry::CapabilityRequirements::min_height: core::option::Option<u16>
+pub termrock::registry::CapabilityRequirements::min_width: core::option::Option<u16>
+pub termrock::registry::CapabilityRequirements::mouse_enhanced: bool
+pub termrock::registry::CapabilityRequirements::responsive_surface: core::option::Option<alloc::string::String>
+impl core::clone::Clone for termrock::registry::CapabilityRequirements
+pub fn termrock::registry::CapabilityRequirements::clone(&self) -> termrock::registry::CapabilityRequirements
+impl core::cmp::Eq for termrock::registry::CapabilityRequirements
+impl core::cmp::PartialEq for termrock::registry::CapabilityRequirements
+pub fn termrock::registry::CapabilityRequirements::eq(&self, &termrock::registry::CapabilityRequirements) -> bool
+impl core::default::Default for termrock::registry::CapabilityRequirements
+pub fn termrock::registry::CapabilityRequirements::default() -> termrock::registry::CapabilityRequirements
+impl core::fmt::Debug for termrock::registry::CapabilityRequirements
+pub fn termrock::registry::CapabilityRequirements::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::CapabilityRequirements
+pub fn termrock::registry::CapabilityRequirements::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::CapabilityRequirements
+impl serde_core::ser::Serialize for termrock::registry::CapabilityRequirements
+pub fn termrock::registry::CapabilityRequirements::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::CapabilityRequirements
+pub fn termrock::registry::CapabilityRequirements::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::CapabilityRequirements
+impl core::marker::Send for termrock::registry::CapabilityRequirements
+impl core::marker::Sync for termrock::registry::CapabilityRequirements
+impl core::marker::Unpin for termrock::registry::CapabilityRequirements
+impl core::marker::UnsafeUnpin for termrock::registry::CapabilityRequirements
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::CapabilityRequirements
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::CapabilityRequirements
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::CapabilityRequirements where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::CapabilityRequirements::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::CapabilityRequirements where U: core::convert::From<T>
+pub fn termrock::registry::CapabilityRequirements::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::CapabilityRequirements where U: core::convert::Into<T>
+pub type termrock::registry::CapabilityRequirements::Error = core::convert::Infallible
+pub fn termrock::registry::CapabilityRequirements::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::CapabilityRequirements where U: core::convert::TryFrom<T>
+pub type termrock::registry::CapabilityRequirements::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::CapabilityRequirements::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::CapabilityRequirements where T: core::clone::Clone
+pub type termrock::registry::CapabilityRequirements::Owned = T
+pub fn termrock::registry::CapabilityRequirements::clone_into(&self, &mut T)
+pub fn termrock::registry::CapabilityRequirements::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::CapabilityRequirements where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::CapabilityRequirements::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::CapabilityRequirements where T: ?core::marker::Sized
+pub fn termrock::registry::CapabilityRequirements::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::CapabilityRequirements where T: ?core::marker::Sized
+pub fn termrock::registry::CapabilityRequirements::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::CapabilityRequirements where T: core::clone::Clone
+pub unsafe fn termrock::registry::CapabilityRequirements::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::CapabilityRequirements
+pub fn termrock::registry::CapabilityRequirements::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::CapabilityRequirements
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::CapabilityRequirements where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::ComponentContract
+pub termrock::registry::ComponentContract::anatomy: alloc::vec::Vec<termrock::registry::AnatomyPartRef>
+pub termrock::registry::ComponentContract::capabilities: termrock::registry::CapabilityRequirements
+pub termrock::registry::ComponentContract::complete: bool
+pub termrock::registry::ComponentContract::dependencies: termrock::registry::ContractDependencies
+pub termrock::registry::ComponentContract::description: alloc::string::String
+pub termrock::registry::ComponentContract::files: alloc::vec::Vec<termrock::registry::ContractFile>
+pub termrock::registry::ComponentContract::id: alloc::string::String
+pub termrock::registry::ComponentContract::kind: termrock::registry::RegistryItemKind
+pub termrock::registry::ComponentContract::license: alloc::string::String
+pub termrock::registry::ComponentContract::migration: core::option::Option<alloc::string::String>
+pub termrock::registry::ComponentContract::module: core::option::Option<alloc::string::String>
+pub termrock::registry::ComponentContract::namespace: alloc::string::String
+pub termrock::registry::ComponentContract::outcomes: alloc::vec::Vec<termrock::registry::OutcomeRef>
+pub termrock::registry::ComponentContract::provenance: termrock::registry::Provenance
+pub termrock::registry::ComponentContract::schema: u32
+pub termrock::registry::ComponentContract::semantic_roles: alloc::vec::Vec<termrock::registry::SemanticRoleRef>
+pub termrock::registry::ComponentContract::source_hash: core::option::Option<alloc::string::String>
+pub termrock::registry::ComponentContract::stories: alloc::vec::Vec<alloc::string::String>
+pub termrock::registry::ComponentContract::tests: alloc::vec::Vec<alloc::string::String>
+pub termrock::registry::ComponentContract::title: alloc::string::String
+pub termrock::registry::ComponentContract::variants: alloc::vec::Vec<termrock::registry::VariantRef>
+pub termrock::registry::ComponentContract::version: alloc::string::String
+impl termrock::registry::ComponentContract
+pub const fn termrock::registry::ComponentContract::is_kernel_hosted(&self) -> bool
+pub fn termrock::registry::ComponentContract::qualified_name(&self) -> alloc::string::String
+impl core::clone::Clone for termrock::registry::ComponentContract
+pub fn termrock::registry::ComponentContract::clone(&self) -> termrock::registry::ComponentContract
+impl core::cmp::Eq for termrock::registry::ComponentContract
+impl core::cmp::PartialEq for termrock::registry::ComponentContract
+pub fn termrock::registry::ComponentContract::eq(&self, &termrock::registry::ComponentContract) -> bool
+impl core::fmt::Debug for termrock::registry::ComponentContract
+pub fn termrock::registry::ComponentContract::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::ComponentContract
+pub fn termrock::registry::ComponentContract::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::ComponentContract
+impl serde_core::ser::Serialize for termrock::registry::ComponentContract
+pub fn termrock::registry::ComponentContract::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::ComponentContract
+pub fn termrock::registry::ComponentContract::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::ComponentContract
+impl core::marker::Send for termrock::registry::ComponentContract
+impl core::marker::Sync for termrock::registry::ComponentContract
+impl core::marker::Unpin for termrock::registry::ComponentContract
+impl core::marker::UnsafeUnpin for termrock::registry::ComponentContract
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::ComponentContract
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::ComponentContract
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::ComponentContract where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::ComponentContract::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::ComponentContract where U: core::convert::From<T>
+pub fn termrock::registry::ComponentContract::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::ComponentContract where U: core::convert::Into<T>
+pub type termrock::registry::ComponentContract::Error = core::convert::Infallible
+pub fn termrock::registry::ComponentContract::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::ComponentContract where U: core::convert::TryFrom<T>
+pub type termrock::registry::ComponentContract::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::ComponentContract::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::ComponentContract where T: core::clone::Clone
+pub type termrock::registry::ComponentContract::Owned = T
+pub fn termrock::registry::ComponentContract::clone_into(&self, &mut T)
+pub fn termrock::registry::ComponentContract::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::ComponentContract where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::ComponentContract::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::ComponentContract where T: ?core::marker::Sized
+pub fn termrock::registry::ComponentContract::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::ComponentContract where T: ?core::marker::Sized
+pub fn termrock::registry::ComponentContract::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::ComponentContract where T: core::clone::Clone
+pub unsafe fn termrock::registry::ComponentContract::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::ComponentContract
+pub fn termrock::registry::ComponentContract::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::ComponentContract
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::ComponentContract where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::ContractDependencies
+pub termrock::registry::ContractDependencies::cargo: alloc::vec::Vec<alloc::string::String>
+pub termrock::registry::ContractDependencies::kernel: core::option::Option<termrock::registry::KernelRequirement>
+pub termrock::registry::ContractDependencies::registry: alloc::vec::Vec<alloc::string::String>
+impl core::clone::Clone for termrock::registry::ContractDependencies
+pub fn termrock::registry::ContractDependencies::clone(&self) -> termrock::registry::ContractDependencies
+impl core::cmp::Eq for termrock::registry::ContractDependencies
+impl core::cmp::PartialEq for termrock::registry::ContractDependencies
+pub fn termrock::registry::ContractDependencies::eq(&self, &termrock::registry::ContractDependencies) -> bool
+impl core::default::Default for termrock::registry::ContractDependencies
+pub fn termrock::registry::ContractDependencies::default() -> termrock::registry::ContractDependencies
+impl core::fmt::Debug for termrock::registry::ContractDependencies
+pub fn termrock::registry::ContractDependencies::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::ContractDependencies
+pub fn termrock::registry::ContractDependencies::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::ContractDependencies
+impl serde_core::ser::Serialize for termrock::registry::ContractDependencies
+pub fn termrock::registry::ContractDependencies::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::ContractDependencies
+pub fn termrock::registry::ContractDependencies::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::ContractDependencies
+impl core::marker::Send for termrock::registry::ContractDependencies
+impl core::marker::Sync for termrock::registry::ContractDependencies
+impl core::marker::Unpin for termrock::registry::ContractDependencies
+impl core::marker::UnsafeUnpin for termrock::registry::ContractDependencies
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::ContractDependencies
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::ContractDependencies
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::ContractDependencies where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::ContractDependencies::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::ContractDependencies where U: core::convert::From<T>
+pub fn termrock::registry::ContractDependencies::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::ContractDependencies where U: core::convert::Into<T>
+pub type termrock::registry::ContractDependencies::Error = core::convert::Infallible
+pub fn termrock::registry::ContractDependencies::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::ContractDependencies where U: core::convert::TryFrom<T>
+pub type termrock::registry::ContractDependencies::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::ContractDependencies::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::ContractDependencies where T: core::clone::Clone
+pub type termrock::registry::ContractDependencies::Owned = T
+pub fn termrock::registry::ContractDependencies::clone_into(&self, &mut T)
+pub fn termrock::registry::ContractDependencies::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::ContractDependencies where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::ContractDependencies::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::ContractDependencies where T: ?core::marker::Sized
+pub fn termrock::registry::ContractDependencies::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::ContractDependencies where T: ?core::marker::Sized
+pub fn termrock::registry::ContractDependencies::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::ContractDependencies where T: core::clone::Clone
+pub unsafe fn termrock::registry::ContractDependencies::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::ContractDependencies
+pub fn termrock::registry::ContractDependencies::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::ContractDependencies
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::ContractDependencies where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::ContractFile
+pub termrock::registry::ContractFile::hash: core::option::Option<alloc::string::String>
+pub termrock::registry::ContractFile::optional: bool
+pub termrock::registry::ContractFile::role: termrock::registry::ContractFileRole
+pub termrock::registry::ContractFile::source: alloc::string::String
+pub termrock::registry::ContractFile::target: core::option::Option<alloc::string::String>
+impl core::clone::Clone for termrock::registry::ContractFile
+pub fn termrock::registry::ContractFile::clone(&self) -> termrock::registry::ContractFile
+impl core::cmp::Eq for termrock::registry::ContractFile
+impl core::cmp::PartialEq for termrock::registry::ContractFile
+pub fn termrock::registry::ContractFile::eq(&self, &termrock::registry::ContractFile) -> bool
+impl core::fmt::Debug for termrock::registry::ContractFile
+pub fn termrock::registry::ContractFile::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::ContractFile
+pub fn termrock::registry::ContractFile::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::ContractFile
+impl serde_core::ser::Serialize for termrock::registry::ContractFile
+pub fn termrock::registry::ContractFile::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::ContractFile
+pub fn termrock::registry::ContractFile::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::ContractFile
+impl core::marker::Send for termrock::registry::ContractFile
+impl core::marker::Sync for termrock::registry::ContractFile
+impl core::marker::Unpin for termrock::registry::ContractFile
+impl core::marker::UnsafeUnpin for termrock::registry::ContractFile
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::ContractFile
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::ContractFile
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::ContractFile where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::ContractFile::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::ContractFile where U: core::convert::From<T>
+pub fn termrock::registry::ContractFile::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::ContractFile where U: core::convert::Into<T>
+pub type termrock::registry::ContractFile::Error = core::convert::Infallible
+pub fn termrock::registry::ContractFile::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::ContractFile where U: core::convert::TryFrom<T>
+pub type termrock::registry::ContractFile::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::ContractFile::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::ContractFile where T: core::clone::Clone
+pub type termrock::registry::ContractFile::Owned = T
+pub fn termrock::registry::ContractFile::clone_into(&self, &mut T)
+pub fn termrock::registry::ContractFile::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::ContractFile where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::ContractFile::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::ContractFile where T: ?core::marker::Sized
+pub fn termrock::registry::ContractFile::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::ContractFile where T: ?core::marker::Sized
+pub fn termrock::registry::ContractFile::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::ContractFile where T: core::clone::Clone
+pub unsafe fn termrock::registry::ContractFile::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::ContractFile
+pub fn termrock::registry::ContractFile::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::ContractFile
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::ContractFile where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::ContractIssue
+pub termrock::registry::ContractIssue::code: alloc::string::String
+pub termrock::registry::ContractIssue::contract_id: alloc::string::String
+pub termrock::registry::ContractIssue::level: termrock::registry::ContractIssueLevel
+pub termrock::registry::ContractIssue::message: alloc::string::String
+impl core::clone::Clone for termrock::registry::ContractIssue
+pub fn termrock::registry::ContractIssue::clone(&self) -> termrock::registry::ContractIssue
+impl core::cmp::Eq for termrock::registry::ContractIssue
+impl core::cmp::PartialEq for termrock::registry::ContractIssue
+pub fn termrock::registry::ContractIssue::eq(&self, &termrock::registry::ContractIssue) -> bool
+impl core::fmt::Debug for termrock::registry::ContractIssue
+pub fn termrock::registry::ContractIssue::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::ContractIssue
+pub fn termrock::registry::ContractIssue::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::ContractIssue
+impl core::marker::Freeze for termrock::registry::ContractIssue
+impl core::marker::Send for termrock::registry::ContractIssue
+impl core::marker::Sync for termrock::registry::ContractIssue
+impl core::marker::Unpin for termrock::registry::ContractIssue
+impl core::marker::UnsafeUnpin for termrock::registry::ContractIssue
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::ContractIssue
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::ContractIssue
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::ContractIssue where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::ContractIssue::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::ContractIssue where U: core::convert::From<T>
+pub fn termrock::registry::ContractIssue::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::ContractIssue where U: core::convert::Into<T>
+pub type termrock::registry::ContractIssue::Error = core::convert::Infallible
+pub fn termrock::registry::ContractIssue::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::ContractIssue where U: core::convert::TryFrom<T>
+pub type termrock::registry::ContractIssue::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::ContractIssue::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::ContractIssue where T: core::clone::Clone
+pub type termrock::registry::ContractIssue::Owned = T
+pub fn termrock::registry::ContractIssue::clone_into(&self, &mut T)
+pub fn termrock::registry::ContractIssue::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::ContractIssue where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::ContractIssue::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::ContractIssue where T: ?core::marker::Sized
+pub fn termrock::registry::ContractIssue::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::ContractIssue where T: ?core::marker::Sized
+pub fn termrock::registry::ContractIssue::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::ContractIssue where T: core::clone::Clone
+pub unsafe fn termrock::registry::ContractIssue::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::ContractIssue
+pub fn termrock::registry::ContractIssue::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::ContractIssue
+pub struct termrock::registry::KernelRequirement
+pub termrock::registry::KernelRequirement::crate_name: alloc::string::String
+pub termrock::registry::KernelRequirement::features: alloc::vec::Vec<alloc::string::String>
+pub termrock::registry::KernelRequirement::min_version: alloc::string::String
+impl core::clone::Clone for termrock::registry::KernelRequirement
+pub fn termrock::registry::KernelRequirement::clone(&self) -> termrock::registry::KernelRequirement
+impl core::cmp::Eq for termrock::registry::KernelRequirement
+impl core::cmp::PartialEq for termrock::registry::KernelRequirement
+pub fn termrock::registry::KernelRequirement::eq(&self, &termrock::registry::KernelRequirement) -> bool
+impl core::fmt::Debug for termrock::registry::KernelRequirement
+pub fn termrock::registry::KernelRequirement::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::KernelRequirement
+pub fn termrock::registry::KernelRequirement::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::KernelRequirement
+impl serde_core::ser::Serialize for termrock::registry::KernelRequirement
+pub fn termrock::registry::KernelRequirement::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::KernelRequirement
+pub fn termrock::registry::KernelRequirement::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::KernelRequirement
+impl core::marker::Send for termrock::registry::KernelRequirement
+impl core::marker::Sync for termrock::registry::KernelRequirement
+impl core::marker::Unpin for termrock::registry::KernelRequirement
+impl core::marker::UnsafeUnpin for termrock::registry::KernelRequirement
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::KernelRequirement
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::KernelRequirement
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::KernelRequirement where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::KernelRequirement::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::KernelRequirement where U: core::convert::From<T>
+pub fn termrock::registry::KernelRequirement::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::KernelRequirement where U: core::convert::Into<T>
+pub type termrock::registry::KernelRequirement::Error = core::convert::Infallible
+pub fn termrock::registry::KernelRequirement::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::KernelRequirement where U: core::convert::TryFrom<T>
+pub type termrock::registry::KernelRequirement::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::KernelRequirement::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::KernelRequirement where T: core::clone::Clone
+pub type termrock::registry::KernelRequirement::Owned = T
+pub fn termrock::registry::KernelRequirement::clone_into(&self, &mut T)
+pub fn termrock::registry::KernelRequirement::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::KernelRequirement where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::KernelRequirement::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::KernelRequirement where T: ?core::marker::Sized
+pub fn termrock::registry::KernelRequirement::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::KernelRequirement where T: ?core::marker::Sized
+pub fn termrock::registry::KernelRequirement::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::KernelRequirement where T: core::clone::Clone
+pub unsafe fn termrock::registry::KernelRequirement::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::KernelRequirement
+pub fn termrock::registry::KernelRequirement::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::KernelRequirement
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::KernelRequirement where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::OutcomeRef
+pub termrock::registry::OutcomeRef::id: alloc::string::String
+impl core::clone::Clone for termrock::registry::OutcomeRef
+pub fn termrock::registry::OutcomeRef::clone(&self) -> termrock::registry::OutcomeRef
+impl core::cmp::Eq for termrock::registry::OutcomeRef
+impl core::cmp::PartialEq for termrock::registry::OutcomeRef
+pub fn termrock::registry::OutcomeRef::eq(&self, &termrock::registry::OutcomeRef) -> bool
+impl core::fmt::Debug for termrock::registry::OutcomeRef
+pub fn termrock::registry::OutcomeRef::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::OutcomeRef
+pub fn termrock::registry::OutcomeRef::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::OutcomeRef
+impl serde_core::ser::Serialize for termrock::registry::OutcomeRef
+pub fn termrock::registry::OutcomeRef::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::OutcomeRef
+pub fn termrock::registry::OutcomeRef::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::OutcomeRef
+impl core::marker::Send for termrock::registry::OutcomeRef
+impl core::marker::Sync for termrock::registry::OutcomeRef
+impl core::marker::Unpin for termrock::registry::OutcomeRef
+impl core::marker::UnsafeUnpin for termrock::registry::OutcomeRef
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::OutcomeRef
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::OutcomeRef
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::OutcomeRef where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::OutcomeRef::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::OutcomeRef where U: core::convert::From<T>
+pub fn termrock::registry::OutcomeRef::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::OutcomeRef where U: core::convert::Into<T>
+pub type termrock::registry::OutcomeRef::Error = core::convert::Infallible
+pub fn termrock::registry::OutcomeRef::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::OutcomeRef where U: core::convert::TryFrom<T>
+pub type termrock::registry::OutcomeRef::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::OutcomeRef::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::OutcomeRef where T: core::clone::Clone
+pub type termrock::registry::OutcomeRef::Owned = T
+pub fn termrock::registry::OutcomeRef::clone_into(&self, &mut T)
+pub fn termrock::registry::OutcomeRef::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::OutcomeRef where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::OutcomeRef::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::OutcomeRef where T: ?core::marker::Sized
+pub fn termrock::registry::OutcomeRef::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::OutcomeRef where T: ?core::marker::Sized
+pub fn termrock::registry::OutcomeRef::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::OutcomeRef where T: core::clone::Clone
+pub unsafe fn termrock::registry::OutcomeRef::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::OutcomeRef
+pub fn termrock::registry::OutcomeRef::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::OutcomeRef
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::OutcomeRef where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::Provenance
+pub termrock::registry::Provenance::authors: alloc::vec::Vec<alloc::string::String>
+pub termrock::registry::Provenance::origin: alloc::string::String
+pub termrock::registry::Provenance::path: alloc::string::String
+pub termrock::registry::Provenance::revision: alloc::string::String
+pub termrock::registry::Provenance::spdx: alloc::string::String
+impl core::clone::Clone for termrock::registry::Provenance
+pub fn termrock::registry::Provenance::clone(&self) -> termrock::registry::Provenance
+impl core::cmp::Eq for termrock::registry::Provenance
+impl core::cmp::PartialEq for termrock::registry::Provenance
+pub fn termrock::registry::Provenance::eq(&self, &termrock::registry::Provenance) -> bool
+impl core::fmt::Debug for termrock::registry::Provenance
+pub fn termrock::registry::Provenance::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::Provenance
+pub fn termrock::registry::Provenance::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::Provenance
+impl serde_core::ser::Serialize for termrock::registry::Provenance
+pub fn termrock::registry::Provenance::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::Provenance
+pub fn termrock::registry::Provenance::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::Provenance
+impl core::marker::Send for termrock::registry::Provenance
+impl core::marker::Sync for termrock::registry::Provenance
+impl core::marker::Unpin for termrock::registry::Provenance
+impl core::marker::UnsafeUnpin for termrock::registry::Provenance
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::Provenance
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::Provenance
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::Provenance where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::Provenance::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::Provenance where U: core::convert::From<T>
+pub fn termrock::registry::Provenance::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::Provenance where U: core::convert::Into<T>
+pub type termrock::registry::Provenance::Error = core::convert::Infallible
+pub fn termrock::registry::Provenance::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::Provenance where U: core::convert::TryFrom<T>
+pub type termrock::registry::Provenance::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::Provenance::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::Provenance where T: core::clone::Clone
+pub type termrock::registry::Provenance::Owned = T
+pub fn termrock::registry::Provenance::clone_into(&self, &mut T)
+pub fn termrock::registry::Provenance::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::Provenance where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::Provenance::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::Provenance where T: ?core::marker::Sized
+pub fn termrock::registry::Provenance::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::Provenance where T: ?core::marker::Sized
+pub fn termrock::registry::Provenance::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::Provenance where T: core::clone::Clone
+pub unsafe fn termrock::registry::Provenance::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::Provenance
+pub fn termrock::registry::Provenance::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::Provenance
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::Provenance where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::SemanticRoleRef
+pub termrock::registry::SemanticRoleRef::id: alloc::string::String
+impl core::clone::Clone for termrock::registry::SemanticRoleRef
+pub fn termrock::registry::SemanticRoleRef::clone(&self) -> termrock::registry::SemanticRoleRef
+impl core::cmp::Eq for termrock::registry::SemanticRoleRef
+impl core::cmp::PartialEq for termrock::registry::SemanticRoleRef
+pub fn termrock::registry::SemanticRoleRef::eq(&self, &termrock::registry::SemanticRoleRef) -> bool
+impl core::fmt::Debug for termrock::registry::SemanticRoleRef
+pub fn termrock::registry::SemanticRoleRef::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::SemanticRoleRef
+pub fn termrock::registry::SemanticRoleRef::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::SemanticRoleRef
+impl serde_core::ser::Serialize for termrock::registry::SemanticRoleRef
+pub fn termrock::registry::SemanticRoleRef::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::SemanticRoleRef
+pub fn termrock::registry::SemanticRoleRef::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::SemanticRoleRef
+impl core::marker::Send for termrock::registry::SemanticRoleRef
+impl core::marker::Sync for termrock::registry::SemanticRoleRef
+impl core::marker::Unpin for termrock::registry::SemanticRoleRef
+impl core::marker::UnsafeUnpin for termrock::registry::SemanticRoleRef
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::SemanticRoleRef
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::SemanticRoleRef
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::SemanticRoleRef where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::SemanticRoleRef::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::SemanticRoleRef where U: core::convert::From<T>
+pub fn termrock::registry::SemanticRoleRef::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::SemanticRoleRef where U: core::convert::Into<T>
+pub type termrock::registry::SemanticRoleRef::Error = core::convert::Infallible
+pub fn termrock::registry::SemanticRoleRef::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::SemanticRoleRef where U: core::convert::TryFrom<T>
+pub type termrock::registry::SemanticRoleRef::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::SemanticRoleRef::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::SemanticRoleRef where T: core::clone::Clone
+pub type termrock::registry::SemanticRoleRef::Owned = T
+pub fn termrock::registry::SemanticRoleRef::clone_into(&self, &mut T)
+pub fn termrock::registry::SemanticRoleRef::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::SemanticRoleRef where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::SemanticRoleRef::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::SemanticRoleRef where T: ?core::marker::Sized
+pub fn termrock::registry::SemanticRoleRef::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::SemanticRoleRef where T: ?core::marker::Sized
+pub fn termrock::registry::SemanticRoleRef::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::SemanticRoleRef where T: core::clone::Clone
+pub unsafe fn termrock::registry::SemanticRoleRef::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::SemanticRoleRef
+pub fn termrock::registry::SemanticRoleRef::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::SemanticRoleRef
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::SemanticRoleRef where T: for<'de> serde_core::de::Deserialize<'de>
+pub struct termrock::registry::ValidationReport
+pub termrock::registry::ValidationReport::issues: alloc::vec::Vec<termrock::registry::ContractIssue>
+impl termrock::registry::ValidationReport
+pub fn termrock::registry::ValidationReport::error_count(&self) -> usize
+pub fn termrock::registry::ValidationReport::ok(&self) -> bool
+impl core::clone::Clone for termrock::registry::ValidationReport
+pub fn termrock::registry::ValidationReport::clone(&self) -> termrock::registry::ValidationReport
+impl core::cmp::Eq for termrock::registry::ValidationReport
+impl core::cmp::PartialEq for termrock::registry::ValidationReport
+pub fn termrock::registry::ValidationReport::eq(&self, &termrock::registry::ValidationReport) -> bool
+impl core::default::Default for termrock::registry::ValidationReport
+pub fn termrock::registry::ValidationReport::default() -> termrock::registry::ValidationReport
+impl core::fmt::Debug for termrock::registry::ValidationReport
+pub fn termrock::registry::ValidationReport::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::registry::ValidationReport
+impl core::marker::Freeze for termrock::registry::ValidationReport
+impl core::marker::Send for termrock::registry::ValidationReport
+impl core::marker::Sync for termrock::registry::ValidationReport
+impl core::marker::Unpin for termrock::registry::ValidationReport
+impl core::marker::UnsafeUnpin for termrock::registry::ValidationReport
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::ValidationReport
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::ValidationReport
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::ValidationReport where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::ValidationReport::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::ValidationReport where U: core::convert::From<T>
+pub fn termrock::registry::ValidationReport::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::ValidationReport where U: core::convert::Into<T>
+pub type termrock::registry::ValidationReport::Error = core::convert::Infallible
+pub fn termrock::registry::ValidationReport::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::ValidationReport where U: core::convert::TryFrom<T>
+pub type termrock::registry::ValidationReport::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::ValidationReport::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::ValidationReport where T: core::clone::Clone
+pub type termrock::registry::ValidationReport::Owned = T
+pub fn termrock::registry::ValidationReport::clone_into(&self, &mut T)
+pub fn termrock::registry::ValidationReport::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::ValidationReport where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::ValidationReport::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::ValidationReport where T: ?core::marker::Sized
+pub fn termrock::registry::ValidationReport::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::ValidationReport where T: ?core::marker::Sized
+pub fn termrock::registry::ValidationReport::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::ValidationReport where T: core::clone::Clone
+pub unsafe fn termrock::registry::ValidationReport::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::ValidationReport
+pub fn termrock::registry::ValidationReport::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::ValidationReport
+pub struct termrock::registry::VariantRef
+pub termrock::registry::VariantRef::description: alloc::string::String
+pub termrock::registry::VariantRef::id: alloc::string::String
+impl core::clone::Clone for termrock::registry::VariantRef
+pub fn termrock::registry::VariantRef::clone(&self) -> termrock::registry::VariantRef
+impl core::cmp::Eq for termrock::registry::VariantRef
+impl core::cmp::PartialEq for termrock::registry::VariantRef
+pub fn termrock::registry::VariantRef::eq(&self, &termrock::registry::VariantRef) -> bool
+impl core::fmt::Debug for termrock::registry::VariantRef
+pub fn termrock::registry::VariantRef::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::registry::VariantRef
+pub fn termrock::registry::VariantRef::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::registry::VariantRef
+impl serde_core::ser::Serialize for termrock::registry::VariantRef
+pub fn termrock::registry::VariantRef::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for termrock::registry::VariantRef
+pub fn termrock::registry::VariantRef::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+impl core::marker::Freeze for termrock::registry::VariantRef
+impl core::marker::Send for termrock::registry::VariantRef
+impl core::marker::Sync for termrock::registry::VariantRef
+impl core::marker::Unpin for termrock::registry::VariantRef
+impl core::marker::UnsafeUnpin for termrock::registry::VariantRef
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::registry::VariantRef
+impl core::panic::unwind_safe::UnwindSafe for termrock::registry::VariantRef
+impl<Q, K> equivalent::Equivalent<K> for termrock::registry::VariantRef where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::registry::VariantRef::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::registry::VariantRef where U: core::convert::From<T>
+pub fn termrock::registry::VariantRef::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::registry::VariantRef where U: core::convert::Into<T>
+pub type termrock::registry::VariantRef::Error = core::convert::Infallible
+pub fn termrock::registry::VariantRef::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::registry::VariantRef where U: core::convert::TryFrom<T>
+pub type termrock::registry::VariantRef::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::registry::VariantRef::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::registry::VariantRef where T: core::clone::Clone
+pub type termrock::registry::VariantRef::Owned = T
+pub fn termrock::registry::VariantRef::clone_into(&self, &mut T)
+pub fn termrock::registry::VariantRef::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::registry::VariantRef where T: 'static + ?core::marker::Sized
+pub fn termrock::registry::VariantRef::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::registry::VariantRef where T: ?core::marker::Sized
+pub fn termrock::registry::VariantRef::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::registry::VariantRef where T: ?core::marker::Sized
+pub fn termrock::registry::VariantRef::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::registry::VariantRef where T: core::clone::Clone
+pub unsafe fn termrock::registry::VariantRef::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::registry::VariantRef
+pub fn termrock::registry::VariantRef::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::registry::VariantRef
+impl<T> serde_core::de::DeserializeOwned for termrock::registry::VariantRef where T: for<'de> serde_core::de::Deserialize<'de>
+pub const termrock::registry::CONTRACT_SCHEMA: u32
+pub fn termrock::registry::official_contract(&str) -> core::option::Option<termrock::registry::ComponentContract>
+pub fn termrock::registry::official_ids() -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::registry::official_kernel_contracts() -> alloc::vec::Vec<termrock::registry::ComponentContract>
+pub fn termrock::registry::validate_contract(&termrock::registry::ComponentContract) -> termrock::registry::ValidationReport
+pub fn termrock::registry::validate_contracts(&[termrock::registry::ComponentContract]) -> termrock::registry::ValidationReport
 pub mod termrock::runtime
 #[non_exhaustive] pub enum termrock::runtime::PresenceChange
 pub termrock::runtime::PresenceChange::BecameHidden

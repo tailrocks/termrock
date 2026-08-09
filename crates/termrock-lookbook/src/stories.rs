@@ -844,6 +844,15 @@ pub(crate) fn stories() -> Vec<Story> {
             motion_presence_story,
         ),
         Story::new(
+            "registry/contracts",
+            "ComponentContract catalog",
+            "ComponentContract",
+            "Official kernel contracts: kind, complete, stories, module.",
+            56,
+            12,
+            registry_contracts_story,
+        ),
+        Story::new(
             "overlay/nested-escape",
             "Nested overlays",
             "OverlayStack",
@@ -4755,6 +4764,46 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     focus_graph: &[],
     };
     frame.render_widget(DesignInspector::new(snap, &mono), area);
+}
+
+fn registry_contracts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::registry::{official_kernel_contracts, validate_contracts};
+    use termrock::widgets::{Panel, PanelChrome};
+
+    let catalog = official_kernel_contracts();
+    let report = validate_contracts(&catalog);
+    let _ = report.ok();
+    frame.render_widget(
+        Panel::new(system)
+            .title("ComponentContract · official catalog")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    let mut y = inner.y;
+    for c in catalog.into_iter().take(usize::from(inner.height)) {
+        let line = format!(
+            "{:<18} {:<10} s={} t={} {}",
+            c.id,
+            c.kind.id(),
+            c.stories.len(),
+            c.tests.len(),
+            if c.complete { "✓" } else { "…" }
+        );
+        frame.buffer_mut().set_stringn(
+            inner.x,
+            y,
+            &line,
+            usize::from(inner.width),
+            system.style(termrock::style::Role::Text),
+        );
+        y = y.saturating_add(1);
+    }
 }
 
 fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

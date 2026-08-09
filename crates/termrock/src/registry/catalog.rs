@@ -1,0 +1,400 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! Official kernel inventory contracts (embedded catalog).
+
+use super::contract::{
+    AnatomyPartRef, CapabilityRequirements, ComponentContract, ContractDependencies, ContractFile,
+    ContractFileRole, KernelRequirement, OutcomeRef, Provenance, RegistryItemKind, SemanticRoleRef,
+    VariantRef, CONTRACT_SCHEMA,
+};
+
+fn prov(path: &str) -> Provenance {
+    Provenance {
+        origin: "https://github.com/tailrocks/termrock".into(),
+        path: path.into(),
+        revision: "main".into(),
+        spdx: "Apache-2.0".into(),
+        authors: vec!["Tailrocks contributors".into()],
+    }
+}
+
+fn file(source: &str, role: ContractFileRole) -> ContractFile {
+    ContractFile {
+        source: source.into(),
+        target: None,
+        role,
+        hash: None,
+        optional: false,
+    }
+}
+
+fn kernel_dep() -> ContractDependencies {
+    ContractDependencies {
+        kernel: Some(KernelRequirement {
+            crate_name: "termrock".into(),
+            min_version: "0.11.0".into(),
+            features: vec![],
+        }),
+        registry: vec![],
+        cargo: vec!["ratatui-core".into()],
+    }
+}
+
+fn caps_basic() -> CapabilityRequirements {
+    CapabilityRequirements {
+        color: vec![
+            "truecolor".into(),
+            "256".into(),
+            "16".into(),
+            "mono".into(),
+        ],
+        glyphs: vec!["unicode".into(), "ascii".into()],
+        responsive_surface: None,
+        min_width: Some(8),
+        min_height: Some(1),
+        mouse_enhanced: false,
+    }
+}
+
+/// Official kernel-hosted contracts (subset of public inventory).
+#[must_use]
+pub fn official_kernel_contracts() -> Vec<ComponentContract> {
+    vec![
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "Panel".into(),
+            title: "Panel".into(),
+            description: "Bordered surface with focus-visible chrome via Role::BorderFocused."
+                .into(),
+            kind: RegistryItemKind::Primitive,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::widgets::Panel".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![
+                file("crates/termrock/src/widgets/panel.rs", ContractFileRole::Primary),
+                file(
+                    "docs/public/component-previews/panel-focused.svg",
+                    ContractFileRole::Fixture,
+                ),
+            ],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "border".into(),
+                    label: "Border".into(),
+                },
+                AnatomyPartRef {
+                    id: "title".into(),
+                    label: "Title".into(),
+                },
+                AnatomyPartRef {
+                    id: "body".into(),
+                    label: "Body".into(),
+                },
+            ],
+            semantic_roles: vec![
+                SemanticRoleRef {
+                    id: "Role::Border".into(),
+                },
+                SemanticRoleRef {
+                    id: "Role::BorderFocused".into(),
+                },
+            ],
+            variants: vec![VariantRef {
+                id: "focused".into(),
+                description: "PanelChrome::Focused".into(),
+            }],
+            outcomes: vec![],
+            stories: vec!["panel/focused".into()],
+            tests: vec!["widgets::panel".into()],
+            migration: None,
+            provenance: prov("crates/termrock/src/widgets/panel.rs"),
+            source_hash: None,
+            complete: true,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "ScrollArea".into(),
+            title: "ScrollArea".into(),
+            description: "Canonical scrolling primitive: axes, follow, anchors, chain."
+                .into(),
+            kind: RegistryItemKind::Primitive,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::widgets::ScrollArea".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/widgets/scroll_area.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("LogViewer".into());
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "body".into(),
+                    label: "Viewport body".into(),
+                },
+                AnatomyPartRef {
+                    id: "scrollbar".into(),
+                    label: "Scrollbar".into(),
+                },
+                AnatomyPartRef {
+                    id: "new_content".into(),
+                    label: "New content strip".into(),
+                },
+            ],
+            semantic_roles: vec![
+                SemanticRoleRef {
+                    id: "Role::ScrollTrack".into(),
+                },
+                SemanticRoleRef {
+                    id: "Role::ScrollThumb".into(),
+                },
+            ],
+            variants: vec![],
+            outcomes: vec![OutcomeRef {
+                id: "ScrollOutcome".into(),
+            }],
+            stories: vec!["scroll-area/follow-paused".into()],
+            tests: vec!["widgets::scroll_area".into()],
+            migration: Some("migrations/0085-v0.13.0-scroll-area.md".into()),
+            provenance: prov("crates/termrock/src/widgets/scroll_area.rs"),
+            source_hash: None,
+            complete: true,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "DismissableLayer".into(),
+            title: "DismissableLayer".into(),
+            description: "Reusable dismiss policy: Esc, outside press/release, traps."
+                .into(),
+            kind: RegistryItemKind::Behavior,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::interaction::DismissableLayer".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/interaction/dismissable.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "dismissible".into(),
+                    description: "DismissPolicy::dismissible".into(),
+                },
+                VariantRef {
+                    id: "critical".into(),
+                    description: "DismissPolicy::critical trap".into(),
+                },
+            ],
+            outcomes: vec![OutcomeRef {
+                id: "DismissDecision".into(),
+            }],
+            stories: vec!["dismissable/gestures".into()],
+            tests: vec!["interaction::dismissable".into()],
+            migration: Some("migrations/0089-v0.13.0-dismissable-layer.md".into()),
+            provenance: prov("crates/termrock/src/interaction/dismissable.rs"),
+            source_hash: None,
+            complete: true,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "OverlayStack".into(),
+            title: "OverlayStack".into(),
+            description: "Sole overlay authority: z-order, placement, queue, Esc one layer."
+                .into(),
+            kind: RegistryItemKind::Behavior,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::interaction::OverlayStack".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/interaction/overlay_stack.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec!["termrock/DismissableLayer".into()];
+                d
+            },
+            capabilities: caps_basic(),
+            anatomy: vec![],
+            semantic_roles: vec![],
+            variants: vec![],
+            outcomes: vec![OutcomeRef {
+                id: "OverlayOutcome".into(),
+            }],
+            stories: vec![
+                "overlay/nested-escape".into(),
+                "overlay/queued-dialogs".into(),
+            ],
+            tests: vec!["overlay_stack".into()],
+            migration: Some("migrations/0087-v0.13.0-overlay-stack-premium.md".into()),
+            provenance: prov("crates/termrock/src/interaction/overlay_stack.rs"),
+            source_hash: None,
+            complete: true,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "TerminalCapabilities".into(),
+            title: "TerminalCapabilities".into(),
+            description: "Detect/profile/override capabilities; CapabilityBoundary for widgets."
+                .into(),
+            kind: RegistryItemKind::Behavior,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::capability::TerminalCapabilities".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![
+                file(
+                    "crates/termrock/src/capability/profile.rs",
+                    ContractFileRole::Primary,
+                ),
+                file(
+                    "crates/termrock/src/capability/boundary.rs",
+                    ContractFileRole::Support,
+                ),
+            ],
+            dependencies: kernel_dep(),
+            capabilities: {
+                let mut c = caps_basic();
+                c.mouse_enhanced = true;
+                c
+            },
+            anatomy: vec![],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "modern".into(),
+                    description: "CapabilityProfile::Modern".into(),
+                },
+                VariantRef {
+                    id: "minimal".into(),
+                    description: "CapabilityProfile::Minimal".into(),
+                },
+            ],
+            outcomes: vec![],
+            stories: vec!["capability/profiles".into()],
+            tests: vec!["capability".into(), "capability_pty".into()],
+            migration: Some("migrations/0091-v0.13.0-terminal-capabilities.md".into()),
+            provenance: prov("crates/termrock/src/capability"),
+            source_hash: None,
+            complete: true,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "phosphor-theme".into(),
+            title: "Phosphor theme".into(),
+            description: "Default phosphor design language (RolePalette).".into(),
+            kind: RegistryItemKind::Theme,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::style::RolePalette".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/style/tokens.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![],
+            semantic_roles: vec![SemanticRoleRef {
+                id: "Role::*".into(),
+            }],
+            variants: vec![VariantRef {
+                id: "tailrocks_phosphor".into(),
+                description: "Default brand palette".into(),
+            }],
+            outcomes: vec![],
+            stories: vec!["capability/color-ladder".into()],
+            tests: vec!["style".into()],
+            migration: None,
+            provenance: prov("crates/termrock/src/style"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "agent-workbench".into(),
+            title: "Agent Workbench".into(),
+            description: "Flagship multi-pane agent shell block (composition).".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::agent_workbench".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/agent_workbench.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec![
+                    "termrock/ScrollArea".into(),
+                    "termrock/OverlayStack".into(),
+                    "termrock/Panel".into(),
+                ];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("AppShell".into());
+                c.min_width = Some(40);
+                c.min_height = Some(12);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "transcript".into(),
+                    label: "Transcript".into(),
+                },
+                AnatomyPartRef {
+                    id: "composer".into(),
+                    label: "Prompt composer".into(),
+                },
+                AnatomyPartRef {
+                    id: "rail".into(),
+                    label: "Task rail".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![],
+            outcomes: vec![],
+            stories: vec!["agent-workbench/basic".into()],
+            tests: vec![],
+            migration: None,
+            provenance: prov("crates/termrock/src/patterns/agent_workbench.rs"),
+            source_hash: None,
+            complete: false,
+        },
+    ]
+}
+
+/// Lookup by id in the official kernel catalog.
+#[must_use]
+pub fn official_contract(id: &str) -> Option<ComponentContract> {
+    official_kernel_contracts()
+        .into_iter()
+        .find(|c| c.id == id)
+}
+
+/// All official ids.
+#[must_use]
+pub fn official_ids() -> Vec<String> {
+    official_kernel_contracts()
+        .into_iter()
+        .map(|c| c.id)
+        .collect()
+}
+

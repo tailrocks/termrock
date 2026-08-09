@@ -21,6 +21,7 @@ pub mod layout;
 pub mod osc;
 pub mod patterns;
 pub mod perf;
+pub mod registry;
 pub mod runtime;
 pub mod scroll;
 pub mod style;
