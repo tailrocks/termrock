@@ -12,6 +12,7 @@ use ratatui_core::style::{Color, Modifier, Style};
 mod appearance;
 mod density;
 mod palette;
+mod preview_host;
 mod quantize;
 mod tokens;
 
@@ -28,6 +29,7 @@ use palette::{
     TAB_BG_INACTIVE as TAB_BG_INACTIVE_RGB, TAB_BG_INACTIVE_HOVER as TAB_BG_INACTIVE_HOVER_RGB,
     WARNING_YELLOW as WARNING_YELLOW_RGB, WHITE as WHITE_RGB,
 };
+pub use preview_host::CapabilityPreviewHost;
 pub use quantize::{ColorCapability, quantize_color, quantize_theme, rgb_to_xterm256};
 pub use tokens::{
     DesignSystem, DesignTokens, GlyphSet, ListRowRecipe, SelectionChrome, SpacingScale,

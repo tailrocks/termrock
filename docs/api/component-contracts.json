@@ -71,6 +71,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "DesignInspector": {
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "focus": "not-applicable",
+    "nonColor": "covered",
+    "unicode": "not-applicable",
+    "narrowTerminal": "not-applicable"
+  },
   "DetailTable": {
     "keyboard": "covered",
     "mouse": "covered",

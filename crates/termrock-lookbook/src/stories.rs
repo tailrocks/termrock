@@ -15,25 +15,27 @@ use ratatui::{
 use termrock::{
     Theme,
     scroll::DialogScroll,
+    style::ColorCapability,
     style::Role,
     widgets::{
         Action, ActionBar, ActionBarState, Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk,
         BUILTIN_THEME_PRESETS, Backdrop, Banner, BarDatum, BarSeries, CellAlignment, ChoiceDialog,
         ChoiceDialogState, CodeBlock, Column, ColumnWidth, CommandPalette, CommandPaletteState,
         CompletionCandidate, CompletionMenu, CompletionMenuSize, CompletionMenuState,
-        DetailCapability, DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine,
-        DiffState, DiffView, EmptyState, ErrorView, Form, FormField, FormSection, FormState,
-        GridCell, GridColumn, GridRow, Hint, HintBar, ImageMeta, ImageProtocol, ImageSurface,
-        JumpOverlay, JumpTarget, List, ListRow, ListState, LoadingView, LogPane, LogPaneState,
-        MarkdownBlock, MarkdownBlockKind, MarkdownView, MessageDialog, MeterSegment, Panel,
-        PanelEmphasis, Picker, PickerState, Progress, ProgressKind, PromptBox, PromptBoxState,
-        RowRole, SegmentedMeter, Severity, Skeleton, SortDirection, Sparkline, SplitDirection,
-        SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, StreamItem,
-        StreamItemKind, StreamView, Tab, Table, TableRow, TableState, Tabs, TabsState, TextArea,
-        TextAreaState, TextCursor, TextInput, TextInputState, ThemePicker, ThemePickerState,
-        ThinkingBlock, Timeline, TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus,
-        Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode,
-        TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
+        DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
+        DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, EmptyState, ErrorView,
+        Form, FormField, FormSection, FormState, GridCell, GridColumn, GridRow, Hint, HintBar,
+        ImageMeta, ImageProtocol, ImageSurface, JumpOverlay, JumpTarget, List, ListRow, ListState,
+        LoadingView, LogPane, LogPaneState, MarkdownBlock, MarkdownBlockKind, MarkdownView,
+        MessageDialog, MeterSegment, Panel, PanelEmphasis, Picker, PickerState, Progress,
+        ProgressKind, PromptBox, PromptBoxState, RowRole, SegmentedMeter, Severity, Skeleton,
+        SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
+        StatusBarState, StatusSlot, StreamItem, StreamItemKind, StreamView, Tab, Table, TableRow,
+        TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
+        TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline, TimelineEvent,
+        Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock, TranscriptKind,
+        TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
+        VirtualGrid, VirtualGridState,
     },
 };
 
@@ -478,6 +480,15 @@ pub(crate) fn stories() -> Vec<Story> {
             60,
             1,
             status_bar,
+        ),
+        Story::new(
+            "design-inspector/basic",
+            "Design inspector",
+            "DesignInspector",
+            "Studio focus/layer/capability strip.",
+            48,
+            2,
+            design_inspector,
         ),
         Story::new(
             "dialog/message",
@@ -1698,6 +1709,16 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         area,
         &mut state,
     );
+}
+
+fn design_inspector(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let snap = DesignInspectorFrame {
+        focused: Some("list"),
+        layer: Some("root"),
+        capability: ColorCapability::Truecolor,
+        density: "comfortable",
+    };
+    frame.render_widget(DesignInspector::new(snap, theme), area);
 }
 
 fn dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {

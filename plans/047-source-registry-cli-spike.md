@@ -18,6 +18,7 @@
 - **Depends on**: Plan 046
 - **Category**: distribution, CLI, security, DX
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: BLOCKED — requires maintainer approval for workspace CLI/schema; not shipped
 
 ## Why this matters
 

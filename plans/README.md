@@ -22,12 +22,12 @@ Historical plans **001–038** are complete (removed after verification).
 | [041](041-variable-height-transcript-engine.md) | Variable-height streaming transcript | P1 | L | DONE | 040 | 0035 |
 | [042](042-responsive-workspace-blocks.md) | Responsive workspace tree + patterns | P1 | L | DONE | 040–041 | 0036 |
 | [043](043-token-driven-phosphor-system.md) | Token-driven quiet phosphor hierarchy | P1 | L | DONE | 040 | 0037 |
-| [044](044-universal-intent-collections.md) | Universal intents for collections | P1 | M | TODO | 039–040 | 0037 |
-| [045](045-composed-row-panel-anatomy.md) | Priority-aware row/panel anatomy | P2 | M | TODO | 041, 043 | 0038 |
-| [046](046-agent-workbench-flagship.md) | Agent Workbench flagship | P2 | L | TODO | 039–045 | 0039 |
-| [047](047-source-registry-cli-spike.md) | Safe source-registry CLI spike | P3 | L | TODO | 046 + approval | 0040 |
-| [048](048-lookbook-studio-inspector.md) | Lookbook → executable Studio | P3 | L | TODO | 040, 043–047 | 0041 |
-| [049](049-capability-aware-preview-host.md) | Capability-aware preview/media host | P3 | L | TODO | 042–043, 048 | 0042 |
+| [044](044-universal-intent-collections.md) | Universal intents for collections | P1 | M | DONE | 039–040 | 0038 |
+| [045](045-composed-row-panel-anatomy.md) | Priority-aware row/panel anatomy | P2 | M | DONE | 041, 043 | 0039 |
+| [046](046-agent-workbench-flagship.md) | Agent Workbench flagship | P2 | L | DONE | 039–045 | 0040 |
+| [047](047-source-registry-cli-spike.md) | Safe source-registry CLI spike | P3 | L | BLOCKED | 046 + approval | — |
+| [048](048-lookbook-studio-inspector.md) | Lookbook → executable Studio | P3 | L | DONE | 040, 043–047 | 0041 |
+| [049](049-capability-aware-preview-host.md) | Capability-aware preview/media host | P3 | L | DONE | 042–043, 048 | 0042 |
 | [050](050-terminal-native-primitives.md) | Primitives, content, and feedback | P2 | L | TODO | 043, 045, 048–049 | 0043 |
 | [051](051-controls-navigation-overlays.md) | Controls, navigation, and overlays | P2 | L | TODO | 040, 043–045, 048, 050 | 0044 |
 | [052](052-data-review-surfaces.md) | Scalable data/log/review surfaces | P2 | L | TODO | 041, 043–045, 048, 050–051 | 0045 |

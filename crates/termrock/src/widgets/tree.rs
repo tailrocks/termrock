@@ -7,7 +7,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::KeyEvent,
     interaction::HitRegion,
     scroll::max_offset,
     style::{Role, Theme},
@@ -216,24 +216,38 @@ impl<Id> TreeState<Id> {
 impl<Id: Clone + PartialEq> TreeState<Id> {
     /// Routes navigation, disclosure, checking, and activation keys.
     pub fn handle_key(&mut self, nodes: &[TreeNode<'_, Id>], key: KeyEvent) -> TreeOutcome<Id> {
-        if !self.focused || key.kind == KeyEventKind::Release {
+        if let Some(intent) = crate::interaction::default_tree_intent(key) {
+            return self.handle_intent(nodes, intent);
+        }
+        TreeOutcome::Ignored
+    }
+
+    /// Routes a semantic intent (keymap / scene adapter).
+    pub fn handle_intent(
+        &mut self,
+        nodes: &[TreeNode<'_, Id>],
+        intent: crate::interaction::UiIntent,
+    ) -> TreeOutcome<Id> {
+        if !self.focused {
             return TreeOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Up => self.move_selection(nodes, -1),
-            KeyCode::Down => self.move_selection(nodes, 1),
-            KeyCode::Home => self.select_boundary(nodes, false),
-            KeyCode::End => self.select_boundary(nodes, true),
-            KeyCode::PageUp => self.page_selection(nodes, false),
-            KeyCode::PageDown => self.page_selection(nodes, true),
-            KeyCode::Left => self.collapse_or_parent(nodes),
-            KeyCode::Right => self.expand(nodes),
-            KeyCode::Enter => self
+        use crate::interaction::{NavigationMove, PageMove, UiIntent};
+        match intent {
+            UiIntent::Move(NavigationMove::Previous) => self.move_selection(nodes, -1),
+            UiIntent::Move(NavigationMove::Next) => self.move_selection(nodes, 1),
+            UiIntent::Move(NavigationMove::First) => self.select_boundary(nodes, false),
+            UiIntent::Move(NavigationMove::Last) => self.select_boundary(nodes, true),
+            UiIntent::Page(PageMove::Backward) => self.page_selection(nodes, false),
+            UiIntent::Page(PageMove::Forward) => self.page_selection(nodes, true),
+            UiIntent::Collapse => self.collapse_or_parent(nodes),
+            UiIntent::Expand => self.expand(nodes),
+            UiIntent::Activate => self
                 .selected_node(nodes)
                 .map_or(TreeOutcome::Ignored, |node| {
                     TreeOutcome::Activated(node.id.clone())
                 }),
-            KeyCode::Char(' ') => self.toggle_selected(nodes),
+            UiIntent::Toggle => self.toggle_selected(nodes),
+            UiIntent::Cancel | UiIntent::Close => TreeOutcome::Ignored,
             _ => TreeOutcome::Ignored,
         }
     }

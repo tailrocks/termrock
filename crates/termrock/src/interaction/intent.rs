@@ -49,6 +49,10 @@ pub enum UiIntent {
     Cancel,
     /// Submit a form or prompt.
     Submit,
+    /// Expand a tree node / disclosure.
+    Expand,
+    /// Collapse a tree node / disclosure.
+    Collapse,
 }
 
 /// Maps a key event to a list-oriented intent using TermRock defaults.
@@ -84,6 +88,29 @@ pub fn default_list_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::Esc => Some(UiIntent::Cancel),
         _ => None,
     }
+}
+
+/// Default intent map for tree collections (list + expand/collapse).
+#[must_use]
+pub fn default_tree_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    match key.code {
+        KeyCode::Right | KeyCode::Char('l' | 'L') => Some(UiIntent::Expand),
+        KeyCode::Left | KeyCode::Char('h' | 'H') => Some(UiIntent::Collapse),
+        _ => default_list_intent(key),
+    }
+}
+
+/// Default intent map for tabular collections.
+#[must_use]
+pub fn default_table_intent(key: KeyEvent) -> Option<UiIntent> {
+    default_list_intent(key).and_then(|intent| match intent {
+        // Tables do not toggle multi-select with Space by default.
+        UiIntent::Toggle => None,
+        other => Some(other),
+    })
 }
 
 #[cfg(test)]

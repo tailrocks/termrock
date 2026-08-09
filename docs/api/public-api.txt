@@ -1289,6 +1289,8 @@ impl<T> either::into_either::IntoEither for termrock::SemanticRole
 pub termrock::interaction::UiIntent::Activate
 pub termrock::interaction::UiIntent::Cancel
 pub termrock::interaction::UiIntent::Close
+pub termrock::interaction::UiIntent::Collapse
+pub termrock::interaction::UiIntent::Expand
 pub termrock::interaction::UiIntent::Move(termrock::NavigationMove)
 pub termrock::interaction::UiIntent::Open
 pub termrock::interaction::UiIntent::Page(termrock::PageMove)
@@ -1856,6 +1858,8 @@ pub fn termrock::SemanticScene<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::SemanticScene<Id>
 pub fn termrock::interaction::classify_click(ratatui_core::layout::rect::Rect, u16, u16) -> termrock::interaction::ModalClickResult
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::UiIntent>
+pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::UiIntent>
+pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::UiIntent>
 pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::interaction::render_backdrop(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect)
 pub mod termrock::keymap
@@ -3210,6 +3214,56 @@ pub fn termrock::osc::encode_hyperlink_close() -> alloc::vec::Vec<u8>
 pub fn termrock::osc::encode_hyperlink_open(core::option::Option<&str>, &str) -> alloc::vec::Vec<u8>
 pub fn termrock::osc::encode_pointer(termrock::osc::PointerShape) -> alloc::vec::Vec<u8>
 pub mod termrock::patterns
+#[non_exhaustive] pub enum termrock::patterns::WorkbenchPane
+pub termrock::patterns::WorkbenchPane::Prompt
+pub termrock::patterns::WorkbenchPane::Status
+pub termrock::patterns::WorkbenchPane::TaskRail
+pub termrock::patterns::WorkbenchPane::Transcript
+impl termrock::patterns::WorkbenchPane
+pub const fn termrock::patterns::WorkbenchPane::id(self) -> &'static str
+impl core::clone::Clone for termrock::patterns::WorkbenchPane
+pub fn termrock::patterns::WorkbenchPane::clone(&self) -> termrock::patterns::WorkbenchPane
+impl core::cmp::Eq for termrock::patterns::WorkbenchPane
+impl core::cmp::PartialEq for termrock::patterns::WorkbenchPane
+pub fn termrock::patterns::WorkbenchPane::eq(&self, &termrock::patterns::WorkbenchPane) -> bool
+impl core::fmt::Debug for termrock::patterns::WorkbenchPane
+pub fn termrock::patterns::WorkbenchPane::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::patterns::WorkbenchPane
+pub fn termrock::patterns::WorkbenchPane::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::patterns::WorkbenchPane
+impl core::marker::StructuralPartialEq for termrock::patterns::WorkbenchPane
+impl core::marker::Freeze for termrock::patterns::WorkbenchPane
+impl core::marker::Send for termrock::patterns::WorkbenchPane
+impl core::marker::Sync for termrock::patterns::WorkbenchPane
+impl core::marker::Unpin for termrock::patterns::WorkbenchPane
+impl core::marker::UnsafeUnpin for termrock::patterns::WorkbenchPane
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::WorkbenchPane
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::WorkbenchPane
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::WorkbenchPane where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchPane::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::WorkbenchPane where U: core::convert::From<T>
+pub fn termrock::patterns::WorkbenchPane::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::WorkbenchPane where U: core::convert::Into<T>
+pub type termrock::patterns::WorkbenchPane::Error = core::convert::Infallible
+pub fn termrock::patterns::WorkbenchPane::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::WorkbenchPane where U: core::convert::TryFrom<T>
+pub type termrock::patterns::WorkbenchPane::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::WorkbenchPane::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::WorkbenchPane where T: core::clone::Clone
+pub type termrock::patterns::WorkbenchPane::Owned = T
+pub fn termrock::patterns::WorkbenchPane::clone_into(&self, &mut T)
+pub fn termrock::patterns::WorkbenchPane::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::WorkbenchPane where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchPane::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::WorkbenchPane where T: ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchPane::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::WorkbenchPane where T: ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchPane::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::WorkbenchPane where T: core::clone::Clone
+pub unsafe fn termrock::patterns::WorkbenchPane::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::WorkbenchPane
+pub fn termrock::patterns::WorkbenchPane::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::WorkbenchPane
 pub struct termrock::patterns::AgentShellLayout
 pub termrock::patterns::AgentShellLayout::density: termrock::Density
 pub termrock::patterns::AgentShellLayout::prompt_height: u16
@@ -3489,6 +3543,7 @@ pub unsafe fn termrock::patterns::ResourceBrowserSlots::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::patterns::ResourceBrowserSlots
 pub fn termrock::patterns::ResourceBrowserSlots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::ResourceBrowserSlots
+pub fn termrock::patterns::agent_workbench_layout(ratatui_core::layout::rect::Rect, &termrock::layout::WorkspaceState) -> alloc::vec::Vec<termrock::layout::PaneGeom>
 pub fn termrock::patterns::layout_agent_shell(ratatui_core::layout::rect::Rect, termrock::patterns::AgentShellLayout) -> termrock::patterns::AgentShellSlots
 pub fn termrock::patterns::layout_ops_dashboard(ratatui_core::layout::rect::Rect, termrock::patterns::OpsDashboardLayout) -> termrock::patterns::OpsDashboardSlots
 pub fn termrock::patterns::layout_resource_browser(ratatui_core::layout::rect::Rect, termrock::patterns::ResourceBrowserLayout) -> termrock::patterns::ResourceBrowserSlots
@@ -4579,6 +4634,54 @@ pub unsafe fn termrock::AppearanceThemeMap::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::AppearanceThemeMap
 pub fn termrock::AppearanceThemeMap::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::AppearanceThemeMap
+pub struct termrock::style::CapabilityPreviewHost
+pub termrock::style::CapabilityPreviewHost::capability: termrock::ColorCapability
+pub termrock::style::CapabilityPreviewHost::system: termrock::DesignSystem
+impl termrock::CapabilityPreviewHost
+pub const fn termrock::CapabilityPreviewHost::capability(self, termrock::ColorCapability) -> Self
+pub fn termrock::CapabilityPreviewHost::projected_theme(&self) -> termrock::style::Theme
+pub fn termrock::CapabilityPreviewHost::projected_tokens(&self) -> termrock::DesignTokens
+pub fn termrock::CapabilityPreviewHost::truecolor(termrock::DesignSystem) -> Self
+impl core::clone::Clone for termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::clone(&self) -> termrock::CapabilityPreviewHost
+impl core::cmp::Eq for termrock::CapabilityPreviewHost
+impl core::cmp::PartialEq for termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::eq(&self, &termrock::CapabilityPreviewHost) -> bool
+impl core::fmt::Debug for termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::CapabilityPreviewHost
+impl core::marker::Freeze for termrock::CapabilityPreviewHost
+impl core::marker::Send for termrock::CapabilityPreviewHost
+impl core::marker::Sync for termrock::CapabilityPreviewHost
+impl core::marker::Unpin for termrock::CapabilityPreviewHost
+impl core::marker::UnsafeUnpin for termrock::CapabilityPreviewHost
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::CapabilityPreviewHost
+impl core::panic::unwind_safe::UnwindSafe for termrock::CapabilityPreviewHost
+impl<Q, K> equivalent::Equivalent<K> for termrock::CapabilityPreviewHost where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::CapabilityPreviewHost::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::CapabilityPreviewHost where U: core::convert::From<T>
+pub fn termrock::CapabilityPreviewHost::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::CapabilityPreviewHost where U: core::convert::Into<T>
+pub type termrock::CapabilityPreviewHost::Error = core::convert::Infallible
+pub fn termrock::CapabilityPreviewHost::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::CapabilityPreviewHost where U: core::convert::TryFrom<T>
+pub type termrock::CapabilityPreviewHost::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::CapabilityPreviewHost::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::CapabilityPreviewHost where T: core::clone::Clone
+pub type termrock::CapabilityPreviewHost::Owned = T
+pub fn termrock::CapabilityPreviewHost::clone_into(&self, &mut T)
+pub fn termrock::CapabilityPreviewHost::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::CapabilityPreviewHost where T: 'static + ?core::marker::Sized
+pub fn termrock::CapabilityPreviewHost::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::CapabilityPreviewHost where T: ?core::marker::Sized
+pub fn termrock::CapabilityPreviewHost::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::CapabilityPreviewHost where T: ?core::marker::Sized
+pub fn termrock::CapabilityPreviewHost::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::CapabilityPreviewHost where T: core::clone::Clone
+pub unsafe fn termrock::CapabilityPreviewHost::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::CapabilityPreviewHost
 pub struct termrock::style::DesignSystem
 pub termrock::style::DesignSystem::tokens: termrock::DesignTokens
 impl termrock::DesignSystem
@@ -7834,6 +7937,191 @@ pub unsafe fn termrock::widgets::CompletionMenuState<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::widgets::CompletionMenuState<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CompletionMenuState<Id>
+pub struct termrock::widgets::ComposedRow<'a, Id>
+pub termrock::widgets::ComposedRow::badge: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::ComposedRow::enabled: bool
+pub termrock::widgets::ComposedRow::id: Id
+pub termrock::widgets::ComposedRow::leading: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::ComposedRow::loading: bool
+pub termrock::widgets::ComposedRow::primary: ratatui_core::text::line::Line<'a>
+pub termrock::widgets::ComposedRow::secondary: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::ComposedRow::shortcut: core::option::Option<&'a str>
+impl<'a, Id> termrock::widgets::ComposedRow<'a, Id>
+pub fn termrock::widgets::ComposedRow<'a, Id>::parts_for_width(&self, u16) -> termrock::widgets::ComposedRowParts<'a>
+pub fn termrock::widgets::ComposedRow<'a, Id>::primary(Id, ratatui_core::text::line::Line<'a>) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ComposedRow<'a, Id>
+pub fn termrock::widgets::ComposedRow<'a, Id>::clone(&self) -> termrock::widgets::ComposedRow<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ComposedRow<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ComposedRow<'a, Id>
+pub fn termrock::widgets::ComposedRow<'a, Id>::eq(&self, &termrock::widgets::ComposedRow<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ComposedRow<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ComposedRow<'a, Id>
+pub fn termrock::widgets::ComposedRow<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::ComposedRow<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::ComposedRow<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::ComposedRow<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::ComposedRow<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::ComposedRow<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ComposedRow<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ComposedRow<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ComposedRow<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ComposedRow<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ComposedRow<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ComposedRow<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ComposedRow<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ComposedRow<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ComposedRow<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ComposedRow<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ComposedRow<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ComposedRow<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ComposedRow<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::ComposedRow<'a, Id>::Owned = T
+pub fn termrock::widgets::ComposedRow<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ComposedRow<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ComposedRow<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ComposedRow<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ComposedRow<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ComposedRow<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ComposedRow<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ComposedRow<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ComposedRow<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ComposedRow<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ComposedRow<'a, Id>
+pub fn termrock::widgets::ComposedRow<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ComposedRow<'a, Id>
+pub struct termrock::widgets::ComposedRowParts<'a>
+pub termrock::widgets::ComposedRowParts::badge: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::ComposedRowParts::leading: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::ComposedRowParts::primary: ratatui_core::text::line::Line<'a>
+pub termrock::widgets::ComposedRowParts::secondary: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::ComposedRowParts::shortcut: core::option::Option<&'a str>
+impl<'a> core::clone::Clone for termrock::widgets::ComposedRowParts<'a>
+pub fn termrock::widgets::ComposedRowParts<'a>::clone(&self) -> termrock::widgets::ComposedRowParts<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::ComposedRowParts<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::ComposedRowParts<'a>
+pub fn termrock::widgets::ComposedRowParts<'a>::eq(&self, &termrock::widgets::ComposedRowParts<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::ComposedRowParts<'a>
+pub fn termrock::widgets::ComposedRowParts<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::ComposedRowParts<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ComposedRowParts<'a>
+impl<'a> core::marker::Send for termrock::widgets::ComposedRowParts<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ComposedRowParts<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ComposedRowParts<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ComposedRowParts<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ComposedRowParts<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ComposedRowParts<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ComposedRowParts<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ComposedRowParts<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ComposedRowParts<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ComposedRowParts<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ComposedRowParts<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ComposedRowParts<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ComposedRowParts<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ComposedRowParts<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ComposedRowParts<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ComposedRowParts<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ComposedRowParts<'a> where T: core::clone::Clone
+pub type termrock::widgets::ComposedRowParts<'a>::Owned = T
+pub fn termrock::widgets::ComposedRowParts<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ComposedRowParts<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ComposedRowParts<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ComposedRowParts<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ComposedRowParts<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ComposedRowParts<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ComposedRowParts<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ComposedRowParts<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ComposedRowParts<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ComposedRowParts<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ComposedRowParts<'a>
+pub fn termrock::widgets::ComposedRowParts<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ComposedRowParts<'a>
+pub struct termrock::widgets::DesignInspector<'a>
+impl<'a> termrock::widgets::DesignInspector<'a>
+pub fn termrock::widgets::DesignInspector<'a>::from_system(&'a termrock::DesignSystem, termrock::widgets::DesignInspectorFrame<'a>) -> Self
+pub const fn termrock::widgets::DesignInspector<'a>::new(termrock::widgets::DesignInspectorFrame<'a>, &'a termrock::style::Theme) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::DesignInspector<'_>
+pub fn &termrock::widgets::DesignInspector<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::DesignInspector<'_>
+pub fn termrock::widgets::DesignInspector<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::DesignInspector<'a>
+pub fn termrock::widgets::DesignInspector<'a>::clone(&self) -> termrock::widgets::DesignInspector<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::DesignInspector<'a>
+pub fn termrock::widgets::DesignInspector<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for termrock::widgets::DesignInspector<'a>
+impl<'a> core::marker::Send for termrock::widgets::DesignInspector<'a>
+impl<'a> core::marker::Sync for termrock::widgets::DesignInspector<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::DesignInspector<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::DesignInspector<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DesignInspector<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DesignInspector<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::DesignInspector<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::DesignInspector<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DesignInspector<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::DesignInspector<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::DesignInspector<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DesignInspector<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DesignInspector<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DesignInspector<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DesignInspector<'a> where T: core::clone::Clone
+pub type termrock::widgets::DesignInspector<'a>::Owned = T
+pub fn termrock::widgets::DesignInspector<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DesignInspector<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DesignInspector<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DesignInspector<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DesignInspector<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DesignInspector<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DesignInspector<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DesignInspector<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DesignInspector<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DesignInspector<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DesignInspector<'a>
+pub fn termrock::widgets::DesignInspector<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DesignInspector<'a>
+pub struct termrock::widgets::DesignInspectorFrame<'a>
+pub termrock::widgets::DesignInspectorFrame::capability: termrock::ColorCapability
+pub termrock::widgets::DesignInspectorFrame::density: &'a str
+pub termrock::widgets::DesignInspectorFrame::focused: core::option::Option<&'a str>
+pub termrock::widgets::DesignInspectorFrame::layer: core::option::Option<&'a str>
+impl<'a> core::clone::Clone for termrock::widgets::DesignInspectorFrame<'a>
+pub fn termrock::widgets::DesignInspectorFrame<'a>::clone(&self) -> termrock::widgets::DesignInspectorFrame<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::DesignInspectorFrame<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::DesignInspectorFrame<'a>
+pub fn termrock::widgets::DesignInspectorFrame<'a>::eq(&self, &termrock::widgets::DesignInspectorFrame<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::DesignInspectorFrame<'a>
+pub fn termrock::widgets::DesignInspectorFrame<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::DesignInspectorFrame<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::DesignInspectorFrame<'a>
+impl<'a> core::marker::Send for termrock::widgets::DesignInspectorFrame<'a>
+impl<'a> core::marker::Sync for termrock::widgets::DesignInspectorFrame<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::DesignInspectorFrame<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::DesignInspectorFrame<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DesignInspectorFrame<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DesignInspectorFrame<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DesignInspectorFrame<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DesignInspectorFrame<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DesignInspectorFrame<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::DesignInspectorFrame<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DesignInspectorFrame<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::DesignInspectorFrame<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::DesignInspectorFrame<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DesignInspectorFrame<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DesignInspectorFrame<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DesignInspectorFrame<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DesignInspectorFrame<'a> where T: core::clone::Clone
+pub type termrock::widgets::DesignInspectorFrame<'a>::Owned = T
+pub fn termrock::widgets::DesignInspectorFrame<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DesignInspectorFrame<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DesignInspectorFrame<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DesignInspectorFrame<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DesignInspectorFrame<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DesignInspectorFrame<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DesignInspectorFrame<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DesignInspectorFrame<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DesignInspectorFrame<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DesignInspectorFrame<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DesignInspectorFrame<'a>
+pub fn termrock::widgets::DesignInspectorFrame<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DesignInspectorFrame<'a>
 pub struct termrock::widgets::DetailRow<'a, Id>
 pub termrock::widgets::DetailRow::capability: termrock::widgets::DetailCapability
 pub termrock::widgets::DetailRow::emphasis: bool
@@ -11857,6 +12145,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TreeNode<'a, Id>
 pub struct termrock::widgets::TreeState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::TreeOutcome<Id>
+pub fn termrock::widgets::TreeState<Id>::handle_intent(&mut self, &[termrock::widgets::TreeNode<'_, Id>], termrock::UiIntent) -> termrock::widgets::TreeOutcome<Id>
 pub fn termrock::widgets::TreeState<Id>::handle_key(&mut self, &[termrock::widgets::TreeNode<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::TreeOutcome<Id>
 pub fn termrock::widgets::TreeState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id> termrock::widgets::TreeState<Id>
@@ -12743,6 +13032,8 @@ impl<T> either::into_either::IntoEither for termrock::SemanticRole
 pub termrock::UiIntent::Activate
 pub termrock::UiIntent::Cancel
 pub termrock::UiIntent::Close
+pub termrock::UiIntent::Collapse
+pub termrock::UiIntent::Expand
 pub termrock::UiIntent::Move(termrock::NavigationMove)
 pub termrock::UiIntent::Open
 pub termrock::UiIntent::Page(termrock::PageMove)
@@ -12839,6 +13130,54 @@ pub unsafe fn termrock::AppearanceThemeMap::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::AppearanceThemeMap
 pub fn termrock::AppearanceThemeMap::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::AppearanceThemeMap
+pub struct termrock::CapabilityPreviewHost
+pub termrock::CapabilityPreviewHost::capability: termrock::ColorCapability
+pub termrock::CapabilityPreviewHost::system: termrock::DesignSystem
+impl termrock::CapabilityPreviewHost
+pub const fn termrock::CapabilityPreviewHost::capability(self, termrock::ColorCapability) -> Self
+pub fn termrock::CapabilityPreviewHost::projected_theme(&self) -> termrock::style::Theme
+pub fn termrock::CapabilityPreviewHost::projected_tokens(&self) -> termrock::DesignTokens
+pub fn termrock::CapabilityPreviewHost::truecolor(termrock::DesignSystem) -> Self
+impl core::clone::Clone for termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::clone(&self) -> termrock::CapabilityPreviewHost
+impl core::cmp::Eq for termrock::CapabilityPreviewHost
+impl core::cmp::PartialEq for termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::eq(&self, &termrock::CapabilityPreviewHost) -> bool
+impl core::fmt::Debug for termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::CapabilityPreviewHost
+impl core::marker::Freeze for termrock::CapabilityPreviewHost
+impl core::marker::Send for termrock::CapabilityPreviewHost
+impl core::marker::Sync for termrock::CapabilityPreviewHost
+impl core::marker::Unpin for termrock::CapabilityPreviewHost
+impl core::marker::UnsafeUnpin for termrock::CapabilityPreviewHost
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::CapabilityPreviewHost
+impl core::panic::unwind_safe::UnwindSafe for termrock::CapabilityPreviewHost
+impl<Q, K> equivalent::Equivalent<K> for termrock::CapabilityPreviewHost where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::CapabilityPreviewHost::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::CapabilityPreviewHost where U: core::convert::From<T>
+pub fn termrock::CapabilityPreviewHost::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::CapabilityPreviewHost where U: core::convert::Into<T>
+pub type termrock::CapabilityPreviewHost::Error = core::convert::Infallible
+pub fn termrock::CapabilityPreviewHost::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::CapabilityPreviewHost where U: core::convert::TryFrom<T>
+pub type termrock::CapabilityPreviewHost::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::CapabilityPreviewHost::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::CapabilityPreviewHost where T: core::clone::Clone
+pub type termrock::CapabilityPreviewHost::Owned = T
+pub fn termrock::CapabilityPreviewHost::clone_into(&self, &mut T)
+pub fn termrock::CapabilityPreviewHost::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::CapabilityPreviewHost where T: 'static + ?core::marker::Sized
+pub fn termrock::CapabilityPreviewHost::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::CapabilityPreviewHost where T: ?core::marker::Sized
+pub fn termrock::CapabilityPreviewHost::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::CapabilityPreviewHost where T: ?core::marker::Sized
+pub fn termrock::CapabilityPreviewHost::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::CapabilityPreviewHost where T: core::clone::Clone
+pub unsafe fn termrock::CapabilityPreviewHost::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::CapabilityPreviewHost
+pub fn termrock::CapabilityPreviewHost::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::CapabilityPreviewHost
 pub struct termrock::DesignSystem
 pub termrock::DesignSystem::tokens: termrock::DesignTokens
 impl termrock::DesignSystem
@@ -13313,5 +13652,7 @@ impl<T> core::convert::From<T> for termrock::style::Theme
 pub fn termrock::style::Theme::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Theme
 pub fn termrock::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::UiIntent>
+pub fn termrock::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::UiIntent>
+pub fn termrock::default_tree_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::UiIntent>
 pub fn termrock::dispatch_keymap_action<Id, LayerId, Action>(&termrock::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::theme_for_appearance(termrock::Appearance) -> termrock::style::Theme

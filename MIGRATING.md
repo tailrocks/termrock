@@ -51,6 +51,11 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0035 | `v0.12.0` | [Variable-height transcript](migrations/0035-v0.12.0-variable-height-transcript.md) |
 | 0036 | `v0.12.0` | [Responsive workspace tree](migrations/0036-v0.12.0-responsive-workspace-tree.md) |
 | 0037 | `v0.12.0` | [DesignSystem quiet phosphor](migrations/0037-v0.12.0-design-system-quiet-phosphor.md) |
+| 0038 | `v0.12.0` | [Universal collection intents](migrations/0038-v0.12.0-universal-intents.md) |
+| 0039 | `v0.12.0` | [Composed row anatomy](migrations/0039-v0.12.0-composed-row-anatomy.md) |
+| 0040 | `v0.12.0` | [Agent Workbench pattern](migrations/0040-v0.12.0-agent-workbench.md) |
+| 0041 | `v0.12.0` | [Design inspector](migrations/0041-v0.12.0-design-inspector.md) |
+| 0042 | `v0.12.0` | [Capability preview host](migrations/0042-v0.12.0-capability-preview-host.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

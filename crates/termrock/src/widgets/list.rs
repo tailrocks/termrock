@@ -206,6 +206,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self.activate(rows),
             UiIntent::Toggle => self.toggle_selected(rows),
             UiIntent::Cancel | UiIntent::Close => Outcome::Cancelled,
+            UiIntent::Expand | UiIntent::Collapse => Outcome::Ignored,
         }
     }
 

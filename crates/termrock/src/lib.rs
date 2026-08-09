@@ -22,9 +22,10 @@ pub mod crossterm;
 pub use interaction::{
     InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
     LayerKind, NavigationMove, PageMove, SceneError, SemanticElement, SemanticRole, SemanticScene,
-    UiIntent, default_list_intent, dispatch_keymap_action,
+    UiIntent, default_list_intent, default_table_intent, default_tree_intent,
+    dispatch_keymap_action,
 };
 pub use style::{
-    Appearance, AppearanceThemeMap, ColorCapability, Density, DesignSystem, DesignTokens, GlyphSet,
-    Motion, SelectionChrome, SpacingScale, Theme, theme_for_appearance,
+    Appearance, AppearanceThemeMap, CapabilityPreviewHost, ColorCapability, Density, DesignSystem,
+    DesignTokens, GlyphSet, Motion, SelectionChrome, SpacingScale, Theme, theme_for_appearance,
 };

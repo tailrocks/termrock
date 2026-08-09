@@ -56,6 +56,20 @@ let anchor = Rect::new(12, 6, 1, 1);
 let menu = CompletionMenu::new(&candidates, &theme, bounds, anchor);
 let state = CompletionMenuState::new(Some("select"));`,
   },
+  DesignInspector: {
+    description: 'Studio debug strip for focus, layer, density, and color capability.',
+    primaryStory: 'design-inspector/basic',
+    usage: `use termrock::{Theme, style::ColorCapability, widgets::{DesignInspector, DesignInspectorFrame}};
+
+let theme = Theme::default();
+let frame = DesignInspectorFrame {
+    focused: Some("list"),
+    layer: Some("root"),
+    capability: ColorCapability::Truecolor,
+    density: "comfortable",
+};
+let _inspector = DesignInspector::new(frame, &theme);`,
+  },
   DetailTable: {
     description: 'A selectable key/value table with stable rows and typed activation capabilities.',
     primaryStory: 'detail-table/basic',
