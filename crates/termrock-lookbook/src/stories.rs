@@ -20,6 +20,7 @@ use termrock::{
     style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
     widgets::{
         Action, ActionBar, ActionBarState, ActionLink, Anchor, AnsiParseOptions, AnsiText,
+        ButtonGroup, ButtonGroupItem, ButtonGroupState,
         AnsiTextMode, AnsiTextState, AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS,
         Backdrop, Badge, Banner,
         BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
@@ -597,6 +598,42 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             2,
             action_bar,
+        ),
+        Story::new(
+            "button-group/dialog",
+            "ButtonGroup dialog",
+            "ButtonGroup",
+            "Cancel + Save primary + Delete; Enter submits Save.",
+            48,
+            3,
+            button_group_dialog_story,
+        ),
+        Story::new(
+            "button-group/connected",
+            "ButtonGroup connected",
+            "ButtonGroup",
+            "Connected recipe for segmented actions.",
+            36,
+            3,
+            button_group_connected_story,
+        ),
+        Story::new(
+            "button-group/overflow",
+            "ButtonGroup overflow",
+            "ButtonGroup",
+            "Secondary actions collapse into overflow at narrow width.",
+            22,
+            3,
+            button_group_overflow_story,
+        ),
+        Story::new(
+            "button-group/loading",
+            "ButtonGroup loading",
+            "ButtonGroup",
+            "Default action loading; siblings remain.",
+            40,
+            3,
+            button_group_loading_story,
         ),
         Story::new(
             "accordion/section",
@@ -3189,6 +3226,24 @@ pub(crate) fn stories() -> Vec<Story> {
             22,
             2,
             action_bar,
+        ),
+        Story::new(
+            "button-group/narrow",
+            "Narrow ButtonGroup",
+            "ButtonGroup",
+            "Overflow + keep primary at 20 cols.",
+            20,
+            2,
+            button_group_overflow_story,
+        ),
+        Story::new(
+            "button-group/unicode",
+            "Unicode ButtonGroup",
+            "ButtonGroup",
+            "Unicode action labels.",
+            40,
+            2,
+            button_group_unicode_story,
         ),
         Story::new(
             "action-bar/unicode",
@@ -5831,6 +5886,66 @@ fn toolbar_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         area,
         &mut state,
     );
+}
+
+fn button_group_dialog_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ButtonGroupItem::new("cancel", "Cancel"),
+        ButtonGroupItem::destructive("delete", "Delete"),
+        ButtonGroupItem::primary("save", "Save").leading("✓"),
+    ];
+    let mut state = ButtonGroupState::new();
+    state.set_surface_focused(true);
+    state.cursor = Some("save");
+    let _ = ButtonGroup::new(&items, system)
+        .separated()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn button_group_connected_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ButtonGroupItem::quiet("day", "Day"),
+        ButtonGroupItem::quiet("week", "Week"),
+        ButtonGroupItem::quiet("month", "Month"),
+    ];
+    let mut state = ButtonGroupState::new();
+    state.set_surface_focused(true);
+    state.cursor = Some("week");
+    let _ = ButtonGroup::new(&items, system)
+        .connected()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn button_group_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ButtonGroupItem::quiet("more", "Details").priority(10),
+        ButtonGroupItem::new("cancel", "Cancel").priority(60),
+        ButtonGroupItem::primary("apply", "Apply"),
+        ButtonGroupItem::destructive("reset", "Reset").priority(15),
+    ];
+    let mut state = ButtonGroupState::new();
+    state.set_surface_focused(true);
+    let _ = ButtonGroup::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn button_group_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ButtonGroupItem::new("cancel", "Cancel"),
+        ButtonGroupItem::primary("save", "Save").loading(true),
+    ];
+    let mut state = ButtonGroupState::new();
+    state.set_surface_focused(true);
+    let _ = ButtonGroup::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn button_group_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ButtonGroupItem::new("cancel", "取消"),
+        ButtonGroupItem::primary("ok", "保存 ✨"),
+    ];
+    let mut state = ButtonGroupState::new();
+    state.set_surface_focused(true);
+    let _ = ButtonGroup::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn action_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

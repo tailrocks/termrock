@@ -1,3 +1,48 @@
+ Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
+warning: unresolved link to `DataTableState::handle_key`
+   --> crates/termrock/src/interaction/intent.rs:272:7
+    |
+272 | /// [`DataTableState::handle_key`].
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
+    |
+    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
+
+warning: unresolved link to `LogStreamState::handle_key`
+   --> crates/termrock/src/interaction/intent.rs:350:35
+    |
+350 | /// - `f` is a product chord on [`LogStreamState::handle_key`] (also Toggle)
+    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `LogStreamState` in scope
+
+warning: unresolved link to `Self::reconcile_retain`
+   --> crates/termrock/src/interaction/selection_model.rs:462:11
+    |
+462 |     /// [`Self::reconcile_retain`] when off-window selection must survive.
+    |           ^^^^^^^^^^^^^^^^^^^^^^ the struct `SelectionModel` has no field or associated item named `reconcile_retain`
+
+warning: unresolved link to `Stack`
+   --> crates/termrock/src/widgets/card.rs:257:69
+    |
+257 |     /// Layout with optional description row carved from body via [`Stack`].
+    |                                                                     ^^^^^ no item named `Stack` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `Theme`
+   --> crates/termrock/src/widgets/prompt_composer.rs:553:39
+    |
+553 |     /// pass a monochrome-quantized [`Theme`]).
+    |                                       ^^^^^ no item named `Theme` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `Self::from_slots`
+   --> crates/termrock/src/widgets/status_bar.rs:423:17
+    |
+423 |     /// using [`Self::from_slots`].
+    |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
+
+warning: `termrock` (lib doc) generated 6 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.12s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -15285,6 +15330,156 @@ pub unsafe fn termrock::widgets::BreadcrumbsOutcome<Id>::clone_to_uninit(&self, 
 impl<T> core::convert::From<T> for termrock::widgets::BreadcrumbsOutcome<Id>
 pub fn termrock::widgets::BreadcrumbsOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::BreadcrumbsOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::ButtonGroupOrientation
+pub termrock::widgets::ButtonGroupOrientation::Horizontal
+pub termrock::widgets::ButtonGroupOrientation::Vertical
+impl termrock::widgets::ButtonGroupOrientation
+pub const fn termrock::widgets::ButtonGroupOrientation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ButtonGroupOrientation
+pub fn termrock::widgets::ButtonGroupOrientation::clone(&self) -> termrock::widgets::ButtonGroupOrientation
+impl core::cmp::Eq for termrock::widgets::ButtonGroupOrientation
+impl core::cmp::PartialEq for termrock::widgets::ButtonGroupOrientation
+pub fn termrock::widgets::ButtonGroupOrientation::eq(&self, &termrock::widgets::ButtonGroupOrientation) -> bool
+impl core::default::Default for termrock::widgets::ButtonGroupOrientation
+pub fn termrock::widgets::ButtonGroupOrientation::default() -> termrock::widgets::ButtonGroupOrientation
+impl core::fmt::Debug for termrock::widgets::ButtonGroupOrientation
+pub fn termrock::widgets::ButtonGroupOrientation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ButtonGroupOrientation
+pub fn termrock::widgets::ButtonGroupOrientation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ButtonGroupOrientation
+impl core::marker::StructuralPartialEq for termrock::widgets::ButtonGroupOrientation
+impl core::marker::Freeze for termrock::widgets::ButtonGroupOrientation
+impl core::marker::Send for termrock::widgets::ButtonGroupOrientation
+impl core::marker::Sync for termrock::widgets::ButtonGroupOrientation
+impl core::marker::Unpin for termrock::widgets::ButtonGroupOrientation
+impl core::marker::UnsafeUnpin for termrock::widgets::ButtonGroupOrientation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonGroupOrientation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonGroupOrientation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ButtonGroupOrientation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupOrientation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonGroupOrientation where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonGroupOrientation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonGroupOrientation where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonGroupOrientation::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonGroupOrientation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonGroupOrientation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonGroupOrientation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonGroupOrientation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonGroupOrientation where T: core::clone::Clone
+pub type termrock::widgets::ButtonGroupOrientation::Owned = T
+pub fn termrock::widgets::ButtonGroupOrientation::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonGroupOrientation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonGroupOrientation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupOrientation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonGroupOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupOrientation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonGroupOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupOrientation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonGroupOrientation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonGroupOrientation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonGroupOrientation
+pub fn termrock::widgets::ButtonGroupOrientation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonGroupOrientation
+#[non_exhaustive] pub enum termrock::widgets::ButtonGroupOutcome<Id>
+pub termrock::widgets::ButtonGroupOutcome::Activated
+pub termrock::widgets::ButtonGroupOutcome::Activated::id: Id
+pub termrock::widgets::ButtonGroupOutcome::CursorMoved
+pub termrock::widgets::ButtonGroupOutcome::CursorMoved::id: Id
+pub termrock::widgets::ButtonGroupOutcome::Ignored
+pub termrock::widgets::ButtonGroupOutcome::OverflowActivate
+pub termrock::widgets::ButtonGroupOutcome::OverflowActivate::id: Id
+pub termrock::widgets::ButtonGroupOutcome::OverflowClosed
+pub termrock::widgets::ButtonGroupOutcome::OverflowOpened
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ButtonGroupOutcome<Id>
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::clone(&self) -> termrock::widgets::ButtonGroupOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ButtonGroupOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ButtonGroupOutcome<Id>
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::eq(&self, &termrock::widgets::ButtonGroupOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ButtonGroupOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ButtonGroupOutcome<Id>
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ButtonGroupOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ButtonGroupOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ButtonGroupOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ButtonGroupOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ButtonGroupOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonGroupOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonGroupOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ButtonGroupOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonGroupOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonGroupOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonGroupOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonGroupOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonGroupOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonGroupOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::ButtonGroupOutcome<Id>::Owned = T
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonGroupOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonGroupOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonGroupOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonGroupOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonGroupOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonGroupOutcome<Id>
+pub fn termrock::widgets::ButtonGroupOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonGroupOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::ButtonGroupRecipe
+pub termrock::widgets::ButtonGroupRecipe::Connected
+pub termrock::widgets::ButtonGroupRecipe::Separated
+impl termrock::widgets::ButtonGroupRecipe
+pub const fn termrock::widgets::ButtonGroupRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ButtonGroupRecipe
+pub fn termrock::widgets::ButtonGroupRecipe::clone(&self) -> termrock::widgets::ButtonGroupRecipe
+impl core::cmp::Eq for termrock::widgets::ButtonGroupRecipe
+impl core::cmp::PartialEq for termrock::widgets::ButtonGroupRecipe
+pub fn termrock::widgets::ButtonGroupRecipe::eq(&self, &termrock::widgets::ButtonGroupRecipe) -> bool
+impl core::default::Default for termrock::widgets::ButtonGroupRecipe
+pub fn termrock::widgets::ButtonGroupRecipe::default() -> termrock::widgets::ButtonGroupRecipe
+impl core::fmt::Debug for termrock::widgets::ButtonGroupRecipe
+pub fn termrock::widgets::ButtonGroupRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ButtonGroupRecipe
+pub fn termrock::widgets::ButtonGroupRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ButtonGroupRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::ButtonGroupRecipe
+impl core::marker::Freeze for termrock::widgets::ButtonGroupRecipe
+impl core::marker::Send for termrock::widgets::ButtonGroupRecipe
+impl core::marker::Sync for termrock::widgets::ButtonGroupRecipe
+impl core::marker::Unpin for termrock::widgets::ButtonGroupRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::ButtonGroupRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonGroupRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonGroupRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ButtonGroupRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonGroupRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonGroupRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonGroupRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonGroupRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonGroupRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonGroupRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonGroupRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonGroupRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonGroupRecipe where T: core::clone::Clone
+pub type termrock::widgets::ButtonGroupRecipe::Owned = T
+pub fn termrock::widgets::ButtonGroupRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonGroupRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonGroupRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonGroupRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonGroupRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonGroupRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonGroupRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonGroupRecipe
+pub fn termrock::widgets::ButtonGroupRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonGroupRecipe
 #[non_exhaustive] pub enum termrock::widgets::ButtonSize
 pub termrock::widgets::ButtonSize::Compact
 pub termrock::widgets::ButtonSize::Normal
@@ -24795,6 +24990,265 @@ pub unsafe fn termrock::widgets::Button<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Button<'a>
 pub fn termrock::widgets::Button<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Button<'a>
+pub struct termrock::widgets::ButtonGroup<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ButtonGroup<'a, Id>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::activate_overflow(&self, &mut termrock::widgets::ButtonGroupState<Id>, Id) -> termrock::widgets::ButtonGroupOutcome<Id>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::handle_key(&self, &mut termrock::widgets::ButtonGroupState<Id>, termrock::input::KeyEvent) -> termrock::widgets::ButtonGroupOutcome<Id>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::handle_key_result(&self, &mut termrock::widgets::ButtonGroupState<Id>, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::ButtonGroupOutcome<Id>>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::handle_mouse(&self, &mut termrock::widgets::ButtonGroupState<Id>, termrock::input::MouseEvent) -> termrock::widgets::ButtonGroupOutcome<Id>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ButtonGroupState<Id>) -> termrock::widgets::ButtonGroupParts<Id>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::plan_overflow(&self, u16) -> (alloc::vec::Vec<usize>, alloc::vec::Vec<usize>)
+pub fn termrock::widgets::ButtonGroup<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::ButtonGroupState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+impl<'a, Id> termrock::widgets::ButtonGroup<'a, Id>
+pub const fn termrock::widgets::ButtonGroup<'a, Id>::connected(self) -> Self
+pub const fn termrock::widgets::ButtonGroup<'a, Id>::new(&'a [termrock::widgets::ButtonGroupItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::ButtonGroup<'a, Id>::orientation(self, termrock::widgets::ButtonGroupOrientation) -> Self
+pub const fn termrock::widgets::ButtonGroup<'a, Id>::overflow_label(self, &'a str) -> Self
+pub const fn termrock::widgets::ButtonGroup<'a, Id>::recipe(self, termrock::widgets::ButtonGroupRecipe) -> Self
+pub const fn termrock::widgets::ButtonGroup<'a, Id>::separated(self) -> Self
+pub const fn termrock::widgets::ButtonGroup<'a, Id>::stack_below(self, u16) -> Self
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for &termrock::widgets::ButtonGroup<'a, Id>
+pub fn &termrock::widgets::ButtonGroup<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ButtonGroup<'a, Id>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::clone(&self) -> termrock::widgets::ButtonGroup<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ButtonGroup<'a, Id>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::ButtonGroup<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::ButtonGroup<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::ButtonGroup<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::ButtonGroup<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::ButtonGroup<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::ButtonGroup<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonGroup<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonGroup<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonGroup<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonGroup<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonGroup<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonGroup<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonGroup<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonGroup<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonGroup<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonGroup<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::ButtonGroup<'a, Id>::Owned = T
+pub fn termrock::widgets::ButtonGroup<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonGroup<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonGroup<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroup<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonGroup<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroup<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonGroup<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroup<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonGroup<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonGroup<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonGroup<'a, Id>
+pub fn termrock::widgets::ButtonGroup<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonGroup<'a, Id>
+pub struct termrock::widgets::ButtonGroupItem<'a, Id>
+pub termrock::widgets::ButtonGroupItem::command: core::option::Option<&'a str>
+pub termrock::widgets::ButtonGroupItem::enabled: bool
+pub termrock::widgets::ButtonGroupItem::id: Id
+pub termrock::widgets::ButtonGroupItem::is_default: bool
+pub termrock::widgets::ButtonGroupItem::label: &'a str
+pub termrock::widgets::ButtonGroupItem::leading: core::option::Option<&'a str>
+pub termrock::widgets::ButtonGroupItem::loading: bool
+pub termrock::widgets::ButtonGroupItem::priority: u8
+pub termrock::widgets::ButtonGroupItem::variant: termrock::widgets::ButtonVariant
+impl<'a, Id> termrock::widgets::ButtonGroupItem<'a, Id>
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::can_activate(&self) -> bool
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::command(self, &'a str) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::default_action(self, bool) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::destructive(Id, &'a str) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::leading(self, &'a str) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::loading(self, bool) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::new(Id, &'a str) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::primary(Id, &'a str) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::priority(self, u8) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::quiet(Id, &'a str) -> Self
+pub const fn termrock::widgets::ButtonGroupItem<'a, Id>::variant(self, termrock::widgets::ButtonVariant) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ButtonGroupItem<'a, Id>
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::clone(&self) -> termrock::widgets::ButtonGroupItem<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ButtonGroupItem<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ButtonGroupItem<'a, Id>
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::eq(&self, &termrock::widgets::ButtonGroupItem<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ButtonGroupItem<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ButtonGroupItem<'a, Id>
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::ButtonGroupItem<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::ButtonGroupItem<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::ButtonGroupItem<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::ButtonGroupItem<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::ButtonGroupItem<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::ButtonGroupItem<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonGroupItem<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonGroupItem<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ButtonGroupItem<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonGroupItem<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonGroupItem<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonGroupItem<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonGroupItem<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonGroupItem<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonGroupItem<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::ButtonGroupItem<'a, Id>::Owned = T
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonGroupItem<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonGroupItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonGroupItem<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonGroupItem<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonGroupItem<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonGroupItem<'a, Id>
+pub fn termrock::widgets::ButtonGroupItem<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonGroupItem<'a, Id>
+pub struct termrock::widgets::ButtonGroupItemParts<Id>
+pub termrock::widgets::ButtonGroupItemParts::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::ButtonGroupItemParts::id: Id
+pub termrock::widgets::ButtonGroupItemParts::overflowed: bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ButtonGroupItemParts<Id>
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::clone(&self) -> termrock::widgets::ButtonGroupItemParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ButtonGroupItemParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ButtonGroupItemParts<Id>
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::eq(&self, &termrock::widgets::ButtonGroupItemParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ButtonGroupItemParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ButtonGroupItemParts<Id>
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ButtonGroupItemParts<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ButtonGroupItemParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ButtonGroupItemParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ButtonGroupItemParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ButtonGroupItemParts<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonGroupItemParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonGroupItemParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ButtonGroupItemParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonGroupItemParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonGroupItemParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonGroupItemParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonGroupItemParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonGroupItemParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonGroupItemParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::ButtonGroupItemParts<Id>::Owned = T
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonGroupItemParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonGroupItemParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonGroupItemParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonGroupItemParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonGroupItemParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonGroupItemParts<Id>
+pub fn termrock::widgets::ButtonGroupItemParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonGroupItemParts<Id>
+pub struct termrock::widgets::ButtonGroupParts<Id>
+pub termrock::widgets::ButtonGroupParts::items: alloc::vec::Vec<termrock::widgets::ButtonGroupItemParts<Id>>
+pub termrock::widgets::ButtonGroupParts::overflow_ids: alloc::vec::Vec<Id>
+pub termrock::widgets::ButtonGroupParts::overflow_trigger: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::ButtonGroupParts::root: ratatui_core::layout::rect::Rect
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ButtonGroupParts<Id>
+pub fn termrock::widgets::ButtonGroupParts<Id>::clone(&self) -> termrock::widgets::ButtonGroupParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ButtonGroupParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ButtonGroupParts<Id>
+pub fn termrock::widgets::ButtonGroupParts<Id>::eq(&self, &termrock::widgets::ButtonGroupParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ButtonGroupParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ButtonGroupParts<Id>
+pub fn termrock::widgets::ButtonGroupParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ButtonGroupParts<Id>
+impl<Id> core::marker::Send for termrock::widgets::ButtonGroupParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ButtonGroupParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ButtonGroupParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ButtonGroupParts<Id>
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonGroupParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonGroupParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ButtonGroupParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonGroupParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonGroupParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonGroupParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonGroupParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonGroupParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonGroupParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonGroupParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonGroupParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonGroupParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::ButtonGroupParts<Id>::Owned = T
+pub fn termrock::widgets::ButtonGroupParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonGroupParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonGroupParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonGroupParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonGroupParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonGroupParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonGroupParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonGroupParts<Id>
+pub fn termrock::widgets::ButtonGroupParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonGroupParts<Id>
+pub struct termrock::widgets::ButtonGroupState<Id>
+pub termrock::widgets::ButtonGroupState::cursor: core::option::Option<Id>
+pub termrock::widgets::ButtonGroupState::hovered: core::option::Option<Id>
+pub termrock::widgets::ButtonGroupState::overflow_open: bool
+pub termrock::widgets::ButtonGroupState::parts: core::option::Option<termrock::widgets::ButtonGroupParts<Id>>
+pub termrock::widgets::ButtonGroupState::roving: termrock::interaction::RovingFocusGroup<Id>
+pub termrock::widgets::ButtonGroupState::surface_focused: bool
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ButtonGroupState<Id>
+pub fn termrock::widgets::ButtonGroupState<Id>::new() -> Self
+pub fn termrock::widgets::ButtonGroupState<Id>::set_surface_focused(&mut self, bool)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::ButtonGroupState<Id>
+pub fn termrock::widgets::ButtonGroupState<Id>::default() -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ButtonGroupState<Id>
+pub fn termrock::widgets::ButtonGroupState<Id>::clone(&self) -> termrock::widgets::ButtonGroupState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ButtonGroupState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ButtonGroupState<Id>
+pub fn termrock::widgets::ButtonGroupState<Id>::eq(&self, &termrock::widgets::ButtonGroupState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ButtonGroupState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ButtonGroupState<Id>
+pub fn termrock::widgets::ButtonGroupState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ButtonGroupState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ButtonGroupState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ButtonGroupState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ButtonGroupState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ButtonGroupState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonGroupState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonGroupState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ButtonGroupState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonGroupState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonGroupState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonGroupState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonGroupState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonGroupState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonGroupState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonGroupState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonGroupState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonGroupState<Id> where T: core::clone::Clone
+pub type termrock::widgets::ButtonGroupState<Id>::Owned = T
+pub fn termrock::widgets::ButtonGroupState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonGroupState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonGroupState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonGroupState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonGroupState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonGroupState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonGroupState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonGroupState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonGroupState<Id>
+pub fn termrock::widgets::ButtonGroupState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonGroupState<Id>
 pub struct termrock::widgets::ButtonParts
 pub termrock::widgets::ButtonParts::label: ratatui_core::layout::rect::Rect
 pub termrock::widgets::ButtonParts::root: ratatui_core::layout::rect::Rect

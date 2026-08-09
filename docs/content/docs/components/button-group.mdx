@@ -1,0 +1,71 @@
+---
+title: ButtonGroup
+description: 'Grouped actions — overflow, roving focus, default submit, connected recipe.'
+---
+
+## Previews
+
+### `button-group/dialog`
+
+![Dialog](/component-previews/button-group-dialog.svg)
+
+### `button-group/connected`
+
+![Connected](/component-previews/button-group-connected.svg)
+
+### `button-group/overflow`
+
+![Overflow](/component-previews/button-group-overflow.svg)
+
+### `button-group/loading`
+
+![Loading](/component-previews/button-group-loading.svg)
+
+### `button-group/narrow`
+
+![Narrow](/component-previews/button-group-narrow.svg)
+
+### `button-group/unicode`
+
+![Unicode](/component-previews/button-group-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{ButtonGroup, ButtonGroupItem, ButtonGroupState};
+
+let items = [
+    ButtonGroupItem::new("cancel", "Cancel"),
+    ButtonGroupItem::destructive("delete", "Delete"),
+    ButtonGroupItem::primary("save", "Save"),
+];
+let mut state = ButtonGroupState::new();
+state.set_surface_focused(true);
+let parts = ButtonGroup::new(&items, &system)
+    .separated() // or .connected()
+    .paint(area, buf, &mut state);
+
+// Host overflow menu from parts.overflow_ids
+// Enter → default (primary); Space → roving cursor
+```
+
+## Contract
+
+| Concern | Rule |
+|---------|------|
+| Enter | Default / primary action |
+| Space | Roving cursor command |
+| Narrow | Low priority → `…` overflow; primary kept |
+| Connected | 1-col `│` separators between faces |
+| Auto-stack | Opt-in `.stack_below(n)` (default off) |
+| Loading/disabled | Face paints; cannot activate |
+| Semantics | Group + each visible command as Button |
+
+## vs ActionBar / Toolbar
+
+Prefer **ButtonGroup** for overflow, variants, default Enter, and roving.
+Keep **ActionBar** for simple labeled strips. **Toolbar** owns rich command catalogs.
+
+## Migration
+
+See `migrations/0130-v0.13.0-button-group.md`.

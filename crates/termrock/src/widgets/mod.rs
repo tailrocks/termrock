@@ -8,6 +8,7 @@ pub use crate::ansi_text::{
 pub use crate::interaction::Outcome;
 
 mod action_bar;
+mod button_group;
 mod agent;
 mod agent_blocks;
 mod blocks;
@@ -77,6 +78,10 @@ mod virtualizer;
 
 pub use crate::style::PanelChrome;
 pub use action_bar::{Action, ActionBar, ActionBarState};
+pub use button_group::{
+    ButtonGroup, ButtonGroupItem, ButtonGroupItemParts, ButtonGroupOrientation, ButtonGroupOutcome,
+    ButtonGroupParts, ButtonGroupRecipe, ButtonGroupState,
+};
 pub use agent::{ThinkingBlock, Timeline, TimelineEvent, TokenMeter, ToolCard, ToolStatus};
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
