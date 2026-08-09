@@ -1,5 +1,10 @@
 //! termrock: domain-neutral TUI kernel for Ratatui.
 //!
+//! **North star:** de facto base layer for modern Rust TUIs — simple defaults,
+//! advanced power, modern APIs only, built **on Ratatui** (preferred session
+//! adapter: optional `crossterm` feature). Breaking redesigns are always allowed;
+//! see repository `AGENTS.md`.
+//!
 //! **Architecture:** one paint authority ([`style::DesignSystem`]), one focus/hit
 //! authority ([`interaction::InteractionScene`]), one modal authority
 //! ([`interaction::OverlayStack`]), plus [`runtime::run`] for the host loop.

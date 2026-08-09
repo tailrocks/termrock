@@ -1,10 +1,28 @@
 # TermRock architecture foundation
 
 **Status:** binding product direction (pre-stable)  
-**Date:** 2026-08-09  
+**Date:** 2026-08-09 (north-star stack law reinforced 2026-08-10)  
+**Contributor law:** root [`AGENTS.md`](../../AGENTS.md) — *North star*  
 **Related:** [shadcn-tui-direction.md](./shadcn-tui-direction.md),
 [terminal-design-system.md](./terminal-design-system.md),
 [product-audit.md](./product-audit.md), migrations `0029`–`0031`
+
+## North star
+
+TermRock is the **de facto base layer for modern Rust terminal applications**:
+simple defaults, advanced power, modern APIs, shadcn-class ownership and quality
+**on Ratatui**. The emotional bar is intentional: a developer who builds a new
+TUI should think *this is the best foundation I have used*. Breaking redesigns
+are free; excellence is not. Full contributor statement: **AGENTS.md → North
+star**.
+
+### Stack law
+
+| Layer | Role |
+|-------|------|
+| **Ratatui** | Mandatory paint engine (`Buffer`, `Frame`, layout cells, widgets). TermRock never replaces Ratatui with a retained UI DOM. |
+| **crossterm** (feature) | Preferred session / backend / event adapter while it remains the best Ratatui-ecosystem choice. Kernel events stay backend-neutral. |
+| **TermRock kernel** | Design system, intents, focus, overlays, semantic scene, capabilities — product-grade contracts on top of paint. |
 
 ## Category definition
 

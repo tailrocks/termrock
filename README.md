@@ -2,16 +2,23 @@
 
 **Beautiful, inspectable terminal components you own.**
 
+**North star:** TermRock is the de facto base layer for modern Rust TUIs — the
+shadcn-class design system **on [Ratatui](https://ratatui.rs/)** (with
+**crossterm** as the preferred session/backend adapter). Simple defaults,
+advanced power when you need it, modern APIs only. Breaking redesigns are
+always allowed; quality is the only permanent constraint. Contributor law:
+[`AGENTS.md`](AGENTS.md) (*North star*).
+
 TermRock is the **source-owned design system for building exceptional terminal
-software** on [Ratatui](https://ratatui.rs/)—not merely another widget dump.
-Category direction (kernel + registry + Studio + agent pack):
+software** on Ratatui—not merely another widget dump. Category direction
+(kernel + registry + Studio + agent pack):
 [`docs/design/shadcn-tui-strategic-brief.md`](docs/design/shadcn-tui-strategic-brief.md).
 
-It is a **hybrid terminal design system**: a stable interaction kernel
-(session lifecycle, focus, overlays, semantic intents, design tokens), product-
-neutral widgets, and composition patterns—inspired by the open, inspectable
-source model of [shadcn/ui](https://ui.shadcn.com/docs), adapted to Rust,
-Ratatui, and terminal constraints. Architecture foundation:
+It is a **hybrid terminal design system**: interaction kernel (session
+lifecycle, focus, overlays, semantic intents, design tokens), product-neutral
+widgets, and composition patterns—inspired by the open, inspectable source
+model of [shadcn/ui](https://ui.shadcn.com/docs), adapted to Rust, Ratatui, and
+terminal constraints. Architecture foundation:
 [`docs/design/architecture-foundation.md`](docs/design/architecture-foundation.md).
 Experience research:
 [`docs/design/experience-research-2026.md`](docs/design/experience-research-2026.md).
