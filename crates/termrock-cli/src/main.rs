@@ -88,9 +88,19 @@ fn main() -> ExitCode {
         println!("plan {}@{}", entry.name, entry.version);
         for a in &plan.actions {
             match a {
-                PlanAction::Create { dest, sha256, .. } => {
+                PlanAction::Create {
+                    dest,
+                    sha256,
+                    force_overwrite,
+                    ..
+                } => {
+                    let tag = if *force_overwrite {
+                        "FORCE+BACKUP"
+                    } else {
+                        "CREATE"
+                    };
                     println!(
-                        "  CREATE {} ({})",
+                        "  {tag} {} ({})",
                         dest.display(),
                         &sha256[..12.min(sha256.len())]
                     );

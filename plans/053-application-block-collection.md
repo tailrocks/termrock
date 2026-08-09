@@ -152,3 +152,9 @@ Studio completeness; allocation/local-work checks; separate check/gate pass.
 
 Future blocks follow the same source-owned/public-kernel/Studio evidence contract.
 Product-branded variants belong in consumer registries, not TermRock core.
+
+
+### Registry packaging (post-skeptic)
+
+- `registry/fixtures/{ops-dashboard,resource-browser,settings-shell,form-wizard}`
+- Install+compile: `install_blocks_compile` integration test.

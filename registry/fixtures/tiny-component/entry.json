@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "tiny-component",
+  "version": "0.1.0",
+  "description": "Second offline install entry",
+  "license": "Apache-2.0",
+  "kernel": "0.11.0",
+  "files": [
+    {
+      "source": "src/lib.rs",
+      "dest": "src/ui/tiny_component.rs",
+      "sha256": "8302769abf688cc4f28f0c6f69cafa71bee4138e0e087fe3cda1cf1d66ba4b9a"
+    }
+  ]
+}

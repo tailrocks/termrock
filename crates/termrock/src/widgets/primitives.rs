@@ -7,11 +7,7 @@
 //! loading never activate. Press confirms; Release never activates. Effects
 //! remain consumer-owned outcomes.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     input::{
@@ -753,7 +749,6 @@ pub fn button_hit<Id: Clone>(id: Id, state: &ButtonState) -> Option<HitRegion<Id
     state.region.map(|area| HitRegion { id, area })
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -884,5 +879,4 @@ mod tests {
         );
         assert!(!buf[(0, 0)].symbol().is_empty());
     }
-
 }

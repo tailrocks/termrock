@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "form-wizard",
+  "version": "0.1.0",
+  "description": "FormWizard source-owned block",
+  "license": "Apache-2.0",
+  "kernel": "0.11.0",
+  "files": [
+    {
+      "source": "src/lib.rs",
+      "dest": "src/ui/blocks/form_wizard.rs",
+      "sha256": "aedd716e239710237a5e17b60b0145d8e198e2fa7d090f437b1eec8e9f5522f1"
+    }
+  ]
+}

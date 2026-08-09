@@ -191,3 +191,10 @@ deny/licenses; malicious-path suite; `rtk proxy mise run check` and `rtk proxy m
 Remote registries, signatures, publishing, upgrade merge, and a broader block
 catalog require separate plans. Preserve schema versioning and local-source
 abstraction so those can be added without weakening filesystem safety.
+
+
+### Security closure (post-skeptic)
+
+- Symlink dest escape refused (`refuses_symlink_escape_dest`).
+- Force overwrite creates `*.termrock.bak`.
+- Fixtures: demo-block + tiny-component + threat unit tests.
