@@ -1,49 +1,74 @@
 ---
 title: Command palette
-description: Global fuzzy command launcher — query + results without owning your command registry.
+description: Fuzzy jump across commands — list projection + overlay placement without owning your command registry.
 ---
 
 # Command palette
 
-**Purpose.** Give power users a **single entry point** to run commands by name:
-type to filter, move selection, activate — while the app owns the command list
-and side effects.
+**Purpose.** Let users jump to any command by typing a query. TermRock paints
+the modal, filter field chrome, and result list; **you** own the command catalog
+and what happens on activation.
 
 ## When to use / when not
 
-| Use palette | Prefer |
-|-------------|--------|
-| Global commands, jump to settings | — |
-| Many actions discoverable by name | — |
-| In-field completions | CompletionMenu |
-| Modal yes/no | Dialog |
-| Agent slash in composer | PromptComposer + slash menu |
+| Use CommandPalette | Prefer |
+|--------------------|--------|
+| Global command jump | — |
+| File/symbol pickers | Picker |
+| Agent slash commands only | PromptComposer slash menu |
+| Settings forms | Form |
 
-## Installation
+## Focus law
 
-Crate pin. Overlay: `open_command_palette_overlay`.
+| Concern | Owner |
+|---------|--------|
+| Overlay open/Esc peel | OverlayStack |
+| Surface focus / accepts input | Host (`focused` + `set_accepts_input`) |
+| Result cursor | Picker/list inside `CommandPaletteState` |
+| Filter / ranking | Consumer projection |
 
-## Source files
+## Outcomes
 
-`CommandPalette`, `CommandPaletteState`, `CommandPaletteOutcome`,
-`place_command_palette`, overlay helpers
+- `Ignored`
+- `QueryChanged` — rebuild filtered rows
+- `CursorMoved` — result highlight changed
+- `Activated(Id)`
+- `Cancelled` — Esc with empty query
+
+## Intents
+
+Results use list intents (j/k, page, Enter, Esc). Query typing stays on
+TextInput path. Two-stage Esc: clear query, then cancel.
+
+## Non-color
+
+- Empty: `∅` / `[ ]` + message
+- Panel: Focused vs Normal border roles
+- Footer: muted keymap hint
+
+## Responsive
+
+| Geometry | Behavior |
+|----------|----------|
+| height ≥ 8, width ≥ 28 | Footer hint |
+| narrow (&lt; 28) | Drop footer; short placeholder |
+| Overlay narrow | Fullscreen promote via OverlayPolicy |
 
 ## Basic example
 
 ```rust
 use ratatui_core::{layout::Rect, text::Line};
 use termrock::{
-    style::DesignTokens,
-    widgets::{
-        CommandPalette, CommandPaletteSize, ListRow, place_command_palette,
-    },
+    style::DesignSystem,
+    widgets::{CommandPalette, CommandPaletteSize, ListRow, place_command_palette},
 };
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let rows = [ListRow::item("quit", Line::from("Quit"))];
-let palette = CommandPalette::new("Commands", &rows, &tokens);
+let palette = CommandPalette::new("Commands", &rows, &system);
 let rect = place_command_palette(Rect::new(0, 0, 80, 24), CommandPaletteSize::default());
-let _ = (palette, rect);
+assert!(rect.width > 0);
+let _ = palette;
 ```
 
 ## Interactive example
@@ -52,91 +77,25 @@ let _ = (palette, rect);
 use ratatui_core::text::Line;
 use termrock::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    widgets::{CommandPalette, CommandPaletteOutcome, CommandPaletteState, ListRow},
+    style::DesignSystem,
+    widgets::{
+        CommandPalette, CommandPaletteOutcome, CommandPaletteState, ListRow,
+    },
 };
 
+let system = DesignSystem::default();
 let rows = [ListRow::item("quit", Line::from("Quit"))];
 let mut state = CommandPaletteState::new(Some("quit"));
+state.set_accepts_input(true);
 let outcome = CommandPalette::handle_key(
     &mut state,
     KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
     &rows,
 );
 assert!(matches!(outcome, CommandPaletteOutcome::Activated("quit")));
+let _ = CommandPalette::new("Commands", &rows, &system);
 ```
-
-## Anatomy
-
-`backdrop (optional)` · `panel` · `query field` · `results list` · empty state
-
-## Public API (intent)
-
-| API | Why |
-|-----|-----|
-| `CommandPalette::new(title, rows, tokens)` | Chrome around Picker |
-| `handle_key` | Query change / selection / activate / cancel |
-| Overlay open/place | Centered, dim backdrop, dismissible Esc |
-
-## State ownership
-
-| TermRock | Consumer |
-|----------|----------|
-| Query text, selection, scroll | Command catalog & filtering |
-| Placement | What each id does |
-| | When palette is open |
-
-## Typed outcomes
-
-`QueryChanged` (refilter) · `SelectionChanged` · `Activated(id)` · `Cancelled`
-
-## Variants / sizes / density
-
-`CommandPaletteSize`; narrow promotes fullscreen via overlay policy.
-
-## Keyboard / mouse / focus
-
-Type to filter; up/down; Enter activate; Esc dismiss one layer. Mouse select on
-rows. Focus trapped while open.
-
-## Responsive / a11y / unicode
-
-Stories: `command-palette/basic`. Results use list contraction rules.
-
-## Composition
-
-Global keymap Ctrl+K-class → open overlay; AgentWorkbench chrome.
-
-## Theming
-
-Focused panel border; selection on result row.
-
-## Common mistakes
-
-- Filtering inside TermRock with domain rules (keep filter in app).  
-- Not handling `QueryChanged` (stale rows).  
-- Nested Esc closing the whole app.
-
-## Performance
-
-Filter in consumer O(n) ok for hundreds of commands; for thousands, index
-outside and pass only top-k rows.
-
-## Testing
-
-`command-palette/basic`; overlay open/restore tests; documentation examples.
-
-## Migration
-
-Overlay stack integration `0043`.
 
 ## Related
 
-Picker · CompletionMenu · JumpOverlay · Keymap  
-
-## Complete application sketch
-
-```text
-keymap OpenPalette → stack.open command_palette
-each frame: filter commands by state.query → rows
-Activated → run command + dismiss overlay
-```
+Picker · OverlayStack · Dialog · migration `0074` · design `command-palette-premium.md`

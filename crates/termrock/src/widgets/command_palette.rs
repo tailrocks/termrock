@@ -17,8 +17,10 @@ use crate::{
     input::KeyEvent,
     interaction::{
         OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
-        OverlayStack, place_overlay,
+        OverlayStack, UiIntent, place_overlay,
     },
+    style::{DesignSystem, Role},
+    text::take_display_cols,
     widgets::{ListRow, Panel, PanelChrome, Picker, PickerOutcome, PickerState, TextInputState},
 };
 
@@ -102,8 +104,8 @@ pub enum CommandPaletteOutcome<Id> {
     Ignored,
     /// Query changed; rebuild filtered projection.
     QueryChanged,
-    /// Highlight moved.
-    SelectionChanged,
+    /// Result cursor moved (not scene focus).
+    CursorMoved,
     /// Command activated.
     Activated(Id),
     /// Palette dismissed.
@@ -115,7 +117,7 @@ impl<Id> From<PickerOutcome<Id>> for CommandPaletteOutcome<Id> {
         match value {
             PickerOutcome::Ignored => Self::Ignored,
             PickerOutcome::QueryChanged => Self::QueryChanged,
-            PickerOutcome::SelectionChanged => Self::SelectionChanged,
+            PickerOutcome::CursorMoved => Self::CursorMoved,
             PickerOutcome::Activated(id) => Self::Activated(id),
             PickerOutcome::Cancelled => Self::Cancelled,
         }
@@ -126,11 +128,19 @@ impl<Id> From<PickerOutcome<Id>> for CommandPaletteOutcome<Id> {
 pub type CommandPaletteState<Id> = PickerState<Id>;
 
 /// Floating command palette chrome around a [`Picker`].
+///
+/// **Surface focus** via [`Self::focused`] + host [`PickerState::set_accepts_input`].
+/// **Result cursor** is list-local inside picker state.
 #[derive(Debug, Clone, Copy)]
 pub struct CommandPalette<'a, Id> {
     title: &'a str,
     rows: &'a [ListRow<'a, Id>],
-    tokens: &'a crate::style::DesignSystem,
+    system: &'a DesignSystem,
+    focused: bool,
+    ascii: bool,
+    colorless: bool,
+    footer_hint: Option<&'a str>,
+    empty_message: &'a str,
 }
 
 impl<'a, Id> CommandPalette<'a, Id> {
@@ -139,13 +149,53 @@ impl<'a, Id> CommandPalette<'a, Id> {
     pub const fn new(
         title: &'a str,
         rows: &'a [ListRow<'a, Id>],
-        tokens: &'a crate::style::DesignSystem,
+        system: &'a DesignSystem,
     ) -> Self {
         Self {
             title,
             rows,
-            tokens,
+            system,
+            focused: true,
+            ascii: false,
+            colorless: false,
+            footer_hint: Some("↑↓ navigate · enter run · esc clear/close"),
+            empty_message: "No commands",
         }
+    }
+
+    /// Scene/overlay surface focus chrome.
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// ASCII empty / panel recipes.
+    #[must_use]
+    pub const fn ascii(mut self, ascii: bool) -> Self {
+        self.ascii = ascii;
+        self
+    }
+
+    /// Reduced-color paint.
+    #[must_use]
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
+
+    /// Footer keymap hint (dropped when height is tight).
+    #[must_use]
+    pub const fn footer_hint(mut self, hint: Option<&'a str>) -> Self {
+        self.footer_hint = hint;
+        self
+    }
+
+    /// Empty projection message.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
     }
 }
 
@@ -157,6 +207,15 @@ impl<Id: Clone + PartialEq> CommandPalette<'_, Id> {
         rows: &[ListRow<'_, Id>],
     ) -> CommandPaletteOutcome<Id> {
         CommandPaletteOutcome::from(state.handle_key(rows, key))
+    }
+
+    /// Intent path (results list; query still via raw keys / TextInput).
+    pub fn handle_intent(
+        state: &mut CommandPaletteState<Id>,
+        intent: UiIntent,
+        rows: &[ListRow<'_, Id>],
+    ) -> CommandPaletteOutcome<Id> {
+        CommandPaletteOutcome::from(state.handle_intent(rows, intent))
     }
 
     /// Accesses the query for caller filtering.
@@ -173,16 +232,59 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CommandPalette<'_, Id> {
         if area.is_empty() {
             return;
         }
-        let panel = Panel::new(self.tokens)
-            .title(self.title)
-            .emphasis(PanelChrome::Focused);
+        let surface = self.focused && state.accepts_input();
+        let emphasis = if surface {
+            PanelChrome::Focused
+        } else {
+            PanelChrome::Normal
+        };
+        let panel = Panel::new(self.system).title(self.title).emphasis(emphasis);
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
-        let picker = Picker::new(self.rows, self.tokens).label("Command");
-        StatefulWidget::render(&picker, inner, buffer, state);
+
+        let narrow = area.width < 28;
+        let tiny = area.height < 6;
+        let show_footer = self.footer_hint.is_some() && !tiny && area.height >= 8 && !narrow;
+        let body = if show_footer {
+            Rect::new(
+                inner.x,
+                inner.y,
+                inner.width,
+                inner.height.saturating_sub(1),
+            )
+        } else {
+            inner
+        };
+
+        let picker = Picker::new(self.rows, self.system)
+            .label("Command")
+            .placeholder(if narrow {
+                "Filter…"
+            } else {
+                "Type a command"
+            })
+            .empty_message(self.empty_message)
+            .focused(surface)
+            .ascii(self.ascii)
+            .colorless(self.colorless);
+        StatefulWidget::render(&picker, body, buffer, state);
+
+        if show_footer {
+            if let Some(hint) = self.footer_hint {
+                let y = inner.bottom().saturating_sub(1);
+                let style = self.system.style(Role::TextMuted);
+                buffer.set_stringn(
+                    inner.x,
+                    y,
+                    &take_display_cols(hint, usize::from(inner.width)),
+                    usize::from(inner.width),
+                    style,
+                );
+            }
+        }
     }
 }
 
@@ -200,16 +302,127 @@ mod tests {
 
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
+    use crate::interaction::NavigationMove;
+    use crate::style::DesignSystem;
+
+    fn row(id: &'static str, label: &'static str) -> ListRow<'static, &'static str> {
+        ListRow::item(id, Line::from(label))
+    }
 
     #[test]
     fn activation_maps_from_picker() {
-        let rows = [ListRow::item("quit", Line::from("Quit"))];
+        let rows = [row("quit", "Quit")];
         let mut state = CommandPaletteState::new(Some("quit"));
         let key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
         assert_eq!(
             CommandPalette::handle_key(&mut state, key, &rows),
             CommandPaletteOutcome::Activated("quit")
         );
+    }
+
+    #[test]
+    fn cursor_moved_not_selection_changed() {
+        let rows = [row("a", "A"), row("b", "B")];
+        let mut state = CommandPaletteState::new(Some("a"));
+        assert_eq!(
+            CommandPalette::handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+                &rows
+            ),
+            CommandPaletteOutcome::CursorMoved
+        );
+        let src = include_str!("command_palette.rs");
+        let head = src
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or(src)
+            .lines()
+            .filter(|l| {
+                let t = l.trim_start();
+                !t.starts_with("//") && !t.starts_with("//!")
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(!head.contains("SelectionChanged"));
+        assert!(head.contains("CursorMoved"));
+    }
+
+    #[test]
+    fn accepts_input_gate() {
+        let rows = [row("quit", "Quit")];
+        let mut state = CommandPaletteState::new(Some("quit"));
+        state.set_accepts_input(false);
+        assert_eq!(
+            CommandPalette::handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+                &rows
+            ),
+            CommandPaletteOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn intent_activate() {
+        let rows = [row("run", "Run")];
+        let mut state = CommandPaletteState::new(Some("run"));
+        assert_eq!(
+            CommandPalette::handle_intent(&mut state, UiIntent::Activate, &rows),
+            CommandPaletteOutcome::Activated("run")
+        );
+        // Single-item list: move may wrap or no-op depending on List.
+        let _ =
+            CommandPalette::handle_intent(&mut state, UiIntent::Move(NavigationMove::Next), &rows);
+    }
+
+    #[test]
+    fn paint_empty_footer_ascii_narrow() {
+        let system = DesignSystem::default();
+        let mut state = CommandPaletteState::<&str>::new(None);
+        let area = Rect::new(0, 0, 40, 10);
+        let mut buffer = Buffer::empty(area);
+        let palette = CommandPalette::new("Commands", &[], &system);
+        StatefulWidget::render(&palette, area, &mut buffer, &mut state);
+        let text: String = buffer.content().iter().map(|c| c.symbol()).collect();
+        assert!(text.contains("Commands"), "{text:?}");
+        assert!(
+            text.contains('∅') || text.contains("No commands") || text.contains("empty"),
+            "{text:?}"
+        );
+        assert!(
+            text.contains("navigate") || text.contains("esc"),
+            "{text:?}"
+        );
+
+        let narrow = Rect::new(0, 0, 22, 8);
+        let mut nbuf = Buffer::empty(narrow);
+        StatefulWidget::render(&palette, narrow, &mut nbuf, &mut state);
+        let ntext: String = nbuf.content().iter().map(|c| c.symbol()).collect();
+        // Footer dropped on narrow.
+        assert!(!ntext.contains("navigate"), "{ntext:?}");
+
+        let mut abuf = Buffer::empty(area);
+        let ascii = CommandPalette::new("Commands", &[], &system).ascii(true);
+        StatefulWidget::render(&ascii, area, &mut abuf, &mut state);
+        let atext: String = abuf.content().iter().map(|c| c.symbol()).collect();
+        assert!(
+            atext.contains('[') || atext.contains("empty") || atext.contains("No"),
+            "{atext:?}"
+        );
+    }
+
+    #[test]
+    fn unfocused_uses_normal_chrome() {
+        let system = DesignSystem::default();
+        let rows = [row("a", "Alpha")];
+        let mut state = CommandPaletteState::new(Some("a"));
+        let area = Rect::new(0, 0, 36, 8);
+        let mut buffer = Buffer::empty(area);
+        let palette = CommandPalette::new("Commands", &rows, &system).focused(false);
+        StatefulWidget::render(&palette, area, &mut buffer, &mut state);
+        // Border should use Border role not BorderFocused when unfocused.
+        assert_eq!(buffer[(0, 0)].fg, system.style(Role::Border).fg.unwrap());
     }
 
     #[test]

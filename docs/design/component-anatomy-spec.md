@@ -1410,27 +1410,27 @@ Every component below uses sections **1–24**:
 
 1. **Purpose:** Fuzzy command launcher overlay.  
 2. **Anatomy:** `root` · `query` · `list` · `empty` · `footer_hints`  
-3. **Public properties:** commands projection, filter consumer-owned, `design`  
-4. **State:** query + list selection (palette state).  
-5. **Variants:** `default`  
-6. **Sizes/density:** min width DimensionTokens; center elevated.  
-7. **Visual states:** empty, loading, results.  
-8. **Interaction states:** query vs results.  
-9. **Keyboard:** type query; up/down; Enter activate; Esc clear then close.  
-10. **Mouse:** click row.  
-11. **Focus:** trap in overlay layer.  
-12. **Disabled:** skip disabled commands.  
-13. **Loading:** Skeleton/Empty swap by consumer.  
+3. **Public properties:** rows projection, `system`, `focused`, `ascii`, `colorless`, footer/empty copy  
+4. **State:** PickerState (query + list cursor + accepts_input).  
+5. **Variants:** default chrome; unfocused Normal panel.  
+6. **Sizes/density:** CommandPaletteSize + OverlayPolicy promote.  
+7. **Visual states:** empty, results, unfocused surface.  
+8. **Interaction states:** query edit vs list cursor.  
+9. **Keyboard:** type query; j/k page; Enter; Esc clear then close.  
+10. **Mouse:** click row (picker).  
+11. **Focus:** OverlayStack trap; host accepts_input; list cursor local.  
+12. **Disabled:** skip disabled rows in list.  
+13. **Loading:** consumer swaps empty message / rows.  
 14. **Error:** N/A.  
-15. **Narrow:** full width; drop footer.  
-16. **Tiny:** query only.  
-17. **Unicode/ASCII:** query grapheme-safe; list gutters catalog.  
-18. **Colorless:** selected command reverse/gutter; query cursor reverse.  
-19. **Composition:** scene modal/palette layer.  
-20. **Outcomes:** `Activated(Id)` · `QueryChanged` · `Cancelled`  
-21. **Stories:** existing + `command-palette/loading`  
-22. **Snapshots:** empty query.  
-23. **Interaction tests:** two-stage Esc.  
+15. **Narrow:** drop footer; fullscreen promote.  
+16. **Tiny:** query-first; short empty.  
+17. **Unicode/ASCII:** query grapheme-safe; empty `∅`/`[ ]`.  
+18. **Colorless:** muted empty; list selection gutters.  
+19. **Composition:** OverlayStack CommandPalette kind.  
+20. **Outcomes:** `Activated` · `QueryChanged` · `CursorMoved` · `Cancelled` · `Ignored`  
+21. **Stories:** `command-palette/{basic,empty,ascii,narrow,unicode}`  
+22. **Snapshots:** empty, footer, unfocused border.  
+23. **Interaction tests:** two-stage Esc; accepts_input; overlay open.  
 24. **Perf:** filter O(n) consumer; paint O(visible).
 
 ## Backdrop

@@ -8377,9 +8377,9 @@ impl<T> either::into_either::IntoEither for termrock::widgets::ComboboxOutcome
 #[non_exhaustive] pub enum termrock::widgets::CommandPaletteOutcome<Id>
 pub termrock::widgets::CommandPaletteOutcome::Activated(Id)
 pub termrock::widgets::CommandPaletteOutcome::Cancelled
+pub termrock::widgets::CommandPaletteOutcome::CursorMoved
 pub termrock::widgets::CommandPaletteOutcome::Ignored
 pub termrock::widgets::CommandPaletteOutcome::QueryChanged
-pub termrock::widgets::CommandPaletteOutcome::SelectionChanged
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CommandPaletteOutcome<Id>
 pub fn termrock::widgets::CommandPaletteOutcome<Id>::clone(&self) -> termrock::widgets::CommandPaletteOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::CommandPaletteOutcome<Id>
@@ -10628,9 +10628,9 @@ impl<T> either::into_either::IntoEither for termrock::widgets::PermissionScope
 #[non_exhaustive] pub enum termrock::widgets::PickerOutcome<Id>
 pub termrock::widgets::PickerOutcome::Activated(Id)
 pub termrock::widgets::PickerOutcome::Cancelled
+pub termrock::widgets::PickerOutcome::CursorMoved
 pub termrock::widgets::PickerOutcome::Ignored
 pub termrock::widgets::PickerOutcome::QueryChanged
-pub termrock::widgets::PickerOutcome::SelectionChanged
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PickerOutcome<Id>
 pub fn termrock::widgets::PickerOutcome<Id>::clone(&self) -> termrock::widgets::PickerOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::PickerOutcome<Id>
@@ -13768,8 +13768,14 @@ pub fn termrock::widgets::ComboboxState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ComboboxState
 pub struct termrock::widgets::CommandPalette<'a, Id>
 impl<'a, Id> termrock::widgets::CommandPalette<'a, Id>
+pub const fn termrock::widgets::CommandPalette<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::CommandPalette<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::CommandPalette<'a, Id>::empty_message(self, &'a str) -> Self
+pub const fn termrock::widgets::CommandPalette<'a, Id>::focused(self, bool) -> Self
+pub const fn termrock::widgets::CommandPalette<'a, Id>::footer_hint(self, core::option::Option<&'a str>) -> Self
 pub const fn termrock::widgets::CommandPalette<'a, Id>::new(&'a str, &'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::CommandPalette<'_, Id>
+pub fn termrock::widgets::CommandPalette<'_, Id>::handle_intent(&mut termrock::widgets::CommandPaletteState<Id>, termrock::interaction::UiIntent, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::CommandPaletteOutcome<Id>
 pub fn termrock::widgets::CommandPalette<'_, Id>::handle_key(&mut termrock::widgets::CommandPaletteState<Id>, termrock::input::KeyEvent, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::CommandPaletteOutcome<Id>
 pub fn termrock::widgets::CommandPalette<'_, Id>::query(&termrock::widgets::CommandPaletteState<Id>) -> &termrock::widgets::TextInputState
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CommandPalette<'a, Id>
@@ -18348,7 +18354,10 @@ pub fn termrock::widgets::PermissionTarget::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PermissionTarget
 pub struct termrock::widgets::Picker<'a, Id>
 impl<'a, Id> termrock::widgets::Picker<'a, Id>
+pub const fn termrock::widgets::Picker<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Picker<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::Picker<'a, Id>::empty_message(self, &'a str) -> Self
+pub const fn termrock::widgets::Picker<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::Picker<'a, Id>::label(self, &'a str) -> Self
 pub const fn termrock::widgets::Picker<'a, Id>::new(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Picker<'a, Id>::placeholder(self, &'a str) -> Self
@@ -18402,12 +18411,14 @@ pub fn termrock::widgets::PickerState<Id>::hover(&mut self, ratatui_core::layout
 pub fn termrock::widgets::PickerState<Id>::reconcile(&mut self, &[termrock::widgets::ListRow<'_, Id>])
 pub fn termrock::widgets::PickerState<Id>::scroll_by(&mut self, isize, usize) -> bool
 impl<Id> termrock::widgets::PickerState<Id>
+pub const fn termrock::widgets::PickerState<Id>::accepts_input(&self) -> bool
 pub const fn termrock::widgets::PickerState<Id>::list(&self) -> &termrock::widgets::ListState<Id>
 pub const fn termrock::widgets::PickerState<Id>::list_mut(&mut self) -> &mut termrock::widgets::ListState<Id>
 pub fn termrock::widgets::PickerState<Id>::new(core::option::Option<Id>) -> Self
 pub const fn termrock::widgets::PickerState<Id>::query(&self) -> &termrock::widgets::TextInputState
 pub const fn termrock::widgets::PickerState<Id>::query_mut(&mut self) -> &mut termrock::widgets::TextInputState
 pub fn termrock::widgets::PickerState<Id>::query_text(&self) -> &str
+pub fn termrock::widgets::PickerState<Id>::set_accepts_input(&mut self, bool)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PickerState<Id>
 pub fn termrock::widgets::PickerState<Id>::clone(&self) -> termrock::widgets::PickerState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::PickerState<Id>

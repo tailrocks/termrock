@@ -1071,6 +1071,24 @@ pub(crate) fn stories() -> Vec<Story> {
         )
         .with_interactor(command_palette_interactor),
         Story::new(
+            "command-palette/empty",
+            "Command palette empty",
+            "CommandPalette",
+            "Empty projection with non-color mark and footer.",
+            42,
+            10,
+            command_palette_empty,
+        ),
+        Story::new(
+            "command-palette/ascii",
+            "Command palette ASCII",
+            "CommandPalette",
+            "ASCII empty cue and normal surface chrome.",
+            40,
+            8,
+            command_palette_ascii,
+        ),
+        Story::new(
             "code-block/basic",
             "Code block",
             "CodeBlock",
@@ -4451,10 +4469,32 @@ fn command_palette(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let rows = [
         ListRow::item("system", Line::from("Toggle system")),
         ListRow::item("quit", Line::from("Quit")),
+        ListRow::item("東京", Line::from("Open 東京 workspace")),
     ];
     let mut state = CommandPaletteState::new(Some("system"));
     frame.render_stateful_widget(
         &CommandPalette::new("Commands", &rows, &tokens),
+        area,
+        &mut state,
+    );
+}
+
+fn command_palette_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = CommandPaletteState::<&str>::new(None);
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &[], system),
+        area,
+        &mut state,
+    );
+}
+
+fn command_palette_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = CommandPaletteState::<&str>::new(None);
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &[], system)
+            .ascii(true)
+            .colorless(true)
+            .focused(true),
         area,
         &mut state,
     );

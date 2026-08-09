@@ -282,7 +282,7 @@ impl StoryInteraction for PickerInteractor {
                 self.activated = Some(id);
                 true
             }
-            PickerOutcome::SelectionChanged => true,
+            PickerOutcome::CursorMoved => true,
             PickerOutcome::Ignored | PickerOutcome::Cancelled => false,
             _ => false,
         }
