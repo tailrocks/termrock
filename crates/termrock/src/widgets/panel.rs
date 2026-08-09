@@ -1,22 +1,81 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Token-driven panel chrome with priority-aware title slots.
+//! Composable panel chrome with anatomy, variants, and body modes.
 //!
-//! Border *weight* never encodes focus — only semantic theme roles do.
-//! Fill and border geometry come from [`crate::widgets::Surface`]; Panel owns
-//! title/footer slots and maps [`PanelChrome`] → [`SurfaceRecipe`].
+//! **Anatomy:** `root` · `header` · `body` · `footer` · optional `disclosure`.
+//! Border *weight* never encodes focus — only [`Role::BorderFocused`] does.
+//! Fill/geometry come from [`crate::widgets::Surface`].
+//!
+//! Focus belongs to interactive *descendants* by default. Only
+//! [`PanelVariant::Interactive`] (or collapsible header) registers panel-level
+//! focus / activation.
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Span, widgets::Widget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Style,
+    text::Span,
+    widgets::Widget,
+};
 use ratatui_widgets::block::Block;
 
-use crate::style::{DesignSystem, PanelChrome, PanelRecipe};
-use crate::text::display_cols;
-use crate::widgets::surface::{Surface, SurfaceRecipe};
+use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
+use crate::style::{DesignSystem, GlyphSet, PanelChrome, PanelRecipe, Role};
+use crate::text::{display_cols, take_display_cols};
+use crate::widgets::surface::{Surface, SurfaceFill, SurfaceRecipe};
+use crate::widgets::view_state::{EmptyState, ErrorView, LoadingView, Skeleton};
 
 // PanelChrome lives in `style` (sole chrome enum). Re-exported from widgets::mod.
 
-/// Priority-ordered title/footer slots for one-line panel chrome.
+/// Border / interaction recipe for a panel (orthogonal to focus emphasis).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum PanelVariant {
+    /// Single-line border + surface fill (default).
+    #[default]
+    Bordered,
+    /// No border; density padding only (quiet region).
+    Quiet,
+    /// Top/bottom divider rules only (no side borders).
+    DividerOnly,
+    /// Whole panel is actionable (focus + activate).
+    Interactive,
+    /// Selected membership chrome (distinct from focus).
+    Selected,
+}
+
+impl PanelVariant {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Bordered => "bordered",
+            Self::Quiet => "quiet",
+            Self::DividerOnly => "divider-only",
+            Self::Interactive => "interactive",
+            Self::Selected => "selected",
+        }
+    }
+}
+
+/// Built-in body projection when the host does not paint custom children.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum PanelBody {
+    /// Host paints children into body (default).
+    #[default]
+    Host,
+    /// Loading placeholder.
+    Loading,
+    /// Empty state.
+    Empty,
+    /// Error state.
+    Error,
+}
+
+/// Priority-ordered title/footer slots for panel chrome.
 ///
 /// Narrow drop order: footer → trailing → subtitle → leading → title (last).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -29,8 +88,12 @@ pub struct PanelSlots<'a> {
     pub leading: Option<&'a str>,
     /// Trailing badge/action label on the title line.
     pub trailing: Option<&'a str>,
-    /// Footer hint/status on the bottom border.
+    /// Footer hint/status on the bottom border or footer band.
     pub footer: Option<&'a str>,
+    /// Optional body title for empty/error modes.
+    pub body_title: Option<&'a str>,
+    /// Optional body detail for empty/error/loading modes.
+    pub body_detail: Option<&'a str>,
 }
 
 impl<'a> PanelSlots<'a> {
@@ -50,6 +113,9 @@ impl<'a> PanelSlots<'a> {
         }
         if width < 10 {
             slots.leading = None;
+        }
+        if width < 16 {
+            slots.body_detail = None;
         }
         slots
     }
@@ -78,15 +144,204 @@ impl<'a> PanelSlots<'a> {
             parts.push(format!("[{}]", trailing.trim()));
         }
         let text = parts.join(" ");
-        if text.is_empty() { None } else { Some(text) }
+        if text.is_empty() {
+            None
+        } else {
+            Some(text)
+        }
     }
 }
 
+/// Named geometry parts for one laid-out panel (no nested box soup).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct PanelParts {
+    /// Outer allocation.
+    pub root: Rect,
+    /// Header / title band (inside border); None when untitled quiet panel.
+    pub header: Option<Rect>,
+    /// Body content area (children paint here).
+    pub body: Rect,
+    /// Footer band; None when no footer.
+    pub footer: Option<Rect>,
+    /// Disclosure hit target when collapsible.
+    pub disclosure: Option<Rect>,
+    /// Mouse hit region for panel-level interaction.
+    pub hit: Rect,
+    /// Clip contract (= body for children).
+    pub clip: Rect,
+}
+
+impl PanelParts {
+    /// True when body has positive area.
+    #[must_use]
+    pub const fn has_body(self) -> bool {
+        self.body.width > 0 && self.body.height > 0
+    }
+}
+
+/// Interaction state for collapsible / interactive panels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct PanelState {
+    /// Collapsed body when collapsible.
+    pub collapsed: bool,
+    /// Panel-level focus (interactive / collapsible header only).
+    pub focused: bool,
+    /// Pointer hover on panel hit region.
+    pub hovered: bool,
+    /// Cached layout for hit tests.
+    pub parts: Option<PanelParts>,
+}
+
+impl PanelState {
+    /// Open expanded panel.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            collapsed: false,
+            focused: false,
+            hovered: false,
+            parts: None,
+        }
+    }
+
+    /// Sets collapse.
+    pub const fn set_collapsed(&mut self, collapsed: bool) {
+        self.collapsed = collapsed;
+    }
+
+    /// Sets panel focus (host / scene).
+    pub const fn set_focused(&mut self, focused: bool) {
+        self.focused = focused;
+    }
+
+    /// Whether collapsed.
+    #[must_use]
+    pub const fn is_collapsed(&self) -> bool {
+        self.collapsed
+    }
+
+    /// Key handling via intents (Activate / Toggle / Expand / Collapse).
+    pub fn handle_key(&mut self, key: KeyEvent, collapsible: bool, interactive: bool) -> PanelOutcome {
+        if !self.focused || key.kind != KeyEventKind::Press {
+            return PanelOutcome::Ignored;
+        }
+        let Some(intent) = default_button_intent(key).or_else(|| default_list_intent(key)) else {
+            return PanelOutcome::Ignored;
+        };
+        self.handle_intent(intent, collapsible, interactive)
+    }
+
+    /// Semantic intent path.
+    pub fn handle_intent(
+        &mut self,
+        intent: UiIntent,
+        collapsible: bool,
+        interactive: bool,
+    ) -> PanelOutcome {
+        if !self.focused {
+            return PanelOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Toggle | UiIntent::Expand | UiIntent::Collapse if collapsible => {
+                if matches!(intent, UiIntent::Expand) {
+                    self.collapsed = false;
+                } else if matches!(intent, UiIntent::Collapse) {
+                    self.collapsed = true;
+                } else {
+                    self.collapsed = !self.collapsed;
+                }
+                PanelOutcome::ToggleCollapsed {
+                    collapsed: self.collapsed,
+                }
+            }
+            UiIntent::Activate if interactive => PanelOutcome::Activated,
+            UiIntent::Activate if collapsible => {
+                self.collapsed = !self.collapsed;
+                PanelOutcome::ToggleCollapsed {
+                    collapsed: self.collapsed,
+                }
+            }
+            _ => PanelOutcome::Ignored,
+        }
+    }
+
+    /// Key path with [`EventResult`].
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+        collapsible: bool,
+        interactive: bool,
+    ) -> EventResult<PanelOutcome> {
+        match self.handle_key(key, collapsible, interactive) {
+            PanelOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Click header toggles collapse; body activates interactive.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        collapsible: bool,
+        interactive: bool,
+    ) -> PanelOutcome {
+        if event.kind != MouseEventKind::Down(MouseButton::Left) {
+            // Hover tracking
+            if matches!(
+                event.kind,
+                MouseEventKind::Moved | MouseEventKind::Drag(MouseButton::Left)
+            ) {
+                if let Some(parts) = self.parts {
+                    self.hovered = parts.hit.contains(event.position);
+                }
+            }
+            return PanelOutcome::Ignored;
+        }
+        let Some(parts) = self.parts else {
+            return PanelOutcome::Ignored;
+        };
+        if collapsible
+            && (parts.disclosure.is_some_and(|r| r.contains(event.position))
+                || parts.header.is_some_and(|r| r.contains(event.position)))
+        {
+            self.collapsed = !self.collapsed;
+            return PanelOutcome::ToggleCollapsed {
+                collapsed: self.collapsed,
+            };
+        }
+        if interactive && parts.hit.contains(event.position) {
+            return PanelOutcome::Activated;
+        }
+        PanelOutcome::Ignored
+    }
+}
+
+/// Typed panel outcomes (no side effects).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum PanelOutcome {
+    /// No change.
+    #[default]
+    Ignored,
+    /// Interactive panel activated.
+    Activated,
+    /// Collapse toggled.
+    ToggleCollapsed {
+        /// New collapsed flag.
+        collapsed: bool,
+    },
+}
+
+/// A composable container painted through [`DesignSystem`] recipes.
 #[derive(Debug, Clone)]
-/// A bordered container painted through [`DesignSystem`] recipes.
 pub struct Panel<'a> {
     slots: PanelSlots<'a>,
     emphasis: PanelChrome,
+    variant: PanelVariant,
+    body: PanelBody,
+    collapsible: bool,
+    /// Prefer elevated fill underlay (cards).
+    raised: bool,
     style: Option<Style>,
     tokens: &'a DesignSystem,
 }
@@ -102,8 +357,14 @@ impl<'a> Panel<'a> {
                 leading: None,
                 trailing: None,
                 footer: None,
+                body_title: None,
+                body_detail: None,
             },
             emphasis: PanelChrome::Normal,
+            variant: PanelVariant::Bordered,
+            body: PanelBody::Host,
+            collapsible: false,
+            raised: false,
             style: None,
             tokens,
         }
@@ -113,6 +374,12 @@ impl<'a> Panel<'a> {
     #[must_use]
     pub const fn from_tokens(tokens: &'a DesignSystem) -> Self {
         Self::new(tokens)
+    }
+
+    /// Quiet bordered-off panel (no chrome line).
+    #[must_use]
+    pub const fn quiet(tokens: &'a DesignSystem) -> Self {
+        Self::new(tokens).variant(PanelVariant::Quiet)
     }
 
     #[must_use]
@@ -151,6 +418,20 @@ impl<'a> Panel<'a> {
     }
 
     #[must_use]
+    /// Body empty/error/loading title copy.
+    pub const fn body_title(mut self, title: &'a str) -> Self {
+        self.slots.body_title = Some(title);
+        self
+    }
+
+    #[must_use]
+    /// Body detail copy.
+    pub const fn body_detail(mut self, detail: &'a str) -> Self {
+        self.slots.body_detail = Some(detail);
+        self
+    }
+
+    #[must_use]
     /// Replaces all panel slots at once.
     pub const fn slots(mut self, slots: PanelSlots<'a>) -> Self {
         self.slots = slots;
@@ -158,7 +439,7 @@ impl<'a> Panel<'a> {
     }
 
     #[must_use]
-    /// Sets the semantic panel emphasis.
+    /// Sets the semantic panel emphasis (focus / danger).
     pub const fn emphasis(mut self, emphasis: PanelChrome) -> Self {
         self.emphasis = emphasis;
         self
@@ -171,6 +452,34 @@ impl<'a> Panel<'a> {
         self
     }
 
+    /// Border / interaction variant.
+    #[must_use]
+    pub const fn variant(mut self, variant: PanelVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+
+    /// Built-in body mode.
+    #[must_use]
+    pub const fn body(mut self, body: PanelBody) -> Self {
+        self.body = body;
+        self
+    }
+
+    /// Enables collapsible header (disclosure + Enter/Space toggle when focused).
+    #[must_use]
+    pub const fn collapsible(mut self, collapsible: bool) -> Self {
+        self.collapsible = collapsible;
+        self
+    }
+
+    /// Use elevated fill (card underlay) when the palette defines one.
+    #[must_use]
+    pub const fn raised(mut self, raised: bool) -> Self {
+        self.raised = raised;
+        self
+    }
+
     #[must_use]
     /// Overrides the recipe border style.
     pub const fn style(mut self, style: Style) -> Self {
@@ -178,16 +487,40 @@ impl<'a> Panel<'a> {
         self
     }
 
+    /// Whether this panel claims panel-level keyboard focus.
+    #[must_use]
+    pub const fn is_focusable(&self) -> bool {
+        self.collapsible || matches!(self.variant, PanelVariant::Interactive)
+    }
+
     /// Resolves the panel recipe for current emphasis.
     #[must_use]
     pub fn recipe(&self) -> PanelRecipe {
-        self.tokens.panel_recipe(self.emphasis)
+        self.tokens.panel_recipe(self.resolved_chrome())
     }
 
     /// Palette borrow from the design system.
     #[must_use]
     pub const fn palette(&self) -> &crate::style::RolePalette {
         self.tokens.palette()
+    }
+
+    /// Effective chrome after variant (Selected ≠ Focused).
+    #[must_use]
+    pub const fn resolved_chrome(&self) -> PanelChrome {
+        match self.emphasis {
+            PanelChrome::Danger => PanelChrome::Danger,
+            PanelChrome::Focused => PanelChrome::Focused,
+            PanelChrome::Normal => {
+                if matches!(self.variant, PanelVariant::Selected) {
+                    // Selected uses Selection fill via Surface; border stays Normal
+                    // so focus remains a distinct BorderFocused cue.
+                    PanelChrome::Normal
+                } else {
+                    PanelChrome::Normal
+                }
+            }
+        }
     }
 
     /// Slot projection after contraction for a given outer width.
@@ -197,12 +530,55 @@ impl<'a> Panel<'a> {
         self.slots.for_width(width.saturating_sub(4))
     }
 
+    /// Maps panel emphasis + variant onto the Surface recipe set.
+    #[must_use]
+    pub const fn surface_recipe(&self) -> SurfaceRecipe {
+        if matches!(self.emphasis, PanelChrome::Danger) {
+            return SurfaceRecipe::Destructive;
+        }
+        if matches!(self.emphasis, PanelChrome::Focused) {
+            return SurfaceRecipe::Focused;
+        }
+        match self.variant {
+            PanelVariant::Selected => SurfaceRecipe::Selected,
+            PanelVariant::Interactive => {
+                if self.raised {
+                    SurfaceRecipe::Raised
+                } else {
+                    SurfaceRecipe::Interactive
+                }
+            }
+            PanelVariant::Quiet | PanelVariant::DividerOnly => {
+                if self.raised {
+                    SurfaceRecipe::Raised
+                } else {
+                    SurfaceRecipe::Inset
+                }
+            }
+            PanelVariant::Bordered => {
+                if self.raised {
+                    SurfaceRecipe::Raised
+                } else {
+                    SurfaceRecipe::Inset
+                }
+            }
+        }
+    }
+
+    /// Whether a full single-line box border is painted.
+    #[must_use]
+    pub const fn has_box_border(&self) -> bool {
+        match self.variant {
+            PanelVariant::Quiet | PanelVariant::DividerOnly => false,
+            PanelVariant::Bordered
+            | PanelVariant::Interactive
+            | PanelVariant::Selected => true,
+        }
+    }
+
     #[must_use]
     /// Builds the surrounding block from the recipe (single-line border only).
     pub fn block(&self) -> Block<'a> {
-        // Unknown width at block-build time: keep all slots; render path may
-        // re-resolve. Consumers painting with known width should use
-        // [`Self::block_for_width`].
         self.block_for_width(u16::MAX)
     }
 
@@ -211,13 +587,15 @@ impl<'a> Panel<'a> {
     pub fn block_for_width(&self, width: u16) -> Block<'a> {
         let recipe = self.recipe();
         let border = self.style.unwrap_or(recipe.border);
-        let mut block = Block::bordered().border_style(border);
+        let mut block = if self.has_box_border() {
+            Block::bordered().border_style(border)
+        } else {
+            Block::default()
+        };
         let slots = self.slots_for_width(width);
-        if let Some(title) = slots.title_text() {
-            // Clamp title display width roughly for very narrow frames.
+        if let Some(title) = self.title_line(slots, None) {
             let budget = width.saturating_sub(4).max(1);
             let clipped = if display_cols(&title) > usize::from(budget) {
-                // Keep start of primary title text.
                 title
                     .chars()
                     .take(usize::from(budget.saturating_sub(1)))
@@ -234,37 +612,301 @@ impl<'a> Panel<'a> {
         block
     }
 
-    /// Maps panel emphasis onto the Surface recipe set.
+    fn title_line(&self, slots: PanelSlots<'a>, collapsed: Option<bool>) -> Option<String> {
+        let mut base = slots.title_text()?;
+        if self.collapsible {
+            let glyph = match (collapsed.unwrap_or(false), self.tokens.glyphs) {
+                (true, GlyphSet::Unicode) => "▸",
+                (false, GlyphSet::Unicode) => "▾",
+                (true, GlyphSet::Ascii) => ">",
+                (false, GlyphSet::Ascii) => "v",
+            };
+            base = format!("{glyph} {base}");
+        }
+        Some(base)
+    }
+
+    /// Layout named parts without painting.
     #[must_use]
-    pub const fn surface_recipe(&self) -> SurfaceRecipe {
-        match self.emphasis {
-            PanelChrome::Normal => SurfaceRecipe::Inset,
-            PanelChrome::Focused => SurfaceRecipe::Focused,
-            PanelChrome::Danger => SurfaceRecipe::Destructive,
+    pub fn layout(&self, area: Rect, state: Option<&PanelState>) -> PanelParts {
+        let collapsed = state.is_some_and(|s| s.collapsed && self.collapsible);
+        let has_border = self.has_box_border();
+        let border_cells: u16 = if has_border { 1 } else { 0 };
+        let inner = shrink(
+            area,
+            border_cells,
+            border_cells,
+            border_cells,
+            border_cells,
+        );
+
+        let slots = self.slots_for_width(area.width);
+        let has_title = slots.title_text().is_some() || self.collapsible;
+        let has_footer_band = slots.footer.is_some() && !has_border;
+        // With box border, footer sits on bottom border (Block title_bottom).
+        let footer_rows: u16 = if has_footer_band { 1 } else { 0 };
+        // Header is one row inside when we paint multi-part header band for collapsible
+        // without relying only on Block title (Block title is on the border line).
+        let header_inside: u16 = if self.collapsible && has_title && has_border {
+            0 // disclosure lives in border title
+        } else if !has_border && has_title {
+            1
+        } else {
+            0
+        };
+
+        let mut y = inner.y;
+        let header = if header_inside > 0 && inner.height > 0 {
+            let h = Rect {
+                x: inner.x,
+                y,
+                width: inner.width,
+                height: 1.min(inner.height),
+            };
+            y = y.saturating_add(1);
+            Some(h)
+        } else if has_title && has_border {
+            // Title on border — expose header as top inner row for hit tests.
+            Some(Rect {
+                x: area.x.saturating_add(1),
+                y: area.y,
+                width: area.width.saturating_sub(2),
+                height: 1.min(area.height),
+            })
+        } else {
+            None
+        };
+
+        let footer_y = inner
+            .bottom()
+            .saturating_sub(footer_rows);
+        let body_bottom = if collapsed {
+            y
+        } else {
+            footer_y
+        };
+        let body_h = body_bottom.saturating_sub(y);
+        let body = if collapsed {
+            Rect {
+                x: inner.x,
+                y,
+                width: inner.width,
+                height: 0,
+            }
+        } else {
+            Rect {
+                x: inner.x,
+                y,
+                width: inner.width,
+                height: body_h,
+            }
+        };
+        let footer = if footer_rows > 0 && !collapsed {
+            Some(Rect {
+                x: inner.x,
+                y: footer_y,
+                width: inner.width,
+                height: 1,
+            })
+        } else {
+            None
+        };
+
+        let disclosure = header.map(|h| Rect {
+            x: h.x,
+            y: h.y,
+            width: 2.min(h.width),
+            height: h.height,
+        });
+
+        let hit = if self.is_focusable() || has_border {
+            area
+        } else {
+            body
+        };
+
+        PanelParts {
+            root: area,
+            header,
+            body,
+            footer,
+            disclosure,
+            hit,
+            clip: body,
         }
     }
 
+    /// Content rectangle inside panel chrome (host children).
     #[must_use]
-    /// Returns the content rectangle inside panel chrome.
     pub fn inner(&self, area: Rect) -> Rect {
-        Surface::new(self.tokens)
-            .recipe(self.surface_recipe())
-            .bordered(true)
+        self.layout(area, None).body
+    }
+
+    /// Paint panel chrome + optional built-in body; returns body rect.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: Option<&mut PanelState>) -> Rect {
+        if area.is_empty() {
+            return area;
+        }
+        let collapsed = state.as_ref().is_some_and(|s| s.collapsed && self.collapsible);
+        let focused = state.as_ref().is_some_and(|s| s.focused);
+        let parts = self.layout(
+            area,
+            state.as_ref().map(|s| &**s),
+        );
+
+        // Surface fill (variant-aware).
+        let surface_recipe = if focused && self.is_focusable() {
+            SurfaceRecipe::Focused
+        } else {
+            self.surface_recipe()
+        };
+        let fill_policy = if matches!(self.variant, PanelVariant::Quiet) {
+            SurfaceFill::Transparent
+        } else {
+            SurfaceFill::Auto
+        };
+        let _ = Surface::new(self.tokens)
+            .recipe(surface_recipe)
+            .bordered(false)
+            .fill(fill_policy)
             .padding(0, 0)
-            .layout(area)
-            .content
+            .paint(area, buffer);
+
+        // Box border + title/footer on border.
+        if self.has_box_border() {
+            let mut emphasis = self.emphasis;
+            if focused && self.is_focusable() {
+                emphasis = PanelChrome::Focused;
+            }
+            let recipe = self.tokens.panel_recipe(emphasis);
+            let border = self.style.unwrap_or(recipe.border);
+            let mut block = Block::bordered().border_style(border);
+            let slots = self.slots_for_width(area.width);
+            if let Some(title) = self.title_line(slots, Some(collapsed)) {
+                let budget = area.width.saturating_sub(4).max(1);
+                let clipped = if display_cols(&title) > usize::from(budget) {
+                    title
+                        .chars()
+                        .take(usize::from(budget.saturating_sub(1)))
+                        .collect::<String>()
+                        + "…"
+                } else {
+                    title
+                };
+                block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
+            }
+            if let Some(footer) = slots.footer {
+                block =
+                    block.title_bottom(Span::styled(format!(" {} ", footer.trim()), recipe.title));
+            }
+            block.render(area, buffer);
+        } else if matches!(self.variant, PanelVariant::DividerOnly) {
+            paint_divider_only(area, buffer, self.tokens);
+            if let Some(header) = parts.header {
+                paint_header_line(self, header, buffer, collapsed);
+            }
+            if let Some(footer) = parts.footer {
+                if let Some(text) = self.slots_for_width(area.width).footer {
+                    let t = take_display_cols(text, usize::from(footer.width));
+                    buffer.set_stringn(
+                        footer.x,
+                        footer.y,
+                        &t,
+                        usize::from(footer.width),
+                        self.tokens.style(Role::TextMuted),
+                    );
+                }
+            }
+        } else if matches!(self.variant, PanelVariant::Quiet) {
+            if let Some(header) = parts.header {
+                paint_header_line(self, header, buffer, collapsed);
+            }
+            if let Some(footer) = parts.footer {
+                if let Some(text) = self.slots_for_width(area.width).footer {
+                    let t = take_display_cols(text, usize::from(footer.width));
+                    buffer.set_stringn(
+                        footer.x,
+                        footer.y,
+                        &t,
+                        usize::from(footer.width),
+                        self.tokens.style(Role::TextMuted),
+                    );
+                }
+            }
+        }
+
+        // Built-in body modes.
+        if !collapsed && parts.has_body() {
+            match self.body {
+                PanelBody::Host => {}
+                PanelBody::Loading => {
+                    let label = self.slots.body_detail.unwrap_or("Loading");
+                    let frame = match self.tokens.glyphs {
+                        GlyphSet::Unicode => "…",
+                        GlyphSet::Ascii => "...",
+                    };
+                    Widget::render(
+                        &LoadingView::new(label, frame, self.tokens),
+                        parts.body,
+                        buffer,
+                    );
+                }
+                PanelBody::Empty => {
+                    let title = self.slots.body_title.unwrap_or("No items");
+                    let mut empty = EmptyState::new(title, self.tokens);
+                    if let Some(d) = self.slots.body_detail {
+                        empty = empty.detail(d);
+                    }
+                    let glyph = match self.tokens.glyphs {
+                        GlyphSet::Unicode => "○",
+                        GlyphSet::Ascii => "o",
+                    };
+                    empty = empty.glyph(glyph);
+                    Widget::render(&empty, parts.body, buffer);
+                }
+                PanelBody::Error => {
+                    let title = self.slots.body_title.unwrap_or("Error");
+                    let mut err = ErrorView::new(title, self.tokens);
+                    if let Some(d) = self.slots.body_detail {
+                        err = err.detail(d);
+                    }
+                    Widget::render(&err, parts.body, buffer);
+                }
+            }
+        } else if collapsed {
+            // nothing in body
+        }
+
+        // Tiny non-color cue: selected gutter when Selected variant.
+        if matches!(self.variant, PanelVariant::Selected) && area.width > 0 && area.height > 0 {
+            let g = self.tokens.glyphs.selection_gutter();
+            buffer.set_stringn(
+                area.x,
+                area.y.saturating_add(area.height / 2),
+                g,
+                1,
+                self.tokens.style(Role::Accent),
+            );
+        }
+
+        if let Some(state) = state {
+            state.parts = Some(parts);
+        }
+        parts.body
+    }
+
+    /// Skeleton body helper for loading lists (host-driven).
+    pub fn paint_skeleton_body(&self, body: Rect, buffer: &mut Buffer, lines: u16) {
+        if body.is_empty() {
+            return;
+        }
+        Widget::render(&Skeleton::new(lines, self.tokens), body, buffer);
     }
 }
 
 impl Widget for &Panel<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        // Fill via Surface (terminal-default / mono aware); then titled border.
-        let _ = Surface::new(self.tokens)
-            .recipe(self.surface_recipe())
-            .bordered(false)
-            .padding(0, 0)
-            .paint(area, buffer);
-        self.block_for_width(area.width).render(area, buffer);
+        let _ = self.paint(area, buffer, None);
     }
 }
 
@@ -274,9 +916,71 @@ impl Widget for Panel<'_> {
     }
 }
 
+fn paint_header_line(panel: &Panel<'_>, header: Rect, buffer: &mut Buffer, collapsed: bool) {
+    let slots = panel.slots_for_width(header.width.saturating_add(4));
+    if let Some(title) = panel.title_line(slots, Some(collapsed)) {
+        let t = take_display_cols(&title, usize::from(header.width));
+        let style = if panel.emphasis == PanelChrome::Focused {
+            panel.tokens.style(Role::TextStrong)
+        } else {
+            panel.tokens.style(Role::Text)
+        };
+        buffer.set_stringn(
+            header.x,
+            header.y,
+            &t,
+            usize::from(header.width),
+            style,
+        );
+    }
+}
+
+fn paint_divider_only(area: Rect, buffer: &mut Buffer, system: &DesignSystem) {
+    if area.width == 0 || area.height == 0 {
+        return;
+    }
+    let rule = system.glyphs.rule();
+    let style = system.style(Role::Border);
+    let line: String = std::iter::repeat_n(rule, usize::from(area.width)).collect();
+    buffer.set_stringn(area.x, area.y, &line, usize::from(area.width), style);
+    if area.height > 1 {
+        buffer.set_stringn(
+            area.x,
+            area.bottom().saturating_sub(1),
+            &line,
+            usize::from(area.width),
+            style,
+        );
+    }
+}
+
+fn shrink(area: Rect, left: u16, top: u16, right: u16, bottom: u16) -> Rect {
+    let x = area.x.saturating_add(left);
+    let y = area.y.saturating_add(top);
+    let width = area.width.saturating_sub(left.saturating_add(right));
+    let height = area.height.saturating_sub(top.saturating_add(bottom));
+    if width == 0 || height == 0 {
+        Rect {
+            x,
+            y,
+            width: 0,
+            height: 0,
+        }
+    } else {
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::{KeyCode, KeyModifiers};
+    use crate::style::DesignSystem;
 
     #[test]
     fn panel_recipe_focus_uses_border_focused_not_weight() {
@@ -308,5 +1012,100 @@ mod tests {
         let tiny = panel.slots_for_width(8);
         assert!(tiny.leading.is_none());
         assert_eq!(tiny.title, Some("Main"));
+    }
+
+    #[test]
+    fn selected_is_not_focused_surface() {
+        let tokens = DesignSystem::default();
+        let selected = Panel::new(&tokens)
+            .variant(PanelVariant::Selected)
+            .title("S");
+        assert_eq!(selected.surface_recipe(), SurfaceRecipe::Selected);
+        assert_eq!(selected.resolved_chrome(), PanelChrome::Normal);
+        let focused = Panel::new(&tokens)
+            .emphasis(PanelChrome::Focused)
+            .title("F");
+        assert_eq!(focused.surface_recipe(), SurfaceRecipe::Focused);
+    }
+
+    #[test]
+    fn quiet_has_no_box_border() {
+        let tokens = DesignSystem::default();
+        let p = Panel::quiet(&tokens).title("Q");
+        assert!(!p.has_box_border());
+        let parts = p.layout(Rect::new(0, 0, 20, 6), None);
+        assert!(parts.body.width > 0);
+    }
+
+    #[test]
+    fn collapsible_toggle_via_intent() {
+        let mut state = PanelState::new();
+        state.set_focused(true);
+        let out = state.handle_intent(UiIntent::Toggle, true, false);
+        assert_eq!(out, PanelOutcome::ToggleCollapsed { collapsed: true });
+        assert!(state.is_collapsed());
+    }
+
+    #[test]
+    fn interactive_activate_via_enter() {
+        let mut state = PanelState::new();
+        state.set_focused(true);
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            false,
+            true,
+        );
+        assert_eq!(out, PanelOutcome::Activated);
+    }
+
+    #[test]
+    fn collapsed_body_has_zero_height() {
+        let tokens = DesignSystem::default();
+        let panel = Panel::new(&tokens).title("Fold").collapsible(true);
+        let mut state = PanelState::new();
+        state.set_collapsed(true);
+        let parts = panel.layout(Rect::new(0, 0, 30, 10), Some(&state));
+        assert_eq!(parts.body.height, 0);
+    }
+
+    #[test]
+    fn paint_empty_body_mode() {
+        let tokens = DesignSystem::default();
+        let panel = Panel::new(&tokens)
+            .title("List")
+            .body(PanelBody::Empty)
+            .body_title("No rows");
+        let mut buf = Buffer::empty(Rect::new(0, 0, 24, 8));
+        let body = panel.paint(Rect::new(0, 0, 24, 8), &mut buf, None);
+        assert!(body.height > 0);
+    }
+
+    #[test]
+    fn layout_is_cheap() {
+        let tokens = DesignSystem::default();
+        let panel = Panel::new(&tokens)
+            .title("Perf")
+            .subtitle("sub")
+            .footer("f")
+            .variant(PanelVariant::Bordered);
+        let area = Rect::new(0, 0, 40, 12);
+        for _ in 0..20_000 {
+            let _ = panel.layout(area, None);
+        }
+    }
+
+    #[test]
+    fn focusable_only_when_interactive_or_collapsible() {
+        let tokens = DesignSystem::default();
+        assert!(!Panel::new(&tokens).title("x").is_focusable());
+        assert!(Panel::new(&tokens)
+            .variant(PanelVariant::Interactive)
+            .is_focusable());
+        assert!(Panel::new(&tokens).collapsible(true).is_focusable());
+    }
+
+    #[test]
+    fn variant_ids_stable() {
+        assert_eq!(PanelVariant::DividerOnly.id(), "divider-only");
     }
 }

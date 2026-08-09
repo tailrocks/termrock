@@ -1,0 +1,43 @@
+---
+title: Card
+description: 'Raised Panel composition with description band for metrics and tool cards.'
+---
+
+## Previews
+
+### `card/basic`
+
+![Card basic](/component-previews/card-basic.svg)
+
+### `card/tool`
+
+![Tool-style card](/component-previews/card-tool.svg)
+
+## Anatomy
+
+`root` · `header` · `description` · `body` · `footer`  
+Built on Panel + raised Surface — no nested box soup.
+
+## Usage
+
+```rust
+use termrock::{style::DesignSystem, widgets::Card};
+
+let system = DesignSystem::default();
+let body = Card::new(&system)
+    .title("Latency")
+    .description("p99 last hour")
+    .footer("dashboard")
+    .paint(area, buf, None);
+// paint children only inside `body`
+```
+
+## Composition
+
+- **ToolCard** paints via Card chrome
+- Dashboard metric tiles use Card + host body content
+- Prefer Card for elevated content; Panel for workspace chrome
+
+## Migration
+
+See `migrations/0096-v0.13.0-panel-card.md`.

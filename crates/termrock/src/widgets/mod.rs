@@ -28,6 +28,7 @@ mod list;
 mod log_pane;
 mod markdown;
 mod menu_nav;
+mod card;
 mod panel;
 mod permission;
 mod picker;
@@ -129,7 +130,10 @@ pub use menu_nav::{
     TOOLTIP_OVERLAY_ID, Tooltip, TooltipState, dismiss_drawer_overlay, open_drawer_overlay,
     open_popover_overlay, open_tooltip_overlay, place_drawer, place_popover, place_tooltip,
 };
-pub use panel::{Panel, PanelSlots};
+pub use card::{Card, CardParts};
+pub use panel::{
+    Panel, PanelBody, PanelOutcome, PanelParts, PanelSlots, PanelState, PanelVariant,
+};
 pub use permission::{
     DataMovement, EditField, ExecutionLocation, InitiatorKind, PERMISSION_OVERLAY_ID,
     PermissionAction, PermissionActionKind, PermissionActionRegion, PermissionAuditEntry,

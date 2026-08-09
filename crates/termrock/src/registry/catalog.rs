@@ -65,8 +65,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             schema: CONTRACT_SCHEMA,
             id: "Panel".into(),
             title: "Panel".into(),
-            description: "Bordered surface with focus-visible chrome via Role::BorderFocused."
-                .into(),
+            description: "Composable container: variants, body modes, collapsible/interactive; focus ≠ selection; Role::BorderFocused for focus.".into(),
             kind: RegistryItemKind::Primitive,
             license: "Apache-2.0".into(),
             module: Some("termrock::widgets::Panel".into()),
@@ -79,20 +78,24 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                     ContractFileRole::Fixture,
                 ),
             ],
-            dependencies: kernel_dep(),
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec!["termrock/Surface".into()];
+                d
+            },
             capabilities: caps_basic(),
             anatomy: vec![
                 AnatomyPartRef {
-                    id: "border".into(),
-                    label: "Border".into(),
-                },
-                AnatomyPartRef {
-                    id: "title".into(),
-                    label: "Title".into(),
+                    id: "header".into(),
+                    label: "Header".into(),
                 },
                 AnatomyPartRef {
                     id: "body".into(),
                     label: "Body".into(),
+                },
+                AnatomyPartRef {
+                    id: "footer".into(),
+                    label: "Footer".into(),
                 },
             ],
             semantic_roles: vec![
@@ -103,17 +106,40 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                     id: "Role::BorderFocused".into(),
                 },
             ],
-            variants: vec![VariantRef {
-                id: "focused".into(),
-                description: "PanelChrome::Focused".into(),
-            }],
-            outcomes: vec![],
-            stories: vec!["panel/focused".into()],
+            variants: vec![
+                VariantRef {
+                    id: "bordered".into(),
+                    description: "Default box border".into(),
+                },
+                VariantRef {
+                    id: "quiet".into(),
+                    description: "No border".into(),
+                },
+                VariantRef {
+                    id: "selected".into(),
+                    description: "Selection chrome (not focus)".into(),
+                },
+            ],
+            outcomes: vec![
+                OutcomeRef {
+                    id: "Activated".into(),
+                },
+                OutcomeRef {
+                    id: "ToggleCollapsed".into(),
+                },
+            ],
+            stories: vec![
+                "panel/focused".into(),
+                "panel/variants".into(),
+                "panel/empty".into(),
+                "panel/collapsible".into(),
+                "panel/narrow".into(),
+            ],
             tests: vec!["widgets::panel".into()],
-            migration: None,
+            migration: Some("migrations/0096-v0.13.0-panel-card.md".into()),
             provenance: prov("crates/termrock/src/widgets/panel.rs"),
             source_hash: None,
-            complete: true,
+            complete: false,
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
@@ -321,6 +347,56 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             tests: vec!["style".into()],
             migration: None,
             provenance: prov("crates/termrock/src/style"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "Card".into(),
+            title: "Card".into(),
+            description: "Raised Panel composition with description band for metrics/tool cards.".into(),
+            kind: RegistryItemKind::Primitive,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::widgets::Card".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![
+                file(
+                    "crates/termrock/src/widgets/card.rs",
+                    ContractFileRole::Primary,
+                ),
+                file(
+                    "docs/public/component-previews/card-basic.svg",
+                    ContractFileRole::Fixture,
+                ),
+            ],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec!["termrock/Panel".into(), "termrock/Surface".into()];
+                d
+            },
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "header".into(),
+                    label: "Header".into(),
+                },
+                AnatomyPartRef {
+                    id: "description".into(),
+                    label: "Description".into(),
+                },
+                AnatomyPartRef {
+                    id: "body".into(),
+                    label: "Body".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![],
+            outcomes: vec![],
+            stories: vec!["card/basic".into(), "card/tool".into()],
+            tests: vec!["widgets::card".into()],
+            migration: Some("migrations/0096-v0.13.0-panel-card.md".into()),
+            provenance: prov("crates/termrock/src/widgets/card.rs"),
             source_hash: None,
             complete: false,
         },

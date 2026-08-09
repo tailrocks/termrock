@@ -212,14 +212,32 @@ let mut state = DetailTableState::<&str>::default();
 let outcome = state.select_next(&details);`,
   },
   Panel: {
-    description: 'A themed bordered container with semantic focus emphasis.',
-    primaryStory: 'panel/focused',
-    usage: `use ratatui_core::layout::Rect;
-use termrock::{style::DesignTokens, widgets::{Panel, PanelEmphasis}};
+    description:
+      'Composable container with variants, body modes, collapsible/interactive state; focus ≠ selection.',
+    primaryStory: 'panel/variants',
+    usage: `use termrock::{style::{DesignSystem, PanelChrome}, widgets::{Panel, PanelBody, PanelVariant}};
 
-let tokens = DesignTokens::default();
-let panel = Panel::new(&tokens).title("Files").emphasis(PanelEmphasis::Focused);
-let inner = panel.inner(Rect::new(0, 0, 80, 24));`,
+let system = DesignSystem::default();
+let body = Panel::new(&system)
+    .title("Inbox")
+    .variant(PanelVariant::Bordered)
+    .emphasis(PanelChrome::Focused)
+    .body(PanelBody::Empty)
+    .body_title("No messages")
+    .paint(area, buf, None);`,
+  },
+  Card: {
+    description:
+      'Raised Panel composition with description band for metrics and tool cards.',
+    primaryStory: 'card/basic',
+    usage: `use termrock::{style::DesignSystem, widgets::Card};
+
+let system = DesignSystem::default();
+let body = Card::new(&system)
+    .title("Latency")
+    .description("p99 last hour")
+    .footer("dashboard")
+    .paint(area, buf, None);`,
   },
   Picker: {
     description: 'A filterable stable-ID list composition with caller-owned matching and ordering.',

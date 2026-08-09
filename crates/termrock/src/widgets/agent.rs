@@ -266,40 +266,42 @@ impl<'a> ToolCard<'a> {
 
 impl Widget for &ToolCard<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let panel_tokens = self.system.clone();
-
         if area.is_empty() {
             return;
         }
-        let panel = Panel::new(&panel_tokens).emphasis(match self.status {
-            ToolStatus::Error => PanelChrome::Danger,
-            ToolStatus::Running => PanelChrome::Focused,
-            _ => PanelChrome::Normal,
-        });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        if inner.is_empty() {
+        use crate::widgets::Card;
+        let card = Card::new(self.system)
+            .title(self.name)
+            .leading(self.status.glyph())
+            .subtitle(self.summary)
+            .emphasis(match self.status {
+                ToolStatus::Error => PanelChrome::Danger,
+                ToolStatus::Running => PanelChrome::Focused,
+                _ => PanelChrome::Normal,
+            });
+        let body = card.paint(area, buffer, None);
+        if body.is_empty() {
             return;
         }
         let header = format!("{} {} — {}", self.status.glyph(), self.name, self.summary);
-        let clipped = take_display_cols(&header, usize::from(inner.width));
+        let clipped = take_display_cols(&header, usize::from(body.width));
         buffer.set_stringn(
-            inner.x,
-            inner.y,
+            body.x,
+            body.y,
             &clipped,
-            usize::from(inner.width),
+            usize::from(body.width),
             self.system.style(self.status.role()),
         );
         if self.expanded
             && let Some(detail) = self.detail
-            && inner.height > 1
+            && body.height > 1
         {
-            let body = take_display_cols(detail, usize::from(inner.width));
+            let line = take_display_cols(detail, usize::from(body.width));
             buffer.set_stringn(
-                inner.x,
-                inner.y.saturating_add(1),
-                &body,
-                usize::from(inner.width),
+                body.x,
+                body.y.saturating_add(1),
+                &line,
+                usize::from(body.width),
                 self.system.style(Role::TextMuted),
             );
         }

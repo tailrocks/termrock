@@ -109,6 +109,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0093 | `v0.13.0` | [ComponentContract registry](migrations/0093-v0.13.0-component-contract-registry.md) |
 | 0094 | `v0.13.0` | [AppShell](migrations/0094-v0.13.0-app-shell.md) |
 | 0095 | `v0.13.0` | [Surface](migrations/0095-v0.13.0-surface.md) |
+| 0096 | `v0.13.0` | [Panel + Card](migrations/0096-v0.13.0-panel-card.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

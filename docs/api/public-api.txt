@@ -14548,6 +14548,56 @@ pub unsafe fn termrock::interaction::Outcome<T>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::Outcome<T>
 pub fn termrock::interaction::Outcome<T>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::Outcome<T>
+#[non_exhaustive] pub enum termrock::widgets::PanelBody
+pub termrock::widgets::PanelBody::Empty
+pub termrock::widgets::PanelBody::Error
+pub termrock::widgets::PanelBody::Host
+pub termrock::widgets::PanelBody::Loading
+impl core::clone::Clone for termrock::widgets::PanelBody
+pub fn termrock::widgets::PanelBody::clone(&self) -> termrock::widgets::PanelBody
+impl core::cmp::Eq for termrock::widgets::PanelBody
+impl core::cmp::PartialEq for termrock::widgets::PanelBody
+pub fn termrock::widgets::PanelBody::eq(&self, &termrock::widgets::PanelBody) -> bool
+impl core::default::Default for termrock::widgets::PanelBody
+pub fn termrock::widgets::PanelBody::default() -> termrock::widgets::PanelBody
+impl core::fmt::Debug for termrock::widgets::PanelBody
+pub fn termrock::widgets::PanelBody::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PanelBody
+pub fn termrock::widgets::PanelBody::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PanelBody
+impl core::marker::StructuralPartialEq for termrock::widgets::PanelBody
+impl core::marker::Freeze for termrock::widgets::PanelBody
+impl core::marker::Send for termrock::widgets::PanelBody
+impl core::marker::Sync for termrock::widgets::PanelBody
+impl core::marker::Unpin for termrock::widgets::PanelBody
+impl core::marker::UnsafeUnpin for termrock::widgets::PanelBody
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PanelBody
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PanelBody
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PanelBody where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PanelBody::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PanelBody where U: core::convert::From<T>
+pub fn termrock::widgets::PanelBody::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PanelBody where U: core::convert::Into<T>
+pub type termrock::widgets::PanelBody::Error = core::convert::Infallible
+pub fn termrock::widgets::PanelBody::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PanelBody where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PanelBody::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PanelBody::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PanelBody where T: core::clone::Clone
+pub type termrock::widgets::PanelBody::Owned = T
+pub fn termrock::widgets::PanelBody::clone_into(&self, &mut T)
+pub fn termrock::widgets::PanelBody::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PanelBody where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PanelBody::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PanelBody where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelBody::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PanelBody where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelBody::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PanelBody where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PanelBody::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PanelBody
+pub fn termrock::widgets::PanelBody::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PanelBody
 #[non_exhaustive] pub enum termrock::widgets::PanelChrome
 pub termrock::widgets::PanelChrome::Danger
 pub termrock::widgets::PanelChrome::Focused
@@ -14597,6 +14647,109 @@ pub unsafe fn termrock::style::PanelChrome::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::PanelChrome
 pub fn termrock::style::PanelChrome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::PanelChrome
+#[non_exhaustive] pub enum termrock::widgets::PanelOutcome
+pub termrock::widgets::PanelOutcome::Activated
+pub termrock::widgets::PanelOutcome::Ignored
+pub termrock::widgets::PanelOutcome::ToggleCollapsed
+pub termrock::widgets::PanelOutcome::ToggleCollapsed::collapsed: bool
+impl core::clone::Clone for termrock::widgets::PanelOutcome
+pub fn termrock::widgets::PanelOutcome::clone(&self) -> termrock::widgets::PanelOutcome
+impl core::cmp::Eq for termrock::widgets::PanelOutcome
+impl core::cmp::PartialEq for termrock::widgets::PanelOutcome
+pub fn termrock::widgets::PanelOutcome::eq(&self, &termrock::widgets::PanelOutcome) -> bool
+impl core::default::Default for termrock::widgets::PanelOutcome
+pub fn termrock::widgets::PanelOutcome::default() -> termrock::widgets::PanelOutcome
+impl core::fmt::Debug for termrock::widgets::PanelOutcome
+pub fn termrock::widgets::PanelOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PanelOutcome
+pub fn termrock::widgets::PanelOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PanelOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::PanelOutcome
+impl core::marker::Freeze for termrock::widgets::PanelOutcome
+impl core::marker::Send for termrock::widgets::PanelOutcome
+impl core::marker::Sync for termrock::widgets::PanelOutcome
+impl core::marker::Unpin for termrock::widgets::PanelOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::PanelOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PanelOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PanelOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PanelOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PanelOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PanelOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::PanelOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PanelOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::PanelOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::PanelOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PanelOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PanelOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PanelOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PanelOutcome where T: core::clone::Clone
+pub type termrock::widgets::PanelOutcome::Owned = T
+pub fn termrock::widgets::PanelOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::PanelOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PanelOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PanelOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PanelOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PanelOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PanelOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PanelOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PanelOutcome
+pub fn termrock::widgets::PanelOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PanelOutcome
+#[non_exhaustive] pub enum termrock::widgets::PanelVariant
+pub termrock::widgets::PanelVariant::Bordered
+pub termrock::widgets::PanelVariant::DividerOnly
+pub termrock::widgets::PanelVariant::Interactive
+pub termrock::widgets::PanelVariant::Quiet
+pub termrock::widgets::PanelVariant::Selected
+impl termrock::widgets::PanelVariant
+pub const fn termrock::widgets::PanelVariant::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PanelVariant
+pub fn termrock::widgets::PanelVariant::clone(&self) -> termrock::widgets::PanelVariant
+impl core::cmp::Eq for termrock::widgets::PanelVariant
+impl core::cmp::PartialEq for termrock::widgets::PanelVariant
+pub fn termrock::widgets::PanelVariant::eq(&self, &termrock::widgets::PanelVariant) -> bool
+impl core::default::Default for termrock::widgets::PanelVariant
+pub fn termrock::widgets::PanelVariant::default() -> termrock::widgets::PanelVariant
+impl core::fmt::Debug for termrock::widgets::PanelVariant
+pub fn termrock::widgets::PanelVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PanelVariant
+pub fn termrock::widgets::PanelVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PanelVariant
+impl core::marker::StructuralPartialEq for termrock::widgets::PanelVariant
+impl core::marker::Freeze for termrock::widgets::PanelVariant
+impl core::marker::Send for termrock::widgets::PanelVariant
+impl core::marker::Sync for termrock::widgets::PanelVariant
+impl core::marker::Unpin for termrock::widgets::PanelVariant
+impl core::marker::UnsafeUnpin for termrock::widgets::PanelVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PanelVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PanelVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PanelVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PanelVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PanelVariant where U: core::convert::From<T>
+pub fn termrock::widgets::PanelVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PanelVariant where U: core::convert::Into<T>
+pub type termrock::widgets::PanelVariant::Error = core::convert::Infallible
+pub fn termrock::widgets::PanelVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PanelVariant where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PanelVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PanelVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PanelVariant where T: core::clone::Clone
+pub type termrock::widgets::PanelVariant::Owned = T
+pub fn termrock::widgets::PanelVariant::clone_into(&self, &mut T)
+pub fn termrock::widgets::PanelVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PanelVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PanelVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PanelVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PanelVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PanelVariant where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PanelVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PanelVariant
+pub fn termrock::widgets::PanelVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PanelVariant
 #[non_exhaustive] pub enum termrock::widgets::PermissionAction
 pub termrock::widgets::PermissionAction::Allow
 pub termrock::widgets::PermissionAction::AllowEdited
@@ -17685,6 +17838,117 @@ pub unsafe fn termrock::widgets::Callout<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Callout<'a>
 pub fn termrock::widgets::Callout<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Callout<'a>
+pub struct termrock::widgets::Card<'a>
+impl<'a> termrock::widgets::Card<'a>
+pub const fn termrock::widgets::Card<'a>::body(self, termrock::widgets::PanelBody) -> Self
+pub const fn termrock::widgets::Card<'a>::body_detail(self, &'a str) -> Self
+pub const fn termrock::widgets::Card<'a>::body_title(self, &'a str) -> Self
+pub const fn termrock::widgets::Card<'a>::chrome(self, termrock::style::PanelChrome) -> Self
+pub const fn termrock::widgets::Card<'a>::collapsible(self, bool) -> Self
+pub const fn termrock::widgets::Card<'a>::description(self, &'a str) -> Self
+pub const fn termrock::widgets::Card<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
+pub const fn termrock::widgets::Card<'a>::footer(self, &'a str) -> Self
+pub fn termrock::widgets::Card<'a>::inner(&self, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::Card<'a>::interactive(self, bool) -> Self
+pub fn termrock::widgets::Card<'a>::layout(&self, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::PanelState>) -> termrock::widgets::CardParts
+pub const fn termrock::widgets::Card<'a>::leading(self, &'a str) -> Self
+pub const fn termrock::widgets::Card<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Card<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, core::option::Option<&mut termrock::widgets::PanelState>) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::Card<'a>::subtitle(self, &'a str) -> Self
+pub const fn termrock::widgets::Card<'a>::title(self, &'a str) -> Self
+pub const fn termrock::widgets::Card<'a>::trailing(self, &'a str) -> Self
+pub const fn termrock::widgets::Card<'a>::variant(self, termrock::widgets::PanelVariant) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Card<'_>
+pub fn &termrock::widgets::Card<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Card<'_>
+pub fn termrock::widgets::Card<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::Card<'a>
+pub fn termrock::widgets::Card<'a>::clone(&self) -> termrock::widgets::Card<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Card<'a>
+pub fn termrock::widgets::Card<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for termrock::widgets::Card<'a>
+impl<'a> core::marker::Send for termrock::widgets::Card<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Card<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Card<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Card<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Card<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Card<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Card<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Card<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Card<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Card<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Card<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Card<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Card<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Card<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Card<'a> where T: core::clone::Clone
+pub type termrock::widgets::Card<'a>::Owned = T
+pub fn termrock::widgets::Card<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Card<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Card<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Card<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Card<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Card<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Card<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Card<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Card<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Card<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Card<'a>
+pub fn termrock::widgets::Card<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Card<'a>
+pub struct termrock::widgets::CardParts
+pub termrock::widgets::CardParts::body: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CardParts::clip: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CardParts::description: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::CardParts::footer: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::CardParts::header: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::CardParts::hit: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CardParts::root: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::CardParts
+pub fn termrock::widgets::CardParts::clone(&self) -> termrock::widgets::CardParts
+impl core::cmp::Eq for termrock::widgets::CardParts
+impl core::cmp::PartialEq for termrock::widgets::CardParts
+pub fn termrock::widgets::CardParts::eq(&self, &termrock::widgets::CardParts) -> bool
+impl core::convert::From<termrock::widgets::PanelParts> for termrock::widgets::CardParts
+pub fn termrock::widgets::CardParts::from(termrock::widgets::PanelParts) -> Self
+impl core::fmt::Debug for termrock::widgets::CardParts
+pub fn termrock::widgets::CardParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CardParts
+pub fn termrock::widgets::CardParts::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CardParts
+impl core::marker::StructuralPartialEq for termrock::widgets::CardParts
+impl core::marker::Freeze for termrock::widgets::CardParts
+impl core::marker::Send for termrock::widgets::CardParts
+impl core::marker::Sync for termrock::widgets::CardParts
+impl core::marker::Unpin for termrock::widgets::CardParts
+impl core::marker::UnsafeUnpin for termrock::widgets::CardParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CardParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CardParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CardParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CardParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CardParts where U: core::convert::From<T>
+pub fn termrock::widgets::CardParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CardParts where U: core::convert::Into<T>
+pub type termrock::widgets::CardParts::Error = core::convert::Infallible
+pub fn termrock::widgets::CardParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CardParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CardParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CardParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CardParts where T: core::clone::Clone
+pub type termrock::widgets::CardParts::Owned = T
+pub fn termrock::widgets::CardParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::CardParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CardParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CardParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CardParts where T: ?core::marker::Sized
+pub fn termrock::widgets::CardParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CardParts where T: ?core::marker::Sized
+pub fn termrock::widgets::CardParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CardParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CardParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CardParts
+pub fn termrock::widgets::CardParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CardParts
 pub struct termrock::widgets::Checkbox<'a, Id>
 pub termrock::widgets::Checkbox::id: Id
 impl<'a, Id> termrock::widgets::Checkbox<'a, Id>
@@ -22250,15 +22514,27 @@ pub struct termrock::widgets::Panel<'a>
 impl<'a> termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::block(&self) -> ratatui_widgets::block::Block<'a>
 pub fn termrock::widgets::Panel<'a>::block_for_width(&self, u16) -> ratatui_widgets::block::Block<'a>
+pub const fn termrock::widgets::Panel<'a>::body(self, termrock::widgets::PanelBody) -> Self
+pub const fn termrock::widgets::Panel<'a>::body_detail(self, &'a str) -> Self
+pub const fn termrock::widgets::Panel<'a>::body_title(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::chrome(self, termrock::style::PanelChrome) -> Self
+pub const fn termrock::widgets::Panel<'a>::collapsible(self, bool) -> Self
 pub const fn termrock::widgets::Panel<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
 pub const fn termrock::widgets::Panel<'a>::footer(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::from_tokens(&'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Panel<'a>::has_box_border(&self) -> bool
 pub fn termrock::widgets::Panel<'a>::inner(&self, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::Panel<'a>::is_focusable(&self) -> bool
+pub fn termrock::widgets::Panel<'a>::layout(&self, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::PanelState>) -> termrock::widgets::PanelParts
 pub const fn termrock::widgets::Panel<'a>::leading(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Panel<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, core::option::Option<&mut termrock::widgets::PanelState>) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::Panel<'a>::paint_skeleton_body(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, u16)
 pub const fn termrock::widgets::Panel<'a>::palette(&self) -> &termrock::style::RolePalette
+pub const fn termrock::widgets::Panel<'a>::quiet(&'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Panel<'a>::raised(self, bool) -> Self
 pub fn termrock::widgets::Panel<'a>::recipe(&self) -> termrock::style::PanelRecipe
+pub const fn termrock::widgets::Panel<'a>::resolved_chrome(&self) -> termrock::style::PanelChrome
 pub const fn termrock::widgets::Panel<'a>::slots(self, termrock::widgets::PanelSlots<'a>) -> Self
 pub fn termrock::widgets::Panel<'a>::slots_for_width(&self, u16) -> termrock::widgets::PanelSlots<'a>
 pub const fn termrock::widgets::Panel<'a>::style(self, ratatui_core::style::Style) -> Self
@@ -22266,6 +22542,7 @@ pub const fn termrock::widgets::Panel<'a>::subtitle(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::surface_recipe(&self) -> termrock::widgets::SurfaceRecipe
 pub const fn termrock::widgets::Panel<'a>::title(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::trailing(self, &'a str) -> Self
+pub const fn termrock::widgets::Panel<'a>::variant(self, termrock::widgets::PanelVariant) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Panel<'_>
 pub fn &termrock::widgets::Panel<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::widgets::Panel<'_>
@@ -22304,7 +22581,64 @@ pub unsafe fn termrock::widgets::Panel<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Panel<'a>
+pub struct termrock::widgets::PanelParts
+pub termrock::widgets::PanelParts::body: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PanelParts::clip: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PanelParts::disclosure: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PanelParts::footer: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PanelParts::header: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PanelParts::hit: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PanelParts::root: ratatui_core::layout::rect::Rect
+impl termrock::widgets::PanelParts
+pub const fn termrock::widgets::PanelParts::has_body(self) -> bool
+impl core::clone::Clone for termrock::widgets::PanelParts
+pub fn termrock::widgets::PanelParts::clone(&self) -> termrock::widgets::PanelParts
+impl core::cmp::Eq for termrock::widgets::PanelParts
+impl core::cmp::PartialEq for termrock::widgets::PanelParts
+pub fn termrock::widgets::PanelParts::eq(&self, &termrock::widgets::PanelParts) -> bool
+impl core::convert::From<termrock::widgets::PanelParts> for termrock::widgets::CardParts
+pub fn termrock::widgets::CardParts::from(termrock::widgets::PanelParts) -> Self
+impl core::fmt::Debug for termrock::widgets::PanelParts
+pub fn termrock::widgets::PanelParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PanelParts
+pub fn termrock::widgets::PanelParts::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PanelParts
+impl core::marker::StructuralPartialEq for termrock::widgets::PanelParts
+impl core::marker::Freeze for termrock::widgets::PanelParts
+impl core::marker::Send for termrock::widgets::PanelParts
+impl core::marker::Sync for termrock::widgets::PanelParts
+impl core::marker::Unpin for termrock::widgets::PanelParts
+impl core::marker::UnsafeUnpin for termrock::widgets::PanelParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PanelParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PanelParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PanelParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PanelParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PanelParts where U: core::convert::From<T>
+pub fn termrock::widgets::PanelParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PanelParts where U: core::convert::Into<T>
+pub type termrock::widgets::PanelParts::Error = core::convert::Infallible
+pub fn termrock::widgets::PanelParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PanelParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PanelParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PanelParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PanelParts where T: core::clone::Clone
+pub type termrock::widgets::PanelParts::Owned = T
+pub fn termrock::widgets::PanelParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::PanelParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PanelParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PanelParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PanelParts where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PanelParts where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PanelParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PanelParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PanelParts
+pub fn termrock::widgets::PanelParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PanelParts
 pub struct termrock::widgets::PanelSlots<'a>
+pub termrock::widgets::PanelSlots::body_detail: core::option::Option<&'a str>
+pub termrock::widgets::PanelSlots::body_title: core::option::Option<&'a str>
 pub termrock::widgets::PanelSlots::footer: core::option::Option<&'a str>
 pub termrock::widgets::PanelSlots::leading: core::option::Option<&'a str>
 pub termrock::widgets::PanelSlots::subtitle: core::option::Option<&'a str>
@@ -22356,6 +22690,63 @@ pub unsafe fn termrock::widgets::PanelSlots<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PanelSlots<'a>
 pub fn termrock::widgets::PanelSlots<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PanelSlots<'a>
+pub struct termrock::widgets::PanelState
+pub termrock::widgets::PanelState::collapsed: bool
+pub termrock::widgets::PanelState::focused: bool
+pub termrock::widgets::PanelState::hovered: bool
+pub termrock::widgets::PanelState::parts: core::option::Option<termrock::widgets::PanelParts>
+impl termrock::widgets::PanelState
+pub fn termrock::widgets::PanelState::handle_intent(&mut self, termrock::interaction::UiIntent, bool, bool) -> termrock::widgets::PanelOutcome
+pub fn termrock::widgets::PanelState::handle_key(&mut self, termrock::input::KeyEvent, bool, bool) -> termrock::widgets::PanelOutcome
+pub fn termrock::widgets::PanelState::handle_key_result(&mut self, termrock::input::KeyEvent, bool, bool) -> termrock::interaction::EventResult<termrock::widgets::PanelOutcome>
+pub fn termrock::widgets::PanelState::handle_mouse(&mut self, termrock::input::MouseEvent, bool, bool) -> termrock::widgets::PanelOutcome
+pub const fn termrock::widgets::PanelState::is_collapsed(&self) -> bool
+pub const fn termrock::widgets::PanelState::new() -> Self
+pub const fn termrock::widgets::PanelState::set_collapsed(&mut self, bool)
+pub const fn termrock::widgets::PanelState::set_focused(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::PanelState
+pub fn termrock::widgets::PanelState::clone(&self) -> termrock::widgets::PanelState
+impl core::cmp::Eq for termrock::widgets::PanelState
+impl core::cmp::PartialEq for termrock::widgets::PanelState
+pub fn termrock::widgets::PanelState::eq(&self, &termrock::widgets::PanelState) -> bool
+impl core::default::Default for termrock::widgets::PanelState
+pub fn termrock::widgets::PanelState::default() -> termrock::widgets::PanelState
+impl core::fmt::Debug for termrock::widgets::PanelState
+pub fn termrock::widgets::PanelState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::PanelState
+impl core::marker::StructuralPartialEq for termrock::widgets::PanelState
+impl core::marker::Freeze for termrock::widgets::PanelState
+impl core::marker::Send for termrock::widgets::PanelState
+impl core::marker::Sync for termrock::widgets::PanelState
+impl core::marker::Unpin for termrock::widgets::PanelState
+impl core::marker::UnsafeUnpin for termrock::widgets::PanelState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PanelState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PanelState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PanelState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PanelState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PanelState where U: core::convert::From<T>
+pub fn termrock::widgets::PanelState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PanelState where U: core::convert::Into<T>
+pub type termrock::widgets::PanelState::Error = core::convert::Infallible
+pub fn termrock::widgets::PanelState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PanelState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PanelState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PanelState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PanelState where T: core::clone::Clone
+pub type termrock::widgets::PanelState::Owned = T
+pub fn termrock::widgets::PanelState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PanelState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PanelState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PanelState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PanelState where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PanelState where T: ?core::marker::Sized
+pub fn termrock::widgets::PanelState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PanelState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PanelState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PanelState
+pub fn termrock::widgets::PanelState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PanelState
 pub struct termrock::widgets::Paragraph<'a>
 impl<'a> termrock::widgets::Paragraph<'a>
 pub const fn termrock::widgets::Paragraph<'a>::muted(self, bool) -> Self

@@ -195,6 +195,51 @@ pub(crate) fn stories() -> Vec<Story> {
             panel,
         ),
         Story::new(
+            "panel/variants",
+            "Panel variants",
+            "Panel",
+            "Bordered · quiet · divider · interactive · selected ladder.",
+            56,
+            16,
+            panel_variants_story,
+        ),
+        Story::new(
+            "panel/empty",
+            "Panel empty body",
+            "Panel",
+            "Built-in empty body mode with non-color glyph.",
+            36,
+            8,
+            panel_empty_story,
+        ),
+        Story::new(
+            "panel/collapsible",
+            "Panel collapsible",
+            "Panel",
+            "Collapsible header with disclosure; focus owns activate/toggle.",
+            40,
+            8,
+            panel_collapsible_story,
+        ),
+        Story::new(
+            "card/basic",
+            "Card basic",
+            "Card",
+            "Raised card with title, description, body, footer.",
+            36,
+            9,
+            card_basic_story,
+        ),
+        Story::new(
+            "card/tool",
+            "Card tool example",
+            "Card",
+            "Agent tool-style card (status leading + summary).",
+            42,
+            7,
+            card_tool_story,
+        ),
+        Story::new(
             "action-bar/basic",
             "Action bar",
             "ActionBar",
@@ -2421,10 +2466,10 @@ pub(crate) fn stories() -> Vec<Story> {
             "panel/narrow",
             "Narrow Panel",
             "Panel",
-            "Narrow-terminal geometry for Panel (22 cols).",
-            22,
-            7,
-            panel,
+            "Title contraction drops trailing then subtitle then leading.",
+            18,
+            6,
+            panel_narrow_story,
         ),
         Story::new(
             "panel/unicode",
@@ -2901,6 +2946,119 @@ pub(crate) fn stories() -> Vec<Story> {
 /// Catalog generation deliberately uses [`stories`] instead.
 pub(crate) fn gallery_stories() -> Vec<Story> {
     stories()
+}
+
+fn panel_variants_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Panel, PanelVariant};
+    let variants = [
+        PanelVariant::Bordered,
+        PanelVariant::Quiet,
+        PanelVariant::DividerOnly,
+        PanelVariant::Interactive,
+        PanelVariant::Selected,
+    ];
+    let h = (area.height / variants.len() as u16).max(2);
+    for (i, v) in variants.iter().enumerate() {
+        let y = area.y.saturating_add((i as u16).saturating_mul(h));
+        if y >= area.bottom() {
+            break;
+        }
+        let row = Rect::new(area.x, y, area.width, h.min(area.bottom().saturating_sub(y)));
+        let body = Panel::new(system)
+            .title(v.id())
+            .variant(*v)
+            .paint(row, frame.buffer_mut(), None);
+        if body.width > 2 && body.height > 0 {
+            frame.buffer_mut().set_stringn(
+                body.x,
+                body.y,
+                v.id(),
+                usize::from(body.width),
+                system.style(Role::TextMuted),
+            );
+        }
+    }
+}
+
+fn panel_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Panel, PanelBody};
+    let _ = Panel::new(system)
+        .title("Inbox")
+        .body(PanelBody::Empty)
+        .body_title("No messages")
+        .body_detail("Try another filter")
+        .paint(area, frame.buffer_mut(), None);
+}
+
+fn panel_collapsible_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Panel, PanelState};
+    let mut state = PanelState::new();
+    state.set_focused(true);
+    let body = Panel::new(system)
+        .title("Section")
+        .subtitle("details")
+        .collapsible(true)
+        .emphasis(PanelChrome::Focused)
+        .paint(area, frame.buffer_mut(), Some(&mut state));
+    if body.height > 0 && body.width > 2 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "expanded body",
+            usize::from(body.width),
+            system.style(Role::Text),
+        );
+    }
+}
+
+fn panel_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Panel;
+    let _ = Panel::new(system)
+        .title("Main title")
+        .subtitle("subtitle")
+        .leading("*")
+        .trailing("act")
+        .footer("hint")
+        .emphasis(PanelChrome::Focused)
+        .paint(area, frame.buffer_mut(), None);
+}
+
+fn card_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Card;
+    let body = Card::new(system)
+        .title("Latency")
+        .description("p99 over last hour")
+        .footer("dashboard")
+        .paint(area, frame.buffer_mut(), None);
+    if body.width > 2 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "42ms",
+            usize::from(body.width),
+            system.style(Role::TextStrong),
+        );
+    }
+}
+
+fn card_tool_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Card, ToolStatus};
+    let status = ToolStatus::Running;
+    let body = Card::new(system)
+        .title("shell")
+        .leading(status.glyph())
+        .subtitle("cargo test")
+        .emphasis(PanelChrome::Focused)
+        .paint(area, frame.buffer_mut(), None);
+    if body.width > 2 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "running…",
+            usize::from(body.width),
+            system.style(status.role()),
+        );
+    }
 }
 
 fn panel(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
