@@ -13,6 +13,7 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/product-audit.md`](../docs/design/product-audit.md) | Product/architecture audit |
 | [`docs/design/component-anatomy-spec.md`](../docs/design/component-anatomy-spec.md) | Component anatomy/behavior/state catalog |
 | [`docs/design/component-prompt-library.md`](../docs/design/component-prompt-library.md) | **164 agent prompts** (global contract + per-component tasks) |
+| [`docs/design/source-owned-registry.md`](../docs/design/source-owned-registry.md) | **Source-owned registry + CLI architecture** (shadcn-class distribution) |
 
 ### Using the component prompt library
 

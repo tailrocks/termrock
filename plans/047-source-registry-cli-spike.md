@@ -19,12 +19,14 @@
 - **Category**: distribution, CLI, security, DX
 - **Planned at**: commit `16b0ee8`, 2026-08-09
 - **Execution**: BLOCKED — requires maintainer approval for workspace CLI/schema; not shipped
+- **Design SoT**: [`docs/design/source-owned-registry.md`](../docs/design/source-owned-registry.md) (full architecture, schema, 3-way update, security)
 
 ### Evidence (2026-08-09)
 
 - No `registry/` crate or CLI binary in workspace `Cargo.toml` members.
 - Plan STOP: “maintainers explicitly approve adding a workspace CLI crate” — **not granted**.
 - Downstream plans 048–049 re-planned to **not hard-block** on 047 (orthogonal distribution spike).
+- Full ecosystem design documented (registry schema, `termrock.toml`, CLI UX, conflict matrix, phases).
 
 ## Why this matters
 
