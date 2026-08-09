@@ -844,11 +844,7 @@ impl ResponsiveSurface {
             return 1;
         }
         let a = self.anatomy_for_width(width);
-        if a.multi_pane && !a.line_mode {
-            2
-        } else {
-            1
-        }
+        if a.multi_pane && !a.line_mode { 2 } else { 1 }
     }
 
     /// Stable name for docs/tests.
@@ -1157,10 +1153,9 @@ mod tests {
             );
             if width <= 40 {
                 assert!(
-                    contracted
-                        .iter()
-                        .all(|p| p.name != "shortcut" && p.name != "badge"
-                            || p.preferred_width == 0),
+                    contracted.iter().all(
+                        |p| p.name != "shortcut" && p.name != "badge" || p.preferred_width == 0
+                    ),
                     "optional chrome should be gone or empty at {width}: {contracted:?}"
                 );
             }

@@ -608,9 +608,7 @@ impl<FocusId> OverlayStack<FocusId> {
     /// Whether the top overlay owns keyboard while open.
     #[must_use]
     pub fn top_owns_input(&self) -> bool {
-        self.entries
-            .last()
-            .is_some_and(|e| e.policy.owns_input)
+        self.entries.last().is_some_and(|e| e.policy.owns_input)
     }
 
     /// Whether a pointer position hits the top overlay rect.
@@ -650,7 +648,9 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
     /// Opens or replaces an overlay and resolves geometry inside `bounds`.
     pub fn open(&mut self, bounds: Rect, spec: OverlaySpec<FocusId>) -> OverlayOutcome<FocusId> {
         self.bounds = bounds;
-        let policy = spec.policy.unwrap_or_else(|| OverlayPolicy::for_kind(spec.kind));
+        let policy = spec
+            .policy
+            .unwrap_or_else(|| OverlayPolicy::for_kind(spec.kind));
         let (rect, fullscreen_promoted) =
             resolve_placement(bounds, spec.anchor, spec.size, policy, spec.kind);
         let id = spec.id.clone();
@@ -693,13 +693,8 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
                 entry.rect = bounds;
                 continue;
             }
-            let (rect, promoted) = resolve_placement(
-                bounds,
-                entry.anchor,
-                entry.size,
-                entry.policy,
-                entry.kind,
-            );
+            let (rect, promoted) =
+                resolve_placement(bounds, entry.anchor, entry.size, entry.policy, entry.kind);
             entry.rect = rect;
             entry.fullscreen_promoted = promoted || entry.fullscreen_promoted;
         }
@@ -716,7 +711,8 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             LayerDismissPolicy::Dismissible => {
                 let removed = self.entries.pop().expect("top");
                 // Nested dismissal: also drop descendants of removed id.
-                self.entries.retain(|e| e.parent.as_ref() != Some(&removed.id));
+                self.entries
+                    .retain(|e| e.parent.as_ref() != Some(&removed.id));
                 OverlayOutcome::Dismissed {
                     id: removed.id,
                     focus: removed.opener_focus,
@@ -737,7 +733,8 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             LayerDismissPolicy::Trap | LayerDismissPolicy::Ignore => OverlayOutcome::Ignored,
             LayerDismissPolicy::Dismissible => {
                 let removed = self.entries.pop().expect("top");
-                self.entries.retain(|e| e.parent.as_ref() != Some(&removed.id));
+                self.entries
+                    .retain(|e| e.parent.as_ref() != Some(&removed.id));
                 OverlayOutcome::Dismissed {
                     id: removed.id,
                     focus: removed.opener_focus,
@@ -752,7 +749,8 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             return OverlayOutcome::Ignored;
         };
         let removed = self.entries.remove(index);
-        self.entries.retain(|e| e.parent.as_ref() != Some(&removed.id));
+        self.entries
+            .retain(|e| e.parent.as_ref() != Some(&removed.id));
         OverlayOutcome::Dismissed {
             id: removed.id,
             focus: removed.opener_focus,
@@ -763,10 +761,8 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
     ///
     /// Call after ensuring a root layer. Overlay layer ids are stringified
     /// [`OverlayId`] values — use the same string when registering elements.
-    pub fn sync_scene_layers<Id, Action>(
-        &self,
-        scene: &mut InteractionScene<Id, String, Action>,
-    ) where
+    pub fn sync_scene_layers<Id, Action>(&self, scene: &mut InteractionScene<Id, String, Action>)
+    where
         Id: Clone + PartialEq,
         FocusId: Into<Id> + Clone,
     {
@@ -853,45 +849,41 @@ fn resolve_placement(
         return (bounds, true);
     }
     if matches!(prefer, PlacementPrefer::DrawerStart) {
-        let w = width.min(bounds.width / 2).max(size.min_width.min(bounds.width));
+        let w = width
+            .min(bounds.width / 2)
+            .max(size.min_width.min(bounds.width));
         return (Rect::new(bounds.x, bounds.y, w, bounds.height), false);
     }
     if matches!(prefer, PlacementPrefer::DrawerEnd) {
-        let w = width.min(bounds.width / 2).max(size.min_width.min(bounds.width));
+        let w = width
+            .min(bounds.width / 2)
+            .max(size.min_width.min(bounds.width));
         let x = bounds.x.saturating_add(bounds.width.saturating_sub(w));
         return (Rect::new(x, bounds.y, w, bounds.height), false);
     }
 
     let rect = match prefer {
         PlacementPrefer::Center => {
-            let x = bounds.x.saturating_add(bounds.width.saturating_sub(width) / 2);
-            let y = bounds.y.saturating_add(bounds.height.saturating_sub(height) / 2);
+            let x = bounds
+                .x
+                .saturating_add(bounds.width.saturating_sub(width) / 2);
+            let y = bounds
+                .y
+                .saturating_add(bounds.height.saturating_sub(height) / 2);
             Rect::new(x, y, width, height)
         }
         PlacementPrefer::AtOrigin => {
             let origin = anchor.unwrap_or(Rect::new(bounds.x, bounds.y, 1, 1));
-            clamp_rect(
-                Rect::new(origin.x, origin.y, width, height),
-                bounds,
-            )
+            clamp_rect(Rect::new(origin.x, origin.y, width, height), bounds)
         }
-        PlacementPrefer::BelowStart
-        | PlacementPrefer::AboveStart
-        | PlacementPrefer::EndAligned => {
+        PlacementPrefer::BelowStart | PlacementPrefer::AboveStart | PlacementPrefer::EndAligned => {
             let anchor = anchor.unwrap_or(Rect::new(
                 bounds.x.saturating_add(bounds.width / 2),
                 bounds.y.saturating_add(bounds.height / 2),
                 1,
                 1,
             ));
-            place_anchored(
-                bounds,
-                anchor,
-                width,
-                height,
-                prefer,
-                policy.cover_anchor,
-            )
+            place_anchored(bounds, anchor, width, height, prefer, policy.cover_anchor)
         }
         PlacementPrefer::Fullscreen | PlacementPrefer::DrawerStart | PlacementPrefer::DrawerEnd => {
             bounds
@@ -907,7 +899,9 @@ fn clamp_rect(rect: Rect, bounds: Rect) -> Rect {
     let width = rect.width.min(bounds.width).max(1);
     let height = rect.height.min(bounds.height).max(1);
     let max_x = bounds.x.saturating_add(bounds.width.saturating_sub(width));
-    let max_y = bounds.y.saturating_add(bounds.height.saturating_sub(height));
+    let max_y = bounds
+        .y
+        .saturating_add(bounds.height.saturating_sub(height));
     let x = rect.x.clamp(bounds.x, max_x);
     let y = rect.y.clamp(bounds.y, max_y);
     Rect::new(x, y, width, height)
@@ -963,9 +957,7 @@ fn place_anchored(
 
     let right_limit = bounds.x.saturating_add(bounds.width);
     let x = if matches!(prefer, PlacementPrefer::EndAligned) {
-        right_limit
-            .saturating_sub(width)
-            .max(bounds.x)
+        right_limit.saturating_sub(width).max(bounds.x)
     } else if anchor.x.saturating_add(width) <= right_limit {
         anchor.x.max(bounds.x)
     } else {
@@ -1100,12 +1092,7 @@ mod tests {
         let bounds = Rect::new(0, 0, 80, 24);
         let anchor = Rect::new(10, 5, 1, 1);
         let policy = OverlayPolicy::for_kind(OverlayKind::Completion);
-        let rect = place_overlay(
-            bounds,
-            Some(anchor),
-            OverlaySize::menu(20, 8),
-            policy,
-        );
+        let rect = place_overlay(bounds, Some(anchor), OverlaySize::menu(20, 8), policy);
         assert!(!rect_intersects(rect, anchor));
         assert!(rect.y >= 6 || rect.y + rect.height <= 5);
     }
@@ -1115,12 +1102,7 @@ mod tests {
         let bounds = Rect::new(0, 0, 40, 20);
         let anchor = Rect::new(5, 18, 1, 1);
         let policy = OverlayPolicy::for_kind(OverlayKind::Menu);
-        let rect = place_overlay(
-            bounds,
-            Some(anchor),
-            OverlaySize::menu(12, 6),
-            policy,
-        );
+        let rect = place_overlay(bounds, Some(anchor), OverlaySize::menu(12, 6), policy);
         assert!(rect.y + rect.height <= 20);
         assert!(!rect_intersects(rect, anchor) || policy.cover_anchor);
     }
@@ -1348,8 +1330,13 @@ mod tests {
         );
         stack.open(
             bounds,
-            OverlaySpec::menu("menu", Rect::new(20, 12, 8, 1), OverlaySize::menu(16, 5), None)
-                .with_parent("dlg"),
+            OverlaySpec::menu(
+                "menu",
+                Rect::new(20, 12, 8, 1),
+                OverlaySize::menu(16, 5),
+                None,
+            )
+            .with_parent("dlg"),
         );
         stack.open(
             bounds,
@@ -1539,9 +1526,7 @@ mod tests {
             OverlaySpec::dialog("confirm", OverlaySize::dialog(36, 8), Some("save-btn")),
         );
         match stack.handle_escape() {
-            OverlayOutcome::Dismissed {
-                focus: Some(f), ..
-            } => assert_eq!(f, "save-btn"),
+            OverlayOutcome::Dismissed { focus: Some(f), .. } => assert_eq!(f, "save-btn"),
             other => panic!("expected focus restore, got {other:?}"),
         }
     }
@@ -1567,10 +1552,7 @@ mod tests {
         assert!(after.height <= 12);
         assert_eq!(stack.entries().len(), 1);
         // Anchor + size preserved for reflow
-        assert_eq!(
-            stack.top().unwrap().anchor,
-            Some(Rect::new(50, 20, 1, 1))
-        );
+        assert_eq!(stack.top().unwrap().anchor, Some(Rect::new(50, 20, 1, 1)));
         // Dialog that was centered stays centered after shrink
         stack.clear();
         stack.open(
@@ -1598,9 +1580,7 @@ mod tests {
         for expect in (0..4).rev() {
             match stack.handle_escape() {
                 OverlayOutcome::Dismissed {
-                    focus: Some(f),
-                    id,
-                    ..
+                    focus: Some(f), id, ..
                 } => {
                     assert_eq!(f, expect);
                     assert_eq!(id.as_str(), format!("q{expect}"));

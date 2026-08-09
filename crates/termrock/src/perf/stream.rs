@@ -181,13 +181,11 @@ impl StreamCoalescer {
         if delta.is_empty() && priority < UpdatePriority::High {
             return;
         }
-        if matches!(self.backpressure, BackpressureSignal::Hard)
-            && priority < UpdatePriority::High
+        if matches!(self.backpressure, BackpressureSignal::Hard) && priority < UpdatePriority::High
         {
             return;
         }
-        if matches!(self.backpressure, BackpressureSignal::Soft)
-            && priority == UpdatePriority::Low
+        if matches!(self.backpressure, BackpressureSignal::Soft) && priority == UpdatePriority::Low
         {
             return;
         }

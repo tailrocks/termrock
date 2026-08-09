@@ -10,6 +10,8 @@
 
 ## Status
 
+- **Execution**: DONE — migration 0054
+
 - **Priority**: P2
 - **Effort**: L
 - **Risk**: HIGH
@@ -113,12 +115,12 @@ check; separate repository check and gate pass.
 
 ## Done criteria
 
-- [ ] One ScrollArea/state grammar serves scalable content.
-- [ ] Table/DataTable stay consumer-sorted/fetched and stable-ID correct.
-- [ ] ObjectInspector, LogStream, DiffReview have full binding contracts.
-- [ ] Charts use viz recipes and non-color/capability cues.
-- [ ] Hot paths are O(visible) and allocation-gated.
-- [ ] Migration `0045`, docs/evidence/previews/traces/API fresh; gates pass.
+- [x] One ScrollArea/state grammar serves scalable content.
+- [x] Table/DataTable stay consumer-sorted/fetched and stable-ID correct.
+- [x] ObjectInspector, LogStream, DiffReview have full binding contracts.
+- [x] Charts use viz recipes and non-color/capability cues.
+- [x] Hot paths are O(visible) and allocation-gated.
+- [x] Migration `0045`, docs/evidence/previews/traces/API fresh; gates pass.
 
 ## STOP conditions
 

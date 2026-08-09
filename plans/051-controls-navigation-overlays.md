@@ -10,6 +10,8 @@
 
 ## Status
 
+- **Execution**: DONE — migration 0053
+
 - **Priority**: P2
 - **Effort**: L
 - **Risk**: HIGH
@@ -116,12 +118,12 @@ placement model; warmed visible-item allocation; check and gate pass separately.
 
 ## Done criteria
 
-- [ ] All listed controls/navigation/overlay contracts implemented.
-- [ ] Values are controlled or explicitly state-owned; effects remain outcomes.
-- [ ] One Menu/placement/layer truth serves Select/ContextMenu/Palette/etc.
-- [ ] Focus, Escape, outside-click, disabled/loading are deterministic.
-- [ ] Picker and thin/duplicate public paths have canonical replacements only.
-- [ ] Migration `0044`, docs/evidence/previews/traces/API fresh; gates pass.
+- [x] All listed controls/navigation/overlay contracts implemented.
+- [x] Values are controlled or explicitly state-owned; effects remain outcomes.
+- [x] One Menu/placement/layer truth serves Select/ContextMenu/Palette/etc.
+- [x] Focus, Escape, outside-click, disabled/loading are deterministic.
+- [x] Picker and thin/duplicate public paths have canonical replacements only.
+- [x] Migration `0044`, docs/evidence/previews/traces/API fresh; gates pass.
 
 ## STOP conditions
 

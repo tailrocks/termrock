@@ -16,7 +16,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{Density, DesignTokens, Role, Theme},
     text::{display_cols, take_display_cols},
     widgets::{Panel, PanelEmphasis},
@@ -113,9 +115,7 @@ impl PermissionProvenance {
     /// Whether any hop is a subagent.
     #[must_use]
     pub fn has_subagent(&self) -> bool {
-        self.chain
-            .iter()
-            .any(|h| h.kind == InitiatorKind::Subagent)
+        self.chain.iter().any(|h| h.kind == InitiatorKind::Subagent)
     }
 
     /// Compact display: `agent > sub:review > mcp:fs`.
@@ -148,7 +148,7 @@ pub enum PermissionRisk {
 
 impl PermissionRisk {
     /// Theme role for risk chrome.
-        #[must_use]
+    #[must_use]
     pub const fn role(self) -> Role {
         match self {
             Self::Low => Role::Info,
@@ -158,7 +158,7 @@ impl PermissionRisk {
     }
 
     /// ASCII-friendly risk marker.
-        #[must_use]
+    #[must_use]
     pub const fn glyph(self) -> &'static str {
         match self {
             Self::Low => "i",
@@ -169,7 +169,7 @@ impl PermissionRisk {
     }
 
     /// Human risk label.
-        #[must_use]
+    #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
             Self::Low => "low risk",
@@ -222,7 +222,7 @@ pub enum PermissionActionKind {
 
 impl PermissionActionKind {
     /// Short action-kind label.
-        #[must_use]
+    #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
             Self::Unknown => "action",
@@ -291,7 +291,7 @@ pub enum PermissionAction {
 
 impl PermissionAction {
     /// Action button label.
-        #[must_use]
+    #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
             Self::Allow => "Allow",
@@ -456,7 +456,11 @@ pub struct PermissionRequest {
 impl PermissionRequest {
     /// Builder-style minimal request.
     #[must_use]
-    pub fn new(id: impl Into<String>, action: impl Into<String>, target: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        action: impl Into<String>,
+        target: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             generation: 0,
@@ -485,35 +489,35 @@ impl PermissionRequest {
     }
 
     /// Sets risk tier.
-        #[must_use]
+    #[must_use]
     pub fn risk(mut self, risk: PermissionRisk) -> Self {
         self.risk = risk;
         self
     }
 
     /// Sets provenance chain.
-        #[must_use]
+    #[must_use]
     pub fn provenance(mut self, provenance: PermissionProvenance) -> Self {
         self.provenance = provenance;
         self
     }
 
     /// Sets action kind.
-        #[must_use]
+    #[must_use]
     pub fn action_kind(mut self, kind: PermissionActionKind) -> Self {
         self.action_kind = kind;
         self
     }
 
     /// Sets editable command preview.
-        #[must_use]
+    #[must_use]
     pub fn command(mut self, cmd: impl Into<String>) -> Self {
         self.command_preview = Some(cmd.into());
         self
     }
 
     /// Marks data egress with destination and accessed summary.
-        #[must_use]
+    #[must_use]
     pub fn egress(mut self, destination: impl Into<String>, accessed: impl Into<String>) -> Self {
         self.data.egress = true;
         self.data.destination = Some(destination.into());
@@ -522,7 +526,7 @@ impl PermissionRequest {
     }
 
     /// Marks the operation non-reversible.
-        #[must_use]
+    #[must_use]
     pub fn irreversible(mut self) -> Self {
         self.reversible = false;
         self
@@ -531,10 +535,7 @@ impl PermissionRequest {
     /// Default action strip for this risk.
     #[must_use]
     pub fn actions_for_risk(&self) -> Vec<PermissionAction> {
-        let mut actions = vec![
-            PermissionAction::Deny,
-            PermissionAction::InspectDetails,
-        ];
+        let mut actions = vec![PermissionAction::Deny, PermissionAction::InspectDetails];
         if self.command_preview.is_some() || self.pattern_preview.is_some() {
             actions.push(PermissionAction::AllowEdited);
             actions.push(PermissionAction::AllowRestricted);
@@ -610,7 +611,7 @@ pub struct PermissionQueue {
 
 impl PermissionQueue {
     /// Empty queue.
-        #[must_use]
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -631,25 +632,25 @@ impl PermissionQueue {
     }
 
     /// Number of pending requests.
-        #[must_use]
+    #[must_use]
     pub fn len(&self) -> usize {
         self.pending.len()
     }
 
     /// Whether the queue has no pending requests.
-        #[must_use]
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.pending.is_empty()
     }
 
     /// Pending requests oldest-first.
-        #[must_use]
+    #[must_use]
     pub fn pending(&self) -> &[PermissionRequest] {
         &self.pending
     }
 
     /// Audit log (oldest first).
-        #[must_use]
+    #[must_use]
     pub fn audit(&self) -> &[PermissionAuditEntry] {
         &self.audit
     }
@@ -744,7 +745,6 @@ pub enum StaleReason {
     },
 }
 
-
 // ── Surface state ───────────────────────────────────────────────────────────
 
 /// Interaction mode of the trust surface.
@@ -796,7 +796,7 @@ impl Default for PermissionPromptState {
 
 impl PermissionPromptState {
     /// Empty prompt state.
-        #[must_use]
+    #[must_use]
     pub fn new() -> Self {
         Self {
             queue: PermissionQueue::new(),
@@ -826,7 +826,11 @@ impl PermissionPromptState {
             self.available = head.actions_for_risk();
             self.selected = head.risk.default_focus();
             if !self.available.contains(&self.selected) {
-                self.selected = self.available.first().copied().unwrap_or(PermissionAction::Deny);
+                self.selected = self
+                    .available
+                    .first()
+                    .copied()
+                    .unwrap_or(PermissionAction::Deny);
             }
             self.scope = head.requested_scope;
             self.details_expanded = false;
@@ -840,31 +844,31 @@ impl PermissionPromptState {
     }
 
     /// Currently focused action.
-        #[must_use]
+    #[must_use]
     pub fn selected(&self) -> PermissionAction {
         self.selected
     }
 
     /// Selected grant scope.
-        #[must_use]
+    #[must_use]
     pub const fn scope(&self) -> PermissionScope {
         self.scope
     }
 
     /// Whether detail lines are shown.
-        #[must_use]
+    #[must_use]
     pub const fn details_expanded(&self) -> bool {
         self.details_expanded
     }
 
     /// Current edit buffer contents.
-        #[must_use]
+    #[must_use]
     pub fn edit_buffer(&self) -> &str {
         &self.edit_buffer
     }
 
     /// Generation of the head request, if any.
-        #[must_use]
+    #[must_use]
     pub fn head_generation(&self) -> Option<u64> {
         self.queue.head().map(|r| r.generation)
     }
@@ -876,7 +880,10 @@ impl PermissionPromptState {
         }
         let is_press = key.kind == KeyEventKind::Press;
 
-        if matches!(self.mode, SurfaceMode::EditCommand | SurfaceMode::EditPattern) {
+        if matches!(
+            self.mode,
+            SurfaceMode::EditCommand | SurfaceMode::EditPattern
+        ) {
             return self.handle_edit_key(key, is_press);
         }
 
@@ -959,7 +966,9 @@ impl PermissionPromptState {
                 self.edit_buffer.pop();
                 PermissionOutcome::EditChanged
             }
-            KeyCode::Char(c) if !c.is_control() && (is_press || key.kind == KeyEventKind::Repeat) => {
+            KeyCode::Char(c)
+                if !c.is_control() && (is_press || key.kind == KeyEventKind::Repeat) =>
+            {
                 self.edit_buffer.push(c);
                 PermissionOutcome::EditChanged
             }
@@ -1005,11 +1014,7 @@ impl PermissionPromptState {
         self.confirm_with_edit(generation, None)
     }
 
-    fn confirm_with_edit(
-        &mut self,
-        generation: u64,
-        edited: Option<String>,
-    ) -> PermissionOutcome {
+    fn confirm_with_edit(&mut self, generation: u64, edited: Option<String>) -> PermissionOutcome {
         if self.selected == PermissionAction::InspectDetails {
             self.details_expanded = !self.details_expanded;
             return PermissionOutcome::DetailsToggled {
@@ -1021,12 +1026,11 @@ impl PermissionPromptState {
         }
         let action = self.selected;
         let scope = self.scope;
-        let request_id = self
+        let request_id = self.queue.head().map(|r| r.id.clone()).unwrap_or_default();
+        match self
             .queue
-            .head()
-            .map(|r| r.id.clone())
-            .unwrap_or_default();
-        match self.queue.resolve(generation, action, scope, edited.clone()) {
+            .resolve(generation, action, scope, edited.clone())
+        {
             Ok(_) => {
                 self.sync_from_head();
                 PermissionOutcome::Decided {
@@ -1092,7 +1096,7 @@ pub struct PermissionPrompt<'a> {
 
 impl<'a> PermissionPrompt<'a> {
     /// Creates a prompt with the given theme.
-        #[must_use]
+    #[must_use]
     pub const fn new(theme: &'a Theme) -> Self {
         Self {
             theme,
@@ -1101,7 +1105,7 @@ impl<'a> PermissionPrompt<'a> {
     }
 
     /// Prefer ASCII risk markers.
-        #[must_use]
+    #[must_use]
     pub const fn ascii(mut self, ascii: bool) -> Self {
         self.ascii = ascii;
         self
@@ -1118,7 +1122,9 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         }
         let tokens = DesignTokens::new(self.theme.clone(), Density::Compact);
         let Some(req) = state.queue.head() else {
-            let panel = Panel::new(&tokens).title("Permission").emphasis(PanelEmphasis::Normal);
+            let panel = Panel::new(&tokens)
+                .title("Permission")
+                .emphasis(PanelEmphasis::Normal);
             Widget::render(&panel, area, buffer);
             let inner = panel.inner(area);
             if !inner.is_empty() {
@@ -1166,7 +1172,14 @@ impl StatefulWidget for &PermissionPrompt<'_> {
 
         // Provenance
         let prov = format!("from {}", req.provenance.display_path());
-        paint_line(buffer, inner.x, y, w, &prov, self.theme.style(Role::TextMuted));
+        paint_line(
+            buffer,
+            inner.x,
+            y,
+            w,
+            &prov,
+            self.theme.style(Role::TextMuted),
+        );
         y = y.saturating_add(1);
         if y >= inner.bottom() {
             return;
@@ -1203,14 +1216,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         if let Some(warn) = req.warning_text()
             && y < inner.bottom()
         {
-            paint_line(
-                buffer,
-                inner.x,
-                y,
-                w,
-                &warn,
-                self.theme.style(risk.role()),
-            );
+            paint_line(buffer, inner.x, y, w, &warn, self.theme.style(risk.role()));
             y = y.saturating_add(1);
         }
 
@@ -1231,20 +1237,15 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             && y < inner.bottom()
         {
             let p = format!("prior: {} ({})", prior.summary, prior.scope.label());
-            paint_line(
-                buffer,
-                inner.x,
-                y,
-                w,
-                &p,
-                self.theme.style(Role::Info),
-            );
+            paint_line(buffer, inner.x, y, w, &p, self.theme.style(Role::Info));
             y = y.saturating_add(1);
         }
 
         // Command / edit buffer
-        if matches!(state.mode, SurfaceMode::EditCommand | SurfaceMode::EditPattern)
-            && y < inner.bottom()
+        if matches!(
+            state.mode,
+            SurfaceMode::EditCommand | SurfaceMode::EditPattern
+        ) && y < inner.bottom()
         {
             let prefix = match state.mode {
                 SurfaceMode::EditCommand => "edit cmd> ",
@@ -1252,14 +1253,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 _ => "> ",
             };
             let line = format!("{prefix}{}", state.edit_buffer);
-            paint_line(
-                buffer,
-                inner.x,
-                y,
-                w,
-                &line,
-                self.theme.style(Role::Input),
-            );
+            paint_line(buffer, inner.x, y, w, &line, self.theme.style(Role::Input));
             y = y.saturating_add(1);
         } else if let Some(cmd) = &req.command_preview
             && y < inner.bottom()
@@ -1329,13 +1323,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 } else {
                     self.theme.style(Role::Text)
                 };
-                buffer.set_stringn(
-                    rect.x,
-                    rect.y,
-                    &label,
-                    usize::from(rect.width),
-                    style,
-                );
+                buffer.set_stringn(rect.x, rect.y, &label, usize::from(rect.width), style);
                 state.action_regions.push(PermissionActionRegion {
                     action: *action,
                     area: rect,
@@ -1472,12 +1460,7 @@ mod tests {
         assert!(!q.is_live(g2));
         // Confirming g2 while g1 is head → stale
         let err = q
-            .resolve(
-                g2,
-                PermissionAction::Allow,
-                PermissionScope::Once,
-                None,
-            )
+            .resolve(g2, PermissionAction::Allow, PermissionScope::Once, None)
             .unwrap_err();
         assert!(matches!(
             err.reason,

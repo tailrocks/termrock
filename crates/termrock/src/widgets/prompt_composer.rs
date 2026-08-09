@@ -22,10 +22,12 @@ use ratatui_core::{
 
 use crate::{
     input::{
-        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
+        MouseEventKind,
     },
     interaction::{
-        OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack, place_overlay,
+        OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
+        place_overlay,
     },
     style::{Density, DesignTokens, Role, Theme},
     text::{display_cols, take_display_cols},
@@ -680,10 +682,9 @@ impl PromptComposerState {
             }
             if mod_newline || !self.policy.submit_on_enter {
                 self.push_undo();
-                let _ = self.editor.handle_key(KeyEvent::new(
-                    KeyCode::Enter,
-                    KeyModifiers::NONE,
-                ));
+                let _ = self
+                    .editor
+                    .handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
                 return self.after_edit();
             }
         }
@@ -1052,8 +1053,8 @@ fn detect_completion(text: &str, cursor: TextCursor) -> Option<CompletionQuery> 
         let b = bytes[i];
         if b == b'/' || b == b'@' || b == b'#' {
             let at_start = i == 0;
-            let prev_ok = at_start
-                || matches!(bytes[i - 1], b' ' | b'\n' | b'\t' | b'(' | b'[' | b'{');
+            let prev_ok =
+                at_start || matches!(bytes[i - 1], b' ' | b'\n' | b'\t' | b'(' | b'[' | b'{');
             if !prev_ok {
                 continue;
             }
@@ -1289,11 +1290,7 @@ impl StatefulWidget for &PromptComposer<'_> {
                     .saturating_add(layout.status.width.saturating_sub(meter_w));
                 let meter = TokenMeter::new(state.context.used, state.context.limit, self.theme)
                     .label("ctx");
-                Widget::render(
-                    meter,
-                    Rect::new(mx, layout.status.y, meter_w, 1),
-                    buffer,
-                );
+                Widget::render(meter, Rect::new(mx, layout.status.y, meter_w, 1), buffer);
             }
         }
 
@@ -1310,7 +1307,6 @@ impl StatefulWidget for &PromptComposer<'_> {
                 self.theme.style(Role::Danger),
             );
         }
-
     }
 }
 

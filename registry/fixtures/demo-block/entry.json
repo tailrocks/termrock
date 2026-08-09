@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "demo-block",
+  "version": "0.1.0",
+  "description": "Offline registry fixture for termrock-cli",
+  "license": "Apache-2.0",
+  "kernel": "0.11.0",
+  "files": [
+    {
+      "source": "src/lib.rs",
+      "dest": "src/ui/demo_block.rs",
+      "sha256": "628ec35b14ea85627f5a4d63c2b0686f8ac3a20ddc129d4a2f80752b8e390401"
+    }
+  ]
+}

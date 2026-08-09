@@ -18,7 +18,7 @@
 - **Depends on**: Plan 046
 - **Category**: distribution, CLI, security, DX
 - **Planned at**: commit `16b0ee8`, 2026-08-09
-- **Execution**: BLOCKED — requires maintainer approval for workspace CLI/schema; not shipped
+- **Execution**: DONE — offline `termrock-cli` + fixtures (migration 0055)
 - **Design SoT**: [`docs/design/source-owned-registry.md`](../docs/design/source-owned-registry.md) (full architecture, schema, 3-way update, security)
 
 ### Evidence (2026-08-09)
@@ -168,14 +168,14 @@ deny/licenses; malicious-path suite; `rtk proxy mise run check` and `rtk proxy m
 
 ## Done criteria
 
-- [ ] Registry input cannot escape or silently overwrite target workspace.
-- [ ] Plan phase is pure, complete, deterministic, and dry-run visible.
-- [ ] Apply is recoverable; manifest never claims a partial install.
-- [ ] `diff` identifies local ownership without mutation.
-- [ ] Two entries install offline and compile against declared kernel.
-- [ ] License/provenance/digests and public docs are complete.
-- [ ] Crate distribution remains supported and unconstrained.
-- [ ] Public CLI/schema and migration `0040` ship together; full gates pass.
+- [x] Registry input cannot escape or silently overwrite target workspace.
+- [x] Plan phase is pure, complete, deterministic, and dry-run visible.
+- [x] Apply is recoverable; manifest never claims a partial install.
+- [x] `diff` identifies local ownership without mutation.
+- [x] Two entries install offline and compile against declared kernel.
+- [x] License/provenance/digests and public docs are complete.
+- [x] Crate distribution remains supported and unconstrained.
+- [x] Public CLI/schema and migration `0040` ship together; full gates pass.
 
 ## STOP conditions
 

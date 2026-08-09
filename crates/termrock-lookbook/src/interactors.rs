@@ -15,9 +15,9 @@ use termrock::{
     widgets::{
         Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk, BUILTIN_THEME_PRESETS,
         CellAlignment, ChoiceDialogState, Column, ColumnWidth, CommandPalette, CommandPaletteState,
-        ComposerChip, ContextEstimate, DesignInspector, DesignInspectorFrame,
-        Form, FormOutcome, FormSection, FormState, InspectorPanel, List, ListState, LogPane,
-        LogPaneState, ModeIndicator, ModelIndicator, Picker, PickerOutcome, PickerState, PromptBox,
+        ComposerChip, ContextEstimate, DesignInspector, DesignInspectorFrame, Form, FormOutcome,
+        FormSection, FormState, InspectorPanel, List, ListState, LogPane, LogPaneState,
+        ModeIndicator, ModelIndicator, Picker, PickerOutcome, PickerState, PromptBox,
         PromptBoxState, PromptComposer, PromptComposerOutcome, PromptComposerState, Severity,
         SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, Tab, Table,
         TableOutcome, TableRow, TableState, Tabs, TabsState, TextArea, TextAreaOutcome,
@@ -1134,10 +1134,7 @@ impl StoryInteraction for PromptComposerInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        !matches!(
-            self.state.handle_key(key),
-            PromptComposerOutcome::Ignored
-        )
+        !matches!(self.state.handle_key(key), PromptComposerOutcome::Ignored)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {

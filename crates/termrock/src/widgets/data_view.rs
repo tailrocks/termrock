@@ -324,10 +324,7 @@ impl<Id: PartialEq> ColumnModel<Id> {
 
     /// Visible columns only, preserving order.
     pub fn visible(&self) -> impl Iterator<Item = (usize, &DataColumn<Id>)> {
-        self.columns
-            .iter()
-            .enumerate()
-            .filter(|(_, c)| c.visible)
+        self.columns.iter().enumerate().filter(|(_, c)| c.visible)
     }
 
     /// Toggle visibility by id.
@@ -709,15 +706,16 @@ mod tests {
         let mut model = ColumnModel::new(vec![
             DataColumn::new("id", "ID", DataColumnWidth::Fixed(8)).priority(100),
             DataColumn::new("meta", "Meta", DataColumnWidth::Min(12)).priority(10),
-            DataColumn::new("name", "Name", DataColumnWidth::Fill(NonZeroU16::new(1).unwrap()))
-                .priority(80),
+            DataColumn::new(
+                "name",
+                "Name",
+                DataColumnWidth::Fill(NonZeroU16::new(1).unwrap()),
+            )
+            .priority(80),
             DataColumn::new("extra", "Extra", DataColumnWidth::Min(10)).priority(5),
         ]);
         model.contract_to_budget(2, 90);
-        let visible: Vec<_> = model
-            .visible()
-            .map(|(_, c)| c.id)
-            .collect();
+        let visible: Vec<_> = model.visible().map(|(_, c)| c.id).collect();
         assert!(visible.contains(&"id"));
         assert!(!visible.contains(&"extra"));
         assert_eq!(visible.len(), 2);
@@ -748,11 +746,13 @@ mod tests {
     fn load_state_flags() {
         assert!(LoadState::Loading { message: None }.shows_loading_chrome());
         assert!(LoadState::Empty { message: None }.shows_empty());
-        assert!(LoadState::Error {
-            message: "x".into(),
-            retryable: true
-        }
-        .shows_error());
+        assert!(
+            LoadState::Error {
+                message: "x".into(),
+                retryable: true
+            }
+            .shows_error()
+        );
     }
 
     #[test]

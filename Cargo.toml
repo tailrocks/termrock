@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/termrock", "crates/termrock-lookbook"]
+members = ["crates/termrock", "crates/termrock-lookbook", "crates/termrock-cli"]
 resolver = "3"
 
 [workspace.package]
@@ -23,6 +23,8 @@ stats_alloc = "0.1.10"
 tui-scrollbar = "0.2.7"
 unicode-segmentation = "1.13.3"
 unicode-width = "0.2.2"
+sha2 = "0.10"
+hex = "0.4"
 
 [workspace.lints.rust]
 missing_docs = "deny"

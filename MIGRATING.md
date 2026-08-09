@@ -65,6 +65,11 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0049 | `v0.12.0` | [Streaming performance kits](migrations/0049-v0.12.0-streaming-performance.md) |
 | 0050 | `v0.12.0` | [Terminal capability architecture](migrations/0050-v0.12.0-terminal-capabilities.md) |
 | 0051 | `v0.12.0` | [Component documentation standard](migrations/0051-v0.12.0-component-documentation-standard.md) |
+| 0052 | `v0.12.0` | [Terminal-native primitives](migrations/0052-v0.12.0-terminal-primitives.md) |
+| 0053 | `v0.12.0` | [Controls, navigation, overlays](migrations/0053-v0.12.0-controls-navigation-overlays.md) |
+| 0054 | `v0.12.0` | [Data and review surfaces](migrations/0054-v0.12.0-data-review-surfaces.md) |
+| 0055 | `v0.12.0` | [Source registry CLI](migrations/0055-v0.12.0-source-registry-cli.md) |
+| 0056 | `v0.12.0` | [Application blocks](migrations/0056-v0.12.0-application-blocks.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

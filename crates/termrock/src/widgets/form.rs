@@ -569,11 +569,7 @@ fn columns_for(width: u16) -> u8 {
         >= MIN_COLUMN_WIDTH
             .saturating_mul(2)
             .saturating_add(COLUMN_GAP);
-    if policy_cols >= 2 && fits {
-        2
-    } else {
-        1
-    }
+    if policy_cols >= 2 && fits { 2 } else { 1 }
 }
 
 fn dimensions<Id>(sections: &[FormSection<'_, Id>], width: u16) -> (u8, usize) {

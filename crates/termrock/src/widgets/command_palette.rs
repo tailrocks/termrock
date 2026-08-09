@@ -225,7 +225,10 @@ mod tests {
         assert!(matches!(out, OverlayOutcome::Opened { .. }));
         assert_eq!(stack.top().unwrap().kind, OverlayKind::CommandPalette);
         let rect = stack.top().unwrap().rect;
-        assert_eq!(rect, place_command_palette(bounds, CommandPaletteSize::default()));
+        assert_eq!(
+            rect,
+            place_command_palette(bounds, CommandPaletteSize::default())
+        );
         assert!(matches!(
             stack.handle_escape(),
             OverlayOutcome::Dismissed {
@@ -239,12 +242,8 @@ mod tests {
     fn narrow_terminal_promotes_palette() {
         let bounds = Rect::new(0, 0, 40, 12);
         let mut stack = OverlayStack::<()>::new();
-        let _ = open_command_palette_overlay(
-            &mut stack,
-            bounds,
-            CommandPaletteSize::default(),
-            None,
-        );
+        let _ =
+            open_command_palette_overlay(&mut stack, bounds, CommandPaletteSize::default(), None);
         assert!(stack.top().unwrap().fullscreen_promoted);
         assert_eq!(stack.top().unwrap().rect, bounds);
     }

@@ -76,8 +76,7 @@ pub fn detect_environment() -> DetectionReport {
             .or_else(|| std::env::var("COLORTERM_FORCE").ok()),
         glyphs_override: std::env::var("TERMROCK_GLYPHS").ok(),
         profile_override: std::env::var("TERMROCK_PROFILE").ok(),
-        ssh: std::env::var_os("SSH_CONNECTION").is_some()
-            || std::env::var_os("SSH_TTY").is_some(),
+        ssh: std::env::var_os("SSH_CONNECTION").is_some() || std::env::var_os("SSH_TTY").is_some(),
         windows_conpty: cfg!(windows)
             || std::env::var_os("WT_SESSION").is_some()
             || std::env::var_os("ConEmuANSI").is_some(),
@@ -113,10 +112,7 @@ pub fn detect_environment() -> DetectionReport {
     }
     if env.multiplexer.is_some()
         && env.truecolor_hint
-        && env
-            .term
-            .as_deref()
-            .is_some_and(|t| t.starts_with("screen"))
+        && env.term.as_deref().is_some_and(|t| t.starts_with("screen"))
     {
         warnings.push(
             "multiplexer TERM=screen* with truecolor COLORTERM — ensure outer Tc/RGB (tmux terminal-overrides)"
@@ -127,8 +123,9 @@ pub fn detect_environment() -> DetectionReport {
         warnings.push("TERM=dumb — Minimal/Headless profile recommended".into());
     }
     if env.ssh {
-        warnings
-            .push("SSH detected — local clipboard/OSC 52 may fail; prefer Compatible profile".into());
+        warnings.push(
+            "SSH detected — local clipboard/OSC 52 may fail; prefer Compatible profile".into(),
+        );
     }
     if env.term.is_none() {
         warnings.push("TERM unset — capability detection degraded".into());

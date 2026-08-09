@@ -10,8 +10,8 @@ use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::{
-        HitRegion, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
-        OverlayStack, Outcome, place_overlay,
+        HitRegion, Outcome, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize,
+        OverlaySpec, OverlayStack, place_overlay,
     },
     style::{Density, DesignTokens, Theme},
 };
@@ -71,7 +71,11 @@ pub fn open_dialog_overlay<FocusId: Clone>(
 ) -> OverlayOutcome<FocusId> {
     stack.open(
         bounds,
-        OverlaySpec::dialog(DIALOG_OVERLAY_ID, OverlaySize::from(preferred), opener_focus),
+        OverlaySpec::dialog(
+            DIALOG_OVERLAY_ID,
+            OverlaySize::from(preferred),
+            opener_focus,
+        ),
     )
 }
 

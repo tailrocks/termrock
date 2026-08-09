@@ -1,10 +1,6 @@
 //! Integration coverage for the tree rendering hot path.
 
-use std::{
-    alloc::System,
-    hint::black_box,
-    time::Instant,
-};
+use std::{alloc::System, hint::black_box, time::Instant};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};

@@ -4,8 +4,8 @@
 //! Structured report for `termrock doctor` (CLI or embed).
 
 use super::profile::{CapabilityOverrides, CapabilityProfile, EffectiveCapabilities};
-use super::set::{CapabilityKind, fallback_policies};
 use super::resolve_capabilities;
+use super::set::{CapabilityKind, fallback_policies};
 
 /// Severity of a doctor finding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -102,8 +102,7 @@ pub fn build_doctor_report(
         findings.push(DoctorFinding {
             severity: DoctorSeverity::Warning,
             code: "ssh_clipboard".into(),
-            message: "clipboard enabled over SSH — OSC 52 may be blocked; consider override"
-                .into(),
+            message: "clipboard enabled over SSH — OSC 52 may be blocked; consider override".into(),
         });
     }
     if effective.set.multiplexer
@@ -234,7 +233,10 @@ mod tests {
 
     #[test]
     fn doctor_report_lists_all_kinds() {
-        let report = build_doctor_report(Some(CapabilityProfile::Modern), CapabilityOverrides::default());
+        let report = build_doctor_report(
+            Some(CapabilityProfile::Modern),
+            CapabilityOverrides::default(),
+        );
         assert_eq!(report.capabilities.len(), CapabilityKind::ALL.len());
         let text = format_doctor_text(&report);
         assert!(text.contains("termrock doctor"));

@@ -190,11 +190,7 @@ pub struct CapabilityOverrides {
 impl CapabilityOverrides {
     /// Parse common env overrides into this struct (does not run full detect).
     #[must_use]
-    pub fn from_env_keys(
-        color: Option<&str>,
-        glyphs: Option<&str>,
-        profile: Option<&str>,
-    ) -> Self {
+    pub fn from_env_keys(color: Option<&str>, glyphs: Option<&str>, profile: Option<&str>) -> Self {
         let mut o = Self::default();
         if let Some(p) = profile {
             o.profile = CapabilityProfile::parse(p);
@@ -485,6 +481,9 @@ mod tests {
 
     #[test]
     fn resolve_never_panics() {
-        let _ = resolve_capabilities(Some(CapabilityProfile::Compatible), CapabilityOverrides::default());
+        let _ = resolve_capabilities(
+            Some(CapabilityProfile::Compatible),
+            CapabilityOverrides::default(),
+        );
     }
 }

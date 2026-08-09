@@ -20,6 +20,4 @@ pub use follow::{
     FollowMode, NewContentIndicator, ScrollAnchor, ScrollAnchorKind, apply_follow_after_append,
     pause_follow_on_user_scroll,
 };
-pub use stream::{
-    BackpressureSignal, DirtyFlags, StreamBatch, StreamCoalescer, UpdatePriority,
-};
+pub use stream::{BackpressureSignal, DirtyFlags, StreamBatch, StreamCoalescer, UpdatePriority};

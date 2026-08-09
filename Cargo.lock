@@ -1344,6 +1344,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "termrock-cli"
+version = "0.11.0"
+dependencies = [
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "termrock-lookbook"
 version = "0.11.0"
 dependencies = [

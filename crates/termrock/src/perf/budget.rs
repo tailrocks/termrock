@@ -199,11 +199,7 @@ const BUDGETS: [ComponentBudget; 12] = [
 /// Assert a wall-time batch budget (used by hot_path tests).
 ///
 /// Returns `Err` with a message suitable for `assert!` / CI logs.
-pub fn check_batch_budget(
-    budget_id: &str,
-    samples: u32,
-    elapsed: Duration,
-) -> Result<(), String> {
+pub fn check_batch_budget(budget_id: &str, samples: u32, elapsed: Duration) -> Result<(), String> {
     let Some(b) = budget_for(budget_id) else {
         return Err(format!("unknown budget id {budget_id}"));
     };
@@ -271,18 +267,8 @@ mod tests {
 
     #[test]
     fn check_batch_budget_accepts_under_limit() {
-        assert!(check_batch_budget(
-            "tree_viewport_10k",
-            100,
-            Duration::from_millis(50)
-        )
-        .is_ok());
-        assert!(check_batch_budget(
-            "tree_viewport_10k",
-            100,
-            Duration::from_millis(251)
-        )
-        .is_err());
+        assert!(check_batch_budget("tree_viewport_10k", 100, Duration::from_millis(50)).is_ok());
+        assert!(check_batch_budget("tree_viewport_10k", 100, Duration::from_millis(251)).is_err());
     }
 
     #[test]

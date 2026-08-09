@@ -20,20 +20,21 @@ use termrock::{
     style::Role,
     widgets::{
         Action, ActionBar, ActionBarState, Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk,
-        BUILTIN_THEME_PRESETS, Backdrop, Banner, BarDatum, BarSeries, CellAlignment, ChoiceDialog,
-        ChoiceDialogState, CodeBlock, Column, ColumnWidth, CommandPalette, CommandPaletteState,
-        CompletionCandidate, CompletionMenu, CompletionMenuSize, CompletionMenuState,
+        BUILTIN_THEME_PRESETS, Backdrop, Banner, BarDatum, BarSeries, Button, ButtonState,
+        CellAlignment, Checkbox, CheckboxState, ChoiceDialog, ChoiceDialogState, CodeBlock, Column,
+        ColumnWidth, CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
+        CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
         DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, EmptyState, ErrorView,
-        Form, FormField, FormSection, FormState, GridCell, GridColumn, GridRow, Hint, HintBar,
-        ImageMeta, ImageProtocol, ImageSurface, JumpOverlay, JumpTarget, List, ListRow, ListState,
-        LoadingView, LogPane, LogPaneState, MarkdownBlock, MarkdownBlockKind, MarkdownView,
-        MessageDialog, MeterSegment, Panel, PanelEmphasis, Picker, PickerState, Progress,
-        ProgressKind, PromptBox, PromptBoxState, PromptComposer, PromptComposerState, RowRole,
-        SegmentedMeter, Severity, Skeleton,
-        SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
-        StatusBarState, StatusSlot, StreamItem, StreamItemKind, StreamView, Tab, Table, TableRow,
-        TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
+        Form, FormField, FormSection, FormState, FormWizardState, GridCell, GridColumn, GridRow,
+        Hint, HintBar, ImageMeta, ImageProtocol, ImageSurface, JumpOverlay, JumpTarget, List,
+        ListRow, ListState, LoadingView, LogPane, LogPaneState, MarkdownBlock, MarkdownBlockKind,
+        MarkdownView, Menu, MenuItem, MenuState, MessageDialog, MeterSegment, Panel, PanelEmphasis,
+        Picker, PickerState, Progress, ProgressKind, PromptBox, PromptBoxState, PromptComposer,
+        PromptComposerState, RowRole, SegmentedMeter, Severity, Skeleton, SortDirection, Sparkline,
+        SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState,
+        StatusSlot, StreamItem, StreamItemKind, StreamView, Switch, SwitchState, Tab, Table,
+        TableRow, TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
         TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline, TimelineEvent,
         Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock, TranscriptKind,
         TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
@@ -959,6 +960,51 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             8,
             image_surface,
+        ),
+        Story::new(
+            "button/activation",
+            "Button",
+            "Button",
+            "Focused primary button activation chrome.",
+            32,
+            3,
+            button_story,
+        ),
+        Story::new(
+            "checkbox/switch",
+            "Checkbox and Switch",
+            "Checkbox",
+            "Controlled checkbox and switch projections.",
+            40,
+            4,
+            checkbox_switch_story,
+        ),
+        Story::new(
+            "data-table/toolbar",
+            "DataTable",
+            "DataTable",
+            "Toolbar, header, and visible projected rows.",
+            60,
+            10,
+            data_table_story,
+        ),
+        Story::new(
+            "menu/roving",
+            "Menu",
+            "Menu",
+            "Menu with disabled item skipped by roving focus.",
+            36,
+            8,
+            menu_story,
+        ),
+        Story::new(
+            "blocks/form-wizard",
+            "FormWizard",
+            "FormWizard",
+            "Wizard step projection (navigation state only).",
+            40,
+            4,
+            form_wizard_story,
         ),
     ]
 }
@@ -2317,9 +2363,7 @@ fn prompt_box(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 }
 
 fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    use termrock::widgets::{
-        ComposerChip, ContextEstimate, ModeIndicator, ModelIndicator,
-    };
+    use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator, ModelIndicator};
     let tokens = DesignTokens::new(theme.clone(), termrock::Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
@@ -2380,4 +2424,69 @@ fn image_surface(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     meta.pixel_width = Some(128);
     meta.pixel_height = Some(96);
     frame.render_widget(ImageSurface::new(meta, theme), area);
+}
+
+fn button_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut state = ButtonState::new();
+    state.activation.set_focused(true);
+    Button::new("Save", &tokens)
+        .primary(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut cb = CheckboxState::new(true);
+    cb.set_focused(true);
+    Checkbox::new("enable", "Enable", &tokens).render(
+        Rect::new(area.x, area.y, area.width, 1),
+        frame.buffer_mut(),
+        &mut cb,
+    );
+    let mut sw = SwitchState::new(false);
+    Switch::new("dark", "Dark mode", &tokens).render(
+        Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+        frame.buffer_mut(),
+        &mut sw,
+    );
+}
+
+fn data_table_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let columns = termrock::widgets::ColumnModel::new(vec![
+        termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
+        termrock::widgets::DataColumn::new(
+            "name",
+            "Name",
+            termrock::widgets::DataColumnWidth::Min(8),
+        ),
+    ]);
+    let cells0: &[&str] = &["1", "alpha"];
+    let cells1: &[&str] = &["2", "beta"];
+    let rows = [(1u64, cells0), (2u64, cells1)];
+    let toolbar = DataTableToolbar {
+        actions: &["Refresh", "Export"],
+    };
+    let mut state = DataTableState::<u64, &str>::new();
+    DataTable::new(&tokens, &columns, &rows)
+        .toolbar(&toolbar)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn menu_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let items = [
+        MenuItem::new("a", "Open"),
+        MenuItem::new("b", "Disabled").enabled(false),
+        MenuItem::new("c", "Save"),
+    ];
+    let state = MenuState::new();
+    Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &state);
+}
+
+fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, _theme: &Theme) {
+    let state = FormWizardState::new(3);
+    let line = format!("Wizard step {}/3", state.step() + 1);
+    frame.render_widget(Paragraph::new(line), area);
 }

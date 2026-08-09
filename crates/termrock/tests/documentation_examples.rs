@@ -87,7 +87,11 @@ fn handbook_datatable_virtual_window_example() {
 #[test]
 fn handbook_table_selection_example() {
     let tokens = DesignTokens::default();
-    let columns = [Column::new("name", Line::from("Name"), ColumnWidth::Min(12))];
+    let columns = [Column::new(
+        "name",
+        Line::from("Name"),
+        ColumnWidth::Min(12),
+    )];
     let cells = [Line::from("alpha")];
     let rows = [TableRow::new("r1", &cells)];
     let table = Table::new(&columns, &rows, &tokens);
@@ -125,10 +129,7 @@ fn handbook_dialog_examples() {
         &actions,
     );
     let mut state = ChoiceDialogState::new(Some("cancel"));
-    let outcome = state.handle_key(
-        &actions,
-        KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-    );
+    let outcome = state.handle_key(&actions, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
     assert!(matches!(outcome, Outcome::Activated("cancel")));
     let _ = (dialog, choice);
 }

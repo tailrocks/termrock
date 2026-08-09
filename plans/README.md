@@ -45,13 +45,13 @@ Historical plans **001–038** are complete (removed after verification).
 | [044](044-universal-intent-collections.md) | Universal intents for collections | P1 | M | DONE | 039–040 | 0038 |
 | [045](045-composed-row-panel-anatomy.md) | Priority-aware row/panel anatomy | P2 | M | DONE | 041, 043 | 0039 |
 | [046](046-agent-workbench-flagship.md) | Agent Workbench flagship | P2 | L | DONE | 039–045 | 0040 |
-| [047](047-source-registry-cli-spike.md) | Safe source-registry CLI spike | P3 | L | BLOCKED | 046 + approval | — |
+| [047](047-source-registry-cli-spike.md) | Safe source-registry CLI spike | P3 | L | DONE | 046 + approval | 0055 |
 | [048](048-lookbook-studio-inspector.md) | Lookbook → executable Studio | P3 | L | DONE | 040, 043–046 | 0041 |
 | [049](049-capability-aware-preview-host.md) | Capability-aware preview/media host | P3 | L | DONE | 042–043, 048 | 0042 |
-| [050](050-terminal-native-primitives.md) | Primitives, content, and feedback | P2 | L | TODO | 043, 045, 048–049 | 0043 |
-| [051](051-controls-navigation-overlays.md) | Controls, navigation, and overlays | P2 | L | TODO | 040, 043–045, 048, 050 | 0044 |
-| [052](052-data-review-surfaces.md) | Scalable data/log/review surfaces | P2 | L | TODO | 041, 043–045, 048, 050–051 | 0045 |
-| [053](053-application-block-collection.md) | Source-ownable application blocks | P2 | L | TODO | 042, 046–047, 049–052 | 0046 |
+| [050](050-terminal-native-primitives.md) | Primitives, content, and feedback | P2 | L | DONE | 043, 045, 048–049 | 0052 |
+| [051](051-controls-navigation-overlays.md) | Controls, navigation, and overlays | P2 | L | DONE | 040, 043–045, 048, 050 | 0053 |
+| [052](052-data-review-surfaces.md) | Scalable data/log/review surfaces | P2 | L | DONE | 041, 043–045, 048, 050–051 | 0054 |
+| [053](053-application-block-collection.md) | Source-ownable application blocks | P2 | L | DONE | 042, 046–047, 049–052 | 0056 |
 
 Plan 047 is a gate: DONE means public CLI/schema and migration `0040` shipped.
 If rejected/blocked, stop and re-plan every later migration number.
