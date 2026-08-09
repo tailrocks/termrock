@@ -17,6 +17,7 @@
 - **Depends on**: Plan 040
 - **Category**: feature, architecture, performance, UX, Unicode
 - **Planned at**: commit `16b0ee8`, 2026-08-09
+- **Execution**: DONE — Transcript engine (migration 0035)
 
 ## Why this matters
 

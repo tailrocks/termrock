@@ -509,6 +509,18 @@ let timeline = Timeline::new(&events, &theme);`,
 let theme = Theme::default();
 let meter = TokenMeter::new(128_000, 200_000, &theme);`,
   },
+  Transcript: {
+    description: 'Variable-height streaming transcript with stable visual anchors.',
+    primaryStory: 'transcript/basic',
+    usage: `use termrock::{Theme, widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState}};
+
+let theme = Theme::default();
+let lines = ["hello", "world"];
+let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
+let mut state: TranscriptState<&str> = TranscriptState::new();
+let view = Transcript::new(&blocks, &theme);
+let _ = (&mut state, view);`,
+  },
   ToolCard: {
     description: 'Mutable tool invocation card with non-color status glyphs.',
     primaryStory: 'tool-card/basic',

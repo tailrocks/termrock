@@ -31,8 +31,9 @@ use termrock::{
         SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, StreamItem,
         StreamItemKind, StreamView, Tab, Table, TableRow, TableState, Tabs, TabsState, TextArea,
         TextAreaState, TextCursor, TextInput, TextInputState, ThemePicker, ThemePickerState,
-        ThinkingBlock, Timeline, TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Tree,
-        TreeNode, TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
+        ThinkingBlock, Timeline, TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus,
+        Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode,
+        TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
     },
 };
 
@@ -803,6 +804,33 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             6,
             stream_view,
+        ),
+        Story::new(
+            "transcript/basic",
+            "Transcript",
+            "Transcript",
+            "Variable-height multi-block transcript viewport.",
+            48,
+            10,
+            transcript_basic,
+        ),
+        Story::new(
+            "transcript/narrow",
+            "Transcript narrow",
+            "Transcript",
+            "Transcript contraction at narrow widths.",
+            24,
+            8,
+            transcript_basic,
+        ),
+        Story::new(
+            "transcript/unicode",
+            "Transcript unicode",
+            "Transcript",
+            "Grapheme-safe multi-block transcript lines.",
+            48,
+            8,
+            transcript_basic,
         ),
         Story::new(
             "timeline/basic",
@@ -2039,6 +2067,23 @@ fn approval_card_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         area,
         &mut state,
     );
+}
+
+fn transcript_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let user = ["Run the suite", "with unicode: 日本語 🚀"];
+    let assistant = [
+        "Sure — preparing the environment.",
+        "Running tests…",
+        "All green.",
+    ];
+    let tool = ["cargo test — passed"];
+    let blocks = [
+        TranscriptBlock::new("u1", TranscriptKind::User, &user),
+        TranscriptBlock::new("a1", TranscriptKind::Assistant, &assistant),
+        TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).folded(false),
+    ];
+    let mut state = TranscriptState::new();
+    frame.render_stateful_widget(&Transcript::new(&blocks, theme), area, &mut state);
 }
 
 fn stream_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {

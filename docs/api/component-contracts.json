@@ -343,6 +343,14 @@
     "unicode": "not-applicable",
     "narrowTerminal": "not-applicable"
   },
+  "Transcript": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "Tree": {
     "keyboard": "covered",
     "mouse": "covered",

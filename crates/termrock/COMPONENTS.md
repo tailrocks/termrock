@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `ApprovalCard`, `Backdrop`, `Banner`, `BarSeries`, `ChoiceDialog`, `CodeBlock`, `CommandPalette`, `CompletionMenu`, `DetailTable`, `Dialog`, `DiffView`, `EmptyState`, `ErrorView`, `Form`, `HintBar`, `ImageSurface`, `JumpOverlay`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `PromptBox`, `SegmentedMeter`, `Skeleton`, `Sparkline`, `SplitPane`, `StatusBar`, `StreamView`, `Table`, `Tabs`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `TokenMeter`, `ToolCard`, `Tree`, `Viewport`, and `VirtualGrid`.
+The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `ApprovalCard`, `Backdrop`, `Banner`, `BarSeries`, `ChoiceDialog`, `CodeBlock`, `CommandPalette`, `CompletionMenu`, `DetailTable`, `Dialog`, `DiffView`, `EmptyState`, `ErrorView`, `Form`, `HintBar`, `ImageSurface`, `JumpOverlay`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `MessageDialog`, `Panel`, `Picker`, `Progress`, `PromptBox`, `SegmentedMeter`, `Skeleton`, `Sparkline`, `SplitPane`, `StatusBar`, `StreamView`, `Transcript`, `Table`, `Tabs`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `TokenMeter`, `ToolCard`, `Tree`, `Viewport`, and `VirtualGrid`.
 
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,

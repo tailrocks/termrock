@@ -31,6 +31,7 @@ mod text_area;
 mod text_input;
 mod theme_picker;
 mod toast;
+mod transcript;
 mod tree;
 mod view_state;
 mod viewport;
@@ -88,6 +89,10 @@ pub use theme_picker::{
     theme_from_preset_id,
 };
 pub use toast::{Anchor, Severity, Toast, ToastLifetime, ToastState};
+pub use transcript::{
+    Transcript, TranscriptAnchor, TranscriptBlock, TranscriptKind, TranscriptOutcome,
+    TranscriptState,
+};
 pub use tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState};
 pub use view_state::{Banner, EmptyState, ErrorView, LoadingView, Skeleton};
 pub use viewport::Viewport;
