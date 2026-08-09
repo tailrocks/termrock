@@ -48,9 +48,10 @@ use termrock::{
         PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
         PlanReviewState, PlanStep, Popover, Progress, ProgressKind, PromptComposer,
         PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep,
-        RowRole, SegmentedMeter, SeparatorLine, SessionItem, SessionPicker, Severity, Skeleton,
-        SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
-        StatusBarState, StatusSlot, Surface, SurfaceFill, SurfaceRecipe, Switch, SwitchState, Tab,
+        RadioGroup, RadioOption, RadioState, RowRole, SegmentedMeter, SeparatorLine, SessionItem,
+        SessionPicker, Severity, Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane,
+        SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Surface, SurfaceFill,
+        SurfaceRecipe, Switch, SwitchState, Tab,
         Table,
         TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
         TextInput, TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
@@ -2374,6 +2375,42 @@ pub(crate) fn stories() -> Vec<Story> {
             checkbox_list_story,
         ),
         Story::new(
+            "radio-group/basic",
+            "RadioGroup basic",
+            "RadioGroup",
+            "Vertical exclusive choice with legend and description.",
+            44,
+            8,
+            radio_group_basic_story,
+        ),
+        Story::new(
+            "radio-group/horizontal",
+            "RadioGroup horizontal",
+            "RadioGroup",
+            "Horizontal risk/permission style choices.",
+            52,
+            3,
+            radio_group_horizontal_story,
+        ),
+        Story::new(
+            "radio-group/disabled",
+            "RadioGroup disabled option",
+            "RadioGroup",
+            "Disabled option skipped by roving; selected middle.",
+            40,
+            6,
+            radio_group_disabled_story,
+        ),
+        Story::new(
+            "radio-group/badges",
+            "RadioGroup badges",
+            "RadioGroup",
+            "Recommended badge + long labels.",
+            48,
+            7,
+            radio_group_badges_story,
+        ),
+        Story::new(
             "data-table/toolbar",
             "DataTable",
             "DataTable",
@@ -3525,6 +3562,24 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             4,
             checkbox_unicode_story,
+        ),
+        Story::new(
+            "radio-group/narrow",
+            "Narrow RadioGroup",
+            "RadioGroup",
+            "Horizontal collapses to vertical under stack_below.",
+            22,
+            6,
+            radio_group_narrow_story,
+        ),
+        Story::new(
+            "radio-group/unicode",
+            "Unicode RadioGroup",
+            "RadioGroup",
+            "CJK labels and descriptions.",
+            40,
+            6,
+            radio_group_unicode_story,
         ),
         Story::new(
             "choice-dialog/narrow",
@@ -9660,6 +9715,88 @@ fn checkbox_list_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
             &mut st,
         );
     }
+}
+
+fn radio_group_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let options = [
+        RadioOption::new("plan", "Plan").description("Read-only analysis"),
+        RadioOption::new("build", "Build").description("Apply edits with approval"),
+        RadioOption::new("ask", "Ask").description("Questions only"),
+    ];
+    let mut state = RadioState::new(Some("build"));
+    state.set_surface_focused(true);
+    let _ = RadioGroup::new(&options, system)
+        .legend("Workbench mode")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn radio_group_horizontal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let options = [
+        RadioOption::new("low", "Low"),
+        RadioOption::new("med", "Medium"),
+        RadioOption::new("high", "High"),
+    ];
+    let mut state = RadioState::new(Some("med"));
+    state.set_surface_focused(true);
+    let _ = RadioGroup::new(&options, system)
+        .legend("Risk")
+        .horizontal()
+        .stack_below(0)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn radio_group_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let options = [
+        RadioOption::new("a", "Available"),
+        RadioOption::new("b", "Maintenance").enabled(false),
+        RadioOption::new("c", "Alternative"),
+    ];
+    let mut state = RadioState::new(Some("a"));
+    state.set_surface_focused(true);
+    let _ = RadioGroup::new(&options, system)
+        .legend("Endpoint")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn radio_group_badges_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let options = [
+        RadioOption::new("once", "Allow once"),
+        RadioOption::new("session", "Allow for session").badge("recommended"),
+        RadioOption::new("always", "Always allow").description("Persists across restarts"),
+        RadioOption::new("deny", "Deny"),
+    ];
+    let mut state = RadioState::new(Some("session"));
+    state.set_surface_focused(true);
+    let _ = RadioGroup::new(&options, system)
+        .legend("Permission")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn radio_group_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let options = [
+        RadioOption::new("l", "Low"),
+        RadioOption::new("m", "Medium"),
+        RadioOption::new("h", "High"),
+    ];
+    let mut state = RadioState::new(Some("m"));
+    state.set_surface_focused(true);
+    let _ = RadioGroup::new(&options, system)
+        .horizontal()
+        .stack_below(40)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn radio_group_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let options = [
+        RadioOption::new("a", "計画").description("読み取り専用"),
+        RadioOption::new("b", "構築").description("編集を適用 ✨"),
+        RadioOption::new("c", "質問"),
+    ];
+    let mut state = RadioState::new(Some("b"));
+    state.set_surface_focused(true);
+    let _ = RadioGroup::new(&options, system)
+        .legend("モード")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn data_table_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

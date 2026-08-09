@@ -653,55 +653,234 @@ impl<Id: Clone> StatefulWidget for &Checkbox<'_, Id> {
     }
 }
 
-// ── Radio ───────────────────────────────────────────────────────────────────
+// ── RadioGroup ──────────────────────────────────────────────────────────────
 
-/// Radio change outcome.
+/// When movement commits selection.
+///
+/// **Default [`FollowFocus`](Self::FollowFocus)** matches native desktop and
+/// Radix: arrow/Home/End/typeahead update both active descendant **and**
+/// selection. Use [`ActivateToSelect`](Self::ActivateToSelect) when browsing
+/// options must not change the value until Space/Enter (settings review,
+/// destructive choices).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum RadioSelectionPolicy {
+    /// Movement commits selection (native / Radix default).
+    #[default]
+    FollowFocus,
+    /// Movement only; Space/Enter commits selection.
+    ActivateToSelect,
+}
+
+impl RadioSelectionPolicy {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::FollowFocus => "follow-focus",
+            Self::ActivateToSelect => "activate-to-select",
+        }
+    }
+}
+
+/// Layout axis for a [`RadioGroup`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum RadioGroupOrientation {
+    /// One option per row (default; also forced when narrow).
+    #[default]
+    Vertical,
+    /// Options in a single row (settings chips / permission actions).
+    Horizontal,
+}
+
+impl RadioGroupOrientation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Vertical => "vertical",
+            Self::Horizontal => "horizontal",
+        }
+    }
+}
+
+/// One option in a [`RadioGroup`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RadioOption<'a, Id> {
+    /// Stable id (selection + roving).
+    pub id: Id,
+    /// Primary label.
+    pub label: &'a str,
+    /// Optional secondary line (vertical only; dropped when height tight).
+    pub description: Option<&'a str>,
+    /// Optional trailing badge (e.g. "recommended").
+    pub badge: Option<&'a str>,
+    /// Whether selectable (skipped by roving when false).
+    pub enabled: bool,
+}
+
+impl<'a, Id> RadioOption<'a, Id> {
+    /// Enabled option with label.
+    #[must_use]
+    pub const fn new(id: Id, label: &'a str) -> Self {
+        Self {
+            id,
+            label,
+            description: None,
+            badge: None,
+            enabled: true,
+        }
+    }
+
+    /// Description line.
+    #[must_use]
+    pub const fn description(mut self, description: &'a str) -> Self {
+        self.description = Some(description);
+        self
+    }
+
+    /// Trailing badge.
+    #[must_use]
+    pub const fn badge(mut self, badge: &'a str) -> Self {
+        self.badge = Some(badge);
+        self
+    }
+
+    /// Enabled flag.
+    #[must_use]
+    pub const fn enabled(mut self, on: bool) -> Self {
+        self.enabled = on;
+        self
+    }
+
+    /// Typeahead / a11y label.
+    #[must_use]
+    pub fn a11y(&self) -> &str {
+        if self.label.is_empty() {
+            "option"
+        } else {
+            self.label
+        }
+    }
+}
+
+/// Per-option paint geometry.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RadioOptionParts<Id> {
+    /// Option id.
+    pub id: Id,
+    /// Full option hit rect.
+    pub area: Rect,
+    /// Radio mark box.
+    pub mark_area: Rect,
+    /// Whether disabled.
+    pub disabled: bool,
+}
+
+/// Group paint geometry.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RadioGroupParts<Id> {
+    /// Root area.
+    pub root: Rect,
+    /// Legend rect when painted.
+    pub legend: Option<Rect>,
+    /// Option parts (source order).
+    pub options: Vec<RadioOptionParts<Id>>,
+}
+
+/// Radio group outcomes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum RadioOutcome<Id> {
     /// No change.
     Ignored,
-    /// Selected option id within group.
+    /// Active descendant moved without selection change
+    /// ([`RadioSelectionPolicy::ActivateToSelect`] only).
+    CursorMoved {
+        /// New active id.
+        id: Id,
+    },
+    /// Selection committed (also on FollowFocus movement).
     Selected(Id),
 }
 
-/// Radio group state: selected value + collection active descendant.
+/// Radio group state: controlled selection + roving active descendant.
+///
+/// Host owns domain value: apply [`RadioOutcome::Selected`] then
+/// [`Self::set_selected`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RadioState<Id> {
     selected: Option<Id>,
     collection: crate::interaction::CollectionState<Id>,
+    /// Group keyboard ownership.
+    surface_focused: bool,
+    /// Group enabled.
     enabled: bool,
+    /// Validation failed (form).
+    invalid: bool,
+    /// Selection commit policy.
+    policy: RadioSelectionPolicy,
+    /// Hovered option.
+    hovered: Option<Id>,
+    /// Last parts.
+    parts: Option<RadioGroupParts<Id>>,
+    /// Legacy hit regions (same order as painted options).
     regions: Vec<Rect>,
 }
 
 impl<Id: Clone + PartialEq> RadioState<Id> {
-    /// Empty selection.
+    /// Optional initial selection.
     #[must_use]
     pub fn new(selected: Option<Id>) -> Self {
         let mut collection = crate::interaction::CollectionState::new()
-            .orientation(crate::interaction::RovingOrientation::Vertical);
+            .orientation(crate::interaction::RovingOrientation::Vertical)
+            .wrap(true);
         collection.set_active(selected.clone());
         Self {
             selected,
             collection,
+            surface_focused: false,
             enabled: true,
+            invalid: false,
+            policy: RadioSelectionPolicy::FollowFocus,
+            hovered: None,
+            parts: None,
             regions: Vec::new(),
         }
     }
 
-    #[must_use]
     /// Selected id.
+    #[must_use]
     pub fn selected(&self) -> Option<&Id> {
         self.selected.as_ref()
     }
 
-    /// Active descendant (cursor); may differ from selected until Activate.
+    /// Active descendant (cursor); may differ from selected under ActivateToSelect.
     #[must_use]
     pub const fn active(&self) -> Option<&Id> {
         self.collection.active()
     }
 
-    /// Controlled select (also moves collection active when `Some`).
+    /// Selection policy.
+    #[must_use]
+    pub const fn policy(&self) -> RadioSelectionPolicy {
+        self.policy
+    }
+
+    /// Surface focus.
+    #[must_use]
+    pub const fn is_surface_focused(&self) -> bool {
+        self.surface_focused
+    }
+
+    /// Parts from last paint.
+    #[must_use]
+    pub const fn parts(&self) -> Option<&RadioGroupParts<Id>> {
+        self.parts.as_ref()
+    }
+
+    /// Controlled select (also moves active when `Some`).
     pub fn set_selected(&mut self, selected: Option<Id>) {
         self.selected = selected.clone();
         if selected.is_some() {
@@ -709,8 +888,668 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         }
     }
 
-    fn entries_plain(options: &[Id]) -> Vec<crate::interaction::CollectionItem<Id>> {
-        options
+    /// Surface focus.
+    pub fn set_surface_focused(&mut self, on: bool) {
+        self.surface_focused = on;
+        if !on {
+            self.collection.clear_typeahead();
+        }
+    }
+
+    /// Group enabled.
+    pub const fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+    }
+
+    /// Invalid chrome.
+    pub const fn set_invalid(&mut self, on: bool) {
+        self.invalid = on;
+    }
+
+    /// Selection policy.
+    pub const fn set_policy(&mut self, policy: RadioSelectionPolicy) {
+        self.policy = policy;
+    }
+
+    /// Builder-style policy.
+    #[must_use]
+    pub const fn policy_mode(mut self, policy: RadioSelectionPolicy) -> Self {
+        self.policy = policy;
+        self
+    }
+
+    /// Hit regions (legacy).
+    #[must_use]
+    pub fn regions(&self) -> &[Rect] {
+        &self.regions
+    }
+}
+
+/// Single-choice group with roving focus.
+///
+/// **vs Tabs / ModeRibbon.** Those navigate content/modes. RadioGroup is a form
+/// value choice (settings, permissions, question flows).
+///
+/// **vs ToggleGroup single.** ToggleGroup is sticky toolbar chrome; RadioGroup
+/// is exclusive form selection with legend, descriptions, and radio marks.
+///
+/// **Selection policy.** Default [`RadioSelectionPolicy::FollowFocus`]: arrows
+/// commit. [`RadioSelectionPolicy::ActivateToSelect`] requires Space/Enter.
+#[derive(Debug, Clone, Copy)]
+pub struct RadioGroup<'a, Id> {
+    options: &'a [RadioOption<'a, Id>],
+    system: &'a DesignSystem,
+    legend: Option<&'a str>,
+    orientation: RadioGroupOrientation,
+    /// Auto-vertical when width &lt; this (0 = never). Default 28.
+    stack_below: u16,
+    colorless: bool,
+}
+
+impl<'a, Id> RadioGroup<'a, Id> {
+    /// Options + design system.
+    #[must_use]
+    pub const fn new(options: &'a [RadioOption<'a, Id>], system: &'a DesignSystem) -> Self {
+        Self {
+            options,
+            system,
+            legend: None,
+            orientation: RadioGroupOrientation::Vertical,
+            stack_below: 28,
+            colorless: false,
+        }
+    }
+
+    /// Group legend / question text.
+    #[must_use]
+    pub const fn legend(mut self, legend: &'a str) -> Self {
+        self.legend = Some(legend);
+        self
+    }
+
+    /// Orientation.
+    #[must_use]
+    pub const fn orientation(mut self, orientation: RadioGroupOrientation) -> Self {
+        self.orientation = orientation;
+        self
+    }
+
+    /// Horizontal layout.
+    #[must_use]
+    pub const fn horizontal(mut self) -> Self {
+        self.orientation = RadioGroupOrientation::Horizontal;
+        self
+    }
+
+    /// Vertical layout (default).
+    #[must_use]
+    pub const fn vertical(mut self) -> Self {
+        self.orientation = RadioGroupOrientation::Vertical;
+        self
+    }
+
+    /// Force vertical when width &lt; `cols` (0 disables).
+    #[must_use]
+    pub const fn stack_below(mut self, cols: u16) -> Self {
+        self.stack_below = cols;
+        self
+    }
+
+    /// Force ASCII-style marks.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    fn resolved_orientation(&self, width: u16) -> RadioGroupOrientation {
+        if matches!(self.orientation, RadioGroupOrientation::Vertical) {
+            return RadioGroupOrientation::Vertical;
+        }
+        if self.stack_below > 0 && width < self.stack_below {
+            RadioGroupOrientation::Vertical
+        } else {
+            RadioGroupOrientation::Horizontal
+        }
+    }
+
+    fn mono(&self) -> bool {
+        self.colorless
+            || self.system.glyphs.is_ascii()
+            || matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            )
+    }
+
+    fn mark(&self, selected: bool) -> &'static str {
+        if self.mono() {
+            return if selected { "(*)" } else { "( )" };
+        }
+        // Prefer 3-col bracket forms for alignment stability even in Unicode
+        // when glyph is single-cell — still use catalog for enhanced.
+        if self.system.glyphs.is_ascii() {
+            return if selected { "(*)" } else { "( )" };
+        }
+        if selected {
+            self.system.glyphs.resolve(crate::style::Glyph::RadioOn).text
+        } else {
+            self.system
+                .glyphs
+                .resolve(crate::style::Glyph::RadioOff)
+                .text
+        }
+    }
+
+    fn mark_cols(&self, selected: bool) -> u16 {
+        display_cols(self.mark(selected)) as u16
+    }
+
+    fn option_label_line(&self, opt: &RadioOption<'a, Id>, max_cols: usize) -> String {
+        let mut s = opt.label.to_string();
+        if let Some(b) = opt.badge {
+            if !b.is_empty() {
+                s.push(' ');
+                s.push('[');
+                s.push_str(b);
+                s.push(']');
+            }
+        }
+        take_display_cols(&s, max_cols)
+    }
+
+    fn collection_items(&self) -> Vec<crate::interaction::CollectionItem<Id>>
+    where
+        Id: Clone,
+    {
+        self.options
+            .iter()
+            .map(|o| crate::interaction::CollectionItem {
+                id: o.id.clone(),
+                enabled: o.enabled,
+                label: o.label.to_string(),
+                parent: None,
+            })
+            .collect()
+    }
+
+    fn option_by_id(&self, id: &Id) -> Option<&RadioOption<'a, Id>>
+    where
+        Id: PartialEq,
+    {
+        self.options.iter().find(|o| &o.id == id)
+    }
+}
+
+impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
+    /// Paint group.
+    pub fn paint(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut RadioState<Id>,
+    ) -> RadioGroupParts<Id> {
+        state.regions.clear();
+        state.parts = None;
+        if area.is_empty() || self.options.is_empty() {
+            let parts = RadioGroupParts {
+                root: area,
+                legend: None,
+                options: Vec::new(),
+            };
+            state.parts = Some(parts.clone());
+            return parts;
+        }
+
+        // Reconcile roving with enabled flags + typeahead labels
+        let items = self.collection_items();
+        let _ = state.collection.reconcile(&items);
+        if state.collection.active().is_none() {
+            if let Some(sel) = state.selected.clone() {
+                state.collection.set_active(Some(sel));
+            } else if let Some(first) = items.iter().find(|e| e.enabled) {
+                state.collection.set_active(Some(first.id.clone()));
+            }
+        }
+        let orient = self.resolved_orientation(area.width);
+
+        let mut y = area.y;
+        let mut legend_rect = None;
+        if let Some(leg) = self.legend {
+            if !leg.is_empty() && y < area.bottom() {
+                let mut style = self.system.style(if state.invalid {
+                    Role::Danger
+                } else {
+                    Role::TextStrong
+                });
+                if state.surface_focused {
+                    style = style.add_modifier(Modifier::UNDERLINED);
+                }
+                let text = take_display_cols(leg, usize::from(area.width));
+                buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
+                legend_rect = Some(Rect::new(
+                    area.x,
+                    y,
+                    display_cols(&text).min(usize::from(area.width)) as u16,
+                    1,
+                ));
+                y = y.saturating_add(1);
+            }
+        }
+
+        let mut option_parts = Vec::new();
+        match orient {
+            RadioGroupOrientation::Vertical => {
+                for opt in self.options {
+                    if y >= area.bottom() {
+                        break;
+                    }
+                    let selected = state.selected.as_ref() == Some(&opt.id);
+                    let focused = state.surface_focused && state.active() == Some(&opt.id);
+                    let hovered = state.hovered.as_ref() == Some(&opt.id);
+                    let mark = self.mark(selected);
+                    let mark_w = self.mark_cols(selected).min(area.width);
+                    let mark_area = Rect::new(area.x, y, mark_w.max(1), 1);
+                    let style = self.option_style(state, opt, selected, focused, hovered);
+                    buffer.set_stringn(
+                        mark_area.x,
+                        mark_area.y,
+                        mark,
+                        usize::from(mark_w.max(1)),
+                        style,
+                    );
+                    let label_x = area.x.saturating_add(mark_w).saturating_add(1);
+                    let mut row_h = 1u16;
+                    if label_x < area.right() {
+                        let lw = area.right().saturating_sub(label_x);
+                        let line = self.option_label_line(opt, usize::from(lw));
+                        buffer.set_stringn(label_x, y, &line, usize::from(lw), style);
+                    }
+                    // Description under label when room
+                    if area.height.saturating_sub(y.saturating_sub(area.y)) > 1
+                        && area.width >= 16
+                        && let Some(desc) = opt.description
+                        && !desc.is_empty()
+                    {
+                        let dy = y.saturating_add(1);
+                        if dy < area.bottom() {
+                            let dx = label_x.min(area.right().saturating_sub(1));
+                            let dw = area.right().saturating_sub(dx);
+                            let text = take_display_cols(desc, usize::from(dw));
+                            let dstyle = if !opt.enabled || !state.enabled {
+                                self.system.style(Role::TextDisabled)
+                            } else {
+                                self.system.style(Role::TextMuted)
+                            };
+                            buffer.set_stringn(dx, dy, &text, usize::from(dw), dstyle);
+                            row_h = 2;
+                        }
+                    }
+                    let hit = Rect::new(area.x, y, area.width, row_h.min(area.bottom() - y));
+                    state.regions.push(hit);
+                    option_parts.push(RadioOptionParts {
+                        id: opt.id.clone(),
+                        area: hit,
+                        mark_area,
+                        disabled: !opt.enabled,
+                    });
+                    y = y.saturating_add(row_h);
+                }
+            }
+            RadioGroupOrientation::Horizontal => {
+                let mut x = area.x;
+                let gap = 2u16;
+                for opt in self.options {
+                    if x >= area.right() {
+                        break;
+                    }
+                    let selected = state.selected.as_ref() == Some(&opt.id);
+                    let focused = state.surface_focused && state.active() == Some(&opt.id);
+                    let hovered = state.hovered.as_ref() == Some(&opt.id);
+                    let mark = self.mark(selected);
+                    let mark_w = self.mark_cols(selected);
+                    let label = self.option_label_line(opt, 24);
+                    let label_w = display_cols(&label) as u16;
+                    let w = mark_w
+                        .saturating_add(1)
+                        .saturating_add(label_w)
+                        .min(area.right().saturating_sub(x));
+                    if w == 0 {
+                        break;
+                    }
+                    let style = self.option_style(state, opt, selected, focused, hovered);
+                    let mark_area = Rect::new(x, area.y, mark_w.min(w).max(1), 1.min(area.height));
+                    buffer.set_stringn(
+                        mark_area.x,
+                        mark_area.y,
+                        mark,
+                        usize::from(mark_area.width),
+                        style,
+                    );
+                    let lx = x.saturating_add(mark_w).saturating_add(1);
+                    if lx < x.saturating_add(w) && area.height > 0 {
+                        let lw = x.saturating_add(w).saturating_sub(lx);
+                        let text = take_display_cols(&label, usize::from(lw));
+                        buffer.set_stringn(lx, area.y, &text, usize::from(lw), style);
+                    }
+                    let hit = Rect::new(x, area.y, w, 1.min(area.height));
+                    state.regions.push(hit);
+                    option_parts.push(RadioOptionParts {
+                        id: opt.id.clone(),
+                        area: hit,
+                        mark_area,
+                        disabled: !opt.enabled,
+                    });
+                    x = x.saturating_add(w).saturating_add(gap);
+                }
+            }
+        }
+
+        let root_h = area
+            .height
+            .min(y.saturating_sub(area.y).max(1));
+        let parts = RadioGroupParts {
+            root: Rect::new(area.x, area.y, area.width, root_h.min(area.height)),
+            legend: legend_rect,
+            options: option_parts,
+        };
+        state.parts = Some(parts.clone());
+        parts
+    }
+
+    fn option_style(
+        &self,
+        state: &RadioState<Id>,
+        opt: &RadioOption<'a, Id>,
+        selected: bool,
+        focused: bool,
+        hovered: bool,
+    ) -> ratatui_core::style::Style {
+        if !state.enabled || !opt.enabled {
+            return self.system.style(Role::TextDisabled);
+        }
+        if state.invalid && selected {
+            return self.system.style(Role::Danger).add_modifier(Modifier::BOLD);
+        }
+        if focused {
+            let mut s = self.system.style(Role::Focus);
+            if selected {
+                s = s.add_modifier(Modifier::BOLD);
+            } else {
+                s = s.add_modifier(Modifier::UNDERLINED);
+            }
+            return s;
+        }
+        if selected {
+            let mut s = self.system.style(Role::TextStrong);
+            s = s.add_modifier(Modifier::BOLD);
+            if self.mono() {
+                s = s.add_modifier(Modifier::REVERSED);
+            }
+            return s;
+        }
+        if hovered {
+            return self.system.style(Role::Text).add_modifier(Modifier::UNDERLINED);
+        }
+        self.system.style(Role::Text)
+    }
+
+    /// Prefer [`Self::paint`].
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut RadioState<Id>) {
+        let _ = self.paint(area, buffer, state);
+    }
+
+    fn commit_selected(&self, state: &mut RadioState<Id>, id: Id) -> RadioOutcome<Id> {
+        if let Some(opt) = self.option_by_id(&id) {
+            if !opt.enabled {
+                return RadioOutcome::Ignored;
+            }
+        } else {
+            return RadioOutcome::Ignored;
+        }
+        state.selected = Some(id.clone());
+        state.collection.set_active(Some(id.clone()));
+        RadioOutcome::Selected(id)
+    }
+
+    /// Keys: roving + typeahead + policy-aware select.
+    ///
+    /// Up/Down **and** Left/Right move the active option (works for both
+    /// orientations). Home/End and printable typeahead via collection roving.
+    pub fn handle_key(&self, state: &mut RadioState<Id>, key: KeyEvent) -> RadioOutcome<Id> {
+        if !state.enabled || !state.surface_focused || self.options.is_empty() {
+            return RadioOutcome::Ignored;
+        }
+        if key.kind == KeyEventKind::Release {
+            return RadioOutcome::Ignored;
+        }
+        let items = self.collection_items();
+        let _ = state.collection.reconcile(&items);
+        if items.iter().all(|e| !e.enabled) {
+            return RadioOutcome::Ignored;
+        }
+
+        let is_press = key.kind == KeyEventKind::Press;
+
+        // Space/Enter always commit active
+        if is_press {
+            if let Some(intent) = default_button_intent(key) {
+                if matches!(
+                    intent,
+                    UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle
+                ) {
+                    if let Some(id) = state.collection.active().cloned() {
+                        return self.commit_selected(state, id);
+                    }
+                    return RadioOutcome::Ignored;
+                }
+            }
+            if matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) {
+                if let Some(id) = state.collection.active().cloned() {
+                    return self.commit_selected(state, id);
+                }
+                return RadioOutcome::Ignored;
+            }
+        }
+
+        // Explicit cross-axis movement (horizontal groups still use Left/Right)
+        if is_press && key.modifiers.is_empty() {
+            let before = state.collection.active().cloned();
+            match key.code {
+                KeyCode::Down | KeyCode::Right | KeyCode::Tab => {
+                    let _ = state.collection.move_next(&items);
+                    if state.collection.active() != before.as_ref() {
+                        return self.after_cursor_move(state, before);
+                    }
+                }
+                KeyCode::Up | KeyCode::Left | KeyCode::BackTab => {
+                    let _ = state.collection.move_previous(&items);
+                    if state.collection.active() != before.as_ref() {
+                        return self.after_cursor_move(state, before);
+                    }
+                }
+                KeyCode::Home => {
+                    let _ = state.collection.move_first(&items);
+                    if state.collection.active() != before.as_ref() {
+                        return self.after_cursor_move(state, before);
+                    }
+                }
+                KeyCode::End => {
+                    let _ = state.collection.move_last(&items);
+                    if state.collection.active() != before.as_ref() {
+                        return self.after_cursor_move(state, before);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Typeahead / remaining roving keys
+        let before = state.collection.active().cloned();
+        let _ = state.collection.handle_key(key, &items);
+        if state.collection.active() != before.as_ref() {
+            return self.after_cursor_move(state, before);
+        }
+        RadioOutcome::Ignored
+    }
+
+    fn after_cursor_move(
+        &self,
+        state: &mut RadioState<Id>,
+        _before: Option<Id>,
+    ) -> RadioOutcome<Id> {
+        let Some(id) = state.collection.active().cloned() else {
+            return RadioOutcome::Ignored;
+        };
+        match state.policy {
+            RadioSelectionPolicy::FollowFocus => self.commit_selected(state, id),
+            RadioSelectionPolicy::ActivateToSelect => RadioOutcome::CursorMoved { id },
+        }
+    }
+
+    /// Intent path.
+    pub fn handle_intent(
+        &self,
+        state: &mut RadioState<Id>,
+        intent: UiIntent,
+    ) -> RadioOutcome<Id> {
+        if !state.enabled || self.options.is_empty() {
+            return RadioOutcome::Ignored;
+        }
+        let items = self.collection_items();
+        let _ = state.collection.reconcile(&items);
+        match intent {
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
+                if let Some(id) = state.collection.active().cloned() {
+                    self.commit_selected(state, id)
+                } else {
+                    RadioOutcome::Ignored
+                }
+            }
+            other => {
+                let before = state.collection.active().cloned();
+                let _ = state.collection.handle_intent(other, &items);
+                if state.collection.active() != before.as_ref() {
+                    self.after_cursor_move(state, before)
+                } else {
+                    RadioOutcome::Ignored
+                }
+            }
+        }
+    }
+
+    /// Mouse: click option → select + focus.
+    pub fn handle_mouse(
+        &self,
+        state: &mut RadioState<Id>,
+        event: MouseEvent,
+    ) -> RadioOutcome<Id> {
+        if !state.enabled {
+            return RadioOutcome::Ignored;
+        }
+        let Some(parts) = state.parts.clone() else {
+            return RadioOutcome::Ignored;
+        };
+        match event.kind {
+            MouseEventKind::Moved | MouseEventKind::Drag(_) => {
+                state.hovered = parts
+                    .options
+                    .iter()
+                    .find(|o| o.area.contains(event.position))
+                    .map(|o| o.id.clone());
+                RadioOutcome::Ignored
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                if let Some(opt) = parts
+                    .options
+                    .iter()
+                    .find(|o| !o.disabled && o.area.contains(event.position))
+                {
+                    state.surface_focused = true;
+                    state.collection.set_active(Some(opt.id.clone()));
+                    return self.commit_selected(state, opt.id.clone());
+                }
+                RadioOutcome::Ignored
+            }
+            _ => RadioOutcome::Ignored,
+        }
+    }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut RadioState<Id>,
+        key: KeyEvent,
+    ) -> EventResult<RadioOutcome<Id>> {
+        match self.handle_key(state, key) {
+            RadioOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Semantic: group list + each option.
+    pub fn register_semantic<Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        group_id: Id,
+        area: Rect,
+        state: &RadioState<Id>,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let _ = scene.register(
+            SemanticNode::control(group_id, area)
+                .role(SemanticRole::List)
+                .label(self.legend.unwrap_or("radio group"))
+                .description(state.policy.id())
+                .focusable(state.enabled)
+                .disabled(!state.enabled)
+                .state(SemanticState {
+                    selected: state.surface_focused,
+                    invalid: state.invalid,
+                    ..Default::default()
+                }),
+        );
+        if let Some(parts) = &state.parts {
+            for op in &parts.options {
+                let Some(opt) = self.option_by_id(&op.id) else {
+                    continue;
+                };
+                let selected = state.selected.as_ref() == Some(&op.id);
+                let _ = scene.register(
+                    SemanticNode::control(op.id.clone(), op.area)
+                        .role(SemanticRole::ListItem)
+                        .label(opt.label)
+                        .description(opt.description.unwrap_or(""))
+                        .focusable(opt.enabled && state.enabled)
+                        .disabled(!opt.enabled || !state.enabled)
+                        .state(SemanticState {
+                            selected,
+                            checked: selected,
+                            ..Default::default()
+                        }),
+                );
+            }
+        }
+    }
+}
+
+impl<Id: Clone + PartialEq> RadioState<Id> {
+    /// Headless key path using option ids only (all enabled, no labels).
+    ///
+    /// Prefer [`RadioGroup::handle_key`] for full option metadata (disabled,
+    /// typeahead labels, policy with widget).
+    pub fn handle_key(&mut self, key: KeyEvent, options: &[Id]) -> RadioOutcome<Id> {
+        if !self.enabled || options.is_empty() || key.kind == KeyEventKind::Release {
+            return RadioOutcome::Ignored;
+        }
+        // Ensure surface focused for headless tests
+        self.surface_focused = true;
+        let items: Vec<crate::interaction::CollectionItem<Id>> = options
             .iter()
             .map(|id| crate::interaction::CollectionItem {
                 id: id.clone(),
@@ -718,19 +1557,8 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
                 label: String::new(),
                 parent: None,
             })
-            .collect()
-    }
-
-    /// Arrow/Home/End move + Space/Enter select.
-    pub fn handle_key(&mut self, key: KeyEvent, options: &[Id]) -> RadioOutcome<Id>
-    where
-        Id: Clone,
-    {
-        if !self.enabled || options.is_empty() || key.kind == KeyEventKind::Release {
-            return RadioOutcome::Ignored;
-        }
-        let entries = Self::entries_plain(options);
-        let _ = self.collection.reconcile(&entries);
+            .collect();
+        let _ = self.collection.reconcile(&items);
         let is_press = key.kind == KeyEventKind::Press;
         if is_press
             && key.modifiers.is_empty()
@@ -742,38 +1570,40 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
             }
             return RadioOutcome::Ignored;
         }
-        if matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
-            || (matches!(key.code, KeyCode::Tab)
-                && key.modifiers.contains(KeyModifiers::SHIFT))
-        {
-            let reverse = matches!(key.code, KeyCode::BackTab)
-                || key.modifiers.contains(KeyModifiers::SHIFT);
-            if reverse {
-                let _ = self.collection.move_previous(&entries);
-            } else {
-                let _ = self.collection.move_next(&entries);
+        let before = self.collection.active().cloned();
+        let _ = self.collection.handle_key(key, &items);
+        if self.collection.active() != before.as_ref() {
+            if let Some(id) = self.collection.active().cloned() {
+                return match self.policy {
+                    RadioSelectionPolicy::FollowFocus => {
+                        self.selected = Some(id.clone());
+                        RadioOutcome::Selected(id)
+                    }
+                    RadioSelectionPolicy::ActivateToSelect => RadioOutcome::CursorMoved { id },
+                };
             }
-            return RadioOutcome::Ignored;
         }
-        let _ = self.collection.handle_key(key, &entries);
         RadioOutcome::Ignored
     }
 
-    /// Intent path for collection move / activate.
-    pub fn handle_intent(
-        &mut self,
-        intent: crate::interaction::UiIntent,
-        options: &[Id],
-    ) -> RadioOutcome<Id> {
+    /// Intent path (headless ids).
+    pub fn handle_intent(&mut self, intent: UiIntent, options: &[Id]) -> RadioOutcome<Id> {
         if !self.enabled || options.is_empty() {
             return RadioOutcome::Ignored;
         }
-        let entries = Self::entries_plain(options);
-        let _ = self.collection.reconcile(&entries);
+        self.surface_focused = true;
+        let items: Vec<crate::interaction::CollectionItem<Id>> = options
+            .iter()
+            .map(|id| crate::interaction::CollectionItem {
+                id: id.clone(),
+                enabled: true,
+                label: String::new(),
+                parent: None,
+            })
+            .collect();
+        let _ = self.collection.reconcile(&items);
         match intent {
-            crate::interaction::UiIntent::Activate
-            | crate::interaction::UiIntent::Submit
-            | crate::interaction::UiIntent::Toggle => {
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
                 if let Some(id) = self.collection.active().cloned() {
                     self.selected = Some(id.clone());
                     RadioOutcome::Selected(id)
@@ -782,56 +1612,23 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
                 }
             }
             other => {
-                let _ = self.collection.handle_intent(other, &entries);
+                let before = self.collection.active().cloned();
+                let _ = self.collection.handle_intent(other, &items);
+                if self.collection.active() != before.as_ref() {
+                    if let Some(id) = self.collection.active().cloned() {
+                        return match self.policy {
+                            RadioSelectionPolicy::FollowFocus => {
+                                self.selected = Some(id.clone());
+                                RadioOutcome::Selected(id)
+                            }
+                            RadioSelectionPolicy::ActivateToSelect => {
+                                RadioOutcome::CursorMoved { id }
+                            }
+                        };
+                    }
+                }
                 RadioOutcome::Ignored
             }
-        }
-    }
-}
-
-/// Radio group paint.
-#[derive(Debug, Clone, Copy)]
-pub struct RadioGroup<'a, Id> {
-    options: &'a [(Id, &'a str)],
-    tokens: &'a DesignSystem,
-}
-
-impl<'a, Id> RadioGroup<'a, Id> {
-    /// Options as (id, label).
-    #[must_use]
-    pub const fn new(options: &'a [(Id, &'a str)], tokens: &'a DesignSystem) -> Self {
-        Self { options, tokens }
-    }
-
-    /// Render vertical radio list.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut RadioState<Id>)
-    where
-        Id: Clone + PartialEq,
-    {
-        state.regions.clear();
-        if area.is_empty() {
-            return;
-        }
-        let mut y = area.y;
-        for (id, label) in self.options.iter() {
-            if y >= area.bottom() {
-                break;
-            }
-            let selected = state.selected.as_ref() == Some(id);
-            let focused = state.active() == Some(id);
-            let mark = if selected { "(•)" } else { "( )" };
-            let style = if focused {
-                self.tokens.style(Role::Focus)
-            } else {
-                self.tokens.style(Role::Text)
-            };
-            let line = format!("{mark} {label}");
-            let text = take_display_cols(&line, usize::from(area.width));
-            buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
-            state
-                .regions
-                .push(Rect::new(area.x, y, area.width.min(20), 1));
-            y = y.saturating_add(1);
         }
     }
 }
@@ -1598,13 +2395,164 @@ mod tests {
     }
 
     #[test]
-    fn radio_roving_and_select() {
+    fn radio_follow_focus_selects_on_move() {
         let opts = ["a", "b", "c"];
         let mut state = RadioState::new(Some("a"));
-        let _ = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &opts);
+        // Default FollowFocus: Down commits selection
+        let out = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &opts);
         assert_eq!(state.active(), Some(&"b"));
+        assert_eq!(state.selected(), Some(&"b"));
+        assert_eq!(out, RadioOutcome::Selected("b"));
+    }
+
+    #[test]
+    fn radio_activate_to_select_policy() {
+        let opts = ["a", "b", "c"];
+        let mut state = RadioState::new(Some("a")).policy_mode(RadioSelectionPolicy::ActivateToSelect);
+        let out = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &opts);
+        assert_eq!(state.active(), Some(&"b"));
+        assert_eq!(state.selected(), Some(&"a"));
+        assert!(matches!(out, RadioOutcome::CursorMoved { id: "b" }));
         let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &opts);
         assert_eq!(out, RadioOutcome::Selected("b"));
+        assert_eq!(state.selected(), Some(&"b"));
+    }
+
+    #[test]
+    fn radio_group_paint_and_mouse() {
+        let system = DesignSystem::default();
+        let options = [
+            RadioOption::new("a", "Alpha").description("First"),
+            RadioOption::new("b", "Beta").badge("rec"),
+            RadioOption::new("c", "Gamma").enabled(false),
+        ];
+        let g = RadioGroup::new(&options, &system).legend("Pick one");
+        let mut state = RadioState::new(Some("a"));
+        state.set_surface_focused(true);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
+        let parts = g.paint(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
+        assert!(parts.legend.is_some());
+        assert!(parts.options.len() >= 2);
+        let b = parts.options.iter().find(|o| o.id == "b").unwrap();
+        let out = g.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: b.area.x,
+                    y: b.area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
+        assert_eq!(out, RadioOutcome::Selected("b"));
+    }
+
+    #[test]
+    fn radio_horizontal_and_narrow_stack() {
+        let system = DesignSystem::default();
+        let options = [
+            RadioOption::new("l", "Low"),
+            RadioOption::new("m", "Med"),
+            RadioOption::new("h", "High"),
+        ];
+        let g = RadioGroup::new(&options, &system)
+            .horizontal()
+            .stack_below(40);
+        let mut state = RadioState::new(Some("m"));
+        // Wide: horizontal
+        let mut buf = Buffer::empty(Rect::new(0, 0, 60, 2));
+        let parts = g.paint(Rect::new(0, 0, 60, 2), &mut buf, &mut state);
+        assert!(parts.options.len() >= 2);
+        // Narrow: forced vertical
+        let mut buf2 = Buffer::empty(Rect::new(0, 0, 20, 6));
+        let parts2 = g.paint(Rect::new(0, 0, 20, 6), &mut buf2, &mut state);
+        assert_eq!(parts2.options.len(), 3);
+        // stacked: y increases
+        assert!(parts2.options[1].area.y > parts2.options[0].area.y);
+    }
+
+    #[test]
+    fn radio_ascii_marks() {
+        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
+        let options = [RadioOption::new("a", "A"), RadioOption::new("b", "B")];
+        let g = RadioGroup::new(&options, &system).colorless(true);
+        let mut state = RadioState::new(Some("a"));
+        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 3));
+        let _ = g.paint(Rect::new(0, 0, 20, 3), &mut buf, &mut state);
+        assert_eq!(
+            buf.cell((0, 0)).map(|c| c.symbol().to_string()).as_deref(),
+            Some("(")
+        );
+        assert_eq!(
+            buf.cell((1, 0)).map(|c| c.symbol().to_string()).as_deref(),
+            Some("*")
+        );
+    }
+
+    #[test]
+    fn radio_skips_disabled() {
+        let system = DesignSystem::default();
+        let options = [
+            RadioOption::new("a", "A"),
+            RadioOption::new("b", "B").enabled(false),
+            RadioOption::new("c", "C"),
+        ];
+        let g = RadioGroup::new(&options, &system);
+        let mut state = RadioState::new(Some("a"));
+        state.set_surface_focused(true);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 4));
+        let _ = g.paint(Rect::new(0, 0, 20, 4), &mut buf, &mut state);
+        let out = g.handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+        );
+        // Skips disabled b → c
+        assert_eq!(out, RadioOutcome::Selected("c"));
+    }
+
+    #[test]
+    fn radio_typeahead() {
+        let system = DesignSystem::default();
+        let options = [
+            RadioOption::new("a", "Alpha"),
+            RadioOption::new("b", "Beta"),
+            RadioOption::new("g", "Gamma"),
+        ];
+        let g = RadioGroup::new(&options, &system);
+        let mut state = RadioState::new(Some("a"));
+        state.set_surface_focused(true);
+        let mut buf = Buffer::empty(Rect::new(0, 0, 24, 4));
+        let _ = g.paint(Rect::new(0, 0, 24, 4), &mut buf, &mut state);
+        let out = g.handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE),
+        );
+        assert!(
+            matches!(out, RadioOutcome::Selected("b"))
+                || state.active() == Some(&"b")
+                || state.selected() == Some(&"b")
+        );
+    }
+
+    #[test]
+    fn radio_semantic_and_hot_path() {
+        let system = DesignSystem::default();
+        let options = [
+            RadioOption::new("a", "A"),
+            RadioOption::new("b", "B"),
+        ];
+        let g = RadioGroup::new(&options, &system).legend("Mode");
+        let mut state = RadioState::new(Some("a"));
+        state.set_surface_focused(true);
+        let area = Rect::new(0, 0, 30, 4);
+        let mut buf = Buffer::empty(area);
+        for _ in 0..200 {
+            let _ = g.paint(area, &mut buf, &mut state);
+        }
+        let mut scene = SemanticScene::<&str, ()>::default();
+        g.register_semantic(&mut scene, "group", area, &state);
+        assert!(scene.len() >= 2);
     }
 
     #[test]

@@ -42,7 +42,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 6 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.88s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.91s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -20574,7 +20574,59 @@ pub unsafe fn termrock::widgets::QuestionFlowOutcome<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::widgets::QuestionFlowOutcome<Id>
 pub fn termrock::widgets::QuestionFlowOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::QuestionFlowOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::RadioGroupOrientation
+pub termrock::widgets::RadioGroupOrientation::Horizontal
+pub termrock::widgets::RadioGroupOrientation::Vertical
+impl termrock::widgets::RadioGroupOrientation
+pub const fn termrock::widgets::RadioGroupOrientation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::RadioGroupOrientation
+pub fn termrock::widgets::RadioGroupOrientation::clone(&self) -> termrock::widgets::RadioGroupOrientation
+impl core::cmp::Eq for termrock::widgets::RadioGroupOrientation
+impl core::cmp::PartialEq for termrock::widgets::RadioGroupOrientation
+pub fn termrock::widgets::RadioGroupOrientation::eq(&self, &termrock::widgets::RadioGroupOrientation) -> bool
+impl core::default::Default for termrock::widgets::RadioGroupOrientation
+pub fn termrock::widgets::RadioGroupOrientation::default() -> termrock::widgets::RadioGroupOrientation
+impl core::fmt::Debug for termrock::widgets::RadioGroupOrientation
+pub fn termrock::widgets::RadioGroupOrientation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::RadioGroupOrientation
+pub fn termrock::widgets::RadioGroupOrientation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::RadioGroupOrientation
+impl core::marker::StructuralPartialEq for termrock::widgets::RadioGroupOrientation
+impl core::marker::Freeze for termrock::widgets::RadioGroupOrientation
+impl core::marker::Send for termrock::widgets::RadioGroupOrientation
+impl core::marker::Sync for termrock::widgets::RadioGroupOrientation
+impl core::marker::Unpin for termrock::widgets::RadioGroupOrientation
+impl core::marker::UnsafeUnpin for termrock::widgets::RadioGroupOrientation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RadioGroupOrientation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::RadioGroupOrientation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::RadioGroupOrientation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::RadioGroupOrientation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::RadioGroupOrientation where U: core::convert::From<T>
+pub fn termrock::widgets::RadioGroupOrientation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RadioGroupOrientation where U: core::convert::Into<T>
+pub type termrock::widgets::RadioGroupOrientation::Error = core::convert::Infallible
+pub fn termrock::widgets::RadioGroupOrientation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RadioGroupOrientation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RadioGroupOrientation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RadioGroupOrientation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RadioGroupOrientation where T: core::clone::Clone
+pub type termrock::widgets::RadioGroupOrientation::Owned = T
+pub fn termrock::widgets::RadioGroupOrientation::clone_into(&self, &mut T)
+pub fn termrock::widgets::RadioGroupOrientation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RadioGroupOrientation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RadioGroupOrientation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RadioGroupOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioGroupOrientation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RadioGroupOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioGroupOrientation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RadioGroupOrientation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RadioGroupOrientation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RadioGroupOrientation
+pub fn termrock::widgets::RadioGroupOrientation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RadioGroupOrientation
 #[non_exhaustive] pub enum termrock::widgets::RadioOutcome<Id>
+pub termrock::widgets::RadioOutcome::CursorMoved
+pub termrock::widgets::RadioOutcome::CursorMoved::id: Id
 pub termrock::widgets::RadioOutcome::Ignored
 pub termrock::widgets::RadioOutcome::Selected(Id)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::RadioOutcome<Id>
@@ -20617,6 +20669,56 @@ pub unsafe fn termrock::widgets::RadioOutcome<Id>::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::RadioOutcome<Id>
 pub fn termrock::widgets::RadioOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RadioOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::RadioSelectionPolicy
+pub termrock::widgets::RadioSelectionPolicy::ActivateToSelect
+pub termrock::widgets::RadioSelectionPolicy::FollowFocus
+impl termrock::widgets::RadioSelectionPolicy
+pub const fn termrock::widgets::RadioSelectionPolicy::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::RadioSelectionPolicy
+pub fn termrock::widgets::RadioSelectionPolicy::clone(&self) -> termrock::widgets::RadioSelectionPolicy
+impl core::cmp::Eq for termrock::widgets::RadioSelectionPolicy
+impl core::cmp::PartialEq for termrock::widgets::RadioSelectionPolicy
+pub fn termrock::widgets::RadioSelectionPolicy::eq(&self, &termrock::widgets::RadioSelectionPolicy) -> bool
+impl core::default::Default for termrock::widgets::RadioSelectionPolicy
+pub fn termrock::widgets::RadioSelectionPolicy::default() -> termrock::widgets::RadioSelectionPolicy
+impl core::fmt::Debug for termrock::widgets::RadioSelectionPolicy
+pub fn termrock::widgets::RadioSelectionPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::RadioSelectionPolicy
+pub fn termrock::widgets::RadioSelectionPolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::RadioSelectionPolicy
+impl core::marker::StructuralPartialEq for termrock::widgets::RadioSelectionPolicy
+impl core::marker::Freeze for termrock::widgets::RadioSelectionPolicy
+impl core::marker::Send for termrock::widgets::RadioSelectionPolicy
+impl core::marker::Sync for termrock::widgets::RadioSelectionPolicy
+impl core::marker::Unpin for termrock::widgets::RadioSelectionPolicy
+impl core::marker::UnsafeUnpin for termrock::widgets::RadioSelectionPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RadioSelectionPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::RadioSelectionPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::RadioSelectionPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::RadioSelectionPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::RadioSelectionPolicy where U: core::convert::From<T>
+pub fn termrock::widgets::RadioSelectionPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RadioSelectionPolicy where U: core::convert::Into<T>
+pub type termrock::widgets::RadioSelectionPolicy::Error = core::convert::Infallible
+pub fn termrock::widgets::RadioSelectionPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RadioSelectionPolicy where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RadioSelectionPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RadioSelectionPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RadioSelectionPolicy where T: core::clone::Clone
+pub type termrock::widgets::RadioSelectionPolicy::Owned = T
+pub fn termrock::widgets::RadioSelectionPolicy::clone_into(&self, &mut T)
+pub fn termrock::widgets::RadioSelectionPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RadioSelectionPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RadioSelectionPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RadioSelectionPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioSelectionPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RadioSelectionPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioSelectionPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RadioSelectionPolicy where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RadioSelectionPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RadioSelectionPolicy
+pub fn termrock::widgets::RadioSelectionPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RadioSelectionPolicy
 #[non_exhaustive] pub enum termrock::widgets::ResizablePanelOutcome
 pub termrock::widgets::ResizablePanelOutcome::Collapsed
 pub termrock::widgets::ResizablePanelOutcome::Collapsed::id: termrock::widgets::PanelId
@@ -34679,9 +34781,22 @@ impl<T> core::convert::From<T> for termrock::widgets::QueuedPrompt
 pub fn termrock::widgets::QueuedPrompt::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::QueuedPrompt
 pub struct termrock::widgets::RadioGroup<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::RadioGroup<'a, Id>
+pub fn termrock::widgets::RadioGroup<'a, Id>::handle_intent(&self, &mut termrock::widgets::RadioState<Id>, termrock::context::ContextUiIntent) -> termrock::widgets::RadioOutcome<Id>
+pub fn termrock::widgets::RadioGroup<'a, Id>::handle_key(&self, &mut termrock::widgets::RadioState<Id>, termrock::input::KeyEvent) -> termrock::widgets::RadioOutcome<Id>
+pub fn termrock::widgets::RadioGroup<'a, Id>::handle_key_result(&self, &mut termrock::widgets::RadioState<Id>, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::RadioOutcome<Id>>
+pub fn termrock::widgets::RadioGroup<'a, Id>::handle_mouse(&self, &mut termrock::widgets::RadioState<Id>, termrock::input::MouseEvent) -> termrock::widgets::RadioOutcome<Id>
+pub fn termrock::widgets::RadioGroup<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::RadioState<Id>) -> termrock::widgets::RadioGroupParts<Id>
+pub fn termrock::widgets::RadioGroup<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::RadioState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub fn termrock::widgets::RadioGroup<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::RadioState<Id>)
 impl<'a, Id> termrock::widgets::RadioGroup<'a, Id>
-pub const fn termrock::widgets::RadioGroup<'a, Id>::new(&'a [(Id, &'a str)], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::RadioGroup<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::RadioState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
+pub const fn termrock::widgets::RadioGroup<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::RadioGroup<'a, Id>::horizontal(self) -> Self
+pub const fn termrock::widgets::RadioGroup<'a, Id>::legend(self, &'a str) -> Self
+pub const fn termrock::widgets::RadioGroup<'a, Id>::new(&'a [termrock::widgets::RadioOption<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::RadioGroup<'a, Id>::orientation(self, termrock::widgets::RadioGroupOrientation) -> Self
+pub const fn termrock::widgets::RadioGroup<'a, Id>::stack_below(self, u16) -> Self
+pub const fn termrock::widgets::RadioGroup<'a, Id>::vertical(self) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::RadioGroup<'a, Id>
 pub fn termrock::widgets::RadioGroup<'a, Id>::clone(&self) -> termrock::widgets::RadioGroup<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::RadioGroup<'a, Id>
@@ -34717,14 +34832,166 @@ pub unsafe fn termrock::widgets::RadioGroup<'a, Id>::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::RadioGroup<'a, Id>
 pub fn termrock::widgets::RadioGroup<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RadioGroup<'a, Id>
+pub struct termrock::widgets::RadioGroupParts<Id>
+pub termrock::widgets::RadioGroupParts::legend: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::RadioGroupParts::options: alloc::vec::Vec<termrock::widgets::RadioOptionParts<Id>>
+pub termrock::widgets::RadioGroupParts::root: ratatui_core::layout::rect::Rect
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::RadioGroupParts<Id>
+pub fn termrock::widgets::RadioGroupParts<Id>::clone(&self) -> termrock::widgets::RadioGroupParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::RadioGroupParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::RadioGroupParts<Id>
+pub fn termrock::widgets::RadioGroupParts<Id>::eq(&self, &termrock::widgets::RadioGroupParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::RadioGroupParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::RadioGroupParts<Id>
+pub fn termrock::widgets::RadioGroupParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::RadioGroupParts<Id>
+impl<Id> core::marker::Send for termrock::widgets::RadioGroupParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::RadioGroupParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::RadioGroupParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::RadioGroupParts<Id>
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RadioGroupParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::RadioGroupParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::RadioGroupParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::RadioGroupParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::RadioGroupParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::RadioGroupParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RadioGroupParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::RadioGroupParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::RadioGroupParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RadioGroupParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RadioGroupParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RadioGroupParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RadioGroupParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::RadioGroupParts<Id>::Owned = T
+pub fn termrock::widgets::RadioGroupParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::RadioGroupParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RadioGroupParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RadioGroupParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RadioGroupParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioGroupParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RadioGroupParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioGroupParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RadioGroupParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RadioGroupParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RadioGroupParts<Id>
+pub fn termrock::widgets::RadioGroupParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RadioGroupParts<Id>
+pub struct termrock::widgets::RadioOption<'a, Id>
+pub termrock::widgets::RadioOption::badge: core::option::Option<&'a str>
+pub termrock::widgets::RadioOption::description: core::option::Option<&'a str>
+pub termrock::widgets::RadioOption::enabled: bool
+pub termrock::widgets::RadioOption::id: Id
+pub termrock::widgets::RadioOption::label: &'a str
+impl<'a, Id> termrock::widgets::RadioOption<'a, Id>
+pub fn termrock::widgets::RadioOption<'a, Id>::a11y(&self) -> &str
+pub const fn termrock::widgets::RadioOption<'a, Id>::badge(self, &'a str) -> Self
+pub const fn termrock::widgets::RadioOption<'a, Id>::description(self, &'a str) -> Self
+pub const fn termrock::widgets::RadioOption<'a, Id>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::RadioOption<'a, Id>::new(Id, &'a str) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::RadioOption<'a, Id>
+pub fn termrock::widgets::RadioOption<'a, Id>::clone(&self) -> termrock::widgets::RadioOption<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::RadioOption<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::RadioOption<'a, Id>
+pub fn termrock::widgets::RadioOption<'a, Id>::eq(&self, &termrock::widgets::RadioOption<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::RadioOption<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::RadioOption<'a, Id>
+pub fn termrock::widgets::RadioOption<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::RadioOption<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::RadioOption<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::RadioOption<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::RadioOption<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::RadioOption<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::RadioOption<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RadioOption<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::RadioOption<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::RadioOption<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::RadioOption<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::RadioOption<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::RadioOption<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RadioOption<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::RadioOption<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::RadioOption<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RadioOption<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RadioOption<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RadioOption<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RadioOption<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::RadioOption<'a, Id>::Owned = T
+pub fn termrock::widgets::RadioOption<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::RadioOption<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RadioOption<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RadioOption<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RadioOption<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioOption<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RadioOption<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioOption<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RadioOption<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RadioOption<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RadioOption<'a, Id>
+pub fn termrock::widgets::RadioOption<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RadioOption<'a, Id>
+pub struct termrock::widgets::RadioOptionParts<Id>
+pub termrock::widgets::RadioOptionParts::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::RadioOptionParts::disabled: bool
+pub termrock::widgets::RadioOptionParts::id: Id
+pub termrock::widgets::RadioOptionParts::mark_area: ratatui_core::layout::rect::Rect
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::RadioOptionParts<Id>
+pub fn termrock::widgets::RadioOptionParts<Id>::clone(&self) -> termrock::widgets::RadioOptionParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::RadioOptionParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::RadioOptionParts<Id>
+pub fn termrock::widgets::RadioOptionParts<Id>::eq(&self, &termrock::widgets::RadioOptionParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::RadioOptionParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::RadioOptionParts<Id>
+pub fn termrock::widgets::RadioOptionParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::RadioOptionParts<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::RadioOptionParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::RadioOptionParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::RadioOptionParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::RadioOptionParts<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RadioOptionParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::RadioOptionParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::RadioOptionParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::RadioOptionParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::RadioOptionParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::RadioOptionParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RadioOptionParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::RadioOptionParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::RadioOptionParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RadioOptionParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RadioOptionParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RadioOptionParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RadioOptionParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::RadioOptionParts<Id>::Owned = T
+pub fn termrock::widgets::RadioOptionParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::RadioOptionParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RadioOptionParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RadioOptionParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RadioOptionParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioOptionParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RadioOptionParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::RadioOptionParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RadioOptionParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RadioOptionParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RadioOptionParts<Id>
+pub fn termrock::widgets::RadioOptionParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RadioOptionParts<Id>
 pub struct termrock::widgets::RadioState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::RadioState<Id>
 pub const fn termrock::widgets::RadioState<Id>::active(&self) -> core::option::Option<&Id>
-pub fn termrock::widgets::RadioState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[Id]) -> termrock::widgets::RadioOutcome<Id>
-pub fn termrock::widgets::RadioState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[Id]) -> termrock::widgets::RadioOutcome<Id> where Id: core::clone::Clone
+pub const fn termrock::widgets::RadioState<Id>::is_surface_focused(&self) -> bool
 pub fn termrock::widgets::RadioState<Id>::new(core::option::Option<Id>) -> Self
+pub const fn termrock::widgets::RadioState<Id>::parts(&self) -> core::option::Option<&termrock::widgets::RadioGroupParts<Id>>
+pub const fn termrock::widgets::RadioState<Id>::policy(&self) -> termrock::widgets::RadioSelectionPolicy
+pub const fn termrock::widgets::RadioState<Id>::policy_mode(self, termrock::widgets::RadioSelectionPolicy) -> Self
+pub fn termrock::widgets::RadioState<Id>::regions(&self) -> &[ratatui_core::layout::rect::Rect]
 pub fn termrock::widgets::RadioState<Id>::selected(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::RadioState<Id>::set_enabled(&mut self, bool)
+pub const fn termrock::widgets::RadioState<Id>::set_invalid(&mut self, bool)
+pub const fn termrock::widgets::RadioState<Id>::set_policy(&mut self, termrock::widgets::RadioSelectionPolicy)
 pub fn termrock::widgets::RadioState<Id>::set_selected(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::RadioState<Id>::set_surface_focused(&mut self, bool)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::RadioState<Id>
+pub fn termrock::widgets::RadioState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[Id]) -> termrock::widgets::RadioOutcome<Id>
+pub fn termrock::widgets::RadioState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[Id]) -> termrock::widgets::RadioOutcome<Id>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::RadioState<Id>
 pub fn termrock::widgets::RadioState<Id>::clone(&self) -> termrock::widgets::RadioState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::RadioState<Id>

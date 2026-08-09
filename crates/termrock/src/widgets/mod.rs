@@ -172,7 +172,8 @@ pub use surface::{
 pub use controls::{
     Checkbox, CheckboxOutcome, CheckboxParts, CheckboxState, CheckboxValue, Combobox,
     ComboboxOutcome, ComboboxState, MultiSelect, MultiSelectOutcome, MultiSelectState, RadioGroup,
-    RadioOutcome, RadioState, Select, SelectOutcome, SelectState, Switch, SwitchOutcome,
+    RadioGroupOrientation, RadioGroupParts, RadioOption, RadioOptionParts, RadioOutcome,
+    RadioSelectionPolicy, RadioState, Select, SelectOutcome, SelectState, Switch, SwitchOutcome,
     SwitchState,
 };
 pub use data_table::{DataTable, DataTableOutcome, DataTableState, DataTableToolbar};

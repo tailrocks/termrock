@@ -63,6 +63,7 @@
     "prompt-box",
     "prompt-composer",
     "question-flow",
+    "radio-group",
     "segmented-meter",
     "separator-line",
     "session-picker",
