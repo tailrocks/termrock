@@ -2283,12 +2283,30 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "heading/basic",
+            "Heading H1 reading",
             "Heading",
-            "Heading",
-            "Terminal typography heading.",
+            "H1 with underline weight and rule row.",
             40,
             3,
             heading_story,
+        ),
+        Story::new(
+            "heading/levels",
+            "Heading levels",
+            "Heading",
+            "H1 / H2 / H3 hierarchy in one stack.",
+            40,
+            6,
+            heading_levels_story,
+        ),
+        Story::new(
+            "heading/compact",
+            "Heading compact",
+            "Heading",
+            "ASCII # prefixes for no-color hierarchy.",
+            36,
+            3,
+            heading_compact_story,
         ),
         Story::new(
             "kbd/basic",
@@ -2301,12 +2319,39 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "paragraph/basic",
-            "Paragraph",
+            "Paragraph body",
             "Paragraph",
             "Body paragraph wrap.",
             40,
             4,
             paragraph_story,
+        ),
+        Story::new(
+            "paragraph/quote",
+            "Paragraph quote",
+            "Paragraph",
+            "Block quote with hanging gutter.",
+            40,
+            4,
+            paragraph_quote_story,
+        ),
+        Story::new(
+            "paragraph/list",
+            "Paragraph list",
+            "Paragraph",
+            "List and ordered items with hanging wrap.",
+            40,
+            6,
+            paragraph_list_story,
+        ),
+        Story::new(
+            "paragraph/reading",
+            "Paragraph reading",
+            "Paragraph",
+            "Reading recipe body + quote.",
+            44,
+            6,
+            paragraph_reading_story,
         ),
         Story::new(
             "surface/basic",
@@ -7880,23 +7925,12 @@ fn code_block(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn markdown_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::HeadingLevel;
     let blocks = [
-        MarkdownBlock {
-            kind: MarkdownBlockKind::Heading,
-            text: "Plan",
-        },
-        MarkdownBlock {
-            kind: MarkdownBlockKind::ListItem,
-            text: "Implement widgets",
-        },
-        MarkdownBlock {
-            kind: MarkdownBlockKind::Paragraph,
-            text: "Ship the PR.",
-        },
-        MarkdownBlock {
-            kind: MarkdownBlockKind::Code,
-            text: "cargo test -p termrock",
-        },
+        MarkdownBlock::heading("Plan", HeadingLevel::H1),
+        MarkdownBlock::new(MarkdownBlockKind::ListItem, "Implement widgets"),
+        MarkdownBlock::new(MarkdownBlockKind::Paragraph, "Ship the PR."),
+        MarkdownBlock::new(MarkdownBlockKind::Code, "cargo test -p termrock"),
     ];
     frame.render_widget(MarkdownView::new(&blocks, system), area);
 }
@@ -8545,12 +8579,53 @@ fn text_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn heading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &Heading::new("Section title", &tokens).level(HeadingLevel::H1),
-        area,
-        frame.buffer_mut(),
-    );
+    let _ = Heading::new("Section title", system)
+        .h1()
+        .reading()
+        .paint(area, frame.buffer_mut());
+}
+
+fn heading_levels_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let chunks = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(2),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let _ = Heading::new("Document", system)
+        .h1()
+        .reading()
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = Heading::new("Chapter", system)
+        .h2()
+        .reading()
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = Heading::new("Detail", system)
+        .h3()
+        .paint(chunks[2], frame.buffer_mut());
+}
+
+fn heading_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::GlyphSet;
+    let ascii = system.clone().glyphs(GlyphSet::Ascii);
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let _ = Heading::new("Title", &ascii)
+        .h1()
+        .compact()
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = Heading::new("Section", &ascii)
+        .h2()
+        .compact()
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = Heading::new("Note", &ascii)
+        .h3()
+        .compact()
+        .paint(chunks[2], frame.buffer_mut());
 }
 
 fn kbd_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -8559,15 +8634,52 @@ fn kbd_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn paragraph_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &termrock::widgets::Paragraph::new(
-            "Body text wraps by display columns when height allows.",
-            &tokens,
-        ),
-        area,
-        frame.buffer_mut(),
-    );
+    let _ = termrock::widgets::Paragraph::new(
+        "Body text wraps by display columns when height allows.",
+        system,
+    )
+    .paint(area, frame.buffer_mut());
+}
+
+fn paragraph_quote_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let _ = termrock::widgets::Paragraph::quote(
+        "Quoted prose hangs under the gutter so wrapped lines stay aligned with the body.",
+        system,
+    )
+    .reading()
+    .paint(area, frame.buffer_mut());
+}
+
+fn paragraph_list_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Paragraph;
+    let chunks = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(2),
+        Constraint::Min(1),
+    ])
+    .split(area);
+    let _ = Paragraph::list_item(
+        "First unordered item with hanging wrap for longer labels",
+        system,
+    )
+    .paint(chunks[0], frame.buffer_mut());
+    let _ = Paragraph::ordered_item("Second, numbered step in the plan", system, 2)
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = Paragraph::list_item("Third bullet", system).paint(chunks[2], frame.buffer_mut());
+}
+
+fn paragraph_reading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Paragraph;
+    let chunks = Layout::vertical([Constraint::Length(3), Constraint::Min(2)]).split(area);
+    let _ = Paragraph::new(
+        "Reading-mode body copy is intended for help, dialogs, and plan text that should wrap cleanly.",
+        system,
+    )
+    .reading()
+    .paint(chunks[0], frame.buffer_mut());
+    let _ = Paragraph::quote("A call-out quote in the same recipe.", system)
+        .reading()
+        .paint(chunks[1], frame.buffer_mut());
 }
 
 fn surface_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -9689,21 +9801,15 @@ fn badge_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn heading_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &Heading::new("見出し ✨", &tokens).level(HeadingLevel::H1),
-        area,
-        frame.buffer_mut(),
-    );
+    let _ = Heading::new("見出し ✨", system)
+        .h1()
+        .reading()
+        .paint(area, frame.buffer_mut());
 }
 
 fn paragraph_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &termrock::widgets::Paragraph::new("日本語と絵文字 🚀 を含む本文。", &tokens),
-        area,
-        frame.buffer_mut(),
-    );
+    let _ = termrock::widgets::Paragraph::new("日本語と絵文字 🚀 を含む本文。", system)
+        .paint(area, frame.buffer_mut());
 }
 
 fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

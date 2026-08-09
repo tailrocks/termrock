@@ -15747,6 +15747,10 @@ impl<T> either::into_either::IntoEither for termrock::widgets::GridColumnWidth
 pub termrock::widgets::HeadingLevel::H1
 pub termrock::widgets::HeadingLevel::H2
 pub termrock::widgets::HeadingLevel::H3
+impl termrock::widgets::HeadingLevel
+pub const fn termrock::widgets::HeadingLevel::from_hash_depth(u8) -> Self
+pub const fn termrock::widgets::HeadingLevel::hash_depth(self) -> u8
+pub const fn termrock::widgets::HeadingLevel::id(self) -> &'static str
 impl core::clone::Clone for termrock::widgets::HeadingLevel
 pub fn termrock::widgets::HeadingLevel::clone(&self) -> termrock::widgets::HeadingLevel
 impl core::cmp::Eq for termrock::widgets::HeadingLevel
@@ -15792,6 +15796,57 @@ pub unsafe fn termrock::widgets::HeadingLevel::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HeadingLevel
 pub fn termrock::widgets::HeadingLevel::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HeadingLevel
+#[non_exhaustive] pub enum termrock::widgets::HeadingRecipe
+pub termrock::widgets::HeadingRecipe::Compact
+pub termrock::widgets::HeadingRecipe::Default
+pub termrock::widgets::HeadingRecipe::Reading
+impl termrock::widgets::HeadingRecipe
+pub const fn termrock::widgets::HeadingRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::HeadingRecipe
+pub fn termrock::widgets::HeadingRecipe::clone(&self) -> termrock::widgets::HeadingRecipe
+impl core::cmp::Eq for termrock::widgets::HeadingRecipe
+impl core::cmp::PartialEq for termrock::widgets::HeadingRecipe
+pub fn termrock::widgets::HeadingRecipe::eq(&self, &termrock::widgets::HeadingRecipe) -> bool
+impl core::default::Default for termrock::widgets::HeadingRecipe
+pub fn termrock::widgets::HeadingRecipe::default() -> termrock::widgets::HeadingRecipe
+impl core::fmt::Debug for termrock::widgets::HeadingRecipe
+pub fn termrock::widgets::HeadingRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::HeadingRecipe
+pub fn termrock::widgets::HeadingRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::HeadingRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::HeadingRecipe
+impl core::marker::Freeze for termrock::widgets::HeadingRecipe
+impl core::marker::Send for termrock::widgets::HeadingRecipe
+impl core::marker::Sync for termrock::widgets::HeadingRecipe
+impl core::marker::Unpin for termrock::widgets::HeadingRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::HeadingRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HeadingRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HeadingRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HeadingRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HeadingRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HeadingRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::HeadingRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HeadingRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::HeadingRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::HeadingRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HeadingRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HeadingRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HeadingRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HeadingRecipe where T: core::clone::Clone
+pub type termrock::widgets::HeadingRecipe::Owned = T
+pub fn termrock::widgets::HeadingRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::HeadingRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HeadingRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HeadingRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HeadingRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::HeadingRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HeadingRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::HeadingRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HeadingRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HeadingRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HeadingRecipe
+pub fn termrock::widgets::HeadingRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HeadingRecipe
 pub enum termrock::widgets::HintSpan<'a>
 pub termrock::widgets::HintSpan::Dyn(alloc::string::String)
 pub termrock::widgets::HintSpan::DynKey(alloc::string::String)
@@ -16937,6 +16992,108 @@ pub unsafe fn termrock::widgets::PanelVariant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PanelVariant
 pub fn termrock::widgets::PanelVariant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PanelVariant
+#[non_exhaustive] pub enum termrock::widgets::ParagraphKind
+pub termrock::widgets::ParagraphKind::Body
+pub termrock::widgets::ParagraphKind::ListItem
+pub termrock::widgets::ParagraphKind::OrderedItem
+pub termrock::widgets::ParagraphKind::Quote
+impl termrock::widgets::ParagraphKind
+pub const fn termrock::widgets::ParagraphKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ParagraphKind
+pub fn termrock::widgets::ParagraphKind::clone(&self) -> termrock::widgets::ParagraphKind
+impl core::cmp::Eq for termrock::widgets::ParagraphKind
+impl core::cmp::PartialEq for termrock::widgets::ParagraphKind
+pub fn termrock::widgets::ParagraphKind::eq(&self, &termrock::widgets::ParagraphKind) -> bool
+impl core::default::Default for termrock::widgets::ParagraphKind
+pub fn termrock::widgets::ParagraphKind::default() -> termrock::widgets::ParagraphKind
+impl core::fmt::Debug for termrock::widgets::ParagraphKind
+pub fn termrock::widgets::ParagraphKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ParagraphKind
+pub fn termrock::widgets::ParagraphKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ParagraphKind
+impl core::marker::StructuralPartialEq for termrock::widgets::ParagraphKind
+impl core::marker::Freeze for termrock::widgets::ParagraphKind
+impl core::marker::Send for termrock::widgets::ParagraphKind
+impl core::marker::Sync for termrock::widgets::ParagraphKind
+impl core::marker::Unpin for termrock::widgets::ParagraphKind
+impl core::marker::UnsafeUnpin for termrock::widgets::ParagraphKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ParagraphKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ParagraphKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ParagraphKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ParagraphKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ParagraphKind where U: core::convert::From<T>
+pub fn termrock::widgets::ParagraphKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ParagraphKind where U: core::convert::Into<T>
+pub type termrock::widgets::ParagraphKind::Error = core::convert::Infallible
+pub fn termrock::widgets::ParagraphKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ParagraphKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ParagraphKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ParagraphKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ParagraphKind where T: core::clone::Clone
+pub type termrock::widgets::ParagraphKind::Owned = T
+pub fn termrock::widgets::ParagraphKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::ParagraphKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ParagraphKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ParagraphKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ParagraphKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ParagraphKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ParagraphKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ParagraphKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ParagraphKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ParagraphKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ParagraphKind
+pub fn termrock::widgets::ParagraphKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ParagraphKind
+#[non_exhaustive] pub enum termrock::widgets::ParagraphRecipe
+pub termrock::widgets::ParagraphRecipe::Compact
+pub termrock::widgets::ParagraphRecipe::Reading
+impl termrock::widgets::ParagraphRecipe
+pub const fn termrock::widgets::ParagraphRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ParagraphRecipe
+pub fn termrock::widgets::ParagraphRecipe::clone(&self) -> termrock::widgets::ParagraphRecipe
+impl core::cmp::Eq for termrock::widgets::ParagraphRecipe
+impl core::cmp::PartialEq for termrock::widgets::ParagraphRecipe
+pub fn termrock::widgets::ParagraphRecipe::eq(&self, &termrock::widgets::ParagraphRecipe) -> bool
+impl core::default::Default for termrock::widgets::ParagraphRecipe
+pub fn termrock::widgets::ParagraphRecipe::default() -> termrock::widgets::ParagraphRecipe
+impl core::fmt::Debug for termrock::widgets::ParagraphRecipe
+pub fn termrock::widgets::ParagraphRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ParagraphRecipe
+pub fn termrock::widgets::ParagraphRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ParagraphRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::ParagraphRecipe
+impl core::marker::Freeze for termrock::widgets::ParagraphRecipe
+impl core::marker::Send for termrock::widgets::ParagraphRecipe
+impl core::marker::Sync for termrock::widgets::ParagraphRecipe
+impl core::marker::Unpin for termrock::widgets::ParagraphRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::ParagraphRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ParagraphRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ParagraphRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ParagraphRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ParagraphRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ParagraphRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::ParagraphRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ParagraphRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::ParagraphRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::ParagraphRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ParagraphRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ParagraphRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ParagraphRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ParagraphRecipe where T: core::clone::Clone
+pub type termrock::widgets::ParagraphRecipe::Owned = T
+pub fn termrock::widgets::ParagraphRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::ParagraphRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ParagraphRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ParagraphRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ParagraphRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ParagraphRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ParagraphRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ParagraphRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ParagraphRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ParagraphRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ParagraphRecipe
+pub fn termrock::widgets::ParagraphRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ParagraphRecipe
 #[non_exhaustive] pub enum termrock::widgets::PermissionAction
 pub termrock::widgets::PermissionAction::Allow
 pub termrock::widgets::PermissionAction::AllowEdited
@@ -24276,10 +24433,32 @@ pub fn termrock::widgets::GroupHeader<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::GroupHeader<Id>
 pub struct termrock::widgets::Heading<'a>
 impl<'a> termrock::widgets::Heading<'a>
+pub const fn termrock::widgets::Heading<'a>::compact(self) -> Self
+pub const fn termrock::widgets::Heading<'a>::copyable(self) -> Self
+pub const fn termrock::widgets::Heading<'a>::h1(self) -> Self
+pub const fn termrock::widgets::Heading<'a>::h2(self) -> Self
+pub const fn termrock::widgets::Heading<'a>::h3(self) -> Self
+pub fn termrock::widgets::Heading<'a>::layout(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::HeadingParts
 pub const fn termrock::widgets::Heading<'a>::level(self, termrock::widgets::HeadingLevel) -> Self
+pub const fn termrock::widgets::Heading<'a>::level_of(&self) -> termrock::widgets::HeadingLevel
+pub fn termrock::widgets::Heading<'a>::measure_height(&self) -> u16
 pub const fn termrock::widgets::Heading<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Heading<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> termrock::widgets::HeadingParts
+pub fn termrock::widgets::Heading<'a>::plain(&self) -> &str
+pub fn termrock::widgets::Heading<'a>::plain_with_prefix(&self) -> alloc::string::String
+pub const fn termrock::widgets::Heading<'a>::prefix(self, bool) -> Self
+pub fn termrock::widgets::Heading<'a>::prefix_str(&self) -> &'static str
+pub const fn termrock::widgets::Heading<'a>::reading(self) -> Self
+pub const fn termrock::widgets::Heading<'a>::recipe(self, termrock::widgets::HeadingRecipe) -> Self
+pub const fn termrock::widgets::Heading<'a>::recipe_of(&self) -> termrock::widgets::HeadingRecipe
+pub const fn termrock::widgets::Heading<'a>::rule(self, bool) -> Self
+pub const fn termrock::widgets::Heading<'a>::selectable(self, termrock::widgets::SelectablePolicy) -> Self
+pub const fn termrock::widgets::Heading<'a>::wants_prefix(&self) -> bool
+pub fn termrock::widgets::Heading<'a>::wants_rule(&self) -> bool
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Heading<'_>
 pub fn &termrock::widgets::Heading<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Heading<'_>
+pub fn termrock::widgets::Heading<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Heading<'a>
 pub fn termrock::widgets::Heading<'a>::clone(&self) -> termrock::widgets::Heading<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Heading<'a>
@@ -24315,6 +24494,55 @@ pub unsafe fn termrock::widgets::Heading<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Heading<'a>
 pub fn termrock::widgets::Heading<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Heading<'a>
+pub struct termrock::widgets::HeadingParts
+pub termrock::widgets::HeadingParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::HeadingParts::rule: ratatui_core::layout::rect::Rect
+pub termrock::widgets::HeadingParts::title: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::HeadingParts
+pub fn termrock::widgets::HeadingParts::clone(&self) -> termrock::widgets::HeadingParts
+impl core::cmp::Eq for termrock::widgets::HeadingParts
+impl core::cmp::PartialEq for termrock::widgets::HeadingParts
+pub fn termrock::widgets::HeadingParts::eq(&self, &termrock::widgets::HeadingParts) -> bool
+impl core::default::Default for termrock::widgets::HeadingParts
+pub fn termrock::widgets::HeadingParts::default() -> termrock::widgets::HeadingParts
+impl core::fmt::Debug for termrock::widgets::HeadingParts
+pub fn termrock::widgets::HeadingParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::HeadingParts
+pub fn termrock::widgets::HeadingParts::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::HeadingParts
+impl core::marker::StructuralPartialEq for termrock::widgets::HeadingParts
+impl core::marker::Freeze for termrock::widgets::HeadingParts
+impl core::marker::Send for termrock::widgets::HeadingParts
+impl core::marker::Sync for termrock::widgets::HeadingParts
+impl core::marker::Unpin for termrock::widgets::HeadingParts
+impl core::marker::UnsafeUnpin for termrock::widgets::HeadingParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HeadingParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HeadingParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HeadingParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HeadingParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HeadingParts where U: core::convert::From<T>
+pub fn termrock::widgets::HeadingParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HeadingParts where U: core::convert::Into<T>
+pub type termrock::widgets::HeadingParts::Error = core::convert::Infallible
+pub fn termrock::widgets::HeadingParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HeadingParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HeadingParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HeadingParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HeadingParts where T: core::clone::Clone
+pub type termrock::widgets::HeadingParts::Owned = T
+pub fn termrock::widgets::HeadingParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::HeadingParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HeadingParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HeadingParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HeadingParts where T: ?core::marker::Sized
+pub fn termrock::widgets::HeadingParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HeadingParts where T: ?core::marker::Sized
+pub fn termrock::widgets::HeadingParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HeadingParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HeadingParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HeadingParts
+pub fn termrock::widgets::HeadingParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HeadingParts
 pub struct termrock::widgets::Hint<'a>
 pub termrock::widgets::Hint::chord: &'a str
 pub termrock::widgets::Hint::label: &'a str
@@ -25227,8 +25455,12 @@ impl<T> core::convert::From<T> for termrock::widgets::LogStreamState
 pub fn termrock::widgets::LogStreamState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LogStreamState
 pub struct termrock::widgets::MarkdownBlock<'a>
+pub termrock::widgets::MarkdownBlock::heading_level: termrock::widgets::HeadingLevel
 pub termrock::widgets::MarkdownBlock::kind: termrock::widgets::MarkdownBlockKind
 pub termrock::widgets::MarkdownBlock::text: &'a str
+impl<'a> termrock::widgets::MarkdownBlock<'a>
+pub const fn termrock::widgets::MarkdownBlock<'a>::heading(&'a str, termrock::widgets::HeadingLevel) -> Self
+pub const fn termrock::widgets::MarkdownBlock<'a>::new(termrock::widgets::MarkdownBlockKind, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::MarkdownBlock<'a>
 pub fn termrock::widgets::MarkdownBlock<'a>::clone(&self) -> termrock::widgets::MarkdownBlock<'a>
 impl<'a> core::cmp::Eq for termrock::widgets::MarkdownBlock<'a>
@@ -25272,6 +25504,7 @@ pub fn termrock::widgets::MarkdownBlock<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MarkdownBlock<'a>
 pub struct termrock::widgets::MarkdownView<'a>
 impl<'a> termrock::widgets::MarkdownView<'a>
+pub const fn termrock::widgets::MarkdownView<'a>::compact_headings(self, bool) -> Self
 pub const fn termrock::widgets::MarkdownView<'a>::first(self, usize) -> Self
 pub const fn termrock::widgets::MarkdownView<'a>::new(&'a [termrock::widgets::MarkdownBlock<'a>], &'a termrock::style::DesignSystem) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::MarkdownView<'_>
@@ -26407,10 +26640,33 @@ pub fn termrock::widgets::PanelState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PanelState
 pub struct termrock::widgets::Paragraph<'a>
 impl<'a> termrock::widgets::Paragraph<'a>
+pub const fn termrock::widgets::Paragraph<'a>::compact(self) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::copyable(self) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::hanging(self, bool) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::indent(self, u16) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::kind(self, termrock::widgets::ParagraphKind) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::kind_of(&self) -> termrock::widgets::ParagraphKind
+pub fn termrock::widgets::Paragraph<'a>::layout(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::ParagraphParts
+pub const fn termrock::widgets::Paragraph<'a>::list_index(self, u32) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::list_item(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Paragraph<'a>::measure_height(&self, u16) -> u16
 pub const fn termrock::widgets::Paragraph<'a>::muted(self, bool) -> Self
 pub const fn termrock::widgets::Paragraph<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::ordered_item(&'a str, &'a termrock::style::DesignSystem, u32) -> Self
+pub fn termrock::widgets::Paragraph<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> termrock::widgets::ParagraphParts
+pub fn termrock::widgets::Paragraph<'a>::plain(&self) -> &str
+pub fn termrock::widgets::Paragraph<'a>::plain_with_prefix(&self) -> alloc::string::String
+pub const fn termrock::widgets::Paragraph<'a>::prefix(self, &'a str) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::quote(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::reading(self) -> Self
+pub const fn termrock::widgets::Paragraph<'a>::recipe(self, termrock::widgets::ParagraphRecipe) -> Self
+pub fn termrock::widgets::Paragraph<'a>::resolved_prefix(&self) -> alloc::string::String
+pub const fn termrock::widgets::Paragraph<'a>::selectable(self, termrock::widgets::SelectablePolicy) -> Self
+pub fn termrock::widgets::Paragraph<'a>::wrap_lines(&self, u16) -> alloc::vec::Vec<alloc::string::String>
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Paragraph<'_>
 pub fn &termrock::widgets::Paragraph<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Paragraph<'_>
+pub fn termrock::widgets::Paragraph<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Paragraph<'a>
 pub fn termrock::widgets::Paragraph<'a>::clone(&self) -> termrock::widgets::Paragraph<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Paragraph<'a>
@@ -26446,6 +26702,51 @@ pub unsafe fn termrock::widgets::Paragraph<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Paragraph<'a>
 pub fn termrock::widgets::Paragraph<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Paragraph<'a>
+pub struct termrock::widgets::ParagraphParts
+pub termrock::widgets::ParagraphParts::content: ratatui_core::layout::rect::Rect
+pub termrock::widgets::ParagraphParts::lines: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::ParagraphParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::ParagraphParts::truncated: bool
+impl core::clone::Clone for termrock::widgets::ParagraphParts
+pub fn termrock::widgets::ParagraphParts::clone(&self) -> termrock::widgets::ParagraphParts
+impl core::cmp::Eq for termrock::widgets::ParagraphParts
+impl core::cmp::PartialEq for termrock::widgets::ParagraphParts
+pub fn termrock::widgets::ParagraphParts::eq(&self, &termrock::widgets::ParagraphParts) -> bool
+impl core::fmt::Debug for termrock::widgets::ParagraphParts
+pub fn termrock::widgets::ParagraphParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ParagraphParts
+impl core::marker::Freeze for termrock::widgets::ParagraphParts
+impl core::marker::Send for termrock::widgets::ParagraphParts
+impl core::marker::Sync for termrock::widgets::ParagraphParts
+impl core::marker::Unpin for termrock::widgets::ParagraphParts
+impl core::marker::UnsafeUnpin for termrock::widgets::ParagraphParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ParagraphParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ParagraphParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ParagraphParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ParagraphParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ParagraphParts where U: core::convert::From<T>
+pub fn termrock::widgets::ParagraphParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ParagraphParts where U: core::convert::Into<T>
+pub type termrock::widgets::ParagraphParts::Error = core::convert::Infallible
+pub fn termrock::widgets::ParagraphParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ParagraphParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ParagraphParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ParagraphParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ParagraphParts where T: core::clone::Clone
+pub type termrock::widgets::ParagraphParts::Owned = T
+pub fn termrock::widgets::ParagraphParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::ParagraphParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ParagraphParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ParagraphParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ParagraphParts where T: ?core::marker::Sized
+pub fn termrock::widgets::ParagraphParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ParagraphParts where T: ?core::marker::Sized
+pub fn termrock::widgets::ParagraphParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ParagraphParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ParagraphParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ParagraphParts
+pub fn termrock::widgets::ParagraphParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ParagraphParts
 pub struct termrock::widgets::PermissionActionRegion
 pub termrock::widgets::PermissionActionRegion::action: termrock::widgets::PermissionAction
 pub termrock::widgets::PermissionActionRegion::area: ratatui_core::layout::rect::Rect

@@ -90,7 +90,7 @@ pub use completion_menu::{
 pub use composed_row::{ComposedRow, ComposedRowParts};
 pub use content::{
     Alert, AlertOutcome, AlertState, AlertTone, Callout, CalloutTone, Heading, HeadingLevel,
-    Paragraph,
+    HeadingParts, HeadingRecipe, Paragraph, ParagraphKind, ParagraphParts, ParagraphRecipe,
 };
 pub use text::{
     SelectablePolicy, Text, TextAlign, TextEmphasis, TextLayout, TextLine, TextOverflow, TextSegment,
