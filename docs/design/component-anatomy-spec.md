@@ -4,6 +4,7 @@
 **Audience:** implementers, lookbook authors, migration writers  
 **Design system:** [`terminal-design-system.md`](./terminal-design-system.md)  
 **Agent prompts:** [`component-prompt-library.md`](./component-prompt-library.md) — 164 implementable prompts (global contract + per-component tasks)  
+**Agent collection:** [`termrock-agent.md`](./termrock-agent.md) — `@termrock/agent` source-owned components + AgentWorkbench (patterns extracted from agent TUIs; provider policy stays consumer-owned)  
 **Inventory baseline:** public surface of `termrock::widgets` + `patterns` on the experience-layer line  
 **Policy:** A component is **not** complete because it paints. Interaction design, focus ownership, contraction (narrow/tiny), capability ladders (unicode/ascii/colorless), typed outcomes, stories, and tests are part of the component.
 
