@@ -844,6 +844,15 @@ pub(crate) fn stories() -> Vec<Story> {
             dismissable_gestures_story,
         ),
         Story::new(
+            "responsive/ladder-inspector",
+            "Responsive ladder inspector",
+            "Responsive",
+            "WIDTH_LADDER stages for Form + Table; essential always on.",
+            56,
+            14,
+            responsive_ladder_story,
+        ),
+        Story::new(
             "overlay/edge-placement",
             "Overlay edges",
             "OverlayStack",
@@ -4728,6 +4737,40 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     focus_graph: &[],
     };
     frame.render_widget(DesignInspector::new(snap, &mono), area);
+}
+
+fn responsive_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{ResponsiveSnapshot, ResponsiveSurface, WIDTH_LADDER};
+    use termrock::widgets::{Panel, PanelChrome};
+
+    frame.render_widget(
+        Panel::new(system)
+            .title("Responsive · Form@40 + ladder")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    let snap = ResponsiveSnapshot::for_surface(ResponsiveSurface::Form, 40, 20);
+    let mut y = inner.y;
+    for line in snap.lines().into_iter().take(usize::from(inner.height)) {
+        frame.buffer_mut().set_stringn(
+            inner.x,
+            y,
+            &line,
+            usize::from(inner.width),
+            system.style(termrock::style::Role::Text),
+        );
+        y = y.saturating_add(1);
+        if y >= inner.bottom() {
+            break;
+        }
+    }
+    let _ = WIDTH_LADDER;
 }
 
 fn dismissable_gestures_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

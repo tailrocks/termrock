@@ -26,6 +26,9 @@ use crate::style::Density;
 /// Canonical width samples for responsive test matrices (cells).
 pub const WIDTH_LADDER: [u16; 7] = [160, 120, 100, 80, 60, 40, 20];
 
+/// Canonical height samples for responsive test matrices (rows).
+pub const HEIGHT_LADDER: [u16; 6] = [40, 24, 16, 10, 6, 3];
+
 /// Semantic priority of a content part (survival order under pressure).
 ///
 /// Higher priority survives longer. Drop order under contraction is
@@ -1072,6 +1075,305 @@ pub fn essential_survives(surface: ResponsiveSurface, width: u16) -> bool {
     surface.anatomy_for_width(width).essential
 }
 
+// ── Recipes (named breakpoint sets, not global CSS) ─────────────────────────
+
+/// One breakpoint band: apply `stage` when width ≤ `max_width` (and optional height).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Breakpoint {
+    /// Inclusive max width for this band (cells).
+    pub max_width: u16,
+    /// Inclusive max height for this band (0 = ignore height).
+    pub max_height: u16,
+    /// Stage when this band matches.
+    pub stage: ContractionStage,
+}
+
+impl Breakpoint {
+    /// Width-only band.
+    #[must_use]
+    pub const fn width(max_width: u16, stage: ContractionStage) -> Self {
+        Self {
+            max_width,
+            max_height: 0,
+            stage,
+        }
+    }
+
+    /// Width and height band.
+    #[must_use]
+    pub const fn box_size(max_width: u16, max_height: u16, stage: ContractionStage) -> Self {
+        Self {
+            max_width,
+            max_height,
+            stage,
+        }
+    }
+
+    /// Whether `(width, height)` falls in this band.
+    #[must_use]
+    pub const fn matches(self, width: u16, height: u16) -> bool {
+        if width > self.max_width {
+            return false;
+        }
+        if self.max_height > 0 && height > self.max_height {
+            return false;
+        }
+        true
+    }
+}
+
+/// Named recipe: ordered breakpoints from **narrowest** to **widest** match order
+/// (first matching band wins when scanning descending severity).
+///
+/// Recipes are **surface-local** — not global media queries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ResponsiveRecipe {
+    /// Stable recipe id for Studio / docs.
+    pub name: &'static str,
+    /// Optional surface this recipe specializes.
+    pub surface: Option<ResponsiveSurface>,
+    /// Breakpoints; evaluate with [`Self::stage_for`].
+    pub breakpoints: &'static [Breakpoint],
+}
+
+impl ResponsiveRecipe {
+    /// Global default ladder (same bands as [`ContractionStage::from_width`]).
+    pub const DEFAULT: Self = Self {
+        name: "default-width",
+        surface: None,
+        breakpoints: &[
+            Breakpoint::width(24, ContractionStage::LineMode),
+            Breakpoint::width(40, ContractionStage::DrawerOrOverlay),
+            Breakpoint::width(60, ContractionStage::SinglePane),
+            Breakpoint::width(80, ContractionStage::CollapseSecondaryActions),
+            Breakpoint::width(100, ContractionStage::HideOptionalMeta),
+            Breakpoint::width(120, ContractionStage::ShortenSecondary),
+            Breakpoint::width(159, ContractionStage::CompactSpacing),
+        ],
+    };
+
+    /// Agent workbench: earlier drawer, taller line-mode floor.
+    pub const AGENT_SHELL: Self = Self {
+        name: "agent-shell",
+        surface: Some(ResponsiveSurface::AppShell),
+        breakpoints: &[
+            Breakpoint::box_size(28, 8, ContractionStage::LineMode),
+            Breakpoint::width(56, ContractionStage::DrawerOrOverlay),
+            Breakpoint::width(80, ContractionStage::SinglePane),
+            Breakpoint::width(100, ContractionStage::CollapseSecondaryActions),
+            Breakpoint::width(120, ContractionStage::HideOptionalMeta),
+            Breakpoint::width(140, ContractionStage::ShortenSecondary),
+            Breakpoint::width(160, ContractionStage::CompactSpacing),
+        ],
+    };
+
+    /// Dense data tables / review surfaces.
+    pub const DATA_DENSE: Self = Self {
+        name: "data-dense",
+        surface: Some(ResponsiveSurface::DataTable),
+        breakpoints: &[
+            Breakpoint::width(20, ContractionStage::LineMode),
+            Breakpoint::width(48, ContractionStage::CollapseSecondaryActions),
+            Breakpoint::width(72, ContractionStage::HideOptionalMeta),
+            Breakpoint::width(100, ContractionStage::ShortenSecondary),
+            Breakpoint::width(130, ContractionStage::CompactSpacing),
+        ],
+    };
+
+    /// Resolve stage: first matching band from the list (narrowest first), else Full.
+    #[must_use]
+    pub fn stage_for(self, width: u16, height: u16) -> ContractionStage {
+        for bp in self.breakpoints {
+            if bp.matches(width, height) {
+                return bp.stage;
+            }
+        }
+        ContractionStage::Full
+    }
+
+    /// Classify into [`ViewportClass`] using this recipe (optional surface refine).
+    #[must_use]
+    pub fn classify(self, width: u16, height: u16) -> ViewportClass {
+        let mut stage = self.stage_for(width, height);
+        if let Some(surface) = self.surface {
+            let policy = surface.policy();
+            if height > 0 && height <= policy.line_mode_max_height {
+                stage = ContractionStage::LineMode;
+            }
+            let anatomy = policy.refine_anatomy(AdaptiveAnatomy::from_stage(stage), stage);
+            return ViewportClass {
+                width,
+                height,
+                stage,
+                anatomy,
+            };
+        }
+        // Height floors like global classify when no surface.
+        if height > 0 && height <= 5 {
+            stage = ContractionStage::LineMode;
+        } else if height > 0 && height <= 10 && (stage as u8) < (ContractionStage::SinglePane as u8)
+        {
+            stage = ContractionStage::SinglePane;
+        }
+        ViewportClass {
+            width,
+            height,
+            stage,
+            anatomy: AdaptiveAnatomy::from_stage(stage),
+        }
+    }
+}
+
+/// Host action when secondary chrome overflows the budget.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum OverflowAction {
+    /// Drop the part (default for optional).
+    #[default]
+    Drop,
+    /// Ellipsis / clip in place.
+    Truncate,
+    /// Move into an overflow menu / "⋯" control.
+    OverflowMenu,
+    /// Open as drawer / overlay (`use_drawer`).
+    PromoteDrawer,
+    /// Collapse pane (`Workspace` leaf).
+    CollapsePane,
+    /// Switch to line-mode essential chrome.
+    LineMode,
+}
+
+impl OverflowAction {
+    /// Suggested host action for a dropped priority under anatomy.
+    #[must_use]
+    pub const fn for_priority(priority: ContentPriority, anatomy: AdaptiveAnatomy) -> Self {
+        if anatomy.line_mode {
+            return Self::LineMode;
+        }
+        if anatomy.use_drawer && matches!(priority, ContentPriority::Important) {
+            return Self::PromoteDrawer;
+        }
+        match priority {
+            ContentPriority::Essential => Self::Truncate,
+            ContentPriority::Important => {
+                if anatomy.secondary_actions {
+                    Self::OverflowMenu
+                } else {
+                    Self::Drop
+                }
+            }
+            ContentPriority::Optional | ContentPriority::Decorative => Self::Drop,
+        }
+    }
+}
+
+/// Frame-local inspector snapshot (Studio / DesignInspector / AI).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResponsiveSnapshot {
+    /// Surface under inspection.
+    pub surface: ResponsiveSurface,
+    /// Recipe name (or `"surface-policy"`).
+    pub recipe: &'static str,
+    /// Classified viewport.
+    pub class: ViewportClass,
+    /// One line per WIDTH_LADDER sample: `80→collapse-secondary-actions`.
+    pub ladder: Vec<String>,
+}
+
+impl ResponsiveSnapshot {
+    /// Snapshot surface policy at `width`×`height`.
+    #[must_use]
+    pub fn for_surface(surface: ResponsiveSurface, width: u16, height: u16) -> Self {
+        let class = surface.classify(width, height);
+        let ladder = WIDTH_LADDER
+            .iter()
+            .map(|&w| {
+                let c = surface.classify(w, height.max(24));
+                format!("{w}→{}", c.stage.as_str())
+            })
+            .collect();
+        Self {
+            surface,
+            recipe: "surface-policy",
+            class,
+            ladder,
+        }
+    }
+
+    /// Snapshot a named recipe.
+    #[must_use]
+    pub fn for_recipe(recipe: ResponsiveRecipe, width: u16, height: u16) -> Self {
+        let class = recipe.classify(width, height);
+        let ladder = WIDTH_LADDER
+            .iter()
+            .map(|&w| {
+                let c = recipe.classify(w, height.max(24));
+                format!("{w}→{}", c.stage.as_str())
+            })
+            .collect();
+        Self {
+            surface: recipe.surface.unwrap_or(ResponsiveSurface::AppShell),
+            recipe: recipe.name,
+            class,
+            ladder,
+        }
+    }
+
+    /// Compact multi-line dump for Studio panels.
+    #[must_use]
+    pub fn lines(&self) -> Vec<String> {
+        let mut out = vec![
+            format!(
+                "{} [{}] {}×{} → {}",
+                self.surface.as_str(),
+                self.recipe,
+                self.class.width,
+                self.class.height,
+                self.class.stage.as_str()
+            ),
+            format!(
+                "essential={} important={} meta={} actions={} multi={} drawer={} line={}",
+                self.class.anatomy.essential as u8,
+                self.class.anatomy.important as u8,
+                self.class.anatomy.optional_meta as u8,
+                self.class.anatomy.secondary_actions as u8,
+                self.class.anatomy.multi_pane as u8,
+                self.class.anatomy.use_drawer as u8,
+                self.class.anatomy.line_mode as u8,
+            ),
+            format!("density={:?}", self.class.anatomy.density),
+        ];
+        out.extend(self.ladder.iter().cloned());
+        out
+    }
+}
+
+/// Table / list row chrome from table surface anatomy (no magic width constants).
+#[must_use]
+pub fn table_row_shows_optional(width: u16) -> (bool, bool) {
+    let a = ResponsiveSurface::Table.anatomy_for_width(width);
+    // leading = important chrome; badge = optional meta
+    (a.important && width >= 8, a.optional_meta)
+}
+
+/// Dialog action layout: stack vertically when secondary collapses / narrow.
+#[must_use]
+pub fn dialog_stack_actions(width: u16, height: u16) -> bool {
+    let class = ResponsiveSurface::Dialog.classify(width, height);
+    class.anatomy.line_mode
+        || !class.anatomy.secondary_actions
+        || width < ResponsiveSurface::Dialog.policy().collapse_actions_max_width
+}
+
+/// Tabs: show status glyphs while important chrome survives (not line-mode only).
+///
+/// Glyphs communicate non-color status; drop only under extreme contraction.
+#[must_use]
+pub fn tabs_show_status_glyphs(width: u16) -> bool {
+    let a = ResponsiveSurface::Tabs.anatomy_for_width(width);
+    a.important && !a.line_mode
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1332,5 +1634,37 @@ mod tests {
                 assert!(a.essential, "{}@{w}", surface.as_str());
             }
         }
+    }
+
+    #[test]
+    fn recipes_height_ladder_and_inspector() {
+        for &h in &HEIGHT_LADDER {
+            let _ = ResponsiveRecipe::DEFAULT.classify(80, h);
+        }
+        let agent = ResponsiveRecipe::AGENT_SHELL.classify(50, 24);
+        assert!(
+            matches!(
+                agent.stage,
+                ContractionStage::DrawerOrOverlay | ContractionStage::SinglePane
+            ),
+            "{:?}",
+            agent.stage
+        );
+        let snap = ResponsiveSnapshot::for_surface(ResponsiveSurface::Form, 40, 20);
+        assert!(!snap.lines().is_empty());
+        assert!(snap.lines()[0].contains("form"));
+        let (lead, badge) = table_row_shows_optional(100);
+        assert!(lead && badge);
+        let (_, badge_n) = table_row_shows_optional(30);
+        assert!(!badge_n);
+        assert!(dialog_stack_actions(24, 12));
+        // Line-mode / tiny tab strip hides status glyphs.
+        assert!(!tabs_show_status_glyphs(10));
+        assert!(tabs_show_status_glyphs(80));
+        let full = AdaptiveAnatomy::from_stage(ContractionStage::Full);
+        assert_eq!(
+            OverflowAction::for_priority(ContentPriority::Essential, full),
+            OverflowAction::Truncate
+        );
     }
 }

@@ -577,12 +577,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for Form<'_, Id> {
 }
 
 fn columns_for(width: u16) -> u8 {
+    // Recipe + surface policy: multi-pane only when anatomy allows.
+    let class = ResponsiveSurface::Form.classify(width, 24);
     let policy_cols = ResponsiveSurface::Form.form_columns(width);
     let fits = width
         >= MIN_COLUMN_WIDTH
             .saturating_mul(2)
             .saturating_add(COLUMN_GAP);
-    if policy_cols >= 2 && fits { 2 } else { 1 }
+    if policy_cols >= 2 && fits && class.anatomy.multi_pane && !class.anatomy.line_mode {
+        2
+    } else {
+        1
+    }
 }
 
 fn dimensions<Id>(sections: &[FormSection<'_, Id>], width: u16) -> (u8, usize) {

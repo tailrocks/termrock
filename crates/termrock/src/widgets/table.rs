@@ -760,10 +760,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 usize::from(MARKER_WIDTH),
                 style,
             );
-            // Shared contraction grammar without allocating Line clones on the
-            // warm paint path (badge/leading only — cells stay borrowed).
-            let show_leading = row.leading.is_some() && area.width >= 10;
-            let show_badge = row.badge.is_some() && area.width >= 14;
+            // Shared responsive anatomy (ContentPriority), not magic width cutoffs.
+            let (show_leading_tier, show_badge_tier) =
+                crate::layout::table_row_shows_optional(area.width);
+            let show_leading = row.leading.is_some() && show_leading_tier;
+            let show_badge = row.badge.is_some() && show_badge_tier;
             let mut x = area.x.saturating_add(MARKER_WIDTH);
             if show_leading && let Some(leading) = row.leading.as_ref() {
                 let lw = u16::try_from(leading.width())

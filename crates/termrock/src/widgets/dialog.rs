@@ -957,7 +957,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
             state.regions.clear();
             return;
         }
-        let narrow = area.width < 28;
+        let narrow = crate::layout::dialog_stack_actions(area.width, area.height);
         let action_rows = if narrow {
             (self.actions.len() as u16)
                 .min(area.height.saturating_sub(3))

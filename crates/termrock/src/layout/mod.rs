@@ -10,9 +10,11 @@ use ratatui_core::layout::Rect;
 pub use crate::interaction::HitRegion;
 pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
 pub use responsive::{
-    AdaptiveAnatomy, AnatomyPart, ContentPriority, ContractionStage, OverflowBehavior,
-    ResponsiveSurface, SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER,
-    composed_row_anatomy, contract_parts, dialog_anatomy, essential_survives, status_bar_anatomy,
+    AdaptiveAnatomy, AnatomyPart, Breakpoint, ContentPriority, ContractionStage, HEIGHT_LADDER,
+    OverflowAction, OverflowBehavior, ResponsiveRecipe, ResponsiveSnapshot, ResponsiveSurface,
+    SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER, composed_row_anatomy,
+    contract_parts, dialog_anatomy, dialog_stack_actions, essential_survives, status_bar_anatomy,
+    table_row_shows_optional, tabs_show_status_glyphs,
 };
 pub use work_surface::{RegionId, RegionLayout, RegionSize, RegionSpec, SurfaceAxis, WorkSurface};
 pub use workspace::{

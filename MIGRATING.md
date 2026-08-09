@@ -103,6 +103,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0087 | `v0.13.0` | [OverlayStack premium](migrations/0087-v0.13.0-overlay-stack-premium.md) |
 | 0088 | `v0.13.0` | [TextArea ScrollArea viewport](migrations/0088-v0.13.0-text-area-scroll-area.md) |
 | 0089 | `v0.13.0` | [DismissableLayer](migrations/0089-v0.13.0-dismissable-layer.md) |
+| 0090 | `v0.13.0` | [Responsive contraction](migrations/0090-v0.13.0-responsive-contraction.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

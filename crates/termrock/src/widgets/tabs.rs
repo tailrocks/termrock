@@ -123,9 +123,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
         state.regions.clear();
         let mut x = area.x;
         for tab in self.tabs {
+            let show_status = crate::layout::tabs_show_status_glyphs(area.width);
             let label = match &tab.glyph {
-                Some(glyph) => format!("{} {}", glyph.content, tab.label),
-                None => tab.label.to_owned(),
+                Some(glyph) if show_status => format!("{} {}", glyph.content, tab.label),
+                _ => tab.label.to_owned(),
             };
             let width = UnicodeWidthStr::width(label.as_str())
                 .saturating_add(2)
@@ -158,7 +159,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
                 label_rect.width as usize,
                 style,
             );
-            if label_rect.height > 0
+            if show_status
+                && label_rect.height > 0
                 && label_rect.width > 1
                 && let Some(glyph) = &tab.glyph
             {
