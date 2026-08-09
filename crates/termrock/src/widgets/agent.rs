@@ -150,7 +150,11 @@ impl Widget for &ThinkingBlock<'_> {
         } else {
             Stack::new().layout(area, &[FlexSize::Fixed(1)])
         };
-        let marker = if self.expanded { "▾" } else { "▸" };
+        let marker = if self.expanded {
+            self.system.glyphs.disclosure_open()
+        } else {
+            self.system.glyphs.disclosure_closed()
+        };
         let header = format!("{} {} {}", marker, self.frame, self.summary);
         if let Some(header_r) = layout.get(0) {
             let clipped = take_display_cols(&header, usize::from(header_r.width));

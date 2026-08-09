@@ -591,6 +591,60 @@ pub(crate) fn stories() -> Vec<Story> {
             action_bar,
         ),
         Story::new(
+            "collapsible/inline",
+            "Collapsible inline",
+            "Collapsible",
+            "Compact disclosure; open body for optional detail.",
+            40,
+            6,
+            collapsible_inline_story,
+        ),
+        Story::new(
+            "collapsible/section",
+            "Collapsible section",
+            "Collapsible",
+            "Section-style trigger with open-state rule fill.",
+            44,
+            7,
+            collapsible_section_story,
+        ),
+        Story::new(
+            "collapsible/nested",
+            "Collapsible nested",
+            "Collapsible",
+            "Depth indent for nested disclosures.",
+            44,
+            10,
+            collapsible_nested_story,
+        ),
+        Story::new(
+            "collapsible/disabled",
+            "Collapsible disabled",
+            "Collapsible",
+            "Disabled trigger ignores activate; · marker.",
+            36,
+            3,
+            collapsible_disabled_story,
+        ),
+        Story::new(
+            "collapsible/ascii",
+            "Collapsible ascii",
+            "Collapsible",
+            "ASCII disclosure glyphs (v/>) without Unicode.",
+            36,
+            5,
+            collapsible_ascii_story,
+        ),
+        Story::new(
+            "collapsible/narrow",
+            "Collapsible narrow",
+            "Collapsible",
+            "Trigger truncates; body still opens.",
+            18,
+            5,
+            collapsible_narrow_story,
+        ),
+        Story::new(
             "toolbar/basic",
             "Toolbar basic",
             "Toolbar",
@@ -4607,6 +4661,111 @@ fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let pane = LogPane::new(system).title("Frozen build log");
     state.scroll_to_oldest();
     frame.render_stateful_widget(&pane, area, &mut state);
+}
+
+fn collapsible_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Collapsible, CollapsibleState};
+    use ratatui::widgets::Widget as _;
+    let mut state = CollapsibleState::new().initially_open(true);
+    state.set_focused(true);
+    let body = Collapsible::new("Tool details", system).paint(area, frame.buffer_mut(), &mut state);
+    if body.height > 0 {
+        Paragraph::new("args: --json\nstatus: ok")
+            .style(system.style(Role::TextMuted))
+            .render(body, frame.buffer_mut());
+    }
+}
+
+fn collapsible_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Collapsible, CollapsibleState};
+    use ratatui::widgets::Widget as _;
+    let mut state = CollapsibleState::new().initially_open(true);
+    let body = Collapsible::new("Advanced options", system)
+        .section()
+        .paint(area, frame.buffer_mut(), &mut state);
+    if body.height > 0 {
+        Paragraph::new("retries: 3\ntimeout: 30s")
+            .style(system.style(Role::Text))
+            .render(body, frame.buffer_mut());
+    }
+}
+
+fn collapsible_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Collapsible, CollapsibleState};
+    use ratatui::widgets::Widget as _;
+    let chunks = Layout::vertical([Constraint::Length(5), Constraint::Min(1)]).split(area);
+    let mut outer = CollapsibleState::new().initially_open(true);
+    let body = Collapsible::new("Outer group", system).paint(
+        chunks[0],
+        frame.buffer_mut(),
+        &mut outer,
+    );
+    if body.height > 0 {
+        let mut inner = CollapsibleState::new().initially_open(true);
+        let inner_body = Collapsible::new("Nested detail", system)
+            .depth(1)
+            .paint(body, frame.buffer_mut(), &mut inner);
+        if inner_body.height > 0 {
+            Paragraph::new("leaf content")
+                .style(system.style(Role::TextMuted))
+                .render(inner_body, frame.buffer_mut());
+        }
+    }
+    let mut closed = CollapsibleState::new();
+    let _ = Collapsible::new("Sibling closed", system).paint(
+        chunks[1],
+        frame.buffer_mut(),
+        &mut closed,
+    );
+}
+
+fn collapsible_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Collapsible, CollapsibleState};
+    let mut state = CollapsibleState::new();
+    let _ = Collapsible::new("Locked detail", system)
+        .disabled(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn collapsible_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::GlyphSet;
+    use termrock::widgets::{Collapsible, CollapsibleState};
+    use ratatui::widgets::Widget as _;
+    let ascii = system.clone().glyphs(GlyphSet::Ascii);
+    let chunks = Layout::vertical([Constraint::Length(3), Constraint::Length(2)]).split(area);
+    let mut open = CollapsibleState::new().initially_open(true);
+    let body = Collapsible::new("Open ascii", &ascii).paint(
+        chunks[0],
+        frame.buffer_mut(),
+        &mut open,
+    );
+    if body.height > 0 {
+        Paragraph::new("body")
+            .style(ascii.style(Role::TextMuted))
+            .render(body, frame.buffer_mut());
+    }
+    let mut closed = CollapsibleState::new();
+    let _ = Collapsible::new("Closed ascii", &ascii).paint(
+        chunks[1],
+        frame.buffer_mut(),
+        &mut closed,
+    );
+}
+
+fn collapsible_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Collapsible, CollapsibleState};
+    use ratatui::widgets::Widget as _;
+    let mut state = CollapsibleState::new().initially_open(true);
+    let body = Collapsible::new("Very long optional detail title", system).paint(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
+    if body.height > 0 {
+        Paragraph::new("ok")
+            .style(system.style(Role::TextMuted))
+            .render(body, frame.buffer_mut());
+    }
 }
 
 fn toolbar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

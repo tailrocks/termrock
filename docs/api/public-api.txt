@@ -14154,6 +14154,159 @@ pub unsafe fn termrock::widgets::ChipOutcome<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ChipOutcome<Id>
 pub fn termrock::widgets::ChipOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChipOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::CollapsedContentPolicy
+pub termrock::widgets::CollapsedContentPolicy::KeepMounted
+pub termrock::widgets::CollapsedContentPolicy::Unmount
+impl termrock::widgets::CollapsedContentPolicy
+pub const fn termrock::widgets::CollapsedContentPolicy::id(self) -> &'static str
+pub const fn termrock::widgets::CollapsedContentPolicy::keep_state(self) -> bool
+impl core::clone::Clone for termrock::widgets::CollapsedContentPolicy
+pub fn termrock::widgets::CollapsedContentPolicy::clone(&self) -> termrock::widgets::CollapsedContentPolicy
+impl core::cmp::Eq for termrock::widgets::CollapsedContentPolicy
+impl core::cmp::PartialEq for termrock::widgets::CollapsedContentPolicy
+pub fn termrock::widgets::CollapsedContentPolicy::eq(&self, &termrock::widgets::CollapsedContentPolicy) -> bool
+impl core::default::Default for termrock::widgets::CollapsedContentPolicy
+pub fn termrock::widgets::CollapsedContentPolicy::default() -> termrock::widgets::CollapsedContentPolicy
+impl core::fmt::Debug for termrock::widgets::CollapsedContentPolicy
+pub fn termrock::widgets::CollapsedContentPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CollapsedContentPolicy
+pub fn termrock::widgets::CollapsedContentPolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CollapsedContentPolicy
+impl core::marker::StructuralPartialEq for termrock::widgets::CollapsedContentPolicy
+impl core::marker::Freeze for termrock::widgets::CollapsedContentPolicy
+impl core::marker::Send for termrock::widgets::CollapsedContentPolicy
+impl core::marker::Sync for termrock::widgets::CollapsedContentPolicy
+impl core::marker::Unpin for termrock::widgets::CollapsedContentPolicy
+impl core::marker::UnsafeUnpin for termrock::widgets::CollapsedContentPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CollapsedContentPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CollapsedContentPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CollapsedContentPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CollapsedContentPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CollapsedContentPolicy where U: core::convert::From<T>
+pub fn termrock::widgets::CollapsedContentPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CollapsedContentPolicy where U: core::convert::Into<T>
+pub type termrock::widgets::CollapsedContentPolicy::Error = core::convert::Infallible
+pub fn termrock::widgets::CollapsedContentPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CollapsedContentPolicy where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CollapsedContentPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CollapsedContentPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CollapsedContentPolicy where T: core::clone::Clone
+pub type termrock::widgets::CollapsedContentPolicy::Owned = T
+pub fn termrock::widgets::CollapsedContentPolicy::clone_into(&self, &mut T)
+pub fn termrock::widgets::CollapsedContentPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CollapsedContentPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CollapsedContentPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CollapsedContentPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsedContentPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CollapsedContentPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsedContentPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CollapsedContentPolicy where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CollapsedContentPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CollapsedContentPolicy
+pub fn termrock::widgets::CollapsedContentPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CollapsedContentPolicy
+#[non_exhaustive] pub enum termrock::widgets::CollapsibleOutcome
+pub termrock::widgets::CollapsibleOutcome::Closed
+pub termrock::widgets::CollapsibleOutcome::Ignored
+pub termrock::widgets::CollapsibleOutcome::Opened
+impl termrock::widgets::CollapsibleOutcome
+pub const fn termrock::widgets::CollapsibleOutcome::changed(self) -> bool
+pub const fn termrock::widgets::CollapsibleOutcome::open(self) -> core::option::Option<bool>
+impl core::clone::Clone for termrock::widgets::CollapsibleOutcome
+pub fn termrock::widgets::CollapsibleOutcome::clone(&self) -> termrock::widgets::CollapsibleOutcome
+impl core::cmp::Eq for termrock::widgets::CollapsibleOutcome
+impl core::cmp::PartialEq for termrock::widgets::CollapsibleOutcome
+pub fn termrock::widgets::CollapsibleOutcome::eq(&self, &termrock::widgets::CollapsibleOutcome) -> bool
+impl core::default::Default for termrock::widgets::CollapsibleOutcome
+pub fn termrock::widgets::CollapsibleOutcome::default() -> termrock::widgets::CollapsibleOutcome
+impl core::fmt::Debug for termrock::widgets::CollapsibleOutcome
+pub fn termrock::widgets::CollapsibleOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CollapsibleOutcome
+pub fn termrock::widgets::CollapsibleOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CollapsibleOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::CollapsibleOutcome
+impl core::marker::Freeze for termrock::widgets::CollapsibleOutcome
+impl core::marker::Send for termrock::widgets::CollapsibleOutcome
+impl core::marker::Sync for termrock::widgets::CollapsibleOutcome
+impl core::marker::Unpin for termrock::widgets::CollapsibleOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::CollapsibleOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CollapsibleOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CollapsibleOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CollapsibleOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CollapsibleOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::CollapsibleOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CollapsibleOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::CollapsibleOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::CollapsibleOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CollapsibleOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CollapsibleOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CollapsibleOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CollapsibleOutcome where T: core::clone::Clone
+pub type termrock::widgets::CollapsibleOutcome::Owned = T
+pub fn termrock::widgets::CollapsibleOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::CollapsibleOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CollapsibleOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CollapsibleOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CollapsibleOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CollapsibleOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CollapsibleOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CollapsibleOutcome
+pub fn termrock::widgets::CollapsibleOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CollapsibleOutcome
+#[non_exhaustive] pub enum termrock::widgets::CollapsibleVariant
+pub termrock::widgets::CollapsibleVariant::Inline
+pub termrock::widgets::CollapsibleVariant::Section
+impl termrock::widgets::CollapsibleVariant
+pub const fn termrock::widgets::CollapsibleVariant::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::CollapsibleVariant
+pub fn termrock::widgets::CollapsibleVariant::clone(&self) -> termrock::widgets::CollapsibleVariant
+impl core::cmp::Eq for termrock::widgets::CollapsibleVariant
+impl core::cmp::PartialEq for termrock::widgets::CollapsibleVariant
+pub fn termrock::widgets::CollapsibleVariant::eq(&self, &termrock::widgets::CollapsibleVariant) -> bool
+impl core::default::Default for termrock::widgets::CollapsibleVariant
+pub fn termrock::widgets::CollapsibleVariant::default() -> termrock::widgets::CollapsibleVariant
+impl core::fmt::Debug for termrock::widgets::CollapsibleVariant
+pub fn termrock::widgets::CollapsibleVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CollapsibleVariant
+pub fn termrock::widgets::CollapsibleVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CollapsibleVariant
+impl core::marker::StructuralPartialEq for termrock::widgets::CollapsibleVariant
+impl core::marker::Freeze for termrock::widgets::CollapsibleVariant
+impl core::marker::Send for termrock::widgets::CollapsibleVariant
+impl core::marker::Sync for termrock::widgets::CollapsibleVariant
+impl core::marker::Unpin for termrock::widgets::CollapsibleVariant
+impl core::marker::UnsafeUnpin for termrock::widgets::CollapsibleVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CollapsibleVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CollapsibleVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CollapsibleVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CollapsibleVariant where U: core::convert::From<T>
+pub fn termrock::widgets::CollapsibleVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CollapsibleVariant where U: core::convert::Into<T>
+pub type termrock::widgets::CollapsibleVariant::Error = core::convert::Infallible
+pub fn termrock::widgets::CollapsibleVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CollapsibleVariant where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CollapsibleVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CollapsibleVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CollapsibleVariant where T: core::clone::Clone
+pub type termrock::widgets::CollapsibleVariant::Owned = T
+pub fn termrock::widgets::CollapsibleVariant::clone_into(&self, &mut T)
+pub fn termrock::widgets::CollapsibleVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CollapsibleVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CollapsibleVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CollapsibleVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CollapsibleVariant where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CollapsibleVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CollapsibleVariant
+pub fn termrock::widgets::CollapsibleVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CollapsibleVariant
 #[non_exhaustive] pub enum termrock::widgets::ColumnPin
 pub termrock::widgets::ColumnPin::End
 pub termrock::widgets::ColumnPin::None
@@ -20741,6 +20894,174 @@ pub unsafe fn termrock::widgets::CodeBlock<'a, H>::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::CodeBlock<'a, H>
 pub fn termrock::widgets::CodeBlock<'a, H>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CodeBlock<'a, H>
+pub struct termrock::widgets::Collapsible<'a>
+impl<'a> termrock::widgets::Collapsible<'a>
+pub const fn termrock::widgets::Collapsible<'a>::content_policy(self, termrock::widgets::CollapsedContentPolicy) -> Self
+pub const fn termrock::widgets::Collapsible<'a>::depth(self, u8) -> Self
+pub const fn termrock::widgets::Collapsible<'a>::disabled(self, bool) -> Self
+pub const fn termrock::widgets::Collapsible<'a>::indent(self, u16) -> Self
+pub const fn termrock::widgets::Collapsible<'a>::inline(self) -> Self
+pub const fn termrock::widgets::Collapsible<'a>::is_disabled(&self) -> bool
+pub const fn termrock::widgets::Collapsible<'a>::keep_mounted(self) -> Self
+pub fn termrock::widgets::Collapsible<'a>::layout(&self, ratatui_core::layout::rect::Rect, &termrock::widgets::CollapsibleState) -> termrock::widgets::CollapsibleParts
+pub const fn termrock::widgets::Collapsible<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Collapsible<'a>::open(self, bool) -> Self
+pub fn termrock::widgets::Collapsible<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CollapsibleState) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::Collapsible<'a>::policy(&self) -> termrock::widgets::CollapsedContentPolicy
+pub const fn termrock::widgets::Collapsible<'a>::preferred_content_height(self, u16) -> Self
+pub fn termrock::widgets::Collapsible<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::CollapsibleState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub fn termrock::widgets::Collapsible<'a>::resolved_open(&self, &termrock::widgets::CollapsibleState) -> bool
+pub const fn termrock::widgets::Collapsible<'a>::section(self) -> Self
+pub const fn termrock::widgets::Collapsible<'a>::variant(self, termrock::widgets::CollapsibleVariant) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Collapsible<'_>
+pub fn &termrock::widgets::Collapsible<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Collapsible<'_>
+pub fn termrock::widgets::Collapsible<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::Collapsible<'a>
+pub fn termrock::widgets::Collapsible<'a>::clone(&self) -> termrock::widgets::Collapsible<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Collapsible<'a>
+pub fn termrock::widgets::Collapsible<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for termrock::widgets::Collapsible<'a>
+impl<'a> core::marker::Send for termrock::widgets::Collapsible<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Collapsible<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Collapsible<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Collapsible<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Collapsible<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Collapsible<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Collapsible<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Collapsible<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Collapsible<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Collapsible<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Collapsible<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Collapsible<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Collapsible<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Collapsible<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Collapsible<'a> where T: core::clone::Clone
+pub type termrock::widgets::Collapsible<'a>::Owned = T
+pub fn termrock::widgets::Collapsible<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Collapsible<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Collapsible<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Collapsible<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Collapsible<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Collapsible<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Collapsible<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Collapsible<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Collapsible<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Collapsible<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Collapsible<'a>
+pub fn termrock::widgets::Collapsible<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Collapsible<'a>
+pub struct termrock::widgets::CollapsibleParts
+pub termrock::widgets::CollapsibleParts::clip: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CollapsibleParts::content: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CollapsibleParts::content_policy: termrock::widgets::CollapsedContentPolicy
+pub termrock::widgets::CollapsibleParts::open: bool
+pub termrock::widgets::CollapsibleParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CollapsibleParts::trigger: ratatui_core::layout::rect::Rect
+impl termrock::widgets::CollapsibleParts
+pub const fn termrock::widgets::CollapsibleParts::has_content(self) -> bool
+impl core::clone::Clone for termrock::widgets::CollapsibleParts
+pub fn termrock::widgets::CollapsibleParts::clone(&self) -> termrock::widgets::CollapsibleParts
+impl core::cmp::Eq for termrock::widgets::CollapsibleParts
+impl core::cmp::PartialEq for termrock::widgets::CollapsibleParts
+pub fn termrock::widgets::CollapsibleParts::eq(&self, &termrock::widgets::CollapsibleParts) -> bool
+impl core::default::Default for termrock::widgets::CollapsibleParts
+pub fn termrock::widgets::CollapsibleParts::default() -> termrock::widgets::CollapsibleParts
+impl core::fmt::Debug for termrock::widgets::CollapsibleParts
+pub fn termrock::widgets::CollapsibleParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CollapsibleParts
+pub fn termrock::widgets::CollapsibleParts::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CollapsibleParts
+impl core::marker::StructuralPartialEq for termrock::widgets::CollapsibleParts
+impl core::marker::Freeze for termrock::widgets::CollapsibleParts
+impl core::marker::Send for termrock::widgets::CollapsibleParts
+impl core::marker::Sync for termrock::widgets::CollapsibleParts
+impl core::marker::Unpin for termrock::widgets::CollapsibleParts
+impl core::marker::UnsafeUnpin for termrock::widgets::CollapsibleParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CollapsibleParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CollapsibleParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CollapsibleParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CollapsibleParts where U: core::convert::From<T>
+pub fn termrock::widgets::CollapsibleParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CollapsibleParts where U: core::convert::Into<T>
+pub type termrock::widgets::CollapsibleParts::Error = core::convert::Infallible
+pub fn termrock::widgets::CollapsibleParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CollapsibleParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CollapsibleParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CollapsibleParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CollapsibleParts where T: core::clone::Clone
+pub type termrock::widgets::CollapsibleParts::Owned = T
+pub fn termrock::widgets::CollapsibleParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::CollapsibleParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CollapsibleParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CollapsibleParts where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CollapsibleParts where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CollapsibleParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CollapsibleParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CollapsibleParts
+pub fn termrock::widgets::CollapsibleParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CollapsibleParts
+pub struct termrock::widgets::CollapsibleState
+pub termrock::widgets::CollapsibleState::focused: bool
+pub termrock::widgets::CollapsibleState::open: bool
+pub termrock::widgets::CollapsibleState::parts: core::option::Option<termrock::widgets::CollapsibleParts>
+impl termrock::widgets::CollapsibleState
+pub fn termrock::widgets::CollapsibleState::handle_intent(&mut self, termrock::context::ContextUiIntent, bool, core::option::Option<bool>) -> termrock::widgets::CollapsibleOutcome
+pub fn termrock::widgets::CollapsibleState::handle_key(&mut self, termrock::input::KeyEvent, bool, core::option::Option<bool>) -> termrock::widgets::CollapsibleOutcome
+pub fn termrock::widgets::CollapsibleState::handle_key_result(&mut self, termrock::input::KeyEvent, bool, core::option::Option<bool>) -> termrock::interaction::EventResult<termrock::widgets::CollapsibleOutcome>
+pub fn termrock::widgets::CollapsibleState::handle_mouse(&mut self, termrock::input::MouseEvent, bool, core::option::Option<bool>) -> termrock::widgets::CollapsibleOutcome
+pub const fn termrock::widgets::CollapsibleState::initially_open(self, bool) -> Self
+pub const fn termrock::widgets::CollapsibleState::is_focused(&self) -> bool
+pub const fn termrock::widgets::CollapsibleState::is_open(&self) -> bool
+pub const fn termrock::widgets::CollapsibleState::new() -> Self
+pub const fn termrock::widgets::CollapsibleState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::CollapsibleState::set_open(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::CollapsibleState
+pub fn termrock::widgets::CollapsibleState::clone(&self) -> termrock::widgets::CollapsibleState
+impl core::cmp::Eq for termrock::widgets::CollapsibleState
+impl core::cmp::PartialEq for termrock::widgets::CollapsibleState
+pub fn termrock::widgets::CollapsibleState::eq(&self, &termrock::widgets::CollapsibleState) -> bool
+impl core::default::Default for termrock::widgets::CollapsibleState
+pub fn termrock::widgets::CollapsibleState::default() -> termrock::widgets::CollapsibleState
+impl core::fmt::Debug for termrock::widgets::CollapsibleState
+pub fn termrock::widgets::CollapsibleState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CollapsibleState
+impl core::marker::Freeze for termrock::widgets::CollapsibleState
+impl core::marker::Send for termrock::widgets::CollapsibleState
+impl core::marker::Sync for termrock::widgets::CollapsibleState
+impl core::marker::Unpin for termrock::widgets::CollapsibleState
+impl core::marker::UnsafeUnpin for termrock::widgets::CollapsibleState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CollapsibleState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CollapsibleState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CollapsibleState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CollapsibleState where U: core::convert::From<T>
+pub fn termrock::widgets::CollapsibleState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CollapsibleState where U: core::convert::Into<T>
+pub type termrock::widgets::CollapsibleState::Error = core::convert::Infallible
+pub fn termrock::widgets::CollapsibleState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CollapsibleState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CollapsibleState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CollapsibleState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CollapsibleState where T: core::clone::Clone
+pub type termrock::widgets::CollapsibleState::Owned = T
+pub fn termrock::widgets::CollapsibleState::clone_into(&self, &mut T)
+pub fn termrock::widgets::CollapsibleState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CollapsibleState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CollapsibleState where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CollapsibleState where T: ?core::marker::Sized
+pub fn termrock::widgets::CollapsibleState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CollapsibleState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CollapsibleState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CollapsibleState
+pub fn termrock::widgets::CollapsibleState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CollapsibleState
 pub struct termrock::widgets::Column<'a, Id>
 pub termrock::widgets::Column::alignment: termrock::widgets::CellAlignment
 pub termrock::widgets::Column::id: Id

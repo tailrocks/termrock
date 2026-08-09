@@ -1,0 +1,118 @@
+---
+title: Collapsible
+description: 'Accessible disclosure for optional detail — controlled/uncontrolled open, trigger/content, nested depth, keep-mounted policy.'
+---
+
+## Previews
+
+### `collapsible/inline`
+
+![Inline open](/component-previews/collapsible-inline.svg)
+
+### `collapsible/section`
+
+![Section variant](/component-previews/collapsible-section.svg)
+
+### `collapsible/nested`
+
+![Nested disclosures](/component-previews/collapsible-nested.svg)
+
+### `collapsible/disabled`
+
+![Disabled](/component-previews/collapsible-disabled.svg)
+
+### `collapsible/ascii`
+
+![ASCII glyphs](/component-previews/collapsible-ascii.svg)
+
+### `collapsible/narrow`
+
+![Narrow](/component-previews/collapsible-narrow.svg)
+
+## Anatomy
+
+`root` · `trigger` · optional `content` (body; zero height when closed)
+
+## Variants
+
+| Variant | Trigger |
+|---------|---------|
+| Inline (default) | Compact `Role::Text` |
+| Section | Strong title + quiet rule fill when open |
+
+## Usage
+
+```rust
+use termrock::widgets::{Collapsible, CollapsibleState, CollapsedContentPolicy};
+
+let mut state = CollapsibleState::new();
+state.set_focused(true);
+
+// Uncontrolled open lives on CollapsibleState
+let body = Collapsible::new("Tool details", &system)
+    .paint(area, buf, &mut state);
+if body.height > 0 {
+    // paint optional detail into body
+}
+
+// Controlled open each frame
+let body = Collapsible::new("Details", &system)
+    .open(host_open)
+    .content_policy(CollapsedContentPolicy::KeepMounted)
+    .depth(1)
+    .paint(area, buf, &mut state);
+
+match state.handle_key(key, false, Some(host_open)) {
+    CollapsibleOutcome::Opened => host_open = true,
+    CollapsibleOutcome::Closed => host_open = false,
+    CollapsibleOutcome::Ignored => {}
+}
+```
+
+## Keep-mounted policy
+
+When closed, **layout always collapses body height to zero**.  
+`CollapsedContentPolicy::KeepMounted` tells the host to retain child domain state
+without painting; `Unmount` allows dropping children.
+
+## Focus / keyboard
+
+Focus stays on the trigger. Host wires content focus only while open.
+
+| Intent | Keys | Outcome |
+|--------|------|---------|
+| Activate / Toggle | Enter, Space | open ↔ closed |
+| Expand | Right, `l` | force open |
+| Collapse | Left, `h` | force closed |
+| Mouse | click trigger | focus + toggle |
+
+Disabled: ignore keys and mouse; `·` non-color marker.
+
+## Nested disclosures
+
+```rust
+Collapsible::new("Child", &system).depth(1).paint(area, buf, &mut child_state);
+// indent = depth×2 + optional .indent(n)
+```
+
+## Glyph / no-color
+
+| Set | Closed | Open |
+|-----|--------|------|
+| Unicode | ▸ | ▾ |
+| ASCII | `>` | `v` |
+
+## vs Section / Panel / Tree
+
+| | Collapsible | Section | Panel | Tree |
+|--|-------------|---------|-------|------|
+| Border | no | no | yes | no |
+| Role | free-form detail | editorial group | region | hierarchy |
+
+Prefer **Collapsible** for tool args, optional forms, and nested detail without
+chrome. Prefer **Section**/**Panel** when you need their chrome; they may still
+collapse their own bodies.
+
+## Migration
+
+See `migrations/0112-v0.13.0-collapsible.md`.
