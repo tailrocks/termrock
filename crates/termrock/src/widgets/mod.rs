@@ -150,7 +150,9 @@ pub use review::{
     LogStream, LogStreamOutcome, LogStreamState, ObjectInspector, ObjectInspectorOutcome,
     ObjectInspectorState,
 };
-pub use scroll_area::{ScrollArea, ScrollAreaState, ScrollBarVisibility};
+pub use scroll_area::{
+    ScrollArea, ScrollAreaState, ScrollBarVisibility, ScrollChain, ScrollOutcome, VisibleRange,
+};
 pub use selection::Selection;
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,

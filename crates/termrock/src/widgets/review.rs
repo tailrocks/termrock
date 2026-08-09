@@ -123,10 +123,10 @@ impl ObjectInspectorState {
         let start = usize::from(self.scroll.offset_y());
         let end = start.saturating_add(vh);
         if self.cursor < start {
-            self.scroll.set_offset_y(self.cursor as u16);
+            self.scroll.set_offset_y_quiet(self.cursor as u16);
         } else if self.cursor >= end {
             let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y(next as u16);
+            self.scroll.set_offset_y_quiet(next as u16);
         }
         self.scroll
             .set_content_size(1, field_count.min(u16::MAX as usize) as u16);
@@ -478,10 +478,11 @@ pub enum LogStreamOutcome {
 }
 
 /// Log stream state (bounded scroll + follow; scene owns surface focus).
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+///
+/// Follow/pause/unseen live in [`ScrollAreaState`] — sole authority.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LogStreamState {
     scroll: ScrollAreaState,
-    follow: bool,
     accepts_input: bool,
     origin: (u16, u16),
     body_rows: u16,
@@ -491,13 +492,20 @@ pub struct LogStreamState {
     line_count: u16,
 }
 
+impl Default for LogStreamState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LogStreamState {
     /// Following by default.
     #[must_use]
     pub fn new() -> Self {
+        let mut scroll = ScrollAreaState::new().axes(true, false);
+        scroll.follow_tail();
         Self {
-            scroll: ScrollAreaState::new(),
-            follow: true,
+            scroll,
             accepts_input: true,
             origin: (0, 0),
             body_rows: 0,
@@ -517,10 +525,10 @@ impl LogStreamState {
         self.accepts_input
     }
 
-    /// Following tail.
+    /// Following tail ([`ScrollAreaState`] sole authority).
     #[must_use]
     pub const fn is_following(&self) -> bool {
-        self.follow
+        self.scroll.is_following()
     }
 
     /// Vertical offset.
@@ -529,52 +537,45 @@ impl LogStreamState {
         self.scroll.offset_y()
     }
 
+    /// Shared scroll state (visible range, indicator, anchors).
+    #[must_use]
+    pub const fn scroll(&self) -> &ScrollAreaState {
+        &self.scroll
+    }
+
     /// Force follow on/off (host sync).
     pub fn set_following(&mut self, following: bool) {
-        self.follow = following;
         if following {
             self.scroll.follow_tail();
+        } else {
+            self.scroll.pause_follow();
         }
     }
 
     fn sync_metrics(&mut self, total_lines: u16, viewport: u16) {
         self.line_count = total_lines;
         self.body_rows = viewport;
+        // set_content_size applies follow-tail or new-content indicator.
         self.scroll.set_content_size(1, total_lines);
         self.scroll.set_viewport(1, viewport);
-        self.scroll.clamp();
     }
 
-    /// After append: rejoin tail if following.
+    /// After append: rejoin tail if following; else accumulate unseen.
     pub fn on_append(&mut self, total_lines: u16, viewport: u16) {
         self.sync_metrics(total_lines, viewport);
-        if self.follow {
-            self.scroll.follow_tail();
-        }
-    }
-
-    fn detach_if_following(&mut self) -> bool {
-        if self.follow {
-            self.follow = false;
-            true
-        } else {
-            false
-        }
     }
 
     fn scroll_by_lines(&mut self, delta: i32) -> bool {
         if self.body_rows == 0 && self.line_count == 0 {
             return false;
         }
-        let before = self.scroll.offset_y();
-        let next = i32::from(before).saturating_add(delta).max(0) as u16;
-        self.scroll.set_offset_y(next);
-        self.scroll.offset_y() != before
+        self.scroll
+            .scroll_by(delta as isize, 0)
+            .is_scrolled()
     }
 
     fn scroll_page(&mut self, forward: bool) -> bool {
-        let step = i32::from(self.body_rows.max(1));
-        self.scroll_by_lines(if forward { step } else { -step })
+        self.scroll.page(forward).is_scrolled()
     }
 
     /// Keys via [`crate::interaction::default_log_stream_intent`].
@@ -599,10 +600,11 @@ impl LogStreamState {
         }
         match intent {
             UiIntent::Move(NavigationMove::Next) => {
+                let was_follow = self.scroll.is_following();
                 if !self.scroll_by_lines(1) {
                     return LogStreamOutcome::Ignored;
                 }
-                if self.detach_if_following() {
+                if was_follow {
                     LogStreamOutcome::Detach
                 } else {
                     LogStreamOutcome::Scrolled {
@@ -611,10 +613,11 @@ impl LogStreamState {
                 }
             }
             UiIntent::Move(NavigationMove::Previous) => {
+                let was_follow = self.scroll.is_following();
                 if !self.scroll_by_lines(-1) {
                     return LogStreamOutcome::Ignored;
                 }
-                if self.detach_if_following() {
+                if was_follow {
                     LogStreamOutcome::Detach
                 } else {
                     LogStreamOutcome::Scrolled {
@@ -623,13 +626,11 @@ impl LogStreamState {
                 }
             }
             UiIntent::Move(NavigationMove::First) => {
-                let before = self.offset();
-                self.scroll.set_offset_y(0);
-                let moved = self.offset() != before;
-                let was_follow = self.detach_if_following();
+                let was_follow = self.scroll.is_following();
+                let out = self.scroll.home();
                 if was_follow {
                     LogStreamOutcome::Detach
-                } else if moved {
+                } else if out.is_scrolled() {
                     LogStreamOutcome::Scrolled {
                         offset: self.offset(),
                     }
@@ -638,18 +639,18 @@ impl LogStreamState {
                 }
             }
             UiIntent::Move(NavigationMove::Last) => {
-                if self.follow && self.scroll.is_following() {
+                if self.scroll.is_following() {
                     return LogStreamOutcome::Ignored;
                 }
-                self.follow = true;
                 self.scroll.follow_tail();
                 LogStreamOutcome::Follow
             }
             UiIntent::Page(PageMove::Forward) => {
+                let was_follow = self.scroll.is_following();
                 if !self.scroll_page(true) {
                     return LogStreamOutcome::Ignored;
                 }
-                if self.detach_if_following() {
+                if was_follow {
                     LogStreamOutcome::Detach
                 } else {
                     LogStreamOutcome::Scrolled {
@@ -658,10 +659,11 @@ impl LogStreamState {
                 }
             }
             UiIntent::Page(PageMove::Backward) => {
+                let was_follow = self.scroll.is_following();
                 if !self.scroll_page(false) {
                     return LogStreamOutcome::Ignored;
                 }
-                if self.detach_if_following() {
+                if was_follow {
                     LogStreamOutcome::Detach
                 } else {
                     LogStreamOutcome::Scrolled {
@@ -670,11 +672,10 @@ impl LogStreamState {
                 }
             }
             UiIntent::Toggle => {
-                if self.follow {
-                    self.follow = false;
+                if self.scroll.is_following() {
+                    self.scroll.pause_follow();
                     LogStreamOutcome::Detach
                 } else {
-                    self.follow = true;
                     self.scroll.follow_tail();
                     LogStreamOutcome::Follow
                 }
@@ -707,11 +708,11 @@ impl LogStreamState {
                 // Bottom painted row is follow chip when area reserves it.
                 let chip_y = oy.saturating_add(self.area_rows.saturating_sub(1));
                 if self.area_rows >= 2 && event.position.y == chip_y {
-                    if self.follow {
+                    if self.scroll.is_following() {
                         return LogStreamOutcome::Ignored;
                     }
-                    self.follow = true;
-                    self.scroll.follow_tail();
+                    // Jump to new content / resume follow.
+                    self.scroll.jump_to_new_content();
                     return LogStreamOutcome::Follow;
                 }
                 LogStreamOutcome::Ignored
@@ -778,16 +779,14 @@ impl<'a> LogStream<'a> {
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
         let total = self.lines.len().min(u16::MAX as usize) as u16;
-        let show_chip = area.height >= 2 && (state.follow || !self.lines.is_empty());
+        let following = state.scroll.is_following();
+        let show_chip = area.height >= 2 && (following || !self.lines.is_empty());
         let body_h = if show_chip {
             area.height.saturating_sub(1)
         } else {
             area.height
         };
         state.sync_metrics(total, body_h);
-        if state.follow {
-            state.scroll.follow_tail();
-        }
 
         let surface = self.focused && state.accepts_input;
         let tiny = area.width < 16;
@@ -851,26 +850,40 @@ impl<'a> LogStream<'a> {
 
         if show_chip {
             let chip_y = area.bottom().saturating_sub(1);
-            let chip = if state.follow {
-                if self.ascii { "v follow" } else { "↓ follow" }
+            let following = state.scroll.is_following();
+            let indicator = state.scroll.new_content();
+            let chip = if following {
+                if self.ascii {
+                    "v follow".to_string()
+                } else {
+                    "↓ follow".to_string()
+                }
+            } else if indicator.visible {
+                if self.ascii {
+                    format!("v {} new  f=follow", indicator.unseen)
+                } else {
+                    format!("↓ {} new · f follow", indicator.unseen)
+                }
             } else if self.ascii {
-                "^ pinned  f=follow"
+                "^ pinned  f=follow".to_string()
             } else {
-                "↑ pinned · f follow"
+                "↑ pinned · f follow".to_string()
             };
-            let chip_style = if state.follow && surface {
+            let chip_style = if following && surface {
                 if self.colorless {
                     self.system.style(Role::TextStrong)
                 } else {
                     self.system.style(Role::Accent)
                 }
+            } else if indicator.visible {
+                self.system.style(Role::Warning)
             } else {
                 self.system.style(Role::TextMuted)
             };
             buffer.set_stringn(
                 area.x,
                 chip_y,
-                &take_display_cols(chip, usize::from(area.width)),
+                &take_display_cols(&chip, usize::from(area.width)),
                 usize::from(area.width),
                 chip_style,
             );
@@ -1027,18 +1040,18 @@ impl DiffReviewState {
         let end = start.saturating_add(vh);
         if hunk.start < start {
             self.scroll
-                .set_offset_y(hunk.start.min(u16::MAX as usize) as u16);
+                .set_offset_y_quiet(hunk.start.min(u16::MAX as usize) as u16);
         } else if hunk.start >= end {
             let next = hunk.start.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y(next.min(u16::MAX as usize) as u16);
+            self.scroll
+                .set_offset_y_quiet(next.min(u16::MAX as usize) as u16);
         }
     }
 
     fn scroll_by_lines(&mut self, delta: i32) -> bool {
-        let before = self.scroll.offset_y();
-        let next = i32::from(before).saturating_add(delta).max(0) as u16;
-        self.scroll.set_offset_y(next);
-        self.scroll.offset_y() != before
+        self.scroll
+            .scroll_by(delta as isize, 0)
+            .is_scrolled()
     }
 
     fn move_hunk(&mut self, next: usize, hunks: &[DiffHunk]) -> DiffReviewOutcome {

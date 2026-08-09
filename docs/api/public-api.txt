@@ -1,3 +1,43 @@
+ Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
+warning: unresolved link to `DataTableState::handle_key`
+   --> crates/termrock/src/interaction/intent.rs:272:7
+    |
+272 | /// [`DataTableState::handle_key`].
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
+    |
+    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
+
+warning: unresolved link to `LogStreamState::handle_key`
+   --> crates/termrock/src/interaction/intent.rs:350:35
+    |
+350 | /// - `f` is a product chord on [`LogStreamState::handle_key`] (also Toggle)
+    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `LogStreamState` in scope
+
+warning: unresolved link to `Self::reconcile_retain`
+   --> crates/termrock/src/interaction/selection_model.rs:462:11
+    |
+462 |     /// [`Self::reconcile_retain`] when off-window selection must survive.
+    |           ^^^^^^^^^^^^^^^^^^^^^^ the struct `SelectionModel` has no field or associated item named `reconcile_retain`
+
+warning: public documentation for `IconButton` links to private item `Self::accessible_label`
+   --> crates/termrock/src/widgets/primitives.rs:621:38
+    |
+621 | /// Icon-only button; **requires** [`Self::accessible_label`].
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^ this item is private
+    |
+    = note: this link will resolve properly if you pass `--document-private-items`
+    = note: `#[warn(rustdoc::private_intra_doc_links)]` on by default
+
+warning: unresolved link to `Theme`
+   --> crates/termrock/src/widgets/prompt_composer.rs:553:39
+    |
+553 |     /// pass a monochrome-quantized [`Theme`]).
+    |                                       ^^^^^ no item named `Theme` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: `termrock` (lib doc) generated 5 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.70s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -12940,6 +12980,109 @@ pub unsafe fn termrock::widgets::ScrollBarVisibility::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::ScrollBarVisibility
 pub fn termrock::widgets::ScrollBarVisibility::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ScrollBarVisibility
+#[non_exhaustive] pub enum termrock::widgets::ScrollChain
+pub termrock::widgets::ScrollChain::Capture
+pub termrock::widgets::ScrollChain::NestedPreferChild
+pub termrock::widgets::ScrollChain::Parent
+impl core::clone::Clone for termrock::widgets::ScrollChain
+pub fn termrock::widgets::ScrollChain::clone(&self) -> termrock::widgets::ScrollChain
+impl core::cmp::Eq for termrock::widgets::ScrollChain
+impl core::cmp::PartialEq for termrock::widgets::ScrollChain
+pub fn termrock::widgets::ScrollChain::eq(&self, &termrock::widgets::ScrollChain) -> bool
+impl core::default::Default for termrock::widgets::ScrollChain
+pub fn termrock::widgets::ScrollChain::default() -> termrock::widgets::ScrollChain
+impl core::fmt::Debug for termrock::widgets::ScrollChain
+pub fn termrock::widgets::ScrollChain::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ScrollChain
+pub fn termrock::widgets::ScrollChain::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ScrollChain
+impl core::marker::StructuralPartialEq for termrock::widgets::ScrollChain
+impl core::marker::Freeze for termrock::widgets::ScrollChain
+impl core::marker::Send for termrock::widgets::ScrollChain
+impl core::marker::Sync for termrock::widgets::ScrollChain
+impl core::marker::Unpin for termrock::widgets::ScrollChain
+impl core::marker::UnsafeUnpin for termrock::widgets::ScrollChain
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ScrollChain
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ScrollChain
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ScrollChain where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ScrollChain::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ScrollChain where U: core::convert::From<T>
+pub fn termrock::widgets::ScrollChain::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ScrollChain where U: core::convert::Into<T>
+pub type termrock::widgets::ScrollChain::Error = core::convert::Infallible
+pub fn termrock::widgets::ScrollChain::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ScrollChain where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ScrollChain::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ScrollChain::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ScrollChain where T: core::clone::Clone
+pub type termrock::widgets::ScrollChain::Owned = T
+pub fn termrock::widgets::ScrollChain::clone_into(&self, &mut T)
+pub fn termrock::widgets::ScrollChain::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ScrollChain where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ScrollChain::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ScrollChain where T: ?core::marker::Sized
+pub fn termrock::widgets::ScrollChain::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ScrollChain where T: ?core::marker::Sized
+pub fn termrock::widgets::ScrollChain::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ScrollChain where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ScrollChain::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ScrollChain
+pub fn termrock::widgets::ScrollChain::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ScrollChain
+#[non_exhaustive] pub enum termrock::widgets::ScrollOutcome
+pub termrock::widgets::ScrollOutcome::ChainToParent
+pub termrock::widgets::ScrollOutcome::FollowChanged
+pub termrock::widgets::ScrollOutcome::Ignored
+pub termrock::widgets::ScrollOutcome::Scrolled
+impl termrock::widgets::ScrollOutcome
+pub const fn termrock::widgets::ScrollOutcome::chains(self) -> bool
+pub const fn termrock::widgets::ScrollOutcome::consumed(self) -> bool
+pub const fn termrock::widgets::ScrollOutcome::is_scrolled(self) -> bool
+impl core::clone::Clone for termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollOutcome::clone(&self) -> termrock::widgets::ScrollOutcome
+impl core::cmp::Eq for termrock::widgets::ScrollOutcome
+impl core::cmp::PartialEq for termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollOutcome::eq(&self, &termrock::widgets::ScrollOutcome) -> bool
+impl core::default::Default for termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollOutcome::default() -> termrock::widgets::ScrollOutcome
+impl core::fmt::Debug for termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ScrollOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::ScrollOutcome
+impl core::marker::Freeze for termrock::widgets::ScrollOutcome
+impl core::marker::Send for termrock::widgets::ScrollOutcome
+impl core::marker::Sync for termrock::widgets::ScrollOutcome
+impl core::marker::Unpin for termrock::widgets::ScrollOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ScrollOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ScrollOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ScrollOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ScrollOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ScrollOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ScrollOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ScrollOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ScrollOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ScrollOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ScrollOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ScrollOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ScrollOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ScrollOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ScrollOutcome where T: core::clone::Clone
+pub type termrock::widgets::ScrollOutcome::Owned = T
+pub fn termrock::widgets::ScrollOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ScrollOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ScrollOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ScrollOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ScrollOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ScrollOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ScrollOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ScrollOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ScrollOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ScrollOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ScrollOutcome
 #[non_exhaustive] pub enum termrock::widgets::SectionOutcome
 pub termrock::widgets::SectionOutcome::Ignored
 pub termrock::widgets::SectionOutcome::ToggleCollapsed
@@ -18859,6 +19002,7 @@ pub const fn termrock::widgets::LogStreamState::is_following(&self) -> bool
 pub fn termrock::widgets::LogStreamState::new() -> Self
 pub const fn termrock::widgets::LogStreamState::offset(&self) -> u16
 pub fn termrock::widgets::LogStreamState::on_append(&mut self, u16, u16)
+pub const fn termrock::widgets::LogStreamState::scroll(&self) -> &termrock::widgets::ScrollAreaState
 pub fn termrock::widgets::LogStreamState::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::LogStreamState::set_following(&mut self, bool)
 impl core::clone::Clone for termrock::widgets::LogStreamState
@@ -18867,7 +19011,7 @@ impl core::cmp::Eq for termrock::widgets::LogStreamState
 impl core::cmp::PartialEq for termrock::widgets::LogStreamState
 pub fn termrock::widgets::LogStreamState::eq(&self, &termrock::widgets::LogStreamState) -> bool
 impl core::default::Default for termrock::widgets::LogStreamState
-pub fn termrock::widgets::LogStreamState::default() -> termrock::widgets::LogStreamState
+pub fn termrock::widgets::LogStreamState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::LogStreamState
 pub fn termrock::widgets::LogStreamState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::LogStreamState
@@ -21250,6 +21394,8 @@ pub const fn termrock::widgets::ScrollArea<'a>::bar(self, termrock::widgets::Scr
 pub fn termrock::widgets::ScrollArea<'a>::body_area(&self, ratatui_core::layout::rect::Rect, &termrock::widgets::ScrollAreaState) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::widgets::ScrollArea<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::ScrollArea<'a>::render_bars(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::ScrollAreaState)
+pub fn termrock::widgets::ScrollArea<'a>::render_new_content(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::ScrollAreaState)
+pub const fn termrock::widgets::ScrollArea<'a>::show_new_content(self, bool) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::ScrollArea<'a>
 pub fn termrock::widgets::ScrollArea<'a>::clone(&self) -> termrock::widgets::ScrollArea<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::ScrollArea<'a>
@@ -21287,24 +21433,58 @@ pub fn termrock::widgets::ScrollArea<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ScrollArea<'a>
 pub struct termrock::widgets::ScrollAreaState
 impl termrock::widgets::ScrollAreaState
+pub const fn termrock::widgets::ScrollAreaState::anchor(&self) -> core::option::Option<&termrock::perf::ScrollAnchor>
+pub fn termrock::widgets::ScrollAreaState::apply_anchor(&mut self, &termrock::perf::ScrollAnchor, impl core::ops::function::FnOnce(&str) -> core::option::Option<u64>)
+pub fn termrock::widgets::ScrollAreaState::at_bottom(&self) -> bool
+pub const fn termrock::widgets::ScrollAreaState::at_left(&self) -> bool
+pub fn termrock::widgets::ScrollAreaState::at_right(&self) -> bool
+pub const fn termrock::widgets::ScrollAreaState::at_top(&self) -> bool
+pub const fn termrock::widgets::ScrollAreaState::axes(self, bool, bool) -> Self
+pub fn termrock::widgets::ScrollAreaState::capture_from_end_anchor(&mut self)
+pub fn termrock::widgets::ScrollAreaState::capture_index_anchor(&mut self)
+pub const fn termrock::widgets::ScrollAreaState::chain(self, termrock::widgets::ScrollChain) -> Self
+pub const fn termrock::widgets::ScrollAreaState::chain_policy(&self) -> termrock::widgets::ScrollChain
 pub fn termrock::widgets::ScrollAreaState::clamp(&mut self)
+pub const fn termrock::widgets::ScrollAreaState::content_h(&self) -> u16
+pub const fn termrock::widgets::ScrollAreaState::content_w(&self) -> u16
+pub fn termrock::widgets::ScrollAreaState::end(&mut self) -> termrock::widgets::ScrollOutcome
+pub const fn termrock::widgets::ScrollAreaState::follow_mode(&self) -> termrock::perf::FollowMode
 pub fn termrock::widgets::ScrollAreaState::follow_tail(&mut self)
-pub fn termrock::widgets::ScrollAreaState::handle_key(&mut self, termrock::input::KeyEvent) -> bool
-pub fn termrock::widgets::ScrollAreaState::handle_mouse(&mut self, termrock::input::MouseEvent) -> bool
+pub fn termrock::widgets::ScrollAreaState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollAreaState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollAreaState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollAreaState::home(&mut self) -> termrock::widgets::ScrollOutcome
 pub const fn termrock::widgets::ScrollAreaState::is_following(&self) -> bool
+pub fn termrock::widgets::ScrollAreaState::jump_to_new_content(&mut self)
 pub const fn termrock::widgets::ScrollAreaState::new() -> Self
+pub const fn termrock::widgets::ScrollAreaState::new_content(&self) -> termrock::perf::NewContentIndicator
 pub const fn termrock::widgets::ScrollAreaState::offset_x(&self) -> u16
 pub const fn termrock::widgets::ScrollAreaState::offset_y(&self) -> u16
-pub const fn termrock::widgets::ScrollAreaState::set_content_size(&mut self, u16, u16)
+pub fn termrock::widgets::ScrollAreaState::on_content_grown(&mut self, u64)
+pub fn termrock::widgets::ScrollAreaState::on_content_grown_x(&mut self, u64)
+pub fn termrock::widgets::ScrollAreaState::overflows_x(&self) -> bool
+pub fn termrock::widgets::ScrollAreaState::overflows_y(&self) -> bool
+pub fn termrock::widgets::ScrollAreaState::page(&mut self, bool) -> termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollAreaState::pause_follow(&mut self)
+pub fn termrock::widgets::ScrollAreaState::resume_follow(&mut self)
+pub fn termrock::widgets::ScrollAreaState::scroll_by(&mut self, isize, isize) -> termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollAreaState::set_content_size(&mut self, u16, u16)
+pub fn termrock::widgets::ScrollAreaState::set_offset_x(&mut self, u16)
 pub fn termrock::widgets::ScrollAreaState::set_offset_y(&mut self, u16)
-pub const fn termrock::widgets::ScrollAreaState::set_viewport(&mut self, u16, u16)
+pub fn termrock::widgets::ScrollAreaState::set_offset_y_quiet(&mut self, u16)
+pub fn termrock::widgets::ScrollAreaState::set_viewport(&mut self, u16, u16)
+pub const fn termrock::widgets::ScrollAreaState::viewport_h(&self) -> u16
+pub const fn termrock::widgets::ScrollAreaState::viewport_w(&self) -> u16
+pub fn termrock::widgets::ScrollAreaState::visible_range_x(&self) -> termrock::widgets::VisibleRange
+pub fn termrock::widgets::ScrollAreaState::visible_range_y(&self) -> termrock::widgets::VisibleRange
+pub fn termrock::widgets::ScrollAreaState::wheel_steps(self, u16, u16) -> Self
 impl core::clone::Clone for termrock::widgets::ScrollAreaState
 pub fn termrock::widgets::ScrollAreaState::clone(&self) -> termrock::widgets::ScrollAreaState
 impl core::cmp::Eq for termrock::widgets::ScrollAreaState
 impl core::cmp::PartialEq for termrock::widgets::ScrollAreaState
 pub fn termrock::widgets::ScrollAreaState::eq(&self, &termrock::widgets::ScrollAreaState) -> bool
 impl core::default::Default for termrock::widgets::ScrollAreaState
-pub fn termrock::widgets::ScrollAreaState::default() -> termrock::widgets::ScrollAreaState
+pub fn termrock::widgets::ScrollAreaState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::ScrollAreaState
 pub fn termrock::widgets::ScrollAreaState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::ScrollAreaState
@@ -24699,6 +24879,58 @@ pub unsafe fn termrock::widgets::VirtualWindow::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::VirtualWindow
 pub fn termrock::widgets::VirtualWindow::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::VirtualWindow
+pub struct termrock::widgets::VisibleRange
+pub termrock::widgets::VisibleRange::end: u64
+pub termrock::widgets::VisibleRange::start: u64
+impl termrock::widgets::VisibleRange
+pub const fn termrock::widgets::VisibleRange::empty() -> Self
+pub const fn termrock::widgets::VisibleRange::is_empty(self) -> bool
+pub const fn termrock::widgets::VisibleRange::len(self) -> u64
+impl core::clone::Clone for termrock::widgets::VisibleRange
+pub fn termrock::widgets::VisibleRange::clone(&self) -> termrock::widgets::VisibleRange
+impl core::cmp::Eq for termrock::widgets::VisibleRange
+impl core::cmp::PartialEq for termrock::widgets::VisibleRange
+pub fn termrock::widgets::VisibleRange::eq(&self, &termrock::widgets::VisibleRange) -> bool
+impl core::default::Default for termrock::widgets::VisibleRange
+pub fn termrock::widgets::VisibleRange::default() -> termrock::widgets::VisibleRange
+impl core::fmt::Debug for termrock::widgets::VisibleRange
+pub fn termrock::widgets::VisibleRange::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::VisibleRange
+pub fn termrock::widgets::VisibleRange::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::VisibleRange
+impl core::marker::StructuralPartialEq for termrock::widgets::VisibleRange
+impl core::marker::Freeze for termrock::widgets::VisibleRange
+impl core::marker::Send for termrock::widgets::VisibleRange
+impl core::marker::Sync for termrock::widgets::VisibleRange
+impl core::marker::Unpin for termrock::widgets::VisibleRange
+impl core::marker::UnsafeUnpin for termrock::widgets::VisibleRange
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::VisibleRange
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::VisibleRange
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::VisibleRange where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::VisibleRange::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::VisibleRange where U: core::convert::From<T>
+pub fn termrock::widgets::VisibleRange::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::VisibleRange where U: core::convert::Into<T>
+pub type termrock::widgets::VisibleRange::Error = core::convert::Infallible
+pub fn termrock::widgets::VisibleRange::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::VisibleRange where U: core::convert::TryFrom<T>
+pub type termrock::widgets::VisibleRange::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::VisibleRange::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::VisibleRange where T: core::clone::Clone
+pub type termrock::widgets::VisibleRange::Owned = T
+pub fn termrock::widgets::VisibleRange::clone_into(&self, &mut T)
+pub fn termrock::widgets::VisibleRange::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::VisibleRange where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::VisibleRange::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::VisibleRange where T: ?core::marker::Sized
+pub fn termrock::widgets::VisibleRange::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::VisibleRange where T: ?core::marker::Sized
+pub fn termrock::widgets::VisibleRange::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::VisibleRange where T: core::clone::Clone
+pub unsafe fn termrock::widgets::VisibleRange::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::VisibleRange
+pub fn termrock::widgets::VisibleRange::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::VisibleRange
 pub struct termrock::widgets::WorkbenchMode<'a, Id>
 pub termrock::widgets::WorkbenchMode::active: bool
 pub termrock::widgets::WorkbenchMode::enabled: bool

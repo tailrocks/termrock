@@ -1,6 +1,13 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `Callout`, `Checkbox`, `ChoiceDialog`, `CodeBlock`, `CommandPalette`, `CompletionMenu`, `DataTable`, `DesignInspector`, `DetailTable`, `Dialog`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Form`, `FormWizard`, `Heading`, `HintBar`, `ImageSurface`, `JumpOverlay`, `Kbd`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `QuestionFlow`, `SegmentedMeter`, `SeparatorLine`, `SessionPicker`, `Skeleton`, `Sparkline`, `SplitPane`, `StatusBar`, `Surface`, `Table`, `Tabs`, `TaskRail`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
+The public widget set is derived from the reviewed API report and currently contains `ActionBar`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `Callout`, `Checkbox`, `ChoiceDialog`, `CodeBlock`, `CommandPalette`, `CompletionMenu`, `DataTable`, `DesignInspector`, `DetailTable`, `Dialog`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Form`, `FormWizard`, `Heading`, `HintBar`, `ImageSurface`, `JumpOverlay`, `Kbd`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `QuestionFlow`, `ScrollArea`, `SegmentedMeter`, `SeparatorLine`, `SessionPicker`, `Skeleton`, `Sparkline`, `SplitPane`, `StatusBar`, `Surface`, `Table`, `Tabs`, `TaskRail`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
+
+`ScrollArea` / `ScrollAreaState` is the canonical scrolling primitive: dual-axis
+offsets, wheel/page/intents, scrollbar chrome, follow-tail with paused unseen
+indicator, scroll anchors, nested `ScrollChain` policy, and `VisibleRange` for
+virtualization. Specialized `scroll::TailScroll` / `DialogScroll` helpers remain
+for buffer-local and dialog dual-axis math; new surfaces should prefer
+`ScrollAreaState`.
 
 With the optional `crossterm` feature, `Session` is the sole terminal lifecycle
 owner. Its forward default acquires raw mode, alternate screen, mouse capture,

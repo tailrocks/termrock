@@ -772,6 +772,15 @@ pub(crate) fn stories() -> Vec<Story> {
             selection_model_story,
         ),
         Story::new(
+            "scroll-area/follow-paused",
+            "ScrollArea follow + bars + new",
+            "ScrollArea",
+            "Vertical bars, paused follow, ↓ N new non-color indicator.",
+            48,
+            12,
+            scroll_area_follow_story,
+        ),
+        Story::new(
             "capability/color-ladder",
             "Capability color ladder",
             "DesignInspector",
@@ -4075,6 +4084,53 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 
 
+
+fn scroll_area_follow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        Panel, PanelChrome, ScrollArea, ScrollAreaState, ScrollBarVisibility,
+    };
+
+    let mut state = ScrollAreaState::new().axes(true, true);
+    state.set_content_size(80, 200);
+    state.set_viewport(area.width.saturating_sub(4), area.height.saturating_sub(4));
+    state.follow_tail();
+    // User scrolls away then content grows → new-content badge.
+    let _ = state.scroll_by(-40, 0);
+    state.set_content_size(80, 260);
+
+    frame.render_widget(
+        Panel::new(system)
+            .title("ScrollArea · paused · new content")
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    let sa = ScrollArea::new(system).bar(ScrollBarVisibility::Always);
+    let body = sa.body_area(inner, &state);
+    // Synthetic lines for visible range.
+    let range = state.visible_range_y();
+    for (i, row) in (range.start..range.end).enumerate() {
+        let y = body.y.saturating_add(i as u16);
+        if y >= body.bottom() {
+            break;
+        }
+        let line = format!("L{row:04} stream body · unicode 日本語 🧪");
+        frame.buffer_mut().set_stringn(
+            body.x,
+            y,
+            &line,
+            usize::from(body.width),
+            system.style(termrock::style::Role::Text),
+        );
+    }
+    sa.render_bars(inner, frame.buffer_mut(), &state);
+    sa.render_new_content(inner, frame.buffer_mut(), &state);
+}
 
 fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{SelectionModel, SelectionVisual};

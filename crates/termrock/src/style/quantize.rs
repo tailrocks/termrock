@@ -229,7 +229,7 @@ mod tests {
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         // Accent should still resolve to some style
         let _ = theme.style(Role::Accent);
-        assert_eq!(RolePalette::roles().len(), 38);
+        assert_eq!(RolePalette::roles().len(), crate::style::ROLE_COUNT);
     }
 
     #[test]
