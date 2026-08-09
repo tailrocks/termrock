@@ -352,6 +352,55 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
+            id: "Center".into(),
+            title: "Center".into(),
+            description: "Axis-aware constrained centering; pure geometry, no fake focus node.".into(),
+            kind: RegistryItemKind::Primitive,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::layout::Center".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/layout/center.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "area".into(),
+                    label: "Outer area".into(),
+                },
+                AnatomyPartRef {
+                    id: "child".into(),
+                    label: "Child rect".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "both".into(),
+                    description: "Both axes".into(),
+                },
+                VariantRef {
+                    id: "dialog".into(),
+                    description: "Safe margin dialog".into(),
+                },
+            ],
+            outcomes: vec![],
+            stories: vec![
+                "center/both".into(),
+                "center/dialog".into(),
+                "center/tiny".into(),
+            ],
+            tests: vec!["layout::center".into()],
+            migration: Some("migrations/0099-v0.13.0-center.md".into()),
+            provenance: prov("crates/termrock/src/layout/center.rs"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
             id: "Grid".into(),
             title: "Grid".into(),
             description: "2D track grid: fixed/fr/minmax, gaps, spans, auto-flow, responsive templates, spatial neighbors.".into(),

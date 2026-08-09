@@ -186,6 +186,51 @@ fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 pub(crate) fn stories() -> Vec<Story> {
     vec![
         Story::new(
+            "center/both",
+            "Center both axes",
+            "Center",
+            "Child panel centered horizontally and vertically.",
+            48,
+            14,
+            center_both_story,
+        ),
+        Story::new(
+            "center/dialog",
+            "Center dialog safe margin",
+            "Center",
+            "Dialog-style center with one-cell safe margin.",
+            40,
+            12,
+            center_dialog_story,
+        ),
+        Story::new(
+            "center/horizontal",
+            "Center horizontal only",
+            "Center",
+            "Horizontal center; full height strip.",
+            40,
+            8,
+            center_horizontal_story,
+        ),
+        Story::new(
+            "center/max",
+            "Center max-width",
+            "Center",
+            "Preferred width capped by max_width.",
+            48,
+            10,
+            center_max_story,
+        ),
+        Story::new(
+            "center/tiny",
+            "Center tiny terminal",
+            "Center",
+            "No underflow when outer is smaller than preferred.",
+            12,
+            4,
+            center_tiny_story,
+        ),
+        Story::new(
             "grid/columns",
             "Grid columns",
             "Grid",
@@ -3036,6 +3081,72 @@ pub(crate) fn stories() -> Vec<Story> {
 /// Catalog generation deliberately uses [`stories`] instead.
 pub(crate) fn gallery_stories() -> Vec<Story> {
     stories()
+}
+
+fn center_both_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::Center;
+    use termrock::widgets::{EmptyState, Panel};
+    let child = Center::new(28, 6).layout(area).child;
+    let _ = Panel::new(system).title("centered").paint(child, frame.buffer_mut(), None);
+    let inner = Panel::new(system).title("centered").inner(child);
+    Widget::render(
+        &EmptyState::new("No selection", system).detail("Pick a story"),
+        inner,
+        frame.buffer_mut(),
+    );
+}
+
+fn center_dialog_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::Center;
+    use termrock::widgets::{Panel, PanelChrome};
+    let child = Center::dialog(24, 7).layout(area).child;
+    let body = Panel::new(system)
+        .title("Confirm")
+        .emphasis(PanelChrome::Focused)
+        .footer("esc cancel")
+        .paint(child, frame.buffer_mut(), None);
+    if body.width > 2 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "Apply changes?",
+            usize::from(body.width),
+            system.style(Role::Text),
+        );
+    }
+}
+
+fn center_horizontal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{Center, CenterAxis};
+    use termrock::widgets::Panel;
+    let child = Center::new(16, 1)
+        .axis(CenterAxis::Horizontal)
+        .layout(area)
+        .child;
+    let _ = Panel::new(system)
+        .title("h-center")
+        .paint(child, frame.buffer_mut(), None);
+}
+
+fn center_max_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::Center;
+    use termrock::widgets::Panel;
+    let child = Center::new(80, 5)
+        .max_width(20)
+        .layout(area)
+        .child;
+    let _ = Panel::new(system)
+        .title("max 20")
+        .paint(child, frame.buffer_mut(), None);
+}
+
+fn center_tiny_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::Center;
+    use termrock::widgets::Panel;
+    let child = Center::new(40, 20).safe_margin(true).layout(area).child;
+    let _ = Panel::new(system)
+        .title("tiny")
+        .paint(child, frame.buffer_mut(), None);
 }
 
 fn grid_columns_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

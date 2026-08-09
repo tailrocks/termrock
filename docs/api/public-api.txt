@@ -5768,6 +5768,57 @@ pub unsafe fn termrock::layout::Align::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::layout::Align
 pub fn termrock::layout::Align::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::Align
+#[non_exhaustive] pub enum termrock::layout::CenterAxis
+pub termrock::layout::CenterAxis::Both
+pub termrock::layout::CenterAxis::Horizontal
+pub termrock::layout::CenterAxis::Vertical
+impl termrock::layout::CenterAxis
+pub const fn termrock::layout::CenterAxis::id(self) -> &'static str
+impl core::clone::Clone for termrock::layout::CenterAxis
+pub fn termrock::layout::CenterAxis::clone(&self) -> termrock::layout::CenterAxis
+impl core::cmp::Eq for termrock::layout::CenterAxis
+impl core::cmp::PartialEq for termrock::layout::CenterAxis
+pub fn termrock::layout::CenterAxis::eq(&self, &termrock::layout::CenterAxis) -> bool
+impl core::default::Default for termrock::layout::CenterAxis
+pub fn termrock::layout::CenterAxis::default() -> termrock::layout::CenterAxis
+impl core::fmt::Debug for termrock::layout::CenterAxis
+pub fn termrock::layout::CenterAxis::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::CenterAxis
+pub fn termrock::layout::CenterAxis::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::CenterAxis
+impl core::marker::StructuralPartialEq for termrock::layout::CenterAxis
+impl core::marker::Freeze for termrock::layout::CenterAxis
+impl core::marker::Send for termrock::layout::CenterAxis
+impl core::marker::Sync for termrock::layout::CenterAxis
+impl core::marker::Unpin for termrock::layout::CenterAxis
+impl core::marker::UnsafeUnpin for termrock::layout::CenterAxis
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::CenterAxis
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::CenterAxis
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::CenterAxis where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::CenterAxis::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::CenterAxis where U: core::convert::From<T>
+pub fn termrock::layout::CenterAxis::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::CenterAxis where U: core::convert::Into<T>
+pub type termrock::layout::CenterAxis::Error = core::convert::Infallible
+pub fn termrock::layout::CenterAxis::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::CenterAxis where U: core::convert::TryFrom<T>
+pub type termrock::layout::CenterAxis::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::CenterAxis::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::CenterAxis where T: core::clone::Clone
+pub type termrock::layout::CenterAxis::Owned = T
+pub fn termrock::layout::CenterAxis::clone_into(&self, &mut T)
+pub fn termrock::layout::CenterAxis::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::CenterAxis where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::CenterAxis::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::CenterAxis where T: ?core::marker::Sized
+pub fn termrock::layout::CenterAxis::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::CenterAxis where T: ?core::marker::Sized
+pub fn termrock::layout::CenterAxis::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::CenterAxis where T: core::clone::Clone
+pub unsafe fn termrock::layout::CenterAxis::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::CenterAxis
+pub fn termrock::layout::CenterAxis::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::CenterAxis
 #[non_exhaustive] pub enum termrock::layout::ContentPriority
 pub termrock::layout::ContentPriority::Decorative = 0
 pub termrock::layout::ContentPriority::Essential = 3
@@ -6765,6 +6816,175 @@ pub unsafe fn termrock::layout::Breakpoint::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::layout::Breakpoint
 pub fn termrock::layout::Breakpoint::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::Breakpoint
+pub struct termrock::layout::Center
+impl termrock::layout::Center
+pub const fn termrock::layout::Center::axis(self, termrock::layout::CenterAxis) -> Self
+pub const fn termrock::layout::Center::dialog(u16, u16) -> Self
+pub const fn termrock::layout::Center::from_spec(termrock::layout::CenterSpec) -> Self
+pub fn termrock::layout::Center::layout(self, ratatui_core::layout::rect::Rect) -> termrock::layout::CenterLayout
+pub const fn termrock::layout::Center::margin(self, u16, u16) -> Self
+pub const fn termrock::layout::Center::max_height(self, u16) -> Self
+pub const fn termrock::layout::Center::max_width(self, u16) -> Self
+pub const fn termrock::layout::Center::min(self, u16, u16) -> Self
+pub const fn termrock::layout::Center::new(u16, u16) -> Self
+pub const fn termrock::layout::Center::safe_margin(self, bool) -> Self
+impl core::clone::Clone for termrock::layout::Center
+pub fn termrock::layout::Center::clone(&self) -> termrock::layout::Center
+impl core::cmp::Eq for termrock::layout::Center
+impl core::cmp::PartialEq for termrock::layout::Center
+pub fn termrock::layout::Center::eq(&self, &termrock::layout::Center) -> bool
+impl core::fmt::Debug for termrock::layout::Center
+pub fn termrock::layout::Center::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::Center
+pub fn termrock::layout::Center::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::Center
+impl core::marker::StructuralPartialEq for termrock::layout::Center
+impl core::marker::Freeze for termrock::layout::Center
+impl core::marker::Send for termrock::layout::Center
+impl core::marker::Sync for termrock::layout::Center
+impl core::marker::Unpin for termrock::layout::Center
+impl core::marker::UnsafeUnpin for termrock::layout::Center
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::Center
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::Center
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::Center where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::Center::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::Center where U: core::convert::From<T>
+pub fn termrock::layout::Center::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::Center where U: core::convert::Into<T>
+pub type termrock::layout::Center::Error = core::convert::Infallible
+pub fn termrock::layout::Center::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::Center where U: core::convert::TryFrom<T>
+pub type termrock::layout::Center::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::Center::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::Center where T: core::clone::Clone
+pub type termrock::layout::Center::Owned = T
+pub fn termrock::layout::Center::clone_into(&self, &mut T)
+pub fn termrock::layout::Center::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::Center where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::Center::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::Center where T: ?core::marker::Sized
+pub fn termrock::layout::Center::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::Center where T: ?core::marker::Sized
+pub fn termrock::layout::Center::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::Center where T: core::clone::Clone
+pub unsafe fn termrock::layout::Center::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::Center
+pub fn termrock::layout::Center::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::Center
+pub struct termrock::layout::CenterLayout
+pub termrock::layout::CenterLayout::area: ratatui_core::layout::rect::Rect
+pub termrock::layout::CenterLayout::child: ratatui_core::layout::rect::Rect
+pub termrock::layout::CenterLayout::content: ratatui_core::layout::rect::Rect
+impl termrock::layout::CenterLayout
+pub fn termrock::layout::CenterLayout::contains_child(self, u16, u16) -> bool
+pub const fn termrock::layout::CenterLayout::has_child(self) -> bool
+impl core::clone::Clone for termrock::layout::CenterLayout
+pub fn termrock::layout::CenterLayout::clone(&self) -> termrock::layout::CenterLayout
+impl core::cmp::Eq for termrock::layout::CenterLayout
+impl core::cmp::PartialEq for termrock::layout::CenterLayout
+pub fn termrock::layout::CenterLayout::eq(&self, &termrock::layout::CenterLayout) -> bool
+impl core::fmt::Debug for termrock::layout::CenterLayout
+pub fn termrock::layout::CenterLayout::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::CenterLayout
+pub fn termrock::layout::CenterLayout::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::CenterLayout
+impl core::marker::StructuralPartialEq for termrock::layout::CenterLayout
+impl core::marker::Freeze for termrock::layout::CenterLayout
+impl core::marker::Send for termrock::layout::CenterLayout
+impl core::marker::Sync for termrock::layout::CenterLayout
+impl core::marker::Unpin for termrock::layout::CenterLayout
+impl core::marker::UnsafeUnpin for termrock::layout::CenterLayout
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::CenterLayout
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::CenterLayout
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::CenterLayout where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::CenterLayout::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::CenterLayout where U: core::convert::From<T>
+pub fn termrock::layout::CenterLayout::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::CenterLayout where U: core::convert::Into<T>
+pub type termrock::layout::CenterLayout::Error = core::convert::Infallible
+pub fn termrock::layout::CenterLayout::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::CenterLayout where U: core::convert::TryFrom<T>
+pub type termrock::layout::CenterLayout::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::CenterLayout::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::CenterLayout where T: core::clone::Clone
+pub type termrock::layout::CenterLayout::Owned = T
+pub fn termrock::layout::CenterLayout::clone_into(&self, &mut T)
+pub fn termrock::layout::CenterLayout::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::CenterLayout where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::CenterLayout::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::CenterLayout where T: ?core::marker::Sized
+pub fn termrock::layout::CenterLayout::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::CenterLayout where T: ?core::marker::Sized
+pub fn termrock::layout::CenterLayout::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::CenterLayout where T: core::clone::Clone
+pub unsafe fn termrock::layout::CenterLayout::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::CenterLayout
+pub fn termrock::layout::CenterLayout::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::CenterLayout
+pub struct termrock::layout::CenterSpec
+pub termrock::layout::CenterSpec::axis: termrock::layout::CenterAxis
+pub termrock::layout::CenterSpec::height: u16
+pub termrock::layout::CenterSpec::margin_x: u16
+pub termrock::layout::CenterSpec::margin_y: u16
+pub termrock::layout::CenterSpec::max_height: core::option::Option<u16>
+pub termrock::layout::CenterSpec::max_width: core::option::Option<u16>
+pub termrock::layout::CenterSpec::min_height: u16
+pub termrock::layout::CenterSpec::min_width: u16
+pub termrock::layout::CenterSpec::safe_margin: bool
+pub termrock::layout::CenterSpec::width: u16
+impl termrock::layout::CenterSpec
+pub const fn termrock::layout::CenterSpec::axis(self, termrock::layout::CenterAxis) -> Self
+pub const fn termrock::layout::CenterSpec::dialog(u16, u16) -> Self
+pub const fn termrock::layout::CenterSpec::margin(self, u16, u16) -> Self
+pub const fn termrock::layout::CenterSpec::max(self, core::option::Option<u16>, core::option::Option<u16>) -> Self
+pub const fn termrock::layout::CenterSpec::min(self, u16, u16) -> Self
+pub const fn termrock::layout::CenterSpec::new(u16, u16) -> Self
+pub const fn termrock::layout::CenterSpec::safe_margin(self, bool) -> Self
+impl core::clone::Clone for termrock::layout::CenterSpec
+pub fn termrock::layout::CenterSpec::clone(&self) -> termrock::layout::CenterSpec
+impl core::cmp::Eq for termrock::layout::CenterSpec
+impl core::cmp::PartialEq for termrock::layout::CenterSpec
+pub fn termrock::layout::CenterSpec::eq(&self, &termrock::layout::CenterSpec) -> bool
+impl core::default::Default for termrock::layout::CenterSpec
+pub fn termrock::layout::CenterSpec::default() -> Self
+impl core::fmt::Debug for termrock::layout::CenterSpec
+pub fn termrock::layout::CenterSpec::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::layout::CenterSpec
+pub fn termrock::layout::CenterSpec::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::layout::CenterSpec
+impl core::marker::StructuralPartialEq for termrock::layout::CenterSpec
+impl core::marker::Freeze for termrock::layout::CenterSpec
+impl core::marker::Send for termrock::layout::CenterSpec
+impl core::marker::Sync for termrock::layout::CenterSpec
+impl core::marker::Unpin for termrock::layout::CenterSpec
+impl core::marker::UnsafeUnpin for termrock::layout::CenterSpec
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::CenterSpec
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::CenterSpec
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::CenterSpec where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::CenterSpec::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::CenterSpec where U: core::convert::From<T>
+pub fn termrock::layout::CenterSpec::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::CenterSpec where U: core::convert::Into<T>
+pub type termrock::layout::CenterSpec::Error = core::convert::Infallible
+pub fn termrock::layout::CenterSpec::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::CenterSpec where U: core::convert::TryFrom<T>
+pub type termrock::layout::CenterSpec::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::CenterSpec::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::CenterSpec where T: core::clone::Clone
+pub type termrock::layout::CenterSpec::Owned = T
+pub fn termrock::layout::CenterSpec::clone_into(&self, &mut T)
+pub fn termrock::layout::CenterSpec::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::CenterSpec where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::CenterSpec::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::CenterSpec where T: ?core::marker::Sized
+pub fn termrock::layout::CenterSpec::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::CenterSpec where T: ?core::marker::Sized
+pub fn termrock::layout::CenterSpec::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::CenterSpec where T: core::clone::Clone
+pub unsafe fn termrock::layout::CenterSpec::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::CenterSpec
+pub fn termrock::layout::CenterSpec::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::CenterSpec
 pub struct termrock::layout::DialogSpec
 pub termrock::layout::DialogSpec::horizontal_margin: u16
 pub termrock::layout::DialogSpec::max_height: u16
@@ -7969,6 +8189,8 @@ pub const termrock::layout::HEIGHT_LADDER: [u16; 6]
 pub const termrock::layout::WIDTH_LADDER: [u16; 7]
 pub fn termrock::layout::auto_flow_items(u16, usize, termrock::layout::GridAutoFlow) -> alloc::vec::Vec<termrock::layout::GridItem>
 pub fn termrock::layout::bottom_rows<const N: usize>(ratatui_core::layout::rect::Rect, [u16; N]) -> (ratatui_core::layout::rect::Rect, [ratatui_core::layout::rect::Rect; N])
+pub fn termrock::layout::center_block_y(ratatui_core::layout::rect::Rect, u16) -> u16
+pub fn termrock::layout::center_line_x(ratatui_core::layout::rect::Rect, u16) -> u16
 pub fn termrock::layout::centered_rect(u16, u16, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::composed_row_anatomy() -> [termrock::layout::AnatomyPart; 5]
 pub fn termrock::layout::contract_parts(&[termrock::layout::AnatomyPart], u16, termrock::layout::AdaptiveAnatomy) -> alloc::vec::Vec<termrock::layout::AnatomyPart>
@@ -7981,6 +8203,7 @@ pub fn termrock::layout::form_grid_template(u16) -> termrock::layout::GridSpec
 pub fn termrock::layout::grid_neighbor(&[termrock::layout::GridItem], usize, termrock::interaction::NavigationMove) -> core::option::Option<usize>
 pub fn termrock::layout::grid_neighbor_2d(&[termrock::layout::GridItem], usize, i32, i32) -> core::option::Option<usize>
 pub fn termrock::layout::grid_reading_neighbor(&[termrock::layout::GridItem], usize, bool) -> core::option::Option<usize>
+pub fn termrock::layout::layout_center(ratatui_core::layout::rect::Rect, &termrock::layout::CenterSpec) -> termrock::layout::CenterLayout
 pub fn termrock::layout::layout_grid(ratatui_core::layout::rect::Rect, &termrock::layout::GridSpec, &[termrock::layout::GridItem]) -> termrock::layout::GridLayout
 pub fn termrock::layout::layout_stack(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize]) -> termrock::layout::StackLayout
 pub fn termrock::layout::layout_stack_into(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)

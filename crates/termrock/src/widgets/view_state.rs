@@ -52,20 +52,36 @@ impl Widget for &EmptyState<'_> {
         if area.is_empty() {
             return;
         }
+        use crate::layout::{Center, CenterAxis, FlexSize, Stack};
         let title = format!("{} {}", self.glyph, self.title);
-        let mut y = area.y + area.height.saturating_sub(2) / 2;
-        paint_centered_line(area, buffer, y, &title, self.system.style(Role::TextMuted));
-        if let Some(detail) = self.detail {
-            y = y.saturating_add(1);
-            if y < area.bottom() {
-                paint_centered_line(
-                    area,
-                    buffer,
-                    y,
-                    detail,
-                    self.system.style(Role::TextDisabled),
-                );
-            }
+        let rows = if self.detail.is_some() { 2u16 } else { 1 };
+        let block = Center::new(area.width, rows)
+            .axis(CenterAxis::Vertical)
+            .layout(area)
+            .child;
+        let sizes: &[FlexSize] = if self.detail.is_some() {
+            &[FlexSize::Fixed(1), FlexSize::Fixed(1)]
+        } else {
+            &[FlexSize::Fixed(1)]
+        };
+        let stack = Stack::new().layout(block, sizes);
+        if let Some(r) = stack.get(0) {
+            paint_centered_line(
+                Rect::new(area.x, r.y, area.width, 1),
+                buffer,
+                r.y,
+                &title,
+                self.system.style(Role::TextMuted),
+            );
+        }
+        if let (Some(detail), Some(r)) = (self.detail, stack.get(1)) {
+            paint_centered_line(
+                Rect::new(area.x, r.y, area.width, 1),
+                buffer,
+                r.y,
+                detail,
+                self.system.style(Role::TextDisabled),
+            );
         }
     }
 }
@@ -105,13 +121,17 @@ impl Widget for &LoadingView<'_> {
         if area.is_empty() {
             return;
         }
+        use crate::layout::{Center, CenterAxis};
         let text = if self.frame.is_empty() {
             self.label.to_owned()
         } else {
             format!("{} {}", self.frame, self.label)
         };
-        let y = area.y + area.height.saturating_sub(1) / 2;
-        paint_centered_line(area, buffer, y, &text, self.system.style(Role::Info));
+        let row = Center::new(area.width, 1)
+            .axis(CenterAxis::Vertical)
+            .layout(area)
+            .child;
+        paint_centered_line(area, buffer, row.y, &text, self.system.style(Role::Info));
     }
 }
 
@@ -157,14 +177,36 @@ impl Widget for &ErrorView<'_> {
         if area.is_empty() {
             return;
         }
+        use crate::layout::{Center, CenterAxis, FlexSize, Stack};
         let title = format!("✗ {}", self.title);
-        let mut y = area.y + area.height.saturating_sub(2) / 2;
-        paint_centered_line(area, buffer, y, &title, self.system.style(Role::Danger));
-        if let Some(detail) = self.detail {
-            y = y.saturating_add(1);
-            if y < area.bottom() {
-                paint_centered_line(area, buffer, y, detail, self.system.style(Role::TextMuted));
-            }
+        let rows = if self.detail.is_some() { 2u16 } else { 1 };
+        let block = Center::new(area.width, rows)
+            .axis(CenterAxis::Vertical)
+            .layout(area)
+            .child;
+        let sizes: &[FlexSize] = if self.detail.is_some() {
+            &[FlexSize::Fixed(1), FlexSize::Fixed(1)]
+        } else {
+            &[FlexSize::Fixed(1)]
+        };
+        let stack = Stack::new().layout(block, sizes);
+        if let Some(r) = stack.get(0) {
+            paint_centered_line(
+                Rect::new(area.x, r.y, area.width, 1),
+                buffer,
+                r.y,
+                &title,
+                self.system.style(Role::Danger),
+            );
+        }
+        if let (Some(detail), Some(r)) = (self.detail, stack.get(1)) {
+            paint_centered_line(
+                Rect::new(area.x, r.y, area.width, 1),
+                buffer,
+                r.y,
+                detail,
+                self.system.style(Role::TextMuted),
+            );
         }
     }
 }
@@ -293,11 +335,10 @@ fn paint_centered_line(
     text: &str,
     style: ratatui_core::style::Style,
 ) {
+    use crate::layout::center_line_x;
     let width = display_cols(text).min(usize::from(area.width));
     let clipped = take_display_cols(text, width);
-    let x = area
-        .x
-        .saturating_add(area.width.saturating_sub(width as u16) / 2);
+    let x = center_line_x(area, width as u16);
     buffer.set_stringn(x, y, &clipped, width, style);
 }
 
