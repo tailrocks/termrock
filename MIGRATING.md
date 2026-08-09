@@ -152,6 +152,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0136 | `v0.13.0` | [Slider & RangeSlider](migrations/0136-v0.13.0-slider.md) |
 | 0137 | `v0.13.0` | [Field, Fieldset & Form](migrations/0137-v0.13.0-form-field-fieldset.md) |
 | 0138 | `v0.13.0` | [TextInput](migrations/0138-v0.13.0-text-input.md) |
+| 0139 | `v0.13.0` | [TextArea](migrations/0139-v0.13.0-text-area.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

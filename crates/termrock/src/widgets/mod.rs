@@ -296,7 +296,9 @@ pub use table::{
     TableRow, TableRowRegion, TableState, resolve_widths,
 };
 pub use tabs::{TAB_GAP, Tab, TabCell, Tabs, TabsState, lay_out_tabs, tab_at_column};
-pub use text_area::{TextArea, TextAreaOutcome, TextAreaState, TextCursor};
+pub use text_area::{
+    TextArea, TextAreaOutcome, TextAreaState, TextAreaVariant, TextCursor, TextWrap,
+};
 pub use text_input::{
     EditAction, TextInput, TextInputOutcome, TextInputParts, TextInputState, TextInputValidity,
     Validation,

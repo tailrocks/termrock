@@ -1050,6 +1050,18 @@ impl PromptComposerState {
             TextAreaOutcome::Scrolled => PromptComposerOutcome::Changed,
             TextAreaOutcome::Cancelled => PromptComposerOutcome::DismissRequest,
             TextAreaOutcome::Ignored => PromptComposerOutcome::Ignored,
+            // Composer owns clipboard / external-editor / fullscreen chords before
+            // TextArea; if they leak through, treat as no-op or host passthrough.
+            TextAreaOutcome::ClipboardCopy { text } => {
+                PromptComposerOutcome::SelectionCopied { text }
+            }
+            TextAreaOutcome::ClipboardCut { text } => {
+                self.select_anchor = None;
+                PromptComposerOutcome::SelectionCopied { text }
+            }
+            TextAreaOutcome::ClipboardPasteRequest => PromptComposerOutcome::Ignored,
+            TextAreaOutcome::ExternalEditorRequested => PromptComposerOutcome::ExternalEditor,
+            TextAreaOutcome::FullscreenRequested => self.request_fullscreen(),
         }
     }
 
@@ -1343,6 +1355,13 @@ impl PromptComposerState {
             }
             TextAreaOutcome::Ignored => PromptComposerOutcome::Ignored,
             TextAreaOutcome::Cancelled => PromptComposerOutcome::DismissRequest,
+            TextAreaOutcome::ClipboardCopy { text }
+            | TextAreaOutcome::ClipboardCut { text } => {
+                PromptComposerOutcome::SelectionCopied { text }
+            }
+            TextAreaOutcome::ClipboardPasteRequest
+            | TextAreaOutcome::ExternalEditorRequested
+            | TextAreaOutcome::FullscreenRequested => PromptComposerOutcome::Ignored,
         }
     }
 

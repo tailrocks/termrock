@@ -56,7 +56,7 @@ use termrock::{
         SurfaceRecipe, Switch, SwitchState, Tab,
         Table,
         TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
-        TextInput, TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
+        TextInput, TextInputState, TextWrap, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
         Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
@@ -1378,6 +1378,33 @@ pub(crate) fn stories() -> Vec<Story> {
             34,
             7,
             text_area_scrolled,
+        ),
+        Story::new(
+            "text-area/line-numbers",
+            "Text area line numbers",
+            "TextArea",
+            "Gutter line numbers beside multi-line body.",
+            40,
+            8,
+            text_area_line_numbers,
+        ),
+        Story::new(
+            "text-area/soft-wrap",
+            "Text area soft wrap",
+            "TextArea",
+            "Soft-wrap long lines without horizontal scroll.",
+            28,
+            8,
+            text_area_soft_wrap,
+        ),
+        Story::new(
+            "text-area/review",
+            "Text area review",
+            "TextArea",
+            "Review/comment muted chrome variant.",
+            40,
+            7,
+            text_area_review,
         ),
         Story::new(
             "status-bar/basic",
@@ -7756,6 +7783,41 @@ fn text_area_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         byte: text.lines().last().unwrap().len(),
     });
     frame.render_stateful_widget(&TextArea::new(system).title("Scrolled"), area, &mut state);
+}
+fn text_area_line_numbers(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TextAreaState::new("fn main() {\n    println!(\"hi\");\n}");
+    state.set_accepts_input(true);
+    frame.render_stateful_widget(
+        &TextArea::new(system)
+            .title("Source")
+            .line_numbers(true),
+        area,
+        &mut state,
+    );
+}
+fn text_area_soft_wrap(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TextAreaState::new(
+        "A single very long paragraph that must soft-wrap across several visual rows without a horizontal scrollbar when wrap is Soft.",
+    );
+    state.set_accepts_input(true);
+    state.set_wrap(TextWrap::Soft);
+    frame.render_stateful_widget(
+        &TextArea::new(system).title("Wrap").soft_wrap(),
+        area,
+        &mut state,
+    );
+}
+fn text_area_review(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TextAreaState::new("Looks good overall.\nNit: rename this helper.");
+    state.set_accepts_input(true);
+    frame.render_stateful_widget(
+        &TextArea::new(system)
+            .title("Comment")
+            .placeholder("Leave a review…")
+            .review(),
+        area,
+        &mut state,
+    );
 }
 fn render_text_area(
     frame: &mut Frame<'_>,

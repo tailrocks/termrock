@@ -1,12 +1,14 @@
 ---
 title: TextArea
-description: Multi-line grapheme-safe editor with host-owned accepts_input and two-axis scroll.
+description: Multi-line grapheme-safe editor with selection, undo, soft wrap, and host clipboard hooks.
 ---
 
 # TextArea
 
-**Purpose.** Multi-line editing with grapheme-safe cursor ops, normalized paste,
-and a two-axis viewport. Side effects (submit I/O) stay outside.
+**Purpose.** Multi-line editing for forms, notes, prompts, and comments:
+grapheme-safe cursor ops, selection, undo/redo, word/indent motion, optional
+soft wrap, line numbers, ScrollArea dual-axis viewport, and host-owned side
+effects (clipboard, external editor, fullscreen).
 
 ## When to use / when not
 
@@ -21,35 +23,42 @@ and a two-axis viewport. Side effects (submit I/O) stay outside.
 | Concern | Owner |
 |---------|--------|
 | Input gate | Host `set_accepts_input` |
-| Caret position | TextAreaState (local) |
+| Caret / selection | TextAreaState (local) |
 | Panel chrome | accepts_input → Focused border |
 | Read-only | `set_read_only` (scroll ok, no edit) |
+| Review chrome | `TextArea::review()` / `TextAreaVariant::Review` |
 
 ## Outcomes
 
 - `Ignored`
-- `Changed` — text or caret
+- `Changed` — text, caret, or selection
 - `Scrolled` — viewport only (wheel)
-- `Cancelled` — Esc
+- `Cancelled` — Esc (after clearing selection)
+- `ClipboardCopy { text }` / `ClipboardCut { text }` / `ClipboardPasteRequest`
+- `ExternalEditorRequested` / `FullscreenRequested`
 
 ## Intents
 
 `default_text_area_intent` — Home/End, Page, Left/Right, Esc.
-Up/Down line motion and character insert stay on `handle_key`.
+Up/Down line motion, word chords, indent, undo, and character insert stay on
+`handle_key`.
 
 ## Non-color
 
 - Caret: Focus role or TextStrong when colorless
+- Selection: reversed Focus
 - Scroll track: `░` / `|` (ascii)
 - Placeholder: muted text
+- Line numbers: muted gutter digits
 
 ## Responsive
 
-| Height | Behavior |
-|--------|----------|
-| ≥ 3 | Comfortable body + scrollbars as needed |
-| 2 | Compact body |
-| Tiny width | Horizontal scroll; wrap not yet |
+| Constraint | Behavior |
+|------------|----------|
+| Soft wrap | Visual rows; no horizontal scroll |
+| Wrap None | Horizontal scroll for wide lines |
+| Resize / reflow | Caret absolute; `reveal` re-centers viewport |
+| Line numbers | Gutter width scales with line count (capped) |
 
 ## Example
 
@@ -57,19 +66,25 @@ Up/Down line motion and character insert stay on `handle_key`.
 use termrock::{
     input::{KeyCode, KeyEvent, KeyModifiers},
     style::DesignSystem,
-    widgets::{TextArea, TextAreaOutcome, TextAreaState},
+    widgets::{TextArea, TextAreaOutcome, TextAreaState, TextWrap},
 };
 
 let system = DesignSystem::default();
 let mut state = TextAreaState::new("hello");
 state.set_accepts_input(true);
+state.set_wrap(TextWrap::Soft);
 assert!(matches!(
     state.handle_key(KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE)),
     TextAreaOutcome::Changed
 ));
-let _ = TextArea::new(&system).title("Notes").placeholder("Type…");
+let _ = TextArea::new(&system)
+    .title("Notes")
+    .placeholder("Type…")
+    .line_numbers(true)
+    .soft_wrap();
 ```
 
 ## Related
 
-TextInput · PromptComposer · migration `0078` · design `text-area-accepts-input.md`
+TextInput · PromptComposer · ScrollArea · migration `0139` · design
+`text-area-accepts-input.md`

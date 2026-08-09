@@ -313,14 +313,21 @@ let mut state = TabsState::default();
 state.selected = Some("logs");`,
   },
   TextArea: {
-    description: 'A multi-line grapheme-safe editor with normalized paste and a two-axis viewport.',
+    description:
+      'A multi-line grapheme-safe editor with selection, undo/redo, soft wrap, line numbers, and host clipboard/external-editor hooks.',
     primaryStory: 'text-area/basic',
-    usage: `use termrock::{Theme, widgets::{TextArea, TextAreaState, TextCursor}};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{TextArea, TextAreaState, TextCursor, TextWrap};
 
-let theme = Theme::default();
-let area = TextArea::new(&theme).title("Notes").placeholder("Write…");
+let system = DesignSystem::default();
+let area = TextArea::new(&system)
+    .title("Notes")
+    .placeholder("Write…")
+    .line_numbers(true)
+    .soft_wrap();
 let mut state = TextAreaState::new("first line\nsecond line");
-state.set_focused(true);
+state.set_accepts_input(true);
+state.set_wrap(TextWrap::Soft);
 let valid = state.set_cursor(TextCursor { line: 1, byte: 0 });`,
   },
   TextInput: {

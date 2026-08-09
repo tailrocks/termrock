@@ -76,11 +76,12 @@ edits data and never allocates the full dataset; render cost is bounded by
 the painted viewport.
 
 `TextArea` owns a normalized nonempty line buffer, grapheme-boundary cursor,
-remembered vertical goal column, and two-axis `DialogScroll`. Enter inserts a
-newline; consumer keymaps retain submission policy. Paste normalizes CRLF, LF,
-and CR, while rendering slices only visible logical lines and uses semantic
-panel focus plus a non-color cursor cell. Callers retain validation, effects,
-syntax policy, persistence, and submission.
+selection, undo/redo, word/indent motion, remembered vertical goal column, and
+two-axis `ScrollArea` viewport with optional soft wrap and line-number gutter.
+Enter inserts a newline; consumer keymaps retain submission policy. Host
+outcomes cover clipboard, external editor, and fullscreen promotion. Paste
+normalizes CRLF, LF, and CR; review/read-only variants mute chrome. Callers
+retain validation, effects, syntax policy, persistence, and submission.
 
 `Picker` composes query editing, a caller-filtered stable-ID `List`,
 ID-sticky/index-fallback reconciliation, empty state, and semantic outcomes.
