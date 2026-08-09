@@ -42,9 +42,17 @@ require "Amp modes low" 'low'
 require "Amp modes medium" 'medium'
 require "Amp modes high" 'high'
 require "Amp modes ultra" 'ultra'
-# Guard: competitive §9.2 must not list smart/free as the four capability dials
-if rg -n 'Modes.*\(`smart`' "$COMPETITIVE" 2>/dev/null; then
-  fail "competitive research lists deprecated Amp modes (smart) as capability dials; use low/medium/high/ultra"
+# Guard: do not list smart/free as the four capability dials (deprecated labels OK elsewhere)
+# Wrong historical phrasing: dials (`smart` / free / etc.)
+if rg -n 'dials \(`smart`|product dials \(`smart`|`smart` / free' "$COMPETITIVE" 2>/dev/null; then
+  fail "competitive research lists deprecated Amp modes (smart/free) as capability dials; use low/medium/high/ultra"
+fi
+# Positive: competitive Amp section must name the four manual modes together
+if ! rg -q '`low` / `medium` / `high` / `ultra`' "$COMPETITIVE"; then
+  fail "competitive research must list Amp modes as low/medium/high/ultra (ampcode.com/manual)"
+fi
+if ! rg -q '`low` / `medium` / `high` / `ultra`' "$PRIMARY"; then
+  fail "primary research must list Amp modes as low/medium/high/ultra"
 fi
 
 # Acceptance: hero / community consensus + multi-lang (need ≥2 hero names + ≥2 stacks)
