@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Structural gate for TermRock shadcn-TUI experience research SoTs.
 # Fails if required landscape themes or actionable improvement concepts are missing.
+# Searches files via rg (never loads full corpus into shell argv — ARG_MAX safe).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -9,6 +10,7 @@ cd "$ROOT"
 PRIMARY="$ROOT/docs/design/experience-research-2026.md"
 COMPETITIVE="$ROOT/docs/design/competitive-tui-research.md"
 STRATEGIC="$ROOT/docs/design/shadcn-tui-strategic-brief.md"
+SOTS=("$PRIMARY" "$COMPETITIVE" "$STRATEGIC")
 
 fail() {
   echo "check-experience-research: FAIL: $*" >&2
@@ -19,13 +21,10 @@ fail() {
 [[ -f "$COMPETITIVE" ]] || fail "missing $COMPETITIVE"
 [[ -f "$STRATEGIC" ]] || fail "missing $STRATEGIC"
 
-# Combined corpus so either SoT may host depth, but primary must exist and carry core thesis.
-CORPUS=$(cat "$PRIMARY" "$COMPETITIVE" "$STRATEGIC")
-
 require() {
   local label="$1"
   local pattern="$2"
-  if ! printf '%s' "$CORPUS" | rg -q "$pattern"; then
+  if ! rg -q "$pattern" "${SOTS[@]}"; then
     fail "required theme missing: $label (pattern: $pattern)"
   fi
 }
@@ -85,6 +84,6 @@ rg -q '@termrock/agent|agent pack|PromptComposer' "$STRATEGIC" || fail "strategi
 rg -q 'DesignSystem|Quiet canvas|Phosphor Obsidian' "$STRATEGIC" || fail "strategic brief missing design-system framing"
 
 echo "check-experience-research: OK"
-echo "  primary: $PRIMARY ($(wc -l < "$PRIMARY") lines)"
-echo "  competitive: $COMPETITIVE ($(wc -l < "$COMPETITIVE") lines)"
-echo "  strategic: $STRATEGIC ($(wc -l < "$STRATEGIC") lines)"
+echo "  primary: $PRIMARY ($(wc -l < "$PRIMARY" | tr -d ' ') lines)"
+echo "  competitive: $COMPETITIVE ($(wc -l < "$COMPETITIVE" | tr -d ' ') lines)"
+echo "  strategic: $STRATEGIC ($(wc -l < "$STRATEGIC" | tr -d ' ') lines)"
