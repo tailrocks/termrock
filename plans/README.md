@@ -18,16 +18,15 @@ Historical plans **001–038** are complete (removed after verification).
 | **040** | Unified InteractionScene | P0 | TODO | 039 | 0033 |
 | **041** | Variable-height streaming transcript engine | P1 | TODO | 040 | 0034 |
 | **042** | Responsive workspace tree (not flat rect recipes) | P1 | TODO | 040–041 | 0035 |
+| **043** | DesignTokens drive paint + phosphor quiet canvas | P1 | TODO | 040 | 0036 |
+| **044** | Universal intents for all collections | P1 | TODO | 039–040 | 0037 |
 
 ## Follow-on plan IDs (not authored yet)
 
 | ID | Title | After |
 |----|-------|-------|
-| 043 | DesignTokens drive List/Panel paint + phosphor “quiet canvas, bright intent” | 040 |
-| 044 | Intent-ify Tree, Table, Picker, CompletionMenu | 040 |
 | 045 | Composed row / panel anatomy | 043 |
 | 046 | Agent workbench flagship (scene + transcript + safe approval) | 039–041 |
 | 047 | Source registry CLI spike (`termrock add`) | 044+ |
 | 048 | Lookbook → Studio inspector (tokens, scene, capability) | 040–043 |
-
 Status: `TODO` · `IN PROGRESS` · `DONE` · `BLOCKED` · `REJECTED`.

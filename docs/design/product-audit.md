@@ -1,8 +1,9 @@
 # TermRock complete product audit
 
 **Goal:** become the shadcn/ui of TUI/CLI for Ratatui.  
-**Inspected:** `feat/experience-layer-shadcn-tui` (HEAD family `aa8e91e`), 46 public widgets, 74 lookbook stories, migrations through `0031`, plans `039`–`044`.  
+**Inspected:** `feat/experience-layer-shadcn-tui` (re-verified HEAD family `fec49b1`+), 46 public widgets, 74 lookbook stories, migrations through `0031`, plans `039`–`044` (all still TODO — no P0 code fixes landed yet).  
 **Method:** source, tests, contracts, SVG previews, mise gate, COMPONENTS ownership model—not README claims alone.  
+**Live probes (still true):** ApprovalCard `selected: 0` → AllowOnce; List has `handle_intent` but no `DesignTokens` paint; `list_row_recipe` unused outside tokens.rs; `dismiss_top_esc` uses `rposition`; SemanticScene has no layers/actions; only 1 widget implements `handle_intent`.  
 **Policy:** quality over compatibility; breaking redesigns preferred.
 
 **Priority legend**
