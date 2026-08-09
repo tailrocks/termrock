@@ -371,14 +371,8 @@ impl<Id: PartialEq> ColumnModel<Id> {
 
 // ── Selection ───────────────────────────────────────────────────────────────
 
-/// Cell coordinate in logical space.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub struct CellCoord {
-    /// Logical row index in the current projection.
-    pub row: u64,
-    /// Column index in the column model (including hidden? usually visible ordinal).
-    pub col: usize,
-}
+/// Cell coordinate in logical space (shared with [`crate::interaction::CellCoord`]).
+pub type CellCoord = crate::interaction::CellCoord;
 
 /// Selection mode for data surfaces.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -399,8 +393,9 @@ pub enum SelectionMode {
 
 /// Selection state for data grids (cursor + row membership + cell chrome).
 ///
-/// Row membership uses [`crate::interaction::SelectionModel`] (stable IDs,
-/// range/select-all). **Focus row/col** remain grid cursor (not FocusGraph).
+/// - **Rows:** [`crate::interaction::SelectionModel`] (stable IDs, range/select-all).
+/// - **Cells:** [`crate::interaction::CellSelectionModel`] (single / rect).
+/// - **focus_row/col:** grid cursor (not FocusGraph).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SelectionModel<RowId: Ord = u64> {
     /// Mode.
@@ -411,10 +406,8 @@ pub struct SelectionModel<RowId: Ord = u64> {
     pub focus_col: usize,
     /// Row selection membership (ordered; multi/single via interaction model).
     pub rows: crate::interaction::SelectionModel<RowId>,
-    /// Anchor for cell range selection.
-    pub anchor: Option<CellCoord>,
-    /// Active cell (cell modes).
-    pub active_cell: Option<CellCoord>,
+    /// Cell selection (single / rectangular range).
+    pub cells: crate::interaction::CellSelectionModel,
 }
 
 impl<RowId: Ord> Default for SelectionModel<RowId> {
@@ -426,8 +419,7 @@ impl<RowId: Ord> Default for SelectionModel<RowId> {
             rows: crate::interaction::SelectionModel::new(
                 crate::interaction::SelectionKind::None,
             ),
-            anchor: None,
-            active_cell: None,
+            cells: crate::interaction::CellSelectionModel::new(),
         }
     }
 }
@@ -439,6 +431,7 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
         Self {
             mode: SelectionMode::Row,
             rows: crate::interaction::SelectionModel::single(),
+            cells: crate::interaction::CellSelectionModel::new(),
             ..Self::default()
         }
     }
@@ -449,6 +442,7 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
         Self {
             mode: SelectionMode::MultiRow,
             rows: crate::interaction::SelectionModel::range(),
+            cells: crate::interaction::CellSelectionModel::new(),
             ..Self::default()
         }
     }
@@ -461,6 +455,20 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
             rows: crate::interaction::SelectionModel::new(
                 crate::interaction::SelectionKind::None,
             ),
+            cells: crate::interaction::CellSelectionModel::single(),
+            ..Self::default()
+        }
+    }
+
+    /// Cell-range mode.
+    #[must_use]
+    pub fn cell_range() -> Self {
+        Self {
+            mode: SelectionMode::CellRange,
+            rows: crate::interaction::SelectionModel::new(
+                crate::interaction::SelectionKind::None,
+            ),
+            cells: crate::interaction::CellSelectionModel::range(),
             ..Self::default()
         }
     }
@@ -523,14 +531,33 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
     /// Clear selection sets (keeps focus cursor).
     pub fn clear_selection(&mut self) {
         let _ = self.rows.clear();
-        self.anchor = None;
-        self.active_cell = None;
+        self.cells.clear();
     }
 
     /// Whether row id is selected.
     #[must_use]
     pub fn is_row_selected(&self, id: &RowId) -> bool {
         self.rows.is_selected(id)
+    }
+
+    /// Select / focus a single cell.
+    pub fn select_cell(&mut self, cell: CellCoord) {
+        self.cells.select_cell(cell);
+        self.focus_row = cell.row;
+        self.focus_col = cell.col;
+    }
+
+    /// Extend cell rect to `cell` (Shift-style).
+    pub fn extend_cell(&mut self, cell: CellCoord) {
+        self.cells.extend_to(cell);
+        self.focus_row = cell.row;
+        self.focus_col = cell.col;
+    }
+
+    /// Whether a cell is in the cell selection.
+    #[must_use]
+    pub fn is_cell_selected(&self, cell: CellCoord) -> bool {
+        self.cells.contains(cell)
     }
 }
 

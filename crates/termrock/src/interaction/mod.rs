@@ -25,7 +25,8 @@ pub use roving::{
     roving_hint_keymap_horizontal, roving_hint_keymap_vertical,
 };
 pub use selection_model::{
-    SelectionDelta, SelectionKind, SelectionModel, SelectionVisual, select_subtree,
+    CellCoord, CellSelectionMode, CellSelectionModel, SelectionDelta, SelectionKind,
+    SelectionModel, SelectionVisual, deselect_subtree, select_subtree,
 };
 
 // FocusRing remains crate-private (pre-1.0 M3). Public focus graph is FocusGraph.

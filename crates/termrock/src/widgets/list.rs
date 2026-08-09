@@ -270,11 +270,6 @@ impl<Id> ListState<Id> {
         &self.regions
     }
 
-    /// Enables ordered multi-selection with an empty selection.
-    pub fn enable_multi_select(&mut self) {
-        self.selection.get_or_insert_with(Selection::new);
-    }
-
     /// Disables multi-selection and discards checked identities.
     pub fn disable_multi_select(&mut self) {
         self.selection = None;
@@ -330,6 +325,14 @@ impl<Id> ListState<Id> {
 }
 
 impl<Id: Clone + PartialEq> ListState<Id> {
+    /// Enables ordered multi-selection with an empty selection (range-capable).
+    pub fn enable_multi_select(&mut self) {
+        self.selection.get_or_insert_with(|| {
+            // Range kind: Space toggles; Shift+Space / Shift+click set ranges.
+            Selection::from(crate::interaction::SelectionModel::range())
+        });
+    }
+
     /// Routes navigation, checking, activation, and cancellation keys.
     ///
     /// Keys are mapped through [`default_list_intent`]; prefer
@@ -337,6 +340,13 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
+        }
+        // Shift+Space: range-select along visible enabled items (multi-select).
+        if key.kind == KeyEventKind::Press
+            && matches!(key.code, crate::input::KeyCode::Char(' '))
+            && key.modifiers.contains(crate::input::KeyModifiers::SHIFT)
+        {
+            return self.range_select_to_active(rows);
         }
         match default_list_intent(key) {
             Some(intent) => self.handle_intent(rows, intent),
@@ -415,8 +425,32 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         }) else {
             return Outcome::Ignored;
         };
+        // Anchor for subsequent range ops.
+        if selection.model().anchor().is_none() {
+            selection.model_mut().set_anchor(Some(row.id.clone()));
+        }
         selection.toggle(&row.id);
         Outcome::CheckToggled(row.id.clone())
+    }
+
+    /// Shift-range: set selection from anchor to active along enabled item order.
+    fn range_select_to_active(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
+        let Some(active) = self.collection.active().cloned() else {
+            return Outcome::Ignored;
+        };
+        let Some(selection) = self.selection.as_mut() else {
+            return Outcome::Ignored;
+        };
+        let order: Vec<Id> = rows
+            .iter()
+            .filter(|r| r.enabled && r.role == RowRole::Item)
+            .map(|r| r.id.clone())
+            .collect();
+        if selection.model().anchor().is_none() {
+            selection.model_mut().set_anchor(Some(active.clone()));
+        }
+        let _ = selection.model_mut().set_range(&order, &active);
+        Outcome::CheckToggled(active)
     }
 
     /// Moves selection to the next enabled item, wrapping at the end.
@@ -514,10 +548,58 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             return Outcome::Ignored;
         };
         self.collection.set_active(Some(region.id.clone()));
+        // Shift+click range when multi-select is on (pointer path; host passes modifiers via click_range).
         match self.click_policy {
             ListClickPolicy::Activate => Outcome::Activated(region.id.clone()),
             ListClickPolicy::Select => Outcome::Changed,
         }
+    }
+
+    /// Pointer select with optional range (Shift). Call after hit-test when multi-select is enabled.
+    pub fn click_select(&mut self, position: Position, extend_range: bool) -> Outcome<Id> {
+        let Some(region) = self
+            .regions
+            .iter()
+            .find(|region| region.area.contains(position))
+            .map(|r| (r.id.clone(), r.area))
+        else {
+            return Outcome::Ignored;
+        };
+        let id = region.0;
+        self.collection.set_active(Some(id.clone()));
+        if !extend_range {
+            if let Some(sel) = self.selection.as_mut() {
+                sel.model_mut().set_anchor(Some(id.clone()));
+                let _ = sel.model_mut().select(id.clone());
+            }
+            return Outcome::Changed;
+        }
+        // Need rows for order — host should call range_select_to_active with rows.
+        if let Some(sel) = self.selection.as_mut() {
+            if sel.model().anchor().is_none() {
+                sel.model_mut().set_anchor(Some(id.clone()));
+            }
+            let _ = sel.toggle(&id);
+        }
+        Outcome::CheckToggled(id)
+    }
+
+    /// Shift-range along visible rows to `to` (stable id).
+    pub fn select_range_to(&mut self, rows: &[ListRow<'_, Id>], to: &Id) -> Outcome<Id> {
+        let Some(selection) = self.selection.as_mut() else {
+            return Outcome::Ignored;
+        };
+        let order: Vec<Id> = rows
+            .iter()
+            .filter(|r| r.enabled && r.role == RowRole::Item)
+            .map(|r| r.id.clone())
+            .collect();
+        if selection.model().anchor().is_none() {
+            selection.model_mut().set_anchor(Some(to.clone()));
+        }
+        let _ = selection.model_mut().set_range(&order, to);
+        self.collection.set_active(Some(to.clone()));
+        Outcome::CheckToggled(to.clone())
     }
 
     /// Projects list rows into headless collection items and reconciles active id.
@@ -1265,6 +1347,25 @@ mod tests {
             "primary survives: {text:?}"
         );
         assert!(!text.contains('⌘'), "shortcut drops first: {text:?}");
+    }
+
+    #[test]
+    fn list_shift_space_sets_range_selection() {
+        let rows = rows();
+        let mut state = ListState::new(Some("first"));
+        state.enable_multi_select();
+        let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        let _ = state.handle_intent(&rows, UiIntent::Move(NavigationMove::Next));
+        let out = state.handle_key(
+            &rows,
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::SHIFT),
+        );
+        assert!(matches!(out, Outcome::CheckToggled(_)));
+        let checked = state.selection().unwrap().checked();
+        assert!(
+            checked.len() >= 2,
+            "range should cover first..active, got {checked:?}"
+        );
     }
 
     #[test]

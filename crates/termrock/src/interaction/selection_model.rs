@@ -523,6 +523,247 @@ pub fn select_subtree<Id: Clone + PartialEq>(
     model.select_all(subtree)
 }
 
+/// Deselect every id in `subtree` (collapse-deselect pattern).
+pub fn deselect_subtree<Id: Clone + PartialEq>(
+    model: &mut SelectionModel<Id>,
+    subtree: &[Id],
+) -> SelectionDelta<Id> {
+    for id in subtree {
+        let _ = model.deselect(id);
+    }
+    if model.is_empty() {
+        SelectionDelta::Cleared
+    } else {
+        SelectionDelta::Replaced {
+            selected: model.selected().to_vec(),
+        }
+    }
+}
+
+// ── Cell / rectangular selection (tables, grids) ─────────────────────────────
+
+/// Logical cell coordinate (row index in projection + column ordinal).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
+pub struct CellCoord {
+    /// Logical row index in the current projection / window.
+    pub row: u64,
+    /// Column ordinal among the host column model.
+    pub col: usize,
+}
+
+impl CellCoord {
+    /// Creates a cell coordinate.
+    #[must_use]
+    pub const fn new(row: u64, col: usize) -> Self {
+        Self { row, col }
+    }
+}
+
+/// Cell selection mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum CellSelectionMode {
+    /// No cell membership.
+    #[default]
+    None,
+    /// Single active cell.
+    Single,
+    /// Inclusive rectangular range from anchor to extent.
+    Range,
+}
+
+/// Rectangular / single cell selection (stable as long as projection indices hold).
+///
+/// Hosts map `CellCoord` ↔ domain (row id, column id) for clipboard and edits.
+/// Focus/cursor may share `active` while membership lives in `selected` for multi.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct CellSelectionModel {
+    mode: CellSelectionMode,
+    /// Keyboard / active cell.
+    active: Option<CellCoord>,
+    /// Range anchor (primary click).
+    anchor: Option<CellCoord>,
+    /// Range extent (shift-click / drag end).
+    extent: Option<CellCoord>,
+}
+
+impl CellSelectionModel {
+    /// Empty, no cell selection.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            mode: CellSelectionMode::None,
+            active: None,
+            anchor: None,
+            extent: None,
+        }
+    }
+
+    /// Single-cell mode.
+    #[must_use]
+    pub const fn single() -> Self {
+        Self {
+            mode: CellSelectionMode::Single,
+            active: None,
+            anchor: None,
+            extent: None,
+        }
+    }
+
+    /// Rectangular range mode.
+    #[must_use]
+    pub const fn range() -> Self {
+        Self {
+            mode: CellSelectionMode::Range,
+            active: None,
+            anchor: None,
+            extent: None,
+        }
+    }
+
+    /// Mode.
+    #[must_use]
+    pub const fn mode(&self) -> CellSelectionMode {
+        self.mode
+    }
+
+    /// Active cell (cursor).
+    #[must_use]
+    pub const fn active(&self) -> Option<CellCoord> {
+        self.active
+    }
+
+    /// Range anchor.
+    #[must_use]
+    pub const fn anchor(&self) -> Option<CellCoord> {
+        self.anchor
+    }
+
+    /// Range extent.
+    #[must_use]
+    pub const fn extent(&self) -> Option<CellCoord> {
+        self.extent
+    }
+
+    /// Clears cell membership (keeps mode).
+    pub fn clear(&mut self) {
+        self.active = None;
+        self.anchor = None;
+        self.extent = None;
+    }
+
+    /// Focus/select one cell (single) or set active + collapse range.
+    pub fn select_cell(&mut self, cell: CellCoord) {
+        self.active = Some(cell);
+        self.anchor = Some(cell);
+        self.extent = Some(cell);
+    }
+
+    /// Extends rectangular range from anchor to `cell` (creates anchor if missing).
+    pub fn extend_to(&mut self, cell: CellCoord) {
+        if self.anchor.is_none() {
+            self.anchor = Some(cell);
+        }
+        self.extent = Some(cell);
+        self.active = Some(cell);
+        if matches!(self.mode, CellSelectionMode::None) {
+            self.mode = CellSelectionMode::Range;
+        }
+    }
+
+    /// Inclusive normalized rectangle (min/max row/col).
+    #[must_use]
+    pub fn rect(&self) -> Option<(CellCoord, CellCoord)> {
+        let a = self.anchor?;
+        let b = self.extent.or(self.active)?;
+        let min = CellCoord {
+            row: a.row.min(b.row),
+            col: a.col.min(b.col),
+        };
+        let max = CellCoord {
+            row: a.row.max(b.row),
+            col: a.col.max(b.col),
+        };
+        Some((min, max))
+    }
+
+    /// Whether `cell` lies in the current rect (or equals active in single mode).
+    #[must_use]
+    pub fn contains(&self, cell: CellCoord) -> bool {
+        match self.mode {
+            CellSelectionMode::None => false,
+            CellSelectionMode::Single => self.active == Some(cell),
+            CellSelectionMode::Range => {
+                let Some((min, max)) = self.rect() else {
+                    return self.active == Some(cell);
+                };
+                cell.row >= min.row
+                    && cell.row <= max.row
+                    && cell.col >= min.col
+                    && cell.col <= max.col
+            }
+        }
+    }
+
+    /// Enumerates cells in the rect (row-major). Empty if none.
+    ///
+    /// Caps at `max_cells` to avoid huge allocations on 1M-row universes.
+    #[must_use]
+    pub fn cells(&self, max_cells: usize) -> Vec<CellCoord> {
+        let Some((min, max)) = self.rect() else {
+            return self.active.into_iter().collect();
+        };
+        let mut out = Vec::new();
+        let mut n = 0usize;
+        for row in min.row..=max.row {
+            for col in min.col..=max.col {
+                if n >= max_cells {
+                    return out;
+                }
+                out.push(CellCoord { row, col });
+                n += 1;
+            }
+        }
+        out
+    }
+
+    /// Move active cell by delta within bounds; optionally extends range when `extend`.
+    pub fn move_active(
+        &mut self,
+        d_row: i64,
+        d_col: i32,
+        max_row: u64,
+        max_col: usize,
+        extend: bool,
+    ) -> bool {
+        let mut cell = self.active.unwrap_or(CellCoord::new(0, 0));
+        let before = cell;
+        if d_row >= 0 {
+            cell.row = cell.row.saturating_add(d_row as u64).min(max_row);
+        } else {
+            cell.row = cell.row.saturating_sub((-d_row) as u64);
+        }
+        if max_col == 0 {
+            cell.col = 0;
+        } else if d_col >= 0 {
+            cell.col = cell.col.saturating_add(d_col as usize).min(max_col - 1);
+        } else {
+            cell.col = cell.col.saturating_sub((-d_col) as usize);
+        }
+        if before == cell {
+            return false;
+        }
+        self.active = Some(cell);
+        if extend {
+            self.extend_to(cell);
+        } else {
+            self.anchor = Some(cell);
+            self.extent = Some(cell);
+        }
+        true
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -658,5 +899,29 @@ mod tests {
         let sub = ["folder", "file1", "file2"];
         let _ = select_subtree(&mut m, &sub);
         assert_eq!(m.len(), 3);
+        let _ = deselect_subtree(&mut m, &["file1"]);
+        assert!(!m.is_selected(&"file1"));
+        assert!(m.is_selected(&"folder"));
+    }
+
+    #[test]
+    fn cell_range_contains_and_enumerate() {
+        let mut c = CellSelectionModel::range();
+        c.select_cell(CellCoord::new(1, 1));
+        c.extend_to(CellCoord::new(3, 2));
+        assert!(c.contains(CellCoord::new(2, 1)));
+        assert!(!c.contains(CellCoord::new(0, 0)));
+        let cells = c.cells(100);
+        assert_eq!(cells.len(), 3 * 2); // rows 1..=3, cols 1..=2
+    }
+
+    #[test]
+    fn cell_move_extend_keeps_anchor() {
+        let mut c = CellSelectionModel::range();
+        c.select_cell(CellCoord::new(0, 0));
+        assert!(c.move_active(2, 1, 10, 5, true));
+        assert_eq!(c.anchor(), Some(CellCoord::new(0, 0)));
+        assert_eq!(c.active(), Some(CellCoord::new(2, 1)));
+        assert!(c.contains(CellCoord::new(1, 0)));
     }
 }

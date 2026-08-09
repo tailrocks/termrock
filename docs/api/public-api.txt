@@ -1553,6 +1553,55 @@ pub unsafe fn termrock::interaction::BackdropPolicy::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::interaction::BackdropPolicy
 pub fn termrock::interaction::BackdropPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::BackdropPolicy
+#[non_exhaustive] pub enum termrock::interaction::CellSelectionMode
+pub termrock::interaction::CellSelectionMode::None
+pub termrock::interaction::CellSelectionMode::Range
+pub termrock::interaction::CellSelectionMode::Single
+impl core::clone::Clone for termrock::interaction::CellSelectionMode
+pub fn termrock::interaction::CellSelectionMode::clone(&self) -> termrock::interaction::CellSelectionMode
+impl core::cmp::Eq for termrock::interaction::CellSelectionMode
+impl core::cmp::PartialEq for termrock::interaction::CellSelectionMode
+pub fn termrock::interaction::CellSelectionMode::eq(&self, &termrock::interaction::CellSelectionMode) -> bool
+impl core::default::Default for termrock::interaction::CellSelectionMode
+pub fn termrock::interaction::CellSelectionMode::default() -> termrock::interaction::CellSelectionMode
+impl core::fmt::Debug for termrock::interaction::CellSelectionMode
+pub fn termrock::interaction::CellSelectionMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::CellSelectionMode
+pub fn termrock::interaction::CellSelectionMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::CellSelectionMode
+impl core::marker::StructuralPartialEq for termrock::interaction::CellSelectionMode
+impl core::marker::Freeze for termrock::interaction::CellSelectionMode
+impl core::marker::Send for termrock::interaction::CellSelectionMode
+impl core::marker::Sync for termrock::interaction::CellSelectionMode
+impl core::marker::Unpin for termrock::interaction::CellSelectionMode
+impl core::marker::UnsafeUnpin for termrock::interaction::CellSelectionMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::CellSelectionMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::CellSelectionMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::CellSelectionMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::CellSelectionMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::CellSelectionMode where U: core::convert::From<T>
+pub fn termrock::interaction::CellSelectionMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::CellSelectionMode where U: core::convert::Into<T>
+pub type termrock::interaction::CellSelectionMode::Error = core::convert::Infallible
+pub fn termrock::interaction::CellSelectionMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::CellSelectionMode where U: core::convert::TryFrom<T>
+pub type termrock::interaction::CellSelectionMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::CellSelectionMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::CellSelectionMode where T: core::clone::Clone
+pub type termrock::interaction::CellSelectionMode::Owned = T
+pub fn termrock::interaction::CellSelectionMode::clone_into(&self, &mut T)
+pub fn termrock::interaction::CellSelectionMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::CellSelectionMode where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::CellSelectionMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::CellSelectionMode where T: ?core::marker::Sized
+pub fn termrock::interaction::CellSelectionMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::CellSelectionMode where T: ?core::marker::Sized
+pub fn termrock::interaction::CellSelectionMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::CellSelectionMode where T: core::clone::Clone
+pub unsafe fn termrock::interaction::CellSelectionMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::CellSelectionMode
+pub fn termrock::interaction::CellSelectionMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::CellSelectionMode
 #[non_exhaustive] pub enum termrock::interaction::CollectionOutcome<Id>
 pub termrock::interaction::CollectionOutcome::ActiveChanged
 pub termrock::interaction::CollectionOutcome::ActiveChanged::from: core::option::Option<Id>
@@ -2938,6 +2987,120 @@ pub unsafe fn termrock::interaction::UiIntent::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::UiIntent
 pub fn termrock::interaction::UiIntent::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::UiIntent
+pub struct termrock::interaction::CellCoord
+pub termrock::interaction::CellCoord::col: usize
+pub termrock::interaction::CellCoord::row: u64
+impl termrock::interaction::CellCoord
+pub const fn termrock::interaction::CellCoord::new(u64, usize) -> Self
+impl core::clone::Clone for termrock::interaction::CellCoord
+pub fn termrock::interaction::CellCoord::clone(&self) -> termrock::interaction::CellCoord
+impl core::cmp::Eq for termrock::interaction::CellCoord
+impl core::cmp::Ord for termrock::interaction::CellCoord
+pub fn termrock::interaction::CellCoord::cmp(&self, &termrock::interaction::CellCoord) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::interaction::CellCoord
+pub fn termrock::interaction::CellCoord::eq(&self, &termrock::interaction::CellCoord) -> bool
+impl core::cmp::PartialOrd for termrock::interaction::CellCoord
+pub fn termrock::interaction::CellCoord::partial_cmp(&self, &termrock::interaction::CellCoord) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::interaction::CellCoord
+pub fn termrock::interaction::CellCoord::default() -> termrock::interaction::CellCoord
+impl core::fmt::Debug for termrock::interaction::CellCoord
+pub fn termrock::interaction::CellCoord::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::CellCoord
+pub fn termrock::interaction::CellCoord::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::CellCoord
+impl core::marker::StructuralPartialEq for termrock::interaction::CellCoord
+impl core::marker::Freeze for termrock::interaction::CellCoord
+impl core::marker::Send for termrock::interaction::CellCoord
+impl core::marker::Sync for termrock::interaction::CellCoord
+impl core::marker::Unpin for termrock::interaction::CellCoord
+impl core::marker::UnsafeUnpin for termrock::interaction::CellCoord
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::CellCoord
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::CellCoord
+impl<Q, K> equivalent::Comparable<K> for termrock::interaction::CellCoord where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::CellCoord::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::CellCoord where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::CellCoord::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::CellCoord where U: core::convert::From<T>
+pub fn termrock::interaction::CellCoord::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::CellCoord where U: core::convert::Into<T>
+pub type termrock::interaction::CellCoord::Error = core::convert::Infallible
+pub fn termrock::interaction::CellCoord::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::CellCoord where U: core::convert::TryFrom<T>
+pub type termrock::interaction::CellCoord::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::CellCoord::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::CellCoord where T: core::clone::Clone
+pub type termrock::interaction::CellCoord::Owned = T
+pub fn termrock::interaction::CellCoord::clone_into(&self, &mut T)
+pub fn termrock::interaction::CellCoord::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::CellCoord where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::CellCoord::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::CellCoord where T: ?core::marker::Sized
+pub fn termrock::interaction::CellCoord::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::CellCoord where T: ?core::marker::Sized
+pub fn termrock::interaction::CellCoord::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::CellCoord where T: core::clone::Clone
+pub unsafe fn termrock::interaction::CellCoord::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::CellCoord
+pub fn termrock::interaction::CellCoord::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::CellCoord
+pub struct termrock::interaction::CellSelectionModel
+impl termrock::interaction::CellSelectionModel
+pub const fn termrock::interaction::CellSelectionModel::active(&self) -> core::option::Option<termrock::interaction::CellCoord>
+pub const fn termrock::interaction::CellSelectionModel::anchor(&self) -> core::option::Option<termrock::interaction::CellCoord>
+pub fn termrock::interaction::CellSelectionModel::cells(&self, usize) -> alloc::vec::Vec<termrock::interaction::CellCoord>
+pub fn termrock::interaction::CellSelectionModel::clear(&mut self)
+pub fn termrock::interaction::CellSelectionModel::contains(&self, termrock::interaction::CellCoord) -> bool
+pub fn termrock::interaction::CellSelectionModel::extend_to(&mut self, termrock::interaction::CellCoord)
+pub const fn termrock::interaction::CellSelectionModel::extent(&self) -> core::option::Option<termrock::interaction::CellCoord>
+pub const fn termrock::interaction::CellSelectionModel::mode(&self) -> termrock::interaction::CellSelectionMode
+pub fn termrock::interaction::CellSelectionModel::move_active(&mut self, i64, i32, u64, usize, bool) -> bool
+pub const fn termrock::interaction::CellSelectionModel::new() -> Self
+pub const fn termrock::interaction::CellSelectionModel::range() -> Self
+pub fn termrock::interaction::CellSelectionModel::rect(&self) -> core::option::Option<(termrock::interaction::CellCoord, termrock::interaction::CellCoord)>
+pub fn termrock::interaction::CellSelectionModel::select_cell(&mut self, termrock::interaction::CellCoord)
+pub const fn termrock::interaction::CellSelectionModel::single() -> Self
+impl core::clone::Clone for termrock::interaction::CellSelectionModel
+pub fn termrock::interaction::CellSelectionModel::clone(&self) -> termrock::interaction::CellSelectionModel
+impl core::cmp::Eq for termrock::interaction::CellSelectionModel
+impl core::cmp::PartialEq for termrock::interaction::CellSelectionModel
+pub fn termrock::interaction::CellSelectionModel::eq(&self, &termrock::interaction::CellSelectionModel) -> bool
+impl core::default::Default for termrock::interaction::CellSelectionModel
+pub fn termrock::interaction::CellSelectionModel::default() -> termrock::interaction::CellSelectionModel
+impl core::fmt::Debug for termrock::interaction::CellSelectionModel
+pub fn termrock::interaction::CellSelectionModel::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::interaction::CellSelectionModel
+impl core::marker::Freeze for termrock::interaction::CellSelectionModel
+impl core::marker::Send for termrock::interaction::CellSelectionModel
+impl core::marker::Sync for termrock::interaction::CellSelectionModel
+impl core::marker::Unpin for termrock::interaction::CellSelectionModel
+impl core::marker::UnsafeUnpin for termrock::interaction::CellSelectionModel
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::CellSelectionModel
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::CellSelectionModel
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::CellSelectionModel where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::CellSelectionModel::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::CellSelectionModel where U: core::convert::From<T>
+pub fn termrock::interaction::CellSelectionModel::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::CellSelectionModel where U: core::convert::Into<T>
+pub type termrock::interaction::CellSelectionModel::Error = core::convert::Infallible
+pub fn termrock::interaction::CellSelectionModel::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::CellSelectionModel where U: core::convert::TryFrom<T>
+pub type termrock::interaction::CellSelectionModel::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::CellSelectionModel::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::CellSelectionModel where T: core::clone::Clone
+pub type termrock::interaction::CellSelectionModel::Owned = T
+pub fn termrock::interaction::CellSelectionModel::clone_into(&self, &mut T)
+pub fn termrock::interaction::CellSelectionModel::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::CellSelectionModel where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::CellSelectionModel::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::CellSelectionModel where T: ?core::marker::Sized
+pub fn termrock::interaction::CellSelectionModel::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::CellSelectionModel where T: ?core::marker::Sized
+pub fn termrock::interaction::CellSelectionModel::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::CellSelectionModel where T: core::clone::Clone
+pub unsafe fn termrock::interaction::CellSelectionModel::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::CellSelectionModel
+pub fn termrock::interaction::CellSelectionModel::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::CellSelectionModel
 pub struct termrock::interaction::CollectionItem<Id>
 pub termrock::interaction::CollectionItem::enabled: bool
 pub termrock::interaction::CollectionItem::id: Id
@@ -4443,6 +4606,7 @@ pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) ->
 pub fn termrock::interaction::default_text_area_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_transcript_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
+pub fn termrock::interaction::deselect_subtree<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::interaction::SelectionModel<Id>, &[Id]) -> termrock::interaction::SelectionDelta<Id>
 pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::interaction::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::interaction::from_consumed_flag<M, FocusId>(bool, core::option::Option<M>) -> termrock::interaction::EventResult<M, FocusId>
 pub fn termrock::interaction::place_overlay(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> ratatui_core::layout::rect::Rect
@@ -14917,54 +15081,6 @@ pub unsafe fn termrock::widgets::Callout<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Callout<'a>
 pub fn termrock::widgets::Callout<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Callout<'a>
-pub struct termrock::widgets::CellCoord
-pub termrock::widgets::CellCoord::col: usize
-pub termrock::widgets::CellCoord::row: u64
-impl core::clone::Clone for termrock::widgets::CellCoord
-pub fn termrock::widgets::CellCoord::clone(&self) -> termrock::widgets::CellCoord
-impl core::cmp::Eq for termrock::widgets::CellCoord
-impl core::cmp::PartialEq for termrock::widgets::CellCoord
-pub fn termrock::widgets::CellCoord::eq(&self, &termrock::widgets::CellCoord) -> bool
-impl core::default::Default for termrock::widgets::CellCoord
-pub fn termrock::widgets::CellCoord::default() -> termrock::widgets::CellCoord
-impl core::fmt::Debug for termrock::widgets::CellCoord
-pub fn termrock::widgets::CellCoord::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::CellCoord
-pub fn termrock::widgets::CellCoord::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::CellCoord
-impl core::marker::StructuralPartialEq for termrock::widgets::CellCoord
-impl core::marker::Freeze for termrock::widgets::CellCoord
-impl core::marker::Send for termrock::widgets::CellCoord
-impl core::marker::Sync for termrock::widgets::CellCoord
-impl core::marker::Unpin for termrock::widgets::CellCoord
-impl core::marker::UnsafeUnpin for termrock::widgets::CellCoord
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CellCoord
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CellCoord
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CellCoord where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::CellCoord::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::CellCoord where U: core::convert::From<T>
-pub fn termrock::widgets::CellCoord::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CellCoord where U: core::convert::Into<T>
-pub type termrock::widgets::CellCoord::Error = core::convert::Infallible
-pub fn termrock::widgets::CellCoord::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::CellCoord where U: core::convert::TryFrom<T>
-pub type termrock::widgets::CellCoord::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::CellCoord::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::CellCoord where T: core::clone::Clone
-pub type termrock::widgets::CellCoord::Owned = T
-pub fn termrock::widgets::CellCoord::clone_into(&self, &mut T)
-pub fn termrock::widgets::CellCoord::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::CellCoord where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::CellCoord::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::CellCoord where T: ?core::marker::Sized
-pub fn termrock::widgets::CellCoord::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CellCoord where T: ?core::marker::Sized
-pub fn termrock::widgets::CellCoord::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::CellCoord where T: core::clone::Clone
-pub unsafe fn termrock::widgets::CellCoord::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::CellCoord
-pub fn termrock::widgets::CellCoord::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::CellCoord
 pub struct termrock::widgets::Checkbox<'a, Id>
 pub termrock::widgets::Checkbox::id: Id
 impl<'a, Id> termrock::widgets::Checkbox<'a, Id>
@@ -18435,6 +18551,8 @@ pub fn termrock::widgets::ListState<usize>::selected_item<'a, T>(&self, &'a [T])
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::activate(&self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ListState<Id>::click_select(&mut self, ratatui_core::layout::position::Position, bool) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ListState<Id>::enable_multi_select(&mut self)
 pub fn termrock::widgets::ListState<Id>::handle_intent(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::handle_intent_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::interaction::EventResult<termrock::interaction::Outcome<Id>>
 pub fn termrock::widgets::ListState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::Outcome<Id>
@@ -18443,12 +18561,12 @@ pub fn termrock::widgets::ListState<Id>::hover(&mut self, ratatui_core::layout::
 pub fn termrock::widgets::ListState<Id>::reconcile_collection(&mut self, &[termrock::widgets::ListRow<'_, Id>])
 pub fn termrock::widgets::ListState<Id>::select_next(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::select_previous(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ListState<Id>::select_range_to(&mut self, &[termrock::widgets::ListRow<'_, Id>], &Id) -> termrock::interaction::Outcome<Id>
 impl<Id> termrock::widgets::ListState<Id>
 pub const fn termrock::widgets::ListState<Id>::click_policy(&self) -> termrock::widgets::ListClickPolicy
 pub const fn termrock::widgets::ListState<Id>::collection(&self) -> &termrock::interaction::CollectionState<Id>
 pub const fn termrock::widgets::ListState<Id>::collection_mut(&mut self) -> &mut termrock::interaction::CollectionState<Id>
 pub fn termrock::widgets::ListState<Id>::disable_multi_select(&mut self)
-pub fn termrock::widgets::ListState<Id>::enable_multi_select(&mut self)
 pub const fn termrock::widgets::ListState<Id>::hovered(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::ListState<Id>::new(core::option::Option<Id>) -> Self where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::ListState<Id>::offset(&self) -> usize
@@ -21501,21 +21619,24 @@ impl<T> core::convert::From<T> for termrock::widgets::Selection<Id>
 pub fn termrock::widgets::Selection<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Selection<Id>
 pub struct termrock::widgets::SelectionModel<RowId: core::cmp::Ord>
-pub termrock::widgets::SelectionModel::active_cell: core::option::Option<termrock::widgets::CellCoord>
-pub termrock::widgets::SelectionModel::anchor: core::option::Option<termrock::widgets::CellCoord>
+pub termrock::widgets::SelectionModel::cells: termrock::interaction::CellSelectionModel
 pub termrock::widgets::SelectionModel::focus_col: usize
 pub termrock::widgets::SelectionModel::focus_row: u64
 pub termrock::widgets::SelectionModel::mode: termrock::widgets::SelectionMode
 pub termrock::widgets::SelectionModel::rows: termrock::interaction::SelectionModel<RowId>
 impl<RowId: core::cmp::Ord + core::clone::Clone> termrock::widgets::SelectionModel<RowId>
 pub fn termrock::widgets::SelectionModel<RowId>::cell() -> Self
+pub fn termrock::widgets::SelectionModel<RowId>::cell_range() -> Self
 pub fn termrock::widgets::SelectionModel<RowId>::clear_selection(&mut self)
+pub fn termrock::widgets::SelectionModel<RowId>::extend_cell(&mut self, termrock::widgets::CellCoord)
+pub fn termrock::widgets::SelectionModel<RowId>::is_cell_selected(&self, termrock::widgets::CellCoord) -> bool
 pub fn termrock::widgets::SelectionModel<RowId>::is_row_selected(&self, &RowId) -> bool
 pub fn termrock::widgets::SelectionModel<RowId>::move_focus(&mut self, i64, i32, u64, usize) -> bool
 pub fn termrock::widgets::SelectionModel<RowId>::multi_row() -> Self
 pub fn termrock::widgets::SelectionModel<RowId>::reconcile_rows(&mut self, &[RowId])
 pub fn termrock::widgets::SelectionModel<RowId>::row() -> Self
 pub fn termrock::widgets::SelectionModel<RowId>::select_all_rows(&mut self, &[RowId])
+pub fn termrock::widgets::SelectionModel<RowId>::select_cell(&mut self, termrock::widgets::CellCoord)
 pub fn termrock::widgets::SelectionModel<RowId>::select_row(&mut self, RowId)
 pub fn termrock::widgets::SelectionModel<RowId>::select_row_range(&mut self, &[RowId], &RowId)
 pub fn termrock::widgets::SelectionModel<RowId>::selected_rows(&self) -> &[RowId]
@@ -24675,6 +24796,7 @@ pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) 
 pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<termrock::style::RolePalette>
 pub fn termrock::widgets::wrapped_hint_lines(&[termrock::widgets::HintSpan<'_>], u16, &termrock::style::DesignSystem) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub type termrock::widgets::AlertTone = termrock::widgets::CalloutTone
+pub type termrock::widgets::CellCoord = termrock::interaction::CellCoord
 pub type termrock::widgets::CommandPaletteState<Id> = termrock::widgets::PickerState<Id>
 pub type termrock::widgets::ContextMenu<'a, Id> = termrock::widgets::Menu<'a, Id>
 pub type termrock::widgets::IconButtonState = termrock::widgets::ButtonState
