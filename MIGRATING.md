@@ -123,6 +123,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0107 | `v0.13.0` | [Section](migrations/0107-v0.13.0-section.md) |
 | 0108 | `v0.13.0` | [Separator](migrations/0108-v0.13.0-separator.md) |
 | 0109 | `v0.13.0` | [Toolbar](migrations/0109-v0.13.0-toolbar.md) |
+| 0110 | `v0.13.0` | [StatusBar premium](migrations/0110-v0.13.0-status-bar.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

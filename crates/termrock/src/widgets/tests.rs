@@ -259,24 +259,10 @@ fn action_and_status_regions_match_painted_geometry() {
     assert_eq!(action_state.regions[0].id, "save");
     assert_eq!(action_state.regions[0].area.x, area.x);
 
-    let left = [StatusSlot {
-        id: "left",
-        content: "Ready",
-        priority: 1,
-        min_width: 0,
-        enabled: true,
-        style: Style::new(),
-        hover_style: None,
-    }];
-    let right = [StatusSlot {
-        id: "right",
-        content: "42%",
-        priority: 1,
-        min_width: 0,
-        enabled: true,
-        style: Style::new(),
-        hover_style: None,
-    }];
+    let left = [StatusSlot::new("left", "Ready").priority(1)];
+    let right = [StatusSlot::new("right", "42%")
+        .priority(1)
+        .region(crate::widgets::StatusRegion::Right)];
     let status = StatusBar::new(&left, &right, &system).alpha(1.0);
     let regions = status.regions(area);
     assert_eq!(regions[1].area.right(), area.right());

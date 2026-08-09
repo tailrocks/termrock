@@ -183,7 +183,10 @@ pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,
     SplitSide,
 };
-pub use status_bar::{StatusBar, StatusBarState, StatusSlot};
+pub use status_bar::{
+    StatusBar, StatusBarRecipe, StatusBarState, StatusKind, StatusRegion, StatusSlot,
+    TransientStatus,
+};
 pub use table::{
     CellAlignment, Column, ColumnWidth, SortDirection, Table, TableHeaderRegion, TableOutcome,
     TableRow, TableRowRegion, TableState, resolve_widths,

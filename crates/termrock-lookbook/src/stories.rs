@@ -1126,10 +1126,37 @@ pub(crate) fn stories() -> Vec<Story> {
             "status-bar/basic",
             "Status bar",
             "StatusBar",
-            "Caller-owned left and right status slots.",
-            60,
+            "Mode, focus zone, selection, and shortcuts.",
+            64,
             1,
             status_bar,
+        ),
+        Story::new(
+            "status-bar/minimal",
+            "Status bar minimal",
+            "StatusBar",
+            "Minimal recipe: mode + connection.",
+            48,
+            1,
+            status_bar_minimal_story,
+        ),
+        Story::new(
+            "status-bar/transient",
+            "Status bar transient",
+            "StatusBar",
+            "Transient message without dropping essentials.",
+            56,
+            1,
+            status_bar_transient_story,
+        ),
+        Story::new(
+            "status-bar/rich",
+            "Status bar rich",
+            "StatusBar",
+            "Rich recipe keeps key hints.",
+            72,
+            1,
+            status_bar_rich_story,
         ),
         Story::new(
             "design-inspector/basic",
@@ -5835,27 +5862,67 @@ fn render_text_area(
 }
 
 fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let left = [StatusSlot {
-        id: "state",
-        content: " Ready ",
-        priority: 1,
-        min_width: 0,
-        enabled: true,
-        style: Style::new().reversed(),
-        hover_style: Some(Style::new().bold().reversed()),
-    }];
-    let right = [StatusSlot {
-        id: "position",
-        content: " 3/12 ",
-        priority: 1,
-        min_width: 0,
-        enabled: true,
-        style: Style::new().dim(),
-        hover_style: Some(Style::new().bold()),
-    }];
+    use termrock::widgets::{StatusRegion, StatusSlot};
+    let left = [StatusSlot::mode("mode", "NOR")
+        .style(Style::new().reversed())
+        .hover_style(Style::new().bold().reversed())];
+    let center = [StatusSlot::focus_zone("focus", "main")];
+    let right = [
+        StatusSlot::selection("sel", "3/12")
+            .style(Style::new().dim())
+            .hover_style(Style::new().bold()),
+        StatusSlot::shortcut("hint", "? help").region(StatusRegion::Right),
+    ];
     let mut state = StatusBarState::default();
     frame.render_stateful_widget(
-        &StatusBar::new(&left, &right, system).alpha(1.0),
+        &StatusBar::with_center(&left, &center, &right, system)
+            .rich()
+            .alpha(1.0),
+        area,
+        &mut state,
+    );
+}
+
+fn status_bar_minimal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::StatusSlot;
+    let left = [StatusSlot::mode("mode", "INS")];
+    let right = [
+        StatusSlot::shortcut("h", "lots of help text"),
+        StatusSlot::connection("c", "live"),
+    ];
+    let mut state = StatusBarState::default();
+    frame.render_stateful_widget(
+        &StatusBar::new(&left, &right, system).minimal(),
+        area,
+        &mut state,
+    );
+}
+
+fn status_bar_transient_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{StatusSlot, TransientStatus};
+    let left = [StatusSlot::mode("mode", "NOR")];
+    let right = [StatusSlot::connection("c", "ok")];
+    let msg = TransientStatus::new("file saved");
+    let mut state = StatusBarState::default();
+    frame.render_stateful_widget(
+        &StatusBar::new(&left, &right, system).transient(&msg),
+        area,
+        &mut state,
+    );
+}
+
+fn status_bar_rich_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{StatusRegion, StatusSlot};
+    let left = [StatusSlot::mode("m", "NOR"), StatusSlot::context("p", "crates/termrock")];
+    let center = [StatusSlot::focus_zone("f", "transcript")];
+    let right = [
+        StatusSlot::selection("s", "2 sel"),
+        StatusSlot::connection("c", "ssh"),
+        StatusSlot::shortcut("h", "C-p palette").region(StatusRegion::Right),
+    ];
+    let mut state = StatusBarState::default();
+    frame.render_stateful_widget(
+        &StatusBar::with_center(&left, &center, &right, system).rich(),
         area,
         &mut state,
     );
@@ -9226,15 +9293,7 @@ fn agent_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     ];
     workbench.task_list.select(Some("t1"));
     let modes = default_modes("plan");
-    let slots = [StatusSlot {
-        id: "s",
-        content: "ready",
-        priority: 0,
-        min_width: 0,
-        enabled: true,
-        style: Style::default(),
-        hover_style: None,
-    }];
+    let slots = [StatusSlot::connection("s", "ready")];
     let mut sstate = StatusBarState::default();
     render_agent_workbench(
         frame.buffer_mut(),

@@ -18059,6 +18059,167 @@ pub unsafe fn termrock::widgets::StaleReason::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::StaleReason
 pub fn termrock::widgets::StaleReason::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StaleReason
+#[non_exhaustive] pub enum termrock::widgets::StatusBarRecipe
+pub termrock::widgets::StatusBarRecipe::Compact
+pub termrock::widgets::StatusBarRecipe::Minimal
+pub termrock::widgets::StatusBarRecipe::Rich
+impl termrock::widgets::StatusBarRecipe
+pub const fn termrock::widgets::StatusBarRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::StatusBarRecipe
+pub fn termrock::widgets::StatusBarRecipe::clone(&self) -> termrock::widgets::StatusBarRecipe
+impl core::cmp::Eq for termrock::widgets::StatusBarRecipe
+impl core::cmp::PartialEq for termrock::widgets::StatusBarRecipe
+pub fn termrock::widgets::StatusBarRecipe::eq(&self, &termrock::widgets::StatusBarRecipe) -> bool
+impl core::default::Default for termrock::widgets::StatusBarRecipe
+pub fn termrock::widgets::StatusBarRecipe::default() -> termrock::widgets::StatusBarRecipe
+impl core::fmt::Debug for termrock::widgets::StatusBarRecipe
+pub fn termrock::widgets::StatusBarRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::StatusBarRecipe
+pub fn termrock::widgets::StatusBarRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::StatusBarRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::StatusBarRecipe
+impl core::marker::Freeze for termrock::widgets::StatusBarRecipe
+impl core::marker::Send for termrock::widgets::StatusBarRecipe
+impl core::marker::Sync for termrock::widgets::StatusBarRecipe
+impl core::marker::Unpin for termrock::widgets::StatusBarRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::StatusBarRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StatusBarRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StatusBarRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StatusBarRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StatusBarRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StatusBarRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::StatusBarRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StatusBarRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::StatusBarRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::StatusBarRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StatusBarRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StatusBarRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StatusBarRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StatusBarRecipe where T: core::clone::Clone
+pub type termrock::widgets::StatusBarRecipe::Owned = T
+pub fn termrock::widgets::StatusBarRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::StatusBarRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StatusBarRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StatusBarRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StatusBarRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::StatusBarRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StatusBarRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::StatusBarRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StatusBarRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StatusBarRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StatusBarRecipe
+pub fn termrock::widgets::StatusBarRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StatusBarRecipe
+#[non_exhaustive] pub enum termrock::widgets::StatusKind
+pub termrock::widgets::StatusKind::Connection
+pub termrock::widgets::StatusKind::Context
+pub termrock::widgets::StatusKind::FocusZone
+pub termrock::widgets::StatusKind::Mode
+pub termrock::widgets::StatusKind::Selection
+pub termrock::widgets::StatusKind::Shortcut
+pub termrock::widgets::StatusKind::Text
+pub termrock::widgets::StatusKind::Transient
+impl termrock::widgets::StatusKind
+pub const fn termrock::widgets::StatusKind::allowed_in(self, termrock::widgets::StatusBarRecipe) -> bool
+pub const fn termrock::widgets::StatusKind::default_glyph(self, termrock::style::GlyphSet) -> &'static str
+pub const fn termrock::widgets::StatusKind::default_role(self) -> termrock::style::Role
+pub const fn termrock::widgets::StatusKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::StatusKind
+pub fn termrock::widgets::StatusKind::clone(&self) -> termrock::widgets::StatusKind
+impl core::cmp::Eq for termrock::widgets::StatusKind
+impl core::cmp::PartialEq for termrock::widgets::StatusKind
+pub fn termrock::widgets::StatusKind::eq(&self, &termrock::widgets::StatusKind) -> bool
+impl core::default::Default for termrock::widgets::StatusKind
+pub fn termrock::widgets::StatusKind::default() -> termrock::widgets::StatusKind
+impl core::fmt::Debug for termrock::widgets::StatusKind
+pub fn termrock::widgets::StatusKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::StatusKind
+pub fn termrock::widgets::StatusKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::StatusKind
+impl core::marker::StructuralPartialEq for termrock::widgets::StatusKind
+impl core::marker::Freeze for termrock::widgets::StatusKind
+impl core::marker::Send for termrock::widgets::StatusKind
+impl core::marker::Sync for termrock::widgets::StatusKind
+impl core::marker::Unpin for termrock::widgets::StatusKind
+impl core::marker::UnsafeUnpin for termrock::widgets::StatusKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StatusKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StatusKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StatusKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StatusKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StatusKind where U: core::convert::From<T>
+pub fn termrock::widgets::StatusKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StatusKind where U: core::convert::Into<T>
+pub type termrock::widgets::StatusKind::Error = core::convert::Infallible
+pub fn termrock::widgets::StatusKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StatusKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StatusKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StatusKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StatusKind where T: core::clone::Clone
+pub type termrock::widgets::StatusKind::Owned = T
+pub fn termrock::widgets::StatusKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::StatusKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StatusKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StatusKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StatusKind where T: ?core::marker::Sized
+pub fn termrock::widgets::StatusKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StatusKind where T: ?core::marker::Sized
+pub fn termrock::widgets::StatusKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StatusKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StatusKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StatusKind
+pub fn termrock::widgets::StatusKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StatusKind
+#[non_exhaustive] pub enum termrock::widgets::StatusRegion
+pub termrock::widgets::StatusRegion::Center
+pub termrock::widgets::StatusRegion::Left
+pub termrock::widgets::StatusRegion::Right
+impl termrock::widgets::StatusRegion
+pub const fn termrock::widgets::StatusRegion::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::StatusRegion
+pub fn termrock::widgets::StatusRegion::clone(&self) -> termrock::widgets::StatusRegion
+impl core::cmp::Eq for termrock::widgets::StatusRegion
+impl core::cmp::PartialEq for termrock::widgets::StatusRegion
+pub fn termrock::widgets::StatusRegion::eq(&self, &termrock::widgets::StatusRegion) -> bool
+impl core::default::Default for termrock::widgets::StatusRegion
+pub fn termrock::widgets::StatusRegion::default() -> termrock::widgets::StatusRegion
+impl core::fmt::Debug for termrock::widgets::StatusRegion
+pub fn termrock::widgets::StatusRegion::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::StatusRegion
+pub fn termrock::widgets::StatusRegion::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::StatusRegion
+impl core::marker::StructuralPartialEq for termrock::widgets::StatusRegion
+impl core::marker::Freeze for termrock::widgets::StatusRegion
+impl core::marker::Send for termrock::widgets::StatusRegion
+impl core::marker::Sync for termrock::widgets::StatusRegion
+impl core::marker::Unpin for termrock::widgets::StatusRegion
+impl core::marker::UnsafeUnpin for termrock::widgets::StatusRegion
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StatusRegion
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StatusRegion
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StatusRegion where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StatusRegion::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StatusRegion where U: core::convert::From<T>
+pub fn termrock::widgets::StatusRegion::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StatusRegion where U: core::convert::Into<T>
+pub type termrock::widgets::StatusRegion::Error = core::convert::Infallible
+pub fn termrock::widgets::StatusRegion::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StatusRegion where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StatusRegion::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StatusRegion::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StatusRegion where T: core::clone::Clone
+pub type termrock::widgets::StatusRegion::Owned = T
+pub fn termrock::widgets::StatusRegion::clone_into(&self, &mut T)
+pub fn termrock::widgets::StatusRegion::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StatusRegion where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StatusRegion::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StatusRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::StatusRegion::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StatusRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::StatusRegion::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StatusRegion where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StatusRegion::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StatusRegion
+pub fn termrock::widgets::StatusRegion::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StatusRegion
 #[non_exhaustive] pub enum termrock::widgets::SurfaceElevation
 pub termrock::widgets::SurfaceElevation::Base
 pub termrock::widgets::SurfaceElevation::Canvas
@@ -27788,7 +27949,13 @@ impl<T> either::into_either::IntoEither for termrock::widgets::StalePermission
 pub struct termrock::widgets::StatusBar<'a, Id>
 impl<'a, Id> termrock::widgets::StatusBar<'a, Id>
 pub const fn termrock::widgets::StatusBar<'a, Id>::alpha(self, f32) -> Self
+pub const fn termrock::widgets::StatusBar<'a, Id>::compact(self) -> Self
+pub const fn termrock::widgets::StatusBar<'a, Id>::minimal(self) -> Self
 pub const fn termrock::widgets::StatusBar<'a, Id>::new(&'a [termrock::widgets::StatusSlot<'a, Id>], &'a [termrock::widgets::StatusSlot<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::StatusBar<'a, Id>::recipe(self, termrock::widgets::StatusBarRecipe) -> Self
+pub const fn termrock::widgets::StatusBar<'a, Id>::rich(self) -> Self
+pub const fn termrock::widgets::StatusBar<'a, Id>::transient(self, &'a termrock::widgets::TransientStatus<'a>) -> Self
+pub const fn termrock::widgets::StatusBar<'a, Id>::with_center(&'a [termrock::widgets::StatusSlot<'a, Id>], &'a [termrock::widgets::StatusSlot<'a, Id>], &'a [termrock::widgets::StatusSlot<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 impl<Id: core::clone::Clone> termrock::widgets::StatusBar<'_, Id>
 pub fn termrock::widgets::StatusBar<'_, Id>::regions(&self, ratatui_core::layout::rect::Rect) -> alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::StatusBar<'a, Id>
@@ -27835,9 +28002,12 @@ impl<T> either::into_either::IntoEither for termrock::widgets::StatusBar<'a, Id>
 pub struct termrock::widgets::StatusBarState<Id>
 pub termrock::widgets::StatusBarState::hovered: core::option::Option<Id>
 pub termrock::widgets::StatusBarState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
+pub termrock::widgets::StatusBarState::transient: core::option::Option<alloc::string::String>
 impl<Id: core::clone::Clone> termrock::widgets::StatusBarState<Id>
 pub fn termrock::widgets::StatusBarState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::StatusBarState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
+pub fn termrock::widgets::StatusBarState<Id>::new() -> Self
+pub fn termrock::widgets::StatusBarState<Id>::set_transient(&mut self, core::option::Option<impl core::convert::Into<alloc::string::String>>)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::StatusBarState<Id>
 pub fn termrock::widgets::StatusBarState<Id>::clone(&self) -> termrock::widgets::StatusBarState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::StatusBarState<Id>
@@ -27883,11 +28053,31 @@ impl<T> either::into_either::IntoEither for termrock::widgets::StatusBarState<Id
 pub struct termrock::widgets::StatusSlot<'a, Id>
 pub termrock::widgets::StatusSlot::content: &'a str
 pub termrock::widgets::StatusSlot::enabled: bool
+pub termrock::widgets::StatusSlot::glyph: core::option::Option<&'a str>
 pub termrock::widgets::StatusSlot::hover_style: core::option::Option<ratatui_core::style::Style>
 pub termrock::widgets::StatusSlot::id: Id
+pub termrock::widgets::StatusSlot::kind: termrock::widgets::StatusKind
 pub termrock::widgets::StatusSlot::min_width: u16
 pub termrock::widgets::StatusSlot::priority: u8
+pub termrock::widgets::StatusSlot::region: termrock::widgets::StatusRegion
 pub termrock::widgets::StatusSlot::style: ratatui_core::style::Style
+pub termrock::widgets::StatusSlot::style_explicit: bool
+impl<'a, Id> termrock::widgets::StatusSlot<'a, Id>
+pub fn termrock::widgets::StatusSlot<'a, Id>::connection(Id, &'a str) -> Self
+pub fn termrock::widgets::StatusSlot<'a, Id>::context(Id, &'a str) -> Self
+pub const fn termrock::widgets::StatusSlot<'a, Id>::enabled(self, bool) -> Self
+pub fn termrock::widgets::StatusSlot<'a, Id>::focus_zone(Id, &'a str) -> Self
+pub const fn termrock::widgets::StatusSlot<'a, Id>::glyph(self, &'a str) -> Self
+pub const fn termrock::widgets::StatusSlot<'a, Id>::hover_style(self, ratatui_core::style::Style) -> Self
+pub const fn termrock::widgets::StatusSlot<'a, Id>::kind(self, termrock::widgets::StatusKind) -> Self
+pub const fn termrock::widgets::StatusSlot<'a, Id>::min_width(self, u16) -> Self
+pub fn termrock::widgets::StatusSlot<'a, Id>::mode(Id, &'a str) -> Self
+pub fn termrock::widgets::StatusSlot<'a, Id>::new(Id, &'a str) -> Self
+pub const fn termrock::widgets::StatusSlot<'a, Id>::priority(self, u8) -> Self
+pub const fn termrock::widgets::StatusSlot<'a, Id>::region(self, termrock::widgets::StatusRegion) -> Self
+pub fn termrock::widgets::StatusSlot<'a, Id>::selection(Id, &'a str) -> Self
+pub fn termrock::widgets::StatusSlot<'a, Id>::shortcut(Id, &'a str) -> Self
+pub const fn termrock::widgets::StatusSlot<'a, Id>::style(self, ratatui_core::style::Style) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::StatusSlot<'a, Id>
 pub fn termrock::widgets::StatusSlot<'a, Id>::clone(&self) -> termrock::widgets::StatusSlot<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::StatusSlot<'a, Id>
@@ -30068,6 +30258,53 @@ pub unsafe fn termrock::widgets::TranscriptState<Id>::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::TranscriptState<Id>
 pub fn termrock::widgets::TranscriptState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TranscriptState<Id>
+pub struct termrock::widgets::TransientStatus<'a>
+pub termrock::widgets::TransientStatus::glyph: core::option::Option<&'a str>
+pub termrock::widgets::TransientStatus::text: &'a str
+impl<'a> termrock::widgets::TransientStatus<'a>
+pub const fn termrock::widgets::TransientStatus<'a>::glyph(self, &'a str) -> Self
+pub const fn termrock::widgets::TransientStatus<'a>::new(&'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::TransientStatus<'a>
+pub fn termrock::widgets::TransientStatus<'a>::clone(&self) -> termrock::widgets::TransientStatus<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::TransientStatus<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::TransientStatus<'a>
+pub fn termrock::widgets::TransientStatus<'a>::eq(&self, &termrock::widgets::TransientStatus<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::TransientStatus<'a>
+pub fn termrock::widgets::TransientStatus<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::TransientStatus<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::TransientStatus<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::TransientStatus<'a>
+impl<'a> core::marker::Send for termrock::widgets::TransientStatus<'a>
+impl<'a> core::marker::Sync for termrock::widgets::TransientStatus<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TransientStatus<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TransientStatus<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TransientStatus<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TransientStatus<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TransientStatus<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TransientStatus<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TransientStatus<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TransientStatus<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TransientStatus<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TransientStatus<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TransientStatus<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TransientStatus<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TransientStatus<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TransientStatus<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TransientStatus<'a> where T: core::clone::Clone
+pub type termrock::widgets::TransientStatus<'a>::Owned = T
+pub fn termrock::widgets::TransientStatus<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TransientStatus<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TransientStatus<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TransientStatus<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TransientStatus<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TransientStatus<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TransientStatus<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TransientStatus<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TransientStatus<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TransientStatus<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TransientStatus<'a>
+pub fn termrock::widgets::TransientStatus<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TransientStatus<'a>
 pub struct termrock::widgets::Tree<'a, Id>
 impl<'a, Id> termrock::widgets::Tree<'a, Id>
 pub const fn termrock::widgets::Tree<'a, Id>::empty_message(self, &'a str) -> Self

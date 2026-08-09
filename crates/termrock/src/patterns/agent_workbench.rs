@@ -648,15 +648,7 @@ mod tests {
         let mut tstate = TranscriptState::new();
         let prompt = PromptComposer::new(system);
         let mut pstate = PromptComposerState::new();
-        let slots = [StatusSlot {
-            id: "s",
-            content: "ready",
-            priority: 0,
-            min_width: 0,
-            enabled: true,
-            style: ratatui_core::style::Style::default(),
-            hover_style: None,
-        }];
+        let slots = [StatusSlot::new("s", "ready").priority(0)];
         let mut sstate = StatusBarState::default();
         let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
         terminal

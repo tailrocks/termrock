@@ -14,47 +14,15 @@ use ratatui_core::{
     text::{Line, Span},
 };
 use termrock::{
-    crossterm::{
-        CrosstermBackend,
-        Session,
-        SessionOptions,
-    },
-    input::{
-        Event,
-        KeyCode,
-        KeyEventKind,
-        MouseButton,
-        MouseEventKind,
-    },
+    crossterm::{CrosstermBackend, Session, SessionOptions},
+    input::{Event, KeyCode, KeyEventKind, MouseButton, MouseEventKind},
     interaction::Outcome,
-    keymap::{
-        KeyBinding,
-        KeyChord,
-        Keymap,
-        Visibility,
-    },
+    keymap::{KeyBinding, KeyChord, Keymap, Visibility},
     layout::bottom_rows,
-    style::{
-        Density,
-        DesignSystem,
-        Role,
-        RolePalette,
-    },
+    style::{Density, DesignSystem, Role, RolePalette},
     widgets::{
-        List,
-        ListRow,
-        ListState,
-        Panel,
-        PanelChrome,
-        render_hint_bar,
-        Severity,
-        StatusBar,
-        StatusBarState,
-        StatusSlot,
-        Tab,
-        Tabs,
-        TabsState,
-        Toast,
+        List, ListRow, ListState, Panel, PanelChrome, Severity, StatusBar, StatusBarState,
+        StatusKind, StatusRegion, StatusSlot, Tab, Tabs, TabsState, Toast, render_hint_bar,
     },
 };
 
@@ -243,23 +211,16 @@ fn render_status(
     phosphor: bool,
     state: &mut StatusBarState<&'static str>,
 ) {
-    let left = [StatusSlot {
-        id: "state",
-        content: " ready ",
-        priority: 10,
-        min_width: 0,
-        enabled: true,
-        style: system.style(Role::Success),
-        hover_style: Some(system.style(Role::LinkHover)),
-    }];
-    let right = [StatusSlot {
-        id: "theme",
-        content: if phosphor { " phosphor " } else { " slate " },
-        priority: 10,
-        min_width: 0,
-        enabled: true,
-        style: Style::new(),
-        hover_style: None,
-    }];
+    let left = [StatusSlot::new("state", " ready ")
+        .priority(10)
+        .kind(StatusKind::Connection)
+        .style(system.style(Role::Success))
+        .hover_style(system.style(Role::LinkHover))];
+    let right = [StatusSlot::new(
+        "theme",
+        if phosphor { " phosphor " } else { " slate " },
+    )
+    .priority(10)
+    .region(StatusRegion::Right)];
     frame.render_stateful_widget(StatusBar::new(&left, &right, system), area, state);
 }
