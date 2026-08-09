@@ -2148,11 +2148,47 @@ pub(crate) fn stories() -> Vec<Story> {
         Story::new(
             "button/icon",
             "Icon button",
-            "Button",
+            "IconButton",
             "Icon-only with required accessible label.",
             12,
             3,
             button_icon_story,
+        ),
+        Story::new(
+            "icon-button/toolbar",
+            "IconButton toolbar",
+            "IconButton",
+            "Compact toolbar icons with toggle and badge.",
+            24,
+            3,
+            icon_button_toolbar_story,
+        ),
+        Story::new(
+            "icon-button/destructive",
+            "IconButton destructive",
+            "IconButton",
+            "Destructive icon; not default-focused.",
+            8,
+            3,
+            icon_button_destructive_story,
+        ),
+        Story::new(
+            "icon-button/loading",
+            "IconButton loading",
+            "IconButton",
+            "Loading blocks activation; distinct from disabled.",
+            8,
+            3,
+            icon_button_loading_story,
+        ),
+        Story::new(
+            "icon-button/row",
+            "IconButton data row",
+            "IconButton",
+            "Compact row action with hit slop.",
+            28,
+            2,
+            icon_button_row_story,
         ),
         Story::new(
             "button/dialog",
@@ -3252,6 +3288,24 @@ pub(crate) fn stories() -> Vec<Story> {
             32,
             3,
             button_unicode_story,
+        ),
+        Story::new(
+            "icon-button/narrow",
+            "Narrow IconButton",
+            "IconButton",
+            "Hit slop preserved at 3 cols; glyph unstretched.",
+            5,
+            2,
+            button_icon_story,
+        ),
+        Story::new(
+            "icon-button/unicode",
+            "Unicode IconButton",
+            "IconButton",
+            "Unicode glyph with ASCII fallback available.",
+            16,
+            2,
+            icon_button_toolbar_story,
         ),
         Story::new(
             "callout/narrow",
@@ -9006,12 +9060,78 @@ fn button_toolbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn button_icon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = ButtonState::new();
+    use termrock::widgets::IconButtonState;
+    let mut state = IconButtonState::new();
     state.activation.set_accepts_input(true);
-    termrock::widgets::IconButton::new("×", "Close dialog", system).render(
-        area,
-        frame.buffer_mut(),
-        &mut state,
+    termrock::widgets::IconButton::new("×", "Close dialog", system)
+        .help("Close the dialog (Esc)")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn icon_button_toolbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{IconButton, IconButtonState};
+    let items = [("✂", "Cut"), ("⧉", "Copy"), ("📋", "Paste")];
+    let ascii = [("/", "Cut"), ("c", "Copy"), ("p", "Paste")];
+    let mut x = area.x;
+    for (i, ((g, label), (ag, _))) in items.iter().zip(ascii.iter()).enumerate() {
+        let mut state = IconButtonState::new();
+        state.activation.set_accepts_input(true);
+        if i == 1 {
+            state.set_pressed(true);
+        }
+        let w = 4u16.min(area.right().saturating_sub(x));
+        if w == 0 {
+            break;
+        }
+        let mut btn = IconButton::new(g, label, system)
+            .ascii_glyph(ag)
+            .toggle(i == 1);
+        if i == 2 {
+            btn = btn.badge("2");
+        }
+        btn.paint(
+            Rect::new(x, area.y, w, 1),
+            frame.buffer_mut(),
+            &mut state,
+        );
+        x = x.saturating_add(w.saturating_add(1));
+    }
+}
+
+fn icon_button_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{IconButton, IconButtonState};
+    let mut state = IconButtonState::new();
+    // Host must not default-focus destructive
+    state.activation.set_accepts_input(false);
+    IconButton::new("🗑", "Delete", system)
+        .destructive()
+        .ascii_glyph("x")
+        .help("Delete permanently")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn icon_button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{IconButton, IconButtonState};
+    let mut state = IconButtonState::new();
+    state.activation.set_accepts_input(true);
+    state.activation.set_loading(true);
+    IconButton::new("↻", "Refresh", system)
+        .ascii_glyph("R")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn icon_button_row_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{IconButton, IconButtonSize, IconButtonState};
+    let chunks = Layout::horizontal([Constraint::Length(4), Constraint::Min(10)]).split(area);
+    let mut state = IconButtonState::new();
+    state.activation.set_accepts_input(true);
+    IconButton::new("›", "Open row", system)
+        .size(IconButtonSize::Compact)
+        .ascii_glyph(">")
+        .paint(chunks[0], frame.buffer_mut(), &mut state);
+    frame.render_widget(
+        ratatui::widgets::Paragraph::new("data-row action"),
+        chunks[1],
     );
 }
 

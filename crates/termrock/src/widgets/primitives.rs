@@ -885,78 +885,544 @@ impl StatefulWidget for &Button<'_> {
     }
 }
 
-/// Icon-only button; **requires** [`Self::accessible_label`].
+/// Minimum pointer hit width (cells) — does **not** expand painted glyph width.
+pub const ICON_BUTTON_MIN_HIT: u16 = 3;
+
+/// Icon-button visual density / toolbar recipe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum IconButtonSize {
+    /// Dense gutters / data rows (visual 1–2; hit still ≥ [`ICON_BUTTON_MIN_HIT`]).
+    Compact,
+    /// Toolbar / panel header recipe (default).
+    #[default]
+    Toolbar,
+}
+
+impl IconButtonSize {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Toolbar => "toolbar",
+        }
+    }
+}
+
+/// Painted vs hit geometry for [`IconButton`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct IconButtonParts {
+    /// Full hit target (includes slop; may exceed visual).
+    pub root: Rect,
+    /// Glyph / text face only.
+    pub visual: Rect,
+    /// Optional badge corner.
+    pub badge: Rect,
+}
+
+/// Compact glyph action with **mandatory** accessible labeling.
+///
+/// Visual width stays 1–2 cells (plus optional badge); pointer hit is expanded
+/// to at least [`ICON_BUTTON_MIN_HIT`] **without** stretching the painted glyph
+/// (slop pads empty cells). Hosts wire [`Self::help`] into [`crate::widgets::Tooltip`]
+/// / HintBar; this widget does not steal focus for tooltips.
+///
+/// Activation law is shared with [`Button`] via [`ActivationState`].
 #[derive(Debug, Clone, Copy)]
 pub struct IconButton<'a> {
     glyph: &'a str,
-    system: &'a DesignSystem,
+    /// When set and mono/ASCII profile, prefer this over `glyph`.
+    ascii_glyph: Option<&'a str>,
+    /// When visual width cannot fit glyph, paint this text (1–2 cells ideal).
+    text_fallback: Option<&'a str>,
     accessible_label: &'a str,
+    /// Tooltip / HintBar copy (defaults to accessible_label).
+    help: Option<&'a str>,
+    system: &'a DesignSystem,
     variant: ButtonVariant,
+    size: IconButtonSize,
+    /// Single-cell badge (count / status); clipped to 1–2 cols.
+    badge: Option<&'a str>,
+    /// Toggle affordance (pressed chrome when state.pressed).
+    toggle: bool,
     ascii: bool,
     colorless: bool,
 }
 
 impl<'a> IconButton<'a> {
-    /// Glyph + required accessible name.
+    /// Glyph + **required** non-empty accessible name.
+    ///
+    /// Empty `accessible_label` is a contract violation: paint refuses silent
+    /// activation and shows a danger mark.
     #[must_use]
     pub const fn new(glyph: &'a str, accessible_label: &'a str, system: &'a DesignSystem) -> Self {
         Self {
             glyph,
-            system,
+            ascii_glyph: None,
+            text_fallback: None,
             accessible_label,
+            help: None,
+            system,
             variant: ButtonVariant::Quiet,
+            size: IconButtonSize::Toolbar,
+            badge: None,
+            toggle: false,
             ascii: false,
             colorless: false,
         }
     }
 
-    /// Variant (quiet/primary/destructive common).
+    /// Variant (quiet / primary / destructive common).
     #[must_use]
     pub const fn variant(mut self, variant: ButtonVariant) -> Self {
         self.variant = variant;
         self
     }
 
-    /// ASCII glyph path.
+    /// Destructive recipe (never safe default focus for dialogs).
+    #[must_use]
+    pub const fn destructive(mut self) -> Self {
+        self.variant = ButtonVariant::Destructive;
+        self
+    }
+
+    /// Quiet toolbar recipe (default).
+    #[must_use]
+    pub const fn quiet(mut self) -> Self {
+        self.variant = ButtonVariant::Quiet;
+        self
+    }
+
+    /// Size / density.
+    #[must_use]
+    pub const fn size(mut self, size: IconButtonSize) -> Self {
+        self.size = size;
+        self
+    }
+
+    /// Compact data-row recipe.
+    #[must_use]
+    pub const fn compact(mut self) -> Self {
+        self.size = IconButtonSize::Compact;
+        self
+    }
+
+    /// ASCII glyph override (also forced when design system is ASCII).
+    #[must_use]
+    pub const fn ascii_glyph(mut self, glyph: &'a str) -> Self {
+        self.ascii_glyph = Some(glyph);
+        self
+    }
+
+    /// Force ASCII path (compat).
     #[must_use]
     pub const fn ascii(mut self, ascii: bool) -> Self {
         self.ascii = ascii;
         self
     }
 
-    /// Reduced-color.
+    /// Text fallback when glyph cannot fit (low capability / 1-col squeeze).
+    #[must_use]
+    pub const fn text_fallback(mut self, text: &'a str) -> Self {
+        self.text_fallback = Some(text);
+        self
+    }
+
+    /// Tooltip / help string (HintBar / [`crate::widgets::Tooltip`] host content).
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = Some(help);
+        self
+    }
+
+    /// Corner badge (`"3"`, `"!"`, …).
+    #[must_use]
+    pub const fn badge(mut self, badge: &'a str) -> Self {
+        self.badge = Some(badge);
+        self
+    }
+
+    /// Enable toggle chrome (host sets [`IconButtonState::set_pressed`]).
+    #[must_use]
+    pub const fn toggle(mut self, on: bool) -> Self {
+        self.toggle = on;
+        self
+    }
+
+    /// Reduced-color paint.
     #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
     }
 
-    /// Accessible name for HintBar / a11y.
+    /// Accessible name (always the constructor label).
     #[must_use]
     pub const fn a11y_name(&self) -> &'a str {
         self.accessible_label
     }
+
+    /// Help / tooltip text (help or a11y name).
+    #[must_use]
+    pub fn help_text(&self) -> &'a str {
+        self.help.unwrap_or(self.accessible_label)
+    }
+
+    /// Whether label contract is satisfied.
+    #[must_use]
+    pub const fn has_accessible_label(&self) -> bool {
+        !self.accessible_label.is_empty()
+    }
+
+    /// Safe default focus (destructive → false).
+    #[must_use]
+    pub const fn is_safe_default_focus(self) -> bool {
+        !matches!(self.variant, ButtonVariant::Destructive)
+    }
+
+    /// Preferred **visual** width (glyph + optional badge), not hit slop.
+    #[must_use]
+    pub fn preferred_visual_width(&self) -> u16 {
+        let face = display_cols(self.face_glyph());
+        let badge = self
+            .badge
+            .map(|b| display_cols(b).min(2))
+            .unwrap_or(0);
+        // Badge overlays corner; visual footprint stays max(face, 2) when badge
+        let w = if badge > 0 {
+            face.max(2).max(badge)
+        } else {
+            face.max(1)
+        };
+        u16::try_from(w.min(4)).unwrap_or(2)
+    }
+
+    /// Minimum hit width for pointer (slop).
+    #[must_use]
+    pub const fn min_hit_width(&self) -> u16 {
+        ICON_BUTTON_MIN_HIT
+    }
+
+    fn mono(&self) -> bool {
+        self.ascii
+            || self.colorless
+            || self.system.glyphs.is_ascii()
+            || matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            )
+    }
+
+    fn face_glyph(&self) -> &str {
+        if self.mono() {
+            if let Some(a) = self.ascii_glyph {
+                return a;
+            }
+        }
+        self.glyph
+    }
+
+    fn paint_face(&self, max_cols: usize) -> String {
+        let g = self.face_glyph();
+        let gw = display_cols(g);
+        if gw <= max_cols && gw > 0 {
+            return take_display_cols(g, max_cols);
+        }
+        if let Some(fb) = self.text_fallback {
+            return take_display_cols(fb, max_cols.max(1));
+        }
+        // First char of a11y name as last-resort fallback
+        let ch = self
+            .accessible_label
+            .chars()
+            .next()
+            .unwrap_or('?')
+            .to_ascii_uppercase();
+        take_display_cols(&ch.to_string(), max_cols.max(1))
+    }
 }
 
-/// State for [`IconButton`] (same activation law as Button).
-pub type IconButtonState = ButtonState;
+/// State for [`IconButton`] (activation + toggle + hit slop).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct IconButtonState {
+    /// Shared activation law with [`Button`].
+    pub activation: ActivationState,
+    /// Visual paint region (glyph).
+    pub visual: Option<Rect>,
+    /// Pointer hit region (≥ visual; includes slop).
+    pub hit: Option<Rect>,
+    /// Hover.
+    pub hovered: bool,
+    /// Toggle pressed (only meaningful when button is toggle).
+    pub pressed: bool,
+}
 
-impl IconButton<'_> {
-    /// Paint icon button (min 3-cell hit).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut IconButtonState) {
-        // Reuse Button paint with empty label + leading glyph + a11y.
-        Button::new("", self.system)
-            .variant(self.variant)
-            .leading(self.glyph)
-            .accessible_label(self.accessible_label)
-            .ascii(self.ascii)
-            .colorless(self.colorless)
-            .render(area, buffer, state);
-        // Enforce min hit width 3.
-        if let Some(r) = state.region.as_mut() {
-            r.width = r.width.max(3).min(area.width);
+impl IconButtonState {
+    /// Fresh (no input until host grants).
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            activation: ActivationState::new(),
+            visual: None,
+            hit: None,
+            hovered: false,
+            pressed: false,
         }
     }
+
+    /// Toggle pressed visual.
+    pub const fn set_pressed(&mut self, on: bool) {
+        self.pressed = on;
+    }
+
+    /// Compat: region = hit (for [`button_hit`] / older hosts).
+    #[must_use]
+    pub const fn region(&self) -> Option<Rect> {
+        self.hit
+    }
+
+    /// Key routing.
+    pub fn handle_key(&mut self, key: KeyEvent) -> ActivationOutcome {
+        let out = self.activation.handle_key(key);
+        if matches!(out, ActivationOutcome::Activated) {
+            // Host may flip toggle; we do not auto-toggle (caller owns domain).
+        }
+        out
+    }
+
+    /// Intent routing.
+    pub fn handle_intent(&mut self, intent: crate::interaction::UiIntent) -> ActivationOutcome {
+        self.activation.handle_intent(intent)
+    }
+
+    /// Mouse against **hit** region (slop-aware).
+    pub fn handle_mouse(&mut self, event: MouseEvent) -> ActivationOutcome {
+        if let Some(area) = self.hit {
+            match event.kind {
+                MouseEventKind::Moved | MouseEventKind::Drag(_) => {
+                    self.hovered = area.contains(event.position);
+                }
+                MouseEventKind::Down(MouseButton::Left) => {
+                    self.hovered = area.contains(event.position);
+                }
+                _ => {}
+            }
+        }
+        self.activation.handle_mouse(event, self.hit)
+    }
+
+    /// EventResult key path.
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<ActivationOutcome> {
+        self.activation.handle_key_result(key)
+    }
+}
+
+impl<'a> IconButton<'a> {
+    /// Paint; visual centered in area, hit expanded with slop.
+    pub fn paint(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut IconButtonState,
+    ) -> IconButtonParts {
+        state.visual = None;
+        state.hit = None;
+        if area.is_empty() {
+            return IconButtonParts::default();
+        }
+
+        let a11y_ok = self.has_accessible_label();
+        let mono = self.mono();
+        let loading = state.activation.is_loading();
+        let disabled = !state.activation.is_enabled();
+        let surface = state.activation.accepts_input() && !disabled && !loading;
+        let armed = state.activation.is_armed() || state.activation.is_confirm_armed();
+        let toggled = self.toggle && state.pressed;
+
+        // Visual size: prefer 1–2 cells for face
+        let face_budget = match self.size {
+            IconButtonSize::Compact => 1usize.max(display_cols(self.face_glyph()).min(2)),
+            IconButtonSize::Toolbar => display_cols(self.face_glyph()).clamp(1, 2),
+        };
+        let face = if loading {
+            if mono {
+                "...".to_string()
+            } else {
+                self.system.glyphs.resolve(Glyph::Loading).text.to_string()
+            }
+        } else if !a11y_ok {
+            if mono {
+                "!".into()
+            } else {
+                "⚠".into()
+            }
+        } else {
+            self.paint_face(face_budget)
+        };
+        let face_w = u16::try_from(display_cols(&face).max(1)).unwrap_or(1);
+
+        // Hit width: max(area, min hit, visual) but paint only face_w centered
+        let hit_w = area
+            .width
+            .min(ICON_BUTTON_MIN_HIT.max(face_w).max(if self.badge.is_some() {
+                face_w.saturating_add(1)
+            } else {
+                face_w
+            }));
+        let hit = Rect {
+            x: area.x,
+            y: area.y,
+            width: hit_w.min(area.width),
+            height: 1.min(area.height),
+        };
+        // Center visual in hit
+        let vx = hit.x.saturating_add(hit.width.saturating_sub(face_w) / 2);
+        let visual = Rect {
+            x: vx,
+            y: hit.y,
+            width: face_w.min(hit.width),
+            height: 1,
+        };
+
+        let mut style = if !a11y_ok {
+            self.system.style(Role::Danger)
+        } else if disabled {
+            self.system.style(Role::ActionDisabled)
+        } else if loading {
+            if mono {
+                self.system.style(Role::TextMuted)
+            } else {
+                self.system.style(Role::Info)
+            }
+        } else if surface && (armed || state.hovered || toggled) {
+            match self.variant {
+                ButtonVariant::Destructive => self.system.style(Role::Danger),
+                ButtonVariant::Primary => self.system.style(Role::ActionFocused),
+                _ => self.system.style(Role::ActionFocused),
+            }
+        } else if mono {
+            match self.variant {
+                ButtonVariant::Destructive | ButtonVariant::Primary => {
+                    self.system.style(Role::TextStrong)
+                }
+                _ => self.system.style(Role::Text),
+            }
+        } else {
+            match self.variant {
+                ButtonVariant::Destructive => self.system.style(Role::Danger),
+                ButtonVariant::Primary => self.system.style(Role::Accent),
+                _ => self.system.style(Role::Text),
+            }
+        };
+        style.bg = None;
+        if toggled || armed {
+            style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
+        } else if surface {
+            style = style.add_modifier(Modifier::UNDERLINED);
+        }
+        if matches!(self.variant, ButtonVariant::Destructive) {
+            style = style.add_modifier(Modifier::BOLD);
+        }
+
+        buffer.set_stringn(
+            visual.x,
+            visual.y,
+            &face,
+            usize::from(visual.width),
+            style,
+        );
+
+        // Badge: top-right of hit (overlay last cell)
+        let mut badge_rect = Rect::default();
+        if let Some(b) = self.badge {
+            if hit.width >= 2 && !b.is_empty() {
+                let bt = take_display_cols(b, 1);
+                let bx = hit.x.saturating_add(hit.width.saturating_sub(1));
+                let mut bs = self.system.style(Role::Danger);
+                if mono {
+                    bs = self
+                        .system
+                        .style(Role::TextStrong)
+                        .add_modifier(Modifier::BOLD);
+                }
+                bs.bg = None;
+                buffer.set_stringn(bx, hit.y, &bt, 1, bs);
+                badge_rect = Rect {
+                    x: bx,
+                    y: hit.y,
+                    width: 1,
+                    height: 1,
+                };
+            }
+        }
+
+        state.visual = Some(visual);
+        state.hit = Some(hit);
+        IconButtonParts {
+            root: hit,
+            visual,
+            badge: badge_rect,
+        }
+    }
+
+    /// Compat paint name.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut IconButtonState) {
+        let _ = self.paint(area, buffer, state);
+    }
+
+    /// Semantic registration (label = accessible name).
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &IconButtonState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        let hit = state.hit.unwrap_or(area);
+        if hit.is_empty() {
+            return;
+        }
+        let _ = scene.register(
+            SemanticNode::control(id, hit)
+                .role(SemanticRole::Button)
+                .label(self.accessible_label)
+                .description(self.help_text())
+                .focusable(state.activation.accepts_input() && state.activation.is_enabled())
+                .state(SemanticState {
+                    selected: state.pressed || state.activation.accepts_input(),
+                    pressed: state.activation.is_armed(),
+                    checked: state.pressed,
+                    busy: state.activation.is_loading(),
+                    ..Default::default()
+                }),
+        );
+    }
+
+    /// Accessible label for toolbar overflow / overflow menus (same as a11y).
+    #[must_use]
+    pub const fn to_toolbar_label(&self) -> &'a str {
+        self.accessible_label
+    }
+}
+
+/// Build a toolbar action that prefers icon + keeps label for a11y/overflow.
+///
+/// Defined on [`crate::widgets::ToolbarItem`] via this free function to keep
+/// IconButton free of a hard module cycle with toolbar.
+#[must_use]
+pub fn toolbar_icon_action<'a, Id>(
+    id: Id,
+    icon: &'a str,
+    accessible_label: &'a str,
+) -> super::ToolbarItem<'a, Id> {
+    super::ToolbarItem::action(id, accessible_label).icon(icon)
 }
 
 // ── Badge / Tag / Chip ──────────────────────────────────────────────────────
@@ -1244,13 +1710,93 @@ mod tests {
     #[test]
     fn icon_button_requires_accessible_label() {
         let system = DesignSystem::default();
-        let mut state = ButtonState::new();
+        let mut state = IconButtonState::new();
         state.activation.set_accepts_input(true);
         let area = Rect::new(0, 0, 4, 1);
         let mut buffer = Buffer::empty(area);
         IconButton::new("×", "Close", &system).render(area, &mut buffer, &mut state);
         assert_eq!(IconButton::new("×", "Close", &system).a11y_name(), "Close");
-        assert!(state.region.map(|r| r.width >= 3).unwrap_or(false));
+        assert!(state.hit.map(|r| r.width >= 3).unwrap_or(false));
+    }
+
+    #[test]
+    fn icon_button_hit_slop_exceeds_visual() {
+        let system = DesignSystem::default();
+        let mut state = IconButtonState::new();
+        state.activation.set_accepts_input(true);
+        let area = Rect::new(0, 0, 5, 1);
+        let mut buf = Buffer::empty(area);
+        let parts = IconButton::new("×", "Close", &system)
+            .ascii_glyph("x")
+            .paint(area, &mut buf, &mut state);
+        assert!(parts.root.width >= ICON_BUTTON_MIN_HIT);
+        assert!(parts.visual.width <= parts.root.width);
+        // Glyph not stretched across full hit
+        assert!(parts.visual.width <= 2);
+    }
+
+    #[test]
+    fn icon_button_empty_label_is_unsafe() {
+        let system = DesignSystem::default();
+        assert!(!IconButton::new("×", "", &system).has_accessible_label());
+    }
+
+    #[test]
+    fn icon_button_toggle_and_badge() {
+        let system = DesignSystem::default();
+        let mut state = IconButtonState::new();
+        state.activation.set_accepts_input(true);
+        state.set_pressed(true);
+        let area = Rect::new(0, 0, 4, 1);
+        let mut buf = Buffer::empty(area);
+        let parts = IconButton::new("*", "Star", &system)
+            .toggle(true)
+            .badge("3")
+            .paint(area, &mut buf, &mut state);
+        assert_eq!(parts.badge.width, 1);
+    }
+
+    #[test]
+    fn icon_button_text_fallback() {
+        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
+        let btn = IconButton::new("🔍", "Search", &system)
+            .ascii_glyph("/")
+            .text_fallback("S");
+        assert_eq!(btn.face_glyph(), "/");
+        let face = btn.paint_face(1);
+        assert!(!face.is_empty());
+    }
+
+    #[test]
+    fn icon_button_mouse_uses_hit_slop() {
+        let system = DesignSystem::default();
+        let mut state = IconButtonState::new();
+        state.activation.set_accepts_input(true);
+        let area = Rect::new(0, 0, 5, 1);
+        let mut buf = Buffer::empty(area);
+        let _ = IconButton::new("×", "Close", &system).paint(area, &mut buf, &mut state);
+        // Click on slop cell (right of visual if centered)
+        let hit = state.hit.unwrap();
+        let pos = Position::new(hit.x.saturating_add(hit.width.saturating_sub(1)), hit.y);
+        let down = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: pos,
+            modifiers: KeyModifiers::NONE,
+        };
+        assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
+        let up = MouseEvent {
+            kind: MouseEventKind::Up(MouseButton::Left),
+            position: pos,
+            modifiers: KeyModifiers::NONE,
+        };
+        assert_eq!(state.handle_mouse(up), ActivationOutcome::Activated);
+    }
+
+    #[test]
+    fn toolbar_icon_action_keeps_label() {
+        let item = toolbar_icon_action("close", "×", "Close");
+        assert_eq!(item.label, "Close");
+        assert_eq!(item.icon, Some("×"));
     }
 
     #[test]

@@ -142,6 +142,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0126 | `v0.13.0` | [AvatarGlyph & Identity](migrations/0126-v0.13.0-avatar-identity.md) |
 | 0127 | `v0.13.0` | [HighlightedText & MatchRanges](migrations/0127-v0.13.0-highlighted-text.md) |
 | 0128 | `v0.13.0` | [Button anatomy](migrations/0128-v0.13.0-button.md) |
+| 0129 | `v0.13.0` | [IconButton](migrations/0129-v0.13.0-icon-button.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

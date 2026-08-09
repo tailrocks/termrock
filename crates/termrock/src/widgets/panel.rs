@@ -82,13 +82,26 @@ pub struct PanelAction<'a> {
     pub id: &'a str,
     /// Visible label (contracts under narrow width with the action band).
     pub label: &'a str,
+    /// Optional icon for compact header / IconButton composition.
+    pub icon: Option<&'a str>,
 }
 
 impl<'a> PanelAction<'a> {
     /// Creates a header action.
     #[must_use]
     pub const fn new(id: &'a str, label: &'a str) -> Self {
-        Self { id, label }
+        Self {
+            id,
+            label,
+            icon: None,
+        }
+    }
+
+    /// Icon for compact paint (pair with [`crate::widgets::IconButton`] in host).
+    #[must_use]
+    pub const fn icon(mut self, icon: &'a str) -> Self {
+        self.icon = Some(icon);
+        self
     }
 }
 
