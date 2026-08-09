@@ -20,7 +20,8 @@ use termrock::{
     style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
     widgets::{
         Action, ActionBar, ActionBarState, ActionLink, Anchor, AnsiParseOptions, AnsiText,
-        AnsiTextMode, AnsiTextState, BUILTIN_THEME_PRESETS, Backdrop, Badge, Banner,
+        AnsiTextMode, AnsiTextState, AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS,
+        Backdrop, Badge, Banner,
         BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
         CheckboxState, ChoiceDialog, ChoiceDialogState, CodeBlock, CodeBlockState, CodeHighlight,
         CodeHighlightKind, CodeWrap, Column, ColumnWidth,
@@ -31,8 +32,9 @@ use termrock::{
         DetailTableState, Dialog, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
         DiffState, DiffView, Drawer, EmptyState, ErrorView, Form, FormField, FormSection,
         FormState, FormWizardState, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
-        HintBar, ImageMeta, ImageProtocol, ImageSurface, InspectorField, JumpOverlay, JumpTarget,
-        Kbd, KeyValueList, KeyValueListState, KvEntry, KvLayout, KvStatus, Link, LinkState, List,
+        HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface, InspectorField,
+        JumpOverlay, JumpTarget, Kbd, KeyValueList, KeyValueListState, KvEntry, KvLayout, KvStatus,
+        Link, LinkState, List, PresenceStatus,
         ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
         LogPaneState,
         LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
@@ -2494,6 +2496,60 @@ pub(crate) fn stories() -> Vec<Story> {
             icon_labeled_story,
         ),
         Story::new(
+            "avatar-glyph/basic",
+            "AvatarGlyph initials",
+            "AvatarGlyph",
+            "Two-cell initials avatar.",
+            12,
+            3,
+            avatar_glyph_basic_story,
+        ),
+        Story::new(
+            "avatar-glyph/compact",
+            "AvatarGlyph compact",
+            "AvatarGlyph",
+            "One-cell compact faces.",
+            16,
+            3,
+            avatar_glyph_compact_story,
+        ),
+        Story::new(
+            "avatar-glyph/presence",
+            "AvatarGlyph presence",
+            "AvatarGlyph",
+            "Face plus presence status cell.",
+            16,
+            3,
+            avatar_glyph_presence_story,
+        ),
+        Story::new(
+            "avatar-glyph/no-color",
+            "AvatarGlyph no-color",
+            "AvatarGlyph",
+            "Monochrome face remains legible.",
+            12,
+            3,
+            avatar_glyph_no_color_story,
+        ),
+        Story::new(
+            "identity/basic",
+            "Identity row",
+            "Identity",
+            "Avatar, name, secondary, role badge.",
+            48,
+            3,
+            identity_basic_story,
+        ),
+        Story::new(
+            "identity/thread",
+            "Identity thread roles",
+            "Identity",
+            "User / agent / service in a thread list.",
+            48,
+            5,
+            identity_thread_story,
+        ),
+        Story::new(
             "label/basic",
             "Label basic",
             "Label",
@@ -3447,6 +3503,42 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             3,
             ansi_text_unicode_story,
+        ),
+        Story::new(
+            "avatar-glyph/narrow",
+            "Narrow AvatarGlyph",
+            "AvatarGlyph",
+            "One-cell footprint in tight gutters.",
+            8,
+            2,
+            avatar_glyph_compact_story,
+        ),
+        Story::new(
+            "avatar-glyph/unicode",
+            "Unicode AvatarGlyph",
+            "AvatarGlyph",
+            "Unicode-safe initials seed.",
+            12,
+            2,
+            avatar_glyph_unicode_story,
+        ),
+        Story::new(
+            "identity/narrow",
+            "Narrow Identity",
+            "Identity",
+            "Compact identity in narrow columns.",
+            20,
+            2,
+            identity_narrow_story,
+        ),
+        Story::new(
+            "identity/unicode",
+            "Unicode Identity",
+            "Identity",
+            "Unicode display names.",
+            40,
+            2,
+            identity_unicode_story,
         ),
         Story::new(
             "key-value-list/narrow",
@@ -9505,6 +9597,104 @@ fn icon_enhanced_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         .role(termrock::style::Role::Warning)
         .label("warning")
         .paint(chunks[3], frame.buffer_mut());
+}
+
+fn avatar_glyph_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let chunks = Layout::vertical([Constraint::Length(1); 3]).split(area);
+    let _ = AvatarGlyph::new("Ada Lovelace", system)
+        .size(AvatarSize::Normal)
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = AvatarGlyph::new("termrock", system)
+        .role(IdentityRole::Agent)
+        .size(AvatarSize::Normal)
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = AvatarGlyph::new("svc", system)
+        .role(IdentityRole::Service)
+        .role_glyph()
+        .size(AvatarSize::Normal)
+        .paint(chunks[2], frame.buffer_mut());
+}
+
+fn avatar_glyph_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let chunks = Layout::horizontal([Constraint::Length(2); 6]).split(area);
+    for (i, seed) in ["A", "Bo", "Cy", "D", "Ev", "Fx"].iter().enumerate() {
+        if let Some(c) = chunks.get(i) {
+            let _ = AvatarGlyph::new(seed, system)
+                .compact()
+                .paint(*c, frame.buffer_mut());
+        }
+    }
+}
+
+fn avatar_glyph_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let chunks = Layout::vertical([Constraint::Length(1); 3]).split(area);
+    let _ = AvatarGlyph::new("online", system)
+        .with_presence(PresenceStatus::Online)
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = AvatarGlyph::new("busy", system)
+        .with_presence(PresenceStatus::Busy)
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = AvatarGlyph::new("away", system)
+        .with_presence(PresenceStatus::Away)
+        .paint(chunks[2], frame.buffer_mut());
+}
+
+fn avatar_glyph_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let system = system.clone().no_color();
+    let _ = AvatarGlyph::new("Ada", &system)
+        .size(AvatarSize::Normal)
+        .presence(PresenceStatus::Online)
+        .paint(area, frame.buffer_mut());
+}
+
+fn avatar_glyph_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let _ = AvatarGlyph::new("文档 用户", system)
+        .size(AvatarSize::Normal)
+        .paint(area, frame.buffer_mut());
+}
+
+fn identity_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let _ = Identity::new("Ada Lovelace", system)
+        .role(IdentityRole::User)
+        .secondary("@ada")
+        .badge(true)
+        .presence(PresenceStatus::Online)
+        .paint(area, frame.buffer_mut());
+}
+
+fn identity_thread_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let chunks = Layout::vertical([Constraint::Length(1); 4]).split(area);
+    let _ = Identity::new("you", system)
+        .role(IdentityRole::User)
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = Identity::new("termrock-agent", system)
+        .role(IdentityRole::Agent)
+        .secondary("planning")
+        .badge(true)
+        .presence(PresenceStatus::Busy)
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = Identity::new("build-svc", system)
+        .role(IdentityRole::Service)
+        .face(AvatarFace::RoleGlyph)
+        .paint(chunks[2], frame.buffer_mut());
+    let _ = Identity::new("collab", system)
+        .role(IdentityRole::Collaborator)
+        .compact()
+        .paint(chunks[3], frame.buffer_mut());
+}
+
+fn identity_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let _ = Identity::new("Agent", system)
+        .role(IdentityRole::Agent)
+        .compact()
+        .paint(area, frame.buffer_mut());
+}
+
+fn identity_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let _ = Identity::new("ドキュメント", system)
+        .secondary("日本語")
+        .role(IdentityRole::User)
+        .paint(area, frame.buffer_mut());
 }
 
 fn icon_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

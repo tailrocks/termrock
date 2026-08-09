@@ -1,0 +1,39 @@
+---
+title: Identity
+description: 'Avatar + name + badge + presence for threads and collaborators.'
+---
+
+## Previews
+
+### `identity/basic`
+
+![Basic](/component-previews/identity-basic.svg)
+
+### `identity/thread`
+
+![Thread](/component-previews/identity-thread.svg)
+
+### `identity/narrow`
+
+![Narrow](/component-previews/identity-narrow.svg)
+
+### `identity/unicode`
+
+![Unicode](/component-previews/identity-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{Identity, IdentityRole, PresenceStatus};
+
+Identity::new("termrock-agent", &system)
+    .role(IdentityRole::Agent)
+    .secondary("planning")
+    .badge(true)
+    .presence(PresenceStatus::Busy)
+    .paint(area, buf);
+```
+
+## Migration
+
+See `migrations/0126-v0.13.0-avatar-identity.md`.

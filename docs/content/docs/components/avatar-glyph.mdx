@@ -1,0 +1,55 @@
+---
+title: AvatarGlyph
+description: '1–2 cell terminal avatar — initials, role glyphs, presence.'
+---
+
+## Previews
+
+### `avatar-glyph/basic`
+
+![Basic](/component-previews/avatar-glyph-basic.svg)
+
+### `avatar-glyph/compact`
+
+![Compact](/component-previews/avatar-glyph-compact.svg)
+
+### `avatar-glyph/presence`
+
+![Presence](/component-previews/avatar-glyph-presence.svg)
+
+### `avatar-glyph/no-color`
+
+![No color](/component-previews/avatar-glyph-no-color.svg)
+
+### `avatar-glyph/narrow`
+
+![Narrow](/component-previews/avatar-glyph-narrow.svg)
+
+### `avatar-glyph/unicode`
+
+![Unicode](/component-previews/avatar-glyph-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{AvatarGlyph, AvatarSize, PresenceStatus, IdentityRole};
+
+AvatarGlyph::new("Ada Lovelace", &system)
+    .size(AvatarSize::Normal)
+    .with_presence(PresenceStatus::Online)
+    .paint(area, buf);
+
+AvatarGlyph::new("agent", &system)
+    .role(IdentityRole::Agent)
+    .role_glyph()
+    .compact()
+    .paint(area, buf);
+```
+
+## With Identity
+
+Compose avatar + name via [`Identity`](./identity).
+
+## Migration
+
+See `migrations/0126-v0.13.0-avatar-identity.md`.

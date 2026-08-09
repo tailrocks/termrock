@@ -139,6 +139,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0123 | `v0.13.0` | [Markdown premium](migrations/0123-v0.13.0-markdown.md) |
 | 0124 | `v0.13.0` | [AnsiText](migrations/0124-v0.13.0-ansi-text.md) |
 | 0125 | `v0.13.0` | [KeyValueList](migrations/0125-v0.13.0-key-value-list.md) |
+| 0126 | `v0.13.0` | [AvatarGlyph & Identity](migrations/0126-v0.13.0-avatar-identity.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

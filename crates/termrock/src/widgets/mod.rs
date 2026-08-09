@@ -22,6 +22,7 @@ mod collapsible;
 mod section;
 mod badge;
 mod icon;
+mod identity;
 mod label;
 mod kbd;
 mod key_value_list;
@@ -124,6 +125,10 @@ pub use link::{
     LinkParts, LinkState, LinkVariant,
 };
 pub use icon::{Icon, IconParts};
+pub use identity::{
+    AvatarFace, AvatarGlyph, AvatarGlyphParts, AvatarSize, Identity, IdentityParts, IdentityRole,
+    PresenceStatus, identity_seed, initials_from_name, role_for_seed,
+};
 pub use label::{
     CaptionLayout, CaptionParts, DROP_DESCRIPTION_WIDTH, DROP_MARK_WIDTH, Description,
     DescriptionKind, DescriptionParts, FieldCaption, Label, LabelMark, LabelParts, LabelTone,
