@@ -53,8 +53,8 @@ Historical plans **001–038** are complete (removed after verification).
 | [052](052-data-review-surfaces.md) | Scalable data/log/review surfaces | P2 | L | DONE | 041, 043–045, 048, 050–051 | 0054 |
 | [053](053-application-block-collection.md) | Source-ownable application blocks | P2 | L | DONE | 042, 046–047, 049–052 | 0056 |
 
-Plan 047 is a gate: DONE means public CLI/schema and migration `0040` shipped.
-If rejected/blocked, stop and re-plan every later migration number.
+Plan 047 is DONE (offline `termrock-cli` + fixtures; migration `0055`).
+Historical plan bodies may still say `0040`; live tip ids `0052`–`0056` are authoritative.
 
 ## Execution notes
 
