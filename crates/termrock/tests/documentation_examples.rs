@@ -61,9 +61,15 @@ fn handbook_button_action_bar_example() {
     // Flagship Button (handbook basic + interactive)
     let button = Button::new("Save", &tokens).primary(true);
     let mut button_state = ButtonState::new();
-    button_state.activation.set_focused(true);
+    button_state.activation.set_accepts_input(true);
     let out = button_state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
     assert!(matches!(out, ActivationOutcome::Activated));
+    // Destructive must not be treated as safe default focus
+    assert!(
+        !Button::new("Delete", &tokens)
+            .variant(termrock::widgets::ButtonVariant::Destructive)
+            .is_safe_default_focus()
+    );
     let _ = button;
 
     // Toolbar group pattern remains ActionBar

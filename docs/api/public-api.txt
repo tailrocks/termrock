@@ -2851,6 +2851,7 @@ pub unsafe fn termrock::interaction::SemanticElement<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::interaction::SemanticElement<Id>
 pub fn termrock::interaction::SemanticElement<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticElement<Id>
+pub fn termrock::interaction::default_button_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_choice_dialog_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_diff_review_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -7815,7 +7816,9 @@ pub const termrock::widgets::data_view_bench::ROWS_1M: u64
 pub const termrock::widgets::data_view_bench::VIEWPORT_ROWS: u16
 #[non_exhaustive] pub enum termrock::widgets::ActivationOutcome
 pub termrock::widgets::ActivationOutcome::Activated
+pub termrock::widgets::ActivationOutcome::ConfirmRequired
 pub termrock::widgets::ActivationOutcome::Ignored
+pub termrock::widgets::ActivationOutcome::Pressed
 impl core::clone::Clone for termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ActivationOutcome::clone(&self) -> termrock::widgets::ActivationOutcome
 impl core::cmp::Eq for termrock::widgets::ActivationOutcome
@@ -8000,6 +8003,108 @@ pub unsafe fn termrock::widgets::BreadcrumbsOutcome<Id>::clone_to_uninit(&self, 
 impl<T> core::convert::From<T> for termrock::widgets::BreadcrumbsOutcome<Id>
 pub fn termrock::widgets::BreadcrumbsOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::BreadcrumbsOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::ButtonSize
+pub termrock::widgets::ButtonSize::Compact
+pub termrock::widgets::ButtonSize::Normal
+impl core::clone::Clone for termrock::widgets::ButtonSize
+pub fn termrock::widgets::ButtonSize::clone(&self) -> termrock::widgets::ButtonSize
+impl core::cmp::Eq for termrock::widgets::ButtonSize
+impl core::cmp::PartialEq for termrock::widgets::ButtonSize
+pub fn termrock::widgets::ButtonSize::eq(&self, &termrock::widgets::ButtonSize) -> bool
+impl core::default::Default for termrock::widgets::ButtonSize
+pub fn termrock::widgets::ButtonSize::default() -> termrock::widgets::ButtonSize
+impl core::fmt::Debug for termrock::widgets::ButtonSize
+pub fn termrock::widgets::ButtonSize::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ButtonSize
+pub fn termrock::widgets::ButtonSize::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ButtonSize
+impl core::marker::StructuralPartialEq for termrock::widgets::ButtonSize
+impl core::marker::Freeze for termrock::widgets::ButtonSize
+impl core::marker::Send for termrock::widgets::ButtonSize
+impl core::marker::Sync for termrock::widgets::ButtonSize
+impl core::marker::Unpin for termrock::widgets::ButtonSize
+impl core::marker::UnsafeUnpin for termrock::widgets::ButtonSize
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonSize
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonSize
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ButtonSize where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ButtonSize::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonSize where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonSize::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonSize where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonSize::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonSize::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonSize where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonSize::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonSize::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonSize where T: core::clone::Clone
+pub type termrock::widgets::ButtonSize::Owned = T
+pub fn termrock::widgets::ButtonSize::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonSize::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonSize where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonSize::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonSize where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonSize::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonSize where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonSize::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonSize where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonSize::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonSize
+pub fn termrock::widgets::ButtonSize::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonSize
+#[non_exhaustive] pub enum termrock::widgets::ButtonVariant
+pub termrock::widgets::ButtonVariant::Command
+pub termrock::widgets::ButtonVariant::Destructive
+pub termrock::widgets::ButtonVariant::Link
+pub termrock::widgets::ButtonVariant::Outline
+pub termrock::widgets::ButtonVariant::Primary
+pub termrock::widgets::ButtonVariant::Quiet
+pub termrock::widgets::ButtonVariant::Secondary
+pub termrock::widgets::ButtonVariant::Success
+impl core::clone::Clone for termrock::widgets::ButtonVariant
+pub fn termrock::widgets::ButtonVariant::clone(&self) -> termrock::widgets::ButtonVariant
+impl core::cmp::Eq for termrock::widgets::ButtonVariant
+impl core::cmp::PartialEq for termrock::widgets::ButtonVariant
+pub fn termrock::widgets::ButtonVariant::eq(&self, &termrock::widgets::ButtonVariant) -> bool
+impl core::default::Default for termrock::widgets::ButtonVariant
+pub fn termrock::widgets::ButtonVariant::default() -> termrock::widgets::ButtonVariant
+impl core::fmt::Debug for termrock::widgets::ButtonVariant
+pub fn termrock::widgets::ButtonVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ButtonVariant
+pub fn termrock::widgets::ButtonVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ButtonVariant
+impl core::marker::StructuralPartialEq for termrock::widgets::ButtonVariant
+impl core::marker::Freeze for termrock::widgets::ButtonVariant
+impl core::marker::Send for termrock::widgets::ButtonVariant
+impl core::marker::Sync for termrock::widgets::ButtonVariant
+impl core::marker::Unpin for termrock::widgets::ButtonVariant
+impl core::marker::UnsafeUnpin for termrock::widgets::ButtonVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ButtonVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ButtonVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ButtonVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ButtonVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ButtonVariant where U: core::convert::From<T>
+pub fn termrock::widgets::ButtonVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ButtonVariant where U: core::convert::Into<T>
+pub type termrock::widgets::ButtonVariant::Error = core::convert::Infallible
+pub fn termrock::widgets::ButtonVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ButtonVariant where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ButtonVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ButtonVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ButtonVariant where T: core::clone::Clone
+pub type termrock::widgets::ButtonVariant::Owned = T
+pub fn termrock::widgets::ButtonVariant::clone_into(&self, &mut T)
+pub fn termrock::widgets::ButtonVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ButtonVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ButtonVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ButtonVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ButtonVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::ButtonVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ButtonVariant where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ButtonVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ButtonVariant
+pub fn termrock::widgets::ButtonVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ButtonVariant
 #[non_exhaustive] pub enum termrock::widgets::CalloutTone
 pub termrock::widgets::CalloutTone::Danger
 pub termrock::widgets::CalloutTone::Info
@@ -12519,16 +12624,22 @@ pub fn termrock::widgets::ActionBarState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActionBarState<Id>
 pub struct termrock::widgets::ActivationState
 impl termrock::widgets::ActivationState
+pub const fn termrock::widgets::ActivationState::accepts_input(&self) -> bool
 pub const fn termrock::widgets::ActivationState::can_activate(&self) -> bool
+pub fn termrock::widgets::ActivationState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ActivationState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ActivationState::handle_mouse(&mut self, termrock::input::MouseEvent, core::option::Option<ratatui_core::layout::rect::Rect>) -> termrock::widgets::ActivationOutcome
+pub const fn termrock::widgets::ActivationState::is_armed(&self) -> bool
+pub const fn termrock::widgets::ActivationState::is_confirm_armed(&self) -> bool
 pub const fn termrock::widgets::ActivationState::is_enabled(&self) -> bool
 pub const fn termrock::widgets::ActivationState::is_focused(&self) -> bool
 pub const fn termrock::widgets::ActivationState::is_loading(&self) -> bool
 pub const fn termrock::widgets::ActivationState::new() -> Self
+pub const fn termrock::widgets::ActivationState::set_accepts_input(&mut self, bool)
 pub const fn termrock::widgets::ActivationState::set_enabled(&mut self, bool)
 pub const fn termrock::widgets::ActivationState::set_focused(&mut self, bool)
 pub const fn termrock::widgets::ActivationState::set_loading(&mut self, bool)
+pub const fn termrock::widgets::ActivationState::set_pending_confirmation(&mut self, bool)
 impl core::clone::Clone for termrock::widgets::ActivationState
 pub fn termrock::widgets::ActivationState::clone(&self) -> termrock::widgets::ActivationState
 impl core::cmp::Eq for termrock::widgets::ActivationState
@@ -13050,9 +13161,19 @@ pub struct termrock::widgets::Button<'a>
 impl termrock::widgets::Button<'_>
 pub fn termrock::widgets::Button<'_>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ButtonState)
 impl<'a> termrock::widgets::Button<'a>
+pub fn termrock::widgets::Button<'a>::a11y_name(&self) -> &str
+pub const fn termrock::widgets::Button<'a>::accessible_label(self, &'a str) -> Self
+pub const fn termrock::widgets::Button<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Button<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Button<'a>::full_width(self, bool) -> Self
+pub const fn termrock::widgets::Button<'a>::is_safe_default_focus(self) -> bool
+pub const fn termrock::widgets::Button<'a>::leading(self, &'a str) -> Self
 pub const fn termrock::widgets::Button<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Button<'a>::preferred_width(&self) -> u16
 pub const fn termrock::widgets::Button<'a>::primary(self, bool) -> Self
+pub const fn termrock::widgets::Button<'a>::size(self, termrock::widgets::ButtonSize) -> Self
+pub const fn termrock::widgets::Button<'a>::trailing(self, &'a str) -> Self
+pub const fn termrock::widgets::Button<'a>::variant(self, termrock::widgets::ButtonVariant) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Button<'_>
 pub type &termrock::widgets::Button<'_>::State = termrock::widgets::ButtonState
 pub fn &termrock::widgets::Button<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -13098,6 +13219,7 @@ pub struct termrock::widgets::ButtonState
 pub termrock::widgets::ButtonState::activation: termrock::widgets::ActivationState
 pub termrock::widgets::ButtonState::region: core::option::Option<ratatui_core::layout::rect::Rect>
 impl termrock::widgets::ButtonState
+pub fn termrock::widgets::ButtonState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ButtonState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ButtonState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::ActivationOutcome
 pub const fn termrock::widgets::ButtonState::new() -> Self
@@ -16231,7 +16353,11 @@ pub struct termrock::widgets::IconButton<'a>
 impl termrock::widgets::IconButton<'_>
 pub fn termrock::widgets::IconButton<'_>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::IconButtonState)
 impl<'a> termrock::widgets::IconButton<'a>
-pub const fn termrock::widgets::IconButton<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::IconButton<'a>::a11y_name(&self) -> &'a str
+pub const fn termrock::widgets::IconButton<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::IconButton<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::IconButton<'a>::new(&'a str, &'a str, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::IconButton<'a>::variant(self, termrock::widgets::ButtonVariant) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::IconButton<'a>
 pub fn termrock::widgets::IconButton<'a>::clone(&self) -> termrock::widgets::IconButton<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::IconButton<'a>

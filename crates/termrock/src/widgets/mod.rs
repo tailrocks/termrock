@@ -133,9 +133,9 @@ pub use permission::{
 };
 pub use picker::{Picker, PickerOutcome, PickerState};
 pub use primitives::{
-    ActivationOutcome, ActivationState, Badge, Button, ButtonState, Chip, ChipOutcome, ChipState,
-    IconButton, IconButtonState, Kbd, Separator, SeparatorLine, Spinner, Tag, TagOutcome, TagState,
-    button_hit,
+    ActivationOutcome, ActivationState, Badge, Button, ButtonSize, ButtonState, ButtonVariant,
+    Chip, ChipOutcome, ChipState, IconButton, IconButtonState, Kbd, Separator, SeparatorLine,
+    Spinner, Tag, TagOutcome, TagState, button_hit,
 };
 pub use progress::{Progress, ProgressKind};
 pub use prompt_composer::{

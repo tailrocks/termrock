@@ -1309,12 +1309,48 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "button/activation",
+            "Button primary",
             "Button",
-            "Button",
-            "Focused primary button activation chrome.",
-            32,
+            "Primary button with surface input chrome.",
+            28,
             3,
             button_story,
+        ),
+        Story::new(
+            "button/variants",
+            "Button variants",
+            "Button",
+            "Primary, secondary, quiet, outline, destructive, link, success, command.",
+            56,
+            10,
+            button_variants_story,
+        ),
+        Story::new(
+            "button/destructive",
+            "Button destructive",
+            "Button",
+            "Destructive not granted default surface input.",
+            28,
+            3,
+            button_destructive_story,
+        ),
+        Story::new(
+            "button/toolbar",
+            "Button toolbar row",
+            "Button",
+            "Compact quiet actions in a toolbar row.",
+            48,
+            3,
+            button_toolbar_story,
+        ),
+        Story::new(
+            "button/icon",
+            "Icon button",
+            "Button",
+            "Icon-only with required accessible label.",
+            12,
+            3,
+            button_icon_story,
         ),
         Story::new(
             "checkbox/switch",
@@ -4776,12 +4812,81 @@ fn image_surface(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn button_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-    state.activation.set_focused(true);
-    Button::new("Save", &tokens)
-        .primary(true)
+    state.activation.set_accepts_input(true);
+    Button::new("Save", system)
+        .variant(termrock::widgets::ButtonVariant::Primary)
+        .leading("✓")
         .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn button_variants_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ButtonSize, ButtonVariant};
+    let variants = [
+        (ButtonVariant::Primary, "Primary"),
+        (ButtonVariant::Secondary, "Secondary"),
+        (ButtonVariant::Quiet, "Quiet"),
+        (ButtonVariant::Outline, "Outline"),
+        (ButtonVariant::Destructive, "Delete"),
+        (ButtonVariant::Link, "Link"),
+        (ButtonVariant::Success, "Success"),
+        (ButtonVariant::Command, "Command"),
+    ];
+    let mut y = area.y;
+    for (v, label) in variants {
+        if y >= area.bottom() {
+            break;
+        }
+        let mut state = ButtonState::new();
+        state
+            .activation
+            .set_accepts_input(v != ButtonVariant::Destructive);
+        let row = Rect::new(area.x, y, area.width, 1);
+        Button::new(label, system)
+            .variant(v)
+            .size(ButtonSize::Compact)
+            .render(row, frame.buffer_mut(), &mut state);
+        y = y.saturating_add(1);
+    }
+}
+
+fn button_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ButtonVariant;
+    let mut state = ButtonState::new();
+    // Host must not grant default focus to destructive.
+    state.activation.set_accepts_input(false);
+    Button::new("Delete forever", system)
+        .variant(ButtonVariant::Destructive)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn button_toolbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ButtonSize, ButtonVariant};
+    let labels = ["Cut", "Copy", "Paste"];
+    let mut x = area.x;
+    for label in labels {
+        let mut state = ButtonState::new();
+        state.activation.set_accepts_input(true);
+        let w = 10u16.min(area.right().saturating_sub(x));
+        if w == 0 {
+            break;
+        }
+        Button::new(label, system)
+            .variant(ButtonVariant::Quiet)
+            .size(ButtonSize::Compact)
+            .render(Rect::new(x, area.y, w, 1), frame.buffer_mut(), &mut state);
+        x = x.saturating_add(w.saturating_add(1));
+    }
+}
+
+fn button_icon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = ButtonState::new();
+    state.activation.set_accepts_input(true);
+    termrock::widgets::IconButton::new("×", "Close dialog", system).render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -5254,7 +5359,7 @@ fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-    state.activation.set_focused(true);
+    state.activation.set_accepts_input(true);
     state.activation.set_enabled(false);
     frame.render_stateful_widget(
         &Button::new("Save", &tokens).primary(true),
@@ -5266,7 +5371,7 @@ fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 fn button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-    state.activation.set_focused(true);
+    state.activation.set_accepts_input(true);
     state.activation.set_loading(true);
     frame.render_stateful_widget(&Button::new("Save", &tokens), area, &mut state);
 }
@@ -5274,7 +5379,7 @@ fn button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
-    state.activation.set_focused(true);
+    state.activation.set_accepts_input(true);
     frame.render_stateful_widget(
         &Button::new("保存 ✨", &tokens).primary(true),
         area,

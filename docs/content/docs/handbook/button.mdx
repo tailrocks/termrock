@@ -1,166 +1,102 @@
 ---
-title: Button (Action pattern)
-description: Stable-ID actions for toolbars and dialogs — when to use ActionBar instead of ad-hoc labels.
+title: Button
+description: Canonical primary action — variants, sizes, activation intents, and accessible icon-only labels.
 ---
 
-# Button (Action pattern)
+# Button
 
-**Purpose.** Represent a discrete, activatable command with a **stable identity**
-so focus, hits, and keymaps can refer to “Save” without owning the side effect.
-
-**Status.** A dedicated `Button` primitive is planned (anatomy library). Today’s
-public surface is `Action` + `ActionBar` (and dialog action rows). Use those
-until `Button` ships; the contracts below apply to both.
+**Purpose.** Domain-neutral control that signals one activation. Effects stay
+consumer-owned (`ActivationOutcome`). Multi-id toolbars still use `ActionBar`.
 
 ## When to use / when not
 
-| Use | Prefer instead |
-|-----|----------------|
-| Toolbar / dialog actions with IDs | — |
-| One-shot commands with labels | — |
-| Dense icon-only chrome later | IconButton (planned) |
-| Navigation between screens | Tabs / List / router, not buttons |
-| Free-form text entry | TextInput / PromptComposer |
+| Use Button | Prefer |
+|------------|--------|
+| One labeled or icon action | — |
+| Dialog / form footer CTA | — |
+| Several stable-ID actions | [ActionBar](/docs/handbook/dialog) / Action |
+| Navigation | Tabs / List |
 
-## Installation
+## Focus law
 
-```toml
-termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
-```
+| Concern | Owner |
+|---------|--------|
+| Surface input | `ActivationState::set_accepts_input` (host/scene) |
+| Pressed / armed | ActivationState (pointer Down / Space) |
+| Default dialog focus | Host — **never** default-focus Destructive (`is_safe_default_focus`) |
 
-```bash
-# future registry skin
-# termrock add termrock/button
-```
+## Variants
 
-## Source files
+`Primary` · `Secondary` · `Quiet` · `Outline` · `Destructive` · `Link` ·
+`Success` · `Command`
 
-| Unit | Path |
-|------|------|
-| Crate | `termrock::widgets::{Action, ActionBar, ActionBarState}` |
+## Sizes
+
+`Compact` · `Normal` (pad only; always 1 row).
+
+## Activation
+
+- `default_button_intent` → Enter/Space map to `UiIntent::Activate`
+- Enter: activate on **Press** (once; Repeat ignored)
+- Space: **arm** on Press, activate on **Release**
+- Pointer: Down arms, Up inside hit activates; drag-off cancels
+- Loading and disabled never activate (distinct paint)
+- `set_pending_confirmation(true)` → first Activate is `ConfirmRequired`
+
+## Non-color
+
+- Colorless: strong text for primary/danger/success; outline uses `[ ]`
+- Loading: `…` / `...` prefix (not same as disabled dim alone)
+- Icon-only without a11y name paints danger mark (refuse silent control)
+
+## Responsive
+
+| Width | Behavior |
+|-------|----------|
+| full_width | Fill area |
+| narrow (&lt; 12) | Drop trailing then leading glyphs |
+| tiny (&lt; 6) | Label start only |
 
 ## Basic example
 
 ```rust
-use termrock::{Theme, widgets::{Action, ActionBar, ActionBarState}};
+use termrock::{
+    style::DesignSystem,
+    widgets::{Button, ButtonState, ButtonVariant},
+};
 
-let theme = Theme::default();
-let actions = [
-    Action { id: "save", label: "Save", enabled: true, style: None },
-    Action { id: "cancel", label: "Cancel", enabled: true, style: None },
-];
-let bar = ActionBar::new(&actions, &theme);
-let mut state = ActionBarState::default();
-state.focused = Some("save");
-let _ = (bar, &mut state);
+let system = DesignSystem::default();
+let button = Button::new("Save", &system).variant(ButtonVariant::Primary);
+let mut state = ButtonState::new();
+state.activation.set_accepts_input(true);
+let _ = (button, &mut state);
 ```
 
 ## Interactive example
 
-Focus moves across enabled actions; activation is a typed outcome for the
-consumer to handle (write file, close dialog, …).
-
 ```rust
 use termrock::{
-    Theme,
     input::{KeyCode, KeyEvent, KeyModifiers},
-    widgets::{Action, ActionBarState},
+    style::DesignSystem,
+    widgets::{ActivationOutcome, Button, ButtonState, ButtonVariant},
 };
 
-let actions = [
-    Action { id: "a", label: "A", enabled: true, style: None },
-    Action { id: "b", label: "B", enabled: true, style: None },
-];
-let mut state = ActionBarState::default();
-state.focused = Some("a");
-// Consumer routes Tab/Enter via ActionBar handlers or scene actions.
-let _ = (actions, state, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
-let _ = Theme::default();
+let system = DesignSystem::default();
+let _button = Button::new("Save", &system).variant(ButtonVariant::Primary);
+let mut state = ButtonState::new();
+state.activation.set_accepts_input(true);
+let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+assert!(matches!(out, ActivationOutcome::Activated));
 ```
 
-## Anatomy
+## Icon-only
 
-`root` · `action[]` · optional `label` / `icon` (icon when Button ships) · focus chrome via selection/focus role
-
-Primary label is the action text; under narrow pressure, labels drop before
-removing the hit target (overflow menu — planned).
-
-## Public API (intent)
-
-| API | Why |
-|-----|-----|
-| `Action { id, label, enabled, style }` | Stable id for focus/keymap; label is paint-only |
-| `ActionBar::new` | Lays out a horizontal group with hits |
-| `ActionBarState::focused` | Which action owns keyboard |
-
-## State ownership
-
-| TermRock | Consumer |
-|----------|----------|
-| Focus index, hit regions | Whether action is enabled |
-| Paint from theme roles | Side effects on activate |
-| | Keymap binding ids → actions |
-
-## Typed outcomes
-
-Prefer scene/keymap `Action` payloads or `Outcome::Activated(id)` from dialogs.
-Never run I/O inside the bar.
-
-## Variants / sizes / density
-
-- **Variants:** enabled vs disabled; optional emphasis style on Action.  
-- **Sizes:** one row high; width follows labels.  
-- **Density:** compact reduces horizontal pad between actions.
-
-## Keyboard / mouse / focus
-
-- **Keyboard:** Tab between actions; Enter activates focused (via host/dialog).  
-- **Mouse:** click hit region → activate.  
-- **Focus:** panel emphasis on owning surface; action uses selection role.
-
-## Responsive / a11y / unicode
-
-- Narrow: shorten labels before dropping enabled actions.  
-- Colorless: focused action uses marker/bold, not color alone.  
-- Labels are Unicode-safe; keep critical verbs ASCII-friendly for tiny terms.
-
-## Composition
-
-Dialog footers, form submit rows, workbench toolbars, PermissionPrompt actions.
-
-## Theming
-
-`Role::Selection` / `Role::Text` / `Role::TextDisabled` for focus and disabled.
-
-## Custom recipe
-
-Override `Action.style` for a single dangerous action; keep Deny as default focus
-on destructive dialogs.
-
-## Common mistakes
-
-- Using index-only “button 0” without stable ids.  
-- Running save I/O inside render.  
-- Making the only difference between actions pure color.
-
-## Performance
-
-O(actions) paint — keep bars small; overflow for many actions.
-
-## Testing
-
-Stories: `action-bar/basic`. Contract axes on ActionBar. Unit: focus + hit.
-
-## Migration
-
-None yet; when `Button` lands, handbook will point to it and keep ActionBar as
-the group layout.
+```rust
+use termrock::{style::DesignSystem, widgets::IconButton};
+let system = DesignSystem::default();
+let _ = IconButton::new("×", "Close", &system);
+```
 
 ## Related
 
-ChoiceDialog · PermissionPrompt · HintBar · StatusBar slots
-
-## Complete application sketch
-
-Register actions in a keymap and ActionBar with the same ids; on activate, match
-id in the app loop and run domain effects once.
+ActionBar · Dialog · migration `0076` · design `button-premium.md`

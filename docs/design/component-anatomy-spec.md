@@ -132,57 +132,46 @@ Every component below uses sections **1–24**:
 
 ## Button
 
-1. **Purpose:** Domain-neutral control that invokes one action; consumer maps outcome → effects.  
-2. **Anatomy:** `root` · `leading_icon` · `label` · `trailing_icon` · `kbd_hint`  
-3. **Public properties:** `id`, `label: &str`, `leading`, `trailing`, `variant`, `size`, `enabled`, `loading`, `danger` (or variant), `design: &DesignSystem`  
-4. **State:** Uncontrolled: hover, pressed (frame-local). Controlled: none required. Activation is an outcome, not stored “clicked.”  
-5. **Variants:** `primary` · `secondary` · `ghost` · `danger` · `link`  
-6. **Sizes/density:** height always 1 row; pad_x Comfortable=2, Compact=1, Dashboard=1; `sm`/`md` only change pad.  
-7. **Visual states:** default, hover, focus-visible, pressed, disabled, loading.  
-8. **Interaction states:** idle · armed (Space down) · activated (emit once).  
-9. **Keyboard:** Enter / Space activate; no arrow keys (not a group).  
-10. **Mouse:** press/release on root hit; drag-off cancels activation.  
-11. **Focus:** tab stop when enabled; focus-visible via recipe (underline or border role, not weight).  
-12. **Disabled:** no activate; dim recipe; skip in tab order when `skip_disabled`.  
-13. **Loading:** Spinner replaces `leading_icon`; ignore activate until consumer clears loading.  
-14. **Error/validation:** N/A (use Form/Callout).  
-15. **Narrow:** drop priority: `kbd_hint` → `trailing_icon` → `leading_icon`; never drop `label` first.  
-16. **Tiny:** label only, min 3 cols, ellipsis.  
-17. **Unicode/ASCII:** label grapheme-safe; icons from glyph catalog.  
-18. **Colorless:** primary = bold/underline; danger = `[!]` prefix + bold.  
-19. **Composition:** ActionBar, Dialog footer, Menu item paint, EmptyState action.  
-20. **Outcomes:** `Activated(Id)` · `Ignored`  
-21. **Stories:** `button/primary`, `button/danger-loading`, `button/narrow`, `button/mono`, `button/disabled`  
-22. **Snapshots:** each variant × {default, focus, disabled, loading} at fixed width.  
-23. **Interaction tests:** Enter/Space once; disabled ignores; loading ignores; drag-off no activate.  
+1. **Purpose:** Canonical primary action; consumer maps outcome → effects.  
+2. **Anatomy:** `root` · `leading` · `label` · `trailing` · optional confirm mark  
+3. **Public properties:** label, variant, size, leading/trailing, full_width, accessible_label, ascii, colorless, `system`  
+4. **State:** `ActivationState` (enabled, loading, accepts_input, armed, pending confirm).  
+5. **Variants:** primary · secondary · quiet · outline · destructive · link · success · command  
+6. **Sizes:** compact / normal pad; always 1 row.  
+7. **Visual states:** default, accepts_input, armed, disabled, loading, confirm-armed.  
+8. **Interaction states:** idle · pressed/armed · confirm_required · activated once.  
+9. **Keyboard:** `default_button_intent` (Enter/Space → Activate); Repeat ignored; Space arm/release.  
+10. **Mouse:** Down arms; Up inside hit activates; drag-off cancels.  
+11. **Focus:** host `accepts_input`; Destructive not safe default.  
+12. **Disabled:** no activate; ActionDisabled.  
+13. **Loading:** distinct Info/muted + `…`; no activate.  
+14. **Error:** N/A.  
+15. **Narrow:** drop trailing then leading.  
+16. **Tiny:** label start; min hit 3.  
+17. **Unicode/ASCII:** grapheme-safe label; ASCII brackets/loading.  
+18. **Colorless:** strong primary/danger; outline `[ ]`.  
+19. **Composition:** ActionBar, Dialog footer, forms.  
+20. **Outcomes:** `Activated` · `ConfirmRequired` · `Pressed` · `Ignored`  
+21. **Stories:** `button/{activation,variants,destructive,toolbar,icon,disabled,loading,narrow,unicode}`  
+22. **Snapshots:** variants + loading vs disabled.  
+23. **Interaction tests:** Enter once; Space arm/release; pending confirm; disabled/loading.  
 24. **Perf:** O(1) paint.
 
 ## IconButton
 
-1. **Purpose:** Icon-only action; accessible label required for hints/a11y.  
-2. **Anatomy:** `root` · `icon` · `badge_dot` (optional)  
-3. **Public properties:** `id`, `icon`, `aria_label` (required string), `variant`, `enabled`, `loading`, `design`  
-4. **State:** hover/pressed only.  
-5. **Variants:** `ghost` · `solid` · `danger`  
-6. **Sizes/density:** min hit 3×1 cells even if glyph is 1 cell.  
-7. **Visual states:** default, hover, focus-visible, pressed, disabled, loading.  
-8. **Interaction states:** idle · armed · activated.  
-9. **Keyboard:** Enter / Space.  
-10. **Mouse:** click root.  
-11. **Focus:** tab stop; when focused, HintBar may show `aria_label`.  
-12. **Disabled:** no activate; dim icon.  
-13. **Loading:** spinner glyph replaces icon.  
-14. **Error:** N/A.  
-15. **Narrow:** drop `badge_dot` first.  
-16. **Tiny:** single glyph.  
-17. **Unicode/ASCII:** catalog icon + ASCII fallback.  
-18. **Colorless:** reverse on focus-visible.  
-19. **Composition:** toolbars, Tabs trailing, Dialog chrome.  
-20. **Outcomes:** `Activated(Id)`  
-21. **Stories:** `icon-button/basic`, `icon-button/loading`, `icon-button/badge`  
-22. **Snapshots:** ghost/solid/danger × focus.  
-23. **Interaction tests:** activate + disabled + loading.  
-24. **Perf:** O(1).
+1. **Purpose:** Icon-only action; **accessible_label required**.  
+2. **Anatomy:** `root` · glyph (via Button leading)  
+3. **Public properties:** glyph, accessible_label, variant, ascii, colorless, `system`  
+4. **State:** same ActivationState / ButtonState.  
+5. **Variants:** quiet / primary / destructive common.  
+6. **Sizes:** min hit 3×1.  
+7–14. Same activation laws as Button.  
+15–16. Tiny: glyph only.  
+17–18. Catalog glyph + ASCII.  
+19. **Composition:** toolbars, dialog chrome.  
+20. **Outcomes:** same ActivationOutcome.  
+21. **Stories:** `button/icon`.  
+22–24. Via Button tests.
 
 ## Badge
 

@@ -260,6 +260,26 @@ pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for [`crate::widgets::Button`] / activation controls.
+///
+/// Enter and Space → [`UiIntent::Activate`]. Repeat/Release are ignored by the
+/// map (callers still see kind on the key event). Product chords stay out.
+#[must_use]
+pub fn default_button_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release || key.kind == KeyEventKind::Repeat {
+        return None;
+    }
+    if !key.modifiers.is_empty() {
+        return None;
+    }
+    match key.code {
+        KeyCode::Enter => Some(UiIntent::Activate),
+        // Space maps to Activate; ActivationState may arm-on-press separately.
+        KeyCode::Char(' ') => Some(UiIntent::Activate),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::PromptComposer`] surface chords.
 ///
 /// Enter → [`UiIntent::Submit`] (composer applies submit-vs-newline policy).
@@ -363,6 +383,21 @@ pub fn default_permission_intent(key: KeyEvent) -> Option<UiIntent> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_button_intent_maps_activate() {
+        assert_eq!(
+            default_button_intent(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            Some(UiIntent::Activate)
+        );
+        assert_eq!(
+            default_button_intent(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
+            Some(UiIntent::Activate)
+        );
+        let mut rep = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        rep.kind = KeyEventKind::Repeat;
+        assert_eq!(default_button_intent(rep), None);
+    }
 
     #[test]
     fn default_list_intent_maps_core_keys() {
