@@ -15,7 +15,7 @@ pub use intent::{
     default_data_table_intent, default_diff_review_intent, default_form_intent,
     default_inspector_intent, default_list_intent, default_log_stream_intent, default_menu_intent,
     default_permission_intent, default_prompt_composer_intent, default_table_intent,
-    default_transcript_intent, default_tree_intent,
+    default_text_area_intent, default_transcript_intent, default_tree_intent,
 };
 pub use keymap_bridge::dispatch_keymap_action;
 pub(crate) use modal::ModalStack;

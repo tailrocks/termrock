@@ -260,6 +260,31 @@ pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for [`crate::widgets::TextArea`] navigation / cancel.
+///
+/// Character insert, Backspace, Delete, Enter-newline stay on
+/// [`crate::widgets::TextAreaState::handle_key`]. Home/End/Page map here;
+/// Up/Down line motion stays key-path (not list Previous/Next).
+#[must_use]
+pub fn default_text_area_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    if !key.modifiers.is_empty() && key.modifiers != KeyModifiers::SHIFT {
+        return None;
+    }
+    match key.code {
+        KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+        KeyCode::Esc => Some(UiIntent::Cancel),
+        KeyCode::Left if key.modifiers.is_empty() => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Right if key.modifiers.is_empty() => Some(UiIntent::Move(NavigationMove::Next)),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::Button`] / activation controls.
 ///
 /// Enter and Space → [`UiIntent::Activate`]. Repeat/Release are ignored by the
@@ -383,6 +408,22 @@ pub fn default_permission_intent(key: KeyEvent) -> Option<UiIntent> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_text_area_intent_nav_cancel() {
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Home, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::First))
+        );
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)),
+            Some(UiIntent::Page(PageMove::Forward))
+        );
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            Some(UiIntent::Cancel)
+        );
+    }
 
     #[test]
     fn default_button_intent_maps_activate() {

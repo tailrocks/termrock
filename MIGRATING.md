@@ -91,6 +91,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0075 | `v0.13.0` | [PromptComposer accepts_input](migrations/0075-v0.13.0-prompt-composer-accepts-input.md) |
 | 0076 | `v0.13.0` | [Button premium redesign](migrations/0076-v0.13.0-button-premium.md) |
 | 0077 | `v0.13.0` | [PermissionPrompt premium](migrations/0077-v0.13.0-permission-prompt-premium.md) |
+| 0078 | `v0.13.0` | [TextArea accepts_input](migrations/0078-v0.13.0-text-area-accepts-input.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

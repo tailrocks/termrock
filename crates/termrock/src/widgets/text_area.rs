@@ -75,6 +75,8 @@ pub enum TextAreaOutcome {
     Ignored,
     /// Text or cursor state changed.
     Changed,
+    /// Viewport scrolled without document change.
+    Scrolled,
     /// Editing requested cancellation.
     Cancelled,
 }
@@ -86,7 +88,8 @@ pub struct TextAreaState {
     cursor: TextCursor,
     goal_column: Option<usize>,
     scroll: DialogScroll,
-    focused: bool,
+    accepts_input: bool,
+    read_only: bool,
     viewport_width: usize,
     viewport_height: usize,
     max_width: usize,
@@ -111,7 +114,8 @@ impl TextAreaState {
             cursor: TextCursor::default(),
             goal_column: None,
             scroll: DialogScroll::new(),
-            focused: false,
+            accepts_input: false,
+            read_only: false,
             viewport_width: 0,
             viewport_height: 0,
             max_width: 0,
@@ -258,15 +262,39 @@ impl TextAreaState {
         }
     }
 
-    /// Sets keyboard-focus ownership.
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
+    /// Host input gate (scene/overlay ownership). Does not clear buffer.
+    pub const fn set_accepts_input(&mut self, accepts: bool) {
+        self.accepts_input = accepts;
     }
 
-    /// Returns keyboard-focus ownership.
+    /// Whether host granted keyboard/pointer input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// When true, navigation/scroll allowed but edits ignored.
+    pub const fn set_read_only(&mut self, read_only: bool) {
+        self.read_only = read_only;
+    }
+
+    /// Read-only flag.
+    #[must_use]
+    pub const fn is_read_only(&self) -> bool {
+        self.read_only
+    }
+
+    /// Deprecated name for [`Self::set_accepts_input`].
+    #[deprecated(note = "use set_accepts_input")]
+    pub const fn set_focused(&mut self, focused: bool) {
+        self.accepts_input = focused;
+    }
+
+    /// Deprecated name for [`Self::accepts_input`].
+    #[deprecated(note = "use accepts_input")]
     #[must_use]
     pub const fn is_focused(&self) -> bool {
-        self.focused
+        self.accepts_input
     }
 
     /// Returns two-axis viewport state.
@@ -327,9 +355,73 @@ impl TextAreaState {
         self.finish_edit(edits.discard())
     }
 
-    /// Routes focused keyboard editing. Enter always inserts a newline.
+    /// Semantic navigation/cancel (chars still use [`Self::handle_key`]).
+    pub fn handle_intent(&mut self, intent: crate::interaction::UiIntent) -> TextAreaOutcome {
+        use crate::interaction::{NavigationMove, PageMove, UiIntent};
+        if !self.accepts_input {
+            return TextAreaOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => TextAreaOutcome::Cancelled,
+            UiIntent::Move(NavigationMove::Previous) => {
+                if self.left() {
+                    self.reveal();
+                    TextAreaOutcome::Changed
+                } else {
+                    TextAreaOutcome::Ignored
+                }
+            }
+            UiIntent::Move(NavigationMove::Next) => {
+                if self.right() {
+                    self.reveal();
+                    TextAreaOutcome::Changed
+                } else {
+                    TextAreaOutcome::Ignored
+                }
+            }
+            UiIntent::Move(NavigationMove::First) => {
+                if self.edge(false) {
+                    self.reveal();
+                    TextAreaOutcome::Changed
+                } else {
+                    TextAreaOutcome::Ignored
+                }
+            }
+            UiIntent::Move(NavigationMove::Last) => {
+                if self.edge(true) {
+                    self.reveal();
+                    TextAreaOutcome::Changed
+                } else {
+                    TextAreaOutcome::Ignored
+                }
+            }
+            UiIntent::Page(PageMove::Backward) => {
+                let step = -isize::try_from(self.viewport_height.max(1)).unwrap_or(isize::MAX);
+                if self.vertical(step) {
+                    self.reveal();
+                    TextAreaOutcome::Changed
+                } else {
+                    TextAreaOutcome::Ignored
+                }
+            }
+            UiIntent::Page(PageMove::Forward) => {
+                let step = isize::try_from(self.viewport_height.max(1)).unwrap_or(isize::MAX);
+                if self.vertical(step) {
+                    self.reveal();
+                    TextAreaOutcome::Changed
+                } else {
+                    TextAreaOutcome::Ignored
+                }
+            }
+            // Up/Down as Move is ambiguous with Previous/Next; use Page for page.
+            // Vertical line motion stays key-path (Up/Down).
+            _ => TextAreaOutcome::Ignored,
+        }
+    }
+
+    /// Routes keyboard editing when host granted input. Enter inserts a newline.
     pub fn handle_key(&mut self, key: KeyEvent) -> TextAreaOutcome {
-        if !self.focused || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.kind == KeyEventKind::Release {
             return TextAreaOutcome::Ignored;
         }
         if key.code == KeyCode::Esc {
@@ -339,15 +431,23 @@ impl TextAreaState {
         if !plain {
             return TextAreaOutcome::Ignored;
         }
+        // Intent peel for Home/End/Page/Esc already; Up/Down stay local line moves.
+        if key.modifiers.is_empty()
+            && matches!(
+                key.code,
+                KeyCode::Home | KeyCode::End | KeyCode::PageUp | KeyCode::PageDown
+            )
+        {
+            if let Some(intent) = crate::interaction::default_text_area_intent(key) {
+                let out = self.handle_intent(intent);
+                if !matches!(out, TextAreaOutcome::Ignored) {
+                    return out;
+                }
+            }
+        }
         let vertical_delta = match key.code {
             KeyCode::Up => Some(-1),
             KeyCode::Down => Some(1),
-            KeyCode::PageUp => {
-                Some(-isize::try_from(self.viewport_height.max(1)).unwrap_or(isize::MAX))
-            }
-            KeyCode::PageDown => {
-                Some(isize::try_from(self.viewport_height.max(1)).unwrap_or(isize::MAX))
-            }
             _ => None,
         };
         if let Some(delta) = vertical_delta {
@@ -371,6 +471,9 @@ impl TextAreaState {
             }
             return TextAreaOutcome::Ignored;
         }
+        if self.read_only {
+            return TextAreaOutcome::Ignored;
+        }
         let changed = match key.code {
             KeyCode::Enter => self.newline().is_some(),
             KeyCode::Backspace => self.backspace().is_some(),
@@ -390,7 +493,7 @@ impl TextAreaState {
     pub fn handle_event(&mut self, event: Event) -> TextAreaOutcome {
         match event {
             Event::Key(key) => self.handle_key(key),
-            Event::Paste(text) if self.focused => self.insert_text(&text),
+            Event::Paste(text) if self.accepts_input && !self.read_only => self.insert_text(&text),
             Event::Mouse(mouse)
                 if matches!(
                     mouse.kind,
@@ -404,14 +507,14 @@ impl TextAreaState {
                     TextAreaOutcome::Ignored
                 }
             }
-            Event::Mouse(mouse) if self.body.contains(mouse.position) => {
+            Event::Mouse(mouse) if self.accepts_input && self.body.contains(mouse.position) => {
                 let changed = match mouse.kind {
                     MouseEventKind::ScrollUp => self.scroll_by(0, -1),
                     MouseEventKind::ScrollDown => self.scroll_by(0, 1),
                     _ => false,
                 };
                 if changed {
-                    TextAreaOutcome::Changed
+                    TextAreaOutcome::Scrolled
                 } else {
                     TextAreaOutcome::Ignored
                 }
@@ -686,6 +789,8 @@ pub struct TextArea<'a> {
     system: &'a DesignSystem,
     title: Option<&'a str>,
     placeholder: Option<&'a str>,
+    ascii: bool,
+    colorless: bool,
 }
 
 impl<'a> TextArea<'a> {
@@ -696,6 +801,8 @@ impl<'a> TextArea<'a> {
             system,
             title: None,
             placeholder: None,
+            ascii: false,
+            colorless: false,
         }
     }
     /// Sets panel title.
@@ -710,13 +817,27 @@ impl<'a> TextArea<'a> {
         self.placeholder = Some(placeholder);
         self
     }
+
+    /// ASCII scrollbar / empty cues.
+    #[must_use]
+    pub const fn ascii(mut self, ascii: bool) -> Self {
+        self.ascii = ascii;
+        self
+    }
+
+    /// Reduced-color caret/chrome.
+    #[must_use]
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
 }
 
 impl StatefulWidget for &TextArea<'_> {
     type State = TextAreaState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         let tokens = self.system.clone();
-        let mut panel = Panel::new(&tokens).emphasis(if state.focused {
+        let mut panel = Panel::new(&tokens).emphasis(if state.accepts_input {
             PanelChrome::Focused
         } else {
             PanelChrome::Normal
@@ -776,7 +897,7 @@ impl StatefulWidget for &TextArea<'_> {
                 }),
             );
         }
-        if state.focused && state.cursor.line >= first && state.cursor.line < last {
+        if state.accepts_input && state.cursor.line >= first && state.cursor.line < last {
             let col = display_cols(&state.lines[state.cursor.line][..state.cursor.byte])
                 .saturating_sub(usize::from(state.scroll.scroll_x));
             let x = body
@@ -784,13 +905,19 @@ impl StatefulWidget for &TextArea<'_> {
                 .saturating_add(u16::try_from(col).unwrap_or(u16::MAX))
                 .min(body.right().saturating_sub(1));
             let y = body.y + u16::try_from(state.cursor.line - first).unwrap_or(u16::MAX);
-            buffer.set_style(Rect::new(x, y, 1, 1), self.system.style(Role::Focus));
+            let caret = if self.colorless {
+                self.system.style(Role::TextStrong)
+            } else {
+                self.system.style(Role::Focus)
+            };
+            buffer.set_style(Rect::new(x, y, 1, 1), caret);
         }
         if show_vertical && inner.width > 0 {
             let track = Rect::new(body.right(), inner.y, 1, body.height);
             state.vertical_scrollbar = Some(track);
             for y in track.top()..track.bottom() {
-                buffer.set_string(track.x, y, "░", self.system.style(Role::ScrollTrack));
+                let track_g = if self.ascii { "|" } else { "░" };
+                buffer.set_string(track.x, y, track_g, self.system.style(Role::ScrollTrack));
             }
             if let Some(thumb) = crate::scroll::full_cell_thumb(
                 state.lines.len(),
@@ -858,7 +985,7 @@ mod tests {
     #[test]
     fn normalized_editing_and_goal_column_contract() {
         let mut state = TextAreaState::new("ab🧪\r\nx\r12345");
-        state.set_focused(true);
+        state.set_accepts_input(true);
         assert_eq!(state.lines().collect::<Vec<_>>(), ["ab🧪", "x", "12345"]);
         assert!(state.set_cursor(TextCursor { line: 2, byte: 4 }));
         assert_eq!(
@@ -875,7 +1002,7 @@ mod tests {
     #[test]
     fn paste_split_join_and_invalid_cursor_are_safe() {
         let mut state = TextAreaState::new("e\u{301}x");
-        state.set_focused(true);
+        state.set_accepts_input(true);
         assert!(!state.set_cursor(TextCursor { line: 0, byte: 1 }));
         assert!(state.set_cursor(TextCursor { line: 0, byte: 3 }));
         assert_eq!(state.insert_text("A\r\nB\rC"), TextAreaOutcome::Changed);
@@ -1190,7 +1317,7 @@ mod tests {
         );
         for case in cases {
             let mut state = TextAreaState::new(case.text);
-            state.set_focused(true);
+            state.set_accepts_input(true);
             assert!(state.set_cursor(case.cursor), "{} cursor", case.name);
             let outcome = state.handle_key(KeyEvent::new(case.key, KeyModifiers::NONE));
             assert_eq!(
@@ -1211,7 +1338,7 @@ mod tests {
     #[test]
     fn multi_line_deltas_and_ranges_restore_without_document_snapshots() {
         let mut state = TextAreaState::new("alpha\nbeta\ngamma");
-        state.set_focused(true);
+        state.set_accepts_input(true);
         assert_eq!(
             state.extract_range(c(0, 2), c(2, 2)).as_deref(),
             Some("pha\nbeta\nga")
@@ -1252,7 +1379,7 @@ mod tests {
         let theme = RolePalette::default();
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut state = TextAreaState::new("wide content beyond viewport\none\ntwo\nthree\nfour");
-        state.set_focused(true);
+        state.set_accepts_input(true);
         assert!(state.set_cursor(c(0, 0)));
         let area = Rect::new(2, 3, 14, 6);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 12));
@@ -1286,9 +1413,29 @@ mod tests {
     }
 
     #[test]
+    fn accepts_input_gate_and_read_only() {
+        let mut state = TextAreaState::new("ab");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
+            TextAreaOutcome::Ignored
+        );
+        state.set_accepts_input(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        state.set_read_only(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE)),
+            TextAreaOutcome::Ignored
+        );
+        let _ = state.handle_key(KeyEvent::new(KeyCode::Left, KeyModifiers::NONE));
+    }
+
+    #[test]
     fn measurement_invalidates_only_on_edits_and_tiny_control_input_is_safe() {
         let mut state = TextAreaState::new("ab");
-        state.set_focused(true);
+        state.set_accepts_input(true);
         assert_eq!(state.max_width, 2);
         assert_eq!(state.insert_text("\u{7}東京"), TextAreaOutcome::Changed);
         assert_eq!(state.text(), "ab東京");

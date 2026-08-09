@@ -409,6 +409,7 @@ impl PromptComposerState {
     #[must_use]
     pub fn new() -> Self {
         let mut editor = TextAreaState::default();
+        editor.set_accepts_input(true);
         Self {
             editor,
             undo: Vec::new(),
@@ -462,6 +463,8 @@ impl PromptComposerState {
     /// Host input gate without clearing draft (permission/plan/palette takeover).
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
+        // Embedded editor must accept keys when the composer does (parent already gates).
+        self.editor.set_accepts_input(accepts);
     }
 
     /// Deprecated name for [`Self::accepts_input`].
@@ -1044,6 +1047,7 @@ impl PromptComposerState {
                 self.redo.clear();
                 self.after_edit()
             }
+            TextAreaOutcome::Scrolled => PromptComposerOutcome::Changed,
             TextAreaOutcome::Cancelled => PromptComposerOutcome::DismissRequest,
             TextAreaOutcome::Ignored => PromptComposerOutcome::Ignored,
         }
@@ -1331,7 +1335,7 @@ impl PromptComposerState {
         // Strip SHIFT so TextArea moves caret without treating as special.
         let bare = KeyEvent::new(key.code, KeyModifiers::NONE);
         match self.editor.handle_key(bare) {
-            TextAreaOutcome::Changed => {
+            TextAreaOutcome::Changed | TextAreaOutcome::Scrolled => {
                 if self.select_anchor == Some(self.editor.cursor()) {
                     self.select_anchor = None;
                 }

@@ -112,7 +112,7 @@ pub(crate) struct TextAreaInteractor {
 impl TextAreaInteractor {
     pub(crate) fn new() -> Self {
         let mut state = TextAreaState::new("First line\nSecond line");
-        state.set_focused(true);
+        state.set_accepts_input(true);
         Self {
             state,
             theme: RolePalette::default(),

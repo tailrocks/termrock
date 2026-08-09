@@ -2863,6 +2863,7 @@ pub fn termrock::interaction::default_menu_intent(termrock::input::KeyEvent) -> 
 pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_prompt_composer_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
+pub fn termrock::interaction::default_text_area_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_transcript_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::interaction::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
@@ -11911,6 +11912,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TagOutcome<Id>
 pub termrock::widgets::TextAreaOutcome::Cancelled
 pub termrock::widgets::TextAreaOutcome::Changed
 pub termrock::widgets::TextAreaOutcome::Ignored
+pub termrock::widgets::TextAreaOutcome::Scrolled
 impl core::clone::Clone for termrock::widgets::TextAreaOutcome
 pub fn termrock::widgets::TextAreaOutcome::clone(&self) -> termrock::widgets::TextAreaOutcome
 impl core::cmp::Eq for termrock::widgets::TextAreaOutcome
@@ -21545,6 +21547,8 @@ pub fn termrock::widgets::TaskRail<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TaskRail<'a, Id>
 pub struct termrock::widgets::TextArea<'a>
 impl<'a> termrock::widgets::TextArea<'a>
+pub const fn termrock::widgets::TextArea<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::TextArea<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::TextArea<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::TextArea<'a>::placeholder(self, &'a str) -> Self
 pub const fn termrock::widgets::TextArea<'a>::title(self, &'a str) -> Self
@@ -21592,21 +21596,26 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TextArea<'a>
 pub struct termrock::widgets::TextAreaState
 impl termrock::widgets::TextAreaState
 pub fn termrock::widgets::TextAreaState::absolute_byte(&self, termrock::widgets::TextCursor) -> core::option::Option<usize>
+pub const fn termrock::widgets::TextAreaState::accepts_input(&self) -> bool
 pub const fn termrock::widgets::TextAreaState::cursor(&self) -> termrock::widgets::TextCursor
 pub fn termrock::widgets::TextAreaState::cursor_at_byte(&self, usize) -> termrock::widgets::TextCursor
 pub fn termrock::widgets::TextAreaState::extract_between(&self, termrock::widgets::TextCursor, termrock::widgets::TextCursor) -> core::option::Option<alloc::string::String>
 pub fn termrock::widgets::TextAreaState::handle_event(&mut self, termrock::input::Event) -> termrock::widgets::TextAreaOutcome
+pub fn termrock::widgets::TextAreaState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::TextAreaOutcome
 pub fn termrock::widgets::TextAreaState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::TextAreaOutcome
 pub fn termrock::widgets::TextAreaState::insert_text(&mut self, &str) -> termrock::widgets::TextAreaOutcome
 pub const fn termrock::widgets::TextAreaState::is_focused(&self) -> bool
+pub const fn termrock::widgets::TextAreaState::is_read_only(&self) -> bool
 pub fn termrock::widgets::TextAreaState::lines(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &str>
 pub fn termrock::widgets::TextAreaState::new(impl core::convert::AsRef<str>) -> Self
 pub fn termrock::widgets::TextAreaState::replace_between(&mut self, termrock::widgets::TextCursor, termrock::widgets::TextCursor, &str) -> termrock::widgets::TextAreaOutcome
 pub const fn termrock::widgets::TextAreaState::scroll(&self) -> &termrock::scroll::DialogScroll
 pub fn termrock::widgets::TextAreaState::scroll_by(&mut self, isize, isize) -> bool
 pub fn termrock::widgets::TextAreaState::scroll_to(&mut self, ratatui_core::layout::position::Position) -> bool
+pub const fn termrock::widgets::TextAreaState::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::TextAreaState::set_cursor(&mut self, termrock::widgets::TextCursor) -> bool
 pub const fn termrock::widgets::TextAreaState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::TextAreaState::set_read_only(&mut self, bool)
 pub fn termrock::widgets::TextAreaState::set_text(&mut self, &str)
 pub fn termrock::widgets::TextAreaState::text(&self) -> alloc::string::String
 impl core::clone::Clone for termrock::widgets::TextAreaState

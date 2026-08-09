@@ -1,0 +1,75 @@
+---
+title: TextArea
+description: Multi-line grapheme-safe editor with host-owned accepts_input and two-axis scroll.
+---
+
+# TextArea
+
+**Purpose.** Multi-line editing with grapheme-safe cursor ops, normalized paste,
+and a two-axis viewport. Side effects (submit I/O) stay outside.
+
+## When to use / when not
+
+| Use TextArea | Prefer |
+|--------------|--------|
+| Multi-line notes, code snippets, forms | — |
+| Agent draft with queue/chips | [PromptComposer](/docs/handbook/prompt-composer) |
+| Single line | TextInput |
+
+## Focus law
+
+| Concern | Owner |
+|---------|--------|
+| Input gate | Host `set_accepts_input` |
+| Caret position | TextAreaState (local) |
+| Panel chrome | accepts_input → Focused border |
+| Read-only | `set_read_only` (scroll ok, no edit) |
+
+## Outcomes
+
+- `Ignored`
+- `Changed` — text or caret
+- `Scrolled` — viewport only (wheel)
+- `Cancelled` — Esc
+
+## Intents
+
+`default_text_area_intent` — Home/End, Page, Left/Right, Esc.
+Up/Down line motion and character insert stay on `handle_key`.
+
+## Non-color
+
+- Caret: Focus role or TextStrong when colorless
+- Scroll track: `░` / `|` (ascii)
+- Placeholder: muted text
+
+## Responsive
+
+| Height | Behavior |
+|--------|----------|
+| ≥ 3 | Comfortable body + scrollbars as needed |
+| 2 | Compact body |
+| Tiny width | Horizontal scroll; wrap not yet |
+
+## Example
+
+```rust
+use termrock::{
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    style::DesignSystem,
+    widgets::{TextArea, TextAreaOutcome, TextAreaState},
+};
+
+let system = DesignSystem::default();
+let mut state = TextAreaState::new("hello");
+state.set_accepts_input(true);
+assert!(matches!(
+    state.handle_key(KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE)),
+    TextAreaOutcome::Changed
+));
+let _ = TextArea::new(&system).title("Notes").placeholder("Type…");
+```
+
+## Related
+
+TextInput · PromptComposer · migration `0078` · design `text-area-accepts-input.md`

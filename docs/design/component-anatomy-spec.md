@@ -823,28 +823,27 @@ Every component below uses sections **1–24**:
 ## TextArea
 
 1. **Purpose:** Multi-line grapheme-safe editor.  
-2. **Anatomy:** `root` · `gutter?` · `lines` · `scrollbar` · `placeholder`  
-3. **Public properties:** text state, title, placeholder, wrap policy, `design`  
-4. **State:** buffer, cursor, scroll, selection (uncontrolled typical).  
-5. **Variants:** `default` · `code`  
-6. **Sizes/density:** min height Comfortable=3, Compact=2, Dashboard=2.  
-7. **Visual states:** focus, disabled, read-only, invalid.  
-8. **Interaction states:** editing · scrolling.  
-9. **Keyboard:** multiline edit; Esc cancel policy; optional submit chord.  
-10. **Mouse:** click cursor; wheel scroll; drag select.  
-11. **Focus:** caret; focus chrome.  
-12. **Disabled:** no edit.  
-13. **Loading:** N/A.  
-14. **Error:** invalid border + message.  
-15. **Narrow:** reflow wrap; hide gutter.  
-16. **Tiny:** min 2 rows if possible else single-line fallback guidance.  
+2. **Anatomy:** `root` · `lines` · `scrollbar` · `placeholder` · caret  
+3. **Public properties:** title, placeholder, ascii, colorless, `system`  
+4. **State:** buffer, caret, scroll, accepts_input, read_only.  
+5. **Variants:** default editor surface.  
+6. **Sizes/density:** min height 2–3 rows.  
+7. **Visual states:** accepts_input chrome, caret, empty placeholder.  
+8. **Interaction states:** editing · scrolling · read-only nav.  
+9. **Keyboard:** intents for Home/End/Page/Esc; Up/Down/chars on handle_key.  
+10. **Mouse:** wheel → Scrolled; scrollbar press/drag.  
+11. **Focus:** host accepts_input; caret local.  
+12. **Disabled/read-only:** no edit when read_only or !accepts_input.  
+13–14. Loading/Error: N/A (Form wraps invalid).  
+15. **Narrow:** horizontal scroll.  
+16. **Tiny:** min body.  
 17. **Unicode:** grapheme ops.  
-18. **Colorless:** underline invalid.  
-19. **Composition:** PromptComposer, Form long fields.  
-20. **Outcomes:** `Changed` · `Scrolled` · `Cancelled` · `Submit` (if enabled)  
-21. **Stories:** existing + `text-area/wrap`, `text-area/invalid`  
+18. **Colorless:** TextStrong caret; ASCII scroll `|`.  
+19. **Composition:** PromptComposer (propagates accepts_input), Form.  
+20. **Outcomes:** `Changed` · `Scrolled` · `Cancelled` · `Ignored`  
+21. **Stories:** `text-area/{basic,narrow,unicode,empty,scrolled}`  
 22. **Snapshots:** multi-line unicode.  
-23. **Interaction tests:** enter newline; scroll bounds; undo if exposed.  
+23. **Interaction tests:** accepts_input gate; read_only; grapheme edits.  
 24. **Perf:** O(visible lines); edit ops amortized O(line).
 
 ## Checkbox

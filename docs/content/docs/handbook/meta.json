@@ -10,6 +10,7 @@
     "prompt-composer",
     "permission-prompt",
     "agent-workbench",
+    "text-area",
     "transcript",
     "overlay-stack",
     "host-frame",
@@ -19,4 +20,4 @@
     "log-stream",
     "diff-review"
   ]
-}\n
+}
