@@ -1,0 +1,40 @@
+---
+title: RangeSlider
+description: 'Dual-thumb bounded range — filter windows, Tab between thumbs.'
+---
+
+## Previews
+
+### `range-slider/basic`
+
+![Basic](/component-previews/range-slider-basic.svg)
+
+### `range-slider/narrow`
+
+![Narrow](/component-previews/range-slider-narrow.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{RangeSlider, RangeSliderState, SliderBounds};
+
+let mut state = RangeSliderState::new(20.0, 80.0);
+state.set_focused(true);
+RangeSlider::new(SliderBounds::percent(), &system)
+    .label("Price")
+    .paint(area, buf, &mut state);
+// Tab → switch active thumb; arrows move that thumb
+```
+
+## Contract
+
+| Concern | Rule |
+|---------|------|
+| Thumbs | Start/End; Tab switches |
+| Clamp | Start ≤ End always |
+| Tiny | Numeric `lo–hi` face |
+| Outcomes | `ValueChanged { start, end }` · `ThumbChanged` |
+
+## Migration
+
+See `migrations/0136-v0.13.0-slider.md`.

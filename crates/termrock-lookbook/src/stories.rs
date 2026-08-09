@@ -21,8 +21,9 @@ use termrock::{
     widgets::{
         Action, ActionBar, ActionBarState, ActionLink, Anchor, AnsiParseOptions, AnsiText,
         ButtonGroup, ButtonGroupItem, ButtonGroupState,
-        SegmentedControl, SegmentedControlState, SegmentedItem, Toggle, ToggleGroup,
-        ToggleGroupItem, ToggleGroupState, ToggleState, ToggleValue,
+        RangeSlider, RangeSliderState, SegmentedControl, SegmentedControlState, SegmentedItem,
+        Slider, SliderBounds, SliderMark, SliderState, Toggle, ToggleGroup, ToggleGroupItem,
+        ToggleGroupState, ToggleState, ToggleValue,
         AnsiTextMode, AnsiTextState, AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS,
         Backdrop, Badge, Banner,
         BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
@@ -2376,6 +2377,51 @@ pub(crate) fn stories() -> Vec<Story> {
             checkbox_list_story,
         ),
         Story::new(
+            "slider/basic",
+            "Slider basic",
+            "Slider",
+            "Horizontal volume-style slider with value text.",
+            44,
+            3,
+            slider_basic_story,
+        ),
+        Story::new(
+            "slider/marks",
+            "Slider marks",
+            "Slider",
+            "Marks at 0/50/100 with labels.",
+            40,
+            4,
+            slider_marks_story,
+        ),
+        Story::new(
+            "slider/vertical",
+            "Slider vertical",
+            "Slider",
+            "Vertical orientation for side panels.",
+            8,
+            12,
+            slider_vertical_story,
+        ),
+        Story::new(
+            "slider/numeric",
+            "Slider numeric fallback",
+            "Slider",
+            "Tiny width falls back to numeric face.",
+            8,
+            2,
+            slider_numeric_story,
+        ),
+        Story::new(
+            "range-slider/basic",
+            "RangeSlider basic",
+            "RangeSlider",
+            "Dual-thumb filter range.",
+            44,
+            3,
+            range_slider_basic_story,
+        ),
+        Story::new(
             "segmented-control/basic",
             "SegmentedControl basic",
             "SegmentedControl",
@@ -3653,6 +3699,33 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             6,
             radio_group_unicode_story,
+        ),
+        Story::new(
+            "slider/narrow",
+            "Narrow Slider",
+            "Slider",
+            "Numeric fallback at narrow width.",
+            8,
+            2,
+            slider_numeric_story,
+        ),
+        Story::new(
+            "slider/unicode",
+            "Unicode Slider",
+            "Slider",
+            "CJK label with track.",
+            36,
+            3,
+            slider_unicode_story,
+        ),
+        Story::new(
+            "range-slider/narrow",
+            "Narrow RangeSlider",
+            "RangeSlider",
+            "Range numeric fallback.",
+            8,
+            2,
+            range_slider_narrow_story,
         ),
         Story::new(
             "segmented-control/narrow",
@@ -9733,6 +9806,67 @@ fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         frame.buffer_mut(),
         &mut sw,
     );
+}
+
+fn slider_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SliderState::new(62.0);
+    state.set_focused(true);
+    let _ = Slider::new(SliderBounds::percent(), system)
+        .label("Volume")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn slider_marks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let marks = [
+        SliderMark::labeled(0.0, "lo"),
+        SliderMark::labeled(50.0, "mid"),
+        SliderMark::labeled(100.0, "hi"),
+    ];
+    let mut state = SliderState::new(50.0);
+    state.set_focused(true);
+    let _ = Slider::new(SliderBounds::percent(), system)
+        .label("Gain")
+        .marks(&marks)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn slider_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SliderState::new(70.0);
+    state.set_focused(true);
+    let _ = Slider::new(SliderBounds::percent(), system)
+        .vertical()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn slider_numeric_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SliderState::new(42.0);
+    state.set_focused(true);
+    let _ = Slider::new(SliderBounds::percent(), system)
+        .label("n")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn slider_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SliderState::new(33.0);
+    state.set_focused(true);
+    let _ = Slider::new(SliderBounds::percent(), system)
+        .label("音量 ✨")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn range_slider_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = RangeSliderState::new(20.0, 80.0);
+    state.set_focused(true);
+    let _ = RangeSlider::new(SliderBounds::percent(), system)
+        .label("Price filter")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn range_slider_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = RangeSliderState::new(10.0, 90.0);
+    state.set_focused(true);
+    let _ = RangeSlider::new(SliderBounds::percent(), system)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn segmented_control_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

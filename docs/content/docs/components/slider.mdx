@@ -1,0 +1,61 @@
+---
+title: Slider
+description: 'Bounded numeric slider — step, marks, edit, ASCII handle, tiny fallback.'
+---
+
+## Previews
+
+### `slider/basic`
+
+![Basic](/component-previews/slider-basic.svg)
+
+### `slider/marks`
+
+![Marks](/component-previews/slider-marks.svg)
+
+### `slider/vertical`
+
+![Vertical](/component-previews/slider-vertical.svg)
+
+### `slider/numeric`
+
+![Numeric](/component-previews/slider-numeric.svg)
+
+### `slider/narrow`
+
+![Narrow](/component-previews/slider-narrow.svg)
+
+### `slider/unicode`
+
+![Unicode](/component-previews/slider-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{Slider, SliderState, SliderBounds, SliderMark};
+
+let mut state = SliderState::new(50.0);
+state.set_focused(true);
+Slider::new(SliderBounds::percent(), &system)
+    .label("Volume")
+    .marks(&[SliderMark::labeled(0.0, "lo"), SliderMark::new(100.0)])
+    .paint(area, buf, &mut state);
+```
+
+## Contract
+
+| Concern | Rule |
+|---------|------|
+| Keys | ←→ step · PgUp/PgDn page · Home/End · Enter/digits edit |
+| Pointer | Click/drag track · wheel step |
+| ASCII | `*` handle · `=` fill · `-` empty |
+| Tiny | Width &lt; 10 → numeric-only |
+| Precision | Pair value field when exactness matters |
+
+## Not for
+
+Read-only completion → **Progress**. Exact free entry without bounds → **TextInput**.
+
+## Migration
+
+See `migrations/0136-v0.13.0-slider.md`.

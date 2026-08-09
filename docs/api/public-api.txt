@@ -42,7 +42,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 6 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.14s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.16s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -20719,6 +20719,101 @@ pub unsafe fn termrock::widgets::RadioSelectionPolicy::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::RadioSelectionPolicy
 pub fn termrock::widgets::RadioSelectionPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RadioSelectionPolicy
+#[non_exhaustive] pub enum termrock::widgets::RangeSliderOutcome
+pub termrock::widgets::RangeSliderOutcome::Ignored
+pub termrock::widgets::RangeSliderOutcome::ThumbChanged
+pub termrock::widgets::RangeSliderOutcome::ThumbChanged::thumb: termrock::widgets::RangeThumb
+pub termrock::widgets::RangeSliderOutcome::ValueChanged
+pub termrock::widgets::RangeSliderOutcome::ValueChanged::end: f64
+pub termrock::widgets::RangeSliderOutcome::ValueChanged::start: f64
+impl core::clone::Clone for termrock::widgets::RangeSliderOutcome
+pub fn termrock::widgets::RangeSliderOutcome::clone(&self) -> termrock::widgets::RangeSliderOutcome
+impl core::cmp::PartialEq for termrock::widgets::RangeSliderOutcome
+pub fn termrock::widgets::RangeSliderOutcome::eq(&self, &termrock::widgets::RangeSliderOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::RangeSliderOutcome
+pub fn termrock::widgets::RangeSliderOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::RangeSliderOutcome
+impl core::marker::Freeze for termrock::widgets::RangeSliderOutcome
+impl core::marker::Send for termrock::widgets::RangeSliderOutcome
+impl core::marker::Sync for termrock::widgets::RangeSliderOutcome
+impl core::marker::Unpin for termrock::widgets::RangeSliderOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::RangeSliderOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RangeSliderOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::RangeSliderOutcome
+impl<T, U> core::convert::Into<U> for termrock::widgets::RangeSliderOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::RangeSliderOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RangeSliderOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::RangeSliderOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::RangeSliderOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RangeSliderOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RangeSliderOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RangeSliderOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RangeSliderOutcome where T: core::clone::Clone
+pub type termrock::widgets::RangeSliderOutcome::Owned = T
+pub fn termrock::widgets::RangeSliderOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::RangeSliderOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RangeSliderOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RangeSliderOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RangeSliderOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeSliderOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RangeSliderOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeSliderOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RangeSliderOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RangeSliderOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RangeSliderOutcome
+pub fn termrock::widgets::RangeSliderOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RangeSliderOutcome
+#[non_exhaustive] pub enum termrock::widgets::RangeThumb
+pub termrock::widgets::RangeThumb::End
+pub termrock::widgets::RangeThumb::Start
+impl termrock::widgets::RangeThumb
+pub const fn termrock::widgets::RangeThumb::id(self) -> &'static str
+pub const fn termrock::widgets::RangeThumb::other(self) -> Self
+impl core::clone::Clone for termrock::widgets::RangeThumb
+pub fn termrock::widgets::RangeThumb::clone(&self) -> termrock::widgets::RangeThumb
+impl core::cmp::Eq for termrock::widgets::RangeThumb
+impl core::cmp::PartialEq for termrock::widgets::RangeThumb
+pub fn termrock::widgets::RangeThumb::eq(&self, &termrock::widgets::RangeThumb) -> bool
+impl core::default::Default for termrock::widgets::RangeThumb
+pub fn termrock::widgets::RangeThumb::default() -> termrock::widgets::RangeThumb
+impl core::fmt::Debug for termrock::widgets::RangeThumb
+pub fn termrock::widgets::RangeThumb::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::RangeThumb
+pub fn termrock::widgets::RangeThumb::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::RangeThumb
+impl core::marker::StructuralPartialEq for termrock::widgets::RangeThumb
+impl core::marker::Freeze for termrock::widgets::RangeThumb
+impl core::marker::Send for termrock::widgets::RangeThumb
+impl core::marker::Sync for termrock::widgets::RangeThumb
+impl core::marker::Unpin for termrock::widgets::RangeThumb
+impl core::marker::UnsafeUnpin for termrock::widgets::RangeThumb
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RangeThumb
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::RangeThumb
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::RangeThumb where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::RangeThumb::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::RangeThumb where U: core::convert::From<T>
+pub fn termrock::widgets::RangeThumb::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RangeThumb where U: core::convert::Into<T>
+pub type termrock::widgets::RangeThumb::Error = core::convert::Infallible
+pub fn termrock::widgets::RangeThumb::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RangeThumb where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RangeThumb::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RangeThumb::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RangeThumb where T: core::clone::Clone
+pub type termrock::widgets::RangeThumb::Owned = T
+pub fn termrock::widgets::RangeThumb::clone_into(&self, &mut T)
+pub fn termrock::widgets::RangeThumb::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RangeThumb where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RangeThumb::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RangeThumb where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeThumb::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RangeThumb where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeThumb::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RangeThumb where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RangeThumb::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RangeThumb
+pub fn termrock::widgets::RangeThumb::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RangeThumb
 #[non_exhaustive] pub enum termrock::widgets::ResizablePanelOutcome
 pub termrock::widgets::ResizablePanelOutcome::Collapsed
 pub termrock::widgets::ResizablePanelOutcome::Collapsed::id: termrock::widgets::PanelId
@@ -21750,6 +21845,101 @@ pub unsafe fn termrock::widgets::SidebarOutcome<Id>::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::SidebarOutcome<Id>
 pub fn termrock::widgets::SidebarOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SidebarOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::SliderOrientation
+pub termrock::widgets::SliderOrientation::Horizontal
+pub termrock::widgets::SliderOrientation::Vertical
+impl termrock::widgets::SliderOrientation
+pub const fn termrock::widgets::SliderOrientation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SliderOrientation
+pub fn termrock::widgets::SliderOrientation::clone(&self) -> termrock::widgets::SliderOrientation
+impl core::cmp::Eq for termrock::widgets::SliderOrientation
+impl core::cmp::PartialEq for termrock::widgets::SliderOrientation
+pub fn termrock::widgets::SliderOrientation::eq(&self, &termrock::widgets::SliderOrientation) -> bool
+impl core::default::Default for termrock::widgets::SliderOrientation
+pub fn termrock::widgets::SliderOrientation::default() -> termrock::widgets::SliderOrientation
+impl core::fmt::Debug for termrock::widgets::SliderOrientation
+pub fn termrock::widgets::SliderOrientation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SliderOrientation
+pub fn termrock::widgets::SliderOrientation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SliderOrientation
+impl core::marker::StructuralPartialEq for termrock::widgets::SliderOrientation
+impl core::marker::Freeze for termrock::widgets::SliderOrientation
+impl core::marker::Send for termrock::widgets::SliderOrientation
+impl core::marker::Sync for termrock::widgets::SliderOrientation
+impl core::marker::Unpin for termrock::widgets::SliderOrientation
+impl core::marker::UnsafeUnpin for termrock::widgets::SliderOrientation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SliderOrientation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SliderOrientation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SliderOrientation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SliderOrientation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SliderOrientation where U: core::convert::From<T>
+pub fn termrock::widgets::SliderOrientation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SliderOrientation where U: core::convert::Into<T>
+pub type termrock::widgets::SliderOrientation::Error = core::convert::Infallible
+pub fn termrock::widgets::SliderOrientation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SliderOrientation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SliderOrientation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SliderOrientation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SliderOrientation where T: core::clone::Clone
+pub type termrock::widgets::SliderOrientation::Owned = T
+pub fn termrock::widgets::SliderOrientation::clone_into(&self, &mut T)
+pub fn termrock::widgets::SliderOrientation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SliderOrientation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SliderOrientation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SliderOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderOrientation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SliderOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderOrientation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SliderOrientation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SliderOrientation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SliderOrientation
+pub fn termrock::widgets::SliderOrientation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SliderOrientation
+#[non_exhaustive] pub enum termrock::widgets::SliderOutcome
+pub termrock::widgets::SliderOutcome::EditCancelled
+pub termrock::widgets::SliderOutcome::EditCommitted
+pub termrock::widgets::SliderOutcome::EditCommitted::value: f64
+pub termrock::widgets::SliderOutcome::EditStarted
+pub termrock::widgets::SliderOutcome::Ignored
+pub termrock::widgets::SliderOutcome::ValueChanged
+pub termrock::widgets::SliderOutcome::ValueChanged::value: f64
+impl core::clone::Clone for termrock::widgets::SliderOutcome
+pub fn termrock::widgets::SliderOutcome::clone(&self) -> termrock::widgets::SliderOutcome
+impl core::cmp::PartialEq for termrock::widgets::SliderOutcome
+pub fn termrock::widgets::SliderOutcome::eq(&self, &termrock::widgets::SliderOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::SliderOutcome
+pub fn termrock::widgets::SliderOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SliderOutcome
+impl core::marker::Freeze for termrock::widgets::SliderOutcome
+impl core::marker::Send for termrock::widgets::SliderOutcome
+impl core::marker::Sync for termrock::widgets::SliderOutcome
+impl core::marker::Unpin for termrock::widgets::SliderOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::SliderOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SliderOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SliderOutcome
+impl<T, U> core::convert::Into<U> for termrock::widgets::SliderOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::SliderOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SliderOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::SliderOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::SliderOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SliderOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SliderOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SliderOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SliderOutcome where T: core::clone::Clone
+pub type termrock::widgets::SliderOutcome::Owned = T
+pub fn termrock::widgets::SliderOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::SliderOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SliderOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SliderOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SliderOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SliderOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SliderOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SliderOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SliderOutcome
+pub fn termrock::widgets::SliderOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SliderOutcome
 pub enum termrock::widgets::SortDirection
 pub termrock::widgets::SortDirection::Ascending
 pub termrock::widgets::SortDirection::Descending
@@ -35181,6 +35371,154 @@ pub unsafe fn termrock::widgets::RadioState<Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::RadioState<Id>
 pub fn termrock::widgets::RadioState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RadioState<Id>
+pub struct termrock::widgets::RangeSlider<'a>
+impl<'a> termrock::widgets::RangeSlider<'a>
+pub const fn termrock::widgets::RangeSlider<'a>::colorless(self, bool) -> Self
+pub fn termrock::widgets::RangeSlider<'a>::handle_key(&self, &mut termrock::widgets::RangeSliderState, termrock::input::KeyEvent) -> termrock::widgets::RangeSliderOutcome
+pub fn termrock::widgets::RangeSlider<'a>::handle_key_result(&self, &mut termrock::widgets::RangeSliderState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::RangeSliderOutcome>
+pub fn termrock::widgets::RangeSlider<'a>::handle_mouse(&self, &mut termrock::widgets::RangeSliderState, termrock::input::MouseEvent) -> termrock::widgets::RangeSliderOutcome
+pub const fn termrock::widgets::RangeSlider<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::RangeSlider<'a>::marks(self, &'a [termrock::widgets::SliderMark<'a>]) -> Self
+pub const fn termrock::widgets::RangeSlider<'a>::new(termrock::widgets::SliderBounds, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::RangeSlider<'a>::page_step(self, f64) -> Self
+pub fn termrock::widgets::RangeSlider<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::RangeSliderState) -> termrock::widgets::RangeSliderParts
+pub fn termrock::widgets::RangeSlider<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::RangeSliderState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::RangeSlider<'a>::show_value(self, bool) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::RangeSlider<'_>
+pub fn &termrock::widgets::RangeSlider<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::RangeSlider<'a>
+pub fn termrock::widgets::RangeSlider<'a>::clone(&self) -> termrock::widgets::RangeSlider<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::RangeSlider<'a>
+pub fn termrock::widgets::RangeSlider<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::RangeSlider<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::RangeSlider<'a>
+impl<'a> core::marker::Send for termrock::widgets::RangeSlider<'a>
+impl<'a> core::marker::Sync for termrock::widgets::RangeSlider<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::RangeSlider<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::RangeSlider<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RangeSlider<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::RangeSlider<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::RangeSlider<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::RangeSlider<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RangeSlider<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::RangeSlider<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::RangeSlider<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RangeSlider<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RangeSlider<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RangeSlider<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RangeSlider<'a> where T: core::clone::Clone
+pub type termrock::widgets::RangeSlider<'a>::Owned = T
+pub fn termrock::widgets::RangeSlider<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::RangeSlider<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RangeSlider<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RangeSlider<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RangeSlider<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeSlider<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RangeSlider<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeSlider<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RangeSlider<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RangeSlider<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RangeSlider<'a>
+pub fn termrock::widgets::RangeSlider<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RangeSlider<'a>
+pub struct termrock::widgets::RangeSliderParts
+pub termrock::widgets::RangeSliderParts::end_handle: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::RangeSliderParts::numeric_only: bool
+pub termrock::widgets::RangeSliderParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::RangeSliderParts::start_handle: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::RangeSliderParts::track: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::RangeSliderParts::value_area: core::option::Option<ratatui_core::layout::rect::Rect>
+impl core::clone::Clone for termrock::widgets::RangeSliderParts
+pub fn termrock::widgets::RangeSliderParts::clone(&self) -> termrock::widgets::RangeSliderParts
+impl core::cmp::PartialEq for termrock::widgets::RangeSliderParts
+pub fn termrock::widgets::RangeSliderParts::eq(&self, &termrock::widgets::RangeSliderParts) -> bool
+impl core::fmt::Debug for termrock::widgets::RangeSliderParts
+pub fn termrock::widgets::RangeSliderParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::RangeSliderParts
+impl core::marker::Freeze for termrock::widgets::RangeSliderParts
+impl core::marker::Send for termrock::widgets::RangeSliderParts
+impl core::marker::Sync for termrock::widgets::RangeSliderParts
+impl core::marker::Unpin for termrock::widgets::RangeSliderParts
+impl core::marker::UnsafeUnpin for termrock::widgets::RangeSliderParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RangeSliderParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::RangeSliderParts
+impl<T, U> core::convert::Into<U> for termrock::widgets::RangeSliderParts where U: core::convert::From<T>
+pub fn termrock::widgets::RangeSliderParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RangeSliderParts where U: core::convert::Into<T>
+pub type termrock::widgets::RangeSliderParts::Error = core::convert::Infallible
+pub fn termrock::widgets::RangeSliderParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RangeSliderParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RangeSliderParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RangeSliderParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RangeSliderParts where T: core::clone::Clone
+pub type termrock::widgets::RangeSliderParts::Owned = T
+pub fn termrock::widgets::RangeSliderParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::RangeSliderParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RangeSliderParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RangeSliderParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RangeSliderParts where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeSliderParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RangeSliderParts where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeSliderParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RangeSliderParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RangeSliderParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RangeSliderParts
+pub fn termrock::widgets::RangeSliderParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RangeSliderParts
+pub struct termrock::widgets::RangeSliderState
+pub termrock::widgets::RangeSliderState::active_thumb: termrock::widgets::RangeThumb
+pub termrock::widgets::RangeSliderState::dragging: bool
+pub termrock::widgets::RangeSliderState::enabled: bool
+pub termrock::widgets::RangeSliderState::end: f64
+pub termrock::widgets::RangeSliderState::focused: bool
+pub termrock::widgets::RangeSliderState::hovered: bool
+pub termrock::widgets::RangeSliderState::parts: core::option::Option<termrock::widgets::RangeSliderParts>
+pub termrock::widgets::RangeSliderState::read_only: bool
+pub termrock::widgets::RangeSliderState::start: f64
+impl termrock::widgets::RangeSliderState
+pub const fn termrock::widgets::RangeSliderState::can_edit(&self) -> bool
+pub fn termrock::widgets::RangeSliderState::new(f64, f64) -> Self
+pub const fn termrock::widgets::RangeSliderState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::RangeSliderState::set_focused(&mut self, bool)
+pub fn termrock::widgets::RangeSliderState::set_range(&mut self, f64, f64)
+pub fn termrock::widgets::RangeSliderState::set_read_only(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::RangeSliderState
+pub fn termrock::widgets::RangeSliderState::clone(&self) -> termrock::widgets::RangeSliderState
+impl core::cmp::PartialEq for termrock::widgets::RangeSliderState
+pub fn termrock::widgets::RangeSliderState::eq(&self, &termrock::widgets::RangeSliderState) -> bool
+impl core::fmt::Debug for termrock::widgets::RangeSliderState
+pub fn termrock::widgets::RangeSliderState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::RangeSliderState
+impl core::marker::Freeze for termrock::widgets::RangeSliderState
+impl core::marker::Send for termrock::widgets::RangeSliderState
+impl core::marker::Sync for termrock::widgets::RangeSliderState
+impl core::marker::Unpin for termrock::widgets::RangeSliderState
+impl core::marker::UnsafeUnpin for termrock::widgets::RangeSliderState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RangeSliderState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::RangeSliderState
+impl<T, U> core::convert::Into<U> for termrock::widgets::RangeSliderState where U: core::convert::From<T>
+pub fn termrock::widgets::RangeSliderState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RangeSliderState where U: core::convert::Into<T>
+pub type termrock::widgets::RangeSliderState::Error = core::convert::Infallible
+pub fn termrock::widgets::RangeSliderState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RangeSliderState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RangeSliderState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RangeSliderState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RangeSliderState where T: core::clone::Clone
+pub type termrock::widgets::RangeSliderState::Owned = T
+pub fn termrock::widgets::RangeSliderState::clone_into(&self, &mut T)
+pub fn termrock::widgets::RangeSliderState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RangeSliderState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RangeSliderState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RangeSliderState where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeSliderState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RangeSliderState where T: ?core::marker::Sized
+pub fn termrock::widgets::RangeSliderState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RangeSliderState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RangeSliderState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RangeSliderState
+pub fn termrock::widgets::RangeSliderState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RangeSliderState
 pub struct termrock::widgets::ResizablePanelGroup<'a>
 impl<'a> termrock::widgets::ResizablePanelGroup<'a>
 pub fn termrock::widgets::ResizablePanelGroup<'a>::apply_preset(&self, &mut termrock::widgets::ResizablePanelGroupState, &str, ratatui_core::layout::rect::Rect) -> termrock::widgets::ResizablePanelOutcome
@@ -36726,6 +37064,252 @@ pub unsafe fn termrock::widgets::Skeleton<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Skeleton<'a>
 pub fn termrock::widgets::Skeleton<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Skeleton<'a>
+pub struct termrock::widgets::Slider<'a>
+impl<'a> termrock::widgets::Slider<'a>
+pub const fn termrock::widgets::Slider<'a>::colorless(self, bool) -> Self
+pub fn termrock::widgets::Slider<'a>::handle_key(&self, &mut termrock::widgets::SliderState, termrock::input::KeyEvent) -> termrock::widgets::SliderOutcome
+pub fn termrock::widgets::Slider<'a>::handle_key_result(&self, &mut termrock::widgets::SliderState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::SliderOutcome>
+pub fn termrock::widgets::Slider<'a>::handle_mouse(&self, &mut termrock::widgets::SliderState, termrock::input::MouseEvent) -> termrock::widgets::SliderOutcome
+pub const fn termrock::widgets::Slider<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::Slider<'a>::marks(self, &'a [termrock::widgets::SliderMark<'a>]) -> Self
+pub const fn termrock::widgets::Slider<'a>::new(termrock::widgets::SliderBounds, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Slider<'a>::orientation(self, termrock::widgets::SliderOrientation) -> Self
+pub const fn termrock::widgets::Slider<'a>::page_step(self, f64) -> Self
+pub fn termrock::widgets::Slider<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SliderState) -> termrock::widgets::SliderParts
+pub fn termrock::widgets::Slider<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::SliderState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::Slider<'a>::show_value(self, bool) -> Self
+pub const fn termrock::widgets::Slider<'a>::vertical(self) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Slider<'_>
+pub fn &termrock::widgets::Slider<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::Slider<'a>
+pub fn termrock::widgets::Slider<'a>::clone(&self) -> termrock::widgets::Slider<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Slider<'a>
+pub fn termrock::widgets::Slider<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::Slider<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::Slider<'a>
+impl<'a> core::marker::Send for termrock::widgets::Slider<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Slider<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Slider<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Slider<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Slider<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Slider<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Slider<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Slider<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Slider<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Slider<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Slider<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Slider<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Slider<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Slider<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Slider<'a> where T: core::clone::Clone
+pub type termrock::widgets::Slider<'a>::Owned = T
+pub fn termrock::widgets::Slider<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Slider<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Slider<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Slider<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Slider<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Slider<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Slider<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Slider<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Slider<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Slider<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Slider<'a>
+pub fn termrock::widgets::Slider<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Slider<'a>
+pub struct termrock::widgets::SliderBounds
+pub termrock::widgets::SliderBounds::max: f64
+pub termrock::widgets::SliderBounds::min: f64
+pub termrock::widgets::SliderBounds::step: f64
+impl termrock::widgets::SliderBounds
+pub fn termrock::widgets::SliderBounds::fraction(self, f64) -> f64
+pub fn termrock::widgets::SliderBounds::from_fraction(self, f64) -> f64
+pub fn termrock::widgets::SliderBounds::new(f64, f64, f64) -> Self
+pub fn termrock::widgets::SliderBounds::page_step(self) -> f64
+pub const fn termrock::widgets::SliderBounds::percent() -> Self
+pub fn termrock::widgets::SliderBounds::snap(self, f64) -> f64
+pub fn termrock::widgets::SliderBounds::span(self) -> f64
+impl core::clone::Clone for termrock::widgets::SliderBounds
+pub fn termrock::widgets::SliderBounds::clone(&self) -> termrock::widgets::SliderBounds
+impl core::cmp::PartialEq for termrock::widgets::SliderBounds
+pub fn termrock::widgets::SliderBounds::eq(&self, &termrock::widgets::SliderBounds) -> bool
+impl core::fmt::Debug for termrock::widgets::SliderBounds
+pub fn termrock::widgets::SliderBounds::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::SliderBounds
+impl core::marker::StructuralPartialEq for termrock::widgets::SliderBounds
+impl core::marker::Freeze for termrock::widgets::SliderBounds
+impl core::marker::Send for termrock::widgets::SliderBounds
+impl core::marker::Sync for termrock::widgets::SliderBounds
+impl core::marker::Unpin for termrock::widgets::SliderBounds
+impl core::marker::UnsafeUnpin for termrock::widgets::SliderBounds
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SliderBounds
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SliderBounds
+impl<T, U> core::convert::Into<U> for termrock::widgets::SliderBounds where U: core::convert::From<T>
+pub fn termrock::widgets::SliderBounds::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SliderBounds where U: core::convert::Into<T>
+pub type termrock::widgets::SliderBounds::Error = core::convert::Infallible
+pub fn termrock::widgets::SliderBounds::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SliderBounds where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SliderBounds::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SliderBounds::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SliderBounds where T: core::clone::Clone
+pub type termrock::widgets::SliderBounds::Owned = T
+pub fn termrock::widgets::SliderBounds::clone_into(&self, &mut T)
+pub fn termrock::widgets::SliderBounds::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SliderBounds where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SliderBounds::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SliderBounds where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderBounds::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SliderBounds where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderBounds::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SliderBounds where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SliderBounds::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SliderBounds
+pub fn termrock::widgets::SliderBounds::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SliderBounds
+pub struct termrock::widgets::SliderMark<'a>
+pub termrock::widgets::SliderMark::label: core::option::Option<&'a str>
+pub termrock::widgets::SliderMark::value: f64
+impl<'a> termrock::widgets::SliderMark<'a>
+pub const fn termrock::widgets::SliderMark<'a>::labeled(f64, &'a str) -> Self
+pub const fn termrock::widgets::SliderMark<'a>::new(f64) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::SliderMark<'a>
+pub fn termrock::widgets::SliderMark<'a>::clone(&self) -> termrock::widgets::SliderMark<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::SliderMark<'a>
+pub fn termrock::widgets::SliderMark<'a>::eq(&self, &termrock::widgets::SliderMark<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::SliderMark<'a>
+pub fn termrock::widgets::SliderMark<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::SliderMark<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::SliderMark<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::SliderMark<'a>
+impl<'a> core::marker::Send for termrock::widgets::SliderMark<'a>
+impl<'a> core::marker::Sync for termrock::widgets::SliderMark<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::SliderMark<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::SliderMark<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SliderMark<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SliderMark<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::SliderMark<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::SliderMark<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SliderMark<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::SliderMark<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::SliderMark<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SliderMark<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SliderMark<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SliderMark<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SliderMark<'a> where T: core::clone::Clone
+pub type termrock::widgets::SliderMark<'a>::Owned = T
+pub fn termrock::widgets::SliderMark<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SliderMark<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SliderMark<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SliderMark<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SliderMark<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderMark<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SliderMark<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderMark<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SliderMark<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SliderMark<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SliderMark<'a>
+pub fn termrock::widgets::SliderMark<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SliderMark<'a>
+pub struct termrock::widgets::SliderParts
+pub termrock::widgets::SliderParts::handle: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SliderParts::label_area: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SliderParts::numeric_only: bool
+pub termrock::widgets::SliderParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SliderParts::track: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SliderParts::value_area: core::option::Option<ratatui_core::layout::rect::Rect>
+impl core::clone::Clone for termrock::widgets::SliderParts
+pub fn termrock::widgets::SliderParts::clone(&self) -> termrock::widgets::SliderParts
+impl core::cmp::PartialEq for termrock::widgets::SliderParts
+pub fn termrock::widgets::SliderParts::eq(&self, &termrock::widgets::SliderParts) -> bool
+impl core::fmt::Debug for termrock::widgets::SliderParts
+pub fn termrock::widgets::SliderParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SliderParts
+impl core::marker::Freeze for termrock::widgets::SliderParts
+impl core::marker::Send for termrock::widgets::SliderParts
+impl core::marker::Sync for termrock::widgets::SliderParts
+impl core::marker::Unpin for termrock::widgets::SliderParts
+impl core::marker::UnsafeUnpin for termrock::widgets::SliderParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SliderParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SliderParts
+impl<T, U> core::convert::Into<U> for termrock::widgets::SliderParts where U: core::convert::From<T>
+pub fn termrock::widgets::SliderParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SliderParts where U: core::convert::Into<T>
+pub type termrock::widgets::SliderParts::Error = core::convert::Infallible
+pub fn termrock::widgets::SliderParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SliderParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SliderParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SliderParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SliderParts where T: core::clone::Clone
+pub type termrock::widgets::SliderParts::Owned = T
+pub fn termrock::widgets::SliderParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::SliderParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SliderParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SliderParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SliderParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SliderParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SliderParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SliderParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SliderParts
+pub fn termrock::widgets::SliderParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SliderParts
+pub struct termrock::widgets::SliderState
+pub termrock::widgets::SliderState::dragging: bool
+pub termrock::widgets::SliderState::edit_buffer: alloc::string::String
+pub termrock::widgets::SliderState::editing: bool
+pub termrock::widgets::SliderState::enabled: bool
+pub termrock::widgets::SliderState::focused: bool
+pub termrock::widgets::SliderState::hovered: bool
+pub termrock::widgets::SliderState::parts: core::option::Option<termrock::widgets::SliderParts>
+pub termrock::widgets::SliderState::read_only: bool
+pub termrock::widgets::SliderState::value: f64
+impl termrock::widgets::SliderState
+pub const fn termrock::widgets::SliderState::can_edit(&self) -> bool
+pub fn termrock::widgets::SliderState::new(f64) -> Self
+pub const fn termrock::widgets::SliderState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::SliderState::set_focused(&mut self, bool)
+pub fn termrock::widgets::SliderState::set_read_only(&mut self, bool)
+pub const fn termrock::widgets::SliderState::set_value(&mut self, f64)
+impl core::clone::Clone for termrock::widgets::SliderState
+pub fn termrock::widgets::SliderState::clone(&self) -> termrock::widgets::SliderState
+impl core::cmp::PartialEq for termrock::widgets::SliderState
+pub fn termrock::widgets::SliderState::eq(&self, &termrock::widgets::SliderState) -> bool
+impl core::default::Default for termrock::widgets::SliderState
+pub fn termrock::widgets::SliderState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::SliderState
+pub fn termrock::widgets::SliderState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SliderState
+impl core::marker::Freeze for termrock::widgets::SliderState
+impl core::marker::Send for termrock::widgets::SliderState
+impl core::marker::Sync for termrock::widgets::SliderState
+impl core::marker::Unpin for termrock::widgets::SliderState
+impl core::marker::UnsafeUnpin for termrock::widgets::SliderState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SliderState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SliderState
+impl<T, U> core::convert::Into<U> for termrock::widgets::SliderState where U: core::convert::From<T>
+pub fn termrock::widgets::SliderState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SliderState where U: core::convert::Into<T>
+pub type termrock::widgets::SliderState::Error = core::convert::Infallible
+pub fn termrock::widgets::SliderState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SliderState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SliderState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SliderState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SliderState where T: core::clone::Clone
+pub type termrock::widgets::SliderState::Owned = T
+pub fn termrock::widgets::SliderState::clone_into(&self, &mut T)
+pub fn termrock::widgets::SliderState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SliderState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SliderState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SliderState where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SliderState where T: ?core::marker::Sized
+pub fn termrock::widgets::SliderState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SliderState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SliderState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SliderState
+pub fn termrock::widgets::SliderState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SliderState
 pub struct termrock::widgets::SortSpec<ColId>
 pub termrock::widgets::SortSpec::ascending: bool
 pub termrock::widgets::SortSpec::column: ColId
@@ -41260,6 +41844,8 @@ pub const termrock::widgets::PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::POPOVER_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
+pub const termrock::widgets::SLIDER_MIN_TRACK: u16
+pub const termrock::widgets::SLIDER_NUMERIC_FALLBACK_WIDTH: u16
 pub const termrock::widgets::TAB_GAP: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str
 pub trait termrock::widgets::SyntaxHighlighter

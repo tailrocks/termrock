@@ -10,6 +10,7 @@ pub use crate::interaction::Outcome;
 mod action_bar;
 mod button_group;
 mod segmented_control;
+mod slider;
 mod toggle;
 mod agent;
 mod agent_blocks;
@@ -254,6 +255,11 @@ pub use toolbar::{
     ToolbarState, ToolbarVariant,
 };
 pub use progress::{Progress, ProgressKind};
+pub use slider::{
+    RangeSlider, RangeSliderOutcome, RangeSliderParts, RangeSliderState, RangeThumb, Slider,
+    SliderBounds, SliderMark, SliderOrientation, SliderOutcome, SliderParts, SliderState,
+    SLIDER_MIN_TRACK, SLIDER_NUMERIC_FALLBACK_WIDTH,
+};
 pub use prompt_composer::{
     ChipKind, CompletionKind, CompletionQuery, ComposerChip, ComposerConnection,
     ComposerPresentation, ContextEstimate, LARGE_PASTE_THRESHOLD, ModeIndicator, ModelIndicator,
