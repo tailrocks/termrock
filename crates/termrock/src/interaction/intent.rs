@@ -139,6 +139,45 @@ pub fn default_transcript_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for [`crate::widgets::DataTable`] navigation.
+///
+/// Product chords (sort `s`, filter `/`, expand Shift+arrow, copy, edit) stay on
+/// [`DataTableState::handle_key`].
+#[must_use]
+pub fn default_data_table_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let is_press = key.kind == KeyEventKind::Press;
+    // Ctrl+Home / Ctrl+End handled as page extremes via intent + host, or product path.
+    if key.modifiers.contains(KeyModifiers::CONTROL)
+        && matches!(key.code, KeyCode::Home | KeyCode::End)
+    {
+        return match key.code {
+            KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
+            KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+            _ => None,
+        };
+    }
+    if !key.modifiers.is_empty()
+        && !matches!(key.code, KeyCode::Char(_))
+        && key.modifiers != KeyModifiers::SHIFT
+    {
+        return None;
+    }
+    match key.code {
+        KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Char(' ') if is_press => Some(UiIntent::Toggle),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::Form`] (activate + page scroll only).
 ///
 /// **Field cycle (Tab / Up / Down) is host / scene owned** — not mapped here.

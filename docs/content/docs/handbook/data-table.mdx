@@ -1,32 +1,26 @@
 ---
 title: DataTable
-description: Large, virtualized tabular data for DB and ops tools — project only the visible window.
+description: Virtualized tabular data for DB tools and ops — project only the visible window.
 ---
 
 # DataTable
 
-**Purpose.** Show relational or operational tables at interactive scale: sticky
-headers, sort/filter hooks, selection, and **viewport-only** paint even when the
-logical dataset has millions of rows.
+**Purpose.** Show multi-column data at scale without allocating or painting the
+entire universe. TermRock owns chrome (header, selection, load states); you own
+query, sort, filter, and `project(start..end)`.
 
-**Status.** Full `DataTable` widget is rolling out. **Today** ship with:
-
-- `Table` / `TableState` for interactive borrowed grids  
-- `termrock::widgets::{VirtualWindow, ColumnModel, SelectionModel, LoadState, DataDensity}`  
-  for large-data kits (`data_view`)
-
-Handbook contracts describe the **target** DataTable; examples compile against
-public kits + `Table`.
+Today’s handbook covers **`DataTable` + `data_view` kits** and the mature
+`Table` widget. Prefer `VirtualWindow` for 10k–1M logical rows.
 
 ## When to use / when not
 
 | Use DataTable / Table | Prefer |
 |----------------------|--------|
-| Columns, sort, cell data | — |
-| 10k–1M logical rows | VirtualWindow projection |
-| Hierarchical ops objects | TreeTable (planned) / Tree |
-| Simple nav rows | [List](/docs/handbook/list) |
-| Key/value inspector | DetailTable / ObjectInspector |
+| Relational grids, query results | — |
+| Sort/filter chrome outcomes | Consumer executes sort |
+| Simple vertical navigation | [List](/docs/handbook/list) |
+| Hierarchy | Tree / TreeTable |
+| Key/value object detail | DetailTable / ObjectInspector |
 
 ## Installation
 
@@ -34,33 +28,30 @@ public kits + `Table`.
 termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
 ```
 
-```bash
-# future
-# termrock add termrock/data-table
-```
+Design: `docs/design/data-presentation.md`.
 
 ## Source files
 
 | Unit | Path |
 |------|------|
-| Table | `termrock::widgets::{Table, TableRow, Column, TableState, …}` |
-| Kits | `VirtualWindow`, `ColumnModel`, `SelectionModel`, `LoadState`, `data_view_bench` |
-| Design | `docs/design/data-presentation.md` |
+| DataTable | `termrock::widgets::{DataTable, DataTableState, DataTableOutcome}` |
+| Kits | `termrock::widgets::{VirtualWindow, ColumnModel, LoadState, …}` |
+| Table | `termrock::widgets::{Table, TableRow, TableState, Column}` |
 
-## Basic example (virtual window)
+## Basic example
 
 ```rust
 use termrock::widgets::{VirtualWindow, data_view_bench};
 
-// Logical universe can be huge; paint cost must stay O(viewport).
-let mut rows = VirtualWindow::new(data_view_bench::ROWS_1M, 40);
-let (start, end) = rows.visible_range();
+// Logical 1M rows — never allocate 1M cells in TermRock.
+let mut window = VirtualWindow::new(data_view_bench::ROWS_1M, 40);
+let (start, end) = window.visible_range();
 assert!(end - start <= 40);
-// Consumer: project only [start, end) from DB / index.
-let _ = start;
+// consumer: project only [start, end)
+let _ = window.scroll_by(100);
 ```
 
-## Interactive example (Table selection)
+## Interactive example
 
 ```rust
 use ratatui_core::text::Line;
@@ -75,7 +66,7 @@ let columns = [Column::new("name", Line::from("Name"), ColumnWidth::Min(12))];
 let cells = [Line::from("alpha")];
 let rows = [TableRow::new("r1", &cells)];
 let table = Table::new(&columns, &rows, &tokens);
-let mut state = TableState::new(Some("r1"));
+let mut state: TableState<&str, &str> = TableState::new(Some("r1"));
 let _ = (
     table,
     state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
@@ -85,92 +76,128 @@ let _ = (
 
 ## Anatomy
 
-Sticky **header** · optional pin strips · **body viewport** · scrollbar · footer
-(count/load) · expandable detail (planned)
+`toolbar?` · **sticky header** · body viewport · footer (count / load) ·
+selection gutter · optional expand detail  
 
-Column parts: title · sort mark · resize edge · visibility
+Pinned columns stay outside horizontal scroll when using column kits.
 
-## Public API (intent)
+## Public API
 
 | API | Why |
 |-----|-----|
-| `VirtualWindow` | u64 length without allocating N rows |
-| `ColumnModel::contract_to_budget` | Drop low-priority columns before primary |
-| `SelectionModel` | Row / multi / cell modes |
-| `LoadState` | Loading vs empty vs error vs partial stream |
-| `Table` | Current interactive paint + sort regions |
+| `VirtualWindow` | O(1) visible range over 1M logical rows |
+| `DataTableState::set_logical_rows` | Universe size without row alloc |
+| `DataTableOutcome::SelectAllRequested` | Never invent unloaded ids |
+| `ColumnModel::contract_to_budget` | Responsive drop of low-priority columns |
+| `Table` | Mature interactive grid when rows are resident |
 
 ## State ownership
 
 | TermRock | Consumer |
 |----------|----------|
-| Viewport, selection chrome, hits | Data fetch, sort/filter execution |
-| Column width negotiation | Cell text, types, edit commits |
-| Outcomes only | Clipboard, navigation, mutations |
+| Window offset, focus, selection chrome | Dataset, sort, filter execution |
+| LoadState paint | Fetch / stream / error messages |
+| | Clipboard write for Copy payloads |
 
 ## Typed outcomes
 
-Sort requested · filter changed · row/cell activated · copy payload · edit
-committed — **effects stay in the app**.
+`DataTableOutcome` / table `Outcome`: sort/filter **requests**, activate,
+toggle, copy, expand — effects stay outside.
 
-## Variants / sizes / density
+## Variants
 
-- Density: `DataDensity::{Compact, Comfortable}`  
-- Wide tables: horizontal `VirtualWindow` on columns  
-- Fullscreen: promote table pane in Workspace  
+- Load: Idle / Loading / Partial / Ready / Empty / Error.  
+- Selection: row / multi / cell (kits).  
+- Density: Compact vs Comfortable.
 
-## Keyboard / mouse / focus
+## Sizes
 
-Arrows/page move focus; Enter activates; Space multi-toggles (multi mode);
-header click sorts; wheel scrolls body; drag resize columns (when implemented).
+Min ~ header + 2 body rows. Wide terminals enable more columns; narrow contracts
+by priority.
 
-## Responsive / a11y / unicode
+## Density
 
-Priority drops secondary columns first. Selection gutter works without color.
-Cell text uses grapheme-safe clipping (`table/unicode` story family).
+Compact reduces pad; still one body line per row for virtualization.
+
+## Keyboard
+
+Arrows, Page, Home/End, Space multi-toggle, Enter activate, `s` sort request,
+`/` filter request, `c` copy, Shift+expand (DataTable shell).
+
+## Mouse
+
+Header sort clicks, row select, wheel scroll (breaks follow if used in streams).
+
+## Focus
+
+Table is a pane target; cell/row focus separate from selection set.
+
+## Responsive
+
+`contract_to_budget` drops low priority first; primary id columns pin high
+priority. Story: `data-table/narrow-priority`.
+
+## Accessibility / colorless
+
+Selection gutter glyphs; sort `▲`/`^`; load/error text not color-only.
+
+## Unicode
+
+Stories: `data-table/cjk`, `data-table/combining`. Measure with display cols.
 
 ## Composition
 
-Ops dashboards, resource browsers, DB clients, workbench side panels.
+Ops dashboards, ResourceBrowser, agent DiffReview neighbors, Workbench panes.
 
 ## Theming
 
-Header / selection / muted meta roles; sort glyphs non-color.
+`Role::TextStrong` header, `Role::Selection` / `Focus`, `Role::Danger` errors.
 
 ## Custom recipe
 
-Pin identity column `priority(100)` + `ColumnPin::Start`; hide meta under 60 cols.
+```rust
+// Project only the window — never build Vec of logical_len in the widget.
+use termrock::widgets::VirtualWindow;
+let w = VirtualWindow::new(1_000_000, 40);
+let (a, b) = w.visible_range();
+assert!(b - a <= 40);
+```
 
 ## Common mistakes
 
-- Building `Vec` of 1M `TableRow` every frame.  
-- Sorting inside the widget instead of re-projecting.  
-- Color-only selected cell.
+- Materializing all rows for paint.  
+- Select-all that scans unloaded pages.  
+- Re-sorting inside the widget on every key.
 
 ## Performance
 
-Budgets: `datatable_million_window`, `table_viewport_10k` — see
-`termrock::perf` and streaming-performance design. Stories: `table/*`,
-`virtual-grid/million`.
+Budgets: `datatable_million_window`, table hot path. See streaming-performance.
 
 ## Testing
 
-`table_hot_path`, table stories (`table/basic`, `narrow`, `unicode`, `empty`,
-`disabled`, `sorted`), `data_view` unit tests.
+- Stories: `data-table/rows-10`, `rows-10k`, `rows-1m-virtual`, `wide-64`, `stream-partial`, `empty`  
+- `documentation_examples::handbook_datatable_*` / `handbook_table_*`  
+- `table_hot_path` CI budget  
 
 ## Migration
 
-`0047` data presentation foundation. Table API remains until DataTable renames.
+VirtualGrid resident projection: `migrations/0033`. DataTable evolves alongside
+`Table` (D9 fold planned in data-presentation design).
 
 ## Related
 
-VirtualGrid · List · Tree · DetailTable · LogStream  
+List · VirtualGrid · DetailTable · LogStream · DiffReview  
 
-## Complete application sketch
+## Complete application example
 
 ```text
-query → page cache by VirtualWindow range
-on SortRequested → re-query
-on RowActivated → open inspector
-on resize → reflow columns + reveal selection
+query → total_count → state.window.logical_len = total
+each frame: project(visible_range) → DataTable/Table::render
+on SortRequested → re-query → reset window offset carefully
+on SelectAllRequested → select only projected ids
 ```
+
+
+## Cursor vs scene focus (0068)
+
+Use `cursor_row` / `CursorMoved` for in-table navigation. Host owns surface focus via `focused(bool)` + `accepts_input`.

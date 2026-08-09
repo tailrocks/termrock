@@ -1,43 +1,12 @@
-   Compiling proc-macro2 v1.0.107
-   Compiling quote v1.0.47
-   Compiling libc v0.2.189
-   Compiling thiserror v2.0.20
-    Checking either v1.17.0
-   Compiling instability v0.3.13
-    Checking lru v0.18.2
-   Compiling serde_core v1.0.229
-   Compiling serde v1.0.229
-    Checking line-clipping v0.3.8
-    Checking base64 v0.23.1
-    Checking time v0.3.55
-    Checking itertools v0.14.0
-    Checking unicode-truncate v2.0.1
-   Compiling syn v3.0.3
-   Compiling syn v2.0.119
-   Compiling strum_macros v0.28.0
-   Compiling derive_more-impl v2.1.1
-    Checking errno v0.3.14
-    Checking parking_lot_core v0.9.12
-    Checking mio v1.2.2
-    Checking derive_more v2.1.1
-    Checking signal-hook-registry v1.4.8
-    Checking rustix v1.1.4
-    Checking parking_lot v0.12.5
-    Checking signal-hook v0.3.18
-    Checking signal-hook-mio v0.2.5
-   Compiling darling_core v0.24.0
-    Checking strum v0.28.0
-   Compiling thiserror-impl v2.0.20
-   Compiling serde_derive v1.0.229
-    Checking crossterm v0.29.0
-   Compiling darling_macro v0.24.0
-   Compiling darling v0.24.0
-    Checking kasuari v0.4.12
-    Checking ratatui-core v0.1.2
-    Checking tui-scrollbar v0.2.7
-    Checking ratatui-widgets v0.3.2
-    Checking ratatui-crossterm v0.1.2
  Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
+warning: unresolved link to `DataTableState::handle_key`
+   --> crates/termrock/src/interaction/intent.rs:145:7
+    |
+145 | /// [`DataTableState::handle_key`].
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
+    |
+    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
+
 warning: unresolved link to `Theme`
    --> crates/termrock/src/widgets/prompt_composer.rs:537:39
     |
@@ -45,10 +14,9 @@ warning: unresolved link to `Theme`
     |                                       ^^^^^ no item named `Theme` in scope
     |
     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
 
-warning: `termrock` (lib doc) generated 1 warning
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.95s
+warning: `termrock` (lib doc) generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.58s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -2902,6 +2870,7 @@ pub unsafe fn termrock::interaction::SemanticElement<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::interaction::SemanticElement<Id>
 pub fn termrock::interaction::SemanticElement<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticElement<Id>
+pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_form_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -8813,12 +8782,12 @@ pub termrock::widgets::DataTableOutcome::Activate(RowId)
 pub termrock::widgets::DataTableOutcome::ContextMenu
 pub termrock::widgets::DataTableOutcome::ContextMenu::row: RowId
 pub termrock::widgets::DataTableOutcome::Copy(termrock::widgets::CopyPayload)
+pub termrock::widgets::DataTableOutcome::CursorMoved
 pub termrock::widgets::DataTableOutcome::EditStarted
 pub termrock::widgets::DataTableOutcome::EditStarted::column: core::option::Option<ColId>
 pub termrock::widgets::DataTableOutcome::EditStarted::row: RowId
 pub termrock::widgets::DataTableOutcome::ExpandToggled(RowId)
 pub termrock::widgets::DataTableOutcome::FilterChanged(termrock::widgets::FilterSpec)
-pub termrock::widgets::DataTableOutcome::FocusChanged
 pub termrock::widgets::DataTableOutcome::Ignored
 pub termrock::widgets::DataTableOutcome::RetryLoad
 pub termrock::widgets::DataTableOutcome::Scrolled
@@ -14426,6 +14395,7 @@ pub fn termrock::widgets::DataMovement::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DataMovement
 pub struct termrock::widgets::DataTable<'a, RowId, ColId>
 impl<'a, RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DataTable<'a, RowId, ColId>
+pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::focused(self, bool) -> Self
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::new(&'a termrock::style::DesignSystem, &'a termrock::widgets::ColumnModel<ColId>, &'a [(RowId, &'a [&'a str])]) -> Self
 pub fn termrock::widgets::DataTable<'a, RowId, ColId>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DataTableState<RowId, ColId>)
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::toolbar(self, &'a termrock::widgets::DataTableToolbar<'a>) -> Self
@@ -14471,21 +14441,26 @@ impl<T> core::convert::From<T> for termrock::widgets::DataTable<'a, RowId, ColId
 pub fn termrock::widgets::DataTable<'a, RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DataTable<'a, RowId, ColId>
 pub struct termrock::widgets::DataTableState<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq>
+pub termrock::widgets::DataTableState::accepts_input: bool
 pub termrock::widgets::DataTableState::ascii: bool
 pub termrock::widgets::DataTableState::col_window: termrock::widgets::VirtualWindow
+pub termrock::widgets::DataTableState::colorless: bool
+pub termrock::widgets::DataTableState::cursor_col: usize
+pub termrock::widgets::DataTableState::cursor_row: usize
 pub termrock::widgets::DataTableState::density: termrock::widgets::DataDensity
 pub termrock::widgets::DataTableState::expand: termrock::widgets::ExpandState<RowId>
 pub termrock::widgets::DataTableState::filter: termrock::widgets::FilterSpec
-pub termrock::widgets::DataTableState::focus_col: usize
-pub termrock::widgets::DataTableState::focus_row: usize
 pub termrock::widgets::DataTableState::load: termrock::widgets::LoadState
 pub termrock::widgets::DataTableState::selection: termrock::widgets::SelectionModel<RowId>
 pub termrock::widgets::DataTableState::sort: core::option::Option<termrock::widgets::SortSpec<ColId>>
 pub termrock::widgets::DataTableState::striped: bool
 pub termrock::widgets::DataTableState::window: termrock::widgets::VirtualWindow
 impl<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DataTableState<RowId, ColId>
+pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_intent(&mut self, termrock::interaction::UiIntent, &[RowId], &termrock::widgets::ColumnModel<ColId>) -> termrock::widgets::DataTableOutcome<RowId, ColId> where ColId: core::clone::Clone
 pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[RowId], &termrock::widgets::ColumnModel<ColId>) -> termrock::widgets::DataTableOutcome<RowId, ColId> where ColId: core::clone::Clone
+pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_mouse(&mut self, termrock::input::MouseEvent, &[RowId]) -> termrock::widgets::DataTableOutcome<RowId, ColId>
 pub fn termrock::widgets::DataTableState<RowId, ColId>::new() -> Self
+pub fn termrock::widgets::DataTableState<RowId, ColId>::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::DataTableState<RowId, ColId>::set_logical_rows(&mut self, u64)
 impl<RowId: core::clone::Clone + core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq> core::clone::Clone for termrock::widgets::DataTableState<RowId, ColId>
 pub fn termrock::widgets::DataTableState<RowId, ColId>::clone(&self) -> termrock::widgets::DataTableState<RowId, ColId>
