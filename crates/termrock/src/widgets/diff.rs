@@ -1,6 +1,10 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 
-use crate::style::{Role, Theme};
+use crate::style::{
+        DesignSystem,
+        Role,
+        RolePalette,
+    };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -34,14 +38,14 @@ pub struct DiffState {
 /// A vertically scrollable, syntax-neutral diff presentation.
 pub struct DiffView<'a> {
     lines: &'a [DiffLine<'a>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> DiffView<'a> {
     #[must_use]
     /// Creates a diff view at the first line.
-    pub const fn new(lines: &'a [DiffLine<'a>], theme: &'a Theme) -> Self {
-        Self { lines, theme }
+    pub const fn new(lines: &'a [DiffLine<'a>], system: &'a DesignSystem) -> Self {
+        Self { lines, system }
     }
 }
 
@@ -61,8 +65,8 @@ impl StatefulWidget for &DiffView<'_> {
         {
             let style = match line.kind {
                 DiffKind::Context => Style::new(),
-                DiffKind::Added => self.theme.style(Role::DiffAdded),
-                DiffKind::Removed => self.theme.style(Role::DiffRemoved),
+                DiffKind::Added => self.system.style(Role::DiffAdded),
+                DiffKind::Removed => self.system.style(Role::DiffRemoved),
             };
             buffer.set_stringn(
                 area.x,
@@ -115,26 +119,28 @@ mod tests {
     #[test]
     fn renders_kind_styles_on_their_rows() {
         let lines = lines();
-        let theme = Theme::default();
-        let view = DiffView::new(&lines, &theme);
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let view = DiffView::new(&lines, &system);
         let area = Rect::new(0, 0, 8, 3);
         let mut buffer = Buffer::empty(area);
         let mut state = DiffState::default();
         (&view).render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(0, 0)].symbol(), "z");
-        assert_eq!(buffer[(0, 1)].fg, theme.style(Role::DiffAdded).fg.unwrap());
+        assert_eq!(buffer[(0, 1)].fg, system.style(Role::DiffAdded).fg.unwrap());
         assert_eq!(
             buffer[(0, 2)].fg,
-            theme.style(Role::DiffRemoved).fg.unwrap()
+            system.style(Role::DiffRemoved).fg.unwrap()
         );
     }
 
     #[test]
     fn clamps_over_scroll_to_the_last_full_window() {
         let lines = lines();
-        let theme = Theme::default();
-        let view = DiffView::new(&lines, &theme);
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let view = DiffView::new(&lines, &system);
         let area = Rect::new(0, 0, 8, 3);
         let mut buffer = Buffer::empty(area);
         let mut state = DiffState {
@@ -154,8 +160,9 @@ mod tests {
             text: "a\u{7}b",
             kind: DiffKind::Context,
         }];
-        let theme = Theme::default();
-        let view = DiffView::new(&lines, &theme);
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let view = DiffView::new(&lines, &system);
         let mut state = DiffState::default();
         (&view).render(
             Rect::new(0, 0, 0, 0),

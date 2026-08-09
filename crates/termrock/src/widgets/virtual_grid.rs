@@ -18,14 +18,16 @@ use crate::{
         MouseEventKind,
     },
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols,
         take_display_cols,
     },
 };
+
 
 /// Width policy for one grid column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -840,7 +842,7 @@ pub struct VirtualGrid<'a, RowId, ColId> {
     rows: &'a [GridRow<'a, RowId>],
     /// Known total row count, or `None` for unknown/unbounded.
     total_rows: Option<u64>,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
     show_gutter: bool,
     show_header: bool,
 }
@@ -851,13 +853,13 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
     pub const fn new(
         columns: &'a [GridColumn<'a, ColId>],
         rows: &'a [GridRow<'a, RowId>],
-        theme: &'a Theme,
+        system: &'a DesignSystem,
     ) -> Self {
         Self {
             columns,
             rows,
             total_rows: None,
-            theme,
+            system,
             show_gutter: true,
             show_header: true,
         }
@@ -942,15 +944,15 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
         }
         state.body_cols_visible = visible.len();
 
-        let header_style = self.theme.style(Role::TextMuted);
-        let cell_style = self.theme.style(Role::Text);
+        let header_style = self.system.style(Role::TextMuted);
+        let cell_style = self.system.style(Role::Text);
         let cursor_style = if state.focused {
-            self.theme.style(Role::Accent)
+            self.system.style(Role::Accent)
         } else {
-            self.theme.style(Role::Text)
+            self.system.style(Role::Text)
         };
-        let pending_style = self.theme.style(Role::TextMuted);
-        let gutter_style = self.theme.style(Role::TextMuted);
+        let pending_style = self.system.style(Role::TextMuted);
+        let gutter_style = self.system.style(Role::TextMuted);
 
         if self.show_header && area.height > 0 {
             let mut x = content_x;
@@ -1021,11 +1023,11 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 let style = if is_cursor && !disabled {
                     cursor_style
                 } else if disabled {
-                    self.theme.style(Role::TextMuted)
+                    self.system.style(Role::TextMuted)
                 } else if cell.pending {
                     pending_style
                 } else if in_range {
-                    self.theme.style(Role::Accent)
+                    self.system.style(Role::Accent)
                 } else {
                     cell.style.unwrap_or(cell_style)
                 };
@@ -1073,10 +1075,11 @@ mod tests {
 
     #[test]
     fn empty_and_min_rect_do_not_panic() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let columns = columns();
         let rows: [GridRow<'_, u64>; 0] = [];
-        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(0);
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(0);
         let mut state = VirtualGridState::new();
         let mut terminal = Terminal::new(TestBackend::new(0, 0)).unwrap();
         terminal
@@ -1094,11 +1097,12 @@ mod tests {
 
     #[test]
     fn keyboard_moves_cursor_and_viewport() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let columns = columns();
         let cell_store = cells("1", "2", "3");
         let rows = [GridRow::new(0, 0, &cell_store)];
-        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(100);
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(100);
         let mut state = VirtualGridState::new();
         state.set_focused(true);
         let mut terminal = Terminal::new(TestBackend::new(40, 8)).unwrap();
@@ -1162,12 +1166,13 @@ mod tests {
 
     #[test]
     fn mouse_click_selects_painted_cell() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let columns = columns();
         let cell0 = cells("x", "y", "z");
         let cell1 = cells("p", "q", "r");
         let rows = [GridRow::new(10, 0, &cell0), GridRow::new(11, 1, &cell1)];
-        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(2);
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(2);
         let mut state = VirtualGridState::new();
         state.set_focused(true);
         let mut terminal = Terminal::new(TestBackend::new(40, 6)).unwrap();
@@ -1202,7 +1207,8 @@ mod tests {
 
     #[test]
     fn pending_cells_render_without_panic() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let columns = columns();
         let pending = [
             GridCell::pending(),
@@ -1210,7 +1216,7 @@ mod tests {
             GridCell::pending(),
         ];
         let rows = [GridRow::new(0, 5, &pending)];
-        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(1_000_000);
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(1_000_000);
         let mut state = VirtualGridState::new();
         state.first_row = 5;
         let mut terminal = Terminal::new(TestBackend::new(50, 10)).unwrap();
@@ -1224,11 +1230,12 @@ mod tests {
 
     #[test]
     fn unicode_header_and_cell_width_is_safe() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let columns = [GridColumn::fixed("u", "日本語", 6)];
         let cells = [GridCell::text("🚀ok")];
         let rows = [GridRow::new(0, 0, &cells)];
-        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(1);
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(1);
         let mut state = VirtualGridState::new();
         let mut terminal = Terminal::new(TestBackend::new(20, 4)).unwrap();
         terminal
@@ -1255,10 +1262,11 @@ mod tests {
 
     #[test]
     fn zero_total_has_no_body_hits_and_enter_ignored() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let columns = columns();
         let rows: [GridRow<'_, u64>; 0] = [];
-        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(0);
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(0);
         let mut state = VirtualGridState::new();
         state.set_focused(true);
         let mut terminal = Terminal::new(TestBackend::new(40, 10)).unwrap();
@@ -1281,12 +1289,13 @@ mod tests {
 
     #[test]
     fn short_total_paints_only_existing_rows() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let columns = columns();
         let cell0 = cells("a", "b", "c");
         let cell1 = cells("d", "e", "f");
         let rows = [GridRow::new(0, 0, &cell0), GridRow::new(1, 1, &cell1)];
-        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(2);
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(2);
         let mut state = VirtualGridState::new();
         let mut terminal = Terminal::new(TestBackend::new(40, 12)).unwrap();
         terminal
@@ -1306,7 +1315,8 @@ mod tests {
 
     #[test]
     fn disabled_resident_rows_cannot_be_selected_or_activated() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let columns = columns();
         let cell0 = cells("a", "b", "c");
         let cell1 = cells("d", "e", "f");
@@ -1316,7 +1326,7 @@ mod tests {
             GridRow::new(1, 1, &cell1).enabled(false),
             GridRow::new(2, 2, &cell2),
         ];
-        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(3);
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(3);
         let mut state = VirtualGridState::new();
         state.set_focused(true);
         let mut terminal = Terminal::new(TestBackend::new(40, 8)).unwrap();
@@ -1372,7 +1382,8 @@ mod tests {
 
     #[test]
     fn range_paint_uses_anchor_to_cursor_rectangle() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let columns = columns();
         let shared = cells("x", "y", "z");
         let rows = [
@@ -1382,7 +1393,7 @@ mod tests {
             GridRow::new(3, 3, &shared),
             GridRow::new(4, 4, &shared),
         ];
-        let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(5);
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(5);
         let mut state = VirtualGridState::new();
         state.set_focused(true);
         state.anchor = Some((0, 0));

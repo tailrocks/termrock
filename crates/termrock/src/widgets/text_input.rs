@@ -10,11 +10,13 @@ use crate::{
         KeyModifiers,
     },
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::take_display_cols,
 };
+
 
 use super::edit_core;
 
@@ -323,18 +325,18 @@ pub struct TextInput<'a> {
     label: &'a str,
     placeholder: &'a str,
     validation: Validation<'a>,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> TextInput<'a> {
     #[must_use]
     /// Creates a text input over mutable state with no placeholder.
-    pub const fn new(label: &'a str, theme: &'a Theme) -> Self {
+    pub const fn new(label: &'a str, system: &'a DesignSystem) -> Self {
         Self {
             label,
             placeholder: "",
             validation: Validation::Valid,
-            theme,
+            system,
         }
     }
 
@@ -368,7 +370,7 @@ impl StatefulWidget for &TextInput<'_> {
         }
         state.reveal_cursor(usize::from(area.width));
         let invalid = !state.is_valid() || matches!(self.validation, Validation::Invalid(_));
-        let input_style = self.theme.style(if invalid {
+        let input_style = self.system.style(if invalid {
             Role::InputInvalid
         } else {
             Role::Input
@@ -380,7 +382,7 @@ impl StatefulWidget for &TextInput<'_> {
                 area.y,
                 take_display_cols(self.placeholder, usize::from(area.width)),
                 usize::from(area.width),
-                self.theme.style(Role::TextMuted),
+                self.system.style(Role::TextMuted),
             );
         } else {
             let visible =
@@ -400,7 +402,7 @@ impl StatefulWidget for &TextInput<'_> {
             .min(area.right().saturating_sub(1));
         buffer.set_style(
             Rect::new(cursor_x, area.y, 1, 1),
-            self.theme.style(Role::Focus),
+            self.system.style(Role::Focus),
         );
     }
 }
@@ -444,11 +446,12 @@ mod tests {
 
     #[test]
     fn render_reveals_wide_cursor_in_narrow_viewport() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut state = TextInputState::new("alpha🧪");
         let area = Rect::new(3, 2, 4, 1);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 10, 5));
-        (&TextInput::new("Name", &theme)).render(area, &mut buffer, &mut state);
+        (&TextInput::new("Name", &system)).render(area, &mut buffer, &mut state);
         assert!(state.viewport > 0);
         assert!(state.cursor_byte() >= state.viewport);
     }

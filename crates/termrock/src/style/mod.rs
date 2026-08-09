@@ -16,7 +16,7 @@ mod preview_host;
 mod quantize;
 mod tokens;
 
-pub use appearance::{Appearance, AppearanceThemeMap, theme_for_appearance};
+pub use appearance::{Appearance, AppearanceThemeMap, palette_for_appearance};
 pub use density::{Density, Motion};
 pub use palette::Rgb;
 use palette::{
@@ -33,10 +33,10 @@ pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
     PreviewSurfaceKind,
 };
-pub use quantize::{ColorCapability, quantize_color, quantize_theme, rgb_to_xterm256};
+pub use quantize::{ColorCapability, quantize_color, quantize_palette, rgb_to_xterm256};
 pub use tokens::{
-    DesignSystem, DesignTokens, GlyphSet, ListRowRecipe, ListRowVisualState, PanelChrome,
-    PanelRecipe, SelectionChrome, SpacingScale,
+    DesignSystem, GlyphSet, ListRowRecipe, ListRowVisualState, PanelChrome, PanelRecipe,
+    SelectionChrome, SpacingScale,
 };
 
 #[must_use]
@@ -106,7 +106,7 @@ pub fn faded(color: Color, alpha: f32) -> Color {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Semantic visual roles resolved by a [`Theme`].
+/// Semantic visual roles resolved by a [`RolePalette`].
 pub enum Role {
     /// Terminal-wide base background.
     Canvas,
@@ -258,16 +258,16 @@ every_role!(define_role_exhaustiveness_guard);
 ///
 /// ```
 /// use ratatui_core::style::{Color, Style};
-/// use termrock::style::{Role, Theme};
+/// use termrock::style::{Role, RolePalette};
 ///
-/// let theme = Theme::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
+/// let theme = RolePalette::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
 /// assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
 /// ```
-pub struct Theme {
+pub struct RolePalette {
     roles: [Style; 38],
 }
 
-impl Theme {
+impl RolePalette {
     #[must_use]
     /// Builds the default phosphor-on-black semantic theme.
     pub fn tailrocks_phosphor() -> Self {
@@ -419,7 +419,7 @@ impl Theme {
     }
 }
 
-impl Default for Theme {
+impl Default for RolePalette {
     fn default() -> Self {
         Self::tailrocks_phosphor()
     }
@@ -431,7 +431,7 @@ mod tests {
 
     #[test]
     fn roles_cover_the_positional_theme_array() {
-        let roles = Theme::roles();
+        let roles = RolePalette::roles();
         assert_eq!(roles.len(), 38);
         assert_eq!(Role::DiffRemoved as usize, roles.len() - 1);
         for (index, role) in roles.into_iter().enumerate() {
@@ -443,23 +443,25 @@ mod tests {
     #[test]
     fn builders_override_and_populate_every_role() {
         let blue = Style::new().bg(Color::Blue);
-        let theme = Theme::default().with_role(Role::TabActive, blue);
+        let theme = RolePalette::default().with_role(Role::TabActive, blue);
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert_eq!(theme.style(Role::TabActive), blue);
 
-        let generated = Theme::from_fn(|role| Style::new().fg(Color::Indexed(role as u8)));
-        for role in Theme::roles() {
+        let generated = RolePalette::from_fn(|role| Style::new().fg(Color::Indexed(role as u8)));
+        for role in RolePalette::roles() {
             assert_eq!(generated.style(role).fg, Some(Color::Indexed(role as u8)));
         }
     }
 
     #[test]
     fn default_is_the_phosphor_preset() {
-        assert_eq!(Theme::default(), Theme::tailrocks_phosphor());
+        assert_eq!(RolePalette::default(), RolePalette::tailrocks_phosphor());
     }
 
     #[test]
     fn default_separates_ordinary_and_strong_text() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert_eq!(theme.style(Role::Text).fg, Some(WHITE));
         assert!(
             !theme
@@ -478,14 +480,16 @@ mod tests {
 
     #[test]
     fn default_borders_use_gray_inactive_and_green_focused() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert_eq!(theme.style(Role::Border).fg, Some(BORDER_GRAY));
         assert_eq!(theme.style(Role::BorderFocused).fg, Some(PHOSPHOR_GREEN));
     }
 
     #[test]
     fn action_focused_and_disabled_use_distinct_rgb() {
-        let theme = Theme::tailrocks_phosphor();
+        let theme = RolePalette::tailrocks_phosphor();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let focused = theme.style(Role::ActionFocused);
         let disabled = theme.style(Role::ActionDisabled);
         assert_ne!(focused.fg, disabled.fg);
@@ -504,8 +508,8 @@ mod tests {
 
     #[test]
     fn slate_visibly_diverges_from_phosphor() {
-        let slate = Theme::slate();
-        let phosphor = Theme::tailrocks_phosphor();
+        let slate = RolePalette::slate();
+        let phosphor = RolePalette::tailrocks_phosphor();
         for role in [
             Role::Accent,
             Role::Selection,
@@ -521,7 +525,8 @@ mod tests {
 
     #[test]
     fn phosphor_preset_pins_load_bearing_role_values() {
-        let theme = Theme::tailrocks_phosphor();
+        let theme = RolePalette::tailrocks_phosphor();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let expected = [
             (Role::Text, Style::new().fg(Color::Rgb(255, 255, 255))),
             (Role::Border, Style::new().fg(Color::Rgb(80, 80, 80))),
@@ -573,7 +578,8 @@ mod tests {
 
     #[test]
     fn slate_preset_pins_load_bearing_role_values() {
-        let theme = Theme::slate();
+        let theme = RolePalette::slate();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let expected = [
             (Role::Text, Style::new().fg(Color::Rgb(226, 232, 240))),
             (Role::Border, Style::new().fg(Color::Rgb(71, 85, 105))),

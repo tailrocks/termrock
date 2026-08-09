@@ -12,12 +12,13 @@ use crate::{
         KeyEventKind,
     },
     style::{
-        DesignTokens,
+        DesignSystem,
         Role,
     },
     text::take_display_cols,
     widgets::scroll_area::ScrollAreaState,
 };
+
 
 // ── ObjectInspector ─────────────────────────────────────────────────────────
 
@@ -93,13 +94,13 @@ impl ObjectInspectorState {
 #[derive(Debug, Clone, Copy)]
 pub struct ObjectInspector<'a> {
     fields: &'a [InspectorField<'a>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> ObjectInspector<'a> {
     /// Fields.
     #[must_use]
-    pub const fn new(fields: &'a [InspectorField<'a>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(fields: &'a [InspectorField<'a>], tokens: &'a DesignSystem) -> Self {
         Self { fields, tokens }
     }
 
@@ -117,9 +118,9 @@ impl<'a> ObjectInspector<'a> {
             let pad = "  ".repeat(field.depth as usize);
             let line = format!("{pad}{}: {}", field.key, field.value);
             let style = if i == state.focus {
-                self.tokens.theme.style(Role::Focus)
+                self.tokens.style(Role::Focus)
             } else {
-                self.tokens.theme.style(Role::Text)
+                self.tokens.style(Role::Text)
             };
             let text = take_display_cols(&line, usize::from(area.width));
             buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
@@ -251,13 +252,13 @@ impl LogStreamState {
 #[derive(Debug, Clone, Copy)]
 pub struct LogStream<'a> {
     lines: &'a [LogLine<'a>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> LogStream<'a> {
     /// Lines.
     #[must_use]
-    pub const fn new(lines: &'a [LogLine<'a>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(lines: &'a [LogLine<'a>], tokens: &'a DesignSystem) -> Self {
         Self { lines, tokens }
     }
 
@@ -279,7 +280,7 @@ impl<'a> LogStream<'a> {
                 y,
                 &text,
                 usize::from(area.width),
-                self.tokens.theme.style(line.level.role()),
+                self.tokens.style(line.level.role()),
             );
             y = y.saturating_add(1);
         }
@@ -378,13 +379,13 @@ impl DiffReviewState {
 #[derive(Debug, Clone, Copy)]
 pub struct DiffReview<'a> {
     lines: &'a [(&'a str, Role)],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> DiffReview<'a> {
     /// Lines with roles (added/removed/text).
     #[must_use]
-    pub const fn new(lines: &'a [(&'a str, Role)], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(lines: &'a [(&'a str, Role)], tokens: &'a DesignSystem) -> Self {
         Self { lines, tokens }
     }
 
@@ -405,7 +406,7 @@ impl<'a> DiffReview<'a> {
                 y,
                 &line,
                 usize::from(area.width),
-                self.tokens.theme.style(*role),
+                self.tokens.style(*role),
             );
             y = y.saturating_add(1);
         }

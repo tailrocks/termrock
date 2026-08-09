@@ -44,3 +44,34 @@ mod root_export_policy {
         }
     }
 }
+
+#[cfg(test)]
+mod paint_authority_policy {
+    /// Break B / migration 0061: dual paint types must not re-enter public style API.
+    #[test]
+    fn dual_paint_types_are_gone() {
+        let style_mod = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/style/mod.rs"));
+        let tokens = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/style/tokens.rs"));
+        let panel = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/widgets/panel.rs"));
+        assert!(
+            !style_mod.contains("pub struct Theme"),
+            "Theme must be RolePalette (Break B)"
+        );
+        assert!(
+            style_mod.contains("pub struct RolePalette"),
+            "RolePalette is the palette type"
+        );
+        assert!(
+            !tokens.contains("pub struct DesignTokens"),
+            "DesignTokens must be deleted (Break B)"
+        );
+        assert!(
+            tokens.contains("pub struct DesignSystem"),
+            "DesignSystem is sole paint authority"
+        );
+        assert!(
+            !panel.contains("pub enum PanelEmphasis"),
+            "PanelEmphasis must be PanelChrome only"
+        );
+    }
+}

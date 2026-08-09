@@ -1,7 +1,8 @@
 use ratatui_core::{
     backend::TestBackend,
     layout::Rect,
-    style::{Color, Style},
+    style::{
+        Color, Style},
     terminal::Terminal,
     text::{Line, Span},
 };
@@ -27,7 +28,7 @@ fn vertical_thumb_moves_and_keeps_length() {
                 scroll::ScrollAxis::Vertical,
                 ScrollbarGeometry::new(20, 5, offset),
             ),
-            &Theme::default(),
+            &crate::style::DesignSystem::default(),
         );
         (0..10)
             .filter(|y| buffer[(0, *y)].symbol() == "┃")
@@ -52,16 +53,17 @@ fn block_style_only_changes_vertical_thumb() {
             ScrollbarGeometry::new(10, 5, 0),
         )
         .style(ScrollbarStyle::Block),
-        &Theme::default(),
+        &crate::style::DesignSystem::default(),
     );
     assert!((0..5).any(|y| buffer[(0, y)].symbol() == "█"));
 }
 
 #[test]
 fn scrollbar_uses_semantic_theme_roles() {
-    let theme = Theme::default()
+    let theme = crate::style::RolePalette::default()
         .with_role(Role::ScrollTrack, Style::new().fg(Color::Red))
         .with_role(Role::ScrollThumb, Style::new().fg(Color::Blue));
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 5));
     let area = buffer.area;
     render_scrollbar(
@@ -71,7 +73,7 @@ fn scrollbar_uses_semantic_theme_roles() {
             scroll::ScrollAxis::Vertical,
             ScrollbarGeometry::new(10, 5, 0),
         ),
-        &theme,
+        &system,
     );
     assert_eq!(buffer[(0, 0)].fg, Color::Blue);
     assert_eq!(buffer[(0, 4)].fg, Color::Red);

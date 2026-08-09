@@ -366,7 +366,7 @@ impl DialogScroll {
         block_area: ratatui_core::layout::Rect,
         content_height: usize,
         content_width: usize,
-        theme: &crate::style::Theme,
+        system: &crate::style::DesignSystem,
     ) {
         if is_scrollable(content_height, viewport_height(block_area)) {
             render_scrollbar(
@@ -380,7 +380,7 @@ impl DialogScroll {
                         self.scroll_y,
                     ),
                 ),
-                theme,
+                system,
             );
         }
         if is_scrollable(content_width, viewport_width(block_area)) {
@@ -395,7 +395,7 @@ impl DialogScroll {
                         self.scroll_x,
                     ),
                 ),
-                theme,
+                system,
             );
         }
     }

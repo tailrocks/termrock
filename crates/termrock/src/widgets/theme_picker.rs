@@ -10,6 +10,7 @@ use ratatui_core::{
 };
 
 use crate::{
+
     input::{
         KeyCode,
         KeyEvent,
@@ -17,16 +18,17 @@ use crate::{
     },
     style::{
         Density,
-        DesignTokens,
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::take_display_cols,
     widgets::{
         Panel,
-        PanelEmphasis,
+        PanelChrome,
     },
 };
+
 
 /// One selectable theme preset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,10 +57,10 @@ pub const BUILTIN_THEME_PRESETS: &[ThemePreset] = &[
 
 /// Resolves a built-in theme by preset id.
 #[must_use]
-pub fn theme_from_preset_id(id: &str) -> Option<Theme> {
+pub fn theme_from_preset_id(id: &str) -> Option<RolePalette> {
     match id {
-        "phosphor" | "tailrocks_phosphor" | "dark" => Some(Theme::tailrocks_phosphor()),
-        "slate" | "light" => Some(Theme::slate()),
+        "phosphor" | "tailrocks_phosphor" | "dark" => Some(RolePalette::tailrocks_phosphor()),
+        "slate" | "light" => Some(RolePalette::slate()),
         _ => None,
     }
 }
@@ -158,13 +160,13 @@ pub enum ThemePickerOutcome {
 #[derive(Debug, Clone, Copy)]
 pub struct ThemePicker<'a> {
     presets: &'a [ThemePreset],
-    paint_theme: &'a Theme,
+    paint_theme: &'a DesignSystem,
 }
 
 impl<'a> ThemePicker<'a> {
     /// Creates a picker.
     #[must_use]
-    pub const fn new(presets: &'a [ThemePreset], paint_theme: &'a Theme) -> Self {
+    pub const fn new(presets: &'a [ThemePreset], paint_theme: &'a DesignSystem) -> Self {
         Self {
             presets,
             paint_theme,
@@ -179,10 +181,10 @@ impl StatefulWidget for &ThemePicker<'_> {
         if area.is_empty() {
             return;
         }
-        let tokens = DesignTokens::new(self.paint_theme.clone(), Density::default());
+        let tokens = (*self.paint_theme).clone();
         let panel = Panel::new(&tokens)
             .title("Theme")
-            .emphasis(PanelEmphasis::Focused);
+            .emphasis(PanelChrome::Focused);
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
         if inner.is_empty() {
@@ -250,6 +252,6 @@ mod tests {
             ),
             ThemePickerOutcome::ConfirmIndex(1)
         );
-        assert_eq!(theme_from_preset_id("slate"), Some(Theme::slate()));
+        assert_eq!(theme_from_preset_id("slate"), Some(RolePalette::slate()));
     }
 }

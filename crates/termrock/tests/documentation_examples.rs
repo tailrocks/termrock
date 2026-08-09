@@ -31,9 +31,9 @@ use termrock::{
     },
     style::{
         Density,
-        DesignTokens,
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     widgets::{
         Action,
@@ -84,8 +84,9 @@ use termrock::{
 
 #[test]
 fn toast_documentation_example() {
-    let theme = Theme::default();
-    let toast = Toast::new(&theme, "Saved", Severity::Success)
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let toast = Toast::new(&system, "Saved", Severity::Success)
         .anchor(Anchor::BottomRight)
         .margins(1, 1);
     assert!(toast.rect(Rect::new(0, 0, 40, 8)).is_some());
@@ -93,7 +94,7 @@ fn toast_documentation_example() {
 
 #[test]
 fn list_documentation_example() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = [
         ListRow::item("a", Line::from("Alpha")),
         ListRow::item("b", Line::from("Beta")),
@@ -107,8 +108,9 @@ fn list_documentation_example() {
 
 #[test]
 fn handbook_button_action_bar_example() {
-    let theme = Theme::default();
-    let tokens = DesignTokens::default();
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let tokens = DesignSystem::default();
     // Flagship Button (handbook basic + interactive)
     let button = Button::new("Save", &tokens).primary(true);
     let mut button_state = ButtonState::new();
@@ -132,7 +134,7 @@ fn handbook_button_action_bar_example() {
             style: None,
         },
     ];
-    let bar = ActionBar::new(&actions, &theme);
+    let bar = ActionBar::new(&actions, &system);
     let state = ActionBarState {
         focused: Some("save"),
         ..ActionBarState::default()
@@ -151,7 +153,7 @@ fn handbook_datatable_virtual_window_example() {
 
 #[test]
 fn handbook_table_selection_example() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let columns = [Column::new(
         "name",
         Line::from("Name"),
@@ -170,7 +172,7 @@ fn handbook_table_selection_example() {
 
 #[test]
 fn handbook_dialog_examples() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let dialog = Dialog::new("Notice", Text::from("Done."), &tokens);
     let area = place_dialog(Rect::new(0, 0, 80, 24), DialogSize::default());
     assert!(area.width > 0);
@@ -201,7 +203,7 @@ fn handbook_dialog_examples() {
 
 #[test]
 fn handbook_command_palette_example() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = [ListRow::item("quit", Line::from("Quit"))];
     let palette = CommandPalette::new("Commands", &rows, &tokens);
     let rect = place_command_palette(Rect::new(0, 0, 80, 24), CommandPaletteSize::default());
@@ -218,8 +220,9 @@ fn handbook_command_palette_example() {
 
 #[test]
 fn handbook_prompt_composer_example() {
-    let theme = Theme::default();
-    let tokens = DesignTokens::new(theme.clone(), Density::Comfortable);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let tokens = DesignSystem::new(theme.clone(), Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
     state.set_mode(Some(ModeIndicator {
@@ -229,7 +232,7 @@ fn handbook_prompt_composer_example() {
     state.set_model(Some(ModelIndicator {
         label: "model".into(),
     }));
-    let _composer = PromptComposer::new(&tokens, &theme);
+    let _composer = PromptComposer::new(&tokens);
     state.set_text("ship it");
     let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
     assert!(matches!(
@@ -273,7 +276,8 @@ fn handbook_permission_prompt_example() {
 
 #[test]
 fn theme_documentation_example() {
-    let theme = Theme::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
+    let theme = RolePalette::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
+    let system = DesignSystem::from_palette(theme.clone());
     assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
 }
 

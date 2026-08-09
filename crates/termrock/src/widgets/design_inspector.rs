@@ -8,11 +8,12 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
+    style::DesignSystem,
+
     style::{
         ColorCapability,
-        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::take_display_cols,
 };
@@ -69,17 +70,17 @@ impl Default for DesignInspectorFrame<'_> {
 #[derive(Debug, Clone)]
 pub struct DesignInspector<'a> {
     frame: DesignInspectorFrame<'a>,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
     panel: InspectorPanel,
 }
 
 impl<'a> DesignInspector<'a> {
     /// Creates an inspector for the given snapshot.
     #[must_use]
-    pub const fn new(frame: DesignInspectorFrame<'a>, theme: &'a Theme) -> Self {
+    pub const fn new(frame: DesignInspectorFrame<'a>, system: &'a DesignSystem) -> Self {
         Self {
             frame,
-            theme,
+            system,
             panel: InspectorPanel::Focus,
         }
     }
@@ -96,7 +97,7 @@ impl<'a> DesignInspector<'a> {
     pub fn from_system(system: &'a DesignSystem, frame: DesignInspectorFrame<'a>) -> Self {
         Self {
             frame,
-            theme: system.theme(),
+            system,
             panel: InspectorPanel::Focus,
         }
     }
@@ -107,8 +108,8 @@ impl Widget for &DesignInspector<'_> {
         if area.width == 0 || area.height == 0 {
             return;
         }
-        let style = self.theme.style(Role::TextMuted);
-        let strong = self.theme.style(Role::TextStrong);
+        let style = self.system.style(Role::TextMuted);
+        let strong = self.system.style(Role::TextStrong);
 
         // Tab strip on row 0 when height >= 2.
         let body_y = if area.height >= 2 {
@@ -179,11 +180,12 @@ impl Widget for DesignInspector<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::Theme;
+    use crate::style::RolePalette;
 
     #[test]
     fn studio_shell_paints_tab_and_layers() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let layers = ["root", "approval"];
         let frame = DesignInspectorFrame {
             focused: Some("prompt"),
@@ -197,7 +199,7 @@ mod tests {
         let area = Rect::new(0, 0, 40, 4);
         let mut buffer = Buffer::empty(area);
         Widget::render(
-            DesignInspector::new(frame, &theme).panel(InspectorPanel::Layers),
+            DesignInspector::new(frame, &system).panel(InspectorPanel::Layers),
             area,
             &mut buffer,
         );

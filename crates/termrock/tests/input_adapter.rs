@@ -6,7 +6,7 @@ use crossterm::event::{
     MouseEventKind as CrosstermMouseEventKind,
 };
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
-use termrock::style::DesignTokens;
+use termrock::style::DesignSystem;
 use termrock::{
     input::{
         Event,
@@ -80,7 +80,7 @@ fn every_mouse_button_action_maps_to_the_neutral_vocabulary() {
 
 #[test]
 fn neutral_mouse_event_drives_list_activation() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let backend = crossterm::event::Event::Mouse(crossterm::event::MouseEvent {
         kind: CrosstermMouseEventKind::Down(CrosstermMouseButton::Left),
         column: 2,

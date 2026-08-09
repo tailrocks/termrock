@@ -14,7 +14,7 @@ use termrock::{
         check_batch_budget,
         check_max_rows_touched,
     },
-    style::Theme,
+    style::{DesignSystem, RolePalette},
     widgets::{
         LogPane,
         LogPaneState,
@@ -40,8 +40,9 @@ fn warmed_tail_render_allocations_scale_with_visible_rows() {
     for _ in 0..LINE_COUNT {
         state.append("resident log line");
     }
-    let theme = Theme::default();
-    let pane = LogPane::new(&theme).title("Build log");
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let pane = LogPane::new(&system).title("Build log");
     let area = Rect::new(0, 0, 120, VIEWPORT_HEIGHT);
     let mut buffer = Buffer::empty(area);
 

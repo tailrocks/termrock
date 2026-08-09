@@ -10,8 +10,9 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     interaction::HitRegion,
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
 };
 
@@ -51,17 +52,17 @@ impl<Id> Default for ActionBarState<Id> {
 pub struct ActionBar<'a, Id> {
     actions: &'a [Action<'a, Id>],
     gap: &'a str,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a, Id> ActionBar<'a, Id> {
     #[must_use]
     /// Creates an action bar over borrowed actions with no focused action.
-    pub const fn new(actions: &'a [Action<'a, Id>], theme: &'a Theme) -> Self {
+    pub const fn new(actions: &'a [Action<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
             actions,
             gap: " ",
-            theme,
+            system,
         }
     }
 
@@ -91,9 +92,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
             let focused = state.focused.as_ref() == Some(&action.id);
             let style = action.style.unwrap_or_else(|| {
                 if !action.enabled {
-                    self.theme.style(Role::ActionDisabled)
+                    self.system.style(Role::ActionDisabled)
                 } else if focused {
-                    self.theme.style(Role::ActionFocused)
+                    self.system.style(Role::ActionFocused)
                 } else {
                     Style::new()
                 }

@@ -16,6 +16,7 @@ use ratatui_core::{
 };
 
 use crate::{
+
     input::{
         KeyCode,
         KeyEvent,
@@ -35,9 +36,9 @@ use crate::{
     },
     style::{
         Density,
-        DesignTokens,
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols,
@@ -45,9 +46,10 @@ use crate::{
     },
     widgets::{
         Panel,
-        PanelEmphasis,
+        PanelChrome,
     },
 };
+
 
 /// Overlay id for agent permission / trust surfaces (`OverlayStack`).
 pub const PERMISSION_OVERLAY_ID: &str = "termrock.permission";
@@ -1226,7 +1228,7 @@ impl PermissionPromptState {
 /// Permission / trust surface widget (head of queue).
 #[derive(Debug, Clone, Copy)]
 pub struct PermissionPrompt<'a> {
-    theme: &'a Theme,
+    system: &'a DesignSystem,
     /// Use ASCII risk markers.
     ascii: bool,
 }
@@ -1234,9 +1236,9 @@ pub struct PermissionPrompt<'a> {
 impl<'a> PermissionPrompt<'a> {
     /// Creates a prompt with the given theme.
     #[must_use]
-    pub const fn new(theme: &'a Theme) -> Self {
+    pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
-            theme,
+            system,
             ascii: false,
         }
     }
@@ -1257,11 +1259,11 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         if area.is_empty() {
             return;
         }
-        let tokens = DesignTokens::new(self.theme.clone(), Density::Compact);
+        let tokens = self.system.clone().density(Density::Compact);
         let Some(req) = state.queue.head() else {
             let panel = Panel::new(&tokens)
                 .title("Permission")
-                .emphasis(PanelEmphasis::Normal);
+                .emphasis(PanelChrome::Normal);
             Widget::render(&panel, area, buffer);
             let inner = panel.inner(area);
             if !inner.is_empty() {
@@ -1270,7 +1272,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                     inner.y,
                     "No pending permissions",
                     usize::from(inner.width),
-                    self.theme.style(Role::TextMuted),
+                    self.system.style(Role::TextMuted),
                 );
             }
             return;
@@ -1293,9 +1295,9 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             req.action
         );
         let emphasis = if risk.is_destructive() {
-            PanelEmphasis::Danger
+            PanelChrome::Danger
         } else {
-            PanelEmphasis::Focused
+            PanelChrome::Focused
         };
         let panel = Panel::new(&tokens).title(title.as_str()).emphasis(emphasis);
         let inner = panel.inner(area);
@@ -1315,7 +1317,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             y,
             w,
             &prov,
-            self.theme.style(Role::TextMuted),
+            self.system.style(Role::TextMuted),
         );
         y = y.saturating_add(1);
         if y >= inner.bottom() {
@@ -1328,7 +1330,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             req.action_kind.label(),
             take_display_cols(&req.target.path, w.saturating_sub(12))
         );
-        paint_line(buffer, inner.x, y, w, &line, self.theme.style(Role::Text));
+        paint_line(buffer, inner.x, y, w, &line, self.system.style(Role::Text));
         y = y.saturating_add(1);
 
         if y < inner.bottom() {
@@ -1345,7 +1347,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 y,
                 w,
                 &loc,
-                self.theme.style(Role::TextMuted),
+                self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
         }
@@ -1353,7 +1355,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         if let Some(warn) = req.warning_text()
             && y < inner.bottom()
         {
-            paint_line(buffer, inner.x, y, w, &warn, self.theme.style(risk.role()));
+            paint_line(buffer, inner.x, y, w, &warn, self.system.style(risk.role()));
             y = y.saturating_add(1);
         }
 
@@ -1365,7 +1367,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 y,
                 w,
                 &exp,
-                self.theme.style(Role::TextMuted),
+                self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
         }
@@ -1374,7 +1376,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             && y < inner.bottom()
         {
             let p = format!("prior: {} ({})", prior.summary, prior.scope.label());
-            paint_line(buffer, inner.x, y, w, &p, self.theme.style(Role::Info));
+            paint_line(buffer, inner.x, y, w, &p, self.system.style(Role::Info));
             y = y.saturating_add(1);
         }
 
@@ -1390,7 +1392,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 _ => "> ",
             };
             let line = format!("{prefix}{}", state.edit_buffer);
-            paint_line(buffer, inner.x, y, w, &line, self.theme.style(Role::Input));
+            paint_line(buffer, inner.x, y, w, &line, self.system.style(Role::Input));
             y = y.saturating_add(1);
         } else if let Some(cmd) = &req.command_preview
             && y < inner.bottom()
@@ -1402,7 +1404,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 y,
                 w,
                 &line,
-                self.theme.style(Role::TextStrong),
+                self.system.style(Role::TextStrong),
             );
             y = y.saturating_add(1);
         }
@@ -1418,7 +1420,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                     y,
                     w,
                     detail,
-                    self.theme.style(Role::TextMuted),
+                    self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
             }
@@ -1437,7 +1439,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 y,
                 w,
                 &scope_line,
-                self.theme.style(Role::TextMuted),
+                self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
         }
@@ -1454,11 +1456,11 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 }
                 let rect = Rect::new(x, action_y, width, 1);
                 let style = if *action == state.selected {
-                    self.theme.style(Role::Selection)
+                    self.system.style(Role::Selection)
                 } else if action.grants() && risk.is_destructive() {
-                    self.theme.style(Role::Danger)
+                    self.system.style(Role::Danger)
                 } else {
-                    self.theme.style(Role::Text)
+                    self.system.style(Role::Text)
                 };
                 buffer.set_stringn(rect.x, rect.y, &label, usize::from(rect.width), style);
                 state.action_regions.push(PermissionActionRegion {
@@ -1746,8 +1748,9 @@ mod tests {
     fn mouse_confirm_uses_hit_regions() {
         use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
-        let theme = Theme::default();
-        let prompt = PermissionPrompt::new(&theme);
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let prompt = PermissionPrompt::new(&system);
         let mut state = PermissionPromptState::new();
         state.enqueue(low_read());
         let mut terminal = Terminal::new(TestBackend::new(60, 12)).unwrap();

@@ -28,13 +28,14 @@ use crate::{
     widgets::{
         ListRow,
         Panel,
-        PanelEmphasis,
+        PanelChrome,
         Picker,
         PickerOutcome,
         PickerState,
         TextInputState,
     },
 };
+
 
 /// Default overlay id for a command palette on an [`OverlayStack`].
 pub const COMMAND_PALETTE_OVERLAY_ID: &str = "termrock.command_palette";
@@ -144,7 +145,7 @@ pub type CommandPaletteState<Id> = PickerState<Id>;
 pub struct CommandPalette<'a, Id> {
     title: &'a str,
     rows: &'a [ListRow<'a, Id>],
-    tokens: &'a crate::style::DesignTokens,
+    tokens: &'a crate::style::DesignSystem,
 }
 
 impl<'a, Id> CommandPalette<'a, Id> {
@@ -153,7 +154,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
     pub const fn new(
         title: &'a str,
         rows: &'a [ListRow<'a, Id>],
-        tokens: &'a crate::style::DesignTokens,
+        tokens: &'a crate::style::DesignSystem,
     ) -> Self {
         Self {
             title,
@@ -189,7 +190,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CommandPalette<'_, Id> {
         }
         let panel = Panel::new(self.tokens)
             .title(self.title)
-            .emphasis(PanelEmphasis::Focused);
+            .emphasis(PanelChrome::Focused);
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
         if inner.is_empty() {

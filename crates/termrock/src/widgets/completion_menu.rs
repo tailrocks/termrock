@@ -31,14 +31,16 @@ use crate::{
         place_overlay,
     },
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols,
         take_display_cols,
     },
 };
+
 
 /// One borrowed completion candidate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -480,7 +482,7 @@ pub fn dismiss_completion_overlay<FocusId: Clone>(
 /// Popup completion list widget.
 pub struct CompletionMenu<'a, Id> {
     candidates: &'a [CompletionCandidate<'a, Id>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
     empty_message: &'a str,
     /// Bounds inside which the menu must stay (typically the editor area).
     bounds: Rect,
@@ -494,13 +496,13 @@ impl<'a, Id> CompletionMenu<'a, Id> {
     #[must_use]
     pub const fn new(
         candidates: &'a [CompletionCandidate<'a, Id>],
-        theme: &'a Theme,
+        system: &'a DesignSystem,
         bounds: Rect,
         anchor: Rect,
     ) -> Self {
         Self {
             candidates,
-            theme,
+            system,
             empty_message: "No matches",
             bounds,
             anchor,
@@ -571,8 +573,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
         state.reconcile(self.candidates);
 
         // Clear and border-fill background.
-        let bg = self.theme.style(Role::Surface);
-        let border = self.theme.style(Role::BorderFocused);
+        let bg = self.system.style(Role::Surface);
+        let border = self.system.style(Role::BorderFocused);
         for y in menu.y..menu.y.saturating_add(menu.height) {
             for x in menu.x..menu.x.saturating_add(menu.width) {
                 if let Some(cell) = buffer.cell_mut((x, y)) {
@@ -605,7 +607,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
                 menu.y,
                 text,
                 usize::from(menu.width.saturating_sub(2)),
-                self.theme.style(Role::TextMuted),
+                self.system.style(Role::TextMuted),
             );
             return;
         }
@@ -627,7 +629,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
 
             let selected = state.selected.as_ref() == Some(&candidate.id);
             let hovered = state.hovered.as_ref() == Some(&candidate.id);
-            let style = row_style(self.theme, candidate.enabled, selected, hovered);
+            let style = row_style(self.system, candidate.enabled, selected, hovered);
 
             let kind_cols = candidate.kind.map(display_cols).unwrap_or(0);
             let kind_budget = if kind_cols == 0 {
@@ -652,7 +654,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &CompletionMenu<'_, Id> {
                     kind_text,
                     usize::from(menu.width.saturating_sub(2)),
                     if candidate.enabled {
-                        self.theme.style(Role::TextMuted)
+                        self.system.style(Role::TextMuted)
                     } else {
                         style
                     },
@@ -675,15 +677,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for CompletionMenu<'_, Id> {
     }
 }
 
-fn row_style(theme: &Theme, enabled: bool, selected: bool, hovered: bool) -> Style {
+fn row_style(system: &DesignSystem, enabled: bool, selected: bool, hovered: bool) -> Style {
     if !enabled {
-        theme.style(Role::TextDisabled)
+        system.style(Role::TextDisabled)
     } else if selected {
-        theme.style(Role::Selection)
+        system.style(Role::Selection)
     } else if hovered {
-        theme.style(Role::Focus)
+        system.style(Role::Focus)
     } else {
-        theme.style(Role::Text)
+        system.style(Role::Text)
     }
 }
 

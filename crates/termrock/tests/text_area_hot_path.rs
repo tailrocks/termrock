@@ -13,7 +13,7 @@ use termrock::{
         KeyEvent,
         KeyModifiers,
     },
-    style::Theme,
+    style::{DesignSystem, RolePalette},
     widgets::{
         TextArea,
         TextAreaState,
@@ -29,8 +29,9 @@ fn warmed_large_document_render_is_allocation_free() {
         .map(|_| "resident line with 東京 and emoji 🧪")
         .collect::<Vec<_>>()
         .join("\n");
-    let theme = Theme::default();
-    let widget = TextArea::new(&theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let widget = TextArea::new(&system);
     let mut state = TextAreaState::new(text);
     let area = Rect::new(0, 0, 80, 40);
     let mut buffer = Buffer::empty(area);

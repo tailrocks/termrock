@@ -2,8 +2,9 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::display_cols,
 };
@@ -38,18 +39,18 @@ pub struct Progress<'a> {
     kind: ProgressKind,
     label: Option<&'a str>,
     frames: &'a [&'a str],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> Progress<'a> {
     #[must_use]
     /// Creates an unlabeled progress indicator in the supplied mode.
-    pub const fn new(kind: ProgressKind, theme: &'a Theme) -> Self {
+    pub const fn new(kind: ProgressKind, system: &'a DesignSystem) -> Self {
         Self {
             kind,
             label: None,
             frames: &DEFAULT_PROGRESS_FRAMES,
-            theme,
+            system,
         }
     }
 
@@ -78,13 +79,13 @@ impl Widget for &Progress<'_> {
         {
             return;
         }
-        buffer.set_style(area, self.theme.style(Role::TextMuted));
+        buffer.set_style(area, self.system.style(Role::TextMuted));
         match self.kind {
             ProgressKind::Determinate { fraction } => {
-                render_determinate(area, buffer, self.label, fraction, self.theme);
+                render_determinate(area, buffer, self.label, fraction, self.system);
             }
             ProgressKind::Indeterminate { tick } => {
-                render_indeterminate(area, buffer, self.label, tick, self.frames, self.theme);
+                render_indeterminate(area, buffer, self.label, tick, self.frames, self.system);
             }
         }
     }
@@ -105,7 +106,7 @@ fn render_determinate(
     buffer: &mut Buffer,
     label: Option<&str>,
     fraction: f64,
-    theme: &Theme,
+    system: &DesignSystem,
 ) {
     let fraction = if fraction.is_finite() {
         fraction.clamp(0.0, 1.0)
@@ -127,7 +128,7 @@ fn render_determinate(
             area.y,
             &percentage,
             usize::from(percentage_width),
-            theme.style(Role::Text),
+            system.style(Role::Text),
         );
     }
 
@@ -143,7 +144,7 @@ fn render_determinate(
             area.y,
             label,
             usize::from(label_width),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
         track_x = area.x.saturating_add(label_width);
         if label_width > 0 && track_x < percentage_x {
@@ -159,7 +160,7 @@ fn render_determinate(
             track_x.saturating_add(column),
             area.y,
             if column < filled { "█" } else { "░" },
-            theme.style(if column < filled {
+            system.style(if column < filled {
                 Role::Accent
             } else {
                 Role::TextMuted
@@ -174,7 +175,7 @@ fn render_indeterminate(
     label: Option<&str>,
     tick: u64,
     frames: &[&str],
-    theme: &Theme,
+    system: &DesignSystem,
 ) {
     if frames.is_empty() {
         return;
@@ -190,7 +191,7 @@ fn render_indeterminate(
         area.y,
         glyph,
         usize::from(glyph_width),
-        theme.style(Role::Accent),
+        system.style(Role::Accent),
     );
     if let Some(label) = label
         && glyph_width < area.width
@@ -202,7 +203,7 @@ fn render_indeterminate(
             area.y,
             label,
             usize::from(label_width),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
@@ -217,10 +218,11 @@ mod tests {
 
     #[test]
     fn determinate_progress_clamps_and_keeps_percentage_non_color_cue() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(2, 1, 18, 1);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 22, 3));
-        (&Progress::new(ProgressKind::Determinate { fraction: 1.5 }, &theme).label("Index"))
+        (&Progress::new(ProgressKind::Determinate { fraction: 1.5 }, &system).label("Index"))
             .render(area, &mut buffer);
 
         let row = rendered(&buffer);
@@ -231,11 +233,12 @@ mod tests {
 
     #[test]
     fn indeterminate_tick_is_deterministic_and_tiny_areas_are_safe() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, 8, 1);
         let mut first = Buffer::empty(area);
         let mut second = Buffer::empty(area);
-        let progress = Progress::new(ProgressKind::Indeterminate { tick: 3 }, &theme).label("Load");
+        let progress = Progress::new(ProgressKind::Indeterminate { tick: 3 }, &system).label("Load");
         (&progress).render(area, &mut first);
         (&progress).render(area, &mut second);
 
@@ -245,10 +248,11 @@ mod tests {
     }
 
     fn determinate(fraction: f64, width: u16) -> Buffer {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, width, 1);
         let mut buffer = Buffer::empty(area);
-        (&Progress::new(ProgressKind::Determinate { fraction }, &theme)).render(area, &mut buffer);
+        (&Progress::new(ProgressKind::Determinate { fraction }, &system)).render(area, &mut buffer);
         buffer
     }
 
@@ -284,9 +288,10 @@ mod tests {
 
     #[test]
     fn width_zero_and_one_do_not_panic() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 1));
-        let progress = Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &theme);
+        let progress = Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &system);
         (&progress).render(Rect::new(0, 0, 0, 0), &mut buffer);
         (&progress).render(Rect::new(0, 0, 1, 1), &mut buffer);
     }
@@ -299,10 +304,11 @@ mod tests {
 
     #[test]
     fn wide_char_label_truncates_on_grapheme_boundary() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, 8, 1);
         let mut buffer = Buffer::empty(area);
-        (&Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &theme).label("東京🪨"))
+        (&Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &system).label("東京🪨"))
             .render(area, &mut buffer);
         assert_eq!(buffer[(0, 0)].symbol(), "東");
         assert_eq!(buffer[(2, 0)].symbol(), "京");
@@ -311,12 +317,13 @@ mod tests {
 
     #[test]
     fn custom_frames_cycle_and_wrap() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let frames = ["A", "B"];
         for (tick, expected) in [(0, "A"), (1, "B"), (2, "A")] {
             let area = Rect::new(0, 0, 3, 1);
             let mut buffer = Buffer::empty(area);
-            (&Progress::new(ProgressKind::Indeterminate { tick }, &theme).frames(&frames))
+            (&Progress::new(ProgressKind::Indeterminate { tick }, &system).frames(&frames))
                 .render(area, &mut buffer);
             assert_eq!(buffer[(0, 0)].symbol(), expected);
         }
@@ -324,11 +331,12 @@ mod tests {
 
     #[test]
     fn empty_frames_render_nothing() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, 8, 1);
         let mut buffer = Buffer::empty(area);
         let before = buffer.clone();
-        (&Progress::new(ProgressKind::Indeterminate { tick: 3 }, &theme)
+        (&Progress::new(ProgressKind::Indeterminate { tick: 3 }, &system)
             .frames(&[])
             .label("hidden"))
             .render(area, &mut buffer);
@@ -337,10 +345,11 @@ mod tests {
 
     #[test]
     fn narrow_width_elides_percentage_but_keeps_glyph_cue() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, 14, 1);
         let mut buffer = Buffer::empty(area);
-        (&Progress::new(ProgressKind::Determinate { fraction: 0.62 }, &theme).label("Build"))
+        (&Progress::new(ProgressKind::Determinate { fraction: 0.62 }, &system).label("Build"))
             .render(area, &mut buffer);
         let row = rendered(&buffer);
         assert!(!row.contains('%'));
@@ -350,10 +359,11 @@ mod tests {
 
     #[test]
     fn narrow_long_label_reserves_filled_and_empty_track_cells() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, 14, 1);
         let mut buffer = Buffer::empty(area);
-        (&Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &theme)
+        (&Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
             .label("An extremely long build label"))
             .render(area, &mut buffer);
         let row = rendered(&buffer);

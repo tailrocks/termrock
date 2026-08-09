@@ -12,10 +12,7 @@ use termrock::{
         KeyEvent,
         KeyModifiers,
     },
-    style::{
-        DesignTokens,
-        Role,
-    },
+    style::{Density, DesignSystem, Role, RolePalette},
     widgets::{
         Tree,
         TreeNode,
@@ -94,7 +91,7 @@ fn keyboard_navigation_skips_disabled_rows_and_requests_disclosure() {
 
 #[test]
 fn render_exposes_status_and_only_painted_enabled_rows_are_clickable() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = nodes();
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some("root"));
@@ -130,7 +127,7 @@ fn render_exposes_status_and_only_painted_enabled_rows_are_clickable() {
 
 #[test]
 fn empty_and_zero_sized_trees_are_safe() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let tree: Tree<'_, u8> = Tree::new(&[], &tokens);
     let mut state = TreeState::default();
     let mut buffer = Buffer::empty(Rect::new(0, 0, 0, 0));
@@ -148,7 +145,9 @@ fn empty_and_zero_sized_trees_are_safe() {
 
 #[test]
 fn painted_disclosure_and_selected_row_have_distinct_mouse_outcomes() {
-    let tokens = DesignTokens::default();
+    // Fill selection (not phosphor gutter) so disclosure column geometry matches
+    // the historical hit-test expectations for this regression.
+    let tokens = DesignSystem::new(RolePalette::default(), Density::default());
     let rows = nodes();
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some("leaf"));
@@ -169,7 +168,7 @@ fn painted_disclosure_and_selected_row_have_distinct_mouse_outcomes() {
 
 #[test]
 fn selected_node_is_scrolled_into_a_bounded_viewport() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = vec![
         TreeNode {
             id: 0,
@@ -233,7 +232,7 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
 
 #[test]
 fn page_keys_and_scroll_delta_use_the_painted_viewport() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = (0..8)
         .map(|id| TreeNode {
             id,
@@ -275,7 +274,7 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
 
 #[test]
 fn focus_gates_input_and_preserves_non_color_selection_cues() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = nodes();
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some("root"));
@@ -314,8 +313,8 @@ fn focus_gates_input_and_preserves_non_color_selection_cues() {
 
 #[test]
 fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
-    let tokens = DesignTokens::default();
-    let theme = &tokens.theme;
+    let tokens = DesignSystem::default();
+    let theme = &tokens.palette;
     let rows = vec![
         TreeNode {
             id: 0,
@@ -394,7 +393,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
 
 #[test]
 fn narrow_clipping_never_splits_a_wide_grapheme() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = vec![TreeNode {
         id: 0,
         label: Line::from("🧪e\u{301}Z"),
@@ -440,7 +439,7 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
 
 #[test]
 fn status_suffix_reserves_space_before_clipping_wide_labels() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = vec![TreeNode {
         id: 0,
         label: Line::from("🧪🧪"),
@@ -478,7 +477,7 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
 
 #[test]
 fn trailing_cells_align_right_and_preserve_wide_metadata() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = vec![
         TreeNode {
             id: 0,
@@ -529,7 +528,7 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
 
 #[test]
 fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let narrow_rows = [TreeNode {
         id: 0,
         label: Line::from("hidden"),
@@ -588,7 +587,7 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
 
 #[test]
 fn multi_select_toggles_by_space_and_painted_checkbox() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let rows = nodes();
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some("root"));

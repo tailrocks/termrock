@@ -1,12 +1,17 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{Modifier, Style},
+    style::{
+        Modifier,
+        Style,
+    },
     text::Line,
     widgets::StatefulWidget,
 };
 
 use crate::{
+    style::DesignSystem,
+
     input::{
         KeyCode,
         KeyEvent,
@@ -17,9 +22,10 @@ use crate::{
     scroll::max_offset,
     style::{
         Role,
-        Theme,
+        RolePalette,
     },
 };
+
 
 const FIELD_HEIGHT: usize = 4;
 const SECTION_HEADER_HEIGHT: usize = 2;
@@ -391,14 +397,14 @@ impl<Id: Clone + PartialEq> FormState<Id> {
 /// A responsive, navigable form assembled from borrowed sections.
 pub struct Form<'a, Id> {
     sections: &'a [FormSection<'a, Id>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a, Id> Form<'a, Id> {
     #[must_use]
     /// Creates a form over the supplied sections and theme.
-    pub const fn new(sections: &'a [FormSection<'a, Id>], theme: &'a Theme) -> Self {
-        Self { sections, theme }
+    pub const fn new(sections: &'a [FormSection<'a, Id>], system: &'a DesignSystem) -> Self {
+        Self { sections, system }
     }
 }
 
@@ -458,7 +464,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 state.offset,
                 content_y,
                 &section.title,
-                self.theme.style(Role::TextStrong),
+                self.system.style(Role::TextStrong),
             );
             content_y = content_y.saturating_add(SECTION_HEADER_HEIGHT);
             for (index, field) in section.fields.iter().enumerate() {
@@ -485,7 +491,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                     field_y,
                     field_area,
                     field,
-                    self.theme,
+                    self.system,
                     state.active && state.focused.as_ref() == Some(&field.id),
                     state.hovered.as_ref() == Some(&field.id),
                 );
@@ -540,7 +546,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
             let scrollbar = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
             state.scrollbar_region = Some(scrollbar);
             for y in scrollbar.top()..scrollbar.bottom() {
-                buffer.set_string(scrollbar.x, y, "│", self.theme.style(Role::ScrollTrack));
+                buffer.set_string(scrollbar.x, y, "│", self.system.style(Role::ScrollTrack));
             }
             if let Some(thumb) = crate::scroll::full_cell_thumb(
                 content_height,
@@ -553,7 +559,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                         scrollbar.x,
                         scrollbar.y.saturating_add(y),
                         "█",
-                        self.theme.style(Role::ScrollThumb),
+                        self.system.style(Role::ScrollThumb),
                     );
                 }
             }
@@ -631,29 +637,29 @@ fn paint_field<Id>(
     content_y: usize,
     field_area: Rect,
     field: &FormField<'_, Id>,
-    theme: &Theme,
+    system: &DesignSystem,
     focused: bool,
     hovered: bool,
 ) {
     let mut label_style = if field.enabled {
-        theme.style(Role::Text)
+        system.style(Role::Text)
     } else {
-        theme.style(Role::TextDisabled).add_modifier(Modifier::DIM)
+        system.style(Role::TextDisabled).add_modifier(Modifier::DIM)
     };
     let mut value_style = if field.error.is_some() {
-        theme.style(Role::InputInvalid)
+        system.style(Role::InputInvalid)
     } else {
-        theme.style(Role::Input)
+        system.style(Role::Input)
     };
     if focused {
         label_style = label_style.add_modifier(Modifier::BOLD);
-        value_style = value_style.patch(theme.style(Role::Focus));
+        value_style = value_style.patch(system.style(Role::Focus));
     } else if hovered && field.enabled {
         label_style = label_style.add_modifier(Modifier::UNDERLINED);
     }
     if !field.enabled {
         value_style = value_style
-            .patch(theme.style(Role::TextDisabled))
+            .patch(system.style(Role::TextDisabled))
             .add_modifier(Modifier::DIM);
     }
 
@@ -677,7 +683,7 @@ fn paint_field<Id>(
             field_area.right().saturating_sub(1),
             1,
             "*",
-            theme.style(Role::Accent).add_modifier(Modifier::BOLD),
+            system.style(Role::Accent).add_modifier(Modifier::BOLD),
         );
     }
     let disabled_width = u16::from(!field.enabled && field_area.width > 0);
@@ -712,7 +718,7 @@ fn paint_field<Id>(
             field_area.x,
             field_area.width,
             error,
-            theme.style(Role::Danger),
+            system.style(Role::Danger),
         );
     } else if let Some(help) = &field.help {
         paint_line_at(
@@ -723,7 +729,7 @@ fn paint_field<Id>(
             field_area.x,
             field_area.width,
             help,
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }

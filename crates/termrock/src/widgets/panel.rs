@@ -8,32 +8,14 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Span, widgets::Widget};
 use ratatui_widgets::block::Block;
 
-use crate::style::{DesignTokens, PanelChrome, PanelRecipe, Theme};
+use crate::style::{
+        DesignSystem,
+        PanelChrome,
+        PanelRecipe,
+    };
 use crate::text::display_cols;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
-/// Semantic chrome emphasis for focused and inactive panels.
-pub enum PanelEmphasis {
-    /// Normal panel chrome.
-    Normal,
-    /// Focused panel chrome.
-    Focused,
-    /// Danger-accent chrome for destructive or failed actions.
-    Danger,
-}
-
-impl PanelEmphasis {
-    /// Maps to design-token panel chrome.
-    #[must_use]
-    pub const fn chrome(self) -> PanelChrome {
-        match self {
-            Self::Normal => PanelChrome::Normal,
-            Self::Focused => PanelChrome::Focused,
-            Self::Danger => PanelChrome::Danger,
-        }
-    }
-}
+// PanelChrome lives in `style` (sole chrome enum). Re-exported from widgets::mod.
 
 /// Priority-ordered title/footer slots for one-line panel chrome.
 ///
@@ -102,18 +84,18 @@ impl<'a> PanelSlots<'a> {
 }
 
 #[derive(Debug, Clone)]
-/// A bordered container painted through [`DesignTokens`] recipes.
+/// A bordered container painted through [`DesignSystem`] recipes.
 pub struct Panel<'a> {
     slots: PanelSlots<'a>,
-    emphasis: PanelEmphasis,
+    emphasis: PanelChrome,
     style: Option<Style>,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> Panel<'a> {
     /// Creates an untitled panel from design tokens (canonical constructor).
     #[must_use]
-    pub const fn new(tokens: &'a DesignTokens) -> Self {
+    pub const fn new(tokens: &'a DesignSystem) -> Self {
         Self {
             slots: PanelSlots {
                 title: None,
@@ -122,7 +104,7 @@ impl<'a> Panel<'a> {
                 trailing: None,
                 footer: None,
             },
-            emphasis: PanelEmphasis::Normal,
+            emphasis: PanelChrome::Normal,
             style: None,
             tokens,
         }
@@ -130,7 +112,7 @@ impl<'a> Panel<'a> {
 
     /// Alias for [`Self::new`].
     #[must_use]
-    pub const fn from_tokens(tokens: &'a DesignTokens) -> Self {
+    pub const fn from_tokens(tokens: &'a DesignSystem) -> Self {
         Self::new(tokens)
     }
 
@@ -178,8 +160,15 @@ impl<'a> Panel<'a> {
 
     #[must_use]
     /// Sets the semantic panel emphasis.
-    pub const fn emphasis(mut self, emphasis: PanelEmphasis) -> Self {
+    pub const fn emphasis(mut self, emphasis: PanelChrome) -> Self {
         self.emphasis = emphasis;
+        self
+    }
+
+    /// Canonical chrome setter (alias of [`Self::emphasis`]).
+    #[must_use]
+    pub const fn chrome(mut self, chrome: PanelChrome) -> Self {
+        self.emphasis = chrome;
         self
     }
 
@@ -193,13 +182,13 @@ impl<'a> Panel<'a> {
     /// Resolves the panel recipe for current emphasis.
     #[must_use]
     pub fn recipe(&self) -> PanelRecipe {
-        self.tokens.panel_recipe(self.emphasis.chrome())
+        self.tokens.panel_recipe(self.emphasis)
     }
 
-    /// Theme borrow from tokens.
+    /// Palette borrow from the design system.
     #[must_use]
-    pub const fn theme(&self) -> &Theme {
-        &self.tokens.theme
+    pub const fn palette(&self) -> &crate::style::RolePalette {
+        self.tokens.palette()
     }
 
     /// Slot projection after contraction for a given outer width.
@@ -271,19 +260,19 @@ mod tests {
 
     #[test]
     fn panel_recipe_focus_uses_border_focused_not_weight() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let normal = tokens.panel_recipe(PanelChrome::Normal);
         let focused = tokens.panel_recipe(PanelChrome::Focused);
         assert_ne!(normal.border, focused.border);
         let panel = Panel::new(&tokens)
-            .emphasis(PanelEmphasis::Focused)
+            .emphasis(PanelChrome::Focused)
             .title("T");
         assert_eq!(panel.recipe().border, focused.border);
     }
 
     #[test]
     fn panel_slots_drop_trailing_before_title() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let panel = Panel::new(&tokens)
             .title("Main")
             .subtitle("sub")

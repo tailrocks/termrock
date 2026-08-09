@@ -15,11 +15,12 @@ use crate::{
         MouseEventKind,
     },
     style::{
-        DesignTokens,
+        DesignSystem,
         Role,
     },
     text::take_display_cols,
 };
+
 
 /// Heading level (terminal typography weight/role).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -39,13 +40,13 @@ pub enum HeadingLevel {
 pub struct Heading<'a> {
     text: &'a str,
     level: HeadingLevel,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> Heading<'a> {
     /// Heading text.
     #[must_use]
-    pub const fn new(text: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(text: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             text,
             level: HeadingLevel::H2,
@@ -66,7 +67,7 @@ impl Widget for &Heading<'_> {
         if area.is_empty() {
             return;
         }
-        let mut style = self.tokens.theme.style(Role::TextStrong);
+        let mut style = self.tokens.style(Role::TextStrong);
         if matches!(self.level, HeadingLevel::H1) {
             style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
         } else if matches!(self.level, HeadingLevel::H2) {
@@ -81,14 +82,14 @@ impl Widget for &Heading<'_> {
 #[derive(Debug, Clone, Copy)]
 pub struct Paragraph<'a> {
     text: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     muted: bool,
 }
 
 impl<'a> Paragraph<'a> {
     /// Body text.
     #[must_use]
-    pub const fn new(text: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(text: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             text,
             tokens,
@@ -109,7 +110,7 @@ impl Widget for &Paragraph<'_> {
         if area.is_empty() {
             return;
         }
-        let style = self.tokens.theme.style(if self.muted {
+        let style = self.tokens.style(if self.muted {
             Role::TextMuted
         } else {
             Role::Text
@@ -168,14 +169,14 @@ pub enum SurfaceElevation {
 /// Elevated fill region (no border ownership of focus).
 #[derive(Debug, Clone, Copy)]
 pub struct Surface<'a> {
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     elevation: SurfaceElevation,
 }
 
 impl<'a> Surface<'a> {
     /// Surface fill.
     #[must_use]
-    pub const fn new(tokens: &'a DesignTokens) -> Self {
+    pub const fn new(tokens: &'a DesignSystem) -> Self {
         Self {
             tokens,
             elevation: SurfaceElevation::Base,
@@ -200,7 +201,7 @@ impl Widget for &Surface<'_> {
             SurfaceElevation::Elevated => Role::Elevated,
             SurfaceElevation::Canvas => Role::Canvas,
         };
-        let style = self.tokens.theme.style(role);
+        let style = self.tokens.style(role);
         for y in area.y..area.bottom() {
             for x in area.x..area.right() {
                 buffer[(x, y)].set_style(style);
@@ -298,13 +299,13 @@ impl SectionState {
 pub struct Section<'a> {
     title: &'a str,
     description: Option<&'a str>,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> Section<'a> {
     /// Section title.
     #[must_use]
-    pub const fn new(title: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(title: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             title,
             description: None,
@@ -327,9 +328,9 @@ impl<'a> Section<'a> {
         }
         let mark = if state.collapsed { "▸" } else { "▾" };
         let style = if state.focused {
-            self.tokens.theme.style(Role::TextStrong)
+            self.tokens.style(Role::TextStrong)
         } else {
-            self.tokens.theme.style(Role::Text)
+            self.tokens.style(Role::Text)
         };
         let line = format!("{mark} {}", self.title);
         let text = take_display_cols(&line, usize::from(area.width));
@@ -348,7 +349,7 @@ impl<'a> Section<'a> {
                 y,
                 &d,
                 usize::from(area.width),
-                self.tokens.theme.style(Role::TextMuted),
+                self.tokens.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
         }
@@ -400,13 +401,13 @@ pub struct Callout<'a> {
     title: &'a str,
     body: Option<&'a str>,
     tone: CalloutTone,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> Callout<'a> {
     /// Title + tone.
     #[must_use]
-    pub const fn new(title: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(title: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             title,
             body: None,
@@ -435,7 +436,7 @@ impl Widget for &Callout<'_> {
         if area.is_empty() {
             return;
         }
-        let style = self.tokens.theme.style(self.tone.role());
+        let style = self.tokens.style(self.tone.role());
         let head = format!("{} {}", self.tone.glyph(), self.title);
         let text = take_display_cols(&head, usize::from(area.width));
         buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
@@ -448,7 +449,7 @@ impl Widget for &Callout<'_> {
                 area.y + 1,
                 &b,
                 usize::from(area.width),
-                self.tokens.theme.style(Role::TextMuted),
+                self.tokens.style(Role::TextMuted),
             );
         }
     }
@@ -474,14 +475,14 @@ pub enum AlertOutcome {
 #[derive(Debug, Clone, Copy)]
 pub struct Alert<'a> {
     title: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     tone: AlertTone,
 }
 
 impl<'a> Alert<'a> {
     /// Alert title.
     #[must_use]
-    pub const fn new(title: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(title: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             title,
             tokens,
@@ -537,8 +538,7 @@ impl Alert<'_> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use crate::style::DesignTokens;
-    use crate::text::display_cols;
+        use crate::text::display_cols;
 
     #[test]
     fn section_toggle_collapse() {
@@ -553,7 +553,7 @@ mod tests {
 
     #[test]
     fn heading_paints_strong() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
         Widget::render(
             &Heading::new("Title", &tokens).level(HeadingLevel::H1),

@@ -8,7 +8,7 @@
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::DesignTokens,
+    style::DesignSystem,
     widgets::{
         data_table::{DataTableOutcome, DataTableState},
         menu_nav::{SidebarOutcome, SidebarState},
@@ -16,6 +16,7 @@ use crate::{
         scroll_area::ScrollAreaState,
     },
 };
+
 
 // ── OpsDashboard ────────────────────────────────────────────────────────────
 
@@ -360,14 +361,14 @@ impl FormWizardState {
 /// Paint chrome for form wizard step progress (domain fields stay consumer-owned).
 #[derive(Debug, Clone, Copy)]
 pub struct FormWizard<'a> {
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     label: &'a str,
 }
 
 impl<'a> FormWizard<'a> {
     /// Create chrome with a progress label.
     #[must_use]
-    pub const fn new(tokens: &'a DesignTokens, label: &'a str) -> Self {
+    pub const fn new(tokens: &'a DesignSystem, label: &'a str) -> Self {
         Self { tokens, label }
     }
 
@@ -388,7 +389,7 @@ impl<'a> FormWizard<'a> {
             area.y,
             &text,
             usize::from(area.width),
-            self.tokens.theme.style(crate::style::Role::TextStrong),
+            self.tokens.style(crate::style::Role::TextStrong),
         );
     }
 }
@@ -423,13 +424,13 @@ impl ratatui_core::widgets::StatefulWidget for &FormWizard<'_> {
 #[derive(Debug, Clone, Copy)]
 pub struct BlockChrome<'a> {
     /// Design tokens.
-    pub tokens: &'a DesignTokens,
+    pub tokens: &'a DesignSystem,
 }
 
 impl<'a> BlockChrome<'a> {
     /// Tokens.
     #[must_use]
-    pub const fn new(tokens: &'a DesignTokens) -> Self {
+    pub const fn new(tokens: &'a DesignSystem) -> Self {
         Self { tokens }
     }
 }

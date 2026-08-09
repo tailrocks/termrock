@@ -127,7 +127,8 @@ pub use menu_nav::{
     TOOLTIP_OVERLAY_ID, Tooltip, TooltipState, dismiss_drawer_overlay, open_drawer_overlay,
     open_popover_overlay, open_tooltip_overlay, place_drawer, place_popover, place_tooltip,
 };
-pub use panel::{Panel, PanelEmphasis, PanelSlots};
+pub use panel::{Panel, PanelSlots};
+pub use crate::style::PanelChrome;
 pub use permission::{
     DataMovement, EditField, ExecutionLocation, InitiatorKind, PERMISSION_OVERLAY_ID,
     PermissionAction, PermissionActionKind, PermissionActionRegion, PermissionAuditEntry,

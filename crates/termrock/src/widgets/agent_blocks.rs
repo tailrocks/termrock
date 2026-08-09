@@ -19,7 +19,7 @@ use crate::{
     },
     interaction::Outcome,
     style::{
-        DesignTokens,
+        DesignSystem,
         Role,
     },
     text::take_display_cols,
@@ -28,9 +28,10 @@ use crate::{
         ListRow,
         ListState,
         Panel,
-        PanelEmphasis,
+        PanelChrome,
     },
 };
+
 
 // ── Mode ribbon ─────────────────────────────────────────────────────────────
 
@@ -51,13 +52,13 @@ pub struct WorkbenchMode<'a, Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct ModeRibbon<'a, Id> {
     modes: &'a [WorkbenchMode<'a, Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> ModeRibbon<'a, Id> {
     /// Creates a mode ribbon from borrowed modes.
     #[must_use]
-    pub const fn new(modes: &'a [WorkbenchMode<'a, Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(modes: &'a [WorkbenchMode<'a, Id>], tokens: &'a DesignSystem) -> Self {
         Self { modes, tokens }
     }
 }
@@ -173,11 +174,11 @@ impl<Id: Clone + PartialEq> Widget for &ModeRibbon<'_, Id> {
                 format!(" {} ", mode.label)
             };
             let style = if !mode.enabled {
-                self.tokens.theme.style(Role::TextDisabled)
+                self.tokens.style(Role::TextDisabled)
             } else if mode.active {
-                self.tokens.theme.style(Role::Accent)
+                self.tokens.style(Role::Accent)
             } else {
-                self.tokens.theme.style(Role::TextMuted)
+                self.tokens.style(Role::TextMuted)
             };
             let clipped = take_display_cols(&label, usize::from(area.right().saturating_sub(x)));
             let w = u16::try_from(clipped.chars().count().max(clipped.len().min(12))).unwrap_or(12);
@@ -225,13 +226,13 @@ pub struct QuestionStep<'a, Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct QuestionFlow<'a, Id> {
     steps: &'a [QuestionStep<'a, Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> QuestionFlow<'a, Id> {
     /// Creates a question flow from borrowed steps.
     #[must_use]
-    pub const fn new(steps: &'a [QuestionStep<'a, Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(steps: &'a [QuestionStep<'a, Id>], tokens: &'a DesignSystem) -> Self {
         Self { steps, tokens }
     }
 }
@@ -389,9 +390,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &QuestionFlow<'_, Id> {
         let panel = Panel::new(self.tokens)
             .title("Question")
             .emphasis(if state.focused {
-                PanelEmphasis::Focused
+                PanelChrome::Focused
             } else {
-                PanelEmphasis::Normal
+                PanelChrome::Normal
             });
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
@@ -404,7 +405,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &QuestionFlow<'_, Id> {
             inner.y,
             &progress,
             usize::from(inner.width),
-            self.tokens.theme.style(Role::TextMuted),
+            self.tokens.style(Role::TextMuted),
         );
         if inner.height > 1 {
             let prompt = take_display_cols(step.prompt, usize::from(inner.width));
@@ -413,7 +414,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &QuestionFlow<'_, Id> {
                 inner.y + 1,
                 &prompt,
                 usize::from(inner.width),
-                self.tokens.theme.style(Role::Text),
+                self.tokens.style(Role::Text),
             );
         }
         let mut y = inner.y.saturating_add(2);
@@ -428,9 +429,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &QuestionFlow<'_, Id> {
             };
             let line = format!("{marker}{}", opt.label);
             let style = if i == state.option_index {
-                self.tokens.theme.style(Role::Accent)
+                self.tokens.style(Role::Accent)
             } else {
-                self.tokens.theme.style(Role::Text)
+                self.tokens.style(Role::Text)
             };
             let clipped = take_display_cols(&line, usize::from(inner.width));
             buffer.set_stringn(inner.x, y, &clipped, usize::from(inner.width), style);
@@ -466,13 +467,13 @@ pub struct PlanStep<'a, Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct PlanReview<'a, Id> {
     steps: &'a [PlanStep<'a, Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> PlanReview<'a, Id> {
     /// Creates plan review from steps.
     #[must_use]
-    pub const fn new(steps: &'a [PlanStep<'a, Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(steps: &'a [PlanStep<'a, Id>], tokens: &'a DesignSystem) -> Self {
         Self { steps, tokens }
     }
 }
@@ -579,9 +580,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &PlanReview<'_, Id> {
         let panel = Panel::new(self.tokens)
             .title("Plan")
             .emphasis(if state.focused {
-                PanelEmphasis::Focused
+                PanelChrome::Focused
             } else {
-                PanelEmphasis::Normal
+                PanelChrome::Normal
             });
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
@@ -600,9 +601,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &PlanReview<'_, Id> {
             };
             let line = format!("{mark} {}", step.title);
             let style = if selected {
-                self.tokens.theme.style(Role::Accent)
+                self.tokens.style(Role::Accent)
             } else {
-                self.tokens.theme.style(Role::Text)
+                self.tokens.style(Role::Text)
             };
             let clipped = take_display_cols(&line, usize::from(inner.width));
             buffer.set_stringn(inner.x, y, &clipped, usize::from(inner.width), style);
@@ -636,13 +637,13 @@ pub struct SessionItem<'a, Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct SessionPicker<'a, Id> {
     sessions: &'a [SessionItem<'a, Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> SessionPicker<'a, Id> {
     /// Creates a session picker.
     #[must_use]
-    pub const fn new(sessions: &'a [SessionItem<'a, Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(sessions: &'a [SessionItem<'a, Id>], tokens: &'a DesignSystem) -> Self {
         Self { sessions, tokens }
     }
 
@@ -700,7 +701,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &SessionPicker<'_, Id> {
         let rows = self.rows();
         let panel = Panel::new(self.tokens)
             .title("Sessions")
-            .emphasis(PanelEmphasis::Focused);
+            .emphasis(PanelChrome::Focused);
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
         if !inner.is_empty() {
@@ -723,7 +724,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for SessionPicker<'_, Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct TaskRail<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     title: &'a str,
 }
 
@@ -732,7 +733,7 @@ impl<'a, Id> TaskRail<'a, Id> {
     #[must_use]
     pub const fn new(
         rows: &'a [ListRow<'a, Id>],
-        tokens: &'a DesignTokens,
+        tokens: &'a DesignSystem,
         title: &'a str,
     ) -> Self {
         Self {
@@ -750,9 +751,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &TaskRail<'_, Id> {
         let panel = Panel::new(self.tokens)
             .title(self.title)
             .emphasis(if state.is_focused() {
-                PanelEmphasis::Focused
+                PanelChrome::Focused
             } else {
-                PanelEmphasis::Normal
+                PanelChrome::Normal
             });
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
@@ -777,7 +778,7 @@ mod tests {
 
     #[test]
     fn mode_ribbon_requests_mode_on_arrows() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let modes = [
             WorkbenchMode {
                 id: "plan",
@@ -807,7 +808,7 @@ mod tests {
 
     #[test]
     fn question_flow_required_blocks_next() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let opts = [
             QuestionOption {
                 id: "a",

@@ -18,10 +18,10 @@ use termrock::{
     },
     interaction::Outcome,
     style::{
+        RolePalette,
         ColorCapability,
         Density,
-        DesignTokens,
-        Theme,
+        DesignSystem,
     },
     widgets::{
         Anchor,
@@ -132,7 +132,7 @@ pub(crate) trait StoryInteraction {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect);
     fn handle_key(&mut self, key: KeyEvent) -> bool;
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool;
-    fn set_theme(&mut self, theme: Theme);
+    fn set_theme(&mut self, theme: RolePalette);
     fn knobs(&self) -> &[Knob] {
         &[]
     }
@@ -152,13 +152,13 @@ pub(crate) trait StoryInteraction {
 }
 
 pub(crate) struct StaticStory {
-    pub(crate) render_fn: fn(&mut Frame<'_>, Rect, &Theme),
-    pub(crate) theme: Theme,
+    pub(crate) render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem),
+    pub(crate) theme: RolePalette,
 }
 
 impl StoryInteraction for StaticStory {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        (self.render_fn)(frame, area, &self.theme);
+        (self.render_fn)(frame, area, &DesignSystem::from_palette(self.theme.clone()));
     }
     fn handle_key(&mut self, _key: KeyEvent) -> bool {
         false
@@ -166,14 +166,14 @@ impl StoryInteraction for StaticStory {
     fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
         false
     }
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
 
 pub(crate) struct TextAreaInteractor {
     state: TextAreaState,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl TextAreaInteractor {
@@ -182,7 +182,7 @@ impl TextAreaInteractor {
         state.set_focused(true);
         Self {
             state,
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -190,7 +190,7 @@ impl TextAreaInteractor {
 impl StoryInteraction for TextAreaInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &TextArea::new(&self.theme).title("Compose"),
+            &TextArea::new(&DesignSystem::from_palette(self.theme.clone())).title("Compose"),
             area,
             &mut self.state,
         );
@@ -205,7 +205,7 @@ impl StoryInteraction for TextAreaInteractor {
                 TextAreaOutcome::Ignored
             )
     }
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
     fn captures_text_input(&self) -> bool {
@@ -215,21 +215,21 @@ impl StoryInteraction for TextAreaInteractor {
 
 pub(crate) struct ChoiceDialogInteractor {
     state: ChoiceDialogState<&'static str>,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl ChoiceDialogInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: ChoiceDialogState::new(Some("continue")),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
 
 impl StoryInteraction for ChoiceDialogInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        render_choice_dialog(frame, area, &mut self.state, &self.theme);
+        render_choice_dialog(frame, area, &mut self.state, &DesignSystem::from_palette(self.theme.clone()));
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -250,14 +250,14 @@ impl StoryInteraction for ChoiceDialogInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
 
 pub(crate) struct ListInteractor {
     state: ListState<&'static str>,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl ListInteractor {
@@ -267,7 +267,7 @@ impl ListInteractor {
         state.selection_mut().unwrap().toggle(&"alpha");
         Self {
             state,
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -275,7 +275,7 @@ impl ListInteractor {
 impl StoryInteraction for ListInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let rows = list_rows();
-        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let tokens = DesignSystem::new(self.theme.clone(), Density::default());
         frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut self.state);
     }
 
@@ -287,7 +287,7 @@ impl StoryInteraction for ListInteractor {
         route_pointer(self, mouse, preview_area)
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
@@ -311,7 +311,7 @@ impl PointerTarget for ListInteractor {
 
 pub(crate) struct PickerInteractor {
     state: PickerState<&'static str>,
-    theme: Theme,
+    theme: RolePalette,
     activated: Option<&'static str>,
 }
 
@@ -319,7 +319,7 @@ impl PickerInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: PickerState::new(Some("alpha")),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
             activated: None,
         }
     }
@@ -328,7 +328,7 @@ impl PickerInteractor {
 impl StoryInteraction for PickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let rows = picker_rows(self.state.query_text());
-        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let tokens = DesignSystem::new(self.theme.clone(), Density::default());
         frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut self.state);
     }
 
@@ -354,7 +354,7 @@ impl StoryInteraction for PickerInteractor {
         route_pointer(self, mouse, preview_area)
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 
@@ -391,7 +391,7 @@ impl PointerTarget for PickerInteractor {
 
 pub(crate) struct LogPaneInteractor {
     state: LogPaneState,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl LogPaneInteractor {
@@ -409,7 +409,7 @@ impl LogPaneInteractor {
         }
         Self {
             state,
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -417,7 +417,7 @@ impl LogPaneInteractor {
 impl StoryInteraction for LogPaneInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &LogPane::new(&self.theme).title("Build log"),
+            &LogPane::new(&DesignSystem::from_palette(self.theme.clone())).title("Build log"),
             area,
             &mut self.state,
         );
@@ -431,7 +431,7 @@ impl StoryInteraction for LogPaneInteractor {
         route_pointer(self, mouse, preview_area)
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
@@ -445,7 +445,7 @@ impl PointerTarget for LogPaneInteractor {
 pub(crate) struct TreeInteractor {
     nodes: Vec<TreeNode<'static, &'static str>>,
     state: TreeState<&'static str>,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl TreeInteractor {
@@ -456,14 +456,14 @@ impl TreeInteractor {
         Self {
             nodes: tree_nodes(),
             state,
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
 
 impl StoryInteraction for TreeInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let tokens = DesignTokens::new(self.theme.clone(), termrock::style::Density::default());
+        let tokens = DesignSystem::new(self.theme.clone(), termrock::style::Density::default());
         frame.render_stateful_widget(&Tree::new(&self.nodes, &tokens), area, &mut self.state);
     }
 
@@ -478,7 +478,7 @@ impl StoryInteraction for TreeInteractor {
         route_pointer(self, mouse, preview_area)
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
@@ -504,14 +504,14 @@ impl PointerTarget for TreeInteractor {
 
 pub(crate) struct FormInteractor {
     state: FormState<&'static str>,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl FormInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: FormState::new(Some("name")),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -525,7 +525,7 @@ impl StoryInteraction for FormInteractor {
             title: ratatui::text::Line::from("General"),
             fields: &fields,
         }];
-        frame.render_stateful_widget(&Form::new(&sections, &self.theme), area, &mut self.state);
+        frame.render_stateful_widget(&Form::new(&sections, &DesignSystem::from_palette(self.theme.clone())), area, &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -541,7 +541,7 @@ impl StoryInteraction for FormInteractor {
         route_pointer(self, mouse, preview_area)
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
@@ -568,29 +568,30 @@ impl PointerTarget for FormInteractor {
 
 pub(crate) struct SplitPaneInteractor {
     state: SplitPaneState,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl SplitPaneInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: SplitPaneState::new(SplitRatio::from_percent(38)),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
 
 impl StoryInteraction for SplitPaneInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        render_split_pane(frame, area, &mut self.state, &self.theme);
+        render_split_pane(frame, area, &mut self.state, &DesignSystem::from_palette(self.theme.clone()));
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
+        let system = DesignSystem::from_palette(self.theme.clone());
         let split = SplitPane::new(
             SplitDirection::Horizontal,
             SPLIT_PANE_MIN,
             SPLIT_PANE_MAX,
-            &self.theme,
+            &system,
         );
         !matches!(
             self.state.handle_key(&split, key),
@@ -600,11 +601,12 @@ impl StoryInteraction for SplitPaneInteractor {
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
         let position = mouse.position;
+        let system = DesignSystem::from_palette(self.theme.clone());
         let split = SplitPane::new(
             SplitDirection::Horizontal,
             SPLIT_PANE_MIN,
             SPLIT_PANE_MAX,
-            &self.theme,
+            &system,
         );
         match mouse.kind {
             MouseEventKind::Moved => self.state.hover(&split, position),
@@ -625,7 +627,7 @@ impl StoryInteraction for SplitPaneInteractor {
         }
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
@@ -633,7 +635,7 @@ impl StoryInteraction for SplitPaneInteractor {
 pub(crate) struct ToastInteractor {
     knobs: Vec<Knob>,
     message: TextInputState,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl ToastInteractor {
@@ -660,7 +662,7 @@ impl ToastInteractor {
                 },
             ],
             message: TextInputState::new("Updated").with_max_graphemes(48),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 
@@ -686,7 +688,7 @@ impl ToastInteractor {
 impl StoryInteraction for ToastInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_widget(
-            Toast::new(&self.theme, self.message.value(), self.severity()).anchor(self.anchor()),
+            Toast::new(&DesignSystem::from_palette(self.theme.clone()), self.message.value(), self.severity()).anchor(self.anchor()),
             area,
         );
     }
@@ -699,7 +701,7 @@ impl StoryInteraction for ToastInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 
@@ -736,7 +738,7 @@ impl StoryInteraction for ToastInteractor {
     fn render_knob_editor(&mut self, selected: usize, frame: &mut Frame<'_>, area: Rect) {
         if selected == 2 {
             frame.render_stateful_widget(
-                &TextInput::new("Message", &self.theme).placeholder("Toast message"),
+                &TextInput::new("Message", &DesignSystem::from_palette(self.theme.clone())).placeholder("Toast message"),
                 area,
                 &mut self.message,
             );
@@ -752,7 +754,7 @@ impl StoryInteraction for ToastInteractor {
 
 pub(crate) struct TabsInteractor {
     state: TabsState<&'static str>,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl TabsInteractor {
@@ -763,7 +765,7 @@ impl TabsInteractor {
                 focused: true,
                 ..TabsState::default()
             },
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -786,7 +788,7 @@ impl StoryInteraction for TabsInteractor {
                 enabled: true,
             },
         ];
-        frame.render_stateful_widget(&Tabs::new(&tabs, &self.theme).gap(1), area, &mut self.state);
+        frame.render_stateful_widget(&Tabs::new(&tabs, &DesignSystem::from_palette(self.theme.clone())).gap(1), area, &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -807,14 +809,14 @@ impl StoryInteraction for TabsInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
 
 pub(crate) struct TableInteractor {
     state: TableState<&'static str, &'static str>,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl TableInteractor {
@@ -823,14 +825,14 @@ impl TableInteractor {
         state.set_focused(true);
         Self {
             state,
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
 
 impl StoryInteraction for TableInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let tokens = DesignSystem::new(self.theme.clone(), Density::default());
         let columns = [
             Column::new(
                 "name",
@@ -856,21 +858,21 @@ impl StoryInteraction for TableInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
 
 pub(crate) struct ThemePickerInteractor {
     state: ThemePickerState,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl ThemePickerInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: ThemePickerState::new(0),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -878,7 +880,7 @@ impl ThemePickerInteractor {
 impl StoryInteraction for ThemePickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &ThemePicker::new(BUILTIN_THEME_PRESETS, &self.theme),
+            &ThemePicker::new(BUILTIN_THEME_PRESETS, &DesignSystem::from_palette(self.theme.clone())),
             area,
             &mut self.state,
         );
@@ -895,28 +897,28 @@ impl StoryInteraction for ThemePickerInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
 
 pub(crate) struct CommandPaletteInteractor {
     state: CommandPaletteState<&'static str>,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl CommandPaletteInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: CommandPaletteState::new(Some("theme")),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
 
 impl StoryInteraction for CommandPaletteInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let tokens = DesignSystem::new(self.theme.clone(), Density::default());
         let rows = [
             termrock::widgets::ListRow::item("theme", Line::from("Toggle theme")),
             termrock::widgets::ListRow::item("quit", Line::from("Quit")),
@@ -943,21 +945,21 @@ impl StoryInteraction for CommandPaletteInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
 
 pub(crate) struct ApprovalCardInteractor {
     state: ApprovalCardState,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl ApprovalCardInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: ApprovalCardState::new(),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -969,7 +971,7 @@ impl StoryInteraction for ApprovalCardInteractor {
                 "Write files",
                 "Agent requests write access to src/",
                 ApprovalRisk::High,
-                &self.theme,
+                &DesignSystem::from_palette(self.theme.clone()),
             ),
             area,
             &mut self.state,
@@ -987,21 +989,21 @@ impl StoryInteraction for ApprovalCardInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
 
 pub(crate) struct DesignInspectorInteractor {
     panel: InspectorPanel,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl DesignInspectorInteractor {
     pub(crate) fn new() -> Self {
         Self {
             panel: InspectorPanel::Focus,
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -1020,7 +1022,7 @@ impl StoryInteraction for DesignInspectorInteractor {
             selection_chrome: "gutter",
         };
         frame.render_widget(
-            DesignInspector::new(snap, &self.theme).panel(self.panel),
+            DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone())).panel(self.panel),
             area,
         );
     }
@@ -1060,21 +1062,21 @@ impl StoryInteraction for DesignInspectorInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
 
 pub(crate) struct TranscriptInteractor {
     state: TranscriptState<&'static str>,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl TranscriptInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: TranscriptState::new(),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -1087,7 +1089,7 @@ impl StoryInteraction for TranscriptInteractor {
             TranscriptBlock::new("a1", TranscriptKind::Assistant, &lines[1..]),
         ];
         frame.render_stateful_widget(
-            &Transcript::new(&blocks, &self.theme),
+            &Transcript::new(&blocks, &DesignSystem::from_palette(self.theme.clone())),
             area,
             &mut self.state,
         );
@@ -1109,21 +1111,21 @@ impl StoryInteraction for TranscriptInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }
 
 pub(crate) struct PromptBoxInteractor {
     state: PromptBoxState,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl PromptBoxInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: PromptBoxState::new(),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
@@ -1131,7 +1133,7 @@ impl PromptBoxInteractor {
 impl StoryInteraction for PromptBoxInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &PromptBox::new(&self.theme).placeholder("Ask anything…"),
+            &PromptBox::new(&DesignSystem::from_palette(self.theme.clone())).placeholder("Ask anything…"),
             area,
             &mut self.state,
         );
@@ -1148,7 +1150,7 @@ impl StoryInteraction for PromptBoxInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 
@@ -1159,14 +1161,14 @@ impl StoryInteraction for PromptBoxInteractor {
 
 pub(crate) struct PromptComposerInteractor {
     state: PromptComposerState,
-    theme: Theme,
-    tokens: DesignTokens,
+    theme: RolePalette,
+    tokens: DesignSystem,
 }
 
 impl PromptComposerInteractor {
     pub(crate) fn new() -> Self {
-        let theme = Theme::default();
-        let tokens = DesignTokens::new(theme.clone(), Density::Comfortable);
+        let theme = RolePalette::default();
+        let tokens = DesignSystem::new(theme.clone(), Density::Comfortable);
         let mut state = PromptComposerState::new();
         state.set_placeholder("Ask anything…");
         state.set_mode(Some(ModeIndicator {
@@ -1192,7 +1194,7 @@ impl PromptComposerInteractor {
 impl StoryInteraction for PromptComposerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &PromptComposer::new(&self.tokens, &self.theme),
+            &PromptComposer::new(&self.tokens),
             area,
             &mut self.state,
         );
@@ -1210,9 +1212,9 @@ impl StoryInteraction for PromptComposerInteractor {
         )
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme.clone();
-        self.tokens = DesignTokens::new(theme, Density::Comfortable);
+        self.tokens = DesignSystem::new(theme, Density::Comfortable);
     }
 
     fn captures_text_input(&self) -> bool {
@@ -1222,21 +1224,21 @@ impl StoryInteraction for PromptComposerInteractor {
 
 pub(crate) struct VirtualGridInteractor {
     state: VirtualGridState<&'static str, &'static str>,
-    theme: Theme,
+    theme: RolePalette,
 }
 
 impl VirtualGridInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: VirtualGridState::new(),
-            theme: Theme::default(),
+            theme: RolePalette::default(),
         }
     }
 }
 
 impl StoryInteraction for VirtualGridInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let _ = (&self.state, &self.theme);
+        let _ = (&self.state, &DesignSystem::from_palette(self.theme.clone()));
         frame.render_widget(
             ratatui::widgets::Paragraph::new("VirtualGrid interactor — arrows/page navigate"),
             area,
@@ -1259,7 +1261,7 @@ impl StoryInteraction for VirtualGridInteractor {
         false
     }
 
-    fn set_theme(&mut self, theme: Theme) {
+    fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 }

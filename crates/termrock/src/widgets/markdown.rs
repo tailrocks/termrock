@@ -11,8 +11,9 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols,
@@ -52,17 +53,17 @@ pub struct MarkdownBlock<'a> {
 pub struct MarkdownView<'a> {
     blocks: &'a [MarkdownBlock<'a>],
     first: usize,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> MarkdownView<'a> {
     /// Creates a markdown view starting at the first block.
     #[must_use]
-    pub const fn new(blocks: &'a [MarkdownBlock<'a>], theme: &'a Theme) -> Self {
+    pub const fn new(blocks: &'a [MarkdownBlock<'a>], system: &'a DesignSystem) -> Self {
         Self {
             blocks,
             first: 0,
-            theme,
+            system,
         }
     }
 
@@ -103,7 +104,7 @@ impl Widget for &MarkdownView<'_> {
             if matches!(block.kind, MarkdownBlockKind::Code) {
                 buffer.set_style(
                     Rect::new(area.x, y, area.width, 1),
-                    self.theme.style(Role::Surface),
+                    self.system.style(Role::Surface),
                 );
             }
             buffer.set_stringn(
@@ -111,7 +112,7 @@ impl Widget for &MarkdownView<'_> {
                 y,
                 &clipped,
                 usize::from(area.width),
-                self.theme.style(role),
+                self.system.style(role),
             );
             let _ = display_cols(&clipped);
         }
@@ -174,13 +175,14 @@ mod tests {
 
     #[test]
     fn renders_heading_strong() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let blocks = [MarkdownBlock {
             kind: MarkdownBlockKind::Heading,
             text: "Hello",
         }];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 1));
-        MarkdownView::new(&blocks, &theme).render(Rect::new(0, 0, 20, 1), &mut buffer);
+        MarkdownView::new(&blocks, &system).render(Rect::new(0, 0, 20, 1), &mut buffer);
         let row: String = (0..20)
             .map(|x| buffer[(x, 0)].symbol().to_owned())
             .collect();

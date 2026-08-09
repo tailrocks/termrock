@@ -7,8 +7,9 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::take_display_cols,
 };
@@ -19,14 +20,14 @@ const SPARK_GLYPHS: &[char] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '
 #[derive(Debug, Clone, Copy)]
 pub struct Sparkline<'a> {
     samples: &'a [f64],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> Sparkline<'a> {
     /// Creates a sparkline from borrowed samples.
     #[must_use]
-    pub const fn new(samples: &'a [f64], theme: &'a Theme) -> Self {
-        Self { samples, theme }
+    pub const fn new(samples: &'a [f64], system: &'a DesignSystem) -> Self {
+        Self { samples, system }
     }
 }
 
@@ -52,7 +53,7 @@ impl Widget for &Sparkline<'_> {
                 area.y,
                 &glyph,
                 1,
-                self.theme.style(Role::Accent),
+                self.system.style(Role::Accent),
             );
         }
     }
@@ -81,14 +82,14 @@ pub struct BarDatum<'a> {
 #[derive(Debug, Clone, Copy)]
 pub struct BarSeries<'a> {
     bars: &'a [BarDatum<'a>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> BarSeries<'a> {
     /// Creates a bar series.
     #[must_use]
-    pub const fn new(bars: &'a [BarDatum<'a>], theme: &'a Theme) -> Self {
-        Self { bars, theme }
+    pub const fn new(bars: &'a [BarDatum<'a>], system: &'a DesignSystem) -> Self {
+        Self { bars, system }
     }
 }
 
@@ -116,7 +117,7 @@ impl Widget for &BarSeries<'_> {
                     y,
                     &label,
                     label_width,
-                    self.theme.style(Role::TextMuted),
+                    self.system.style(Role::TextMuted),
                 );
             }
             let track_x = area
@@ -141,7 +142,7 @@ impl Widget for &BarSeries<'_> {
                 y,
                 &fill,
                 usize::from(filled),
-                self.theme.style(Role::Accent),
+                self.system.style(Role::Accent),
             );
             if filled < track_w {
                 buffer.set_stringn(
@@ -149,7 +150,7 @@ impl Widget for &BarSeries<'_> {
                     y,
                     &empty,
                     usize::from(track_w.saturating_sub(filled)),
-                    self.theme.style(Role::TextDisabled),
+                    self.system.style(Role::TextDisabled),
                 );
             }
         }
@@ -181,14 +182,14 @@ pub struct MeterSegment<'a> {
 #[derive(Debug, Clone, Copy)]
 pub struct SegmentedMeter<'a> {
     segments: &'a [MeterSegment<'a>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> SegmentedMeter<'a> {
     /// Creates a segmented meter.
     #[must_use]
-    pub const fn new(segments: &'a [MeterSegment<'a>], theme: &'a Theme) -> Self {
-        Self { segments, theme }
+    pub const fn new(segments: &'a [MeterSegment<'a>], system: &'a DesignSystem) -> Self {
+        Self { segments, system }
     }
 }
 
@@ -231,7 +232,7 @@ impl Widget for &SegmentedMeter<'_> {
                 area.y,
                 &fill,
                 usize::from(width),
-                self.theme.style(segment.role),
+                self.system.style(segment.role),
             );
             x = x.saturating_add(width);
             remaining = remaining.saturating_sub(width);
@@ -255,16 +256,18 @@ mod tests {
 
     #[test]
     fn sparkline_uses_block_glyphs() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let samples = [0.0, 0.5, 1.0];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 3, 1));
-        Sparkline::new(&samples, &theme).render(Rect::new(0, 0, 3, 1), &mut buffer);
+        Sparkline::new(&samples, &system).render(Rect::new(0, 0, 3, 1), &mut buffer);
         assert_ne!(buffer[(0, 0)].symbol(), buffer[(2, 0)].symbol());
     }
 
     #[test]
     fn segmented_meter_covers_full_width() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let segments = [
             MeterSegment {
                 label: "a",
@@ -278,7 +281,7 @@ mod tests {
             },
         ];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 10, 1));
-        SegmentedMeter::new(&segments, &theme).render(Rect::new(0, 0, 10, 1), &mut buffer);
+        SegmentedMeter::new(&segments, &system).render(Rect::new(0, 0, 10, 1), &mut buffer);
         for x in 0..10 {
             assert_eq!(buffer[(x, 0)].symbol(), "█");
         }

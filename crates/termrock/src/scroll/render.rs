@@ -7,15 +7,9 @@ use ratatui_core::{buffer::Buffer, layout::Rect, terminal::Frame, text::Line, wi
 use ratatui_widgets::paragraph::Paragraph;
 
 use crate::{
-    style::{
-        Role,
-        Theme,
-    },
-    text::{
-        display_cols,
-        fixed_prefix_scroll_segments,
-    },
     scroll,
+    style::{DesignSystem, Role},
+    text::{display_cols, fixed_prefix_scroll_segments},
 };
 
 /// Dim track glyph shared by every scrollbar.
@@ -210,14 +204,14 @@ impl ScrollbarSpec {
 }
 
 /// Paints a themed full-cell scrollbar into an explicit track rectangle.
-pub fn render_scrollbar(buffer: &mut Buffer, area: Rect, spec: ScrollbarSpec, theme: &Theme) {
-    Scrollbar { spec, theme }.render(area, buffer);
+pub fn render_scrollbar(buffer: &mut Buffer, area: Rect, spec: ScrollbarSpec, system: &DesignSystem) {
+    Scrollbar { spec, system }.render(area, buffer);
 }
 
 #[derive(Debug, Clone, Copy)]
 struct Scrollbar<'a> {
     spec: ScrollbarSpec,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 /// Render borrowed lines into a rectangle with a vertical offset and optional
@@ -227,7 +221,7 @@ pub fn render_lines_with_offset_in_area(
     area: Rect,
     lines: &[Line<'_>],
     offset: u16,
-    theme: &Theme,
+    system: &DesignSystem,
 ) {
     let viewport = usize::from(area.height);
     let total = lines.len();
@@ -238,7 +232,7 @@ pub fn render_lines_with_offset_in_area(
         .take(viewport)
         .cloned()
         .collect();
-    frame.render_widget(Paragraph::new(visible).style(theme.style(Role::Text)), area);
+    frame.render_widget(Paragraph::new(visible).style(system.style(Role::Text)), area);
     if scroll::is_scrollable(total, viewport) {
         render_scrollbar(
             frame.buffer_mut(),
@@ -247,7 +241,7 @@ pub fn render_lines_with_offset_in_area(
                 scroll::ScrollAxis::Vertical,
                 ScrollbarGeometry::new(total, viewport, clamped),
             ),
-            theme,
+            system,
         );
     }
 }
@@ -297,9 +291,9 @@ impl Widget for Scrollbar<'_> {
                     SCROLLBAR_TRACK
                 },
                 if in_thumb {
-                    self.theme.style(Role::ScrollThumb)
+                    self.system.style(Role::ScrollThumb)
                 } else {
-                    self.theme.style(Role::ScrollTrack)
+                    self.system.style(Role::ScrollTrack)
                 },
             );
         }

@@ -18,14 +18,16 @@ use crate::{
         MouseEventKind,
     },
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols,
         take_display_cols,
     },
 };
+
 
 /// Semantic kind of a transcript block.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -434,27 +436,27 @@ impl<Id: Clone + Eq> TranscriptState<Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct Transcript<'a, Id> {
     blocks: &'a [TranscriptBlock<'a, Id>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a, Id> Transcript<'a, Id> {
     /// Creates a transcript over the given blocks.
     #[must_use]
-    pub const fn new(blocks: &'a [TranscriptBlock<'a, Id>], theme: &'a Theme) -> Self {
-        Self { blocks, theme }
+    pub const fn new(blocks: &'a [TranscriptBlock<'a, Id>], system: &'a DesignSystem) -> Self {
+        Self { blocks, system }
     }
 }
 
-fn kind_style(theme: &Theme, kind: TranscriptKind) -> Style {
+fn kind_style(system: &DesignSystem, kind: TranscriptKind) -> Style {
     match kind {
-        TranscriptKind::User => theme.style(Role::Text),
-        TranscriptKind::Assistant => theme.style(Role::Text),
-        TranscriptKind::Tool => theme.style(Role::TextMuted),
-        TranscriptKind::System => theme.style(Role::Warning),
-        TranscriptKind::Thinking => theme.style(Role::TextMuted),
-        TranscriptKind::Approval => theme.style(Role::Danger),
-        TranscriptKind::Diff => theme.style(Role::Text),
-        TranscriptKind::Content => theme.style(Role::Text),
+        TranscriptKind::User => system.style(Role::Text),
+        TranscriptKind::Assistant => system.style(Role::Text),
+        TranscriptKind::Tool => system.style(Role::TextMuted),
+        TranscriptKind::System => system.style(Role::Warning),
+        TranscriptKind::Thinking => system.style(Role::TextMuted),
+        TranscriptKind::Approval => system.style(Role::Danger),
+        TranscriptKind::Diff => system.style(Role::Text),
+        TranscriptKind::Content => system.style(Role::Text),
     }
 }
 
@@ -490,10 +492,10 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
             if end <= view_start || *start >= view_end {
                 continue;
             }
-            let style = kind_style(self.theme, block.kind);
+            let style = kind_style(self.system, block.kind);
             let selected = state.selected.as_ref() == Some(&block.id);
             let style = if selected && state.focused {
-                self.theme.style(Role::Accent)
+                self.system.style(Role::Accent)
             } else {
                 style
             };
@@ -549,11 +551,12 @@ mod tests {
 
     #[test]
     fn zero_area_and_empty_are_safe() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let lines: [&str; 0] = [];
         let blocks: [TranscriptBlock<'_, u32>; 0] = [];
         let mut state = TranscriptState::new();
-        let t = Transcript::new(&blocks, &theme);
+        let t = Transcript::new(&blocks, &system);
         let mut terminal = Terminal::new(TestBackend::new(0, 0)).unwrap();
         terminal
             .draw(|f| f.render_stateful_widget(&t, Rect::default(), &mut state))
@@ -563,7 +566,8 @@ mod tests {
 
     #[test]
     fn variable_height_viewport_maps_across_blocks() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let a = ["one", "two", "three"];
         let b = ["solo"];
         let c = ["x", "y"];
@@ -586,7 +590,7 @@ mod tests {
         terminal
             .draw(|f| {
                 f.render_stateful_widget(
-                    &Transcript::new(&blocks, &theme),
+                    &Transcript::new(&blocks, &system),
                     Rect::new(0, 0, 20, 2),
                     &mut state,
                 );
@@ -615,7 +619,8 @@ mod tests {
 
     #[test]
     fn anchor_survives_append_and_resize_height() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let a = ["a0", "a1"];
         let b = ["b0", "b1", "b2"];
         let blocks = [
@@ -629,7 +634,7 @@ mod tests {
         terminal
             .draw(|f| {
                 f.render_stateful_widget(
-                    &Transcript::new(&blocks, &theme),
+                    &Transcript::new(&blocks, &system),
                     Rect::new(0, 0, 30, 3),
                     &mut state,
                 );
@@ -646,7 +651,7 @@ mod tests {
         terminal
             .draw(|f| {
                 f.render_stateful_widget(
-                    &Transcript::new(&blocks2, &theme),
+                    &Transcript::new(&blocks2, &system),
                     Rect::new(0, 0, 30, 3),
                     &mut state,
                 );

@@ -17,15 +17,13 @@ use ratatui::{
     backend::TestBackend,
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Style},
+    style::{
+        Color,
+        Style,
+    },
     widgets::{Block, Clear},
 };
-use termrock::{
-    style::{
-        PREVIEW_CARD,
-        Theme,
-    },
-};
+use termrock::style::{DesignSystem, RolePalette, PREVIEW_CARD};
 
 use crate::stories::{Story, stories};
 
@@ -45,7 +43,7 @@ fn stderr_line(args: Arguments<'_>) {
 }
 
 /// Render the story into a ratatui test buffer and return it.
-pub(crate) fn render_story_to_buffer(story: Story, theme: &Theme) -> Buffer {
+pub(crate) fn render_story_to_buffer(story: Story, theme: &RolePalette) -> Buffer {
     let width = story.width.saturating_add(STORY_PAD * 2);
     let height = story.height.saturating_add(STORY_PAD * 2);
     let backend = TestBackend::new(width, height);
@@ -72,7 +70,8 @@ pub(crate) fn render_story_to_buffer(story: Story, theme: &Theme) -> Buffer {
         // renders on the same surface as the real app, with PREVIEW_CARD only
         // as the surround — identical to the interactive preview.
         frame.render_widget(Clear, inner);
-        story.render(frame, inner, theme);
+        let system = DesignSystem::from_palette(theme.clone());
+        story.render(frame, inner, &system);
     }) {
         Ok(_) => {}
         Err(error) => match error {},
@@ -82,7 +81,7 @@ pub(crate) fn render_story_to_buffer(story: Story, theme: &Theme) -> Buffer {
 
 /// Render the story to an SVG string.
 #[must_use]
-pub(crate) fn render_story_to_svg(story: Story, theme: &Theme) -> String {
+pub(crate) fn render_story_to_svg(story: Story, theme: &RolePalette) -> String {
     let buffer = render_story_to_buffer(story, theme);
     buffer_to_svg(&buffer, story.title)
 }
@@ -96,7 +95,7 @@ pub(crate) fn story_svg_filename(story: Story) -> String {
 /// Write all story SVGs to `out_dir`, creating it if needed.
 pub(crate) fn write_story_svgs(
     out_dir: impl AsRef<Path>,
-    theme: &Theme,
+    theme: &RolePalette,
 ) -> io::Result<Vec<PathBuf>> {
     let out_dir = out_dir.as_ref();
     fs::create_dir_all(out_dir)?;
@@ -112,7 +111,7 @@ pub(crate) fn write_story_svgs(
 /// Check that all SVGs in `dir` are current. Prints a success message and
 /// returns `Ok(())` when they match; returns `Err` with failure details otherwise.
 pub(crate) fn check_svgs(dir: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-    let theme = Theme::default();
+    let theme = RolePalette::default();
     let expected = expected_svg_names();
     let actual = actual_svg_names(&dir)?;
     let mut failures = Vec::new();
@@ -316,7 +315,7 @@ fn escape_xml(value: &str) -> String {
     reason = "debug helper kept for snapshot triage outside normal lookbook flow"
 )]
 pub(crate) fn render_story_to_text(story: Story) -> String {
-    let buffer = render_story_to_buffer(story, &Theme::default());
+    let buffer = render_story_to_buffer(story, &RolePalette::default());
     let mut out = String::new();
     for y in 0..story.height {
         for x in 0..story.width {
@@ -372,7 +371,7 @@ mod color_tests {
     #[test]
     fn button_disabled_svg_body_differs_from_activation() {
         use crate::stories::stories;
-        let theme = Theme::default();
+        let theme = RolePalette::default();
         let act = stories()
             .into_iter()
             .find(|s| s.id == "button/activation")
@@ -402,7 +401,7 @@ mod color_tests {
     #[test]
     fn button_unicode_svg_contains_cjk_or_emoji() {
         use crate::stories::stories;
-        let theme = Theme::default();
+        let theme = RolePalette::default();
         let story = stories()
             .into_iter()
             .find(|s| s.id == "button/unicode")

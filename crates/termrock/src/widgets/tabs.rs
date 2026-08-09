@@ -5,8 +5,9 @@ use ratatui_core::{
 use crate::{
     interaction::HitRegion,
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
 };
 use unicode_width::UnicodeWidthStr;
@@ -98,17 +99,17 @@ impl<Id> Default for TabsState<Id> {
 pub struct Tabs<'a, Id> {
     tabs: &'a [Tab<'a, Id>],
     gap: u16,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a, Id> Tabs<'a, Id> {
     #[must_use]
     /// Creates a tab strip over borrowed tabs with no active or hovered tab.
-    pub const fn new(tabs: &'a [Tab<'a, Id>], theme: &'a Theme) -> Self {
+    pub const fn new(tabs: &'a [Tab<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
             tabs,
             gap: TAB_GAP,
-            theme,
+            system,
         }
     }
 
@@ -147,7 +148,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
                 (false, true) => Role::TabInactiveHovered,
                 (false, false) => Role::TabInactive,
             };
-            let mut style = self.theme.style(role);
+            let mut style = self.system.style(role);
             if selected {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -174,9 +175,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tabs<'_, Id> {
             }
             if selected && area.height > 1 {
                 let underline_style = if state.focused {
-                    self.theme.style(Role::TabUnderlineFocused)
+                    self.system.style(Role::TabUnderlineFocused)
                 } else {
-                    self.theme.style(Role::TabUnderlineUnfocused)
+                    self.system.style(Role::TabUnderlineUnfocused)
                 };
                 buffer.set_stringn(
                     label_rect.x,
@@ -217,7 +218,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for Tabs<'_, Id> {
 mod tests {
     use super::*;
     use ratatui_core::layout::Position;
-    use ratatui_core::style::{Color, Style};
+    use ratatui_core::style::{
+        Color,
+        Style,
+    };
 
     #[test]
     fn selection_cue_and_hit_regions_share_two_row_geometry() {
@@ -245,8 +249,9 @@ mod tests {
             focused: true,
             ..TabsState::default()
         };
-        let theme = Theme::default();
-        (&Tabs::new(&tabs, &theme).gap(1)).render(area, &mut buffer, &mut state);
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        (&Tabs::new(&tabs, &system).gap(1)).render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(3, 5)].symbol(), "━");
         assert_eq!(
@@ -273,9 +278,10 @@ mod tests {
         let area = Rect::new(0, 0, 20, 2);
         let mut buffer = Buffer::empty(area);
         let mut state = TabsState::default();
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
 
-        (&Tabs::new(&tabs, &theme).gap(1)).render(area, &mut buffer, &mut state);
+        (&Tabs::new(&tabs, &system).gap(1)).render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(1, 0)].symbol(), "●");
         assert_eq!(buffer[(1, 0)].fg, Color::Yellow);

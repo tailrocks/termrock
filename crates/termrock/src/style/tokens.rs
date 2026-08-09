@@ -3,7 +3,7 @@
 
 //! Design-system tokens beyond role colors: spacing, glyphs, recipes.
 
-use super::{Density, Motion, Role, Theme};
+use super::{ColorCapability, Density, Motion, Role, RolePalette};
 use ratatui_core::style::Style;
 
 /// Glyph policy for borders, disclosure, and status markers.
@@ -124,11 +124,59 @@ impl SpacingScale {
     }
 }
 
-/// Complete design-system token bundle for one frame or app shell.
+/// Runtime visual facts for one list row (widget state + row projection).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct ListRowVisualState {
+    /// Cursor / keyboard selection.
+    pub selected: bool,
+    /// List owns focus and this row is the cursor.
+    pub focused: bool,
+    /// Pointer hover (enabled item only).
+    pub hovered: bool,
+    /// Row accepts interaction.
+    pub enabled: bool,
+    /// Row is loading (leading spinner/ellipsis).
+    pub loading: bool,
+    /// Multi-select membership.
+    pub checked: bool,
+}
+
+/// Semantic panel chrome emphasis for recipes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum PanelChrome {
+    /// Inactive / background panel.
+    #[default]
+    Normal,
+    /// Interaction owner.
+    Focused,
+    /// Destructive / risk surface.
+    Danger,
+}
+
+/// Resolved paint plan for a panel chrome surface.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PanelRecipe {
+    /// Single-line border style (weight never encodes focus).
+    pub border: ratatui_core::style::Style,
+    /// Title text style.
+    pub title: ratatui_core::style::Style,
+    /// Horizontal content pad (cells).
+    pub pad_x: u16,
+    /// Vertical content pad (cells).
+    pub pad_y: u16,
+    /// Optional surface fill style.
+    pub surface: ratatui_core::style::Style,
+}
+
+/// Sole paint authority for a frame or app shell (pre-1.0 Break B).
+///
+/// One object owns palette, density, glyphs, spacing, selection, and capability.
+/// Widgets take `&DesignSystem` only — never a bare palette or legacy token bundle.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DesignTokens {
-    /// Color/style theme.
-    pub theme: Theme,
+pub struct DesignSystem {
+    /// Role → Style map.
+    pub palette: RolePalette,
     /// Layout density.
     pub density: Density,
     /// Motion preference.
@@ -139,26 +187,50 @@ pub struct DesignTokens {
     pub spacing: SpacingScale,
     /// Default list/menu selection chrome.
     pub selection: SelectionChrome,
+    /// Color depth used for quantize-at-edge.
+    pub capability: ColorCapability,
 }
 
-impl Default for DesignTokens {
+impl Default for DesignSystem {
     fn default() -> Self {
-        Self::new(Theme::default(), Density::default())
+        Self::phosphor()
     }
 }
 
-impl DesignTokens {
-    /// Builds tokens with density-derived spacing.
+impl DesignSystem {
+    /// Default phosphor Obsidian system (quiet gutter selection).
     #[must_use]
-    pub fn new(theme: Theme, density: Density) -> Self {
+    pub fn phosphor() -> Self {
+        Self::from_palette(RolePalette::default())
+            .selection(SelectionChrome::Gutter)
+    }
+
+    /// Builds from palette + density-derived spacing.
+    #[must_use]
+    pub fn new(palette: RolePalette, density: Density) -> Self {
         Self {
-            theme,
+            palette,
             density,
             motion: Motion::default(),
             glyphs: GlyphSet::default(),
             spacing: SpacingScale::from_density(density),
             selection: SelectionChrome::default(),
+            capability: ColorCapability::default(),
         }
+    }
+
+    /// Builds from a palette with default density.
+    #[must_use]
+    pub fn from_palette(palette: RolePalette) -> Self {
+        Self::new(palette, Density::default())
+    }
+
+    /// Overrides density and recomputes spacing from density.
+    #[must_use]
+    pub fn density(mut self, density: Density) -> Self {
+        self.density = density;
+        self.spacing = SpacingScale::from_density(density);
+        self
     }
 
     /// Overrides motion.
@@ -182,10 +254,32 @@ impl DesignTokens {
         self
     }
 
-    /// Quiet-canvas / bright-intent design system alias (same token bundle).
+    /// Overrides color capability (call before quantize).
     #[must_use]
-    pub fn design_system(self) -> DesignSystem {
-        DesignSystem { tokens: self }
+    pub const fn capability(mut self, capability: ColorCapability) -> Self {
+        self.capability = capability;
+        self
+    }
+
+    /// Role style lookup.
+    #[must_use]
+    pub fn style(&self, role: Role) -> ratatui_core::style::Style {
+        self.palette.style(role)
+    }
+
+    /// Palette borrow.
+    #[must_use]
+    pub const fn palette(&self) -> &RolePalette {
+        &self.palette
+    }
+
+    /// Quantizes palette colors to this system's capability (or an override).
+    #[must_use]
+    pub fn quantize(self, capability: ColorCapability) -> Self {
+        let mut out = self;
+        out.capability = capability;
+        out.palette = super::quantize_palette(&out.palette, capability);
+        out
     }
 
     /// Panel chrome recipe for single-line borders and title hierarchy.
@@ -197,18 +291,15 @@ impl DesignTokens {
             PanelChrome::Danger => (Role::Danger, Role::TextStrong),
         };
         PanelRecipe {
-            border: self.theme.style(border_role),
-            title: self.theme.style(title_role),
+            border: self.style(border_role),
+            title: self.style(title_role),
             pad_x: self.spacing.pad_x,
             pad_y: self.spacing.pad_y,
-            surface: self.theme.style(Role::Surface),
+            surface: self.style(Role::Surface),
         }
     }
 
-    /// Resolves styles for a **list row** chrome recipe (one vertical slice).
-    ///
-    /// Prefer [`Self::resolve_list_row`] with a full [`ListRowVisualState`] when
-    /// hover/loading/checked affect paint.
+    /// Resolves styles for a list row chrome recipe (one vertical slice).
     #[must_use]
     pub fn list_row_recipe(&self, selected: bool, focused: bool, enabled: bool) -> ListRowRecipe {
         self.resolve_list_row(ListRowVisualState {
@@ -226,27 +317,26 @@ impl DesignTokens {
     pub fn resolve_list_row(&self, state: ListRowVisualState) -> ListRowRecipe {
         let disabled = !state.enabled;
         let label = if disabled {
-            self.theme.style(Role::TextDisabled)
+            self.style(Role::TextDisabled)
         } else if state.selected && matches!(self.selection, SelectionChrome::Fill) {
-            self.theme.style(Role::Selection)
+            self.style(Role::Selection)
         } else if state.selected {
-            self.theme.style(Role::TextStrong)
+            self.style(Role::TextStrong)
         } else if state.loading {
-            self.theme.style(Role::TextMuted)
+            self.style(Role::TextMuted)
         } else {
-            self.theme.style(Role::Text)
+            self.style(Role::Text)
         };
-        let secondary = self.theme.style(if disabled {
+        let secondary = self.style(if disabled {
             Role::TextDisabled
         } else {
             Role::TextMuted
         });
         let shortcut = secondary;
         let gutter = if state.selected {
-            // Accent gutter for selection; focus-visible is underline on primary.
             Some((
                 self.glyphs.selection_gutter(),
-                self.theme.style(Role::Accent),
+                self.style(Role::Accent),
             ))
         } else {
             None
@@ -265,9 +355,9 @@ impl DesignTokens {
             use_tint,
             hover_fill,
             show_focus_underline: state.focused && state.selected && !disabled,
-            focus: self.theme.style(Role::Focus),
-            hover: self.theme.style(Role::LinkHover),
-            tint: self.theme.style(Role::Focus),
+            focus: self.style(Role::Focus),
+            hover: self.style(Role::LinkHover),
+            tint: self.style(Role::Focus),
             check_on: self.glyphs.check_on(),
             check_off: self.glyphs.check_off(),
             loading_glyph: self.glyphs.loading(),
@@ -278,110 +368,6 @@ impl DesignTokens {
             checked: state.checked,
             loading: state.loading,
         }
-    }
-}
-
-/// Runtime visual facts for one list row (widget state + row projection).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub struct ListRowVisualState {
-    /// Cursor / keyboard selection.
-    pub selected: bool,
-    /// List owns focus and this row is the cursor.
-    pub focused: bool,
-    /// Pointer hover (enabled item only).
-    pub hovered: bool,
-    /// Row accepts interaction.
-    pub enabled: bool,
-    /// Row is loading (leading spinner/ellipsis).
-    pub loading: bool,
-    /// Multi-select membership.
-    pub checked: bool,
-}
-
-/// Semantic panel chrome emphasis for recipes (mirrors widget emphasis).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum PanelChrome {
-    /// Inactive / background panel.
-    #[default]
-    Normal,
-    /// Interaction owner.
-    Focused,
-    /// Destructive / risk surface.
-    Danger,
-}
-
-/// Resolved paint plan for a panel chrome surface.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PanelRecipe {
-    /// Single-line border style (weight never encodes focus).
-    pub border: Style,
-    /// Title text style.
-    pub title: Style,
-    /// Horizontal content pad (cells).
-    pub pad_x: u16,
-    /// Vertical content pad (cells).
-    pub pad_y: u16,
-    /// Optional surface fill style.
-    pub surface: Style,
-}
-
-/// Token-driven design system surface (quiet canvas, bright intent).
-///
-/// Wraps [`DesignTokens`] as the preferred public name from the terminal design
-/// system spec. Prefer constructing via [`DesignTokens::design_system`] or
-/// [`DesignSystem::phosphor`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DesignSystem {
-    /// Underlying tokens.
-    pub tokens: DesignTokens,
-}
-
-impl Default for DesignSystem {
-    fn default() -> Self {
-        Self::phosphor()
-    }
-}
-
-impl DesignSystem {
-    /// Default phosphor Obsidian tokens.
-    #[must_use]
-    pub fn phosphor() -> Self {
-        Self {
-            tokens: DesignTokens::default().selection(SelectionChrome::Gutter),
-        }
-    }
-
-    /// Builds from an existing theme + density.
-    #[must_use]
-    pub fn new(theme: Theme, density: Density) -> Self {
-        Self {
-            tokens: DesignTokens::new(theme, density).selection(SelectionChrome::Gutter),
-        }
-    }
-
-    /// List row recipe (quiet selection via gutter by default).
-    #[must_use]
-    pub fn list_row_recipe(&self, selected: bool, focused: bool, enabled: bool) -> ListRowRecipe {
-        self.tokens.list_row_recipe(selected, focused, enabled)
-    }
-
-    /// Full list row recipe from visual state.
-    #[must_use]
-    pub fn resolve_list_row(&self, state: ListRowVisualState) -> ListRowRecipe {
-        self.tokens.resolve_list_row(state)
-    }
-
-    /// Panel chrome recipe.
-    #[must_use]
-    pub fn panel_recipe(&self, emphasis: PanelChrome) -> PanelRecipe {
-        self.tokens.panel_recipe(emphasis)
-    }
-
-    /// Theme borrow.
-    #[must_use]
-    pub const fn theme(&self) -> &Theme {
-        &self.tokens.theme
     }
 }
 
@@ -442,10 +428,10 @@ mod tests {
 
     #[test]
     fn list_row_recipe_changes_with_selection_chrome() {
-        let fill = DesignTokens::new(Theme::default(), Density::Compact)
+        let fill = DesignSystem::new(RolePalette::default(), Density::Compact)
             .selection(SelectionChrome::Fill)
             .list_row_recipe(true, true, true);
-        let gutter = DesignTokens::new(Theme::default(), Density::Compact)
+        let gutter = DesignSystem::new(RolePalette::default(), Density::Compact)
             .selection(SelectionChrome::Gutter)
             .list_row_recipe(true, true, true);
         assert!(fill.use_fill);
@@ -464,8 +450,8 @@ mod tests {
 
     #[test]
     fn reduced_motion_is_distinct() {
-        let full = DesignTokens::default();
-        let reduced = DesignTokens::default().motion(Motion::Reduced);
+        let full = DesignSystem::default();
+        let reduced = DesignSystem::default().motion(Motion::Reduced);
         assert!(full.motion.animate_spinners());
         assert!(!Motion::Off.animate_spinners());
         assert_ne!(full.motion, reduced.motion);

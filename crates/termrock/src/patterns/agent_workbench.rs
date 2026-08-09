@@ -34,7 +34,7 @@ use crate::{
         WorkspaceState,
     },
     style::{
-        DesignTokens,
+        DesignSystem,
         Role,
     },
     widgets::{
@@ -46,7 +46,7 @@ use crate::{
         ModeRibbon,
         ModeRibbonState,
         Panel,
-        PanelEmphasis,
+        PanelChrome,
         PromptBox,
         PromptBoxState,
         QuestionFlow,
@@ -304,7 +304,7 @@ pub fn sync_workbench_scene(
 /// Borrowed surfaces for one workbench paint.
 pub struct WorkbenchSurfaces<'a, 'b> {
     /// Design tokens (canonical paint input).
-    pub tokens: &'a DesignTokens,
+    pub tokens: &'a DesignSystem,
     /// Persistent workbench state (scene, workspace, task list).
     pub state: &'a mut AgentWorkbenchState,
     /// Task rail rows (composed anatomy).
@@ -393,9 +393,9 @@ pub fn render_agent_workbench(
             "task_rail" => {
                 let is_focused = state.scene.focused() == Some(&"task_rail");
                 let panel = Panel::new(tokens).title("Tasks").emphasis(if is_focused {
-                    PanelEmphasis::Focused
+                    PanelChrome::Focused
                 } else {
-                    PanelEmphasis::Normal
+                    PanelChrome::Normal
                 });
                 let inner = panel.inner(pane.area);
                 Widget::render(&panel, pane.area, buffer);
@@ -414,9 +414,9 @@ pub fn render_agent_workbench(
                 let panel = Panel::new(tokens)
                     .title("Transcript")
                     .emphasis(if is_focused {
-                        PanelEmphasis::Focused
+                        PanelChrome::Focused
                     } else {
-                        PanelEmphasis::Normal
+                        PanelChrome::Normal
                     });
                 let inner = panel.inner(pane.area);
                 Widget::render(&panel, pane.area, buffer);
@@ -439,7 +439,7 @@ pub fn render_agent_workbench(
             }
             "status" => {
                 StatefulWidget::render(
-                    &StatusBar::new(status_slots, &[], &tokens.theme),
+                    &StatusBar::new(status_slots, &[], &tokens),
                     pane.area,
                     buffer,
                     status_state,
@@ -453,7 +453,7 @@ pub fn render_agent_workbench(
         && let Some(modal) = approval_rect
     {
         StatefulWidget::render(card, modal, buffer, approval_state);
-        let _ = tokens.theme.style(Role::BorderFocused);
+        let _ = tokens.style(Role::BorderFocused);
     }
     if let Some(flow) = question
         && let Some(modal) = question_rect
@@ -514,7 +514,7 @@ mod tests {
     )]
     fn paint(
         workbench: &mut AgentWorkbenchState,
-        tokens: &DesignTokens,
+        tokens: &DesignSystem,
         tasks: &[ListRow<'_, &'static str>],
         modes: &[WorkbenchMode<'_, &'static str>],
         blocks: &[TranscriptBlock<'_, &str>],
@@ -523,9 +523,9 @@ mod tests {
         width: u16,
         height: u16,
     ) -> Terminal<TestBackend> {
-        let transcript = Transcript::new(blocks, &tokens.theme);
+        let transcript = Transcript::new(blocks, &tokens);
         let mut tstate = TranscriptState::new();
-        let prompt = PromptBox::new(&tokens.theme);
+        let prompt = PromptBox::new(&tokens);
         let mut pstate = PromptBoxState::new();
         let slots = [StatusSlot {
             id: "s",
@@ -578,7 +578,7 @@ mod tests {
 
     #[test]
     fn composed_workbench_paints_task_rail_modes_and_keeps_scene() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let lines = ["hello", "world"];
         let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
         let mut workbench = AgentWorkbenchState::new();
@@ -614,13 +614,13 @@ mod tests {
 
     #[test]
     fn escape_peels_approval_then_question_on_persistent_scene() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let lines = ["x"];
         let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
         let mut workbench = AgentWorkbenchState::new();
         let tasks: [ListRow<'_, &str>; 0] = [];
         let modes = default_modes("build");
-        let card = ApprovalCard::new("Delete", "Remove files?", ApprovalRisk::High, &tokens.theme);
+        let card = ApprovalCard::new("Delete", "Remove files?", ApprovalRisk::High, &tokens);
         let mut astate = ApprovalCardState::new();
         let _ = paint(
             &mut workbench,
@@ -687,7 +687,7 @@ mod tests {
 
     #[test]
     fn flagship_script_narrow_widths_keep_contained_geometry() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let lines = ["stream line"];
         let blocks = [TranscriptBlock::new(
             "b1",
@@ -697,9 +697,9 @@ mod tests {
         let mut workbench = AgentWorkbenchState::new();
         let tasks = [ListRow::item("t1", Line::from("task"))];
         let modes = default_modes("plan");
-        let transcript = Transcript::new(&blocks, &tokens.theme);
+        let transcript = Transcript::new(&blocks, &tokens);
         let mut tstate = TranscriptState::new();
-        let prompt = PromptBox::new(&tokens.theme);
+        let prompt = PromptBox::new(&tokens);
         let mut pstate = PromptBoxState::new();
         let slots: [StatusSlot<'_, &str>; 0] = [];
         let mut sstate = StatusBarState::default();

@@ -14,7 +14,7 @@ use termrock::{
         KeyEvent,
         KeyModifiers,
     },
-    style::Theme,
+    style::{DesignSystem, RolePalette},
     widgets::{
         Form,
         FormField,
@@ -74,8 +74,9 @@ fn rendering_exposes_sections_required_help_error_and_non_color_states() {
         title: Line::from("General"),
         fields: &fields,
     }];
-    let theme = Theme::default();
-    let form = Form::new(&sections, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form = Form::new(&sections, &system);
     let mut state = FormState::new(Some("host"));
     let area = Rect::new(0, 0, 36, 14);
     let mut buffer = Buffer::empty(area);
@@ -117,8 +118,9 @@ fn wide_forms_use_two_columns_and_clicks_follow_painted_geometry() {
         title: Line::from("General"),
         fields: &fields,
     }];
-    let theme = Theme::default();
-    let form = Form::new(&sections, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form = Form::new(&sections, &system);
     let mut state = FormState::new(Some("host"));
     let area = Rect::new(4, 2, 80, 10);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 90, 14));
@@ -175,8 +177,9 @@ fn focused_field_is_revealed_and_manual_scroll_is_bounded() {
         title: Line::from("Long form"),
         fields: &fields,
     }];
-    let theme = Theme::default();
-    let form = Form::new(&sections, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form = Form::new(&sections, &system);
     let mut state = FormState::new(Some(7));
     let area = Rect::new(0, 0, 30, 5);
     let mut buffer = Buffer::empty(area);
@@ -205,8 +208,9 @@ fn focused_field_is_revealed_and_manual_scroll_is_bounded() {
 
 #[test]
 fn empty_and_tiny_forms_are_safe() {
-    let theme = Theme::default();
-    let form: Form<'_, u8> = Form::new(&[], &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form: Form<'_, u8> = Form::new(&[], &system);
     let mut state = FormState::default();
     let mut zero = Buffer::empty(Rect::new(0, 0, 0, 0));
     form.render(Rect::new(0, 0, 0, 0), &mut zero, &mut state);
@@ -223,7 +227,7 @@ fn empty_and_tiny_forms_are_safe() {
         title: Line::from("Settings"),
         fields: &fields,
     }];
-    let form = Form::new(&sections, &theme);
+    let form = Form::new(&sections, &system);
     let area = Rect::new(0, 0, 2, 6);
     let mut tiny = Buffer::empty(area);
     form.render(area, &mut tiny, &mut state);
@@ -248,8 +252,9 @@ fn traversal_is_stable_across_sections_and_responsive_reflow() {
             fields: &second,
         },
     ];
-    let theme = Theme::default();
-    let form = Form::new(&sections, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form = Form::new(&sections, &system);
     let mut state = FormState::new(Some(1));
 
     assert_eq!(
@@ -340,8 +345,9 @@ fn arrow_navigation_matches_tab_order_in_each_column_layout() {
         title: Line::from("General"),
         fields: &fields,
     }];
-    let theme = Theme::default();
-    let form = Form::new(&sections, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form = Form::new(&sections, &system);
     let mut state = FormState::new(Some("host"));
 
     let narrow_area = Rect::new(0, 0, 40, 14);
@@ -373,8 +379,9 @@ fn scroll_by_clamps_at_bounds() {
         title: Line::from("Long"),
         fields: &fields,
     }];
-    let theme = Theme::default();
-    let form = Form::new(&sections, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form = Form::new(&sections, &system);
     let area = Rect::new(0, 0, 30, 5);
     let mut buffer = Buffer::empty(area);
     let mut state = FormState::new(None);
@@ -397,8 +404,9 @@ fn click_on_field_focuses_and_reports() {
         title: Line::from("General"),
         fields: &fields,
     }];
-    let theme = Theme::default();
-    let form = Form::new(&sections, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form = Form::new(&sections, &system);
     let area = Rect::new(0, 0, 40, 14);
     let mut buffer = Buffer::empty(area);
     let mut state = FormState::new(Some("host"));
@@ -422,8 +430,9 @@ fn partially_clipped_field_retains_union_hit_region() {
         title: Line::from("General"),
         fields: &fields,
     }];
-    let theme = Theme::default();
-    let form = Form::new(&sections, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form = Form::new(&sections, &system);
     let area = Rect::new(0, 0, 30, 5);
     let mut buffer = Buffer::empty(area);
     let mut state = FormState::new(None);
@@ -449,8 +458,9 @@ fn click_outside_any_region_is_ignored() {
         title: Line::from("General"),
         fields: &fields,
     }];
-    let theme = Theme::default();
-    let form = Form::new(&sections, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let form = Form::new(&sections, &system);
     let area = Rect::new(4, 3, 40, 14);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 50, 20));
     let mut state = FormState::new(Some("host"));

@@ -13,59 +13,20 @@ use ratatui::{
 };
 use termrock::{
     input::{
-        Event,
-        KeyCode,
-        KeyEvent,
-        KeyEventKind,
-        KeyModifiers,
-        MouseButton,
-        MouseEvent,
+        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
         MouseEventKind,
     },
-    interaction::{
-        FocusOutcome,
-        FocusTarget,
-        ModalStack,
-        Outcome,
-        render_backdrop,
-    },
+    interaction::{FocusOutcome, FocusTarget, ModalStack, Outcome, render_backdrop},
     keymap::KeyChord,
     layout::centered_rect,
-    patterns::{
-        layout_studio_shell,
-        StudioShellLayout,
-    },
+    patterns::{StudioShellLayout, layout_studio_shell},
     runtime::FrameTick,
-    scroll::{
-        ScrollSpan,
-        self,
-    },
-    style::{
-        ColorCapability,
-        Density,
-        DesignTokens,
-        Role,
-        Theme,
-    },
+    scroll::{self, ScrollSpan},
+    style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
     widgets::{
-        Action,
-        ChoiceDialog,
-        ChoiceDialogState,
-        DesignInspector,
-        DesignInspectorFrame,
-        Dialog,
-        InspectorPanel,
-        List as ComponentList,
-        ListRow,
-        ListState as ComponentListState,
-        Panel,
-        PanelEmphasis,
-        Progress,
-        ProgressKind,
-        Severity,
-        Toast,
-        ToastLifetime,
-        ToastState,
+        Action, ChoiceDialog, ChoiceDialogState, DesignInspector, DesignInspectorFrame, Dialog,
+        InspectorPanel, List as ComponentList, ListRow, ListState as ComponentListState, Panel,
+        PanelChrome, Progress, ProgressKind, Severity, Toast, ToastLifetime, ToastState,
     },
 };
 
@@ -126,7 +87,7 @@ pub(crate) struct Lookbook {
     sidebar_inner_area: Rect,
     sidebar_viewport_items: usize,
     preview_viewport_rows: usize,
-    theme: Theme,
+    theme: RolePalette,
     knob_selected: usize,
     prototype_toast: ToastState,
     modals: ModalStack<PrototypeModal>,
@@ -134,7 +95,7 @@ pub(crate) struct Lookbook {
 
 impl Lookbook {
     pub(crate) fn new() -> Self {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
         let mut interactor = gallery_stories()[0].make_interactor();
         interactor.set_theme(theme.clone());
         Self {
@@ -232,7 +193,7 @@ impl Lookbook {
         frame.render_widget(
             Progress::new(
                 ProgressKind::Indeterminate { tick: spinner_tick },
-                &self.theme,
+                &DesignSystem::from_palette(self.theme.clone()),
             )
             .label(&live_label),
             Rect::new(
@@ -253,7 +214,7 @@ impl Lookbook {
         if self.prototype_toast.is_visible(tick) {
             frame.render_widget(
                 Toast::new(
-                    &self.theme,
+                    &DesignSystem::from_palette(self.theme.clone()),
                     "Preview updated · expires in 2s",
                     Severity::Success,
                 ),
@@ -266,7 +227,7 @@ impl Lookbook {
     }
 
     fn render_sidebar(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let panel_tokens = DesignSystem::from_palette(self.theme.clone());
         let catalog = gallery_stories();
         let block = Panel::new(&panel_tokens)
             .title("Stories")
@@ -312,7 +273,7 @@ impl Lookbook {
     }
 
     fn render_description(&self, frame: &mut Frame<'_>, area: Rect) {
-        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let panel_tokens = DesignSystem::from_palette(self.theme.clone());
         let story = gallery_stories()[self.selected];
         let block = Panel::new(&panel_tokens).title("About").block();
         let inner = block.inner(area);
@@ -347,7 +308,7 @@ impl Lookbook {
     }
 
     fn render_preview(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let panel_tokens = DesignSystem::from_palette(self.theme.clone());
         let story = gallery_stories()[self.selected];
         let block = Panel::new(&panel_tokens)
             .title("Preview")
@@ -432,13 +393,13 @@ impl Lookbook {
             selection_chrome: "gutter",
         };
         frame.render_widget(
-            DesignInspector::new(snap, &self.theme).panel(InspectorPanel::Focus),
+            DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone())).panel(InspectorPanel::Focus),
             area,
         );
     }
 
     fn render_knobs(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let tokens = DesignSystem::from_palette(self.theme.clone());
         let panel = Panel::new(&tokens)
             .title("Controls")
             .emphasis(self.focus.panel_emphasis_for(&FocusId::Controls));
@@ -617,10 +578,10 @@ impl Lookbook {
         let theme_toggle = key.code == KeyCode::Char('t')
             && (key.modifiers.contains(KeyModifiers::CONTROL) || !captures_text);
         if theme_toggle {
-            self.theme = if self.theme == Theme::tailrocks_phosphor() {
-                Theme::slate()
+            self.theme = if self.theme == RolePalette::tailrocks_phosphor() {
+                RolePalette::slate()
             } else {
-                Theme::default()
+                RolePalette::default()
             };
             self.interactor.set_theme(self.theme.clone());
             return ControlFlow::Continue(());
@@ -781,7 +742,7 @@ impl Lookbook {
             return;
         };
         modal.state.focused = self.focus.focused().copied();
-        let tokens = termrock::style::DesignTokens::new(
+        let tokens = termrock::style::DesignSystem::new(
             self.theme.clone(),
             termrock::style::Density::default(),
         );
@@ -792,7 +753,7 @@ impl Lookbook {
                     Line::from("Tab stays here; close restores the opener.").into(),
                     &tokens,
                 )
-                .emphasis(PanelEmphasis::Focused),
+                .emphasis(PanelChrome::Focused),
                 &actions,
             )
             .gap(" · "),
@@ -877,7 +838,7 @@ mod tests {
 
         let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
 
-        assert_eq!(app.theme, Theme::slate());
+        assert_eq!(app.theme, RolePalette::slate());
     }
 
     #[test]
@@ -896,12 +857,12 @@ mod tests {
         ));
 
         let _ = app.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), tick);
-        assert_eq!(app.theme, Theme::default());
+        assert_eq!(app.theme, RolePalette::default());
         let _ = app.handle_key(
             KeyEvent::new(KeyCode::Char('t'), KeyModifiers::CONTROL),
             tick,
         );
-        assert_eq!(app.theme, Theme::slate());
+        assert_eq!(app.theme, RolePalette::slate());
     }
 
     #[test]

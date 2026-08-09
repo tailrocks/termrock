@@ -4,8 +4,9 @@ use ratatui_widgets::{block::Block, clear::Clear, paragraph::Paragraph};
 use crate::{
     runtime::FrameTick,
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::display_cols,
 };
@@ -104,11 +105,11 @@ pub enum Anchor {
 ///
 /// ```
 /// use ratatui_core::layout::Rect;
-/// use termrock::style::Theme;
+/// use termrock::style::DesignSystem;
 /// use termrock::widgets::{Anchor, Severity, Toast};
 ///
-/// let theme = Theme::default();
-/// let toast = Toast::new(&theme, "Saved", Severity::Success)
+/// let system = DesignSystem::phosphor();
+/// let toast = Toast::new(&system, "Saved", Severity::Success)
 ///     .anchor(Anchor::BottomRight)
 ///     .margins(1, 1);
 /// assert!(toast.rect(Rect::new(0, 0, 40, 8)).is_some());
@@ -120,13 +121,13 @@ pub struct Toast<'a> {
     style: Option<Style>,
     horizontal_margin: u16,
     vertical_margin: u16,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> Toast<'a> {
     #[must_use]
     /// Creates a toast with default top-right anchoring and margins.
-    pub const fn new(theme: &'a Theme, message: &'a str, severity: Severity) -> Self {
+    pub const fn new(system: &'a DesignSystem, message: &'a str, severity: Severity) -> Self {
         Self {
             message,
             severity,
@@ -134,7 +135,7 @@ impl<'a> Toast<'a> {
             style: None,
             horizontal_margin: 2,
             vertical_margin: 1,
-            theme,
+            system,
         }
     }
 
@@ -209,8 +210,8 @@ impl Widget for &Toast<'_> {
             Severity::Error => Role::Danger,
         };
         Paragraph::new(self.message)
-            .style(self.style.unwrap_or(self.theme.style(Role::Text)))
-            .block(Block::bordered().border_style(self.theme.style(border_role)))
+            .style(self.style.unwrap_or(self.system.style(Role::Text)))
+            .block(Block::bordered().border_style(self.system.style(border_role)))
             .render(area, buffer);
     }
 }
@@ -266,14 +267,15 @@ mod tests {
 
     #[test]
     fn anchors_and_margins_resolve_inside_the_outer_area() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let outer = Rect::new(10, 5, 30, 12);
-        let top_right = Toast::new(&theme, "Saved", Severity::Success)
+        let top_right = Toast::new(&system, "Saved", Severity::Success)
             .anchor(Anchor::TopRight)
             .margins(2, 1)
             .rect(outer)
             .expect("visible toast");
-        let bottom_left = Toast::new(&theme, "Saved", Severity::Success)
+        let bottom_left = Toast::new(&system, "Saved", Severity::Success)
             .anchor(Anchor::BottomLeft)
             .margins(2, 1)
             .rect(outer)

@@ -16,20 +16,22 @@ use crate::{
         UNCACHED_REVISION,
     },
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
 };
 
-use super::PanelEmphasis;
+
+use super::PanelChrome;
 
 #[derive(Debug, Clone, Copy)]
 /// A scrollable view over borrowed terminal lines.
 pub struct Viewport<'a> {
     lines: &'a [Line<'a>],
     title: Option<&'a str>,
-    emphasis: PanelEmphasis,
-    theme: &'a Theme,
+    emphasis: PanelChrome,
+    system: &'a DesignSystem,
     content_style: Option<Style>,
     content_revision: u64,
 }
@@ -37,12 +39,12 @@ pub struct Viewport<'a> {
 impl<'a> Viewport<'a> {
     #[must_use]
     /// Creates a viewport over borrowed lines with zero scroll offset.
-    pub const fn new(lines: &'a [Line<'a>], theme: &'a Theme) -> Self {
+    pub const fn new(lines: &'a [Line<'a>], system: &'a DesignSystem) -> Self {
         Self {
             lines,
             title: None,
-            emphasis: PanelEmphasis::Normal,
-            theme,
+            emphasis: PanelChrome::Normal,
+            system,
             content_style: None,
             content_revision: UNCACHED_REVISION,
         }
@@ -57,7 +59,7 @@ impl<'a> Viewport<'a> {
 
     #[must_use]
     /// Selects the border emphasis for the active interaction owner.
-    pub const fn emphasis(mut self, emphasis: PanelEmphasis) -> Self {
+    pub const fn emphasis(mut self, emphasis: PanelChrome) -> Self {
         self.emphasis = emphasis;
         self
     }
@@ -98,18 +100,18 @@ impl StatefulWidget for &Viewport<'_> {
             content_width,
             viewport_width,
         );
-        let border_role = if self.emphasis == PanelEmphasis::Focused {
+        let border_role = if self.emphasis == PanelChrome::Focused {
             Role::BorderFocused
         } else {
             Role::Border
         };
         let mut block = Block::default()
             .borders(Borders::ALL)
-            .border_style(self.theme.style(border_role));
+            .border_style(self.system.style(border_role));
         if let Some(title) = self.title {
             block = block.title(Span::styled(
                 format!(" {} ", title.trim()),
-                self.theme.style(Role::TextStrong),
+                self.system.style(Role::TextStrong),
             ));
         }
         // Vertical slicing keeps frame cost proportional to the painted
@@ -124,7 +126,7 @@ impl StatefulWidget for &Viewport<'_> {
             .block(block)
             .style(
                 self.content_style
-                    .unwrap_or_else(|| self.theme.style(Role::Text)),
+                    .unwrap_or_else(|| self.system.style(Role::Text)),
             )
             .scroll((0, state.scroll_x))
             .render(area, buffer);
@@ -140,8 +142,8 @@ impl StatefulWidget for &Viewport<'_> {
                 self.lines.len(),
                 viewport_height,
                 state.scroll_y,
-                self.theme.style(Role::ScrollTrack),
-                self.theme.style(Role::ScrollThumb),
+                self.system.style(Role::ScrollTrack),
+                self.system.style(Role::ScrollThumb),
             );
         }
     }

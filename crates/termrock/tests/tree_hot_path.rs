@@ -5,7 +5,7 @@ use std::{alloc::System, hint::black_box, time::Instant};
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
 use termrock::perf::{check_batch_budget, check_zero_alloc_steady};
-use termrock::style::DesignTokens;
+use termrock::style::DesignSystem;
 use termrock::widgets::{Tree, TreeNode, TreeNodeStatus, TreeState};
 
 #[global_allocator]
@@ -13,7 +13,7 @@ static GLOBAL: &StatsAlloc<System> = &INSTRUMENTED_SYSTEM;
 
 #[test]
 fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     const NODE_COUNT: usize = 10_000;
     const VIEWPORT_HEIGHT: u16 = 40;
     const SAMPLES: usize = 100;

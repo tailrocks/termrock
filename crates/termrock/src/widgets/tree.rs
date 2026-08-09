@@ -12,7 +12,6 @@ use crate::{
     scroll::max_offset,
     style::{
         DesignSystem,
-        DesignTokens,
         ListRowVisualState,
         Role,
     },
@@ -569,14 +568,14 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 /// selection, scroll, hover, multi-check, hit geometry, and typed outcomes.
 pub struct Tree<'a, Id> {
     nodes: &'a [TreeNode<'a, Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     empty_message: Option<&'a str>,
 }
 
 impl<'a, Id> Tree<'a, Id> {
     #[must_use]
     /// Creates a tree over borrowed flattened nodes and mutable tree state.
-    pub const fn new(nodes: &'a [TreeNode<'a, Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(nodes: &'a [TreeNode<'a, Id>], tokens: &'a DesignSystem) -> Self {
         Self {
             nodes,
             tokens,
@@ -587,7 +586,7 @@ impl<'a, Id> Tree<'a, Id> {
     /// Preferred paint root from [`DesignSystem`].
     #[must_use]
     pub const fn from_system(nodes: &'a [TreeNode<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self::new(nodes, &system.tokens)
+        Self::new(nodes, system)
     }
 
     /// Message painted when `nodes` is empty.
@@ -599,7 +598,7 @@ impl<'a, Id> Tree<'a, Id> {
 
     /// Design tokens used for recipes and glyphs.
     #[must_use]
-    pub const fn tokens(&self) -> &DesignTokens {
+    pub const fn tokens(&self) -> &DesignSystem {
         self.tokens
     }
 }
@@ -620,7 +619,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         if self.nodes.is_empty() {
             state.offset = 0;
             if let Some(message) = self.empty_message {
-                let style = self.tokens.theme.style(Role::TextMuted);
+                let style = self.tokens.style(Role::TextMuted);
                 buffer.set_stringn(area.x, area.y, message, usize::from(area.width), style);
             }
             return;
@@ -680,10 +679,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             });
             let mut style = match node.status {
                 TreeNodeStatus::Ready if node.enabled => recipe.label,
-                TreeNodeStatus::Ready => self.tokens.theme.style(Role::TextDisabled),
+                TreeNodeStatus::Ready => self.tokens.style(Role::TextDisabled),
                 // Loading stays muted even when interaction-disabled.
-                TreeNodeStatus::Loading => self.tokens.theme.style(Role::TextMuted),
-                TreeNodeStatus::Error => self.tokens.theme.style(Role::Danger),
+                TreeNodeStatus::Loading => self.tokens.style(Role::TextMuted),
+                TreeNodeStatus::Error => self.tokens.style(Role::Danger),
             };
             if !node.enabled {
                 style = style.add_modifier(Modifier::DIM);
@@ -701,7 +700,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             } else if hovered && node.enabled {
                 style = recipe.hover.add_modifier(Modifier::UNDERLINED);
             } else if checked && node.enabled {
-                style = style.patch(self.tokens.theme.style(Role::Accent));
+                style = style.patch(self.tokens.style(Role::Accent));
             }
             if recipe.use_fill && selected {
                 buffer.set_style(row, style);
@@ -964,7 +963,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                     scrollbar.x,
                     y,
                     "│",
-                    self.tokens.theme.style(Role::ScrollTrack),
+                    self.tokens.style(Role::ScrollTrack),
                 );
             }
             if let Some(thumb) = crate::scroll::full_cell_thumb(
@@ -978,7 +977,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                         scrollbar.x,
                         scrollbar.y.saturating_add(y),
                         "█",
-                        self.tokens.theme.style(Role::ScrollThumb),
+                        self.tokens.style(Role::ScrollThumb),
                     );
                 }
             }
@@ -999,7 +998,11 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyEvent, KeyModifiers};
     use crate::interaction::{NavigationMove, UiIntent};
-    use crate::style::{DesignSystem, GlyphSet, SelectionChrome};
+    use crate::style::{
+        DesignSystem,
+        GlyphSet,
+        SelectionChrome,
+    };
 
     fn sample() -> Vec<TreeNode<'static, &'static str>> {
         vec![
@@ -1055,7 +1058,7 @@ mod tests {
 
     #[test]
     fn ascii_disclosure_and_gutter() {
-        let tokens = DesignTokens::default()
+        let tokens = DesignSystem::default()
             .glyphs(GlyphSet::Ascii)
             .selection(SelectionChrome::Gutter);
         let nodes = [
@@ -1074,13 +1077,13 @@ mod tests {
 
     #[test]
     fn density_indent_dashboard_tighter() {
-        let comfortable = DesignTokens::new(
-            crate::style::Theme::default(),
+        let comfortable = DesignSystem::new(
+            crate::style::RolePalette::default(),
             crate::style::Density::Comfortable,
         )
         .selection(SelectionChrome::Gutter);
-        let dashboard = DesignTokens::new(
-            crate::style::Theme::default(),
+        let dashboard = DesignSystem::new(
+            crate::style::RolePalette::default(),
             crate::style::Density::Dashboard,
         )
         .selection(SelectionChrome::Gutter);
@@ -1115,7 +1118,7 @@ mod tests {
         let nodes: Vec<TreeNode<'_, usize>> = (0..5_000)
             .map(|i| TreeNode::new(i, Line::from(format!("n{i}")), (i % 5) as u16))
             .collect();
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = TreeState::new(Some(4_900));
         let area = Rect::new(0, 0, 40, 15);
         let mut buffer = Buffer::empty(area);

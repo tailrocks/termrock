@@ -8,7 +8,7 @@ use crate::{
         KeyEvent,
         KeyEventKind,
     },
-    widgets::PanelEmphasis,
+    widgets::PanelChrome,
 };
 
 use super::ModalStack;
@@ -249,11 +249,11 @@ impl<Id: Clone + Eq, ScopeId: Clone + Eq> FocusRing<Id, ScopeId> {
 
     /// Projects focus into semantic panel emphasis without changing glyphs.
     #[must_use]
-    pub fn panel_emphasis_for(&self, id: &Id) -> PanelEmphasis {
+    pub fn panel_emphasis_for(&self, id: &Id) -> PanelChrome {
         if self.is_focused(id) {
-            PanelEmphasis::Focused
+            PanelChrome::Focused
         } else {
-            PanelEmphasis::Normal
+            PanelChrome::Normal
         }
     }
 

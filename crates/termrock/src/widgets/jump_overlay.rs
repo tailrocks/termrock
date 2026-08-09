@@ -10,6 +10,7 @@ use ratatui_core::{
 };
 
 use crate::{
+
     input::{
         KeyCode,
         KeyEvent,
@@ -23,10 +24,12 @@ use crate::{
         OverlayStack,
     },
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
 };
+
 
 /// Default overlay id for jump mode (fullscreen-class, owns input).
 pub const JUMP_OVERLAY_ID: &str = "termrock.jump";
@@ -209,21 +212,21 @@ pub fn assign_jump_badges<Id: Clone>(regions: &[HitRegion<Id>]) -> Vec<JumpTarge
 #[derive(Debug, Clone, Copy)]
 pub struct JumpOverlay<'a, Id> {
     targets: &'a [JumpTarget<Id>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a, Id> JumpOverlay<'a, Id> {
     /// Creates a jump overlay over borrowed targets.
     #[must_use]
-    pub const fn new(targets: &'a [JumpTarget<Id>], theme: &'a Theme) -> Self {
-        Self { targets, theme }
+    pub const fn new(targets: &'a [JumpTarget<Id>], system: &'a DesignSystem) -> Self {
+        Self { targets, system }
     }
 }
 
 impl<Id> Widget for &JumpOverlay<'_, Id> {
     fn render(self, _area: Rect, buffer: &mut Buffer) {
         let style = self
-            .theme
+            .system
             .style(Role::ActionFocused)
             .add_modifier(ratatui_core::style::Modifier::BOLD);
         for target in self.targets {

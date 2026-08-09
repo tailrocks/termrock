@@ -26,7 +26,7 @@ use termrock::{
         Keymap,
         Visibility,
     },
-    style::Theme,
+    style::RolePalette,
 };
 
 const USAGE: &str = "usage: termrock-lookbook <terminal|list|render|check>";
@@ -207,8 +207,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 out_dir = args.next().map(PathBuf::from);
             } else if flag == OsStr::new("--theme") && theme.is_none() {
                 theme = match args.next().as_deref() {
-                    Some(value) if value == OsStr::new("phosphor") => Some(Theme::default()),
-                    Some(value) if value == OsStr::new("slate") => Some(Theme::slate()),
+                    Some(value) if value == OsStr::new("phosphor") => Some(RolePalette::default()),
+                    Some(value) if value == OsStr::new("slate") => Some(RolePalette::slate()),
                     _ => return Err(usage.into()),
                 };
             } else {
@@ -252,7 +252,7 @@ fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests;
 
-fn write_svgs(out_dir: PathBuf, theme: &Theme) -> Result<(), Box<dyn std::error::Error>> {
+fn write_svgs(out_dir: PathBuf, theme: &RolePalette) -> Result<(), Box<dyn std::error::Error>> {
     for path in write_story_svgs(&out_dir, theme)? {
         let mut stdout = io::stdout().lock();
         drop(io::Write::write_fmt(

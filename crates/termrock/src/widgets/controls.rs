@@ -16,7 +16,7 @@ use crate::{
         MouseEventKind,
     },
     style::{
-        DesignTokens,
+        DesignSystem,
         Role,
     },
     text::{
@@ -24,6 +24,7 @@ use crate::{
         take_display_cols,
     },
 };
+
 
 // ── Checkbox ────────────────────────────────────────────────────────────────
 
@@ -129,13 +130,13 @@ pub struct Checkbox<'a, Id> {
     pub id: Id,
     /// Label.
     label: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> Checkbox<'a, Id> {
     /// Id + label.
     #[must_use]
-    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignSystem) -> Self {
         Self { id, label, tokens }
     }
 }
@@ -149,11 +150,11 @@ impl<Id> Checkbox<'_, Id> {
         }
         let mark = if state.checked { "[x]" } else { "[ ]" };
         let style = if !state.enabled {
-            self.tokens.theme.style(Role::TextDisabled)
+            self.tokens.style(Role::TextDisabled)
         } else if state.focused {
-            self.tokens.theme.style(Role::Focus)
+            self.tokens.style(Role::Focus)
         } else {
-            self.tokens.theme.style(Role::Text)
+            self.tokens.style(Role::Text)
         };
         let line = format!("{mark} {}", self.label);
         let text = take_display_cols(&line, usize::from(area.width));
@@ -265,13 +266,13 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct RadioGroup<'a, Id> {
     options: &'a [(Id, &'a str)],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> RadioGroup<'a, Id> {
     /// Options as (id, label).
     #[must_use]
-    pub const fn new(options: &'a [(Id, &'a str)], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(options: &'a [(Id, &'a str)], tokens: &'a DesignSystem) -> Self {
         Self { options, tokens }
     }
 
@@ -293,9 +294,9 @@ impl<'a, Id> RadioGroup<'a, Id> {
             let focused = state.focus_index == i;
             let mark = if selected { "(•)" } else { "( )" };
             let style = if focused {
-                self.tokens.theme.style(Role::Focus)
+                self.tokens.style(Role::Focus)
             } else {
-                self.tokens.theme.style(Role::Text)
+                self.tokens.style(Role::Text)
             };
             let line = format!("{mark} {label}");
             let text = take_display_cols(&line, usize::from(area.width));
@@ -408,13 +409,13 @@ pub struct Switch<'a, Id> {
     pub id: Id,
     /// Label.
     label: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> Switch<'a, Id> {
     /// Id + label.
     #[must_use]
-    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignSystem) -> Self {
         Self { id, label, tokens }
     }
 }
@@ -428,13 +429,13 @@ impl<Id> Switch<'_, Id> {
         }
         let knob = if state.on { "[ON ]" } else { "[OFF]" };
         let style = if !state.enabled {
-            self.tokens.theme.style(Role::TextDisabled)
+            self.tokens.style(Role::TextDisabled)
         } else if state.focused {
-            self.tokens.theme.style(Role::Focus)
+            self.tokens.style(Role::Focus)
         } else if state.on {
-            self.tokens.theme.style(Role::Success)
+            self.tokens.style(Role::Success)
         } else {
-            self.tokens.theme.style(Role::TextMuted)
+            self.tokens.style(Role::TextMuted)
         };
         let line = format!("{knob} {}", self.label);
         let text = take_display_cols(&line, usize::from(area.width));
@@ -555,14 +556,14 @@ impl<Id: Clone> SelectState<Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct Select<'a, Id> {
     placeholder: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     _id: core::marker::PhantomData<Id>,
 }
 
 impl<'a, Id> Select<'a, Id> {
     /// Placeholder when empty.
     #[must_use]
-    pub const fn new(placeholder: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(placeholder: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             placeholder,
             tokens,
@@ -585,9 +586,9 @@ impl<'a, Id> Select<'a, Id> {
         let label = selected_label.unwrap_or(self.placeholder);
         let open = if state.open { "▴" } else { "▾" };
         let style = if state.focused {
-            self.tokens.theme.style(Role::Input)
+            self.tokens.style(Role::Input)
         } else {
-            self.tokens.theme.style(Role::Text)
+            self.tokens.style(Role::Text)
         };
         let line = format!(" {label} {open} ");
         let text = take_display_cols(&line, usize::from(area.width));
@@ -666,13 +667,13 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct MultiSelect<'a, Id> {
     options: &'a [(Id, &'a str)],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id: Clone + PartialEq> MultiSelect<'a, Id> {
     /// Options.
     #[must_use]
-    pub const fn new(options: &'a [(Id, &'a str)], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(options: &'a [(Id, &'a str)], tokens: &'a DesignSystem) -> Self {
         Self { options, tokens }
     }
 
@@ -689,9 +690,9 @@ impl<'a, Id: Clone + PartialEq> MultiSelect<'a, Id> {
             let on = state.selected.iter().any(|s| s == id);
             let mark = if on { "[x]" } else { "[ ]" };
             let style = if state.focus_index == i && state.focused {
-                self.tokens.theme.style(Role::Focus)
+                self.tokens.style(Role::Focus)
             } else {
-                self.tokens.theme.style(Role::Text)
+                self.tokens.style(Role::Text)
             };
             let line = format!("{mark} {label}");
             let text = take_display_cols(&line, usize::from(area.width));
@@ -825,13 +826,13 @@ impl Default for ComboboxState {
 #[derive(Debug, Clone, Copy)]
 pub struct Combobox<'a> {
     placeholder: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> Combobox<'a> {
     /// Placeholder.
     #[must_use]
-    pub const fn new(placeholder: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(placeholder: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             placeholder,
             tokens,
@@ -849,9 +850,9 @@ impl<'a> Combobox<'a> {
             state.query.as_str()
         };
         let style = if state.focused {
-            self.tokens.theme.style(Role::Input)
+            self.tokens.style(Role::Input)
         } else {
-            self.tokens.theme.style(Role::TextMuted)
+            self.tokens.style(Role::TextMuted)
         };
         let text = take_display_cols(show, usize::from(area.width));
         buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);

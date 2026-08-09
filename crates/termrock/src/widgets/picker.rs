@@ -5,6 +5,7 @@ use ratatui_core::{
 };
 
 use crate::{
+
     input::{
         KeyCode,
         KeyEvent,
@@ -12,11 +13,12 @@ use crate::{
     },
     interaction::Outcome,
     style::{
-        DesignTokens,
+        DesignSystem,
         Role,
     },
     text::take_display_cols,
 };
+
 
 use super::{List, ListRow, ListState, RowRole, TextInput, TextInputOutcome, TextInputState};
 
@@ -231,7 +233,7 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
 /// product-neutral empty cue. Picker owns no overlay, matching, or async policy.
 pub struct Picker<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     label: &'a str,
     placeholder: &'a str,
     empty_message: &'a str,
@@ -240,7 +242,7 @@ pub struct Picker<'a, Id> {
 impl<'a, Id> Picker<'a, Id> {
     /// Creates a picker with `Filter`, `Type to filter`, and `No matches` defaults.
     #[must_use]
-    pub const fn new(rows: &'a [ListRow<'a, Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(rows: &'a [ListRow<'a, Id>], tokens: &'a DesignSystem) -> Self {
         Self {
             rows,
             tokens,
@@ -288,7 +290,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         }
         let query_area = Rect::new(area.x, area.y, area.width, 1);
         StatefulWidget::render(
-            &TextInput::new(self.label, &self.tokens.theme).placeholder(self.placeholder),
+            &TextInput::new(self.label, self.tokens).placeholder(self.placeholder),
             query_area,
             buffer,
             &mut state.query,
@@ -320,7 +322,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 list_area.y,
                 take_display_cols(self.empty_message, usize::from(list_area.width)),
                 usize::from(list_area.width),
-                self.tokens.theme.style(Role::TextMuted),
+                self.tokens.style(Role::TextMuted),
             );
         } else {
             StatefulWidget::render(
@@ -471,8 +473,8 @@ mod tests {
 
     #[test]
     fn empty_and_tiny_rendering_are_safe_and_clear_pointer_geometry() {
-        let tokens = DesignTokens::default();
-        let _theme = tokens.theme.clone();
+        let tokens = DesignSystem::default();
+        let _theme = tokens.palette.clone();
         let visible = rows(&["alpha"]);
         let mut state = PickerState::new(Some("alpha"));
         let mut buffer = Buffer::empty(Rect::new(0, 0, 8, 2));
@@ -489,7 +491,7 @@ mod tests {
 
     #[test]
     fn mouse_activation_delegates_to_painted_list_geometry() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let visible = rows(&["alpha"]);
         let mut state = PickerState::new(Some("alpha"));
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 3));
@@ -514,7 +516,7 @@ mod tests {
 
     #[test]
     fn rendering_a_filtered_projection_clears_stale_hover() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let initial = rows(&["alpha", "beta"]);
         let reordered = rows(&["beta", "alpha"]);
         let filtered = rows(&["alpha"]);

@@ -26,7 +26,7 @@ use crate::{
         place_overlay,
     },
     style::{
-        DesignTokens,
+        DesignSystem,
         Role,
     },
     text::{
@@ -34,6 +34,7 @@ use crate::{
         take_display_cols,
     },
 };
+
 
 /// Default overlay id for drawers opened via helpers.
 pub const DRAWER_OVERLAY_ID: &str = "termrock.drawer";
@@ -181,13 +182,13 @@ impl MenuState {
 #[derive(Debug, Clone, Copy)]
 pub struct Menu<'a, Id> {
     items: &'a [MenuItem<Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> Menu<'a, Id> {
     /// Items.
     #[must_use]
-    pub const fn new(items: &'a [MenuItem<Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(items: &'a [MenuItem<Id>], tokens: &'a DesignSystem) -> Self {
         Self { items, tokens }
     }
 
@@ -208,7 +209,7 @@ impl<'a, Id> Menu<'a, Id> {
                     y,
                     &line,
                     usize::from(area.width),
-                    self.tokens.theme.style(Role::Border),
+                    self.tokens.style(Role::Border),
                 );
                 y = y.saturating_add(1);
                 if y >= area.bottom() {
@@ -217,11 +218,11 @@ impl<'a, Id> Menu<'a, Id> {
             }
             let focused = state.focus_index == i;
             let style = if !item.enabled {
-                self.tokens.theme.style(Role::TextDisabled)
+                self.tokens.style(Role::TextDisabled)
             } else if focused {
-                self.tokens.theme.style(Role::Selection)
+                self.tokens.style(Role::Selection)
             } else {
-                self.tokens.theme.style(Role::Text)
+                self.tokens.style(Role::Text)
             };
             let check = match item.checked {
                 Some(true) => "✓ ",
@@ -364,13 +365,13 @@ impl<Id: Clone + PartialEq> SidebarState<Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct Sidebar<'a, Id> {
     items: &'a [SidebarItem<Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
     /// Items.
     #[must_use]
-    pub const fn new(items: &'a [SidebarItem<Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(items: &'a [SidebarItem<Id>], tokens: &'a DesignSystem) -> Self {
         Self { items, tokens }
     }
 
@@ -387,11 +388,11 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
             let selected = state.selected.as_ref() == Some(&item.id);
             let focused = state.focus_index == i;
             let style = if selected {
-                self.tokens.theme.style(Role::Selection)
+                self.tokens.style(Role::Selection)
             } else if focused {
-                self.tokens.theme.style(Role::Focus)
+                self.tokens.style(Role::Focus)
             } else {
-                self.tokens.theme.style(Role::Text)
+                self.tokens.style(Role::Text)
             };
             let text = if state.expanded {
                 take_display_cols(&item.label, usize::from(area.width))
@@ -477,13 +478,13 @@ impl BreadcrumbsState {
 #[derive(Debug, Clone, Copy)]
 pub struct Breadcrumbs<'a, Id> {
     items: &'a [BreadcrumbItem<Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> Breadcrumbs<'a, Id> {
     /// Items root→leaf.
     #[must_use]
-    pub const fn new(items: &'a [BreadcrumbItem<Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(items: &'a [BreadcrumbItem<Id>], tokens: &'a DesignSystem) -> Self {
         Self { items, tokens }
     }
 
@@ -507,7 +508,7 @@ impl<'a, Id> Breadcrumbs<'a, Id> {
             area.y,
             &text,
             usize::from(area.width),
-            self.tokens.theme.style(Role::TextMuted),
+            self.tokens.style(Role::TextMuted),
         );
         let _ = display_cols(&line);
     }
@@ -677,13 +678,13 @@ pub fn open_tooltip_overlay<FocusId: Clone>(
 #[derive(Debug, Clone, Copy)]
 pub struct Drawer<'a> {
     title: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> Drawer<'a> {
     /// Title.
     #[must_use]
-    pub const fn new(title: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(title: &'a str, tokens: &'a DesignSystem) -> Self {
         Self { title, tokens }
     }
 }
@@ -693,7 +694,7 @@ impl Widget for &Drawer<'_> {
         if area.is_empty() {
             return;
         }
-        let style = self.tokens.theme.style(Role::Elevated);
+        let style = self.tokens.style(Role::Elevated);
         for y in area.y..area.bottom() {
             for x in area.x..area.right() {
                 buffer[(x, y)].set_style(style);
@@ -705,7 +706,7 @@ impl Widget for &Drawer<'_> {
             area.y,
             &text,
             usize::from(area.width),
-            self.tokens.theme.style(Role::TextStrong),
+            self.tokens.style(Role::TextStrong),
         );
     }
 }
@@ -714,13 +715,13 @@ impl Widget for &Drawer<'_> {
 #[derive(Debug, Clone, Copy)]
 pub struct Popover<'a> {
     title: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> Popover<'a> {
     /// Title.
     #[must_use]
-    pub const fn new(title: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(title: &'a str, tokens: &'a DesignSystem) -> Self {
         Self { title, tokens }
     }
 }
@@ -736,7 +737,7 @@ impl Widget for &Popover<'_> {
             area.y,
             &text,
             usize::from(area.width),
-            self.tokens.theme.style(Role::Elevated),
+            self.tokens.style(Role::Elevated),
         );
     }
 }
@@ -785,13 +786,13 @@ impl TooltipState {
 #[derive(Debug, Clone, Copy)]
 pub struct Tooltip<'a> {
     text: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> Tooltip<'a> {
     /// Help text.
     #[must_use]
-    pub const fn new(text: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(text: &'a str, tokens: &'a DesignSystem) -> Self {
         Self { text, tokens }
     }
 }
@@ -808,7 +809,7 @@ impl Tooltip<'_> {
             area.y,
             &text,
             usize::from(area.width),
-            self.tokens.theme.style(Role::TextMuted),
+            self.tokens.style(Role::TextMuted),
         );
     }
 }

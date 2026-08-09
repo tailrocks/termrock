@@ -14,13 +14,13 @@
 
 use ratatui_core::layout::Rect;
 
-use super::{ColorCapability, DesignSystem, DesignTokens, Theme, quantize_theme};
+use super::{ColorCapability, DesignSystem, RolePalette, quantize_palette};
 
 /// Kind of capability-aware preview surface (media/resource host).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum PreviewSurfaceKind {
-    /// Theme / design-system swatch.
+    /// Design-system / palette swatch surface.
     Theme,
     /// Image protocol surface (placement only; emission is consumer-owned).
     Image,
@@ -161,15 +161,15 @@ impl CapabilityPreviewHost {
 
     /// Theme quantized for the active capability.
     #[must_use]
-    pub fn projected_theme(&self) -> Theme {
-        quantize_theme(self.system.theme(), self.capability)
+    pub fn projected_theme(&self) -> RolePalette {
+        quantize_palette(self.system.palette(), self.capability)
     }
 
     /// Tokens with projected theme.
     #[must_use]
-    pub fn projected_tokens(&self) -> DesignTokens {
-        let mut tokens = self.system.tokens.clone();
-        tokens.theme = self.projected_theme();
+    pub fn projected_tokens(&self) -> DesignSystem {
+        let mut tokens = self.system.clone();
+        tokens.palette = self.projected_theme();
         tokens
     }
 

@@ -4,7 +4,7 @@
 |-------|-------|
 | **Title** | Pre-1.0 public API redesign (deliberate breaks) |
 | **Date** | 2026-08-09 |
-| **Status** | Accepted execution SoT — **M1/Break A landed** (`0060`); next M2 DesignSystem sole paint |
+| **Status** | Accepted execution SoT — **M1+M2 landed** (`0060`, `0061`); next M3 scene sole focus |
 | **Author** | TermRock architecture (elevated from `docs/design/pre-1.0-api-redesign.md`) |
 | **Scope** | Every public module / major type in `termrock` + `termrock-lookbook` (+ future `termrock-studio`) |
 | **Authority** | `Agents.md` forward-only; hybrid kernel + source-owned registry |

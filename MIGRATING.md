@@ -74,6 +74,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0058 | `v0.12.0` | [Category-leading Tree redesign](migrations/0058-v0.12.0-tree-category-leading.md) |
 | 0059 | `v0.12.0` | [OverlayStack helpers (drawer/popover/tooltip/jump)](migrations/0059-v0.12.0-overlay-stack-helpers.md) |
 | 0060 | `v0.13.0` | [Crate root re-export purge](migrations/0060-v0.13.0-root-reexport-purge.md) |
+| 0061 | `v0.13.0` | [DesignSystem sole paint](migrations/0061-v0.13.0-design-system-sole-paint.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

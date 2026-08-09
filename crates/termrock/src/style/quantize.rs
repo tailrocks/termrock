@@ -5,7 +5,7 @@
 
 use ratatui_core::style::{Color, Style};
 
-use super::{Role, Theme};
+use super::{Role, RolePalette};
 
 /// Detected or configured terminal color depth.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -73,11 +73,11 @@ pub fn quantize_color(color: Color, capability: ColorCapability) -> Color {
 
 /// Quantizes every role style in a theme.
 #[must_use]
-pub fn quantize_theme(theme: &Theme, capability: ColorCapability) -> Theme {
+pub fn quantize_palette(palette: &RolePalette, capability: ColorCapability) -> RolePalette {
     if matches!(capability, ColorCapability::Truecolor) {
-        return theme.clone();
+        return palette.clone();
     }
-    Theme::from_fn(|role| quantize_style(theme.style(role), capability))
+    RolePalette::from_fn(|role| quantize_style(palette.style(role), capability))
 }
 
 fn quantize_style(style: Style, capability: ColorCapability) -> Style {
@@ -199,11 +199,11 @@ fn indexed_to_ansi16(index: u8) -> Color {
     }
 }
 
-impl Theme {
+impl RolePalette {
     /// Returns a theme with colors quantized to `capability`.
     #[must_use]
     pub fn quantized(&self, capability: ColorCapability) -> Self {
-        quantize_theme(self, capability)
+        quantize_palette(self, capability)
     }
 }
 
@@ -224,11 +224,12 @@ mod tests {
     }
 
     #[test]
-    fn quantize_theme_phosphor_to_ansi_keeps_roles() {
-        let theme = Theme::tailrocks_phosphor().quantized(ColorCapability::Ansi16);
+    fn quantize_palette_phosphor_to_ansi_keeps_roles() {
+        let theme = RolePalette::tailrocks_phosphor().quantized(ColorCapability::Ansi16);
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         // Accent should still resolve to some style
         let _ = theme.style(Role::Accent);
-        assert_eq!(Theme::roles().len(), 38);
+        assert_eq!(RolePalette::roles().len(), 38);
     }
 
     #[test]

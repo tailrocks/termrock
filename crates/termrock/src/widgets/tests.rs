@@ -7,7 +7,12 @@ use ratatui_core::{
 };
 
 use super::*;
-use crate::style::{Density, DesignTokens, Role, Theme};
+use crate::style::{
+        Density,
+        DesignSystem,
+        Role,
+        RolePalette,
+    };
 
 #[cfg(feature = "serde")]
 #[test]
@@ -31,19 +36,20 @@ fn areas() -> [Rect; 5] {
 
 #[test]
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
-    let theme = Theme::default();
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let panel = Panel::new(&panel_tokens)
         .title("Title")
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let hints = [Hint {
         chord: "Enter",
         label: "choose",
         priority: 1,
         visible: true,
     }];
-    let hint_bar = HintBar::new(&hints, &theme).separator(" · ");
-    let toast = Toast::new(&theme, "Updated", Severity::Success).anchor(Anchor::TopRight);
+    let hint_bar = HintBar::new(&hints, &system).separator(" · ");
+    let toast = Toast::new(&system, "Updated", Severity::Success).anchor(Anchor::TopRight);
     let backdrop = Backdrop::new().symbol(' ').style(Style::new().dim());
     for area in areas() {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 30));
@@ -56,19 +62,21 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 
 #[test]
 fn focused_panel_preserves_plain_border_glyphs() {
-    let theme = Theme::default();
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
-    let panel = Panel::new(&panel_tokens).emphasis(PanelEmphasis::Focused);
+    let panel = Panel::new(&panel_tokens).emphasis(PanelChrome::Focused);
     (&panel).render(area, &mut buffer);
     assert_panel_border(&buffer, area, theme.style(Role::BorderFocused));
 }
 
 #[test]
 fn inactive_panel_preserves_plain_gray_border() {
-    let theme = Theme::default();
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     Panel::new(&panel_tokens).render(area, &mut buffer);
@@ -100,7 +108,7 @@ fn assert_panel_border(buffer: &Buffer, area: Rect, expected: Style) {
 
 #[test]
 fn stable_ids_survive_reordering() {
-    let _tokens = DesignTokens::default();
+    let _tokens = DesignSystem::default();
     let first = [
         ListRow {
             id: "a",
@@ -131,15 +139,15 @@ fn stable_ids_survive_reordering() {
     let mut state = ListState::new(Some("b"));
     let area = Rect::new(0, 0, 20, 2);
     let mut buffer = Buffer::empty(area);
-    let _theme = Theme::default();
+    let _theme = RolePalette::default();
     StatefulWidget::render(
-        &List::new(&first, &DesignTokens::default()),
+        &List::new(&first, &DesignSystem::default()),
         area,
         &mut buffer,
         &mut state,
     );
     StatefulWidget::render(
-        &List::new(&second, &DesignTokens::default()),
+        &List::new(&second, &DesignSystem::default()),
         area,
         &mut buffer,
         &mut state,
@@ -159,7 +167,7 @@ fn stable_ids_survive_reordering() {
 
 #[test]
 fn disabled_and_separator_rows_have_no_hit_regions() {
-    let _tokens = DesignTokens::default();
+    let _tokens = DesignSystem::default();
     let rows = [
         ListRow {
             id: 1,
@@ -201,9 +209,9 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
     let mut state = ListState::default();
     let area = Rect::new(4, 3, 20, 3);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 10));
-    let _theme = Theme::default();
+    let _theme = RolePalette::default();
     StatefulWidget::render(
-        &List::new(&rows, &DesignTokens::default()),
+        &List::new(&rows, &DesignSystem::default()),
         area,
         &mut buffer,
         &mut state,
@@ -228,7 +236,8 @@ fn text_input_edits_extended_graphemes_atomically() {
 
 #[test]
 fn action_and_status_regions_match_painted_geometry() {
-    let theme = Theme::default();
+    let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
     let actions = [
         Action {
             id: "save",
@@ -247,7 +256,7 @@ fn action_and_status_regions_match_painted_geometry() {
     let area = Rect::new(5, 2, 30, 1);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 40, 5));
     StatefulWidget::render(
-        &ActionBar::new(&actions, &theme).gap(" "),
+        &ActionBar::new(&actions, &system).gap(" "),
         area,
         &mut buffer,
         &mut action_state,
@@ -273,7 +282,7 @@ fn action_and_status_regions_match_painted_geometry() {
         style: Style::new(),
         hover_style: None,
     }];
-    let status = StatusBar::new(&left, &right, &theme).alpha(1.0);
+    let status = StatusBar::new(&left, &right, &system).alpha(1.0);
     let regions = status.regions(area);
     assert_eq!(regions[1].area.right(), area.right());
     (&status).render(area, &mut buffer, &mut StatusBarState::default());
@@ -287,8 +296,9 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
         Line::from("two"),
         Line::from("three"),
     ];
-    let theme = Theme::default();
-    let viewport = Viewport::new(&lines, &theme).title(" Log ");
+    let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let viewport = Viewport::new(&lines, &system).title(" Log ");
     let area = Rect::new(0, 0, 12, 4);
     let mut buffer = Buffer::empty(area);
     let mut state = crate::scroll::DialogScroll {
@@ -309,10 +319,11 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
 #[test]
 fn viewport_emphasis_focused_uses_border_focused_role() {
     let lines = [Line::from("row")];
-    let theme = Theme::default();
-    let viewport = Viewport::new(&lines, &theme)
+    let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let viewport = Viewport::new(&lines, &system)
         .title("Active")
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let area = Rect::new(0, 0, 16, 4);
     let mut buffer = Buffer::empty(area);
     let mut state = crate::scroll::DialogScroll::default();
@@ -334,7 +345,8 @@ fn viewport_emphasis_focused_uses_border_focused_role() {
 fn theme_override_reaches_active_tab_cells() {
     use ratatui_core::style::Color;
 
-    let theme = Theme::default().with_role(Role::TabActive, Style::new().bg(Color::Blue));
+    let theme = RolePalette::default().with_role(Role::TabActive, Style::new().bg(Color::Blue));
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
     let tabs = [Tab {
         id: "active",
         label: "Active",
@@ -342,7 +354,7 @@ fn theme_override_reaches_active_tab_cells() {
         active: true,
         enabled: true,
     }];
-    let widget = Tabs::new(&tabs, &theme).gap(1);
+    let widget = Tabs::new(&tabs, &system).gap(1);
     let area = Rect::new(0, 0, 12, 2);
     let mut buffer = Buffer::empty(area);
     let mut state = TabsState::default();
@@ -354,8 +366,9 @@ fn theme_override_reaches_active_tab_cells() {
 
 #[test]
 fn owned_panel_render_matches_borrowed_render() {
-    let theme = Theme::default();
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 12, 3);
     let mut owned = Buffer::empty(area);
     let mut borrowed = Buffer::empty(area);

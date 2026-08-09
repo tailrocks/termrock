@@ -1,13 +1,16 @@
-use ratatui_core::{
-    buffer::Buffer,
+use ratatui_core::{buffer::Buffer,
     layout::Rect,
-    style::{Color, Style},
+    style::{
+        Color,
+        Style,
+    },
     text::Text,
     widgets::{StatefulWidget, Widget},
 };
 use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 
 use crate::{
+
     input::{
         KeyCode,
         KeyEvent,
@@ -30,15 +33,15 @@ use crate::{
     style::{
         Density,
         DesignSystem,
-        DesignTokens,
         Role,
-        Theme,
+        RolePalette,
     },
 };
 
+
 use super::{
     Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel,
-    PanelEmphasis,
+    PanelChrome,
 };
 
 /// Default overlay id for a modal dialog on an [`OverlayStack`].
@@ -97,7 +100,7 @@ pub enum DialogVariant {
     /// Neutral elevated dialog.
     #[default]
     Default,
-    /// Destructive / risk surface (`PanelEmphasis::Danger`).
+    /// Destructive / risk surface (`PanelChrome::Danger`).
     Danger,
     /// Informational emphasis (focused border, info title tone).
     Info,
@@ -209,7 +212,7 @@ impl Backdrop {
 
     /// Resolves backdrop from design tokens (Reset by default; no hard black).
     #[must_use]
-    pub fn from_tokens(tokens: &DesignTokens) -> Self {
+    pub fn from_tokens(tokens: &DesignSystem) -> Self {
         let _ = tokens;
         Self::reset()
     }
@@ -379,10 +382,10 @@ mod backdrop_tests {
             enabled: true,
             style: None,
         }];
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let dialog = ChoiceDialog::new(
             Dialog::new("Choose", Text::from("Continue?"), &tokens)
-                .emphasis(PanelEmphasis::Focused),
+                .emphasis(PanelChrome::Focused),
             &actions,
         );
         let area = Rect::new(3, 2, 30, 6);
@@ -408,12 +411,12 @@ mod backdrop_tests {
             emphasis: false,
             style: None,
         }];
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let dialog = MessageDialog::new(
             Dialog::new("Failure", Text::from("a message that wraps"), &tokens)
-                .emphasis(PanelEmphasis::Focused),
+                .emphasis(PanelChrome::Focused),
             &details,
-            &tokens.theme,
+            &tokens,
         )
         .wrap(true);
         let area = Rect::new(0, 0, 12, 8);
@@ -425,16 +428,16 @@ mod backdrop_tests {
 
     #[test]
     fn dialog_uses_semantic_focused_panel_chrome() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let dialog = Dialog::new(" Notice ", Text::from("Done"), &tokens)
-            .emphasis(PanelEmphasis::Focused);
+            .emphasis(PanelChrome::Focused);
         let area = Rect::new(0, 0, 18, 4);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);
 
         assert_eq!(
             buffer[(0, 0)].fg,
-            tokens.theme.style(crate::style::Role::BorderFocused).fg.unwrap()
+            tokens.style(crate::style::Role::BorderFocused).fg.unwrap()
         );
         assert!(
             buffer
@@ -448,7 +451,7 @@ mod backdrop_tests {
 
     #[test]
     fn danger_variant_uses_danger_border_and_title_cue() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let dialog = Dialog::new("Delete", Text::from("Irreversible"), &tokens)
             .variant(DialogVariant::Danger);
         let area = Rect::new(0, 0, 24, 5);
@@ -456,7 +459,7 @@ mod backdrop_tests {
         (&dialog).render(area, &mut buffer);
         assert_eq!(
             buffer[(0, 0)].fg,
-            tokens.theme.style(Role::Danger).fg.unwrap()
+            tokens.style(Role::Danger).fg.unwrap()
         );
         let text: String = buffer.content().iter().map(|c| c.symbol()).collect();
         assert!(text.contains('!') || text.contains("Delete"), "{text:?}");
@@ -521,8 +524,8 @@ pub struct Dialog<'a> {
     title: &'a str,
     body: Text<'a>,
     style: Style,
-    tokens: &'a DesignTokens,
-    emphasis: PanelEmphasis,
+    tokens: &'a DesignSystem,
+    emphasis: PanelChrome,
     variant: DialogVariant,
     footer_hint: Option<&'a str>,
     loading: bool,
@@ -531,13 +534,13 @@ pub struct Dialog<'a> {
 impl<'a> Dialog<'a> {
     #[must_use]
     /// Creates a dialog painted from design tokens / recipes.
-    pub const fn new(title: &'a str, body: Text<'a>, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(title: &'a str, body: Text<'a>, tokens: &'a DesignSystem) -> Self {
         Self {
             title,
             body,
             style: Style::new(),
             tokens,
-            emphasis: PanelEmphasis::Normal,
+            emphasis: PanelChrome::Normal,
             variant: DialogVariant::Default,
             footer_hint: None,
             loading: false,
@@ -547,18 +550,18 @@ impl<'a> Dialog<'a> {
     /// Preferred constructor from [`DesignSystem`].
     #[must_use]
     pub const fn from_system(title: &'a str, body: Text<'a>, system: &'a DesignSystem) -> Self {
-        Self::new(title, body, &system.tokens)
+        Self::new(title, body, system)
     }
 
-    /// Theme borrow for child widgets that still take `&Theme`.
+    /// Theme borrow for child widgets that still take `&RolePalette`.
     #[must_use]
-    pub const fn theme(&self) -> &Theme {
-        &self.tokens.theme
+    pub const fn theme(&self) -> &RolePalette {
+        self.tokens.palette()
     }
 
     /// Design tokens used for panel recipes and density.
     #[must_use]
-    pub const fn tokens(&self) -> &DesignTokens {
+    pub const fn tokens(&self) -> &DesignSystem {
         self.tokens
     }
 
@@ -571,7 +574,7 @@ impl<'a> Dialog<'a> {
 
     #[must_use]
     /// Sets the semantic panel emphasis (overridden by danger variant).
-    pub const fn emphasis(mut self, emphasis: PanelEmphasis) -> Self {
+    pub const fn emphasis(mut self, emphasis: PanelChrome) -> Self {
         self.emphasis = emphasis;
         self
     }
@@ -597,9 +600,9 @@ impl<'a> Dialog<'a> {
         self
     }
 
-    fn resolved_emphasis(&self) -> PanelEmphasis {
+    fn resolved_emphasis(&self) -> PanelChrome {
         match self.variant {
-            DialogVariant::Danger => PanelEmphasis::Danger,
+            DialogVariant::Danger => PanelChrome::Danger,
             DialogVariant::Default | DialogVariant::Info => self.emphasis,
         }
     }
@@ -629,7 +632,7 @@ impl Widget for &Dialog<'_> {
             .emphasis(emphasis);
         let mut body_style = self.style;
         if body_style.fg.is_none() {
-            body_style = body_style.patch(self.tokens.theme.style(Role::Text));
+            body_style = body_style.patch(self.tokens.style(Role::Text));
         }
         // Tiny: border + title only.
         if area.height < 3 {
@@ -657,7 +660,7 @@ impl Widget for &Dialog<'_> {
             let y = area.bottom().saturating_sub(2);
             let x = area.x.saturating_add(1);
             let w = area.width.saturating_sub(2);
-            let style = self.tokens.theme.style(Role::TextMuted);
+            let style = self.tokens.style(Role::TextMuted);
             buffer.set_stringn(x, y, hint, usize::from(w), style);
         }
     }
@@ -879,7 +882,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
             focused: state.focused.clone(),
             regions: Vec::new(),
         };
-        (&ActionBar::new(self.actions, self.dialog.theme()).gap(self.gap)).render(
+        (&ActionBar::new(self.actions, self.dialog.tokens()).gap(self.gap)).render(
             action_area,
             buffer,
             &mut action_state,
@@ -904,7 +907,7 @@ pub struct MessageDialog<'a, Id> {
     details: &'a [DetailRow<'a, Id>],
     label_width: u16,
     wrap: bool,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a, Id> MessageDialog<'a, Id> {
@@ -913,14 +916,14 @@ impl<'a, Id> MessageDialog<'a, Id> {
     pub const fn new(
         dialog: Dialog<'a>,
         details: &'a [DetailRow<'a, Id>],
-        theme: &'a Theme,
+        system: &'a DesignSystem,
     ) -> Self {
         Self {
             dialog,
             details,
             label_width: 0,
             wrap: false,
-            theme,
+            system,
         }
     }
 
@@ -964,7 +967,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &MessageDialog<'_, Id> {
             area.width - 2,
             area.height.saturating_sub(body_height).saturating_sub(2),
         );
-        (&DetailTable::new(self.details, self.theme)
+        (&DetailTable::new(self.details, self.system)
             .label_width(self.label_width)
             .wrap(self.wrap))
             .render(inner, buffer, state);

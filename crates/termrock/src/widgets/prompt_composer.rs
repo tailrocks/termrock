@@ -21,6 +21,7 @@ use ratatui_core::{
 };
 
 use crate::{
+
     input::{
         Event,
         KeyCode,
@@ -42,9 +43,9 @@ use crate::{
     },
     style::{
         Density,
-        DesignTokens,
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols,
@@ -52,7 +53,7 @@ use crate::{
     },
     widgets::{
         Panel,
-        PanelEmphasis,
+        PanelChrome,
         TextArea,
         TextAreaOutcome,
         TextAreaState,
@@ -60,6 +61,7 @@ use crate::{
         TokenMeter,
     },
 };
+
 
 /// Default overlay id for composer completion (slash / mention).
 pub const PROMPT_COMPLETION_OVERLAY_ID: &str = "termrock.prompt_completion";
@@ -1459,15 +1461,14 @@ fn detect_completion(text: &str, cursor: TextCursor) -> Option<CompletionQuery> 
 /// Prompt composer chrome + editor.
 #[derive(Debug, Clone, Copy)]
 pub struct PromptComposer<'a> {
-    tokens: &'a DesignTokens,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> PromptComposer<'a> {
-    /// Creates a composer using design tokens + theme paint.
+    /// Creates a composer from the sole paint authority.
     #[must_use]
-    pub const fn new(tokens: &'a DesignTokens, theme: &'a Theme) -> Self {
-        Self { tokens, theme }
+    pub const fn new(system: &'a DesignSystem) -> Self {
+        Self { system }
     }
 }
 
@@ -1653,11 +1654,11 @@ impl StatefulWidget for &PromptComposer<'_> {
         // Panel border only in normal+ when height allows
         if state.presentation != ComposerPresentation::Compact && area.height >= 3 {
             let emphasis = if state.focused {
-                PanelEmphasis::Focused
+                PanelChrome::Focused
             } else {
-                PanelEmphasis::Normal
+                PanelChrome::Normal
             };
-            let panel = Panel::new(self.tokens).emphasis(emphasis);
+            let panel = Panel::new(self.system).emphasis(emphasis);
             Widget::render(&panel, area, buffer);
         }
 
@@ -1666,9 +1667,9 @@ impl StatefulWidget for &PromptComposer<'_> {
             if let Some(chip) = state.chips.iter().find(|c| c.id == *id) {
                 let focused = state.chip_focus == Some(i);
                 let style = if focused {
-                    self.theme.style(Role::Selection)
+                    self.system.style(Role::Selection)
                 } else {
-                    self.theme.style(Role::Elevated)
+                    self.system.style(Role::Elevated)
                 };
                 let mark = match chip.kind {
                     ChipKind::File => {
@@ -1698,7 +1699,7 @@ impl StatefulWidget for &PromptComposer<'_> {
         if !layout.editor.is_empty() {
             let placeholder = state.placeholder.as_str();
             StatefulWidget::render(
-                &TextArea::new(self.theme).placeholder(placeholder),
+                &TextArea::new(self.system).placeholder(placeholder),
                 layout.editor,
                 buffer,
                 &mut state.editor,
@@ -1706,11 +1707,11 @@ impl StatefulWidget for &PromptComposer<'_> {
             // Selection highlight (after TextArea paint)
             if state.has_selection() {
                 let sel = if state.colorless {
-                    self.theme
+                    self.system
                         .style(Role::Selection)
                         .add_modifier(ratatui_core::style::Modifier::REVERSED)
                 } else {
-                    self.theme.style(Role::Selection)
+                    self.system.style(Role::Selection)
                 };
                 paint_editor_selection(buffer, layout.editor, state, sel);
             }
@@ -1750,9 +1751,9 @@ impl StatefulWidget for &PromptComposer<'_> {
             }
             let left = parts.join(" · ");
             let style = if state.mode.as_ref().is_some_and(|m| m.warning) {
-                self.theme.style(Role::Warning)
+                self.system.style(Role::Warning)
             } else {
-                self.theme.style(Role::TextMuted)
+                self.system.style(Role::TextMuted)
             };
             let clipped = take_display_cols(&left, usize::from(layout.status.width));
             buffer.set_stringn(
@@ -1769,7 +1770,7 @@ impl StatefulWidget for &PromptComposer<'_> {
                     .status
                     .x
                     .saturating_add(layout.status.width.saturating_sub(meter_w));
-                let meter = TokenMeter::new(state.context.used, state.context.limit, self.theme)
+                let meter = TokenMeter::new(state.context.used, state.context.limit, self.system)
                     .label("ctx");
                 Widget::render(meter, Rect::new(mx, layout.status.y, meter_w, 1), buffer);
             }
@@ -1785,7 +1786,7 @@ impl StatefulWidget for &PromptComposer<'_> {
                 layout.validation.y,
                 &clipped,
                 usize::from(layout.validation.width),
-                self.theme.style(Role::Danger),
+                self.system.style(Role::Danger),
             );
         }
     }
@@ -2176,18 +2177,17 @@ mod tests {
     #[test]
     fn selection_paint_does_not_panic() {
         use ratatui_core::widgets::StatefulWidget;
-        let tokens = crate::style::DesignTokens::new(
-            Theme::default(),
+        let system = crate::style::DesignSystem::new(
+            RolePalette::default(),
             Density::Comfortable,
         );
-        let theme = Theme::default();
         let mut state = PromptComposerState::new();
         state.set_text("hello world");
         state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
         StatefulWidget::render(
-            &PromptComposer::new(&tokens, &theme),
+            &PromptComposer::new(&system),
             Rect::new(0, 0, 40, 8),
             &mut buf,
             &mut state,

@@ -23,11 +23,11 @@ use termrock::{
     },
     scroll::DialogScroll,
     style::{
+        RolePalette,
         ColorCapability,
         Density,
-        DesignTokens,
+        DesignSystem,
         Role,
-        Theme,
     },
     widgets::{
         Action,
@@ -112,7 +112,7 @@ use termrock::{
         MeterSegment,
         ModeRibbon,
         Panel,
-        PanelEmphasis,
+        PanelChrome,
         PermissionActionKind,
         PermissionPrompt,
         PermissionPromptState,
@@ -203,7 +203,7 @@ use crate::interactors::{
     ToastInteractor, TranscriptInteractor, TreeInteractor, VirtualGridInteractor,
 };
 
-type RenderFn = fn(&mut Frame<'_>, Rect, &Theme);
+type RenderFn = fn(&mut Frame<'_>, Rect, &DesignSystem);
 type InteractorFactory = fn(RenderFn) -> Box<dyn StoryInteraction>;
 
 pub(crate) const SPLIT_PANE_MIN: u16 = 12;
@@ -246,8 +246,8 @@ impl Story {
         self.interactor = interactor;
         self
     }
-    pub(crate) fn render(self, frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-        (self.render)(frame, area, theme);
+    pub(crate) fn render(self, frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+        (self.render)(frame, area, system);
     }
     pub(crate) fn make_interactor(&self) -> Box<dyn StoryInteraction> {
         (self.interactor)(self.render)
@@ -257,7 +257,7 @@ impl Story {
 fn static_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(StaticStory {
         render_fn: render,
-        theme: Theme::default(),
+        theme: RolePalette::default(),
     })
 }
 
@@ -759,7 +759,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "capability/no-color",
             "Capability no-color",
             "DesignInspector",
-            "Monochrome theme still conveys roles via structure.",
+            "Monochrome system still conveys roles via structure.",
             48,
             10,
             capability_no_color_story,
@@ -1321,10 +1321,10 @@ pub(crate) fn stories() -> Vec<Story> {
             prompt_composer_fullscreen,
         ),
         Story::new(
-            "theme-picker/basic",
+            "system-picker/basic",
             "Theme picker",
             "ThemePicker",
-            "Live theme preset selection list.",
+            "Live system preset selection list.",
             36,
             6,
             theme_picker,
@@ -2520,7 +2520,7 @@ pub(crate) fn stories() -> Vec<Story> {
             text_input_unicode,
         ),
         Story::new(
-            "theme-picker/narrow",
+            "system-picker/narrow",
             "Narrow ThemePicker",
             "ThemePicker",
             "Narrow-terminal geometry for ThemePicker (18 cols).",
@@ -2529,7 +2529,7 @@ pub(crate) fn stories() -> Vec<Story> {
             theme_picker,
         ),
         Story::new(
-            "theme-picker/unicode",
+            "system-picker/unicode",
             "Unicode ThemePicker",
             "ThemePicker",
             "Unicode-safe paint path for ThemePicker (CJK/emoji-capable layout).",
@@ -2708,12 +2708,12 @@ pub(crate) fn gallery_stories() -> Vec<Story> {
     stories()
 }
 
-fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+fn panel(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let panel_tokens = system.clone().density(Density::default());
     frame.render_widget(
         Panel::new(&panel_tokens)
             .title("Summary")
-            .emphasis(PanelEmphasis::Focused),
+            .emphasis(PanelChrome::Focused),
         area,
     );
     if area.width > 2 && area.height > 2 {
@@ -2724,37 +2724,37 @@ fn panel(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     }
 }
 
-fn progress(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn progress(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let determinate = Rect::new(area.x, area.y, area.width, area.height.min(1));
     frame.render_widget(
-        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, theme).label("Processing"),
+        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, system).label("Processing"),
         determinate,
     );
     if area.height > 1 {
         frame.render_widget(
-            Progress::new(ProgressKind::Indeterminate { tick: 3 }, theme).label("Waiting"),
+            Progress::new(ProgressKind::Indeterminate { tick: 3 }, system).label("Waiting"),
             Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
         );
     }
 }
 
-fn progress_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn progress_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     const ASCII_FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
     let [bar, spinner] =
         Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(area);
     frame.render_widget(
-        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, theme).label("Build"),
+        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, system).label("Build"),
         bar,
     );
     frame.render_widget(
-        Progress::new(ProgressKind::Indeterminate { tick: 3 }, theme)
+        Progress::new(ProgressKind::Indeterminate { tick: 3 }, system)
             .frames(&ASCII_FRAMES)
             .label("Waiting"),
         spinner,
     );
 }
 
-fn log_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn log_pane(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = LogPaneState::new().with_max_lines(200);
     for line in [
         "[12:04:01] resolving workspace",
@@ -2764,10 +2764,10 @@ fn log_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ] {
         state.append(line);
     }
-    frame.render_stateful_widget(&LogPane::new(theme).title("Build log"), area, &mut state);
+    frame.render_stateful_widget(&LogPane::new(system).title("Build log"), area, &mut state);
 }
 
-fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = LogPaneState::new();
     for line in [
         "[12:04:01] resolving workspace",
@@ -2780,12 +2780,12 @@ fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ] {
         state.append(line);
     }
-    let pane = LogPane::new(theme).title("Frozen build log");
+    let pane = LogPane::new(system).title("Frozen build log");
     state.scroll_to_oldest();
     frame.render_stateful_widget(&pane, area, &mut state);
 }
 
-fn action_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn action_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let actions = [
         Action {
             id: "accept",
@@ -2804,7 +2804,7 @@ fn action_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         focused: Some("accept"),
         ..ActionBarState::default()
     };
-    frame.render_stateful_widget(&ActionBar::new(&actions, theme).gap("  "), area, &mut state);
+    frame.render_stateful_widget(&ActionBar::new(&actions, system).gap("  "), area, &mut state);
 }
 
 pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
@@ -2885,27 +2885,27 @@ pub(crate) fn form_fields() -> Vec<FormField<'static, &'static str>> {
     ]
 }
 
-fn form(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn form(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let fields = form_fields();
     let sections = [FormSection {
         title: Line::from("General"),
         fields: &fields,
     }];
     let mut state = FormState::new(Some("name"));
-    frame.render_stateful_widget(&Form::new(&sections, theme), area, &mut state);
+    frame.render_stateful_widget(&Form::new(&sections, system), area, &mut state);
 }
 
 pub(crate) fn render_split_pane(
     frame: &mut Frame<'_>,
     area: Rect,
     state: &mut SplitPaneState,
-    theme: &Theme,
+    system: &DesignSystem,
 ) {
     let split = SplitPane::new(
         SplitDirection::Horizontal,
         SPLIT_PANE_MIN,
         SPLIT_PANE_MAX,
-        theme,
+        system,
     );
     let layout = split.layout(area, state);
     if !layout.first.is_empty() {
@@ -2923,14 +2923,14 @@ pub(crate) fn render_split_pane(
     frame.render_stateful_widget(&split, area, state);
 }
 
-fn split_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn split_pane(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = SplitPaneState::new(SplitRatio::from_percent(38));
     state.set_focused(true);
-    render_split_pane(frame, area, &mut state, theme);
+    render_split_pane(frame, area, &mut state, system);
 }
 
-fn tree_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn tree_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let nodes: [TreeNode<'_, &str>; 0] = [];
     let mut state = TreeState::<&str>::default();
     frame.render_stateful_widget(
@@ -2940,8 +2940,8 @@ fn tree_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default())
+fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default())
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = [
         TreeNode::new("root", Line::from("Workspace"), 0)
@@ -2958,8 +2958,8 @@ fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
-fn tree_ascii(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default())
+fn tree_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default())
         .glyphs(termrock::style::GlyphSet::Ascii)
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = tree_nodes();
@@ -2971,8 +2971,8 @@ fn tree_ascii(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
-fn tree_composed(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn tree_composed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let nodes = [
         TreeNode::new("pkg", Line::from("termrock"), 0)
             .branch()
@@ -2993,8 +2993,8 @@ fn tree_composed(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
-fn tree_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::Compact)
+fn tree_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::Compact)
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = [
         TreeNode::new("r", Line::from("Root"), 0).branch().expanded(),
@@ -3006,8 +3006,8 @@ fn tree_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
-fn tree_deep(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::Comfortable)
+fn tree_deep(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::Comfortable)
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = [
         TreeNode::new("d0", Line::from("depth-0"), 0).branch().expanded(),
@@ -3021,8 +3021,8 @@ fn tree_deep(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
-fn tree(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn tree(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let nodes = tree_nodes();
     let mut state = TreeState::new(Some("workspace"));
     state.enable_multi_select();
@@ -3030,12 +3030,12 @@ fn tree(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
-fn tabs(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn tabs(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let items = [
         Tab {
             id: "overview",
             label: "Overview",
-            glyph: Some(Span::styled("●", theme.style(Role::Success))),
+            glyph: Some(Span::styled("●", system.style(Role::Success))),
             active: true,
             enabled: true,
         },
@@ -3052,19 +3052,22 @@ fn tabs(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         focused: true,
         ..TabsState::default()
     };
-    frame.render_stateful_widget(&Tabs::new(&items, theme).gap(1), area, &mut state);
+    frame.render_stateful_widget(&Tabs::new(&items, system).gap(1), area, &mut state);
 }
 
-fn hint_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let theme = if *theme == Theme::tailrocks_phosphor() {
-        theme
-            .clone()
-            .with_role(Role::HintKey, Style::new().bold())
-            .with_role(Role::HintText, Style::new())
-            .with_role(Role::HintDim, Style::new())
-            .with_role(Role::HintSeparator, Style::new())
+fn hint_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let system = if system.palette() == &RolePalette::tailrocks_phosphor() {
+        DesignSystem::from_palette(
+            system
+                .palette()
+                .clone()
+                .with_role(Role::HintKey, Style::new().bold())
+                .with_role(Role::HintText, Style::new())
+                .with_role(Role::HintDim, Style::new())
+                .with_role(Role::HintSeparator, Style::new()),
+        )
     } else {
-        theme.clone()
+        system.clone()
     };
     let hints = [
         Hint {
@@ -3086,11 +3089,11 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             visible: true,
         },
     ];
-    frame.render_widget(HintBar::new(&hints, &theme).separator("  "), area);
+    frame.render_widget(HintBar::new(&hints, &system).separator("  "), area);
 }
 
-fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
     state.enable_multi_select();
@@ -3098,8 +3101,8 @@ fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
-fn list_multi(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default())
+fn list_multi(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default())
         .selection(termrock::style::SelectionChrome::Gutter);
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
@@ -3109,16 +3112,16 @@ fn list_multi(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
-fn list_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn list_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let rows: [ListRow<'_, &str>; 0] = [];
     let mut state = ListState::<&str>::default();
     let list = List::new(&rows, &tokens).empty_message(Line::from("No matching items"));
     frame.render_stateful_widget(&list, area, &mut state);
 }
 
-fn list_loading(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn list_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let rows = [
         ListRow::item("ready", Line::from("Ready job")).badge(Line::from("ok")),
         ListRow::item("busy", Line::from("Fetching metrics")).loading(),
@@ -3130,8 +3133,8 @@ fn list_loading(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
-fn list_disabled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn list_disabled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let rows = [
         ListRow::item("live", Line::from("Live service")),
         ListRow::item("off", Line::from("Suspended")).disabled(),
@@ -3141,8 +3144,8 @@ fn list_disabled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
-fn list_ascii(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default())
+fn list_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default())
         .glyphs(termrock::style::GlyphSet::Ascii)
         .selection(termrock::style::SelectionChrome::Gutter);
     let rows = list_rows();
@@ -3152,8 +3155,8 @@ fn list_ascii(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
-fn list_composed(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn list_composed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let rows = [
         ListRow::item("build", Line::from("Build"))
             .leading(Line::from("*"))
@@ -3171,8 +3174,8 @@ fn list_composed(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
-fn list_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::Compact);
+fn list_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::Compact);
     let rows = [
         ListRow::item("id", Line::from("Identity"))
             .badge(Line::from("99"))
@@ -3183,8 +3186,8 @@ fn list_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
-fn list_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let rows = [
         ListRow {
             id: "cjk",
@@ -3280,21 +3283,21 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
     ]
 }
 
-fn picker_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn picker_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let rows = picker_rows("");
     let mut state = PickerState::new(Some("alpha"));
     frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut state);
 }
 
-fn picker_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn picker_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let mut state = PickerState::<&str>::new(None);
     frame.render_stateful_widget(&Picker::new(&[], &tokens), area, &mut state);
 }
 
-fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let rows = [
         ListRow {
             id: "tokyo",
@@ -3326,11 +3329,11 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut state);
 }
 
-fn text_input_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn text_input_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = TextInputState::new("東京🧪 Cafe\u{301}");
     assert!(state.set_cursor_byte("東京".len()));
     frame.render_stateful_widget(
-        &TextInput::new("Query", theme).validation(Validation::Valid),
+        &TextInput::new("Query", system).validation(Validation::Valid),
         area,
         &mut state,
     );
@@ -3354,8 +3357,8 @@ pub(crate) fn picker_rows(query: &str) -> Vec<ListRow<'static, &'static str>> {
     .collect()
 }
 
-fn detail_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let _tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn detail_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let _tokens = system.clone().density(termrock::style::Density::default());
     let rows = [
         DetailRow {
             id: "state",
@@ -3378,14 +3381,14 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ];
     let mut state = DetailTableState::default();
     frame.render_stateful_widget(
-        &DetailTable::new(&rows, theme).label_width(14).wrap(true),
+        &DetailTable::new(&rows, system).label_width(14).wrap(true),
         area,
         &mut state,
     );
 }
 
-fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let _tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let _tokens = system.clone().density(termrock::style::Density::default());
     let rows = [
         DetailRow {
             id: "region",
@@ -3408,7 +3411,7 @@ fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     ];
     let mut state = DetailTableState::default();
     frame.render_stateful_widget(
-        &DetailTable::new(&rows, theme).label_width(8).wrap(true),
+        &DetailTable::new(&rows, system).label_width(8).wrap(true),
         area,
         &mut state,
     );
@@ -3424,8 +3427,8 @@ enum TableVariant {
     Empty,
 }
 
-fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let panel_tokens = system.clone().density(Density::default());
     frame.render_widget(Panel::new(&panel_tokens).title("Editor"), area);
     let candidates = [
         CompletionCandidate::new("select", "SELECT").kind("keyword"),
@@ -3437,7 +3440,7 @@ fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let anchor = Rect::new(area.x.saturating_add(4), area.y.saturating_add(2), 1, 1);
     let mut state = CompletionMenuState::new(Some("select"));
     frame.render_stateful_widget(
-        &CompletionMenu::new(&candidates, theme, area, anchor).preferred_size(CompletionMenuSize {
+        &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(CompletionMenuSize {
             width: 28,
             height: 6,
         }),
@@ -3446,8 +3449,8 @@ fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let panel_tokens = system.clone().density(Density::default());
     frame.render_widget(Panel::new(&panel_tokens).title("Edge"), area);
     let candidates = [
         CompletionCandidate::new("alpha", "αlpha-wide-label"),
@@ -3463,7 +3466,7 @@ fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
     let mut state = CompletionMenuState::new(Some("beta"));
     frame.render_stateful_widget(
-        &CompletionMenu::new(&candidates, theme, area, anchor).preferred_size(CompletionMenuSize {
+        &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(CompletionMenuSize {
             width: 24,
             height: 5,
         }),
@@ -3472,15 +3475,15 @@ fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn virtual_grid_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    render_virtual_grid(frame, area, theme, 20);
+fn virtual_grid_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_virtual_grid(frame, area, system, 20);
 }
 
-fn virtual_grid_million(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    render_virtual_grid(frame, area, theme, 1_000_000);
+fn virtual_grid_million(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_virtual_grid(frame, area, system, 1_000_000);
 }
 
-fn render_virtual_grid(frame: &mut Frame<'_>, area: Rect, theme: &Theme, total_rows: u64) {
+fn render_virtual_grid(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, total_rows: u64) {
     let columns = [
         GridColumn::fixed("id", "id", 8),
         GridColumn::fixed("name", "name", 16),
@@ -3531,33 +3534,33 @@ fn render_virtual_grid(frame: &mut Frame<'_>, area: Rect, theme: &Theme, total_r
         GridRow::new(4, 4, &cells4),
         GridRow::new(5, 5, &cells5),
     ];
-    let grid = VirtualGrid::new(&columns, &rows, theme).total_rows(total_rows);
+    let grid = VirtualGrid::new(&columns, &rows, system).total_rows(total_rows);
     let mut state = VirtualGridState::new();
     state.set_focused(true);
     frame.render_stateful_widget(&grid, area, &mut state);
 }
 
-fn table_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    render_table(frame, area, theme, TableVariant::Basic);
+fn table_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Basic);
 }
-fn table_sorted(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    render_table(frame, area, theme, TableVariant::Sorted);
+fn table_sorted(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Sorted);
 }
-fn table_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    render_table(frame, area, theme, TableVariant::Narrow);
+fn table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Narrow);
 }
-fn table_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    render_table(frame, area, theme, TableVariant::Unicode);
+fn table_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Unicode);
 }
-fn table_disabled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    render_table(frame, area, theme, TableVariant::Disabled);
+fn table_disabled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Disabled);
 }
-fn table_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    render_table(frame, area, theme, TableVariant::Empty);
+fn table_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Empty);
 }
 
-fn render_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme, variant: TableVariant) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, variant: TableVariant) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let sorted = matches!(variant, TableVariant::Sorted);
     let columns = [
         Column {
@@ -3604,7 +3607,7 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme, variant: Table
     let cells = [
         [
             Line::from("101"),
-            Line::from(Span::styled("termrock", theme.style(Role::Accent))),
+            Line::from(Span::styled("termrock", system.style(Role::Accent))),
             Line::from("東京🧪alpha"),
             Line::from("82.4%"),
             Line::from("run"),
@@ -3681,40 +3684,40 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, theme: &Theme, variant: Table
     frame.render_stateful_widget(&Table::new(&columns, visible, &tokens), area, &mut state);
 }
 
-fn text_area_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn text_area_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     render_text_area(
         frame,
         area,
-        theme,
+        system,
         "Compose",
         "First line\nSecond line\nThird line",
         None,
     );
 }
-fn text_area_narrow(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn text_area_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     render_text_area(
         frame,
         area,
-        theme,
+        system,
         "Narrow",
         "prefix 東京🧪 trailing content",
         None,
     );
 }
-fn text_area_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn text_area_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     render_text_area(
         frame,
         area,
-        theme,
+        system,
         "Unicode",
         "e\u{301} cafe\n東京 region\n👩\u{200d}💻 builds",
         None,
     );
 }
-fn text_area_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    render_text_area(frame, area, theme, "Notes", "", Some("Write a note…"));
+fn text_area_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_text_area(frame, area, system, "Notes", "", Some("Write a note…"));
 }
-fn text_area_scrolled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn text_area_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let text = "zero\none\ntwo\nthree\nfour\nfive: deliberately wide content beyond the viewport";
     let mut state = TextAreaState::new(text);
     state.set_focused(true);
@@ -3722,26 +3725,26 @@ fn text_area_scrolled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         line: 5,
         byte: text.lines().last().unwrap().len(),
     });
-    frame.render_stateful_widget(&TextArea::new(theme).title("Scrolled"), area, &mut state);
+    frame.render_stateful_widget(&TextArea::new(system).title("Scrolled"), area, &mut state);
 }
 fn render_text_area(
     frame: &mut Frame<'_>,
     area: Rect,
-    theme: &Theme,
+    system: &DesignSystem,
     title: &str,
     text: &str,
     placeholder: Option<&str>,
 ) {
     let mut state = TextAreaState::new(text);
     state.set_focused(true);
-    let mut widget = TextArea::new(theme).title(title);
+    let mut widget = TextArea::new(system).title(title);
     if let Some(placeholder) = placeholder {
         widget = widget.placeholder(placeholder);
     }
     frame.render_stateful_widget(&widget, area, &mut state);
 }
 
-fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let left = [StatusSlot {
         id: "state",
         content: " Ready ",
@@ -3762,13 +3765,13 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     }];
     let mut state = StatusBarState::default();
     frame.render_stateful_widget(
-        &StatusBar::new(&left, &right, theme).alpha(1.0),
+        &StatusBar::new(&left, &right, system).alpha(1.0),
         area,
         &mut state,
     );
 }
 
-fn design_inspector(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn design_inspector(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let layers = ["root"];
     let recipes = ["list_row", "panel"];
     let snap = DesignInspectorFrame {
@@ -3780,10 +3783,10 @@ fn design_inspector(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         recipes: &recipes,
         selection_chrome: "gutter",
     };
-    frame.render_widget(DesignInspector::new(snap, theme), area);
+    frame.render_widget(DesignInspector::new(snap, system), area);
 }
 
-fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     // Four stacked inspector strips: truecolor → 256 → 16 → mono.
     let caps = [
         (ColorCapability::Truecolor, "truecolor"),
@@ -3800,7 +3803,7 @@ fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, theme: &Them
         if row.is_empty() {
             continue;
         }
-        let q = theme.quantized(*cap);
+        let q = system.clone().quantize(*cap);
         let snap = DesignInspectorFrame {
             focused: Some(label),
             layer: Some("root"),
@@ -3814,8 +3817,8 @@ fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, theme: &Them
     }
 }
 
-fn capability_no_color_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let mono = theme.quantized(ColorCapability::Monochrome);
+fn capability_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mono = system.clone().quantize(ColorCapability::Monochrome);
     let layers = ["root"];
     let recipes = ["panel", "list_row"];
     let snap = DesignInspectorFrame {
@@ -3830,8 +3833,8 @@ fn capability_no_color_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(DesignInspector::new(snap, &mono), area);
 }
 
-fn capability_ascii_glyphs_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::Compact).glyphs(termrock::style::GlyphSet::Ascii);
+fn capability_ascii_glyphs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::Compact).glyphs(termrock::style::GlyphSet::Ascii);
     let rows = [
         ListRow::item("a", Line::from("ASCII disclosure")),
         ListRow::item("b", Line::from("Selected row")).badge(Line::from("ok")),
@@ -3841,8 +3844,8 @@ fn capability_ascii_glyphs_story(frame: &mut Frame<'_>, area: Rect, theme: &Them
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
-fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let mono = theme.quantized(ColorCapability::Monochrome);
+fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mono = system.clone().quantize(ColorCapability::Monochrome);
     let layers = ["headless"];
     let recipes = ["buffer_only"];
     let snap = DesignInspectorFrame {
@@ -3857,8 +3860,8 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_widget(DesignInspector::new(snap, &mono), area);
 }
 
-fn overlay_nested(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn overlay_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut stack = OverlayStack::<()>::new();
     let _ = stack.open(
         area,
@@ -3870,15 +3873,15 @@ fn overlay_nested(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         area,
         OverlaySpec::menu("child", anchor, OverlaySize::menu(18, 4), None).with_parent("parent"),
     );
-    paint_stack_rects(frame, area, &stack, &tokens, theme);
+    paint_stack_rects(frame, area, &stack, &tokens, system);
     frame.render_widget(
         Paragraph::new(Line::from("Esc peels child then parent")),
         Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
     );
 }
 
-fn overlay_edges(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn overlay_edges(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let size = OverlaySize::menu(14, 3);
     let policy = OverlayPolicy::for_kind(OverlayKind::Menu);
     let anchors = [
@@ -3897,14 +3900,14 @@ fn overlay_edges(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
                     2 => "BL",
                     _ => "BR",
                 })
-                .emphasis(PanelEmphasis::Normal),
+                .emphasis(PanelChrome::Normal),
             r,
         );
     }
 }
 
-fn overlay_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::Compact);
+fn overlay_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::Compact);
     let mut stack = OverlayStack::<()>::new();
     let _ = stack.open(
         area,
@@ -3913,7 +3916,7 @@ fn overlay_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let dialog_rect = stack.top().map(|e| e.rect).unwrap_or(area);
     frame.render_widget(
         Dialog::new("Tiny", Line::from("fullscreen promote").into(), &tokens)
-            .emphasis(PanelEmphasis::Focused),
+            .emphasis(PanelChrome::Focused),
         dialog_rect,
     );
     let tip = place_overlay(
@@ -3933,8 +3936,8 @@ fn overlay_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn overlay_queued(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn overlay_queued(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut stack = OverlayStack::<()>::new();
     let _ = stack.open(
         area,
@@ -3944,15 +3947,15 @@ fn overlay_queued(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         area,
         OverlaySpec::dialog("d2", OverlaySize::dialog(28, 6), None),
     );
-    paint_stack_rects(frame, area, &stack, &tokens, theme);
+    paint_stack_rects(frame, area, &stack, &tokens, system);
     frame.render_widget(
         Paragraph::new(Line::from(format!("depth={} top owns Esc", stack.entries().len()))),
         Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
     );
 }
 
-fn overlay_fullscreen_promote(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn overlay_fullscreen_promote(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut stack = OverlayStack::<()>::new();
     let _ = stack.open(
         area,
@@ -3968,7 +3971,7 @@ fn overlay_fullscreen_promote(frame: &mut Frame<'_>, area: Rect, theme: &Theme) 
         frame.render_widget(
             Panel::new(&tokens)
                 .title("promoted")
-                .emphasis(PanelEmphasis::Focused),
+                .emphasis(PanelChrome::Focused),
             top.rect,
         );
     }
@@ -3978,8 +3981,8 @@ fn paint_stack_rects(
     frame: &mut Frame<'_>,
     _area: Rect,
     stack: &OverlayStack<()>,
-    tokens: &DesignTokens,
-    _theme: &Theme,
+    tokens: &DesignSystem,
+    _system: &DesignSystem,
 ) {
     for (i, entry) in stack.entries().iter().enumerate() {
         if entry.rect.width == 0 || entry.rect.height == 0 {
@@ -3995,17 +3998,17 @@ fn paint_stack_rects(
             Panel::new(tokens)
                 .title(title)
                 .emphasis(if i + 1 == stack.entries().len() {
-                    PanelEmphasis::Focused
+                    PanelChrome::Focused
                 } else {
-                    PanelEmphasis::Normal
+                    PanelChrome::Normal
                 }),
             entry.rect,
         );
     }
 }
 
-fn dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     frame.render_widget(
         Dialog::new(
             "Notice",
@@ -4013,15 +4016,15 @@ fn dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             &tokens,
         )
         .style(Style::new())
-        .emphasis(termrock::widgets::PanelEmphasis::Focused)
+        .emphasis(termrock::widgets::PanelChrome::Focused)
         .footer_hint("esc dismiss"),
         area,
     );
 }
 
-fn choice_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn choice_dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = ChoiceDialogState::new(Some("continue"));
-    render_choice_dialog(frame, area, &mut state, theme);
+    render_choice_dialog(frame, area, &mut state, system);
 }
 
 pub(crate) fn choice_actions() -> [Action<'static, &'static str>; 2] {
@@ -4045,9 +4048,9 @@ pub(crate) fn render_choice_dialog(
     frame: &mut Frame<'_>,
     area: Rect,
     state: &mut ChoiceDialogState<&'static str>,
-    theme: &Theme,
+    system: &DesignSystem,
 ) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+    let tokens = system.clone().density(termrock::style::Density::default());
     let actions = choice_actions();
     frame.render_stateful_widget(
         &ChoiceDialog::new(
@@ -4057,7 +4060,7 @@ pub(crate) fn render_choice_dialog(
                 &tokens,
             )
             .style(Style::new())
-            .emphasis(termrock::widgets::PanelEmphasis::Focused),
+            .emphasis(termrock::widgets::PanelChrome::Focused),
             &actions,
         )
         .gap(" "),
@@ -4066,8 +4069,8 @@ pub(crate) fn render_choice_dialog(
     );
 }
 
-fn message_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::default());
+fn message_dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
     let details = [
         DetailRow {
             id: "state",
@@ -4097,9 +4100,9 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
                 &tokens,
             )
             .style(Style::new())
-            .emphasis(termrock::widgets::PanelEmphasis::Focused),
+            .emphasis(termrock::widgets::PanelChrome::Focused),
             &details,
-            theme,
+            system,
         )
         .label_width(14)
         .wrap(true),
@@ -4108,14 +4111,17 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn diff(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let theme = if *theme == Theme::tailrocks_phosphor() {
-        theme
-            .clone()
-            .with_role(Role::DiffAdded, Style::new().bold())
-            .with_role(Role::DiffRemoved, Style::new().dim())
+fn diff(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let system = if system.palette() == &RolePalette::tailrocks_phosphor() {
+        DesignSystem::from_palette(
+            system
+                .palette()
+                .clone()
+                .with_role(Role::DiffAdded, Style::new().bold())
+                .with_role(Role::DiffRemoved, Style::new().dim()),
+        )
     } else {
-        theme.clone()
+        system.clone()
     };
     let lines = [
         DiffLine {
@@ -4132,28 +4138,28 @@ fn diff(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         },
     ];
     frame.render_stateful_widget(
-        &DiffView::new(&lines, &theme),
+        &DiffView::new(&lines, &system),
         area,
         &mut DiffState::default(),
     );
 }
 
-fn toast(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn toast(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
-        Toast::new(theme, "Updated", Severity::Success).anchor(Anchor::TopRight),
+        Toast::new(system, "Updated", Severity::Success).anchor(Anchor::TopRight),
         area,
     );
 }
-fn backdrop(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let style = if *theme == Theme::tailrocks_phosphor() {
+fn backdrop(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let style = if system.palette() == &RolePalette::tailrocks_phosphor() {
         Style::new().dim()
     } else {
-        theme.style(Role::Backdrop)
+        system.style(Role::Backdrop)
     };
     frame.render_widget(Backdrop::new().symbol('░').style(style), area);
 }
 
-fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let lines = [
         Line::from("alpha: short"),
         Line::from("beta: a deliberately wide borrowed row for horizontal scrolling"),
@@ -4162,11 +4168,13 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         Line::from("epsilon: fifth row"),
         Line::from("zeta: sixth row"),
     ];
-    let border_style = theme.style(Role::BorderFocused);
-    let theme = theme.clone().with_role(Role::Border, border_style);
+    let border_style = system.style(Role::BorderFocused);
+    let system = DesignSystem::from_palette(
+        system.palette().clone().with_role(Role::Border, border_style),
+    );
     let mut state = DialogScroll::default();
     frame.render_stateful_widget(
-        &Viewport::new(&lines, &theme)
+        &Viewport::new(&lines, &system)
             .title("Viewport")
             .content_style(Style::new()),
         area,
@@ -4174,41 +4182,41 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn empty_state(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn empty_state(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
-        EmptyState::new("No results", theme).detail("Try another query"),
+        EmptyState::new("No results", system).detail("Try another query"),
         area,
     );
 }
 
-fn loading_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    frame.render_widget(LoadingView::new("Loading…", "⠋", theme), area);
+fn loading_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(LoadingView::new("Loading…", "⠋", system), area);
 }
 
-fn error_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn error_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
-        ErrorView::new("Request failed", theme).detail("Timed out"),
+        ErrorView::new("Request failed", system).detail("Timed out"),
         area,
     );
 }
 
-fn banner(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn banner(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
-        Banner::new("Deployed successfully", Severity::Success, theme),
+        Banner::new("Deployed successfully", Severity::Success, system),
         area,
     );
 }
 
-fn skeleton(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    frame.render_widget(Skeleton::new(4, theme), area);
+fn skeleton(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(Skeleton::new(4, system), area);
 }
 
-fn jump_overlay(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+fn jump_overlay(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let panel_tokens = system.clone().density(Density::default());
     frame.render_widget(
         Panel::new(&panel_tokens)
             .title("Jump targets")
-            .emphasis(PanelEmphasis::Normal),
+            .emphasis(PanelChrome::Normal),
         area,
     );
     let targets = [
@@ -4223,16 +4231,16 @@ fn jump_overlay(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             badge: 'm',
         },
     ];
-    frame.render_widget(JumpOverlay::new(&targets, theme), area);
+    frame.render_widget(JumpOverlay::new(&targets, system), area);
 }
 
-fn command_palette(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn command_palette(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let rows = [
-        ListRow::item("theme", Line::from("Toggle theme")),
+        ListRow::item("system", Line::from("Toggle system")),
         ListRow::item("quit", Line::from("Quit")),
     ];
-    let mut state = CommandPaletteState::new(Some("theme"));
+    let mut state = CommandPaletteState::new(Some("system"));
     frame.render_stateful_widget(
         &CommandPalette::new("Commands", &rows, &tokens),
         area,
@@ -4240,17 +4248,17 @@ fn command_palette(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn code_block(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn code_block(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let lines = ["fn main() {", "    println!(\"hi\");", "}"];
     frame.render_widget(
-        CodeBlock::new(&lines, theme)
+        CodeBlock::new(&lines, system)
             .language("rust")
             .line_numbers(true),
         area,
     );
 }
 
-fn markdown_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn markdown_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let blocks = [
         MarkdownBlock {
             kind: MarkdownBlockKind::Heading,
@@ -4269,15 +4277,15 @@ fn markdown_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             text: "cargo test -p termrock",
         },
     ];
-    frame.render_widget(MarkdownView::new(&blocks, theme), area);
+    frame.render_widget(MarkdownView::new(&blocks, system), area);
 }
 
-fn sparkline(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn sparkline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let samples = [0.1, 0.3, 0.2, 0.7, 0.9, 0.5, 0.8, 0.4];
-    frame.render_widget(Sparkline::new(&samples, theme), area);
+    frame.render_widget(Sparkline::new(&samples, system), area);
 }
 
-fn bar_series(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn bar_series(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let bars = [
         BarDatum {
             label: "cpu",
@@ -4292,10 +4300,10 @@ fn bar_series(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             fraction: 0.88,
         },
     ];
-    frame.render_widget(BarSeries::new(&bars, theme), area);
+    frame.render_widget(BarSeries::new(&bars, system), area);
 }
 
-fn segmented_meter(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn segmented_meter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let segments = [
         MeterSegment {
             label: "used",
@@ -4313,16 +4321,16 @@ fn segmented_meter(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             role: Role::TextDisabled,
         },
     ];
-    frame.render_widget(SegmentedMeter::new(&segments, theme), area);
+    frame.render_widget(SegmentedMeter::new(&segments, system), area);
 }
 
-fn token_meter(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    frame.render_widget(TokenMeter::new(128_000, 200_000, theme), area);
+fn token_meter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(TokenMeter::new(128_000, 200_000, system), area);
 }
 
-fn thinking_block(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn thinking_block(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
-        ThinkingBlock::new("Planning edits", theme)
+        ThinkingBlock::new("Planning edits", system)
             .frame("·")
             .expanded(true)
             .body("Inspect contracts, then implement."),
@@ -4330,13 +4338,13 @@ fn thinking_block(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn tool_card(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn tool_card(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
         ToolCard::new(
             "shell",
             "cargo test -p termrock",
             ToolStatus::Running,
-            theme,
+            system,
         )
         .expanded(true)
         .detail("running suite…"),
@@ -4344,30 +4352,30 @@ fn tool_card(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn approval_card(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn approval_card(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = ApprovalCardState::new();
     frame.render_stateful_widget(
         &ApprovalCard::new(
             "Permission",
             "Run cargo publish?",
             ApprovalRisk::High,
-            theme,
+            system,
         ),
         area,
         &mut state,
     );
 }
 
-fn approval_card_unicode(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn approval_card_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = ApprovalCardState::new();
     frame.render_stateful_widget(
-        &ApprovalCard::new("権限 🔐", "本番へ公開しますか？", ApprovalRisk::High, theme),
+        &ApprovalCard::new("権限 🔐", "本番へ公開しますか？", ApprovalRisk::High, system),
         area,
         &mut state,
     );
 }
 
-fn transcript_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn transcript_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let user = ["Run the suite", "with unicode: 日本語 🚀"];
     let assistant = [
         "Sure — preparing the environment.",
@@ -4381,10 +4389,10 @@ fn transcript_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).folded(false),
     ];
     let mut state = TranscriptState::new();
-    frame.render_stateful_widget(&Transcript::new(&blocks, theme), area, &mut state);
+    frame.render_stateful_widget(&Transcript::new(&blocks, system), area, &mut state);
 }
 
-fn stream_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn stream_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let items = [
         StreamItem {
             id: "u1",
@@ -4411,10 +4419,10 @@ fn stream_view(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             folded: true,
         },
     ];
-    frame.render_widget(StreamView::new(&items, theme), area);
+    frame.render_widget(StreamView::new(&items, system), area);
 }
 
-fn timeline(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn timeline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let events = [
         TimelineEvent {
             when: "12:01",
@@ -4432,21 +4440,21 @@ fn timeline(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             active: false,
         },
     ];
-    frame.render_widget(Timeline::new(&events, theme), area);
+    frame.render_widget(Timeline::new(&events, system), area);
 }
 
-fn prompt_box(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn prompt_box(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = PromptBoxState::new();
     frame.render_stateful_widget(
-        &PromptBox::new(theme).placeholder("Message…"),
+        &PromptBox::new(system).placeholder("Message…"),
         area,
         &mut state,
     );
 }
 
-fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator, ModelIndicator};
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::Comfortable);
+    let tokens = system.clone().density(termrock::style::Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
     state.set_text("Explain this module");
@@ -4462,12 +4470,12 @@ fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         limit: 128_000,
     });
     state.add_chip(ComposerChip::file("a", "lib.rs"));
-    frame.render_stateful_widget(&PromptComposer::new(&tokens, theme), area, &mut state);
+    frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
 }
 
-fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ModeIndicator, ModelIndicator};
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::Compact);
+    let tokens = system.clone().density(termrock::style::Density::Compact);
     let mut state = PromptComposerState::new();
     state.set_busy(true);
     state.set_text("follow-up while running");
@@ -4478,23 +4486,23 @@ fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     state.set_model(Some(ModelIndicator {
         label: "model".into(),
     }));
-    frame.render_stateful_widget(&PromptComposer::new(&tokens, theme), area, &mut state);
+    frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
 }
 
-fn prompt_composer_compact(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn prompt_composer_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::ComposerPresentation;
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::Dashboard);
+    let tokens = system.clone().density(termrock::style::Density::Dashboard);
     let mut state = PromptComposerState::new();
     state.set_presentation(ComposerPresentation::Compact);
     state.set_ascii_fallback(true);
     state.set_placeholder("msg");
     state.set_text("compact draft");
-    frame.render_stateful_widget(&PromptComposer::new(&tokens, theme), area, &mut state);
+    frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
 }
 
-fn prompt_composer_paste_chip(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn prompt_composer_paste_chip(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator};
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::Comfortable);
+    let tokens = system.clone().density(termrock::style::Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_placeholder("Message…");
     state.set_mode(Some(ModeIndicator {
@@ -4512,12 +4520,12 @@ fn prompt_composer_paste_chip(frame: &mut Frame<'_>, area: Rect, theme: &Theme) 
         body,
     ));
     state.set_text("see attached paste");
-    frame.render_stateful_widget(&PromptComposer::new(&tokens, theme), area, &mut state);
+    frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
 }
 
-fn prompt_composer_disconnected(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn prompt_composer_disconnected(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerConnection, ModeIndicator, ModelIndicator};
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::Comfortable);
+    let tokens = system.clone().density(termrock::style::Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_connection(ComposerConnection::Disconnected);
     state.set_text("cannot send while offline");
@@ -4533,12 +4541,12 @@ fn prompt_composer_disconnected(frame: &mut Frame<'_>, area: Rect, theme: &Theme
         termrock::input::KeyCode::Enter,
         termrock::input::KeyModifiers::NONE,
     ));
-    frame.render_stateful_widget(&PromptComposer::new(&tokens, theme), area, &mut state);
+    frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
 }
 
-fn prompt_composer_fullscreen(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn prompt_composer_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerPresentation, ModeIndicator, ModelIndicator};
-    let tokens = DesignTokens::new(theme.clone(), termrock::style::Density::Comfortable);
+    let tokens = system.clone().density(termrock::style::Density::Comfortable);
     let mut state = PromptComposerState::new();
     state.set_presentation(ComposerPresentation::Fullscreen);
     state.set_placeholder("Long prompt…");
@@ -4550,27 +4558,27 @@ fn prompt_composer_fullscreen(frame: &mut Frame<'_>, area: Rect, theme: &Theme) 
     state.set_model(Some(ModelIndicator {
         label: "model".into(),
     }));
-    frame.render_stateful_widget(&PromptComposer::new(&tokens, theme), area, &mut state);
+    frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
 }
 
-fn theme_picker(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn theme_picker(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = ThemePickerState::new(0);
     frame.render_stateful_widget(
-        &ThemePicker::new(BUILTIN_THEME_PRESETS, theme),
+        &ThemePicker::new(BUILTIN_THEME_PRESETS, system),
         area,
         &mut state,
     );
 }
 
-fn image_surface(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn image_surface(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut meta = ImageMeta::new("preview.png", ImageProtocol::Kitty);
     meta.pixel_width = Some(128);
     meta.pixel_height = Some(96);
-    frame.render_widget(ImageSurface::new(meta, theme), area);
+    frame.render_widget(ImageSurface::new(meta, system), area);
 }
 
-fn button_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn button_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
     state.activation.set_focused(true);
     Button::new("Save", &tokens)
@@ -4578,8 +4586,8 @@ fn button_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut cb = CheckboxState::new(true);
     cb.set_focused(true);
     Checkbox::new("enable", "Enable", &tokens).render(
@@ -4595,8 +4603,8 @@ fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn data_table_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn data_table_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
         termrock::widgets::DataColumn::new(
@@ -4620,12 +4628,12 @@ fn data_table_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 fn data_table_project_window(
     frame: &mut Frame<'_>,
     area: Rect,
-    theme: &Theme,
+    system: &DesignSystem,
     logical: u64,
     offset: u64,
 ) {
     use termrock::widgets::{ColumnPin, DataColumnWidth, LoadState};
-    let tokens = DesignTokens::new(theme.clone(), Density::Compact);
+    let tokens = system.clone().density(Density::Compact);
     let mut columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", DataColumnWidth::Fixed(8))
             .priority(100)
@@ -4672,21 +4680,21 @@ fn data_table_project_window(
     DataTable::new(&tokens, &columns, &rows).render(area, frame.buffer_mut(), &mut state);
 }
 
-fn data_table_rows_10(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    data_table_project_window(frame, area, theme, 10, 0);
+fn data_table_rows_10(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    data_table_project_window(frame, area, system, 10, 0);
 }
 
-fn data_table_rows_10k(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    data_table_project_window(frame, area, theme, 10_000, 250);
+fn data_table_rows_10k(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    data_table_project_window(frame, area, system, 10_000, 250);
 }
 
-fn data_table_rows_1m(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    data_table_project_window(frame, area, theme, 1_000_000, 500_000);
+fn data_table_rows_1m(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    data_table_project_window(frame, area, system, 1_000_000, 500_000);
 }
 
-fn data_table_wide(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn data_table_wide(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ColumnPin, DataColumnWidth};
-    let tokens = DesignTokens::new(theme.clone(), Density::Compact);
+    let tokens = system.clone().density(Density::Compact);
     let mut cols = Vec::new();
     cols.push(
         termrock::widgets::DataColumn::new("id", "ID", DataColumnWidth::Fixed(4))
@@ -4712,8 +4720,8 @@ fn data_table_wide(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     DataTable::new(&tokens, &columns, &rows).render(area, frame.buffer_mut(), &mut state);
 }
 
-fn data_table_combining(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn data_table_combining(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
         termrock::widgets::DataColumn::new(
@@ -4730,16 +4738,16 @@ fn data_table_combining(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     DataTable::new(&tokens, &columns, &rows).render(area, frame.buffer_mut(), &mut state);
 }
 
-fn data_table_stream_partial(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    data_table_project_window(frame, area, theme, 50_000, 100);
+fn data_table_stream_partial(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    data_table_project_window(frame, area, system, 50_000, 100);
 }
 
-fn data_table_narrow_priority(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    data_table_project_window(frame, area, theme, 20, 0);
+fn data_table_narrow_priority(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    data_table_project_window(frame, area, system, 20, 0);
 }
 
-fn data_table_loading(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn data_table_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
     ]);
@@ -4751,8 +4759,8 @@ fn data_table_loading(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     DataTable::new(&tokens, &columns, &rows).render(area, frame.buffer_mut(), &mut state);
 }
 
-fn data_table_error(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn data_table_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
     ]);
@@ -4765,8 +4773,8 @@ fn data_table_error(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     DataTable::new(&tokens, &columns, &rows).render(area, frame.buffer_mut(), &mut state);
 }
 
-fn menu_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let items = [
         MenuItem::new("a", "Open"),
         MenuItem::new("b", "Disabled").enabled(false),
@@ -4776,8 +4784,8 @@ fn menu_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &state);
 }
 
-fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut state = FormWizardState::new(3);
     frame.render_stateful_widget(
         &termrock::widgets::FormWizard::new(&tokens, "Wizard"),
@@ -4786,13 +4794,13 @@ fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn badge_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(&Badge::new("NEW", &tokens), area, frame.buffer_mut());
 }
 
-fn callout_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn callout_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &Callout::new("Heads up", &tokens)
             .body("Non-color risk glyph present.")
@@ -4802,13 +4810,13 @@ fn callout_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn drawer_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(&Drawer::new("Drawer", &tokens), area, frame.buffer_mut());
 }
 
-fn heading_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn heading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &Heading::new("Section title", &tokens).level(HeadingLevel::H1),
         area,
@@ -4816,13 +4824,13 @@ fn heading_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn kbd_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn kbd_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(&Kbd::new("C-k", &tokens), area, frame.buffer_mut());
 }
 
-fn paragraph_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn paragraph_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &termrock::widgets::Paragraph::new(
             "Body text wraps by display columns when height allows.",
@@ -4833,8 +4841,8 @@ fn paragraph_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn surface_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn surface_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &Surface::new(&tokens).elevation(SurfaceElevation::Elevated),
         area,
@@ -4842,8 +4850,8 @@ fn surface_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn separator_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn separator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &SeparatorLine::horizontal(&tokens),
         area,
@@ -4851,8 +4859,8 @@ fn separator_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn popover_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn popover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &Popover::new("Popover tip", &tokens),
         area,
@@ -4860,8 +4868,8 @@ fn popover_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn permission_prompt_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let prompt = PermissionPrompt::new(theme);
+fn permission_prompt_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let prompt = PermissionPrompt::new(system);
     let mut state = PermissionPromptState::new();
     let req = PermissionRequest::new("r1", "bash", "workspace")
         .risk(PermissionRisk::High)
@@ -4887,9 +4895,9 @@ fn permission_nested_provenance() -> PermissionProvenance {
         ))
 }
 
-fn permission_prompt_low_read(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn permission_prompt_low_read(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::PermissionScope;
-    let prompt = PermissionPrompt::new(theme);
+    let prompt = PermissionPrompt::new(system);
     let mut state = PermissionPromptState::new();
     let req = PermissionRequest::new("r1", "read_file", "src/lib.rs")
         .risk(PermissionRisk::Low)
@@ -4902,8 +4910,8 @@ fn permission_prompt_low_read(frame: &mut Frame<'_>, area: Rect, theme: &Theme) 
     frame.render_stateful_widget(&prompt, area, &mut state);
 }
 
-fn permission_prompt_destructive_nested(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let prompt = PermissionPrompt::new(theme);
+fn permission_prompt_destructive_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let prompt = PermissionPrompt::new(system);
     let mut state = PermissionPromptState::new();
     // Queue noise ahead so chrome shows q depth after first enqueue of nested head
     state.enqueue(
@@ -4929,8 +4937,8 @@ fn permission_prompt_destructive_nested(frame: &mut Frame<'_>, area: Rect, theme
     frame.render_stateful_widget(&prompt, area, &mut state);
 }
 
-fn permission_prompt_egress(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let prompt = PermissionPrompt::new(theme);
+fn permission_prompt_egress(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let prompt = PermissionPrompt::new(system);
     let mut state = PermissionPromptState::new();
     let req = PermissionRequest::new("r3", "http_post", "api.example.com")
         .risk(PermissionRisk::Critical)
@@ -4943,8 +4951,8 @@ fn permission_prompt_egress(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&prompt, area, &mut state);
 }
 
-fn mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let modes = [
         WorkbenchMode {
             id: "plan",
@@ -4962,8 +4970,8 @@ fn mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     Widget::render(ModeRibbon::new(&modes, &tokens), area, frame.buffer_mut());
 }
 
-fn plan_review_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn plan_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let steps = [
         PlanStep {
             id: "s1",
@@ -4982,8 +4990,8 @@ fn plan_review_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&PlanReview::new(&steps, &tokens), area, &mut state);
 }
 
-fn question_flow_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn question_flow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let opts = [
         QuestionOption {
             id: "y",
@@ -5004,8 +5012,8 @@ fn question_flow_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&QuestionFlow::new(&steps, &tokens), area, &mut state);
 }
 
-fn session_picker_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn session_picker_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let sessions = [
         SessionItem {
             id: "s1",
@@ -5022,8 +5030,8 @@ fn session_picker_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&SessionPicker::new(&sessions, &tokens), area, &mut state);
 }
 
-fn task_rail_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let rows = [ListRow {
         id: "t1",
         label: Line::from("Task one"),
@@ -5042,8 +5050,8 @@ fn task_rail_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
 
 // ── State-axis story helpers ────────────────────────────────────────────────
 
-fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
     state.activation.set_enabled(false);
     state.activation.set_focused(true);
@@ -5054,16 +5062,16 @@ fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn button_loading_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
     state.activation.set_loading(true);
     state.activation.set_focused(true);
     frame.render_stateful_widget(&Button::new("Save", &tokens), area, &mut state);
 }
 
-fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut state = ButtonState::new();
     state.activation.set_focused(true);
     frame.render_stateful_widget(
@@ -5073,8 +5081,8 @@ fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut state = CheckboxState::new(true);
     state.set_enabled(false);
     state.set_focused(true);
@@ -5085,8 +5093,8 @@ fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut cb = CheckboxState::new(true);
     cb.set_focused(true);
     Checkbox::new("jp", "有効化 🇯🇵", &tokens).render(
@@ -5102,8 +5110,8 @@ fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
         termrock::widgets::DataColumn::new(
@@ -5125,8 +5133,8 @@ fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn data_table_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn data_table_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new(
             "id",
@@ -5151,8 +5159,8 @@ fn data_table_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn menu_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn menu_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let items = [
         MenuItem::new("a", "開く 📂"),
         MenuItem::new("b", "無効").enabled(false),
@@ -5162,7 +5170,7 @@ fn menu_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &state);
 }
 
-fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let actions = [
         Action {
             id: "accept",
@@ -5181,15 +5189,15 @@ fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         focused: Some("accept"),
         ..ActionBarState::default()
     };
-    frame.render_stateful_widget(&ActionBar::new(&actions, theme).gap("  "), area, &mut state);
+    frame.render_stateful_widget(&ActionBar::new(&actions, system).gap("  "), area, &mut state);
 }
 
-fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let panel_tokens = system.clone().density(Density::default());
     frame.render_widget(
         Panel::new(&panel_tokens)
             .title("概要 ✨")
-            .emphasis(PanelEmphasis::Focused),
+            .emphasis(PanelChrome::Focused),
         area,
     );
     if area.width > 2 && area.height > 2 {
@@ -5200,8 +5208,8 @@ fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     }
 }
 
-fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let nodes = [
         TreeNode {
             id: "ws",
@@ -5236,12 +5244,12 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
-fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let items = [
         Tab {
             id: "one",
             label: "概要 ✨",
-            glyph: Some(Span::styled("●", theme.style(Role::Success))),
+            glyph: Some(Span::styled("●", system.style(Role::Success))),
             active: true,
             enabled: true,
         },
@@ -5258,11 +5266,11 @@ fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
         focused: true,
         ..TabsState::default()
     };
-    frame.render_stateful_widget(&Tabs::new(&items, theme).gap(1), area, &mut state);
+    frame.render_stateful_widget(&Tabs::new(&items, system).gap(1), area, &mut state);
 }
 
-fn form_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    form(frame, area, theme);
+fn form_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    form(frame, area, system);
     // Overpaint a unicode title cue so SVG body differs deterministically.
     if area.height > 0 && area.width > 4 {
         frame.buffer_mut().set_stringn(
@@ -5270,17 +5278,17 @@ fn form_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             area.y,
             "設定 ⚙️",
             usize::from(area.width),
-            theme.style(Role::TextStrong),
+            system.style(Role::TextStrong),
         );
     }
 }
 
-fn dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     frame.render_widget(
         Panel::new(&tokens)
             .title("確認 ❓")
-            .emphasis(PanelEmphasis::Focused),
+            .emphasis(PanelChrome::Focused),
         area,
     );
     if area.width > 2 && area.height > 2 {
@@ -5291,410 +5299,410 @@ fn dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     }
 }
 
-fn choice_dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    choice_dialog(frame, area, theme);
+fn choice_dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    choice_dialog(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "選択 ✨",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextStrong),
+            system.style(Role::TextStrong),
         );
     }
 }
 
-fn message_dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    message_dialog(frame, area, theme);
+fn message_dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    message_dialog(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "通知 📣",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextStrong),
+            system.style(Role::TextStrong),
         );
     }
 }
 
-fn status_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    status_bar(frame, area, theme);
+fn status_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    status_bar(frame, area, system);
     if area.width > 4 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "準備完了 ✅ | 行 42",
             usize::from(area.width),
-            theme.style(Role::StatusBar),
+            system.style(Role::StatusBar),
         );
     }
 }
 
-fn toast_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    toast(frame, area, theme);
+fn toast_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    toast(frame, area, system);
     if area.width > 2 && area.height > 0 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(area.height / 2),
             "保存しました ✨",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Success),
+            system.style(Role::Success),
         );
     }
 }
 
-fn log_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    log_pane(frame, area, theme);
+fn log_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    log_pane(frame, area, system);
     if area.width > 2 && area.height > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "情報: 接続完了 🌐",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Info),
+            system.style(Role::Info),
         );
     }
 }
 
-fn command_palette_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    command_palette(frame, area, theme);
+fn command_palette_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    command_palette(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "コマンドを検索… 🔍",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Input),
+            system.style(Role::Input),
         );
     }
 }
 
-fn prompt_composer_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    prompt_composer_basic(frame, area, theme);
+fn prompt_composer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    prompt_composer_basic(frame, area, system);
     if area.width > 4 && area.height > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(2),
             area.y.saturating_add(area.height.saturating_sub(3)),
             "こんにちは 世界 🌍",
             usize::from(area.width.saturating_sub(4)),
-            theme.style(Role::Text),
+            system.style(Role::Text),
         );
     }
 }
 
-fn permission_prompt_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    permission_prompt_story(frame, area, theme);
+fn permission_prompt_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    permission_prompt_story(frame, area, system);
     if area.width > 4 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "権限要求: シェル ⚠️",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Warning),
+            system.style(Role::Warning),
         );
     }
 }
 
-fn prompt_box_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    prompt_box(frame, area, theme);
+fn prompt_box_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    prompt_box(frame, area, system);
     if area.width > 4 && area.height > 1 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "質問を入力… 💬",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn stream_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    stream_view(frame, area, theme);
+fn stream_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    stream_view(frame, area, system);
     if area.width > 2 && area.height > 1 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "ユーザー: こんにちは 👋",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Text),
+            system.style(Role::Text),
         );
     }
 }
 
-fn timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    timeline(frame, area, theme);
+fn timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    timeline(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "開始 🚀",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextStrong),
+            system.style(Role::TextStrong),
         );
     }
 }
 
-fn tool_card_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    tool_card(frame, area, theme);
+fn tool_card_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    tool_card(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "ツール: シェル 🔧",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextStrong),
+            system.style(Role::TextStrong),
         );
     }
 }
 
-fn theme_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    theme_picker(frame, area, theme);
+fn theme_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    theme_picker(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "テーマ選択 🎨",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextStrong),
+            system.style(Role::TextStrong),
         );
     }
 }
 
-fn diff_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    diff(frame, area, theme);
+fn diff_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    diff(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "差分: 設定.json ✨",
             usize::from(area.width),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn design_inspector_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    design_inspector(frame, area, theme);
+fn design_inspector_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    design_inspector(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "検査: フォーカス 🔍",
             usize::from(area.width),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn hint_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    hint_bar(frame, area, theme);
+fn hint_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    hint_bar(frame, area, system);
     if area.width > 4 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "↑↓ 移動  ⏎ 決定  🌐",
             usize::from(area.width),
-            theme.style(Role::HintText),
+            system.style(Role::HintText),
         );
     }
 }
 
-fn split_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    split_pane(frame, area, theme);
+fn split_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    split_pane(frame, area, system);
     if area.width > 4 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "左ペイン 📁",
             usize::from(area.width / 2),
-            theme.style(Role::Text),
+            system.style(Role::Text),
         );
     }
 }
 
-fn viewport_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    viewport(frame, area, theme);
+fn viewport_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    viewport(frame, area, system);
     if area.width > 2 && area.height > 1 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "日本語行 📜 絵文字",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Text),
+            system.style(Role::Text),
         );
     }
 }
 
-fn backdrop_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    backdrop(frame, area, theme);
+fn backdrop_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    backdrop(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(area.height / 2),
             "モーダル背景 🌑",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn empty_state_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn empty_state_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
-        EmptyState::new("結果なし 🌀", theme).detail("クエリを変更してください"),
+        EmptyState::new("結果なし 🌀", system).detail("クエリを変更してください"),
         area,
     );
 }
 
-fn error_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn error_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
-        ErrorView::new("失敗しました 💥", theme).detail("再試行してください"),
+        ErrorView::new("失敗しました 💥", system).detail("再試行してください"),
         area,
     );
 }
 
-fn loading_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    frame.render_widget(LoadingView::new("読込中… ⏳", "⠋", theme), area);
+fn loading_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(LoadingView::new("読込中… ⏳", "⠋", system), area);
 }
 
-fn banner_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+fn banner_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
-        Banner::new("警告: 接続不安定 ⚠️", Severity::Warning, theme),
+        Banner::new("警告: 接続不安定 ⚠️", Severity::Warning, system),
         area,
     );
 }
 
-fn skeleton_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    skeleton(frame, area, theme);
+fn skeleton_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    skeleton(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "読込プレースホルダ …",
             usize::from(area.width),
-            theme.style(Role::TextDisabled),
+            system.style(Role::TextDisabled),
         );
     }
 }
 
-fn jump_overlay_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    jump_overlay(frame, area, theme);
+fn jump_overlay_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    jump_overlay(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "ジャンプ a→ファイル 🎯",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Accent),
+            system.style(Role::Accent),
         );
     }
 }
 
-fn code_block_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    code_block(frame, area, theme);
+fn code_block_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    code_block(frame, area, system);
     if area.width > 2 && area.height > 1 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "// こんにちは 世界",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Text),
+            system.style(Role::Text),
         );
     }
 }
 
-fn markdown_view_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    markdown_view(frame, area, theme);
+fn markdown_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    markdown_view(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "# 見出し ✨",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextStrong),
+            system.style(Role::TextStrong),
         );
     }
 }
 
-fn sparkline_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    sparkline(frame, area, theme);
+fn sparkline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    sparkline(frame, area, system);
     if area.width > 4 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "負荷 📈",
             6.min(usize::from(area.width)),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn bar_series_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    bar_series(frame, area, theme);
+fn bar_series_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    bar_series(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "CPU 使用率 📊",
             usize::from(area.width),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn segmented_meter_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    segmented_meter(frame, area, theme);
+fn segmented_meter_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    segmented_meter(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "配分 🧩",
             6.min(usize::from(area.width)),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn token_meter_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    token_meter(frame, area, theme);
+fn token_meter_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    token_meter(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "トークン 🧮",
             8.min(usize::from(area.width)),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn thinking_block_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    thinking_block(frame, area, theme);
+fn thinking_block_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    thinking_block(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "思考中 🤔",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn image_surface_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    image_surface(frame, area, theme);
+fn image_surface_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    image_surface(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "画像: 写真.png 🖼️",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }
 
-fn mode_ribbon_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn mode_ribbon_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let modes = [
         WorkbenchMode {
             id: "plan",
@@ -5712,8 +5720,8 @@ fn mode_ribbon_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     Widget::render(ModeRibbon::new(&modes, &tokens), area, frame.buffer_mut());
 }
 
-fn plan_review_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn plan_review_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let steps = [
         PlanStep {
             id: "s1",
@@ -5732,8 +5740,8 @@ fn plan_review_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&PlanReview::new(&steps, &tokens), area, &mut state);
 }
 
-fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let opts = [
         QuestionOption {
             id: "y",
@@ -5754,8 +5762,8 @@ fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme)
     frame.render_stateful_widget(&QuestionFlow::new(&steps, &tokens), area, &mut state);
 }
 
-fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let sessions = [
         SessionItem {
             id: "s1",
@@ -5772,8 +5780,8 @@ fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme
     frame.render_stateful_widget(&SessionPicker::new(&sessions, &tokens), area, &mut state);
 }
 
-fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let rows = [ListRow {
         id: "t1",
         label: Line::from("タスク一 📌"),
@@ -5790,13 +5798,13 @@ fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     frame.render_stateful_widget(&TaskRail::new(&rows, &tokens, "任務"), area, &mut state);
 }
 
-fn drawer_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn drawer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(&Drawer::new("設定 ⚙️", &tokens), area, frame.buffer_mut());
 }
 
-fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &Popover::new("ヒント 💡", &tokens),
         area,
@@ -5804,8 +5812,8 @@ fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &SeparatorLine::horizontal(&tokens),
         area,
@@ -5818,13 +5826,13 @@ fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             area.y,
             "区切 ─ 線",
             usize::from(area.width),
-            theme.style(Role::Border),
+            system.style(Role::Border),
         );
     }
 }
 
-fn surface_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn surface_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &Surface::new(&tokens).elevation(SurfaceElevation::Elevated),
         area,
@@ -5836,18 +5844,18 @@ fn surface_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
             area.y.saturating_add(area.height / 2),
             "面 🎴",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Text),
+            system.style(Role::Text),
         );
     }
 }
 
-fn kbd_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn kbd_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(&Kbd::new("⌘K", &tokens), area, frame.buffer_mut());
 }
 
-fn form_wizard_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn form_wizard_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     let mut state = FormWizardState::new(3);
     frame.render_stateful_widget(
         &termrock::widgets::FormWizard::new(&tokens, "ウィザード 🪄"),
@@ -5856,13 +5864,13 @@ fn form_wizard_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn badge_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn badge_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(&Badge::new("新规 ✨", &tokens), area, frame.buffer_mut());
 }
 
-fn heading_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn heading_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &Heading::new("見出し ✨", &tokens).level(HeadingLevel::H1),
         area,
@@ -5870,8 +5878,8 @@ fn heading_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn paragraph_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn paragraph_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &termrock::widgets::Paragraph::new("日本語と絵文字 🚀 を含む本文。", &tokens),
         area,
@@ -5879,8 +5887,8 @@ fn paragraph_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    let tokens = DesignTokens::new(theme.clone(), Density::default());
+fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(Density::default());
     Widget::render(
         &Callout::new("注意", &tokens)
             .body("絵文字付きの説明 ⚠️")
@@ -5890,58 +5898,58 @@ fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     );
 }
 
-fn text_input_basic_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    text_input_unicode(frame, area, theme);
+fn text_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    text_input_unicode(frame, area, system);
 }
 
-fn completion_menu_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    completion_menu_basic(frame, area, theme);
+fn completion_menu_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    completion_menu_basic(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "候補: 関数名 🔍",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Input),
+            system.style(Role::Input),
         );
     }
 }
 
-fn virtual_grid_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    virtual_grid_basic(frame, area, theme);
+fn virtual_grid_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    virtual_grid_basic(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
             "列: 名称 ✨",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::TextStrong),
+            system.style(Role::TextStrong),
         );
     }
 }
 
-fn transcript_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    transcript_basic(frame, area, theme);
+fn transcript_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    transcript_basic(frame, area, system);
     if area.width > 2 && area.height > 1 {
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
             "ユーザー: こんにちは 👋",
             usize::from(area.width.saturating_sub(2)),
-            theme.style(Role::Text),
+            system.style(Role::Text),
         );
     }
 }
 
-fn progress_unicode_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
-    progress(frame, area, theme);
+fn progress_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    progress(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
             "処理中 ⏳ 62%",
             usize::from(area.width),
-            theme.style(Role::TextMuted),
+            system.style(Role::TextMuted),
         );
     }
 }

@@ -21,9 +21,9 @@ use crate::{
     },
     style::{
         Density,
-        DesignTokens,
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols,
@@ -31,12 +31,13 @@ use crate::{
     },
     widgets::{
         Panel,
-        PanelEmphasis,
+        PanelChrome,
         TextArea,
         TextAreaOutcome,
         TextAreaState,
     },
 };
+
 
 // ── Token meter ─────────────────────────────────────────────────────────────
 
@@ -46,18 +47,18 @@ pub struct TokenMeter<'a> {
     used: u64,
     limit: u64,
     label: &'a str,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> TokenMeter<'a> {
     /// Creates a token meter.
     #[must_use]
-    pub const fn new(used: u64, limit: u64, theme: &'a Theme) -> Self {
+    pub const fn new(used: u64, limit: u64, system: &'a DesignSystem) -> Self {
         Self {
             used,
             limit,
             label: "tokens",
-            theme,
+            system,
         }
     }
 
@@ -99,7 +100,7 @@ impl Widget for &TokenMeter<'_> {
             area.y,
             &clipped,
             usize::from(area.width),
-            self.theme.style(role),
+            self.system.style(role),
         );
     }
 }
@@ -123,19 +124,19 @@ pub struct ThinkingBlock<'a> {
     expanded: bool,
     body: &'a str,
     frame: &'a str,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> ThinkingBlock<'a> {
     /// Creates a thinking block.
     #[must_use]
-    pub const fn new(summary: &'a str, theme: &'a Theme) -> Self {
+    pub const fn new(summary: &'a str, system: &'a DesignSystem) -> Self {
         Self {
             summary,
             expanded: false,
             body: "",
             frame: "·",
-            theme,
+            system,
         }
     }
 
@@ -174,7 +175,7 @@ impl Widget for &ThinkingBlock<'_> {
             area.y,
             &clipped,
             usize::from(area.width),
-            self.theme.style(Role::TextMuted),
+            self.system.style(Role::TextMuted),
         );
         if self.expanded && area.height > 1 && !self.body.is_empty() {
             let body = take_display_cols(self.body, usize::from(area.width));
@@ -183,7 +184,7 @@ impl Widget for &ThinkingBlock<'_> {
                 area.y.saturating_add(1),
                 &body,
                 usize::from(area.width),
-                self.theme.style(Role::TextDisabled),
+                self.system.style(Role::TextDisabled),
             );
         }
     }
@@ -251,7 +252,7 @@ pub struct ToolCard<'a> {
     status: ToolStatus,
     detail: Option<&'a str>,
     expanded: bool,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> ToolCard<'a> {
@@ -261,7 +262,7 @@ impl<'a> ToolCard<'a> {
         name: &'a str,
         summary: &'a str,
         status: ToolStatus,
-        theme: &'a Theme,
+        system: &'a DesignSystem,
     ) -> Self {
         Self {
             name,
@@ -269,7 +270,7 @@ impl<'a> ToolCard<'a> {
             status,
             detail: None,
             expanded: false,
-            theme,
+            system,
         }
     }
 
@@ -290,15 +291,15 @@ impl<'a> ToolCard<'a> {
 
 impl Widget for &ToolCard<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let panel_tokens = self.system.clone();
 
         if area.is_empty() {
             return;
         }
         let panel = Panel::new(&panel_tokens).emphasis(match self.status {
-            ToolStatus::Error => PanelEmphasis::Danger,
-            ToolStatus::Running => PanelEmphasis::Focused,
-            _ => PanelEmphasis::Normal,
+            ToolStatus::Error => PanelChrome::Danger,
+            ToolStatus::Running => PanelChrome::Focused,
+            _ => PanelChrome::Normal,
         });
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
@@ -312,7 +313,7 @@ impl Widget for &ToolCard<'_> {
             inner.y,
             &clipped,
             usize::from(inner.width),
-            self.theme.style(self.status.role()),
+            self.system.style(self.status.role()),
         );
         if self.expanded
             && let Some(detail) = self.detail
@@ -324,7 +325,7 @@ impl Widget for &ToolCard<'_> {
                 inner.y.saturating_add(1),
                 &body,
                 usize::from(inner.width),
-                self.theme.style(Role::TextMuted),
+                self.system.style(Role::TextMuted),
             );
         }
     }
@@ -576,7 +577,7 @@ pub struct ApprovalCard<'a> {
     title: &'a str,
     detail: &'a str,
     risk: ApprovalRisk,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> ApprovalCard<'a> {
@@ -586,13 +587,13 @@ impl<'a> ApprovalCard<'a> {
         title: &'a str,
         detail: &'a str,
         risk: ApprovalRisk,
-        theme: &'a Theme,
+        system: &'a DesignSystem,
     ) -> Self {
         Self {
             title,
             detail,
             risk,
-            theme,
+            system,
         }
     }
 }
@@ -610,15 +611,15 @@ impl StatefulWidget for &ApprovalCard<'_> {
     type State = ApprovalCardState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let panel_tokens = self.system.clone();
 
         state.decision_regions.clear();
         if area.is_empty() {
             return;
         }
         let emphasis = match self.risk {
-            ApprovalRisk::High => PanelEmphasis::Danger,
-            _ => PanelEmphasis::Focused,
+            ApprovalRisk::High => PanelChrome::Danger,
+            _ => PanelChrome::Focused,
         };
         let panel = Panel::new(&panel_tokens)
             .title(self.title)
@@ -634,13 +635,13 @@ impl StatefulWidget for &ApprovalCard<'_> {
             inner.y,
             take_display_cols(&header, usize::from(inner.width)),
             usize::from(inner.width),
-            self.theme.style(self.risk.role()),
+            self.system.style(self.risk.role()),
         );
 
         // Tiny height: selected decision + non-color nav cue on one row.
         if inner.height < 3 {
             if inner.height >= 2 {
-                paint_selected_only_fallback(self.theme, inner, state, buffer);
+                paint_selected_only_fallback(self.system, inner, state, buffer);
             }
             return;
         }
@@ -671,9 +672,9 @@ impl StatefulWidget for &ApprovalCard<'_> {
                     break;
                 }
                 let style = if *decision == state.selected {
-                    self.theme.style(Role::ActionFocused)
+                    self.system.style(Role::ActionFocused)
                 } else {
-                    self.theme.style(Role::TextMuted)
+                    self.system.style(Role::TextMuted)
                 };
                 buffer.set_stringn(x, y, text, usize::from(width), style);
                 state.decision_regions.push(ApprovalDecisionRegion {
@@ -694,7 +695,7 @@ impl StatefulWidget for &ApprovalCard<'_> {
         let body_top = inner.y.saturating_add(1);
         let body_bottom = inner.bottom();
         if body_top >= body_bottom {
-            paint_selected_only_fallback(self.theme, inner, state, buffer);
+            paint_selected_only_fallback(self.system, inner, state, buffer);
             return;
         }
         let mut y = body_top;
@@ -712,13 +713,13 @@ impl StatefulWidget for &ApprovalCard<'_> {
             if width > inner.width {
                 // Can't fit this chip at all on this width — selected-only.
                 state.decision_regions.clear();
-                paint_selected_only_fallback(self.theme, inner, state, buffer);
+                paint_selected_only_fallback(self.system, inner, state, buffer);
                 return;
             }
             let style = if *decision == state.selected {
-                self.theme.style(Role::ActionFocused)
+                self.system.style(Role::ActionFocused)
             } else {
-                self.theme.style(Role::TextMuted)
+                self.system.style(Role::TextMuted)
             };
             buffer.set_stringn(x, y, text, usize::from(width), style);
             state.decision_regions.push(ApprovalDecisionRegion {
@@ -741,13 +742,13 @@ impl StatefulWidget for &ApprovalCard<'_> {
             .any(|region| region.decision == state.selected);
         if !painted_any || !selected_visible {
             state.decision_regions.clear();
-            paint_selected_only_fallback(self.theme, inner, state, buffer);
+            paint_selected_only_fallback(self.system, inner, state, buffer);
         }
     }
 }
 
 fn paint_selected_only_fallback(
-    theme: &Theme,
+    system: &DesignSystem,
     inner: Rect,
     state: &mut ApprovalCardState,
     buffer: &mut Buffer,
@@ -767,7 +768,7 @@ fn paint_selected_only_fallback(
         y,
         &clipped,
         usize::from(width),
-        theme.style(Role::ActionFocused),
+        system.style(Role::ActionFocused),
     );
     state.decision_regions.push(ApprovalDecisionRegion {
         decision: state.selected,
@@ -824,17 +825,17 @@ pub struct StreamItem<'a, Id> {
 pub struct StreamView<'a, Id> {
     items: &'a [StreamItem<'a, Id>],
     first: usize,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a, Id> StreamView<'a, Id> {
     /// Creates a stream view.
     #[must_use]
-    pub const fn new(items: &'a [StreamItem<'a, Id>], theme: &'a Theme) -> Self {
+    pub const fn new(items: &'a [StreamItem<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
             items,
             first: 0,
-            theme,
+            system,
         }
     }
 
@@ -870,7 +871,7 @@ impl<Id> Widget for &StreamView<'_, Id> {
                 area.y.saturating_add(row),
                 take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
-                self.theme.style(role),
+                self.system.style(role),
             );
         }
     }
@@ -899,14 +900,14 @@ pub struct TimelineEvent<'a> {
 #[derive(Debug, Clone, Copy)]
 pub struct Timeline<'a> {
     events: &'a [TimelineEvent<'a>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> Timeline<'a> {
     /// Creates a timeline.
     #[must_use]
-    pub const fn new(events: &'a [TimelineEvent<'a>], theme: &'a Theme) -> Self {
-        Self { events, theme }
+    pub const fn new(events: &'a [TimelineEvent<'a>], system: &'a DesignSystem) -> Self {
+        Self { events, system }
     }
 }
 
@@ -934,7 +935,7 @@ impl Widget for &Timeline<'_> {
                 y,
                 take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
-                self.theme.style(role),
+                self.system.style(role),
             );
         }
     }
@@ -970,16 +971,16 @@ pub enum PromptBoxOutcome {
 #[derive(Debug, Clone, Copy)]
 pub struct PromptBox<'a> {
     placeholder: &'a str,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> PromptBox<'a> {
     /// Creates a prompt box.
     #[must_use]
-    pub const fn new(theme: &'a Theme) -> Self {
+    pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             placeholder: "Message…",
-            theme,
+            system,
         }
     }
 
@@ -1068,7 +1069,7 @@ impl StatefulWidget for &PromptBox<'_> {
             return;
         }
         StatefulWidget::render(
-            &TextArea::new(self.theme).placeholder(self.placeholder),
+            &TextArea::new(self.system).placeholder(self.placeholder),
             area,
             buffer,
             &mut state.editor,
@@ -1165,8 +1166,9 @@ mod tests {
     fn approval_selected_visible_at_every_non_empty_width() {
         use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
-        let theme = Theme::default();
-        let card = ApprovalCard::new("Permission", "Run tool?", ApprovalRisk::High, &theme);
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let card = ApprovalCard::new("Permission", "Run tool?", ApprovalRisk::High, &system);
         for width in 0u16..=48 {
             let mut state = ApprovalCardState::new();
             let height = 6u16;

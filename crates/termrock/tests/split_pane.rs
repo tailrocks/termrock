@@ -11,7 +11,7 @@ use termrock::{
         KeyEvent,
         KeyModifiers,
     },
-    style::Theme,
+    style::{DesignSystem, RolePalette},
     widgets::{
         SplitDirection,
         SplitPane,
@@ -24,8 +24,9 @@ use termrock::{
 
 #[test]
 fn horizontal_layout_honors_ratio_and_minimums() {
-    let theme = Theme::default();
-    let split = SplitPane::new(SplitDirection::Horizontal, 10, 15, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let split = SplitPane::new(SplitDirection::Horizontal, 10, 15, &system);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(40));
 
     let layout = split.layout(Rect::new(2, 3, 51, 8), &mut state);
@@ -49,8 +50,9 @@ fn horizontal_layout_honors_ratio_and_minimums() {
 
 #[test]
 fn vertical_layout_and_tiny_areas_never_escape_the_input_rectangle() {
-    let theme = Theme::default();
-    let split = SplitPane::new(SplitDirection::Vertical, 8, 8, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let split = SplitPane::new(SplitDirection::Vertical, 8, 8, &system);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(50));
 
     let regular = split.layout(Rect::new(4, 6, 12, 21), &mut state);
@@ -59,7 +61,7 @@ fn vertical_layout_and_tiny_areas_never_escape_the_input_rectangle() {
     assert_eq!(regular.second, Rect::new(4, 17, 12, 10));
 
     for direction in [SplitDirection::Horizontal, SplitDirection::Vertical] {
-        let tiny = SplitPane::new(direction, 8, 8, &theme);
+        let tiny = SplitPane::new(direction, 8, 8, &system);
         for area in [
             Rect::new(0, 0, 0, 0),
             Rect::new(0, 0, 0, 5),
@@ -83,14 +85,15 @@ fn vertical_layout_and_tiny_areas_never_escape_the_input_rectangle() {
 
 #[test]
 fn impossible_minimums_degrade_proportionally_without_overflow() {
-    let theme = Theme::default();
-    let split = SplitPane::new(SplitDirection::Horizontal, 90, 10, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let split = SplitPane::new(SplitDirection::Horizontal, 90, 10, &system);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(5));
     let layout = split.layout(Rect::new(0, 0, 51, 2), &mut state);
     assert_eq!(layout.first.width, 45);
     assert_eq!(layout.second.width, 5);
 
-    let maximums = SplitPane::new(SplitDirection::Horizontal, u16::MAX, u16::MAX, &theme);
+    let maximums = SplitPane::new(SplitDirection::Horizontal, u16::MAX, u16::MAX, &system);
     let layout = maximums.layout(Rect::new(0, 0, u16::MAX, 1), &mut state);
     assert_eq!(layout.first.width, 32_767);
     assert_eq!(layout.second.width, 32_767);
@@ -98,8 +101,9 @@ fn impossible_minimums_degrade_proportionally_without_overflow() {
 
 #[test]
 fn focused_keyboard_resize_is_axis_specific_and_bounded() {
-    let theme = Theme::default();
-    let split = SplitPane::new(SplitDirection::Horizontal, 2, 2, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let split = SplitPane::new(SplitDirection::Horizontal, 2, 2, &system);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(50));
 
     state.set_focused(false);
@@ -124,8 +128,9 @@ fn focused_keyboard_resize_is_axis_specific_and_bounded() {
 
 #[test]
 fn collapse_preserves_ratio_and_each_side_can_expand() {
-    let theme = Theme::default();
-    let split = SplitPane::new(SplitDirection::Horizontal, 3, 3, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let split = SplitPane::new(SplitDirection::Horizontal, 3, 3, &system);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(35));
     let area = Rect::new(0, 0, 21, 4);
 
@@ -150,8 +155,9 @@ fn collapse_preserves_ratio_and_each_side_can_expand() {
 
 #[test]
 fn painted_divider_supports_focus_drag_and_release() {
-    let theme = Theme::default();
-    let split = SplitPane::new(SplitDirection::Horizontal, 2, 2, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let split = SplitPane::new(SplitDirection::Horizontal, 2, 2, &system);
     let area = Rect::new(5, 7, 31, 5);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(50));
     let mut buffer = Buffer::empty(Rect::new(0, 0, 40, 16));
@@ -182,9 +188,10 @@ fn painted_divider_supports_focus_drag_and_release() {
 
 #[test]
 fn only_same_direction_rendered_geometry_authorizes_pointer_input() {
-    let theme = Theme::default();
-    let horizontal = SplitPane::new(SplitDirection::Horizontal, 1, 1, &theme);
-    let vertical = SplitPane::new(SplitDirection::Vertical, 1, 1, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let horizontal = SplitPane::new(SplitDirection::Horizontal, 1, 1, &system);
+    let vertical = SplitPane::new(SplitDirection::Vertical, 1, 1, &system);
     let area = Rect::new(2, 3, 15, 7);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(50));
     let computed = horizontal.layout(area, &mut state);
@@ -215,8 +222,9 @@ fn only_same_direction_rendered_geometry_authorizes_pointer_input() {
 
 #[test]
 fn vertical_keyboard_pointer_and_collapsed_rendering_match_horizontal_behavior() {
-    let theme = Theme::default();
-    let split = SplitPane::new(SplitDirection::Vertical, 2, 2, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let split = SplitPane::new(SplitDirection::Vertical, 2, 2, &system);
     let area = Rect::new(3, 4, 10, 31);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(50));
     state.set_focused(true);
@@ -255,8 +263,9 @@ fn vertical_keyboard_pointer_and_collapsed_rendering_match_horizontal_behavior()
 
 #[test]
 fn focused_and_collapsed_dividers_have_non_color_glyphs() {
-    let theme = Theme::default();
-    let split = SplitPane::new(SplitDirection::Horizontal, 1, 1, &theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let split = SplitPane::new(SplitDirection::Horizontal, 1, 1, &system);
     let area = Rect::new(0, 0, 9, 3);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(50));
     state.set_focused(true);

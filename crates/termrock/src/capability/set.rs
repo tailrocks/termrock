@@ -177,7 +177,7 @@ const FALLBACKS: [FallbackPolicy; 20] = [
         kind: CapabilityKind::Truecolor,
         fallback: "Quantize theme to 256 → 16 → mono via ColorCapability",
         story: "capability/color-ladder",
-        contract_test: "quantize_theme keeps roles",
+        contract_test: "quantize_palette keeps roles",
     },
     FallbackPolicy {
         kind: CapabilityKind::Color256,

@@ -6,7 +6,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWi
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
 use termrock::{
     scroll::DialogScroll,
-    style::Theme,
+    style::{DesignSystem, RolePalette},
     widgets::Viewport,
 };
 
@@ -24,8 +24,9 @@ fn large_viewport_allocations_scale_with_visible_rows() {
     let lines = (0..LINE_COUNT)
         .map(|_| Line::from("resident line"))
         .collect::<Vec<_>>();
-    let theme = Theme::default();
-    let viewport = Viewport::new(&lines, &theme).content_revision(1);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let viewport = Viewport::new(&lines, &system).content_revision(1);
     let area = Rect::new(0, 0, 120, VIEWPORT_HEIGHT);
     let mut buffer = Buffer::empty(area);
     let mut state = DialogScroll::default();

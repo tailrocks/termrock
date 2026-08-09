@@ -9,6 +9,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
+
     input::{
         KeyCode,
         KeyEvent,
@@ -16,7 +17,7 @@ use crate::{
         KeyModifiers,
     },
     style::{
-        DesignTokens,
+        DesignSystem,
         Role,
     },
     text::take_display_cols,
@@ -25,6 +26,7 @@ use crate::{
         SortSpec, VirtualWindow,
     },
 };
+
 
 /// Toolbar action ids are consumer-owned strings/labels.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -319,7 +321,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> Default for DataTableState<Ro
 /// DataTable chrome: toolbar + header + virtual body projection.
 #[derive(Debug, Clone, Copy)]
 pub struct DataTable<'a, RowId, ColId> {
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     columns: &'a ColumnModel<ColId>,
     /// Projected visible row labels (caller projects cells).
     rows: &'a [(RowId, &'a [&'a str])],
@@ -330,7 +332,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
     /// Columns + visible projected rows.
     #[must_use]
     pub const fn new(
-        tokens: &'a DesignTokens,
+        tokens: &'a DesignSystem,
         columns: &'a ColumnModel<ColId>,
         rows: &'a [(RowId, &'a [&'a str])],
     ) -> Self {
@@ -372,7 +374,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                 y,
                 &text,
                 usize::from(area.width),
-                self.tokens.theme.style(Role::TextMuted),
+                self.tokens.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
         }
@@ -406,7 +408,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                 y,
                 &text,
                 usize::from(area.width),
-                self.tokens.theme.style(Role::TextStrong),
+                self.tokens.style(Role::TextStrong),
             );
             y = y.saturating_add(1);
         }
@@ -419,7 +421,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                         y,
                         msg,
                         usize::from(area.width),
-                        self.tokens.theme.style(Role::TextMuted),
+                        self.tokens.style(Role::TextMuted),
                     );
                 }
                 return;
@@ -432,7 +434,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                         y,
                         msg,
                         usize::from(area.width),
-                        self.tokens.theme.style(Role::TextMuted),
+                        self.tokens.style(Role::TextMuted),
                     );
                 }
                 return;
@@ -444,7 +446,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                         y,
                         message,
                         usize::from(area.width),
-                        self.tokens.theme.style(Role::Danger),
+                        self.tokens.style(Role::Danger),
                     );
                 }
                 return;
@@ -459,13 +461,13 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             let selected = state.selection.selected_rows.contains(id);
             let expanded = state.expand.expanded.contains(id);
             let style = if selected {
-                self.tokens.theme.style(Role::Selection)
+                self.tokens.style(Role::Selection)
             } else if focused {
-                self.tokens.theme.style(Role::Focus)
+                self.tokens.style(Role::Focus)
             } else if state.striped && i % 2 == 1 {
-                self.tokens.theme.style(Role::Surface)
+                self.tokens.style(Role::Surface)
             } else {
-                self.tokens.theme.style(Role::Text)
+                self.tokens.style(Role::Text)
             };
             // Colorless selection/focus gutter
             let gutter = if selected {
@@ -507,7 +509,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                     y,
                     &text,
                     usize::from(area.width),
-                    self.tokens.theme.style(Role::TextMuted),
+                    self.tokens.style(Role::TextMuted),
                 );
             }
         }

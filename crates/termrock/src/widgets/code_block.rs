@@ -7,8 +7,9 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget};
 
 use crate::{
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols_slice,
@@ -40,20 +41,20 @@ pub struct CodeBlock<'a, H: SyntaxHighlighter> {
     show_line_numbers: bool,
     first_line: usize,
     highlighter: &'a H,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> CodeBlock<'a, PlainSyntax> {
     /// Creates a plain code block without line numbers.
     #[must_use]
-    pub const fn new(lines: &'a [&'a str], theme: &'a Theme) -> Self {
+    pub const fn new(lines: &'a [&'a str], system: &'a DesignSystem) -> Self {
         Self {
             lines,
             language: None,
             show_line_numbers: false,
             first_line: 0,
             highlighter: &PlainSyntax,
-            theme,
+            system,
         }
     }
 }
@@ -104,7 +105,7 @@ impl<H: SyntaxHighlighter> Widget for &CodeBlock<'_, H> {
                 y,
                 &header,
                 usize::from(area.width),
-                self.theme.style(Role::TextMuted),
+                self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
             content_top = y;
@@ -138,14 +139,14 @@ impl<H: SyntaxHighlighter> Widget for &CodeBlock<'_, H> {
                     paint_y,
                     &number,
                     usize::from(gutter.saturating_sub(1)),
-                    self.theme.style(Role::TextDisabled),
+                    self.system.style(Role::TextDisabled),
                 );
             }
             let text_x = area.x.saturating_add(gutter);
             let mut col = 0u16;
             for (segment, mut style) in self.highlighter.highlight_line(line, line_index) {
                 if style == Style::default() {
-                    style = self.theme.style(Role::Text);
+                    style = self.system.style(Role::Text);
                 }
                 if col >= text_width {
                     break;
@@ -192,10 +193,11 @@ mod tests {
 
     #[test]
     fn paints_line_numbers_and_source() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let lines = ["fn main() {}", "    // hi"];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 3));
-        CodeBlock::new(&lines, &theme)
+        CodeBlock::new(&lines, &system)
             .line_numbers(true)
             .language("rust")
             .render(Rect::new(0, 0, 30, 3), &mut buffer);

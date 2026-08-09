@@ -7,8 +7,9 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols,
@@ -23,18 +24,18 @@ pub struct EmptyState<'a> {
     title: &'a str,
     detail: Option<&'a str>,
     glyph: &'a str,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> EmptyState<'a> {
     /// Creates an empty state with the default hollow-circle glyph.
     #[must_use]
-    pub const fn new(title: &'a str, theme: &'a Theme) -> Self {
+    pub const fn new(title: &'a str, system: &'a DesignSystem) -> Self {
         Self {
             title,
             detail: None,
             glyph: "○",
-            theme,
+            system,
         }
     }
 
@@ -60,7 +61,7 @@ impl Widget for &EmptyState<'_> {
         }
         let title = format!("{} {}", self.glyph, self.title);
         let mut y = area.y + area.height.saturating_sub(2) / 2;
-        paint_centered_line(area, buffer, y, &title, self.theme.style(Role::TextMuted));
+        paint_centered_line(area, buffer, y, &title, self.system.style(Role::TextMuted));
         if let Some(detail) = self.detail {
             y = y.saturating_add(1);
             if y < area.bottom() {
@@ -69,7 +70,7 @@ impl Widget for &EmptyState<'_> {
                     buffer,
                     y,
                     detail,
-                    self.theme.style(Role::TextDisabled),
+                    self.system.style(Role::TextDisabled),
                 );
             }
         }
@@ -91,17 +92,17 @@ impl Widget for EmptyState<'_> {
 pub struct LoadingView<'a> {
     label: &'a str,
     frame: &'a str,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> LoadingView<'a> {
     /// Creates a loading view with a braille spinner frame.
     #[must_use]
-    pub const fn new(label: &'a str, frame: &'a str, theme: &'a Theme) -> Self {
+    pub const fn new(label: &'a str, frame: &'a str, system: &'a DesignSystem) -> Self {
         Self {
             label,
             frame,
-            theme,
+            system,
         }
     }
 }
@@ -117,7 +118,7 @@ impl Widget for &LoadingView<'_> {
             format!("{} {}", self.frame, self.label)
         };
         let y = area.y + area.height.saturating_sub(1) / 2;
-        paint_centered_line(area, buffer, y, &text, self.theme.style(Role::Info));
+        paint_centered_line(area, buffer, y, &text, self.system.style(Role::Info));
     }
 }
 
@@ -136,17 +137,17 @@ impl Widget for LoadingView<'_> {
 pub struct ErrorView<'a> {
     title: &'a str,
     detail: Option<&'a str>,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> ErrorView<'a> {
     /// Creates an error view with the danger cross marker.
     #[must_use]
-    pub const fn new(title: &'a str, theme: &'a Theme) -> Self {
+    pub const fn new(title: &'a str, system: &'a DesignSystem) -> Self {
         Self {
             title,
             detail: None,
-            theme,
+            system,
         }
     }
 
@@ -165,11 +166,11 @@ impl Widget for &ErrorView<'_> {
         }
         let title = format!("✗ {}", self.title);
         let mut y = area.y + area.height.saturating_sub(2) / 2;
-        paint_centered_line(area, buffer, y, &title, self.theme.style(Role::Danger));
+        paint_centered_line(area, buffer, y, &title, self.system.style(Role::Danger));
         if let Some(detail) = self.detail {
             y = y.saturating_add(1);
             if y < area.bottom() {
-                paint_centered_line(area, buffer, y, detail, self.theme.style(Role::TextMuted));
+                paint_centered_line(area, buffer, y, detail, self.system.style(Role::TextMuted));
             }
         }
     }
@@ -190,17 +191,17 @@ impl Widget for ErrorView<'_> {
 pub struct Banner<'a> {
     message: &'a str,
     severity: Severity,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> Banner<'a> {
     /// Creates a banner for the given severity.
     #[must_use]
-    pub const fn new(message: &'a str, severity: Severity, theme: &'a Theme) -> Self {
+    pub const fn new(message: &'a str, severity: Severity, system: &'a DesignSystem) -> Self {
         Self {
             message,
             severity,
-            theme,
+            system,
         }
     }
 }
@@ -223,7 +224,7 @@ impl Widget for &Banner<'_> {
             area.y,
             &clipped,
             usize::from(area.width),
-            self.theme.style(role),
+            self.system.style(role),
         );
     }
 }
@@ -242,14 +243,14 @@ impl Widget for Banner<'_> {
 #[derive(Debug, Clone, Copy)]
 pub struct Skeleton<'a> {
     rows: u16,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> Skeleton<'a> {
     /// Creates a skeleton with the requested row count.
     #[must_use]
-    pub const fn new(rows: u16, theme: &'a Theme) -> Self {
-        Self { rows, theme }
+    pub const fn new(rows: u16, system: &'a DesignSystem) -> Self {
+        Self { rows, system }
     }
 }
 
@@ -276,7 +277,7 @@ impl Widget for &Skeleton<'_> {
                 y,
                 &fill,
                 usize::from(width),
-                self.theme.style(Role::TextDisabled),
+                self.system.style(Role::TextDisabled),
             );
         }
     }
@@ -314,9 +315,10 @@ mod tests {
 
     #[test]
     fn empty_state_paints_glyph_and_title() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut buffer = Buffer::empty(Rect::new(0, 0, 40, 5));
-        EmptyState::new("No results", &theme)
+        EmptyState::new("No results", &system)
             .detail("Try another query")
             .render(Rect::new(0, 0, 40, 5), &mut buffer);
         let mut painted = String::new();
@@ -331,9 +333,10 @@ mod tests {
 
     #[test]
     fn banner_uses_non_color_success_glyph() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 1));
-        Banner::new("Saved", Severity::Success, &theme).render(Rect::new(0, 0, 20, 1), &mut buffer);
+        Banner::new("Saved", Severity::Success, &system).render(Rect::new(0, 0, 20, 1), &mut buffer);
         assert_eq!(buffer[(0, 0)].symbol(), "✓");
     }
 }

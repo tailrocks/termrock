@@ -5,7 +5,7 @@ use termrock::keymap::glyph;
 use termrock::{
     input::KeyCode,
     keymap::KeyChord,
-    style::Theme,
+    style::RolePalette,
 };
 
 use crate::{
@@ -19,8 +19,8 @@ fn list_story_visibly_uses_the_selected_theme() {
         .into_iter()
         .find(|story| story.id == "list/selection")
         .expect("list story exists");
-    let phosphor = render_story_to_buffer(story, &Theme::tailrocks_phosphor());
-    let slate = render_story_to_buffer(story, &Theme::slate());
+    let phosphor = render_story_to_buffer(story, &RolePalette::tailrocks_phosphor());
+    let slate = render_story_to_buffer(story, &RolePalette::slate());
 
     assert_eq!(phosphor.area, slate.area);
     assert!(

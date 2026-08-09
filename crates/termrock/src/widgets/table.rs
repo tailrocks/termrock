@@ -11,6 +11,8 @@ use ratatui_core::{
 };
 
 use crate::{
+    style::DesignSystem,
+
     input::{
         KeyEvent,
         KeyEventKind,
@@ -20,6 +22,7 @@ use crate::{
     },
     style::Role,
 };
+
 
 const MARKER_WIDTH: u16 = 2;
 
@@ -590,7 +593,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
 pub struct Table<'a, RowId, ColumnId> {
     columns: &'a [Column<'a, ColumnId>],
     rows: &'a [TableRow<'a, RowId>],
-    tokens: &'a crate::style::DesignTokens,
+    tokens: &'a crate::style::DesignSystem,
     column_gap: u16,
 }
 
@@ -600,7 +603,7 @@ impl<'a, RowId, ColumnId> Table<'a, RowId, ColumnId> {
     pub const fn new(
         columns: &'a [Column<'a, ColumnId>],
         rows: &'a [TableRow<'a, RowId>],
-        tokens: &'a crate::style::DesignTokens,
+        tokens: &'a crate::style::DesignSystem,
     ) -> Self {
         Self {
             columns,
@@ -687,7 +690,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 &column.title,
                 title_rect,
                 column.alignment,
-                self.tokens.theme.style(Role::TextStrong),
+                self.tokens.palette.style(Role::TextStrong),
                 buffer,
                 &mut state.scratch_text,
             );
@@ -698,14 +701,14 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     rect.y,
                     " ",
                     1,
-                    self.tokens.theme.style(Role::TextStrong),
+                    self.tokens.palette.style(Role::TextStrong),
                 );
                 buffer.set_stringn(
                     sort_x.saturating_add(1),
                     rect.y,
                     sort_glyph(direction),
                     1,
-                    self.tokens.theme.style(Role::TextStrong),
+                    self.tokens.palette.style(Role::TextStrong),
                 );
             }
             if !state
@@ -756,7 +759,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             } else {
                 Role::Text
             };
-            let style = row.style.unwrap_or_else(|| self.tokens.theme.style(role));
+            let style = row.style.unwrap_or_else(|| self.tokens.palette.style(role));
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1050,8 +1053,7 @@ const fn sort_glyph(direction: SortDirection) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use crate::style::DesignTokens;
-    use ratatui_core::{style::Color, text::Span};
+        use ratatui_core::{style::Color, text::Span};
 
     use crate::input::{KeyCode, KeyModifiers};
 
@@ -1228,7 +1230,7 @@ mod tests {
 
     #[test]
     fn render_preserves_styles_alignment_unicode_and_canonical_regions() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let columns = columns();
         let cells = cells();
         let rows = rows(&cells);
@@ -1318,7 +1320,7 @@ mod tests {
 
     #[test]
     fn pointer_uses_only_painted_enabled_rows_and_sortable_headers() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let columns = columns();
         let cells = cells();
         let rows = rows(&cells);
@@ -1372,8 +1374,8 @@ mod tests {
         let columns = columns();
         let cells = cells();
         let rows = rows(&cells);
-        let tokens = DesignTokens::default();
-        let theme = tokens.theme.clone();
+        let tokens = DesignSystem::default();
+        let theme = tokens.palette.clone();
         let area = Rect::new(0, 0, 30, 4);
         let mut state = TableState::new(None);
         let mut buffer = Buffer::empty(area);
@@ -1412,7 +1414,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "sorted table column must be sortable")]
     fn rejects_sort_direction_on_inert_column_in_debug_builds() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut columns = columns();
         columns[1].sort = Some(SortDirection::Ascending);
         let rows = [];
@@ -1425,7 +1427,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "table column IDs must be unique")]
     fn rejects_duplicate_column_ids_in_debug_builds() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut columns = columns();
         columns[1].id = "name";
         let rows = [];
@@ -1438,7 +1440,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "table row IDs must be unique")]
     fn rejects_duplicate_painted_row_ids_in_debug_builds() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let columns = columns();
         let cells = cells();
         let mut rows = rows(&cells);
@@ -1451,7 +1453,7 @@ mod tests {
 
     #[test]
     fn clipping_preserves_combining_clusters_and_rejects_partial_wide_graphemes() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let columns = [Column {
             id: "value",
             title: Line::from("V"),
@@ -1481,7 +1483,7 @@ mod tests {
 
     #[test]
     fn empty_zero_and_narrow_tables_are_safe_and_remove_phantom_gaps() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let columns = [
             Column {
                 id: 0,

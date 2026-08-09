@@ -12,7 +12,7 @@ use termrock::{
         KeyModifiers,
     },
     scroll::max_offset,
-    style::Theme,
+    style::{DesignSystem, RolePalette},
     widgets::{
         DetailCapability,
         DetailRow,
@@ -71,12 +71,12 @@ fn rows() -> Vec<DetailRow<'static, &'static str>> {
 
 fn render<'a, Id: Clone + PartialEq>(
     rows: &'a [DetailRow<'a, Id>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
     state: &mut DetailTableState<Id>,
     area: Rect,
     wrap: bool,
 ) -> Buffer {
-    let table = DetailTable::new(rows, theme).label_width(0).wrap(wrap);
+    let table = DetailTable::new(rows, system).label_width(0).wrap(wrap);
     let mut buffer = Buffer::empty(area);
     (&table).render(area, &mut buffer, state);
     buffer
@@ -116,10 +116,11 @@ fn selection_includes_rows_without_capability() {
 #[test]
 fn click_on_copyable_row_returns_copy_and_affordance_changes() {
     let rows = rows();
-    let theme = Theme::default();
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
     let area = Rect::new(0, 0, 40, 3);
     let mut state = DetailTableState::default();
-    let before = render(&rows, &theme, &mut state, area, false);
+    let before = render(&rows, &system, &mut state, area, false);
     let copy = state
         .regions
         .iter()
@@ -133,16 +134,17 @@ fn click_on_copyable_row_returns_copy_and_affordance_changes() {
     );
     assert!(before.content().iter().any(|cell| cell.symbol() == "⧉"));
     state.mark_copied(Some("copy"));
-    let after = render(&rows, &theme, &mut state, area, false);
+    let after = render(&rows, &system, &mut state, area, false);
     assert!(after.content().iter().any(|cell| cell.symbol() == "✓"));
 }
 
 #[test]
 fn click_link_returns_activate_link() {
     let rows = rows();
-    let theme = Theme::default();
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
     let mut state = DetailTableState::default();
-    render(&rows, &theme, &mut state, Rect::new(0, 0, 40, 3), false);
+    render(&rows, &system, &mut state, Rect::new(0, 0, 40, 3), false);
     let link = state
         .regions
         .iter()
@@ -159,9 +161,10 @@ fn click_link_returns_activate_link() {
 #[test]
 fn hover_tracks_row_id() {
     let rows = rows();
-    let theme = Theme::default();
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
     let mut state = DetailTableState::default();
-    render(&rows, &theme, &mut state, Rect::new(3, 2, 40, 3), false);
+    render(&rows, &system, &mut state, Rect::new(3, 2, 40, 3), false);
     let copy = state
         .regions
         .iter()
@@ -195,12 +198,13 @@ fn clamp_scroll_after_rows_shrink() {
         emphasis: false,
         style: None,
     }];
-    let theme = Theme::default();
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
     let mut state = DetailTableState::default();
-    render(&many, &theme, &mut state, Rect::new(0, 0, 12, 3), false);
+    render(&many, &system, &mut state, Rect::new(0, 0, 12, 3), false);
     state.scroll.scroll_x = u16::MAX;
     state.scroll.scroll_y = u16::MAX;
-    render(&one, &theme, &mut state, Rect::new(0, 0, 12, 3), false);
+    render(&one, &system, &mut state, Rect::new(0, 0, 12, 3), false);
     state.clamp_scroll();
 
     assert_eq!(state.scroll.scroll_y, 0);
@@ -244,9 +248,10 @@ fn wrap_mode_regions_cover_continuation_rows() {
         emphasis: false,
         style: None,
     }];
-    let theme = Theme::default();
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
     let mut state = DetailTableState::default();
-    render(&rows, &theme, &mut state, Rect::new(0, 0, 18, 6), true);
+    render(&rows, &system, &mut state, Rect::new(0, 0, 18, 6), true);
     let regions = state
         .regions
         .iter()

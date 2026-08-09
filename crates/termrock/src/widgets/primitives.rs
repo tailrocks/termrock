@@ -27,7 +27,7 @@ use crate::{
     keymap::KeyChord,
     runtime::FrameTick,
     style::{
-        DesignTokens,
+        DesignSystem,
         Motion,
         Role,
     },
@@ -36,6 +36,7 @@ use crate::{
         take_display_cols,
     },
 };
+
 
 // ── Shared activation ───────────────────────────────────────────────────────
 
@@ -173,14 +174,14 @@ impl ActivationState {
 #[derive(Debug, Clone, Copy)]
 pub struct Button<'a> {
     label: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     primary: bool,
 }
 
 impl<'a> Button<'a> {
     /// Label + design tokens.
     #[must_use]
-    pub const fn new(label: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(label: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             label,
             tokens,
@@ -239,7 +240,7 @@ impl Button<'_> {
         if area.is_empty() {
             return;
         }
-        let theme = &self.tokens.theme;
+        let theme = &self.tokens.palette;
         let style = if !state.activation.is_enabled() || state.activation.is_loading() {
             theme.style(Role::ActionDisabled)
         } else if state.activation.is_focused() {
@@ -285,13 +286,13 @@ impl StatefulWidget for &Button<'_> {
 #[derive(Debug, Clone, Copy)]
 pub struct IconButton<'a> {
     glyph: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> IconButton<'a> {
     /// Glyph cell(s).
     #[must_use]
-    pub const fn new(glyph: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(glyph: &'a str, tokens: &'a DesignSystem) -> Self {
         Self { glyph, tokens }
     }
 }
@@ -306,7 +307,7 @@ impl IconButton<'_> {
         if area.is_empty() {
             return;
         }
-        let theme = &self.tokens.theme;
+        let theme = &self.tokens.palette;
         let style = if !state.activation.is_enabled() {
             theme.style(Role::ActionDisabled)
         } else if state.activation.is_focused() {
@@ -326,14 +327,14 @@ impl IconButton<'_> {
 #[derive(Debug, Clone, Copy)]
 pub struct Badge<'a> {
     label: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     role: Role,
 }
 
 impl<'a> Badge<'a> {
     /// Label with info role by default.
     #[must_use]
-    pub const fn new(label: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(label: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             label,
             tokens,
@@ -361,7 +362,7 @@ impl Widget for &Badge<'_> {
             area.y,
             &text,
             usize::from(area.width),
-            self.tokens.theme.style(self.role),
+            self.tokens.style(self.role),
         );
     }
 }
@@ -383,14 +384,14 @@ pub struct Tag<'a, Id> {
     pub id: Id,
     /// Label.
     label: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     removable: bool,
 }
 
 impl<'a, Id: Clone> Tag<'a, Id> {
     /// Tag projection.
     #[must_use]
-    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignSystem) -> Self {
         Self {
             id,
             label,
@@ -465,9 +466,9 @@ impl<Id: Clone> Tag<'_, Id> {
             return;
         }
         let style = if state.focused {
-            self.tokens.theme.style(Role::Selection)
+            self.tokens.style(Role::Selection)
         } else {
-            self.tokens.theme.style(Role::TextMuted)
+            self.tokens.style(Role::TextMuted)
         };
         let body = if self.removable {
             format!(" {} × ", self.label)
@@ -503,13 +504,13 @@ pub struct Chip<'a, Id> {
     pub id: Id,
     /// Label.
     label: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a, Id> Chip<'a, Id> {
     /// Chip projection.
     #[must_use]
-    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(id: Id, label: &'a str, tokens: &'a DesignSystem) -> Self {
         Self { id, label, tokens }
     }
 }
@@ -595,11 +596,11 @@ impl<Id> Chip<'_, Id> {
         let mark = if state.selected { "●" } else { "○" };
         let body = format!("{mark} {}", self.label);
         let style = if state.selected {
-            self.tokens.theme.style(Role::Selection)
+            self.tokens.style(Role::Selection)
         } else if state.focused {
-            self.tokens.theme.style(Role::Focus)
+            self.tokens.style(Role::Focus)
         } else {
-            self.tokens.theme.style(Role::Text)
+            self.tokens.style(Role::Text)
         };
         let text = take_display_cols(&body, usize::from(area.width));
         buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
@@ -614,19 +615,19 @@ impl<Id> Chip<'_, Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct Kbd<'a> {
     label: &'a str,
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
 }
 
 impl<'a> Kbd<'a> {
     /// Explicit chord label (e.g. from Keymap glyph).
     #[must_use]
-    pub const fn new(label: &'a str, tokens: &'a DesignTokens) -> Self {
+    pub const fn new(label: &'a str, tokens: &'a DesignSystem) -> Self {
         Self { label, tokens }
     }
 
     /// Format a [`KeyChord`] into a short display label.
     #[must_use]
-    pub fn from_chord(chord: KeyChord, buf: &'a mut String, tokens: &'a DesignTokens) -> Self {
+    pub fn from_chord(chord: KeyChord, buf: &'a mut String, tokens: &'a DesignSystem) -> Self {
         buf.clear();
         if chord.mods.contains(KeyModifiers::CONTROL) {
             buf.push_str("C-");
@@ -668,7 +669,7 @@ impl Widget for &Kbd<'_> {
             area.y,
             &text,
             usize::from(area.width),
-            self.tokens.theme.style(Role::HintKey),
+            self.tokens.style(Role::HintKey),
         );
     }
 }
@@ -676,14 +677,14 @@ impl Widget for &Kbd<'_> {
 /// Separator with borrowed tokens (does not redefine focus borders).
 #[derive(Debug, Clone, Copy)]
 pub struct SeparatorLine<'a> {
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     vertical: bool,
 }
 
 impl<'a> SeparatorLine<'a> {
     /// Horizontal rule.
     #[must_use]
-    pub const fn horizontal(tokens: &'a DesignTokens) -> Self {
+    pub const fn horizontal(tokens: &'a DesignSystem) -> Self {
         Self {
             tokens,
             vertical: false,
@@ -692,7 +693,7 @@ impl<'a> SeparatorLine<'a> {
 
     /// Vertical rule.
     #[must_use]
-    pub const fn vertical(tokens: &'a DesignTokens) -> Self {
+    pub const fn vertical(tokens: &'a DesignSystem) -> Self {
         Self {
             tokens,
             vertical: true,
@@ -708,7 +709,7 @@ impl Widget for &SeparatorLine<'_> {
         if area.is_empty() {
             return;
         }
-        let style = self.tokens.theme.style(Role::Border);
+        let style = self.tokens.style(Role::Border);
         let glyph = if self.vertical { "│" } else { "─" };
         if self.vertical {
             for y in area.y..area.bottom() {
@@ -724,14 +725,14 @@ impl Widget for &SeparatorLine<'_> {
 /// FrameTick-driven spinner frames.
 #[derive(Debug, Clone, Copy)]
 pub struct Spinner<'a> {
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     ascii: bool,
 }
 
 impl<'a> Spinner<'a> {
     /// Unicode braille spinner by default.
     #[must_use]
-    pub const fn new(tokens: &'a DesignTokens) -> Self {
+    pub const fn new(tokens: &'a DesignSystem) -> Self {
         Self {
             tokens,
             ascii: false,
@@ -771,7 +772,7 @@ impl<'a> Spinner<'a> {
             area.y,
             g,
             usize::from(area.width),
-            self.tokens.theme.style(Role::TextMuted),
+            self.tokens.style(Role::TextMuted),
         );
     }
 }
@@ -786,8 +787,7 @@ pub fn button_hit<Id: Clone>(id: Id, state: &ButtonState) -> Option<HitRegion<Id
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use crate::style::DesignTokens;
-    use ratatui_core::layout::Position;
+        use ratatui_core::layout::Position;
     use std::time::{Duration, Instant};
 
     fn press(code: KeyCode) -> KeyEvent {
@@ -883,7 +883,7 @@ mod tests {
 
     #[test]
     fn spinner_motion_off_static() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let spinner = Spinner::new(&tokens);
         let now = Instant::now();
         let tick = FrameTick::manual(now, Duration::from_millis(560), Duration::from_millis(16));
@@ -898,7 +898,7 @@ mod tests {
 
     #[test]
     fn badge_and_separator_paint() {
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 3));
         Widget::render(
             &Badge::new("NEW", &tokens),

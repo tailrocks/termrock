@@ -12,10 +12,12 @@ use crate::{
         KeyEventKind,
     },
     style::{
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
 };
+
 
 const RATIO_SCALE: u16 = 10_000;
 const KEYBOARD_STEP: u16 = 250;
@@ -327,7 +329,7 @@ pub struct SplitPane<'a> {
     direction: SplitDirection,
     first_min: u16,
     second_min: u16,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> SplitPane<'a> {
@@ -337,13 +339,13 @@ impl<'a> SplitPane<'a> {
         direction: SplitDirection,
         first_min: u16,
         second_min: u16,
-        theme: &'a Theme,
+        system: &'a DesignSystem,
     ) -> Self {
         Self {
             direction,
             first_min,
             second_min,
-            theme,
+            system,
         }
     }
 
@@ -397,7 +399,7 @@ impl StatefulWidget for &SplitPane<'_> {
             (SplitDirection::Vertical, None, false) if state.hovered => ("┅", Role::Focus),
             (SplitDirection::Vertical, None, false) => ("─", Role::Border),
         };
-        let mut style = self.theme.style(role);
+        let mut style = self.system.style(role);
         if state.focused {
             style = style.add_modifier(Modifier::BOLD);
         }

@@ -11,11 +11,13 @@ use crate::{
         Outcome,
     },
     style::{
+        DesignSystem,
         faded,
         Role,
-        Theme,
+        RolePalette,
     },
 };
+
 
 #[derive(Debug, Clone)]
 /// A prioritized status-bar segment.
@@ -82,7 +84,7 @@ impl<Id: Clone> StatusBarState<Id> {
 pub struct StatusBar<'a, Id> {
     left: &'a [StatusSlot<'a, Id>],
     right: &'a [StatusSlot<'a, Id>],
-    theme: &'a Theme,
+    system: &'a DesignSystem,
     alpha: f32,
 }
 
@@ -92,12 +94,12 @@ impl<'a, Id> StatusBar<'a, Id> {
     pub const fn new(
         left: &'a [StatusSlot<'a, Id>],
         right: &'a [StatusSlot<'a, Id>],
-        theme: &'a Theme,
+        system: &'a DesignSystem,
     ) -> Self {
         Self {
             left,
             right,
-            theme,
+            system,
             alpha: 1.0,
         }
     }
@@ -249,7 +251,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
         }
         buffer.set_style(
             area,
-            fade_style(self.theme.style(Role::StatusBar), self.alpha),
+            fade_style(self.system.style(Role::StatusBar), self.alpha),
         );
         state.regions.clear();
         let mut content = String::new();
@@ -359,13 +361,14 @@ mod tests {
 
     #[test]
     fn priority_and_minimum_width_control_narrow_layout() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let left = [slot("activity", " activity ", 10, 4)];
         let right = [
             slot("usage", " usage-long ", 1, 0),
             slot("run", " run ", 20, 0),
         ];
-        let bar = StatusBar::new(&left, &right, &theme);
+        let bar = StatusBar::new(&left, &right, &system);
         let regions = bar.regions(Rect::new(3, 2, 10, 1));
         assert!(regions.iter().any(|region| region.id == "run"));
         assert!(regions.iter().any(|region| region.id == "activity"));
@@ -377,8 +380,9 @@ mod tests {
     fn hover_and_activation_follow_only_painted_regions() {
         let left = [slot("activity", " activity ", 1, 4)];
         let theme =
-            Theme::default().with_role(Role::StatusBar, Style::new().bg(Color::Rgb(80, 80, 80)));
-        let bar = StatusBar::new(&left, &[], &theme).alpha(0.5);
+            RolePalette::default().with_role(Role::StatusBar, Style::new().bg(Color::Rgb(80, 80, 80)));
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let bar = StatusBar::new(&left, &[], &system).alpha(0.5);
         let area = Rect::new(4, 3, 6, 1);
         let mut state = StatusBarState::default();
         let mut buffer = Buffer::empty(area);
@@ -395,8 +399,9 @@ mod tests {
     #[test]
     fn unicode_truncation_never_paints_half_a_wide_grapheme() {
         let left = [slot("wide", " 🧪🔬🧭 ", 1, 3)];
-        let theme = Theme::default();
-        let bar = StatusBar::new(&left, &[], &theme);
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let bar = StatusBar::new(&left, &[], &system);
         let area = Rect::new(0, 0, 3, 1);
         let mut state = StatusBarState::default();
         let mut buffer = Buffer::empty(area);

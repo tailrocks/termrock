@@ -19,9 +19,9 @@ use crate::{
     scroll::DialogScroll,
     style::{
         Density,
-        DesignTokens,
+        DesignSystem,
         Role,
-        Theme,
+        RolePalette,
     },
     text::{
         display_cols,
@@ -29,7 +29,8 @@ use crate::{
     },
 };
 
-use super::{Panel, PanelEmphasis, edit_core};
+
+use super::{Panel, PanelChrome, edit_core};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum TextEditDelta {
@@ -699,7 +700,7 @@ impl TextAreaState {
 /// Themed multi-line text editor.
 #[derive(Debug, Clone, Copy)]
 pub struct TextArea<'a> {
-    theme: &'a Theme,
+    system: &'a DesignSystem,
     title: Option<&'a str>,
     placeholder: Option<&'a str>,
 }
@@ -707,9 +708,9 @@ pub struct TextArea<'a> {
 impl<'a> TextArea<'a> {
     /// Creates an untitled editor.
     #[must_use]
-    pub const fn new(theme: &'a Theme) -> Self {
+    pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
-            theme,
+            system,
             title: None,
             placeholder: None,
         }
@@ -731,11 +732,11 @@ impl<'a> TextArea<'a> {
 impl StatefulWidget for &TextArea<'_> {
     type State = TextAreaState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let tokens = DesignTokens::new(self.theme.clone(), Density::default());
+        let tokens = self.system.clone();
         let mut panel = Panel::new(&tokens).emphasis(if state.focused {
-            PanelEmphasis::Focused
+            PanelChrome::Focused
         } else {
-            PanelEmphasis::Normal
+            PanelChrome::Normal
         });
         if let Some(title) = self.title {
             panel = panel.title(title);
@@ -785,7 +786,7 @@ impl StatefulWidget for &TextArea<'_> {
                 body.y + u16::try_from(painted).unwrap_or(u16::MAX),
                 &state.scratch,
                 state.viewport_width,
-                self.theme.style(if line.is_empty() {
+                self.system.style(if line.is_empty() {
                     Role::TextMuted
                 } else {
                     Role::Text
@@ -800,13 +801,13 @@ impl StatefulWidget for &TextArea<'_> {
                 .saturating_add(u16::try_from(col).unwrap_or(u16::MAX))
                 .min(body.right().saturating_sub(1));
             let y = body.y + u16::try_from(state.cursor.line - first).unwrap_or(u16::MAX);
-            buffer.set_style(Rect::new(x, y, 1, 1), self.theme.style(Role::Focus));
+            buffer.set_style(Rect::new(x, y, 1, 1), self.system.style(Role::Focus));
         }
         if show_vertical && inner.width > 0 {
             let track = Rect::new(body.right(), inner.y, 1, body.height);
             state.vertical_scrollbar = Some(track);
             for y in track.top()..track.bottom() {
-                buffer.set_string(track.x, y, "░", self.theme.style(Role::ScrollTrack));
+                buffer.set_string(track.x, y, "░", self.system.style(Role::ScrollTrack));
             }
             if let Some(thumb) = crate::scroll::full_cell_thumb(
                 state.lines.len(),
@@ -819,7 +820,7 @@ impl StatefulWidget for &TextArea<'_> {
                         track.x,
                         track.y + y,
                         "█",
-                        self.theme.style(Role::ScrollThumb),
+                        self.system.style(Role::ScrollThumb),
                     );
                 }
             }
@@ -828,7 +829,7 @@ impl StatefulWidget for &TextArea<'_> {
             let track = Rect::new(inner.x, body.bottom(), body.width, 1);
             state.horizontal_scrollbar = Some(track);
             for x in track.left()..track.right() {
-                buffer.set_string(x, track.y, "░", self.theme.style(Role::ScrollTrack));
+                buffer.set_string(x, track.y, "░", self.system.style(Role::ScrollTrack));
             }
             if let Some(thumb) = crate::scroll::full_cell_thumb(
                 state.max_width,
@@ -841,7 +842,7 @@ impl StatefulWidget for &TextArea<'_> {
                         track.x + x,
                         track.y,
                         "█",
-                        self.theme.style(Role::ScrollThumb),
+                        self.system.style(Role::ScrollThumb),
                     );
                 }
             }
@@ -1264,12 +1265,13 @@ mod tests {
 
     #[test]
     fn scrollbars_stay_inside_panel_and_own_press_drag_geometry() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut state = TextAreaState::new("wide content beyond viewport\none\ntwo\nthree\nfour");
         assert!(state.set_cursor(c(0, 0)));
         let area = Rect::new(2, 3, 14, 6);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 12));
-        (&TextArea::new(&theme).title("Edit")).render(area, &mut buffer, &mut state);
+        (&TextArea::new(&system).title("Edit")).render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(area.right() - 1, area.y)].symbol(), "┐");
         assert_eq!(buffer[(area.x, area.bottom() - 1)].symbol(), "└");
         let vertical = state.vertical_scrollbar.unwrap();
@@ -1311,7 +1313,7 @@ mod tests {
         assert_eq!(state.max_width, measured);
         for area in [Rect::new(0, 0, 0, 0), Rect::new(2, 2, 1, 1)] {
             let mut buffer = Buffer::empty(area);
-            (&TextArea::new(&Theme::default())).render(area, &mut buffer, &mut state);
+            (&TextArea::new(&crate::style::DesignSystem::default())).render(area, &mut buffer, &mut state);
         }
     }
 }

@@ -18,10 +18,11 @@ use crate::{
         max_offset,
     },
     style::{
-        DesignTokens,
+        DesignSystem,
         Role,
     },
 };
+
 
 /// Scrollbar visibility policy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -205,14 +206,14 @@ impl ScrollAreaState {
 /// ScrollArea: paints optional scrollbar track for vertical axis.
 #[derive(Debug, Clone, Copy)]
 pub struct ScrollArea<'a> {
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     bar: ScrollBarVisibility,
 }
 
 impl<'a> ScrollArea<'a> {
     /// Tokens.
     #[must_use]
-    pub const fn new(tokens: &'a DesignTokens) -> Self {
+    pub const fn new(tokens: &'a DesignSystem) -> Self {
         Self {
             tokens,
             bar: ScrollBarVisibility::Auto,
@@ -255,8 +256,8 @@ impl<'a> ScrollArea<'a> {
             return;
         }
         let x = area.right().saturating_sub(1);
-        let track = self.tokens.theme.style(Role::ScrollTrack);
-        let thumb = self.tokens.theme.style(Role::ScrollThumb);
+        let track = self.tokens.style(Role::ScrollTrack);
+        let thumb = self.tokens.style(Role::ScrollThumb);
         for y in area.y..area.bottom() {
             buffer[(x, y)].set_char('│').set_style(track);
         }

@@ -8,6 +8,7 @@ use ratatui_core::{
 use ratatui_core::style::Modifier;
 
 use crate::{
+
     input::{
         KeyEvent,
         KeyEventKind,
@@ -23,11 +24,11 @@ use crate::{
     scroll::max_offset,
     style::{
         DesignSystem,
-        DesignTokens,
         ListRowVisualState,
         Role,
     },
 };
+
 
 use super::{ComposedRow, Selection};
 
@@ -588,7 +589,7 @@ impl ListState<usize> {
 ///     ListRow { id: "a", label: Line::from("Alpha"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true , loading: false },
 ///     ListRow { id: "b", label: Line::from("Beta"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true , loading: false },
 /// ];
-/// let tokens = termrock::style::DesignTokens::default();
+/// let tokens = termrock::style::DesignSystem::default();
 /// let _widget = List::new(&rows, &tokens);
 /// let mut state = ListState::new(Some("a"));
 /// let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
@@ -597,14 +598,14 @@ impl ListState<usize> {
 /// ```
 pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
-    tokens: &'a DesignTokens,
+    tokens: &'a DesignSystem,
     empty_message: Option<Line<'a>>,
 }
 
 impl<'a, Id> List<'a, Id> {
     #[must_use]
     /// Creates a list over borrowed rows; paint uses design-token recipes.
-    pub const fn new(rows: &'a [ListRow<'a, Id>], tokens: &'a DesignTokens) -> Self {
+    pub const fn new(rows: &'a [ListRow<'a, Id>], tokens: &'a DesignSystem) -> Self {
         Self {
             rows,
             tokens,
@@ -615,7 +616,7 @@ impl<'a, Id> List<'a, Id> {
     /// Creates a list from a [`DesignSystem`] (preferred public paint root).
     #[must_use]
     pub const fn from_system(rows: &'a [ListRow<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self::new(rows, &system.tokens)
+        Self::new(rows, system)
     }
 
     /// Message painted when `rows` is empty (consumer-owned copy).
@@ -627,13 +628,13 @@ impl<'a, Id> List<'a, Id> {
 
     /// Theme borrowed from design tokens.
     #[must_use]
-    pub const fn theme(&self) -> &crate::style::Theme {
-        &self.tokens.theme
+    pub const fn theme(&self) -> &crate::style::RolePalette {
+        self.tokens.palette()
     }
 
     /// Design tokens used for recipes.
     #[must_use]
-    pub const fn tokens(&self) -> &DesignTokens {
+    pub const fn tokens(&self) -> &DesignSystem {
         self.tokens
     }
 }
@@ -647,7 +648,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         state.viewport_height = usize::from(area.height);
         if self.rows.is_empty() {
             if let Some(message) = self.empty_message.as_ref() {
-                let style = self.tokens.theme.style(Role::TextMuted);
+                let style = self.tokens.style(Role::TextMuted);
                 buffer.set_line(area.x, area.y, message, area.width);
                 buffer.set_style(Rect::new(area.x, area.y, area.width, 1), style);
             }
@@ -705,7 +706,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             let style = if hovered && row.enabled && !selected {
                 recipe.hover
             } else if checked && !selected {
-                self.tokens.theme.style(Role::Accent)
+                self.tokens.style(Role::Accent)
             } else {
                 recipe.label
             };
@@ -913,7 +914,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         u16::try_from(state.offset).unwrap_or(u16::MAX),
                     ),
                 ),
-                &self.tokens.theme,
+                self.tokens,
             );
         }
         state.hovered = state.pointer.and_then(|position| {
@@ -1092,7 +1093,7 @@ mod tests {
     #[test]
     fn render_reveals_selection_and_mouse_uses_painted_regions() {
         let rows = rows();
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::new(Some("second"));
         let area = Rect::new(4, 3, 12, 1);
         let mut buffer = Buffer::empty(area);
@@ -1134,7 +1135,7 @@ mod tests {
                 loading: false,
             },
         ];
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
         // Gutter (2) + content: badge right-aligned within content band.
         let area = Rect::new(0, 0, 14, 2);
@@ -1156,7 +1157,7 @@ mod tests {
         let mut row = ListRow::item("wide-trailing", Line::from("x"));
         row.trailing = Some(Line::from("🧪Z"));
         let rows = [row];
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
         // Gutter 2 + content 3: badge "🧪Z" (3 cells) fits; grapheme-safe clip drops Z if tighter.
         let area = Rect::new(0, 0, 5, 1);
@@ -1186,7 +1187,7 @@ mod tests {
         row.badge = Some(Line::from("ok"));
         row.shortcut = Some("⌘B");
         let rows = [row];
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
         let area = Rect::new(0, 0, 40, 1);
         let mut buffer = Buffer::empty(area);
@@ -1207,7 +1208,7 @@ mod tests {
         row.shortcut = Some("⌘K");
         row.badge = Some(Line::from("99"));
         let rows = [row];
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
         // Gutter 2 + content 4: optional chrome must drop before primary.
         let area = Rect::new(0, 0, 6, 1);
@@ -1226,7 +1227,7 @@ mod tests {
     #[test]
     fn list_check_toggle_reports_id() {
         let rows = rows();
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::new(Some("first"));
         state.enable_multi_select();
 
@@ -1302,7 +1303,7 @@ mod tests {
     #[test]
     fn click_policy_select_emits_changed_not_activate() {
         let rows = rows();
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::new(Some("first"));
         state.set_click_policy(ListClickPolicy::Select);
         let area = Rect::new(0, 0, 20, 4);
@@ -1319,7 +1320,7 @@ mod tests {
     #[test]
     fn empty_list_paints_empty_message() {
         let rows: [ListRow<'_, &str>; 0] = [];
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::<&str>::default();
         let area = Rect::new(0, 0, 20, 3);
         let mut buffer = Buffer::empty(area);
@@ -1333,7 +1334,7 @@ mod tests {
     fn loading_row_uses_recipe_loading_glyph() {
         let row = ListRow::item("job", Line::from("Build")).loading();
         let rows = [row];
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
         let area = Rect::new(0, 0, 24, 1);
         let mut buffer = Buffer::empty(area);
@@ -1351,7 +1352,7 @@ mod tests {
     #[test]
     fn focused_selection_sets_underline_modifier_on_primary() {
         let rows = [ListRow::item("a", Line::from("Alpha"))];
-        let tokens = DesignTokens::default().selection(crate::style::SelectionChrome::Gutter);
+        let tokens = DesignSystem::default().selection(crate::style::SelectionChrome::Gutter);
         let mut state = ListState::new(Some("a"));
         state.set_focused(true);
         let area = Rect::new(0, 0, 20, 1);
@@ -1394,7 +1395,7 @@ mod tests {
         let rows: Vec<ListRow<'_, usize>> = (0..10_000)
             .map(|i| ListRow::item(i, Line::from(format!("row-{i}"))))
             .collect();
-        let tokens = DesignTokens::default();
+        let tokens = DesignSystem::default();
         let mut state = ListState::new(Some(9_500));
         let area = Rect::new(0, 0, 40, 20);
         let mut buffer = Buffer::empty(area);
@@ -1407,7 +1408,7 @@ mod tests {
     #[test]
     fn ascii_gutter_and_check_glyphs() {
         let rows = [ListRow::item("a", Line::from("A"))];
-        let tokens = DesignTokens::default()
+        let tokens = DesignSystem::default()
             .glyphs(crate::style::GlyphSet::Ascii)
             .selection(crate::style::SelectionChrome::Gutter);
         let mut state = ListState::new(Some("a"));
