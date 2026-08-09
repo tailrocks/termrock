@@ -24,6 +24,7 @@ mod log_pane;
 mod markdown;
 mod panel;
 mod picker;
+mod permission;
 mod progress;
 mod prompt_composer;
 mod selection;
@@ -88,6 +89,13 @@ pub use log_pane::{LogPane, LogPaneState};
 pub use markdown::{MarkdownBlock, MarkdownBlockKind, MarkdownView, project_plain_lines};
 pub use panel::{Panel, PanelEmphasis, PanelSlots};
 pub use picker::{Picker, PickerOutcome, PickerState};
+pub use permission::{
+    DataMovement, EditField, ExecutionLocation, InitiatorKind, PermissionAction,
+    PermissionActionKind, PermissionActionRegion, PermissionAuditEntry, PermissionOutcome,
+    PermissionPrompt, PermissionPromptState, PermissionProvenance, PermissionQueue,
+    PermissionRequest, PermissionRisk, PermissionScope, PermissionTarget, PriorGrant,
+    ProvenanceHop, StalePermission, StaleReason,
+};
 pub use progress::{Progress, ProgressKind};
 pub use prompt_composer::{
     LARGE_PASTE_THRESHOLD, PROMPT_COMPLETION_OVERLAY_ID, PROMPT_FULLSCREEN_OVERLAY_ID, ChipKind,
