@@ -7,13 +7,15 @@
 //!
 //! **Architecture:** one paint authority ([`style::DesignSystem`]), one focus/hit
 //! authority ([`interaction::InteractionScene`]), one modal authority
-//! ([`interaction::OverlayStack`]), plus [`runtime::run`] for the host loop.
+//! ([`interaction::OverlayStack`]), per-frame coordination ([`context::UiContext`]),
+//! plus [`runtime::run`] for the host loop.
 //!
 //! Import from modules (`termrock::style::…`, `termrock::widgets::…`). The crate
 //! root does **not** re-export types (pre-1.0 Break A / migration 0060).
 
 pub mod ansi_text;
 pub mod capability;
+pub mod context;
 pub mod input;
 pub mod interaction;
 pub mod keymap;

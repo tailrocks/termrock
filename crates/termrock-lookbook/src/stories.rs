@@ -186,6 +186,24 @@ fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
 pub(crate) fn stories() -> Vec<Story> {
     vec![
         Story::new(
+            "ui-context/frame",
+            "UiContext frame",
+            "UiContext",
+            "Per-frame host: design + scene + focus + overlays + semantics + tick.",
+            56,
+            12,
+            ui_context_frame_story,
+        ),
+        Story::new(
+            "ui-context/nested",
+            "UiContext nested register",
+            "UiContext",
+            "Nested components register into one scene/semantics via &mut UiContext.",
+            48,
+            10,
+            ui_context_nested_story,
+        ),
+        Story::new(
             "design-system/presets",
             "DesignSystem presets",
             "DesignSystem",
@@ -3108,6 +3126,117 @@ pub(crate) fn stories() -> Vec<Story> {
 /// Catalog generation deliberately uses [`stories`] instead.
 pub(crate) fn gallery_stories() -> Vec<Story> {
     stories()
+}
+
+fn ui_context_frame_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::context::UiHost;
+    use termrock::interaction::{
+        InteractionElement, InteractionLayer, LayerDismissPolicy, LayerKind, SemanticRole,
+    };
+    use termrock::widgets::Panel;
+    #[derive(Clone, Copy, PartialEq, Eq, Hash)]
+    enum Id {
+        Root,
+        Body,
+    }
+    let mut host = UiHost::<Id, Id>::test_with_design(system.clone());
+    host.scene.ensure_root(InteractionLayer {
+        id: Id::Root,
+        kind: LayerKind::Root,
+        owns_input: true,
+        esc: LayerDismissPolicy::Ignore,
+        outside: LayerDismissPolicy::Ignore,
+        focus_return: None,
+    });
+    let mut ctx = host.begin_frame();
+    let _ = ctx.scene_mut().register(
+        InteractionElement::control(Id::Body, Id::Root, area)
+            .role(SemanticRole::Dialog)
+            .focusable(true),
+    );
+    let body = Panel::new(ctx.design())
+        .title("UiContext")
+        .subtitle(&format!("frame {}", ctx.frame_index()))
+        .paint(area, frame.buffer_mut(), None);
+    if body.width > 2 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "design+scene+focus+overlays+tick",
+            usize::from(body.width),
+            ctx.design().style(Role::TextMuted),
+        );
+    }
+}
+
+fn ui_context_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::context::UiHost;
+    use termrock::interaction::{
+        InteractionElement, InteractionLayer, LayerDismissPolicy, LayerKind, SemanticNode,
+        SemanticRole,
+    };
+    use termrock::layout::{FlexSize, Stack};
+    use termrock::widgets::Panel;
+    #[derive(Clone, Copy, PartialEq, Eq, Hash)]
+    enum Id {
+        Root,
+        A,
+        B,
+    }
+    impl std::fmt::Display for Id {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Self::Root => write!(f, "root"),
+                Self::A => write!(f, "a"),
+                Self::B => write!(f, "b"),
+            }
+        }
+    }
+    let mut host = UiHost::<Id, Id>::test_with_design(system.clone());
+    host.scene.ensure_root(InteractionLayer {
+        id: Id::Root,
+        kind: LayerKind::Root,
+        owns_input: true,
+        esc: LayerDismissPolicy::Ignore,
+        outside: LayerDismissPolicy::Ignore,
+        focus_return: None,
+    });
+    let mut ctx = host.begin_frame();
+    let layout = Stack::new()
+        .gap(1)
+        .layout(area, &[FlexSize::Weight(1), FlexSize::Weight(1)]);
+    if let Some(ra) = layout.get(0) {
+        let _ = ctx.scene_mut().register(
+            InteractionElement::control(Id::A, Id::Root, ra)
+                .role(SemanticRole::Button)
+                .focusable(true),
+        );
+        let _ = ctx.semantics_mut().register(
+            SemanticNode::control(Id::A, ra)
+                .role(SemanticRole::Button)
+                .label("Nested A"),
+        );
+        let _ = Panel::new(ctx.design())
+            .title("child A")
+            .paint(ra, frame.buffer_mut(), None);
+    }
+    if let Some(rb) = layout.get(1) {
+        let _ = ctx.scene_mut().register(
+            InteractionElement::control(Id::B, Id::Root, rb)
+                .role(SemanticRole::Input)
+                .focusable(true),
+        );
+        let _ = ctx.semantics_mut().register(
+            SemanticNode::control(Id::B, rb)
+                .role(SemanticRole::Input)
+                .label("Nested B"),
+        );
+        let _ = Panel::new(ctx.design())
+            .title("child B")
+            .paint(rb, frame.buffer_mut(), None);
+    }
+    let n = ctx.semantics().nodes().len();
+    ctx.note(format!("semantic_nodes={n}"));
 }
 
 fn design_system_presets_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

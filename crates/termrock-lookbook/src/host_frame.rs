@@ -5,6 +5,10 @@
 //!
 //! Uses **only** public TermRock authorities: [`DesignSystem`], [`InteractionScene`],
 //! [`OverlayStack`], [`FocusGraph`]. No FocusRing fork.
+//!
+//! Canonical coordination for new hosts is [`termrock::context::UiHost`] /
+//! [`termrock::context::UiContext`]. This lookbook shell mirrors the same
+//! authorities with gallery-specific modal layer policy.
 
 use ratatui::layout::Rect;
 use termrock::{

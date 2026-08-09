@@ -352,6 +352,66 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
+            id: "UiContext".into(),
+            title: "UiContext".into(),
+            description: "Per-frame coordination: design, caps, keymap, scene, focus, overlays, semantics, clock — no retained DOM.".into(),
+            kind: RegistryItemKind::Primitive,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::context::UiContext".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/context.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec![
+                    "termrock/DesignSystem".into(),
+                    "termrock/FocusGraph".into(),
+                    "termrock/OverlayStack".into(),
+                ];
+                d
+            },
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "design".into(),
+                    label: "DesignSystem".into(),
+                },
+                AnatomyPartRef {
+                    id: "scene".into(),
+                    label: "InteractionScene".into(),
+                },
+                AnatomyPartRef {
+                    id: "focus".into(),
+                    label: "FocusGraph".into(),
+                },
+                AnatomyPartRef {
+                    id: "overlays".into(),
+                    label: "OverlayStack".into(),
+                },
+                AnatomyPartRef {
+                    id: "semantics".into(),
+                    label: "SemanticScene".into(),
+                },
+                AnatomyPartRef {
+                    id: "tick".into(),
+                    label: "FrameTick".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![],
+            outcomes: vec![],
+            stories: vec!["ui-context/frame".into(), "ui-context/nested".into()],
+            tests: vec!["context".into()],
+            migration: Some("migrations/0101-v0.13.0-ui-context.md".into()),
+            provenance: prov("crates/termrock/src/context.rs"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
             id: "DesignSystem".into(),
             title: "DesignSystem".into(),
             description: "Complete terminal design system: roles, recipes, presets, packages, capability ladders.".into(),

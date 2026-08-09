@@ -824,6 +824,271 @@ pub fn termrock::capability::format_doctor_text(&termrock::capability::DoctorRep
 pub fn termrock::capability::resolve_capabilities(core::option::Option<termrock::capability::CapabilityProfile>, termrock::capability::CapabilityOverrides) -> termrock::capability::TerminalCapabilities
 pub fn termrock::capability::resolve_from_detection(termrock::capability::DetectionReport, core::option::Option<termrock::capability::CapabilityProfile>, termrock::capability::CapabilityOverrides) -> termrock::capability::TerminalCapabilities
 pub type termrock::capability::EffectiveCapabilities = termrock::capability::TerminalCapabilities
+pub mod termrock::context
+pub mod termrock::context::adapters
+pub enum termrock::context::adapters::RoutedEscape<Id>
+pub termrock::context::adapters::RoutedEscape::Overlay(termrock::interaction::OverlayOutcome<Id>)
+pub termrock::context::adapters::RoutedEscape::Unhandled
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::context::adapters::RoutedEscape<Id>
+pub fn termrock::context::adapters::RoutedEscape<Id>::clone(&self) -> termrock::context::adapters::RoutedEscape<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::context::adapters::RoutedEscape<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::context::adapters::RoutedEscape<Id>
+pub fn termrock::context::adapters::RoutedEscape<Id>::eq(&self, &termrock::context::adapters::RoutedEscape<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::context::adapters::RoutedEscape<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::context::adapters::RoutedEscape<Id>
+pub fn termrock::context::adapters::RoutedEscape<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::context::adapters::RoutedEscape<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::context::adapters::RoutedEscape<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::context::adapters::RoutedEscape<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::context::adapters::RoutedEscape<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::context::adapters::RoutedEscape<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::context::adapters::RoutedEscape<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::context::adapters::RoutedEscape<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::context::adapters::RoutedEscape<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::context::adapters::RoutedEscape<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::context::adapters::RoutedEscape<Id> where U: core::convert::From<T>
+pub fn termrock::context::adapters::RoutedEscape<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::context::adapters::RoutedEscape<Id> where U: core::convert::Into<T>
+pub type termrock::context::adapters::RoutedEscape<Id>::Error = core::convert::Infallible
+pub fn termrock::context::adapters::RoutedEscape<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::context::adapters::RoutedEscape<Id> where U: core::convert::TryFrom<T>
+pub type termrock::context::adapters::RoutedEscape<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::context::adapters::RoutedEscape<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::context::adapters::RoutedEscape<Id> where T: core::clone::Clone
+pub type termrock::context::adapters::RoutedEscape<Id>::Owned = T
+pub fn termrock::context::adapters::RoutedEscape<Id>::clone_into(&self, &mut T)
+pub fn termrock::context::adapters::RoutedEscape<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::context::adapters::RoutedEscape<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::context::adapters::RoutedEscape<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::context::adapters::RoutedEscape<Id> where T: ?core::marker::Sized
+pub fn termrock::context::adapters::RoutedEscape<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::context::adapters::RoutedEscape<Id> where T: ?core::marker::Sized
+pub fn termrock::context::adapters::RoutedEscape<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::context::adapters::RoutedEscape<Id> where T: core::clone::Clone
+pub unsafe fn termrock::context::adapters::RoutedEscape<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::context::adapters::RoutedEscape<Id>
+pub fn termrock::context::adapters::RoutedEscape<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::context::adapters::RoutedEscape<Id>
+pub fn termrock::context::adapters::paint_refs<'a, Id, LayerId, Action, MapAction>(&'a termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>) -> (&'a termrock::style::DesignSystem, termrock::runtime::FrameTick) where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash, MapAction: core::clone::Clone + 'static
+pub fn termrock::context::adapters::route_escape<Id, LayerId, Action, MapAction>(&mut termrock::context::UiContext<'_, Id, LayerId, Action, MapAction>) -> termrock::context::adapters::RoutedEscape<Id> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash, MapAction: core::clone::Clone + 'static
+#[non_exhaustive] pub enum termrock::context::ContextUiIntent
+pub termrock::context::ContextUiIntent::Activate
+pub termrock::context::ContextUiIntent::AppCommand(termrock::interaction::intent::AppCommandId)
+pub termrock::context::ContextUiIntent::Backspace
+pub termrock::context::ContextUiIntent::Cancel
+pub termrock::context::ContextUiIntent::Close
+pub termrock::context::ContextUiIntent::Collapse
+pub termrock::context::ContextUiIntent::Delete
+pub termrock::context::ContextUiIntent::Edit
+pub termrock::context::ContextUiIntent::Expand
+pub termrock::context::ContextUiIntent::FocusNext
+pub termrock::context::ContextUiIntent::FocusPrevious
+pub termrock::context::ContextUiIntent::Fullscreen
+pub termrock::context::ContextUiIntent::Help
+pub termrock::context::ContextUiIntent::JumpLabel(char)
+pub termrock::context::ContextUiIntent::JumpStart
+pub termrock::context::ContextUiIntent::Move(termrock::interaction::NavigationMove)
+pub termrock::context::ContextUiIntent::Open
+pub termrock::context::ContextUiIntent::OpenCommandPalette
+pub termrock::context::ContextUiIntent::Page(termrock::interaction::PageMove)
+pub termrock::context::ContextUiIntent::Search
+pub termrock::context::ContextUiIntent::Submit
+pub termrock::context::ContextUiIntent::Toggle
+impl termrock::context::ContextUiIntent
+pub const fn termrock::context::ContextUiIntent::as_str(self) -> &'static str
+pub const fn termrock::context::ContextUiIntent::is_global_chrome(self) -> bool
+impl core::clone::Clone for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::clone(&self) -> termrock::context::ContextUiIntent
+impl core::cmp::Eq for termrock::context::ContextUiIntent
+impl core::cmp::PartialEq for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::eq(&self, &termrock::context::ContextUiIntent) -> bool
+impl core::fmt::Debug for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::context::ContextUiIntent
+impl core::marker::StructuralPartialEq for termrock::context::ContextUiIntent
+impl core::marker::Freeze for termrock::context::ContextUiIntent
+impl core::marker::Send for termrock::context::ContextUiIntent
+impl core::marker::Sync for termrock::context::ContextUiIntent
+impl core::marker::Unpin for termrock::context::ContextUiIntent
+impl core::marker::UnsafeUnpin for termrock::context::ContextUiIntent
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::context::ContextUiIntent
+impl core::panic::unwind_safe::UnwindSafe for termrock::context::ContextUiIntent
+impl<Q, K> equivalent::Equivalent<K> for termrock::context::ContextUiIntent where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::context::ContextUiIntent::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::context::ContextUiIntent where U: core::convert::From<T>
+pub fn termrock::context::ContextUiIntent::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::context::ContextUiIntent where U: core::convert::Into<T>
+pub type termrock::context::ContextUiIntent::Error = core::convert::Infallible
+pub fn termrock::context::ContextUiIntent::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::context::ContextUiIntent where U: core::convert::TryFrom<T>
+pub type termrock::context::ContextUiIntent::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::context::ContextUiIntent::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::context::ContextUiIntent where T: core::clone::Clone
+pub type termrock::context::ContextUiIntent::Owned = T
+pub fn termrock::context::ContextUiIntent::clone_into(&self, &mut T)
+pub fn termrock::context::ContextUiIntent::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::context::ContextUiIntent where T: 'static + ?core::marker::Sized
+pub fn termrock::context::ContextUiIntent::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::context::ContextUiIntent where T: ?core::marker::Sized
+pub fn termrock::context::ContextUiIntent::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::context::ContextUiIntent where T: ?core::marker::Sized
+pub fn termrock::context::ContextUiIntent::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::context::ContextUiIntent where T: core::clone::Clone
+pub unsafe fn termrock::context::ContextUiIntent::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::context::ContextUiIntent
+pub struct termrock::context::UiContext<'a, Id, LayerId, Action, MapAction: core::clone::Clone + 'static> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash
+impl<'a, Id, LayerId, Action, MapAction> termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash, MapAction: core::clone::Clone + 'static
+pub const fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::boundary(&self) -> core::option::Option<&termrock::capability::CapabilityBoundary>
+pub const fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::capabilities(&self) -> &termrock::capability::TerminalCapabilities
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::collect_semantic_diagnostics(&mut self)
+pub const fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::design(&self) -> &termrock::style::DesignSystem
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::diagnostics(&self) -> &termrock::context::UiDiagnostics
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::diagnostics_mut(&mut self) -> &mut termrock::context::UiDiagnostics
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::focus(&self) -> &termrock::interaction::FocusGraph<Id>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::focus_mut(&mut self) -> &mut termrock::interaction::FocusGraph<Id>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::frame_index(&self) -> u64
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::handle_overlay_escape(&mut self) -> termrock::interaction::OverlayOutcome<Id>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::handle_overlay_pointer_down(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::OverlayOutcome<Id>
+pub const fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::keymap(&self) -> core::option::Option<&termrock::keymap::Keymap<MapAction>>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::new(&'a termrock::style::DesignSystem, &'a termrock::capability::TerminalCapabilities, core::option::Option<&'a termrock::capability::CapabilityBoundary>, core::option::Option<&'a termrock::keymap::Keymap<MapAction>>, &'a mut termrock::interaction::InteractionScene<Id, LayerId, Action>, &'a mut termrock::interaction::FocusGraph<Id>, &'a mut termrock::interaction::OverlayStack<Id>, &'a mut termrock::interaction::SemanticScene<Id, Action>, termrock::runtime::FrameTick, &'a mut termrock::context::UiDiagnostics) -> Self
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::note(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::overlays(&self) -> &termrock::interaction::OverlayStack<Id>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::overlays_mut(&mut self) -> &mut termrock::interaction::OverlayStack<Id>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::request_focus(&mut self, Id) -> termrock::interaction::FocusOutcome<Id> where Id: core::cmp::PartialEq
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::scene(&self) -> &termrock::interaction::InteractionScene<Id, LayerId, Action>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::scene_mut(&mut self) -> &mut termrock::interaction::InteractionScene<Id, LayerId, Action>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::semantic_snapshot(&self) -> termrock::interaction::SemanticSnapshot where Id: core::fmt::Display
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::semantics(&self) -> &termrock::interaction::SemanticScene<Id, Action>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::semantics_mut(&mut self) -> &mut termrock::interaction::SemanticScene<Id, Action>
+pub const fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::tick(&self) -> termrock::runtime::FrameTick
+impl<Id, LayerId, Action, MapAction> core::fmt::Debug for termrock::context::UiContext<'_, Id, LayerId, Action, MapAction> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash + core::fmt::Debug, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash + core::fmt::Debug, Action: core::fmt::Debug, MapAction: core::clone::Clone + 'static + core::fmt::Debug
+pub fn termrock::context::UiContext<'_, Id, LayerId, Action, MapAction>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id, LayerId, Action, MapAction> core::marker::Freeze for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>
+impl<'a, Id, LayerId, Action, MapAction> core::marker::Send for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where Id: core::marker::Send, LayerId: core::marker::Send, MapAction: core::marker::Sync, Action: core::marker::Send
+impl<'a, Id, LayerId, Action, MapAction> core::marker::Sync for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where Id: core::marker::Sync, LayerId: core::marker::Sync, MapAction: core::marker::Sync, Action: core::marker::Sync
+impl<'a, Id, LayerId, Action, MapAction> core::marker::Unpin for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>
+impl<'a, Id, LayerId, Action, MapAction> core::marker::UnsafeUnpin for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>
+impl<'a, Id, LayerId, Action, MapAction> core::panic::unwind_safe::RefUnwindSafe for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where Id: core::panic::unwind_safe::RefUnwindSafe, LayerId: core::panic::unwind_safe::RefUnwindSafe, MapAction: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id, LayerId, Action, MapAction> !core::panic::unwind_safe::UnwindSafe for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>
+impl<T, U> core::convert::Into<U> for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where U: core::convert::From<T>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where U: core::convert::Into<T>
+pub type termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::Error = core::convert::Infallible
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where U: core::convert::TryFrom<T>
+pub type termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> core::any::Any for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where T: 'static + ?core::marker::Sized
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where T: ?core::marker::Sized
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where T: ?core::marker::Sized
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::borrow_mut(&mut self) -> &mut T
+impl<T> core::convert::From<T> for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>
+pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>
+pub struct termrock::context::UiDiagnostics
+pub termrock::context::UiDiagnostics::frame_index: u64
+pub termrock::context::UiDiagnostics::notes: alloc::vec::Vec<alloc::string::String>
+pub termrock::context::UiDiagnostics::semantic: alloc::vec::Vec<termrock::interaction::SemanticDiagnostic>
+impl termrock::context::UiDiagnostics
+pub fn termrock::context::UiDiagnostics::has_issues(&self) -> bool
+pub const fn termrock::context::UiDiagnostics::new() -> Self
+pub fn termrock::context::UiDiagnostics::note(&mut self, impl core::convert::Into<alloc::string::String>)
+impl core::clone::Clone for termrock::context::UiDiagnostics
+pub fn termrock::context::UiDiagnostics::clone(&self) -> termrock::context::UiDiagnostics
+impl core::cmp::Eq for termrock::context::UiDiagnostics
+impl core::cmp::PartialEq for termrock::context::UiDiagnostics
+pub fn termrock::context::UiDiagnostics::eq(&self, &termrock::context::UiDiagnostics) -> bool
+impl core::default::Default for termrock::context::UiDiagnostics
+pub fn termrock::context::UiDiagnostics::default() -> termrock::context::UiDiagnostics
+impl core::fmt::Debug for termrock::context::UiDiagnostics
+pub fn termrock::context::UiDiagnostics::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::context::UiDiagnostics
+impl core::marker::Freeze for termrock::context::UiDiagnostics
+impl core::marker::Send for termrock::context::UiDiagnostics
+impl core::marker::Sync for termrock::context::UiDiagnostics
+impl core::marker::Unpin for termrock::context::UiDiagnostics
+impl core::marker::UnsafeUnpin for termrock::context::UiDiagnostics
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::context::UiDiagnostics
+impl core::panic::unwind_safe::UnwindSafe for termrock::context::UiDiagnostics
+impl<Q, K> equivalent::Equivalent<K> for termrock::context::UiDiagnostics where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::context::UiDiagnostics::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::context::UiDiagnostics where U: core::convert::From<T>
+pub fn termrock::context::UiDiagnostics::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::context::UiDiagnostics where U: core::convert::Into<T>
+pub type termrock::context::UiDiagnostics::Error = core::convert::Infallible
+pub fn termrock::context::UiDiagnostics::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::context::UiDiagnostics where U: core::convert::TryFrom<T>
+pub type termrock::context::UiDiagnostics::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::context::UiDiagnostics::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::context::UiDiagnostics where T: core::clone::Clone
+pub type termrock::context::UiDiagnostics::Owned = T
+pub fn termrock::context::UiDiagnostics::clone_into(&self, &mut T)
+pub fn termrock::context::UiDiagnostics::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::context::UiDiagnostics where T: 'static + ?core::marker::Sized
+pub fn termrock::context::UiDiagnostics::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::context::UiDiagnostics where T: ?core::marker::Sized
+pub fn termrock::context::UiDiagnostics::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::context::UiDiagnostics where T: ?core::marker::Sized
+pub fn termrock::context::UiDiagnostics::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::context::UiDiagnostics where T: core::clone::Clone
+pub unsafe fn termrock::context::UiDiagnostics::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::context::UiDiagnostics
+pub fn termrock::context::UiDiagnostics::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::context::UiDiagnostics
+pub struct termrock::context::UiHost<Id, LayerId, Action, MapAction: core::clone::Clone + 'static> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash
+pub termrock::context::UiHost::boundary: core::option::Option<termrock::capability::CapabilityBoundary>
+pub termrock::context::UiHost::capabilities: termrock::capability::TerminalCapabilities
+pub termrock::context::UiHost::clock: termrock::runtime::FrameClock
+pub termrock::context::UiHost::design: termrock::style::DesignSystem
+pub termrock::context::UiHost::diagnostics: termrock::context::UiDiagnostics
+pub termrock::context::UiHost::focus: termrock::interaction::FocusGraph<Id>
+pub termrock::context::UiHost::keymap: core::option::Option<termrock::keymap::Keymap<MapAction>>
+pub termrock::context::UiHost::overlays: termrock::interaction::OverlayStack<Id>
+pub termrock::context::UiHost::scene: termrock::interaction::InteractionScene<Id, LayerId, Action>
+pub termrock::context::UiHost::semantics: termrock::interaction::SemanticScene<Id, Action>
+impl<Id, LayerId, Action, MapAction> termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash, MapAction: core::clone::Clone + 'static
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::begin_frame(&mut self) -> termrock::context::UiContext<'_, Id, LayerId, Action, MapAction>
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::begin_frame_at(&mut self, termrock::runtime::FrameTick) -> termrock::context::UiContext<'_, Id, LayerId, Action, MapAction>
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::new(termrock::style::DesignSystem, termrock::capability::TerminalCapabilities) -> Self
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::test() -> Self
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::test_with_design(termrock::style::DesignSystem) -> Self
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::with_boundary(self, termrock::capability::CapabilityBoundary) -> Self
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::with_keymap(self, termrock::keymap::Keymap<MapAction>) -> Self
+impl<Id, LayerId, Action, MapAction> core::default::Default for termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash, MapAction: core::clone::Clone + 'static
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::default() -> Self
+impl<Id, LayerId, Action: core::fmt::Debug, MapAction: core::fmt::Debug + core::clone::Clone + 'static> core::fmt::Debug for termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash + core::fmt::Debug, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash + core::fmt::Debug
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id, LayerId, Action, MapAction> core::marker::Freeze for termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::marker::Freeze, LayerId: core::marker::Freeze
+impl<Id, LayerId, Action, MapAction> core::marker::Send for termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::marker::Send, LayerId: core::marker::Send, MapAction: core::marker::Sync + core::marker::Send, Action: core::marker::Send
+impl<Id, LayerId, Action, MapAction> core::marker::Sync for termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::marker::Sync, LayerId: core::marker::Sync, MapAction: core::marker::Sync, Action: core::marker::Sync
+impl<Id, LayerId, Action, MapAction> core::marker::Unpin for termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::marker::Unpin, LayerId: core::marker::Unpin, MapAction: core::marker::Unpin, Action: core::marker::Unpin
+impl<Id, LayerId, Action, MapAction> core::marker::UnsafeUnpin for termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::marker::UnsafeUnpin, LayerId: core::marker::UnsafeUnpin
+impl<Id, LayerId, Action, MapAction> core::panic::unwind_safe::RefUnwindSafe for termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::panic::unwind_safe::RefUnwindSafe, LayerId: core::panic::unwind_safe::RefUnwindSafe, MapAction: core::panic::unwind_safe::RefUnwindSafe, Action: core::panic::unwind_safe::RefUnwindSafe
+impl<Id, LayerId, Action, MapAction> core::panic::unwind_safe::UnwindSafe for termrock::context::UiHost<Id, LayerId, Action, MapAction> where Id: core::panic::unwind_safe::UnwindSafe, LayerId: core::panic::unwind_safe::UnwindSafe, MapAction: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::UnwindSafe, Action: core::panic::unwind_safe::UnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::context::UiHost<Id, LayerId, Action, MapAction> where U: core::convert::From<T>
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::context::UiHost<Id, LayerId, Action, MapAction> where U: core::convert::Into<T>
+pub type termrock::context::UiHost<Id, LayerId, Action, MapAction>::Error = core::convert::Infallible
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::context::UiHost<Id, LayerId, Action, MapAction> where U: core::convert::TryFrom<T>
+pub type termrock::context::UiHost<Id, LayerId, Action, MapAction>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> core::any::Any for termrock::context::UiHost<Id, LayerId, Action, MapAction> where T: 'static + ?core::marker::Sized
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::context::UiHost<Id, LayerId, Action, MapAction> where T: ?core::marker::Sized
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::context::UiHost<Id, LayerId, Action, MapAction> where T: ?core::marker::Sized
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::borrow_mut(&mut self) -> &mut T
+impl<T> core::convert::From<T> for termrock::context::UiHost<Id, LayerId, Action, MapAction>
+pub fn termrock::context::UiHost<Id, LayerId, Action, MapAction>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::context::UiHost<Id, LayerId, Action, MapAction>
+pub fn termrock::context::resolve_keymap_action<A: core::clone::Clone + core::marker::Copy + 'static>(core::option::Option<&termrock::keymap::Keymap<A>>, termrock::input::KeyEvent) -> core::option::Option<A>
 pub mod termrock::crossterm
 pub use termrock::crossterm::CrosstermBackend
 pub struct termrock::crossterm::Session<W: core::io::write::Write>
@@ -3427,52 +3692,52 @@ pub termrock::interaction::UiIntent::Page(termrock::interaction::PageMove)
 pub termrock::interaction::UiIntent::Search
 pub termrock::interaction::UiIntent::Submit
 pub termrock::interaction::UiIntent::Toggle
-impl termrock::interaction::UiIntent
-pub const fn termrock::interaction::UiIntent::as_str(self) -> &'static str
-pub const fn termrock::interaction::UiIntent::is_global_chrome(self) -> bool
-impl core::clone::Clone for termrock::interaction::UiIntent
-pub fn termrock::interaction::UiIntent::clone(&self) -> termrock::interaction::UiIntent
-impl core::cmp::Eq for termrock::interaction::UiIntent
-impl core::cmp::PartialEq for termrock::interaction::UiIntent
-pub fn termrock::interaction::UiIntent::eq(&self, &termrock::interaction::UiIntent) -> bool
-impl core::fmt::Debug for termrock::interaction::UiIntent
-pub fn termrock::interaction::UiIntent::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::interaction::UiIntent
-pub fn termrock::interaction::UiIntent::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::interaction::UiIntent
-impl core::marker::StructuralPartialEq for termrock::interaction::UiIntent
-impl core::marker::Freeze for termrock::interaction::UiIntent
-impl core::marker::Send for termrock::interaction::UiIntent
-impl core::marker::Sync for termrock::interaction::UiIntent
-impl core::marker::Unpin for termrock::interaction::UiIntent
-impl core::marker::UnsafeUnpin for termrock::interaction::UiIntent
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::UiIntent
-impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::UiIntent
-impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::UiIntent where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::interaction::UiIntent::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::interaction::UiIntent where U: core::convert::From<T>
-pub fn termrock::interaction::UiIntent::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::interaction::UiIntent where U: core::convert::Into<T>
-pub type termrock::interaction::UiIntent::Error = core::convert::Infallible
-pub fn termrock::interaction::UiIntent::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::interaction::UiIntent where U: core::convert::TryFrom<T>
-pub type termrock::interaction::UiIntent::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::interaction::UiIntent::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::interaction::UiIntent where T: core::clone::Clone
-pub type termrock::interaction::UiIntent::Owned = T
-pub fn termrock::interaction::UiIntent::clone_into(&self, &mut T)
-pub fn termrock::interaction::UiIntent::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::interaction::UiIntent where T: 'static + ?core::marker::Sized
-pub fn termrock::interaction::UiIntent::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::interaction::UiIntent where T: ?core::marker::Sized
-pub fn termrock::interaction::UiIntent::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::interaction::UiIntent where T: ?core::marker::Sized
-pub fn termrock::interaction::UiIntent::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::interaction::UiIntent where T: core::clone::Clone
-pub unsafe fn termrock::interaction::UiIntent::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::interaction::UiIntent
-pub fn termrock::interaction::UiIntent::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::interaction::UiIntent
+impl termrock::context::ContextUiIntent
+pub const fn termrock::context::ContextUiIntent::as_str(self) -> &'static str
+pub const fn termrock::context::ContextUiIntent::is_global_chrome(self) -> bool
+impl core::clone::Clone for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::clone(&self) -> termrock::context::ContextUiIntent
+impl core::cmp::Eq for termrock::context::ContextUiIntent
+impl core::cmp::PartialEq for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::eq(&self, &termrock::context::ContextUiIntent) -> bool
+impl core::fmt::Debug for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::context::ContextUiIntent
+impl core::marker::StructuralPartialEq for termrock::context::ContextUiIntent
+impl core::marker::Freeze for termrock::context::ContextUiIntent
+impl core::marker::Send for termrock::context::ContextUiIntent
+impl core::marker::Sync for termrock::context::ContextUiIntent
+impl core::marker::Unpin for termrock::context::ContextUiIntent
+impl core::marker::UnsafeUnpin for termrock::context::ContextUiIntent
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::context::ContextUiIntent
+impl core::panic::unwind_safe::UnwindSafe for termrock::context::ContextUiIntent
+impl<Q, K> equivalent::Equivalent<K> for termrock::context::ContextUiIntent where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::context::ContextUiIntent::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::context::ContextUiIntent where U: core::convert::From<T>
+pub fn termrock::context::ContextUiIntent::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::context::ContextUiIntent where U: core::convert::Into<T>
+pub type termrock::context::ContextUiIntent::Error = core::convert::Infallible
+pub fn termrock::context::ContextUiIntent::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::context::ContextUiIntent where U: core::convert::TryFrom<T>
+pub type termrock::context::ContextUiIntent::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::context::ContextUiIntent::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::context::ContextUiIntent where T: core::clone::Clone
+pub type termrock::context::ContextUiIntent::Owned = T
+pub fn termrock::context::ContextUiIntent::clone_into(&self, &mut T)
+pub fn termrock::context::ContextUiIntent::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::context::ContextUiIntent where T: 'static + ?core::marker::Sized
+pub fn termrock::context::ContextUiIntent::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::context::ContextUiIntent where T: ?core::marker::Sized
+pub fn termrock::context::ContextUiIntent::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::context::ContextUiIntent where T: ?core::marker::Sized
+pub fn termrock::context::ContextUiIntent::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::context::ContextUiIntent where T: core::clone::Clone
+pub unsafe fn termrock::context::ContextUiIntent::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::context::ContextUiIntent
+pub fn termrock::context::ContextUiIntent::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::context::ContextUiIntent
 pub struct termrock::interaction::CellCoord
 pub termrock::interaction::CellCoord::col: usize
 pub termrock::interaction::CellCoord::row: u64
@@ -3640,7 +3905,7 @@ pub struct termrock::interaction::CollectionState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::interaction::CollectionState<Id>
 pub fn termrock::interaction::CollectionState<Id>::active_index(&self, &[termrock::interaction::CollectionItem<Id>]) -> core::option::Option<usize>
 pub fn termrock::interaction::CollectionState<Id>::ensure_active_visible(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
-pub fn termrock::interaction::CollectionState<Id>::handle_intent(&mut self, termrock::interaction::UiIntent, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionState<Id>::move_by(&mut self, &[termrock::interaction::CollectionItem<Id>], isize) -> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionState<Id>::move_first(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
@@ -4052,7 +4317,7 @@ pub fn termrock::interaction::FocusGraph<Id>::focus_previous(&mut self) -> termr
 pub fn termrock::interaction::FocusGraph<Id>::focus_spatial(&mut self, termrock::interaction::NavigationMove) -> termrock::interaction::FocusOutcome<Id>
 pub fn termrock::interaction::FocusGraph<Id>::focused_roving(&self) -> bool
 pub fn termrock::interaction::FocusGraph<Id>::from_interaction<LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>) -> Self where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone
-pub fn termrock::interaction::FocusGraph<Id>::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::interaction::FocusOutcome<Id>
+pub fn termrock::interaction::FocusGraph<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::interaction::FocusOutcome<Id>
 pub fn termrock::interaction::FocusGraph<Id>::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::interaction::FocusOutcome<Id>
 pub fn termrock::interaction::FocusGraph<Id>::jump_regions(&self) -> alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 pub fn termrock::interaction::FocusGraph<Id>::pop_trap(&mut self) -> termrock::interaction::FocusOutcome<Id>
@@ -4937,7 +5202,7 @@ impl<T> either::into_either::IntoEither for termrock::interaction::RovingEntry<I
 pub struct termrock::interaction::RovingFocusGroup<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::interaction::RovingFocusGroup<Id>
 pub fn termrock::interaction::RovingFocusGroup<Id>::entries_from_parts(&[Id], &[bool], &[&str]) -> alloc::vec::Vec<termrock::interaction::RovingEntry<Id>>
-pub fn termrock::interaction::RovingFocusGroup<Id>::handle_intent(&mut self, termrock::interaction::UiIntent, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
+pub fn termrock::interaction::RovingFocusGroup<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
 pub fn termrock::interaction::RovingFocusGroup<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
 pub fn termrock::interaction::RovingFocusGroup<Id>::move_by(&mut self, &[termrock::interaction::RovingEntry<Id>], isize) -> termrock::interaction::RovingOutcome<Id>
 pub fn termrock::interaction::RovingFocusGroup<Id>::move_first(&mut self, &[termrock::interaction::RovingEntry<Id>]) -> termrock::interaction::RovingOutcome<Id>
@@ -5360,21 +5625,21 @@ pub fn termrock::interaction::SemanticState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticState
 pub fn termrock::interaction::compose_bubble<M, FocusId>(termrock::interaction::EventResult<M, FocusId>, impl core::ops::function::FnOnce() -> termrock::interaction::EventResult<M, FocusId>) -> termrock::interaction::EventResult<M, FocusId>
 pub fn termrock::interaction::compose_capture<M, FocusId>(termrock::interaction::EventResult<M, FocusId>, impl core::ops::function::FnOnce() -> termrock::interaction::EventResult<M, FocusId>) -> termrock::interaction::EventResult<M, FocusId>
-pub fn termrock::interaction::default_button_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_choice_dialog_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_diff_review_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_form_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_inspector_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_log_stream_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_menu_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_prompt_composer_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_text_area_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_transcript_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
-pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
+pub fn termrock::interaction::default_button_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_choice_dialog_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_diff_review_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_form_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_inspector_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_log_stream_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_menu_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_prompt_composer_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_text_area_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_transcript_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::interaction::deselect_subtree<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::interaction::SelectionModel<Id>, &[Id]) -> termrock::interaction::SelectionDelta<Id>
 pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::interaction::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::interaction::evaluate_escape_stack(&mut [termrock::interaction::DismissableLayer], &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId, termrock::interaction::DismissPhase) -> core::option::Option<(usize, termrock::interaction::DismissDecision)>
@@ -18496,8 +18761,8 @@ pub struct termrock::widgets::ActivationState
 impl termrock::widgets::ActivationState
 pub const fn termrock::widgets::ActivationState::accepts_input(&self) -> bool
 pub const fn termrock::widgets::ActivationState::can_activate(&self) -> bool
-pub fn termrock::widgets::ActivationState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::ActivationOutcome
-pub fn termrock::widgets::ActivationState::handle_intent_result(&mut self, termrock::interaction::UiIntent) -> termrock::interaction::EventResult<termrock::widgets::ActivationOutcome>
+pub fn termrock::widgets::ActivationState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::ActivationOutcome
+pub fn termrock::widgets::ActivationState::handle_intent_result(&mut self, termrock::context::ContextUiIntent) -> termrock::interaction::EventResult<termrock::widgets::ActivationOutcome>
 pub fn termrock::widgets::ActivationState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ActivationState::handle_key_result(&mut self, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::ActivationOutcome>
 pub fn termrock::widgets::ActivationState::handle_mouse(&mut self, termrock::input::MouseEvent, core::option::Option<ratatui_core::layout::rect::Rect>) -> termrock::widgets::ActivationOutcome
@@ -18602,7 +18867,7 @@ pub struct termrock::widgets::AlertState
 pub termrock::widgets::AlertState::focused: bool
 pub termrock::widgets::AlertState::region: core::option::Option<ratatui_core::layout::rect::Rect>
 impl termrock::widgets::AlertState
-pub fn termrock::widgets::AlertState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::AlertOutcome
+pub fn termrock::widgets::AlertState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::AlertOutcome
 pub fn termrock::widgets::AlertState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::AlertOutcome
 pub fn termrock::widgets::AlertState::handle_key_result(&mut self, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::AlertOutcome>
 impl core::clone::Clone for termrock::widgets::AlertState
@@ -19093,7 +19358,7 @@ pub struct termrock::widgets::ButtonState
 pub termrock::widgets::ButtonState::activation: termrock::widgets::ActivationState
 pub termrock::widgets::ButtonState::region: core::option::Option<ratatui_core::layout::rect::Rect>
 impl termrock::widgets::ButtonState
-pub fn termrock::widgets::ButtonState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::ActivationOutcome
+pub fn termrock::widgets::ButtonState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ButtonState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ButtonState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::ActivationOutcome
 pub const fn termrock::widgets::ButtonState::new() -> Self
@@ -19539,7 +19804,7 @@ pub fn termrock::widgets::ChoiceDialogState<Id>::activate_selected(&self, &[term
 pub fn termrock::widgets::ChoiceDialogState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::cursor(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::focused(&self) -> core::option::Option<&Id>
-pub fn termrock::widgets::ChoiceDialogState<Id>::handle_intent(&mut self, &[termrock::widgets::Action<'_, Id>], termrock::interaction::UiIntent) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::handle_intent(&mut self, &[termrock::widgets::Action<'_, Id>], termrock::context::ContextUiIntent) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::handle_key(&mut self, &[termrock::widgets::Action<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::Outcome<Id>
 pub const fn termrock::widgets::ChoiceDialogState<Id>::is_loading(&self) -> bool
 pub const fn termrock::widgets::ChoiceDialogState<Id>::new(core::option::Option<Id>) -> Self
@@ -19835,7 +20100,7 @@ pub const fn termrock::widgets::CommandPalette<'a, Id>::focused(self, bool) -> S
 pub const fn termrock::widgets::CommandPalette<'a, Id>::footer_hint(self, core::option::Option<&'a str>) -> Self
 pub const fn termrock::widgets::CommandPalette<'a, Id>::new(&'a str, &'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::CommandPalette<'_, Id>
-pub fn termrock::widgets::CommandPalette<'_, Id>::handle_intent(&mut termrock::widgets::CommandPaletteState<Id>, termrock::interaction::UiIntent, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::CommandPaletteOutcome<Id>
+pub fn termrock::widgets::CommandPalette<'_, Id>::handle_intent(&mut termrock::widgets::CommandPaletteState<Id>, termrock::context::ContextUiIntent, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::CommandPaletteOutcome<Id>
 pub fn termrock::widgets::CommandPalette<'_, Id>::handle_key(&mut termrock::widgets::CommandPaletteState<Id>, termrock::input::KeyEvent, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::widgets::CommandPaletteOutcome<Id>
 pub fn termrock::widgets::CommandPalette<'_, Id>::query(&termrock::widgets::CommandPaletteState<Id>) -> &termrock::widgets::TextInputState
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CommandPalette<'a, Id>
@@ -20063,7 +20328,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::CompletionMenuSiz
 pub struct termrock::widgets::CompletionMenuState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::CompletionMenuState<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::commit(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
-pub fn termrock::widgets::CompletionMenuState<Id>::handle_intent(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>], termrock::interaction::UiIntent) -> termrock::widgets::CompletionMenuOutcome<Id>
+pub fn termrock::widgets::CompletionMenuState<Id>::handle_intent(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>], termrock::context::ContextUiIntent) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::move_by(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>], isize) -> termrock::widgets::CompletionMenuOutcome<Id>
@@ -20527,7 +20792,7 @@ pub termrock::widgets::DataTableState::sort: core::option::Option<termrock::widg
 pub termrock::widgets::DataTableState::striped: bool
 pub termrock::widgets::DataTableState::window: termrock::widgets::VirtualWindow
 impl<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DataTableState<RowId, ColId>
-pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_intent(&mut self, termrock::interaction::UiIntent, &[RowId], &termrock::widgets::ColumnModel<ColId>) -> termrock::widgets::DataTableOutcome<RowId, ColId> where ColId: core::clone::Clone
+pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[RowId], &termrock::widgets::ColumnModel<ColId>) -> termrock::widgets::DataTableOutcome<RowId, ColId> where ColId: core::clone::Clone
 pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[RowId], &termrock::widgets::ColumnModel<ColId>) -> termrock::widgets::DataTableOutcome<RowId, ColId> where ColId: core::clone::Clone
 pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_mouse(&mut self, termrock::input::MouseEvent, &[RowId]) -> termrock::widgets::DataTableOutcome<RowId, ColId>
 pub fn termrock::widgets::DataTableState<RowId, ColId>::new() -> Self
@@ -21095,7 +21360,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::DiffReview<'a>
 pub struct termrock::widgets::DiffReviewState
 impl termrock::widgets::DiffReviewState
 pub const fn termrock::widgets::DiffReviewState::accepts_input(&self) -> bool
-pub fn termrock::widgets::DiffReviewState::handle_intent(&mut self, termrock::interaction::UiIntent, &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
+pub fn termrock::widgets::DiffReviewState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::DiffHunk], usize) -> termrock::widgets::DiffReviewOutcome
 pub const fn termrock::widgets::DiffReviewState::hunk_cursor(&self) -> usize
@@ -21733,7 +21998,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::FormSection<'a, I
 pub struct termrock::widgets::FormState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::FormState<Id>
 pub fn termrock::widgets::FormState<Id>::click(&mut self, ratatui_core::layout::position::Position, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
-pub fn termrock::widgets::FormState<Id>::handle_intent(&mut self, &[termrock::widgets::FormSection<'_, Id>], termrock::interaction::UiIntent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
+pub fn termrock::widgets::FormState<Id>::handle_intent(&mut self, &[termrock::widgets::FormSection<'_, Id>], termrock::context::ContextUiIntent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormState<Id>::handle_key(&mut self, &[termrock::widgets::FormSection<'_, Id>], termrock::input::KeyEvent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormState<Id>::hit_id(&self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 pub fn termrock::widgets::FormState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
@@ -22765,8 +23030,8 @@ pub fn termrock::widgets::ListState<Id>::activate(&self, &[termrock::widgets::Li
 pub fn termrock::widgets::ListState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::click_select(&mut self, ratatui_core::layout::position::Position, bool) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::enable_multi_select(&mut self)
-pub fn termrock::widgets::ListState<Id>::handle_intent(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::interaction::Outcome<Id>
-pub fn termrock::widgets::ListState<Id>::handle_intent_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::interaction::EventResult<termrock::interaction::Outcome<Id>>
+pub fn termrock::widgets::ListState<Id>::handle_intent(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::context::ContextUiIntent) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ListState<Id>::handle_intent_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::context::ContextUiIntent) -> termrock::interaction::EventResult<termrock::interaction::Outcome<Id>>
 pub fn termrock::widgets::ListState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::handle_key_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::interaction::Outcome<Id>>
 pub fn termrock::widgets::ListState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
@@ -23064,7 +23329,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::LogStream<'a>
 pub struct termrock::widgets::LogStreamState
 impl termrock::widgets::LogStreamState
 pub const fn termrock::widgets::LogStreamState::accepts_input(&self) -> bool
-pub fn termrock::widgets::LogStreamState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::LogStreamOutcome
+pub fn termrock::widgets::LogStreamState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::LogStreamOutcome
 pub const fn termrock::widgets::LogStreamState::is_following(&self) -> bool
@@ -23308,7 +23573,7 @@ pub struct termrock::widgets::MenuState
 impl termrock::widgets::MenuState
 pub fn termrock::widgets::MenuState::cursor_index(&self) -> usize
 pub fn termrock::widgets::MenuState::focus_index(&self) -> usize
-pub fn termrock::widgets::MenuState::handle_intent<Id: core::clone::Clone>(&mut self, termrock::interaction::UiIntent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
+pub fn termrock::widgets::MenuState::handle_intent<Id: core::clone::Clone>(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
 pub fn termrock::widgets::MenuState::handle_key<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
 pub fn termrock::widgets::MenuState::handle_mouse<Id: core::clone::Clone>(&mut self, termrock::input::MouseEvent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
 pub const fn termrock::widgets::MenuState::is_open(&self) -> bool
@@ -23755,7 +24020,7 @@ impl termrock::widgets::ObjectInspectorState
 pub const fn termrock::widgets::ObjectInspectorState::accepts_input(&self) -> bool
 pub const fn termrock::widgets::ObjectInspectorState::cursor(&self) -> usize
 pub const fn termrock::widgets::ObjectInspectorState::focus(&self) -> usize
-pub fn termrock::widgets::ObjectInspectorState::handle_intent(&mut self, termrock::interaction::UiIntent, usize) -> termrock::widgets::ObjectInspectorOutcome
+pub fn termrock::widgets::ObjectInspectorState::handle_intent(&mut self, termrock::context::ContextUiIntent, usize) -> termrock::widgets::ObjectInspectorOutcome
 pub fn termrock::widgets::ObjectInspectorState::handle_key(&mut self, termrock::input::KeyEvent, usize) -> termrock::widgets::ObjectInspectorOutcome
 pub fn termrock::widgets::ObjectInspectorState::handle_mouse(&mut self, termrock::input::MouseEvent, usize) -> termrock::widgets::ObjectInspectorOutcome
 pub fn termrock::widgets::ObjectInspectorState::new() -> Self
@@ -24040,7 +24305,7 @@ pub termrock::widgets::PanelState::focused: bool
 pub termrock::widgets::PanelState::hovered: bool
 pub termrock::widgets::PanelState::parts: core::option::Option<termrock::widgets::PanelParts>
 impl termrock::widgets::PanelState
-pub fn termrock::widgets::PanelState::handle_intent(&mut self, termrock::interaction::UiIntent, bool, bool) -> termrock::widgets::PanelOutcome
+pub fn termrock::widgets::PanelState::handle_intent(&mut self, termrock::context::ContextUiIntent, bool, bool) -> termrock::widgets::PanelOutcome
 pub fn termrock::widgets::PanelState::handle_key(&mut self, termrock::input::KeyEvent, bool, bool) -> termrock::widgets::PanelOutcome
 pub fn termrock::widgets::PanelState::handle_key_result(&mut self, termrock::input::KeyEvent, bool, bool) -> termrock::interaction::EventResult<termrock::widgets::PanelOutcome>
 pub fn termrock::widgets::PanelState::handle_mouse(&mut self, termrock::input::MouseEvent, bool, bool) -> termrock::widgets::PanelOutcome
@@ -24279,7 +24544,7 @@ pub const fn termrock::widgets::PermissionPromptState::details_expanded(&self) -
 pub fn termrock::widgets::PermissionPromptState::dismiss_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::PermissionPromptState::edit_buffer(&self) -> &str
 pub fn termrock::widgets::PermissionPromptState::enqueue(&mut self, termrock::widgets::PermissionRequest) -> u64
-pub fn termrock::widgets::PermissionPromptState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::PermissionOutcome
+pub fn termrock::widgets::PermissionPromptState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::PermissionOutcome
 pub fn termrock::widgets::PermissionPromptState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PermissionOutcome
 pub fn termrock::widgets::PermissionPromptState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::PermissionOutcome
 pub fn termrock::widgets::PermissionPromptState::head(&self) -> core::option::Option<&termrock::widgets::PermissionRequest>
@@ -24668,8 +24933,8 @@ pub fn termrock::widgets::PickerState<Id>::query_text(&self) -> &str
 pub fn termrock::widgets::PickerState<Id>::set_accepts_input(&mut self, bool)
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::PickerState<Id>
 pub fn termrock::widgets::PickerState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::PickerOutcome<Id>
-pub fn termrock::widgets::PickerState<Id>::handle_intent(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::widgets::PickerOutcome<Id>
-pub fn termrock::widgets::PickerState<Id>::handle_intent_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::interaction::UiIntent) -> termrock::interaction::EventResult<termrock::widgets::PickerOutcome<Id>>
+pub fn termrock::widgets::PickerState<Id>::handle_intent(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::context::ContextUiIntent) -> termrock::widgets::PickerOutcome<Id>
+pub fn termrock::widgets::PickerState<Id>::handle_intent_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::context::ContextUiIntent) -> termrock::interaction::EventResult<termrock::widgets::PickerOutcome<Id>>
 pub fn termrock::widgets::PickerState<Id>::handle_key(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::PickerOutcome<Id>
 pub fn termrock::widgets::PickerState<Id>::handle_key_result(&mut self, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::PickerOutcome<Id>>
 pub fn termrock::widgets::PickerState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
@@ -25138,7 +25403,7 @@ pub fn termrock::widgets::PromptComposerState::dismiss_completion_overlay<FocusI
 pub fn termrock::widgets::PromptComposerState::dismiss_fullscreen_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::PromptComposerState::exit_fullscreen(&mut self) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::handle_event(&mut self, termrock::input::Event, ratatui_core::layout::rect::Rect, &[(alloc::string::String, ratatui_core::layout::rect::Rect)]) -> termrock::widgets::PromptComposerOutcome
-pub fn termrock::widgets::PromptComposerState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::PromptComposerOutcome
+pub fn termrock::widgets::PromptComposerState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::handle_mouse(&mut self, termrock::input::MouseEvent, ratatui_core::layout::rect::Rect, &[(alloc::string::String, ratatui_core::layout::rect::Rect)]) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::handle_mouse_at(&mut self, termrock::input::MouseEvent, &termrock::widgets::PromptComposerLayout) -> termrock::widgets::PromptComposerOutcome
@@ -25539,7 +25804,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::RadioGroup<'a, Id
 pub struct termrock::widgets::RadioState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::RadioState<Id>
 pub const fn termrock::widgets::RadioState<Id>::active(&self) -> core::option::Option<&Id>
-pub fn termrock::widgets::RadioState<Id>::handle_intent(&mut self, termrock::interaction::UiIntent, &[Id]) -> termrock::widgets::RadioOutcome<Id>
+pub fn termrock::widgets::RadioState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[Id]) -> termrock::widgets::RadioOutcome<Id>
 pub fn termrock::widgets::RadioState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[Id]) -> termrock::widgets::RadioOutcome<Id> where Id: core::clone::Clone
 pub fn termrock::widgets::RadioState<Id>::new(core::option::Option<Id>) -> Self
 pub fn termrock::widgets::RadioState<Id>::selected(&self) -> core::option::Option<&Id>
@@ -25695,7 +25960,7 @@ pub const fn termrock::widgets::ScrollAreaState::content_w(&self) -> u16
 pub fn termrock::widgets::ScrollAreaState::end(&mut self) -> termrock::widgets::ScrollOutcome
 pub const fn termrock::widgets::ScrollAreaState::follow_mode(&self) -> termrock::perf::FollowMode
 pub fn termrock::widgets::ScrollAreaState::follow_tail(&mut self)
-pub fn termrock::widgets::ScrollAreaState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::ScrollOutcome
+pub fn termrock::widgets::ScrollAreaState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::ScrollOutcome
 pub fn termrock::widgets::ScrollAreaState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::ScrollOutcome
 pub fn termrock::widgets::ScrollAreaState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::ScrollOutcome
 pub fn termrock::widgets::ScrollAreaState::home(&mut self) -> termrock::widgets::ScrollOutcome
@@ -25807,7 +26072,7 @@ pub fn termrock::widgets::Section<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Section<'a>
 pub struct termrock::widgets::SectionState
 impl termrock::widgets::SectionState
-pub fn termrock::widgets::SectionState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::SectionOutcome
+pub fn termrock::widgets::SectionState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::SectionOutcome
 pub fn termrock::widgets::SectionState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::SectionOutcome
 pub fn termrock::widgets::SectionState::handle_key_result(&mut self, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::SectionOutcome>
 pub fn termrock::widgets::SectionState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::SectionOutcome
@@ -27603,7 +27868,7 @@ pub termrock::widgets::TableState::resolved_widths: alloc::vec::Vec<u16>
 pub termrock::widgets::TableState::row_regions: alloc::vec::Vec<termrock::widgets::TableRowRegion<RowId>>
 impl<RowId: core::clone::Clone + core::cmp::Eq, ColumnId: core::clone::Clone + core::cmp::Eq> termrock::widgets::TableState<RowId, ColumnId>
 pub fn termrock::widgets::TableState<RowId, ColumnId>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::TableOutcome<RowId, ColumnId>
-pub fn termrock::widgets::TableState<RowId, ColumnId>::handle_intent(&mut self, &[termrock::widgets::TableRow<'_, RowId>], termrock::interaction::UiIntent) -> termrock::widgets::TableOutcome<RowId, ColumnId>
+pub fn termrock::widgets::TableState<RowId, ColumnId>::handle_intent(&mut self, &[termrock::widgets::TableRow<'_, RowId>], termrock::context::ContextUiIntent) -> termrock::widgets::TableOutcome<RowId, ColumnId>
 pub fn termrock::widgets::TableState<RowId, ColumnId>::handle_key(&mut self, &[termrock::widgets::TableRow<'_, RowId>], termrock::input::KeyEvent) -> termrock::widgets::TableOutcome<RowId, ColumnId>
 pub fn termrock::widgets::TableState<RowId, ColumnId>::handle_mouse(&mut self, termrock::input::MouseEvent, usize) -> termrock::widgets::TableOutcome<RowId, ColumnId>
 pub fn termrock::widgets::TableState<RowId, ColumnId>::hover(&mut self, ratatui_core::layout::position::Position) -> bool
@@ -27940,7 +28205,7 @@ pub const fn termrock::widgets::TextAreaState::cursor(&self) -> termrock::widget
 pub fn termrock::widgets::TextAreaState::cursor_at_byte(&self, usize) -> termrock::widgets::TextCursor
 pub fn termrock::widgets::TextAreaState::extract_between(&self, termrock::widgets::TextCursor, termrock::widgets::TextCursor) -> core::option::Option<alloc::string::String>
 pub fn termrock::widgets::TextAreaState::handle_event(&mut self, termrock::input::Event) -> termrock::widgets::TextAreaOutcome
-pub fn termrock::widgets::TextAreaState::handle_intent(&mut self, termrock::interaction::UiIntent) -> termrock::widgets::TextAreaOutcome
+pub fn termrock::widgets::TextAreaState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::TextAreaOutcome
 pub fn termrock::widgets::TextAreaState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::TextAreaOutcome
 pub fn termrock::widgets::TextAreaState::insert_text(&mut self, &str) -> termrock::widgets::TextAreaOutcome
 pub const fn termrock::widgets::TextAreaState::is_focused(&self) -> bool
@@ -28205,8 +28470,8 @@ impl termrock::widgets::ThemePickerState
 pub fn termrock::widgets::ThemePickerState::clear_confirmed(&mut self)
 pub fn termrock::widgets::ThemePickerState::confirm_id(&mut self, &'static str)
 pub const fn termrock::widgets::ThemePickerState::confirmed(&self) -> core::option::Option<&'static str>
-pub fn termrock::widgets::ThemePickerState::handle_intent(&mut self, termrock::interaction::UiIntent, usize) -> termrock::widgets::ThemePickerOutcome
-pub fn termrock::widgets::ThemePickerState::handle_intent_result(&mut self, termrock::interaction::UiIntent, usize) -> termrock::interaction::EventResult<termrock::widgets::ThemePickerOutcome>
+pub fn termrock::widgets::ThemePickerState::handle_intent(&mut self, termrock::context::ContextUiIntent, usize) -> termrock::widgets::ThemePickerOutcome
+pub fn termrock::widgets::ThemePickerState::handle_intent_result(&mut self, termrock::context::ContextUiIntent, usize) -> termrock::interaction::EventResult<termrock::widgets::ThemePickerOutcome>
 pub fn termrock::widgets::ThemePickerState::handle_key(&mut self, termrock::input::KeyEvent, usize) -> termrock::widgets::ThemePickerOutcome
 pub fn termrock::widgets::ThemePickerState::handle_key_result(&mut self, termrock::input::KeyEvent, usize) -> termrock::interaction::EventResult<termrock::widgets::ThemePickerOutcome>
 pub const fn termrock::widgets::ThemePickerState::new(usize) -> Self
@@ -28855,7 +29120,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TranscriptBlock<'
 pub struct termrock::widgets::TranscriptState<Id>
 pub termrock::widgets::TranscriptState::block_regions: alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>
 impl<Id: core::clone::Clone + core::cmp::Eq> termrock::widgets::TranscriptState<Id>
-pub fn termrock::widgets::TranscriptState<Id>::handle_intent(&mut self, termrock::interaction::UiIntent, &[termrock::widgets::TranscriptBlock<'_, Id>]) -> termrock::widgets::TranscriptOutcome<Id>
+pub fn termrock::widgets::TranscriptState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::TranscriptBlock<'_, Id>]) -> termrock::widgets::TranscriptOutcome<Id>
 pub fn termrock::widgets::TranscriptState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::TranscriptBlock<'_, Id>]) -> termrock::widgets::TranscriptOutcome<Id>
 pub fn termrock::widgets::TranscriptState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::TranscriptBlock<'_, Id>]) -> termrock::widgets::TranscriptOutcome<Id>
 pub fn termrock::widgets::TranscriptState<Id>::layout_heights(&[termrock::widgets::TranscriptBlock<'_, Id>]) -> (u64, alloc::vec::Vec<(Id, u64, u16)>)
@@ -29023,7 +29288,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TreeNode<'a, Id>
 pub struct termrock::widgets::TreeState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::TreeOutcome<Id>
-pub fn termrock::widgets::TreeState<Id>::handle_intent(&mut self, &[termrock::widgets::TreeNode<'_, Id>], termrock::interaction::UiIntent) -> termrock::widgets::TreeOutcome<Id>
+pub fn termrock::widgets::TreeState<Id>::handle_intent(&mut self, &[termrock::widgets::TreeNode<'_, Id>], termrock::context::ContextUiIntent) -> termrock::widgets::TreeOutcome<Id>
 pub fn termrock::widgets::TreeState<Id>::handle_key(&mut self, &[termrock::widgets::TreeNode<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::TreeOutcome<Id>
 pub fn termrock::widgets::TreeState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id> termrock::widgets::TreeState<Id>
@@ -29295,7 +29560,7 @@ pub fn termrock::widgets::VirtualGridState<RowId, ColId>::set_column_widths(&mut
 pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::virtualizer(&self) -> &termrock::widgets::Virtualizer2D
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::virtualizer_mut(&mut self) -> &mut termrock::widgets::Virtualizer2D
 impl<RowId: core::clone::Clone + core::cmp::Eq, ColId: core::clone::Clone + core::cmp::Eq> termrock::widgets::VirtualGridState<RowId, ColId>
-pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_intent(&mut self, termrock::interaction::UiIntent, bool, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
+pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_intent(&mut self, termrock::context::ContextUiIntent, bool, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::GridColumn<'_, ColId>], &[termrock::widgets::GridRow<'_, RowId>]) -> termrock::widgets::VirtualGridOutcome<RowId, ColId>
 impl<RowId, ColId> core::default::Default for termrock::widgets::VirtualGridState<RowId, ColId>
