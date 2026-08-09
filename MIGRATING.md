@@ -82,6 +82,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0066 | `v0.13.0` | [Lookbook HostFrame](migrations/0066-v0.13.0-lookbook-host-frame.md) |
 | 0067 | `v0.13.0` | [Form scene-owned field focus](migrations/0067-v0.13.0-form-scene-focus.md) |
 | 0068 | `v0.13.0` | [DataTable cursor vs scene focus](migrations/0068-v0.13.0-data-table-cursor.md) |
+| 0069 | `v0.13.0` | [Menu/Sidebar cursor](migrations/0069-v0.13.0-menu-cursor.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

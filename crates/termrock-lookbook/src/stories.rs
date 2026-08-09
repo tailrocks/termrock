@@ -4596,8 +4596,8 @@ fn menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         MenuItem::new("b", "Disabled").enabled(false),
         MenuItem::new("c", "Save"),
     ];
-    let state = MenuState::new();
-    Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &state);
+    let mut state = MenuState::new();
+    Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &mut state);
 }
 
 fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -4980,8 +4980,8 @@ fn menu_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         MenuItem::new("b", "無効").enabled(false),
         MenuItem::new("c", "保存 ✨"),
     ];
-    let state = MenuState::new();
-    Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &state);
+    let mut state = MenuState::new();
+    Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &mut state);
 }
 
 fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -1,0 +1,37 @@
+---
+title: Menu
+description: Overlay menu with roving cursor, checks, and scene-owned surface focus.
+---
+
+# Menu
+
+Vertical menu / context menu. **Cursor** is menu-local; **scene focus** is host-owned.
+
+## Outcomes
+
+- `Ignored`
+- `CursorMoved`
+- `Activated(Id)`
+- `Closed` (Esc)
+
+## Focus law
+
+| Concern | Owner |
+|---------|--------|
+| Surface focus | Host / OverlayStack / InteractionScene |
+| Item cursor | `MenuState::cursor_index` |
+| Paint | `Menu::focused` + cursor gutter |
+
+## Non-color
+
+- Cursor: `›` / `>`
+- Checked: `✓` / `[x]`
+- Disabled: dim + `⊘` / `#`
+
+## Intents
+
+`default_menu_intent` — j/k, arrows, Home/End, Enter, Space, Esc.
+
+## Related
+
+OverlayStack · Sidebar · CommandPalette · migration `0069`

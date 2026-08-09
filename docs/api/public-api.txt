@@ -1,8 +1,8 @@
  Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
 warning: unresolved link to `DataTableState::handle_key`
-   --> crates/termrock/src/interaction/intent.rs:145:7
+   --> crates/termrock/src/interaction/intent.rs:164:7
     |
-145 | /// [`DataTableState::handle_key`].
+164 | /// [`DataTableState::handle_key`].
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
     |
     = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
@@ -16,7 +16,7 @@ warning: unresolved link to `Theme`
     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
 
 warning: `termrock` (lib doc) generated 2 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.58s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.61s
 pub mod termrock
 pub mod termrock::ansi_text
 pub fn termrock::ansi_text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -2873,6 +2873,7 @@ impl<T> either::into_either::IntoEither for termrock::interaction::SemanticEleme
 pub fn termrock::interaction::default_data_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_form_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_list_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
+pub fn termrock::interaction::default_menu_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_permission_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_table_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
 pub fn termrock::interaction::default_transcript_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::interaction::UiIntent>
@@ -9979,7 +9980,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::MarkdownBlockKind
 #[non_exhaustive] pub enum termrock::widgets::MenuOutcome<Id>
 pub termrock::widgets::MenuOutcome::Activated(Id)
 pub termrock::widgets::MenuOutcome::Closed
-pub termrock::widgets::MenuOutcome::FocusChanged
+pub termrock::widgets::MenuOutcome::CursorMoved
 pub termrock::widgets::MenuOutcome::Ignored
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MenuOutcome<Id>
 pub fn termrock::widgets::MenuOutcome<Id>::clone(&self) -> termrock::widgets::MenuOutcome<Id>
@@ -17097,8 +17098,11 @@ pub fn termrock::widgets::MarkdownView<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MarkdownView<'a>
 pub struct termrock::widgets::Menu<'a, Id>
 impl<'a, Id> termrock::widgets::Menu<'a, Id>
+pub const fn termrock::widgets::Menu<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Menu<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Menu<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::Menu<'a, Id>::new(&'a [termrock::widgets::MenuItem<Id>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::Menu<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::MenuState)
+pub fn termrock::widgets::Menu<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MenuState)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Menu<'a, Id>
 pub fn termrock::widgets::Menu<'a, Id>::clone(&self) -> termrock::widgets::Menu<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Menu<'a, Id>
@@ -17148,9 +17152,11 @@ pub termrock::widgets::MenuItem::label: alloc::string::String
 pub termrock::widgets::MenuItem::separator_before: bool
 pub termrock::widgets::MenuItem::shortcut: core::option::Option<alloc::string::String>
 impl<Id> termrock::widgets::MenuItem<Id>
+pub fn termrock::widgets::MenuItem<Id>::checked(self, bool) -> Self
 pub fn termrock::widgets::MenuItem<Id>::enabled(self, bool) -> Self
 pub fn termrock::widgets::MenuItem<Id>::new(Id, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::widgets::MenuItem<Id>::separator_before(self, bool) -> Self
+pub fn termrock::widgets::MenuItem<Id>::shortcut(self, impl core::convert::Into<alloc::string::String>) -> Self
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MenuItem<Id>
 pub fn termrock::widgets::MenuItem<Id>::clone(&self) -> termrock::widgets::MenuItem<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::MenuItem<Id>
@@ -17193,9 +17199,14 @@ pub fn termrock::widgets::MenuItem<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MenuItem<Id>
 pub struct termrock::widgets::MenuState
 impl termrock::widgets::MenuState
+pub const fn termrock::widgets::MenuState::cursor_index(self) -> usize
 pub const fn termrock::widgets::MenuState::focus_index(self) -> usize
+pub fn termrock::widgets::MenuState::handle_intent<Id: core::clone::Clone>(&mut self, termrock::interaction::UiIntent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
 pub fn termrock::widgets::MenuState::handle_key<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
+pub fn termrock::widgets::MenuState::handle_mouse<Id: core::clone::Clone>(&mut self, termrock::input::MouseEvent, &[termrock::widgets::MenuItem<Id>]) -> termrock::widgets::MenuOutcome<Id>
+pub const fn termrock::widgets::MenuState::is_open(self) -> bool
 pub const fn termrock::widgets::MenuState::new() -> Self
+pub fn termrock::widgets::MenuState::set_accepts_input(&mut self, bool)
 impl core::clone::Clone for termrock::widgets::MenuState
 pub fn termrock::widgets::MenuState::clone(&self) -> termrock::widgets::MenuState
 impl core::cmp::Eq for termrock::widgets::MenuState
@@ -19916,6 +19927,8 @@ pub fn termrock::widgets::SettingsShellState<SectionId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SettingsShellState<SectionId>
 pub struct termrock::widgets::Sidebar<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Sidebar<'a, Id>
+pub const fn termrock::widgets::Sidebar<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Sidebar<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::Sidebar<'a, Id>::new(&'a [termrock::widgets::SidebarItem<Id>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Sidebar<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::SidebarState<Id>)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Sidebar<'a, Id>
@@ -20000,7 +20013,9 @@ impl<T> core::convert::From<T> for termrock::widgets::SidebarItem<Id>
 pub fn termrock::widgets::SidebarItem<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SidebarItem<Id>
 pub struct termrock::widgets::SidebarState<Id>
+pub termrock::widgets::SidebarState::accepts_input: bool
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::SidebarState<Id>
+pub const fn termrock::widgets::SidebarState<Id>::cursor_index(&self) -> usize
 pub fn termrock::widgets::SidebarState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::SidebarItem<Id>]) -> termrock::widgets::SidebarOutcome<Id>
 pub const fn termrock::widgets::SidebarState<Id>::is_expanded(&self) -> bool
 pub fn termrock::widgets::SidebarState<Id>::new(core::option::Option<Id>) -> Self

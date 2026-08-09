@@ -10,10 +10,12 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
-        OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
-        OverlayStack, place_overlay,
+        NavigationMove, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize,
+        OverlaySpec, OverlayStack, UiIntent, place_overlay,
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -66,6 +68,20 @@ impl<Id> MenuItem<Id> {
         self
     }
 
+    /// Shortcut hint text.
+    #[must_use]
+    pub fn shortcut(mut self, shortcut: impl Into<String>) -> Self {
+        self.shortcut = Some(shortcut.into());
+        self
+    }
+
+    /// Checked / unchecked toggle item.
+    #[must_use]
+    pub fn checked(mut self, checked: bool) -> Self {
+        self.checked = Some(checked);
+        self
+    }
+
     /// Separator before.
     #[must_use]
     pub fn separator_before(mut self, sep: bool) -> Self {
@@ -74,41 +90,68 @@ impl<Id> MenuItem<Id> {
     }
 }
 
-/// Menu outcome.
+/// Menu outcome (cursor is menu-local; scene owns surface focus).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum MenuOutcome<Id> {
     /// No change.
     Ignored,
-    /// Focus moved.
-    FocusChanged,
+    /// Cursor moved among items.
+    CursorMoved,
     /// Item activated.
     Activated(Id),
     /// Esc closed.
     Closed,
 }
 
-/// Menu state (roving focus).
+/// Menu state (roving cursor within the open menu).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct MenuState {
-    focus_index: usize,
+    cursor_index: usize,
     open: bool,
+    /// Host grants input (overlay/scene focused).
+    accepts_input: bool,
+    /// Painted origin for mouse hits.
+    origin: (u16, u16),
+    /// Painted height.
+    painted_rows: u16,
 }
 
 impl MenuState {
-    /// Closed.
+    /// Open menu, cursor on first enabled item after first paint/key.
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            focus_index: 0,
+            cursor_index: 0,
             open: true,
+            accepts_input: true,
+            origin: (0, 0),
+            painted_rows: 0,
         }
     }
 
+    /// Cursor index.
     #[must_use]
-    /// Focus index.
+    pub const fn cursor_index(self) -> usize {
+        self.cursor_index
+    }
+
+    /// Deprecated name for [`Self::cursor_index`].
+    #[deprecated(note = "use cursor_index")]
+    #[must_use]
     pub const fn focus_index(self) -> usize {
-        self.focus_index
+        self.cursor_index
+    }
+
+    /// Whether the menu is open.
+    #[must_use]
+    pub const fn is_open(self) -> bool {
+        self.open
+    }
+
+    /// Host input gate.
+    pub fn set_accepts_input(&mut self, accepts: bool) {
+        self.accepts_input = accepts;
     }
 
     fn next_enabled<Id>(items: &[MenuItem<Id>], from: usize, dir: isize) -> usize {
@@ -125,36 +168,128 @@ impl MenuState {
         from
     }
 
+    fn ensure_cursor_enabled<Id>(&mut self, items: &[MenuItem<Id>]) {
+        if items.is_empty() {
+            self.cursor_index = 0;
+            return;
+        }
+        self.cursor_index = self.cursor_index.min(items.len() - 1);
+        if !items[self.cursor_index].enabled {
+            self.cursor_index = Self::next_enabled(items, self.cursor_index, 1);
+        }
+    }
+
     /// Keyboard navigation.
     pub fn handle_key<Id: Clone>(
         &mut self,
         key: KeyEvent,
         items: &[MenuItem<Id>],
     ) -> MenuOutcome<Id> {
-        if items.is_empty() || key.kind == KeyEventKind::Release {
+        if !self.accepts_input
+            || !self.open
+            || items.is_empty()
+            || key.kind == KeyEventKind::Release
+        {
             return MenuOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
-        match key.code {
-            KeyCode::Esc if is_press => {
-                self.open = false;
-                MenuOutcome::Closed
+        self.ensure_cursor_enabled(items);
+        if let Some(intent) = crate::interaction::default_menu_intent(key) {
+            let out = self.handle_intent(intent, items);
+            if !matches!(out, MenuOutcome::Ignored) {
+                return out;
             }
-            KeyCode::Down => {
-                self.focus_index = Self::next_enabled(items, self.focus_index, 1);
-                MenuOutcome::FocusChanged
+        }
+        MenuOutcome::Ignored
+    }
+
+    /// Intent routing.
+    pub fn handle_intent<Id: Clone>(
+        &mut self,
+        intent: UiIntent,
+        items: &[MenuItem<Id>],
+    ) -> MenuOutcome<Id> {
+        if !self.accepts_input || !self.open || items.is_empty() {
+            return MenuOutcome::Ignored;
+        }
+        self.ensure_cursor_enabled(items);
+        match intent {
+            UiIntent::Move(NavigationMove::Next) => {
+                self.cursor_index = Self::next_enabled(items, self.cursor_index, 1);
+                MenuOutcome::CursorMoved
             }
-            KeyCode::Up => {
-                self.focus_index = Self::next_enabled(items, self.focus_index, -1);
-                MenuOutcome::FocusChanged
+            UiIntent::Move(NavigationMove::Previous) => {
+                self.cursor_index = Self::next_enabled(items, self.cursor_index, -1);
+                MenuOutcome::CursorMoved
             }
-            KeyCode::Enter | KeyCode::Char(' ') if is_press => {
-                let item = &items[self.focus_index.min(items.len() - 1)];
+            UiIntent::Move(NavigationMove::First) => {
+                if let Some(i) = items.iter().position(|it| it.enabled) {
+                    self.cursor_index = i;
+                }
+                MenuOutcome::CursorMoved
+            }
+            UiIntent::Move(NavigationMove::Last) => {
+                if let Some(i) = items.iter().rposition(|it| it.enabled) {
+                    self.cursor_index = i;
+                }
+                MenuOutcome::CursorMoved
+            }
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
+                let item = &items[self.cursor_index.min(items.len() - 1)];
                 if item.enabled {
                     MenuOutcome::Activated(item.id.clone())
                 } else {
                     MenuOutcome::Ignored
                 }
+            }
+            UiIntent::Cancel | UiIntent::Close => {
+                self.open = false;
+                MenuOutcome::Closed
+            }
+            _ => MenuOutcome::Ignored,
+        }
+    }
+
+    /// Click to cursor / activate.
+    pub fn handle_mouse<Id: Clone>(
+        &mut self,
+        event: MouseEvent,
+        items: &[MenuItem<Id>],
+    ) -> MenuOutcome<Id> {
+        if !self.accepts_input || !self.open || items.is_empty() {
+            return MenuOutcome::Ignored;
+        }
+        let (ox, oy) = self.origin;
+        match event.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                let row = usize::from(event.position.y.saturating_sub(oy));
+                // Account for separators: map painted row to item index approximately
+                // by walking paint order.
+                let mut y = 0usize;
+                for (i, item) in items.iter().enumerate() {
+                    if item.separator_before {
+                        y = y.saturating_add(1);
+                    }
+                    if y == row {
+                        if !item.enabled {
+                            return MenuOutcome::Ignored;
+                        }
+                        if self.cursor_index == i {
+                            return MenuOutcome::Activated(item.id.clone());
+                        }
+                        self.cursor_index = i;
+                        return MenuOutcome::CursorMoved;
+                    }
+                    y = y.saturating_add(1);
+                }
+                MenuOutcome::Ignored
+            }
+            MouseEventKind::ScrollDown => {
+                self.cursor_index = Self::next_enabled(items, self.cursor_index, 1);
+                MenuOutcome::CursorMoved
+            }
+            MouseEventKind::ScrollUp => {
+                self.cursor_index = Self::next_enabled(items, self.cursor_index, -1);
+                MenuOutcome::CursorMoved
             }
             _ => MenuOutcome::Ignored,
         }
@@ -165,54 +300,113 @@ impl MenuState {
 #[derive(Debug, Clone, Copy)]
 pub struct Menu<'a, Id> {
     items: &'a [MenuItem<Id>],
-    tokens: &'a DesignSystem,
+    system: &'a DesignSystem,
+    focused: bool,
+    ascii: bool,
+    colorless: bool,
 }
 
 impl<'a, Id> Menu<'a, Id> {
-    /// Items.
+    /// Items + design system.
     #[must_use]
-    pub const fn new(items: &'a [MenuItem<Id>], tokens: &'a DesignSystem) -> Self {
-        Self { items, tokens }
+    pub const fn new(items: &'a [MenuItem<Id>], system: &'a DesignSystem) -> Self {
+        Self {
+            items,
+            system,
+            focused: true,
+            ascii: false,
+            colorless: false,
+        }
+    }
+
+    /// Scene surface focus chrome.
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// ASCII check/cursor glyphs.
+    #[must_use]
+    pub const fn ascii(mut self, ascii: bool) -> Self {
+        self.ascii = ascii;
+        self
+    }
+
+    /// Reduced-color roles.
+    #[must_use]
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
     }
 
     /// Render.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &MenuState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut MenuState) {
         if area.is_empty() {
+            state.painted_rows = 0;
             return;
         }
+        state.origin = (area.x, area.y);
+        let surface = self.focused && state.accepts_input;
         let mut y = area.y;
+        let mut rows = 0u16;
         for (i, item) in self.items.iter().enumerate() {
             if y >= area.bottom() {
                 break;
             }
             if item.separator_before {
-                let line = "─".repeat(usize::from(area.width));
+                let line = if self.ascii {
+                    "-".repeat(usize::from(area.width))
+                } else {
+                    "─".repeat(usize::from(area.width))
+                };
                 buffer.set_stringn(
                     area.x,
                     y,
                     &line,
                     usize::from(area.width),
-                    self.tokens.style(Role::Border),
+                    self.system.style(Role::Border),
                 );
                 y = y.saturating_add(1);
+                rows = rows.saturating_add(1);
                 if y >= area.bottom() {
                     break;
                 }
             }
-            let focused = state.focus_index == i;
-            let style = if !item.enabled {
-                self.tokens.style(Role::TextDisabled)
-            } else if focused {
-                self.tokens.style(Role::Selection)
+            let cursor = state.cursor_index == i;
+            let style = if self.colorless {
+                if !item.enabled {
+                    self.system.style(Role::TextMuted)
+                } else if cursor && surface {
+                    self.system.style(Role::TextStrong)
+                } else {
+                    self.system.style(Role::Text)
+                }
+            } else if !item.enabled {
+                self.system.style(Role::TextDisabled)
+            } else if cursor && surface {
+                self.system.style(Role::Selection)
             } else {
-                self.tokens.style(Role::Text)
+                self.system.style(Role::Text)
             };
             let check = match item.checked {
+                Some(true) if self.ascii => "[x] ",
                 Some(true) => "✓ ",
+                Some(false) if self.ascii => "[ ] ",
                 Some(false) => "  ",
                 None => "",
             };
-            let mut line = format!("{check}{}", item.label);
+            let cursor_g = if cursor && surface {
+                if self.ascii { "> " } else { "› " }
+            } else {
+                "  "
+            };
+            let disabled_mark = if !item.enabled {
+                if self.ascii { " #" } else { " ⊘" }
+            } else {
+                ""
+            };
+            let mut line = format!("{cursor_g}{check}{}{disabled_mark}", item.label);
             if let Some(sc) = &item.shortcut {
                 line.push(' ');
                 line.push_str(sc);
@@ -220,7 +414,9 @@ impl<'a, Id> Menu<'a, Id> {
             let text = take_display_cols(&line, usize::from(area.width));
             buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
             y = y.saturating_add(1);
+            rows = rows.saturating_add(1);
         }
+        state.painted_rows = rows;
     }
 }
 
@@ -288,7 +484,9 @@ pub enum SidebarOutcome<Id> {
 pub struct SidebarState<Id> {
     selected: Option<Id>,
     expanded: bool,
-    focus_index: usize,
+    cursor_index: usize,
+    /// Host grants input.
+    pub accepts_input: bool,
 }
 
 impl<Id: Clone + PartialEq> SidebarState<Id> {
@@ -298,7 +496,8 @@ impl<Id: Clone + PartialEq> SidebarState<Id> {
         Self {
             selected,
             expanded: true,
-            focus_index: 0,
+            cursor_index: 0,
+            accepts_input: true,
         }
     }
 
@@ -314,22 +513,31 @@ impl<Id: Clone + PartialEq> SidebarState<Id> {
         self.expanded
     }
 
+    /// Cursor index.
+    #[must_use]
+    pub const fn cursor_index(&self) -> usize {
+        self.cursor_index
+    }
+
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, items: &[SidebarItem<Id>]) -> SidebarOutcome<Id> {
-        if items.is_empty() || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || items.is_empty() || key.kind != KeyEventKind::Press {
             return SidebarOutcome::Ignored;
         }
         match key.code {
-            KeyCode::Down => {
-                self.focus_index = (self.focus_index + 1) % items.len();
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.cursor_index = (self.cursor_index + 1) % items.len();
                 SidebarOutcome::Ignored
             }
-            KeyCode::Up => {
-                self.focus_index = self.focus_index.checked_sub(1).unwrap_or(items.len() - 1);
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.cursor_index = self.cursor_index.checked_sub(1).unwrap_or(items.len() - 1);
                 SidebarOutcome::Ignored
             }
             KeyCode::Enter | KeyCode::Char(' ') => {
-                let id = items[self.focus_index].id.clone();
+                let id = items[self.cursor_index.min(items.len() - 1)].id.clone();
+                if !items[self.cursor_index.min(items.len() - 1)].enabled {
+                    return SidebarOutcome::Ignored;
+                }
                 self.selected = Some(id.clone());
                 SidebarOutcome::Selected(id)
             }
@@ -348,14 +556,35 @@ impl<Id: Clone + PartialEq> SidebarState<Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct Sidebar<'a, Id> {
     items: &'a [SidebarItem<Id>],
-    tokens: &'a DesignSystem,
+    system: &'a DesignSystem,
+    focused: bool,
+    ascii: bool,
 }
 
 impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
-    /// Items.
+    /// Items + design system.
     #[must_use]
-    pub const fn new(items: &'a [SidebarItem<Id>], tokens: &'a DesignSystem) -> Self {
-        Self { items, tokens }
+    pub const fn new(items: &'a [SidebarItem<Id>], system: &'a DesignSystem) -> Self {
+        Self {
+            items,
+            system,
+            focused: true,
+            ascii: false,
+        }
+    }
+
+    /// Scene surface focus.
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// ASCII rail glyph fallback.
+    #[must_use]
+    pub const fn ascii(mut self, ascii: bool) -> Self {
+        self.ascii = ascii;
+        self
     }
 
     /// Render rail or full labels.
@@ -363,25 +592,39 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
         if area.is_empty() {
             return;
         }
+        let surface = self.focused && state.accepts_input;
         let mut y = area.y;
         for (i, item) in self.items.iter().enumerate() {
             if y >= area.bottom() {
                 break;
             }
             let selected = state.selected.as_ref() == Some(&item.id);
-            let focused = state.focus_index == i;
-            let style = if selected {
-                self.tokens.style(Role::Selection)
-            } else if focused {
-                self.tokens.style(Role::Focus)
+            let cursor = state.cursor_index == i;
+            let style = if !item.enabled {
+                self.system.style(Role::TextDisabled)
+            } else if selected {
+                self.system.style(Role::Selection)
+            } else if cursor && surface {
+                self.system.style(Role::Focus)
             } else {
-                self.tokens.style(Role::Text)
+                self.system.style(Role::Text)
+            };
+            let gutter = if cursor && surface {
+                if self.ascii { ">" } else { "›" }
+            } else if selected {
+                if self.ascii { "*" } else { "•" }
+            } else {
+                " "
             };
             let text = if state.expanded {
-                take_display_cols(&item.label, usize::from(area.width))
+                take_display_cols(&format!("{gutter} {}", item.label), usize::from(area.width))
             } else {
-                let ch = item.label.chars().next().unwrap_or('·');
-                ch.to_string()
+                let ch = item
+                    .label
+                    .chars()
+                    .next()
+                    .unwrap_or(if self.ascii { '.' } else { '·' });
+                format!("{gutter}{ch}")
             };
             buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
             y = y.saturating_add(1);
@@ -803,6 +1046,43 @@ mod tests {
     use crate::input::KeyModifiers;
 
     #[test]
+    fn menu_cursor_moved_not_focus_changed() {
+        let items = [MenuItem::new("a", "A"), MenuItem::new("b", "B")];
+        let mut state = MenuState::new();
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items),
+            MenuOutcome::CursorMoved
+        ));
+        assert_eq!(state.cursor_index(), 1);
+    }
+
+    #[test]
+    fn menu_accepts_input_gate() {
+        let items = [MenuItem::new("a", "A")];
+        let mut state = MenuState::new();
+        state.set_accepts_input(false);
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            MenuOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn menu_jk_and_intent_activate() {
+        let items = [MenuItem::new("a", "A"), MenuItem::new("b", "B")];
+        let mut state = MenuState::new();
+        let _ = state.handle_key(
+            KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+            &items,
+        );
+        assert_eq!(state.cursor_index(), 1);
+        assert!(matches!(
+            state.handle_intent(UiIntent::Activate, &items),
+            MenuOutcome::Activated("b")
+        ));
+    }
+
+    #[test]
     fn menu_skips_disabled_on_roving() {
         let items = [
             MenuItem::new("a", "A"),
@@ -811,7 +1091,7 @@ mod tests {
         ];
         let mut state = MenuState::new();
         let _ = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
-        assert_eq!(state.focus_index(), 2);
+        assert_eq!(state.cursor_index(), 2);
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
             MenuOutcome::Activated("c")
@@ -923,5 +1203,56 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
             BreadcrumbsOutcome::Navigate("a")
         ));
+    }
+
+    #[test]
+    fn no_menu_focus_changed_in_production() {
+        let src = include_str!("menu_nav.rs");
+        let head = src
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or(src)
+            .lines()
+            .filter(|l| {
+                let t = l.trim_start();
+                !t.starts_with("//") && !t.starts_with("//!")
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(!head.contains("FocusChanged"));
+        assert!(head.contains("CursorMoved"));
+        assert!(head.contains("cursor_index"));
+    }
+
+    #[test]
+    fn menu_paint_cursor_gutter_and_narrow() {
+        use ratatui_core::backend::TestBackend;
+        use ratatui_core::terminal::Terminal;
+        let system = DesignSystem::default();
+        let items = [
+            MenuItem::new("a", "Alpha"),
+            MenuItem::new("b", "Beta").checked(true),
+            MenuItem::new("c", "Gamma").enabled(false),
+        ];
+        let mut state = MenuState::new();
+        for (w, h, ascii) in [(40, 8, false), (12, 5, true)] {
+            let mut terminal = Terminal::new(TestBackend::new(w, h)).unwrap();
+            terminal
+                .draw(|f| {
+                    Menu::new(&items, &system)
+                        .focused(true)
+                        .ascii(ascii)
+                        .render(f.area(), f.buffer_mut(), &mut state);
+                })
+                .unwrap();
+            let text: String = terminal
+                .backend()
+                .buffer()
+                .content()
+                .iter()
+                .map(|c| c.symbol().to_string())
+                .collect();
+            assert!(text.contains("Alpha") || text.contains("A"));
+        }
     }
 }

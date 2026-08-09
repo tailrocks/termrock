@@ -139,6 +139,25 @@ pub fn default_transcript_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for [`crate::widgets::Menu`] / context menus.
+#[must_use]
+pub fn default_menu_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let is_press = key.kind == KeyEventKind::Press;
+    match key.code {
+        KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Char(' ') if is_press => Some(UiIntent::Toggle),
+        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::DataTable`] navigation.
 ///
 /// Product chords (sort `s`, filter `/`, expand Shift+arrow, copy, edit) stay on
