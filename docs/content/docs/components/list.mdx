@@ -32,29 +32,49 @@ Unicode list
 
 ```rust
 use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, widgets::{List, ListRow, ListState, RowRole}};
+use termrock::{
+    style::DesignSystem,
+    widgets::{List, ListClickPolicy, ListRow, ListState},
+};
 
-let theme = Theme::default();
-let rows = [ListRow { id: "alpha", label: Line::from("Alpha"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true, loading: false }];
-let tokens = DesignTokens::default();
-let list = List::new(&rows, &tokens);
+let system = DesignSystem::phosphor();
+let rows = [
+    ListRow::item("alpha", Line::from("Alpha")).badge(Line::from("12 ms")),
+    ListRow::item("beta", Line::from("Beta")).secondary(Line::from("ready")),
+];
+let list = List::from_system(&rows, &system);
 let mut state = ListState::new(Some("alpha"));
+state.set_click_policy(ListClickPolicy::Select); // click selects; Enter activates
 let outcome = state.select_next(&rows);
+```
+
+Empty lists paint an optional message:
+
+```rust
+List::from_system(&[], &system).empty_message(Line::from("No results"));
 ```
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | covered |
-| Mouse | covered |
-| Focus | covered |
-| Non-color cues | covered |
+| Keyboard | covered (`UiIntent` / `handle_intent`) |
+| Mouse | covered (hover, click policy, wheel) |
+| Focus | covered (focus-visible underline on primary) |
+| Non-color cues | covered (gutter, underline, check glyphs) |
 | Unicode | covered |
-| Narrow terminal | covered |
+| Narrow terminal | covered (part drop order) |
+| Empty / loading / disabled | covered |
 
 ## Stories
 
-- `list/narrow` — Narrow list
-- `list/selection` — List
-- `list/unicode` — Unicode list
+- `list/selection` — multi-check + metadata
+- `list/narrow` — contraction
+- `list/tiny` — extreme width
+- `list/unicode` — CJK / emoji / combining
+- `list/ascii` — ASCII glyph set
+- `list/multi` — multi-select chrome
+- `list/empty` — empty message
+- `list/loading` — per-row loading
+- `list/disabled` — disabled skip
+- `list/composed-row` — full anatomy

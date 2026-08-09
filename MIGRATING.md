@@ -70,6 +70,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0054 | `v0.12.0` | [Data and review surfaces](migrations/0054-v0.12.0-data-review-surfaces.md) |
 | 0055 | `v0.12.0` | [Source registry CLI](migrations/0055-v0.12.0-source-registry-cli.md) |
 | 0056 | `v0.12.0` | [Application blocks](migrations/0056-v0.12.0-application-blocks.md) |
+| 0057 | `v0.12.0` | [Category-leading List redesign](migrations/0057-v0.12.0-list-category-leading.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -115,7 +115,7 @@ pub use image_surface::{ImageMeta, ImageProtocol, ImageSurface, protocol_emissio
 pub use jump_overlay::{
     JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges,
 };
-pub use list::{List, ListRow, ListState, RowRole};
+pub use list::{List, ListClickPolicy, ListRow, ListState, RowRole};
 pub use log_pane::{LogPane, LogPaneState};
 pub use markdown::{MarkdownBlock, MarkdownBlockKind, MarkdownView, project_plain_lines};
 pub use menu_nav::{

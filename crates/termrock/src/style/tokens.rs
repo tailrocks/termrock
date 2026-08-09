@@ -53,6 +53,33 @@ impl GlyphSet {
             Self::Ascii => "-",
         }
     }
+
+    /// Multi-select checked marker (without trailing space).
+    #[must_use]
+    pub const fn check_on(self) -> &'static str {
+        match self {
+            Self::Unicode => "☑",
+            Self::Ascii => "[x]",
+        }
+    }
+
+    /// Multi-select unchecked marker (without trailing space).
+    #[must_use]
+    pub const fn check_off(self) -> &'static str {
+        match self {
+            Self::Unicode => "☐",
+            Self::Ascii => "[ ]",
+        }
+    }
+
+    /// Loading / busy glyph for composed leading slots.
+    #[must_use]
+    pub const fn loading(self) -> &'static str {
+        match self {
+            Self::Unicode => "…",
+            Self::Ascii => "...",
+        }
+    }
 }
 
 /// How list/menu selection is painted.
@@ -179,18 +206,44 @@ impl DesignTokens {
     }
 
     /// Resolves styles for a **list row** chrome recipe (one vertical slice).
+    ///
+    /// Prefer [`Self::resolve_list_row`] with a full [`ListRowVisualState`] when
+    /// hover/loading/checked affect paint.
     #[must_use]
     pub fn list_row_recipe(&self, selected: bool, focused: bool, enabled: bool) -> ListRowRecipe {
-        let label = if !enabled {
+        self.resolve_list_row(ListRowVisualState {
+            selected,
+            focused,
+            hovered: false,
+            enabled,
+            loading: false,
+            checked: false,
+        })
+    }
+
+    /// Full part×state list row recipe (quiet canvas, bright intent).
+    #[must_use]
+    pub fn resolve_list_row(&self, state: ListRowVisualState) -> ListRowRecipe {
+        let disabled = !state.enabled;
+        let label = if disabled {
             self.theme.style(Role::TextDisabled)
-        } else if selected && matches!(self.selection, SelectionChrome::Fill) {
+        } else if state.selected && matches!(self.selection, SelectionChrome::Fill) {
             self.theme.style(Role::Selection)
-        } else if selected {
+        } else if state.selected {
             self.theme.style(Role::TextStrong)
+        } else if state.loading {
+            self.theme.style(Role::TextMuted)
         } else {
             self.theme.style(Role::Text)
         };
-        let gutter = if selected {
+        let secondary = self.theme.style(if disabled {
+            Role::TextDisabled
+        } else {
+            Role::TextMuted
+        });
+        let shortcut = secondary;
+        let gutter = if state.selected {
+            // Accent gutter for selection; focus-visible is underline on primary.
             Some((
                 self.glyphs.selection_gutter(),
                 self.theme.style(Role::Accent),
@@ -198,21 +251,51 @@ impl DesignTokens {
         } else {
             None
         };
-        let trailing = self.theme.style(if enabled {
-            Role::TextMuted
-        } else {
-            Role::TextDisabled
-        });
+        let use_fill = state.selected && matches!(self.selection, SelectionChrome::Fill);
+        let use_tint = state.selected && matches!(self.selection, SelectionChrome::Tint);
+        let hover_fill = state.hovered && !state.selected && !disabled;
         ListRowRecipe {
             label,
-            trailing,
+            secondary,
+            shortcut,
+            trailing: secondary,
             gutter,
             pad_x: self.spacing.pad_x,
-            use_fill: selected && matches!(self.selection, SelectionChrome::Fill),
-            show_focus_underline: focused && selected,
+            use_fill,
+            use_tint,
+            hover_fill,
+            show_focus_underline: state.focused && state.selected && !disabled,
             focus: self.theme.style(Role::Focus),
+            hover: self.theme.style(Role::LinkHover),
+            tint: self.theme.style(Role::Focus),
+            check_on: self.glyphs.check_on(),
+            check_off: self.glyphs.check_off(),
+            loading_glyph: self.glyphs.loading(),
+            show_gutter_slot: matches!(
+                self.selection,
+                SelectionChrome::Gutter | SelectionChrome::Tint | SelectionChrome::Fill
+            ),
+            checked: state.checked,
+            loading: state.loading,
         }
     }
+}
+
+/// Runtime visual facts for one list row (widget state + row projection).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct ListRowVisualState {
+    /// Cursor / keyboard selection.
+    pub selected: bool,
+    /// List owns focus and this row is the cursor.
+    pub focused: bool,
+    /// Pointer hover (enabled item only).
+    pub hovered: bool,
+    /// Row accepts interaction.
+    pub enabled: bool,
+    /// Row is loading (leading spinner/ellipsis).
+    pub loading: bool,
+    /// Multi-select membership.
+    pub checked: bool,
 }
 
 /// Semantic panel chrome emphasis for recipes (mirrors widget emphasis).
@@ -283,6 +366,12 @@ impl DesignSystem {
         self.tokens.list_row_recipe(selected, focused, enabled)
     }
 
+    /// Full list row recipe from visual state.
+    #[must_use]
+    pub fn resolve_list_row(&self, state: ListRowVisualState) -> ListRowRecipe {
+        self.tokens.resolve_list_row(state)
+    }
+
     /// Panel chrome recipe.
     #[must_use]
     pub fn panel_recipe(&self, emphasis: PanelChrome) -> PanelRecipe {
@@ -296,12 +385,16 @@ impl DesignSystem {
     }
 }
 
-/// Resolved paint recipe for one list/menu row.
+/// Resolved paint recipe for one list/menu row (part×state plan).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ListRowRecipe {
     /// Primary label style.
     pub label: Style,
-    /// Trailing metadata style.
+    /// Secondary metadata style.
+    pub secondary: Style,
+    /// Shortcut hint style.
+    pub shortcut: Style,
+    /// Trailing metadata style (legacy alias of secondary tone).
     pub trailing: Style,
     /// Optional leading gutter glyph + style.
     pub gutter: Option<(&'static str, Style)>,
@@ -309,10 +402,30 @@ pub struct ListRowRecipe {
     pub pad_x: u16,
     /// Whether the row background uses selection fill.
     pub use_fill: bool,
-    /// Whether to paint a focus underline cue.
+    /// Whether selection uses tint (Focus role) without full Selection fill.
+    pub use_tint: bool,
+    /// Whether hover should tint the row background.
+    pub hover_fill: bool,
+    /// Whether to paint a focus underline cue on the primary label.
     pub show_focus_underline: bool,
-    /// Focus accent style.
+    /// Focus accent style (underline / border role).
     pub focus: Style,
+    /// Hover style when not selected.
+    pub hover: Style,
+    /// Tint style for [`SelectionChrome::Tint`].
+    pub tint: Style,
+    /// Multi-select checked glyph.
+    pub check_on: &'static str,
+    /// Multi-select unchecked glyph.
+    pub check_off: &'static str,
+    /// Loading leading glyph.
+    pub loading_glyph: &'static str,
+    /// Reserve leading gutter columns even when unselected (stable alignment).
+    pub show_gutter_slot: bool,
+    /// Multi-select membership for check paint.
+    pub checked: bool,
+    /// Loading flag for leading glyph override.
+    pub loading: bool,
 }
 
 #[cfg(test)]

@@ -673,6 +673,69 @@ pub(crate) fn stories() -> Vec<Story> {
             list_unicode,
         ),
         Story::new(
+            "list/multi",
+            "Multi-select list",
+            "List",
+            "Checked membership with glyph catalog chrome.",
+            42,
+            6,
+            list_multi,
+        ),
+        Story::new(
+            "list/empty",
+            "Empty list",
+            "List",
+            "Empty-message projection when there are no rows.",
+            32,
+            4,
+            list_empty,
+        ),
+        Story::new(
+            "list/loading",
+            "Loading list rows",
+            "List",
+            "Per-row loading leading glyph with muted primary.",
+            40,
+            5,
+            list_loading,
+        ),
+        Story::new(
+            "list/disabled",
+            "Disabled list rows",
+            "List",
+            "Disabled rows skipped by keyboard; dim recipe.",
+            36,
+            5,
+            list_disabled,
+        ),
+        Story::new(
+            "list/ascii",
+            "ASCII list glyphs",
+            "List",
+            "ASCII gutter and check fallbacks under GlyphSet::Ascii.",
+            36,
+            5,
+            list_ascii,
+        ),
+        Story::new(
+            "list/composed-row",
+            "Composed list anatomy",
+            "List",
+            "Leading, secondary, badge, and shortcut parts.",
+            48,
+            5,
+            list_composed,
+        ),
+        Story::new(
+            "list/tiny",
+            "Tiny list",
+            "List",
+            "Primary identity survives extreme width contraction.",
+            10,
+            4,
+            list_tiny,
+        ),
+        Story::new(
             "text-input/unicode",
             "Unicode text input",
             "TextInput",
@@ -2513,6 +2576,91 @@ fn list(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = ListState::new(Some("beta"));
     state.enable_multi_select();
     state.selection_mut().unwrap().toggle(&"alpha");
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+
+fn list_multi(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default())
+        .selection(termrock::style::SelectionChrome::Gutter);
+    let rows = list_rows();
+    let mut state = ListState::new(Some("beta"));
+    state.enable_multi_select();
+    state.selection_mut().unwrap().toggle(&"alpha");
+    state.selection_mut().unwrap().toggle(&"beta");
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+
+fn list_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows: [ListRow<'_, &str>; 0] = [];
+    let mut state = ListState::<&str>::default();
+    let list = List::new(&rows, &tokens).empty_message(Line::from("No matching items"));
+    frame.render_stateful_widget(&list, area, &mut state);
+}
+
+fn list_loading(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows = [
+        ListRow::item("ready", Line::from("Ready job")).badge(Line::from("ok")),
+        ListRow::item("busy", Line::from("Fetching metrics")).loading(),
+        ListRow::item("queued", Line::from("Queued deploy"))
+            .secondary(Line::from("waiting"))
+            .loading(),
+    ];
+    let mut state = ListState::new(Some("busy"));
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+
+fn list_disabled(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows = [
+        ListRow::item("live", Line::from("Live service")),
+        ListRow::item("off", Line::from("Suspended")).disabled(),
+        ListRow::item("next", Line::from("Next target")),
+    ];
+    let mut state = ListState::new(Some("live"));
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+
+fn list_ascii(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default())
+        .glyphs(termrock::style::GlyphSet::Ascii)
+        .selection(termrock::style::SelectionChrome::Gutter);
+    let rows = list_rows();
+    let mut state = ListState::new(Some("beta"));
+    state.enable_multi_select();
+    state.selection_mut().unwrap().toggle(&"beta");
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+
+fn list_composed(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let rows = [
+        ListRow::item("build", Line::from("Build"))
+            .leading(Line::from("*"))
+            .secondary(Line::from("src/lib.rs"))
+            .badge(Line::from("ok"))
+            .shortcut("⌘B"),
+        ListRow::item("test", Line::from("Test"))
+            .leading(Line::from("›"))
+            .secondary(Line::from("crates/termrock"))
+            .badge(Line::from("12"))
+            .shortcut("⌘T"),
+        ListRow::item("lint", Line::from("Lint")).loading().shortcut("⌘L"),
+    ];
+    let mut state = ListState::new(Some("build"));
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+
+fn list_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::Compact);
+    let rows = [
+        ListRow::item("id", Line::from("Identity"))
+            .badge(Line::from("99"))
+            .shortcut("⌘K"),
+        ListRow::item("meta", Line::from("Metadata")).secondary(Line::from("path")),
+    ];
+    let mut state = ListState::new(Some("id"));
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 

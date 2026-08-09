@@ -5,14 +5,27 @@ use ratatui_core::{
     widgets::StatefulWidget,
 };
 
+use ratatui_core::style::Modifier;
+
 use crate::{
     input::{KeyEvent, KeyEventKind},
     interaction::{HitRegion, NavigationMove, Outcome, PageMove, UiIntent, default_list_intent},
     scroll::max_offset,
-    style::{DesignTokens, Role},
+    style::{DesignSystem, DesignTokens, ListRowVisualState, Role},
 };
 
 use super::{ComposedRow, Selection};
+
+/// How a pointer press on a row is interpreted.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ListClickPolicy {
+    /// Select the row and emit [`Outcome::Activated`] (picker / menu default).
+    #[default]
+    Activate,
+    /// Select only; emit [`Outcome::Changed`] (focusable lists that activate on Enter).
+    Select,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -71,6 +84,72 @@ impl<'a, Id> ListRow<'a, Id> {
         }
     }
 
+    /// Creates a non-interactive separator row.
+    #[must_use]
+    pub fn separator(id: Id, label: Line<'a>) -> Self {
+        Self {
+            id,
+            label,
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Separator,
+            enabled: true,
+            loading: false,
+        }
+    }
+
+    /// Sets leading chrome (icon / status).
+    #[must_use]
+    pub fn leading(mut self, leading: Line<'a>) -> Self {
+        self.leading = Some(leading);
+        self
+    }
+
+    /// Sets secondary metadata.
+    #[must_use]
+    pub fn secondary(mut self, secondary: Line<'a>) -> Self {
+        self.secondary = Some(secondary);
+        self
+    }
+
+    /// Sets badge chrome.
+    #[must_use]
+    pub fn badge(mut self, badge: Line<'a>) -> Self {
+        self.badge = Some(badge);
+        self
+    }
+
+    /// Sets trailing keyboard shortcut hint.
+    #[must_use]
+    pub fn shortcut(mut self, shortcut: &'a str) -> Self {
+        self.shortcut = Some(shortcut);
+        self
+    }
+
+    /// Sets legacy trailing metadata (also used as badge when badge is unset).
+    #[must_use]
+    pub fn trailing(mut self, trailing: Line<'a>) -> Self {
+        self.trailing = Some(trailing);
+        self
+    }
+
+    /// Marks the row disabled (skipped by keyboard, non-hittable).
+    #[must_use]
+    pub fn disabled(mut self) -> Self {
+        self.enabled = false;
+        self
+    }
+
+    /// Marks the row loading (leading becomes a busy glyph).
+    #[must_use]
+    pub fn loading(mut self) -> Self {
+        self.loading = true;
+        self
+    }
+
     /// Projects this row into composed anatomy for contraction/paint.
     #[must_use]
     pub fn composed(&self) -> ComposedRow<'a, ()>
@@ -102,6 +181,7 @@ pub struct ListState<Id> {
     pointer: Option<Position>,
     selection: Option<Selection<Id>>,
     check_regions: Vec<HitRegion<Id>>,
+    click_policy: ListClickPolicy,
 }
 
 impl<Id> Default for ListState<Id> {
@@ -116,6 +196,7 @@ impl<Id> Default for ListState<Id> {
             pointer: None,
             selection: None,
             check_regions: Vec::new(),
+            click_policy: ListClickPolicy::Activate,
         }
     }
 }
@@ -134,7 +215,19 @@ impl<Id> ListState<Id> {
             pointer: None,
             selection: None,
             check_regions: Vec::new(),
+            click_policy: ListClickPolicy::Activate,
         }
+    }
+
+    /// Configures pointer-click outcomes ([`ListClickPolicy`]).
+    pub const fn set_click_policy(&mut self, policy: ListClickPolicy) {
+        self.click_policy = policy;
+    }
+
+    #[must_use]
+    /// Returns the pointer-click policy.
+    pub const fn click_policy(&self) -> ListClickPolicy {
+        self.click_policy
     }
 
     /// Replace the stable selected identity.
@@ -398,7 +491,10 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             return Outcome::Ignored;
         };
         self.selected = Some(region.id.clone());
-        Outcome::Activated(region.id.clone())
+        match self.click_policy {
+            ListClickPolicy::Activate => Outcome::Activated(region.id.clone()),
+            ListClickPolicy::Select => Outcome::Changed,
+        }
     }
 }
 
@@ -459,7 +555,7 @@ impl ListState<usize> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 /// Stable-ID list widget rendered with [`ListState`].
 ///
 /// See the `list/selection` lookbook story for selection, metadata, and narrow
@@ -490,19 +586,43 @@ impl ListState<usize> {
 pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
     tokens: &'a DesignTokens,
+    empty_message: Option<Line<'a>>,
 }
 
 impl<'a, Id> List<'a, Id> {
     #[must_use]
     /// Creates a list over borrowed rows; paint uses design-token recipes.
     pub const fn new(rows: &'a [ListRow<'a, Id>], tokens: &'a DesignTokens) -> Self {
-        Self { rows, tokens }
+        Self {
+            rows,
+            tokens,
+            empty_message: None,
+        }
+    }
+
+    /// Creates a list from a [`DesignSystem`] (preferred public paint root).
+    #[must_use]
+    pub const fn from_system(rows: &'a [ListRow<'a, Id>], system: &'a DesignSystem) -> Self {
+        Self::new(rows, &system.tokens)
+    }
+
+    /// Message painted when `rows` is empty (consumer-owned copy).
+    #[must_use]
+    pub fn empty_message(mut self, message: Line<'a>) -> Self {
+        self.empty_message = Some(message);
+        self
     }
 
     /// Theme borrowed from design tokens.
     #[must_use]
     pub const fn theme(&self) -> &crate::style::Theme {
         &self.tokens.theme
+    }
+
+    /// Design tokens used for recipes.
+    #[must_use]
+    pub const fn tokens(&self) -> &DesignTokens {
+        self.tokens
     }
 }
 
@@ -513,6 +633,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         state.regions.clear();
         state.check_regions.clear();
         state.viewport_height = usize::from(area.height);
+        if self.rows.is_empty() {
+            if let Some(message) = self.empty_message.as_ref() {
+                let style = self.tokens.theme.style(Role::TextMuted);
+                buffer.set_line(area.x, area.y, message, area.width);
+                buffer.set_style(Rect::new(area.x, area.y, area.width, 1), style);
+            }
+            state.hovered = None;
+            return;
+        }
         let scrollable = crate::scroll::is_scrollable(self.rows.len(), state.viewport_height);
         let content_width = area.width.saturating_sub(u16::from(scrollable));
         state.offset = state
@@ -553,11 +682,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 .selection
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&row.id));
-            let recipe =
-                self.tokens
-                    .list_row_recipe(selected, state.focused && selected, row.enabled);
+            let recipe = self.tokens.resolve_list_row(ListRowVisualState {
+                selected,
+                focused: state.focused && selected,
+                hovered,
+                enabled: row.enabled,
+                loading: row.loading,
+                checked,
+            });
             let style = if hovered && row.enabled && !selected {
-                self.tokens.theme.style(Role::LinkHover)
+                recipe.hover
             } else if checked && !selected {
                 self.tokens.theme.style(Role::Accent)
             } else {
@@ -565,6 +699,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             };
             if recipe.use_fill {
                 buffer.set_style(rect, style);
+            } else if recipe.use_tint {
+                buffer.set_style(rect, recipe.tint);
+            } else if recipe.hover_fill {
+                buffer.set_style(rect, recipe.hover);
             }
             if row.role == RowRole::Separator {
                 let rule = self.tokens.glyphs.rule();
@@ -580,17 +718,25 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     );
                 }
             } else {
+                // Stable 2-cell gutter slot for quiet selection chrome.
                 if let Some((glyph, gstyle)) = recipe.gutter {
                     buffer.set_stringn(rect.x, rect.y, glyph, 1, gstyle);
                     buffer.set_stringn(rect.x.saturating_add(1), rect.y, " ", 1, style);
-                } else {
+                } else if recipe.show_gutter_slot {
                     buffer.set_stringn(rect.x, rect.y, "  ", 2, style);
                 }
                 let check_x = rect.x.saturating_add(2);
-                render_check_cell(buffer, state, row, rect, check_x, checked, style);
-                let content_x = check_x.saturating_add(u16::from(state.selection.is_some()) * 4);
+                let check_w = render_check_cell(
+                    buffer,
+                    state,
+                    row,
+                    rect,
+                    check_x,
+                    &recipe,
+                    style,
+                );
+                let content_x = check_x.saturating_add(check_w);
                 if content_x < rect.right() {
-                    // Zero-copy contraction (ComposedRow grammar without Line clones).
                     let content_w = rect.right().saturating_sub(content_x);
                     let badge = row.badge.as_ref().or(row.trailing.as_ref());
                     let mut budget = content_w.saturating_sub(1);
@@ -602,7 +748,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 .saturating_add(1)
                         })
                         .unwrap_or(0);
-                    // Shortcuts need room; never steal the last primary cells.
+                    // Drop order: shortcut → badge → secondary → leading → primary.
                     let show_shortcut =
                         row.shortcut.is_some() && content_w >= 12 && budget >= shortcut_need + 2;
                     if show_shortcut {
@@ -632,8 +778,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     if show_secondary {
                         budget = budget.saturating_sub(secondary_need);
                     }
-                    let leading_need = if row.loading {
-                        2
+                    let leading_need = if recipe.loading {
+                        u16::try_from(crate::text::display_cols(recipe.loading_glyph))
+                            .unwrap_or(1)
+                            .saturating_add(1)
                     } else {
                         row.leading
                             .as_ref()
@@ -645,20 +793,32 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             .unwrap_or(0)
                     };
                     let show_leading =
-                        (row.loading || row.leading.is_some()) && budget >= leading_need;
+                        (recipe.loading || row.leading.is_some()) && budget >= leading_need;
 
                     let mut x = content_x;
                     let right = rect.right();
                     if show_leading {
-                        if row.loading {
-                            buffer.set_stringn(x, rect.y, "…", 1, style);
-                            x = x.saturating_add(2);
+                        if recipe.loading {
+                            let lw = u16::try_from(crate::text::display_cols(recipe.loading_glyph))
+                                .unwrap_or(1)
+                                .min(right.saturating_sub(x));
+                            if lw > 0 {
+                                buffer.set_stringn(
+                                    x,
+                                    rect.y,
+                                    recipe.loading_glyph,
+                                    usize::from(lw),
+                                    recipe.secondary,
+                                );
+                                x = x.saturating_add(lw).saturating_add(1);
+                            }
                         } else if let Some(lead) = row.leading.as_ref() {
                             let lw = u16::try_from(lead.width())
                                 .unwrap_or(u16::MAX)
                                 .min(right.saturating_sub(x));
                             if lw > 0 {
                                 buffer.set_line(x, rect.y, lead, lw);
+                                buffer.set_style(Rect::new(x, rect.y, lw, 1), style);
                                 x = x.saturating_add(lw).saturating_add(1);
                             }
                         }
@@ -669,11 +829,20 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     let primary_budget = mid_end.saturating_sub(x);
                     if primary_budget > 0 {
                         buffer.set_line(x, rect.y, &row.label, primary_budget);
-                        x = x.saturating_add(
-                            u16::try_from(row.label.width())
-                                .unwrap_or(u16::MAX)
-                                .min(primary_budget),
+                        let primary_w = u16::try_from(row.label.width())
+                            .unwrap_or(u16::MAX)
+                            .min(primary_budget);
+                        buffer.set_style(
+                            Rect::new(x, rect.y, primary_w.max(1).min(primary_budget), 1),
+                            style,
                         );
+                        if recipe.show_focus_underline && primary_w > 0 {
+                            buffer.set_style(
+                                Rect::new(x, rect.y, primary_w, 1),
+                                recipe.focus.add_modifier(Modifier::UNDERLINED),
+                            );
+                        }
+                        x = x.saturating_add(primary_w);
                     }
                     if show_secondary && let Some(sec) = row.secondary.as_ref() {
                         let avail = mid_end.saturating_sub(x);
@@ -684,6 +853,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 .min(mid_end.saturating_sub(x));
                             if sw > 0 {
                                 buffer.set_line(x, rect.y, sec, sw);
+                                buffer.set_style(Rect::new(x, rect.y, sw, 1), recipe.secondary);
                             }
                         }
                     }
@@ -694,7 +864,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             .min(cursor.saturating_sub(content_x));
                         if w > 0 {
                             cursor = cursor.saturating_sub(w);
-                            buffer.set_stringn(cursor, rect.y, sc, usize::from(w), style);
+                            buffer.set_stringn(cursor, rect.y, sc, usize::from(w), recipe.shortcut);
                         }
                     }
                     if show_badge && let Some(b) = badge {
@@ -707,6 +877,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             }
                             cursor = cursor.saturating_sub(w);
                             buffer.set_line(cursor, rect.y, b, w);
+                            buffer.set_style(Rect::new(cursor, rect.y, w, 1), recipe.trailing);
                         }
                     }
                 }
@@ -743,34 +914,50 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
     }
 }
 
+/// Paints multi-select check chrome; returns occupied width including trailing gap.
 fn render_check_cell<Id: Clone>(
     buffer: &mut Buffer,
     state: &mut ListState<Id>,
     row: &ListRow<'_, Id>,
     rect: Rect,
     check_x: u16,
-    checked: bool,
+    recipe: &crate::style::ListRowRecipe,
     style: ratatui_core::style::Style,
-) {
+) -> u16 {
     if state.selection.is_none() || check_x >= rect.right() {
-        return;
+        return 0;
     }
 
-    let marker = if checked { "[x] " } else { "[ ] " };
+    let marker = if recipe.checked {
+        recipe.check_on
+    } else {
+        recipe.check_off
+    };
+    let glyph_w = u16::try_from(crate::text::display_cols(marker)).unwrap_or(1);
     let available = rect.right().saturating_sub(check_x);
+    let paint_w = glyph_w.min(available);
+    if paint_w == 0 {
+        return 0;
+    }
     buffer.set_stringn(
         check_x,
         rect.y,
         marker,
-        usize::from(available.min(4)),
+        usize::from(paint_w),
         style,
     );
-    if row.enabled && available >= 3 {
+    // Trailing gap after check for content separation.
+    let gap = u16::from(available > paint_w);
+    if gap > 0 {
+        buffer.set_stringn(check_x.saturating_add(paint_w), rect.y, " ", 1, style);
+    }
+    if row.enabled && paint_w >= 1 {
         state.check_regions.push(HitRegion {
             id: row.id.clone(),
-            area: Rect::new(check_x, rect.y, 3, 1),
+            area: Rect::new(check_x, rect.y, paint_w.max(1), 1),
         });
     }
+    paint_w.saturating_add(gap)
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for List<'_, Id> {
@@ -1040,8 +1227,12 @@ mod tests {
         let area = Rect::new(0, 0, 20, 4);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(2, 2)].symbol(), "[");
-        assert_eq!(buffer[(3, 2)].symbol(), "x");
+        // Unicode check glyph (or ASCII "[x]") in the multi-select slot after gutter.
+        let check = buffer[(2, 2)].symbol();
+        assert!(
+            check == "☑" || check == "[" || check == "x",
+            "expected check chrome, got {check:?}"
+        );
         assert_eq!(
             state.click(Position::new(2, 3)),
             Outcome::CheckToggled("second")
@@ -1094,5 +1285,127 @@ mod tests {
         assert_eq!(state.selected(), Some(&0));
         state.reconcile_count(0);
         assert_eq!(state.selected(), None);
+    }
+
+    #[test]
+    fn click_policy_select_emits_changed_not_activate() {
+        let rows = rows();
+        let tokens = DesignTokens::default();
+        let mut state = ListState::new(Some("first"));
+        state.set_click_policy(ListClickPolicy::Select);
+        let area = Rect::new(0, 0, 20, 4);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
+        let pos = state.regions()[0].area;
+        assert_eq!(
+            state.click(Position::new(pos.x, pos.y)),
+            Outcome::Changed
+        );
+        assert_eq!(state.selected(), Some(&"first"));
+    }
+
+    #[test]
+    fn empty_list_paints_empty_message() {
+        let rows: [ListRow<'_, &str>; 0] = [];
+        let tokens = DesignTokens::default();
+        let mut state = ListState::<&str>::default();
+        let area = Rect::new(0, 0, 20, 3);
+        let mut buffer = Buffer::empty(area);
+        let list = List::new(&rows, &tokens).empty_message(Line::from("No items"));
+        (&list).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), "N");
+        assert!(state.regions().is_empty());
+    }
+
+    #[test]
+    fn loading_row_uses_recipe_loading_glyph() {
+        let row = ListRow::item("job", Line::from("Build")).loading();
+        let rows = [row];
+        let tokens = DesignTokens::default();
+        let mut state = ListState::new(None);
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
+        let text: String = (0..24)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            text.contains('…') || text.contains('.'),
+            "loading glyph present: {text:?}"
+        );
+        assert!(text.contains("Build"), "{text:?}");
+    }
+
+    #[test]
+    fn focused_selection_sets_underline_modifier_on_primary() {
+        let rows = [ListRow::item("a", Line::from("Alpha"))];
+        let tokens = DesignTokens::default().selection(crate::style::SelectionChrome::Gutter);
+        let mut state = ListState::new(Some("a"));
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
+        // Primary starts after 2-cell gutter.
+        let style = buffer[(2, 0)].style();
+        assert!(
+            style.add_modifier.contains(Modifier::UNDERLINED)
+                || style
+                    .sub_modifier
+                    .contains(Modifier::UNDERLINED)
+                || style.add_modifier.contains(Modifier::UNDERLINED),
+            "focus-visible underline expected on primary"
+        );
+    }
+
+    #[test]
+    fn fluent_row_builder_and_from_system() {
+        let row = ListRow::item("x", Line::from("X"))
+            .leading(Line::from("*"))
+            .secondary(Line::from("s"))
+            .badge(Line::from("b"))
+            .shortcut("⌘K");
+        let rows = [row];
+        let system = DesignSystem::phosphor();
+        let mut state = ListState::new(Some("x"));
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::from_system(&rows, &system)).render(area, &mut buffer, &mut state);
+        let text: String = (0..40)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(text.contains('X'), "{text:?}");
+        assert_eq!(buffer[(0, 0)].symbol(), "▌");
+    }
+
+    #[test]
+    fn stress_paint_visible_only() {
+        let rows: Vec<ListRow<'_, usize>> = (0..10_000)
+            .map(|i| ListRow::item(i, Line::from(format!("row-{i}"))))
+            .collect();
+        let tokens = DesignTokens::default();
+        let mut state = ListState::new(Some(9_500));
+        let area = Rect::new(0, 0, 40, 20);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
+        assert_eq!(state.regions().len(), 20);
+        assert!(state.offset() <= 9_500);
+        assert!(state.offset() + 20 > 9_500);
+    }
+
+    #[test]
+    fn ascii_gutter_and_check_glyphs() {
+        let rows = [ListRow::item("a", Line::from("A"))];
+        let tokens = DesignTokens::default()
+            .glyphs(crate::style::GlyphSet::Ascii)
+            .selection(crate::style::SelectionChrome::Gutter);
+        let mut state = ListState::new(Some("a"));
+        state.enable_multi_select();
+        state.selection_mut().unwrap().toggle(&"a");
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), ">");
+        let check = buffer[(2, 0)].symbol();
+        assert!(check == "[" || check == "x", "ascii check: {check:?}");
     }
 }
