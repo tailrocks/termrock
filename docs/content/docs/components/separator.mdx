@@ -1,0 +1,81 @@
+---
+title: Separator
+description: 'Horizontal and vertical semantic rules with optional labels; quiet, strong, section-break, focus-zone.'
+---
+
+## Previews
+
+### `separator/basic`
+
+![Quiet](/component-previews/separator-basic.svg)
+
+### `separator/strong`
+
+![Strong](/component-previews/separator-strong.svg)
+
+### `separator/labeled`
+
+![Labeled](/component-previews/separator-labeled.svg)
+
+### `separator/section-break`
+
+![Section break](/component-previews/separator-section-break.svg)
+
+### `separator/vertical`
+
+![Vertical](/component-previews/separator-vertical.svg)
+
+### `separator/focus-zone`
+
+![Focus zone](/component-previews/separator-focus-zone.svg)
+
+### `separator/narrow`
+
+![Narrow](/component-previews/separator-narrow.svg)
+
+## Usage
+
+```rust
+use termrock::{style::DesignSystem, widgets::Separator};
+
+let system = DesignSystem::default();
+Separator::horizontal(&system).quiet().paint(area, buf);
+Separator::horizontal(&system).label("OR").paint(area, buf);
+Separator::horizontal(&system)
+    .section_break()
+    .with_density(system.density)
+    .paint(band, buf); // prefer height ≥ 3
+Separator::vertical(&system).focus_zone().paint(area, buf);
+
+// Legacy alias
+use termrock::widgets::SeparatorLine;
+Widget::render(&SeparatorLine::horizontal(&system), area, buf);
+```
+
+## Variants
+
+| Variant | Purpose |
+|---------|---------|
+| Quiet | Soft editorial rule |
+| Strong | Heavier rule |
+| SectionBreak | Pad + rule + pad (spacing recipe) |
+| Labeled | Centered label on the rule |
+| FocusZone | Zone boundary glyph (**not** focus chrome) |
+
+ASCII / no-color: `GlyphSet::Ascii` substitutes `-` `=` `|` `:`.
+
+## Semantics
+
+Non-interactive. Do not register on FocusGraph. Optional labeled landmark:
+
+```rust
+sep.label("Part 2").register_semantic_if_labeled(&mut scene, "sep", area);
+```
+
+## Layout
+
+`preferred_cross_size()` → 1 (thin) or 3 (section-break band). Hosts allocate the `Rect`; Separator paints into it.
+
+## Migration
+
+See `migrations/0108-v0.13.0-separator.md`.

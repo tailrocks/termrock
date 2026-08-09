@@ -1045,53 +1045,7 @@ impl Widget for &Kbd<'_> {
     }
 }
 
-/// Separator with borrowed tokens (does not redefine focus borders).
-#[derive(Debug, Clone, Copy)]
-pub struct SeparatorLine<'a> {
-    tokens: &'a DesignSystem,
-    vertical: bool,
-}
-
-impl<'a> SeparatorLine<'a> {
-    /// Horizontal rule.
-    #[must_use]
-    pub const fn horizontal(tokens: &'a DesignSystem) -> Self {
-        Self {
-            tokens,
-            vertical: false,
-        }
-    }
-
-    /// Vertical rule.
-    #[must_use]
-    pub const fn vertical(tokens: &'a DesignSystem) -> Self {
-        Self {
-            tokens,
-            vertical: true,
-        }
-    }
-}
-
-/// Alias used in catalogs.
-pub type Separator<'a> = SeparatorLine<'a>;
-
-impl Widget for &SeparatorLine<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        let style = self.tokens.style(Role::Border);
-        let glyph = if self.vertical { "│" } else { "─" };
-        if self.vertical {
-            for y in area.y..area.bottom() {
-                buffer.set_stringn(area.x, y, glyph, 1, style);
-            }
-        } else {
-            let line = glyph.repeat(usize::from(area.width));
-            buffer.set_stringn(area.x, area.y, &line, usize::from(area.width), style);
-        }
-    }
-}
+// Separator lives in `widgets/separator.rs` (variants, labels, ASCII glyphs).
 
 /// FrameTick-driven spinner frames.
 #[derive(Debug, Clone, Copy)]
@@ -1358,7 +1312,7 @@ mod tests {
             &mut buf,
         );
         Widget::render(
-            &SeparatorLine::horizontal(&tokens),
+            &crate::widgets::Separator::horizontal(&tokens),
             Rect::new(0, 1, 20, 1),
             &mut buf,
         );

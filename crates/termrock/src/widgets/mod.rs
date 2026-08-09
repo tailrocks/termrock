@@ -13,6 +13,7 @@ mod completion_menu;
 mod composed_row;
 mod content;
 mod section;
+mod separator;
 mod controls;
 mod data_table;
 mod data_view;
@@ -151,8 +152,11 @@ pub use picker::{
 };
 pub use primitives::{
     ActivationOutcome, ActivationState, Badge, Button, ButtonSize, ButtonState, ButtonVariant,
-    Chip, ChipOutcome, ChipState, IconButton, IconButtonState, Kbd, Separator, SeparatorLine,
-    Spinner, Tag, TagOutcome, TagState, button_hit,
+    Chip, ChipOutcome, ChipState, IconButton, IconButtonState, Kbd, Spinner, Tag, TagOutcome,
+    TagState, button_hit,
+};
+pub use separator::{
+    Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
 };
 pub use progress::{Progress, ProgressKind};
 pub use prompt_composer::{

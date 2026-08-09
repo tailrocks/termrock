@@ -17500,6 +17500,159 @@ pub unsafe fn termrock::widgets::SelectionMode::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SelectionMode
 pub fn termrock::widgets::SelectionMode::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SelectionMode
+#[non_exhaustive] pub enum termrock::widgets::SeparatorOrientation
+pub termrock::widgets::SeparatorOrientation::Horizontal
+pub termrock::widgets::SeparatorOrientation::Vertical
+impl termrock::widgets::SeparatorOrientation
+pub const fn termrock::widgets::SeparatorOrientation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SeparatorOrientation
+pub fn termrock::widgets::SeparatorOrientation::clone(&self) -> termrock::widgets::SeparatorOrientation
+impl core::cmp::Eq for termrock::widgets::SeparatorOrientation
+impl core::cmp::PartialEq for termrock::widgets::SeparatorOrientation
+pub fn termrock::widgets::SeparatorOrientation::eq(&self, &termrock::widgets::SeparatorOrientation) -> bool
+impl core::default::Default for termrock::widgets::SeparatorOrientation
+pub fn termrock::widgets::SeparatorOrientation::default() -> termrock::widgets::SeparatorOrientation
+impl core::fmt::Debug for termrock::widgets::SeparatorOrientation
+pub fn termrock::widgets::SeparatorOrientation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SeparatorOrientation
+pub fn termrock::widgets::SeparatorOrientation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SeparatorOrientation
+impl core::marker::StructuralPartialEq for termrock::widgets::SeparatorOrientation
+impl core::marker::Freeze for termrock::widgets::SeparatorOrientation
+impl core::marker::Send for termrock::widgets::SeparatorOrientation
+impl core::marker::Sync for termrock::widgets::SeparatorOrientation
+impl core::marker::Unpin for termrock::widgets::SeparatorOrientation
+impl core::marker::UnsafeUnpin for termrock::widgets::SeparatorOrientation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SeparatorOrientation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SeparatorOrientation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SeparatorOrientation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SeparatorOrientation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SeparatorOrientation where U: core::convert::From<T>
+pub fn termrock::widgets::SeparatorOrientation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SeparatorOrientation where U: core::convert::Into<T>
+pub type termrock::widgets::SeparatorOrientation::Error = core::convert::Infallible
+pub fn termrock::widgets::SeparatorOrientation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SeparatorOrientation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SeparatorOrientation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SeparatorOrientation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SeparatorOrientation where T: core::clone::Clone
+pub type termrock::widgets::SeparatorOrientation::Owned = T
+pub fn termrock::widgets::SeparatorOrientation::clone_into(&self, &mut T)
+pub fn termrock::widgets::SeparatorOrientation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SeparatorOrientation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SeparatorOrientation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SeparatorOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::SeparatorOrientation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SeparatorOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::SeparatorOrientation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SeparatorOrientation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SeparatorOrientation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SeparatorOrientation
+pub fn termrock::widgets::SeparatorOrientation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SeparatorOrientation
+#[non_exhaustive] pub enum termrock::widgets::SeparatorThickness
+pub termrock::widgets::SeparatorThickness::Band
+pub termrock::widgets::SeparatorThickness::Thin
+impl termrock::widgets::SeparatorThickness
+pub const fn termrock::widgets::SeparatorThickness::cells(self) -> u16
+impl core::clone::Clone for termrock::widgets::SeparatorThickness
+pub fn termrock::widgets::SeparatorThickness::clone(&self) -> termrock::widgets::SeparatorThickness
+impl core::cmp::Eq for termrock::widgets::SeparatorThickness
+impl core::cmp::PartialEq for termrock::widgets::SeparatorThickness
+pub fn termrock::widgets::SeparatorThickness::eq(&self, &termrock::widgets::SeparatorThickness) -> bool
+impl core::default::Default for termrock::widgets::SeparatorThickness
+pub fn termrock::widgets::SeparatorThickness::default() -> termrock::widgets::SeparatorThickness
+impl core::fmt::Debug for termrock::widgets::SeparatorThickness
+pub fn termrock::widgets::SeparatorThickness::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SeparatorThickness
+pub fn termrock::widgets::SeparatorThickness::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SeparatorThickness
+impl core::marker::StructuralPartialEq for termrock::widgets::SeparatorThickness
+impl core::marker::Freeze for termrock::widgets::SeparatorThickness
+impl core::marker::Send for termrock::widgets::SeparatorThickness
+impl core::marker::Sync for termrock::widgets::SeparatorThickness
+impl core::marker::Unpin for termrock::widgets::SeparatorThickness
+impl core::marker::UnsafeUnpin for termrock::widgets::SeparatorThickness
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SeparatorThickness
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SeparatorThickness
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SeparatorThickness where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SeparatorThickness::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SeparatorThickness where U: core::convert::From<T>
+pub fn termrock::widgets::SeparatorThickness::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SeparatorThickness where U: core::convert::Into<T>
+pub type termrock::widgets::SeparatorThickness::Error = core::convert::Infallible
+pub fn termrock::widgets::SeparatorThickness::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SeparatorThickness where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SeparatorThickness::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SeparatorThickness::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SeparatorThickness where T: core::clone::Clone
+pub type termrock::widgets::SeparatorThickness::Owned = T
+pub fn termrock::widgets::SeparatorThickness::clone_into(&self, &mut T)
+pub fn termrock::widgets::SeparatorThickness::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SeparatorThickness where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SeparatorThickness::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SeparatorThickness where T: ?core::marker::Sized
+pub fn termrock::widgets::SeparatorThickness::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SeparatorThickness where T: ?core::marker::Sized
+pub fn termrock::widgets::SeparatorThickness::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SeparatorThickness where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SeparatorThickness::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SeparatorThickness
+pub fn termrock::widgets::SeparatorThickness::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SeparatorThickness
+#[non_exhaustive] pub enum termrock::widgets::SeparatorVariant
+pub termrock::widgets::SeparatorVariant::FocusZone
+pub termrock::widgets::SeparatorVariant::Labeled
+pub termrock::widgets::SeparatorVariant::Quiet
+pub termrock::widgets::SeparatorVariant::SectionBreak
+pub termrock::widgets::SeparatorVariant::Strong
+impl termrock::widgets::SeparatorVariant
+pub const fn termrock::widgets::SeparatorVariant::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SeparatorVariant
+pub fn termrock::widgets::SeparatorVariant::clone(&self) -> termrock::widgets::SeparatorVariant
+impl core::cmp::Eq for termrock::widgets::SeparatorVariant
+impl core::cmp::PartialEq for termrock::widgets::SeparatorVariant
+pub fn termrock::widgets::SeparatorVariant::eq(&self, &termrock::widgets::SeparatorVariant) -> bool
+impl core::default::Default for termrock::widgets::SeparatorVariant
+pub fn termrock::widgets::SeparatorVariant::default() -> termrock::widgets::SeparatorVariant
+impl core::fmt::Debug for termrock::widgets::SeparatorVariant
+pub fn termrock::widgets::SeparatorVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SeparatorVariant
+pub fn termrock::widgets::SeparatorVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SeparatorVariant
+impl core::marker::StructuralPartialEq for termrock::widgets::SeparatorVariant
+impl core::marker::Freeze for termrock::widgets::SeparatorVariant
+impl core::marker::Send for termrock::widgets::SeparatorVariant
+impl core::marker::Sync for termrock::widgets::SeparatorVariant
+impl core::marker::Unpin for termrock::widgets::SeparatorVariant
+impl core::marker::UnsafeUnpin for termrock::widgets::SeparatorVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SeparatorVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SeparatorVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SeparatorVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SeparatorVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SeparatorVariant where U: core::convert::From<T>
+pub fn termrock::widgets::SeparatorVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SeparatorVariant where U: core::convert::Into<T>
+pub type termrock::widgets::SeparatorVariant::Error = core::convert::Infallible
+pub fn termrock::widgets::SeparatorVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SeparatorVariant where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SeparatorVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SeparatorVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SeparatorVariant where T: core::clone::Clone
+pub type termrock::widgets::SeparatorVariant::Owned = T
+pub fn termrock::widgets::SeparatorVariant::clone_into(&self, &mut T)
+pub fn termrock::widgets::SeparatorVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SeparatorVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SeparatorVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SeparatorVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::SeparatorVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SeparatorVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::SeparatorVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SeparatorVariant where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SeparatorVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SeparatorVariant
+pub fn termrock::widgets::SeparatorVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SeparatorVariant
 #[non_exhaustive] pub enum termrock::widgets::SessionPickerOutcome<Id>
 pub termrock::widgets::SessionPickerOutcome::Cancelled
 pub termrock::widgets::SessionPickerOutcome::Ignored
@@ -26675,47 +26828,63 @@ pub unsafe fn termrock::widgets::SelectionModel<RowId>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::SelectionModel<RowId>
 pub fn termrock::widgets::SelectionModel<RowId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SelectionModel<RowId>
-pub struct termrock::widgets::SeparatorLine<'a>
-impl<'a> termrock::widgets::SeparatorLine<'a>
-pub const fn termrock::widgets::SeparatorLine<'a>::horizontal(&'a termrock::style::DesignSystem) -> Self
-pub const fn termrock::widgets::SeparatorLine<'a>::vertical(&'a termrock::style::DesignSystem) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::SeparatorLine<'_>
-pub fn &termrock::widgets::SeparatorLine<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl<'a> core::clone::Clone for termrock::widgets::SeparatorLine<'a>
-pub fn termrock::widgets::SeparatorLine<'a>::clone(&self) -> termrock::widgets::SeparatorLine<'a>
-impl<'a> core::fmt::Debug for termrock::widgets::SeparatorLine<'a>
-pub fn termrock::widgets::SeparatorLine<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::SeparatorLine<'a>
-impl<'a> core::marker::Freeze for termrock::widgets::SeparatorLine<'a>
-impl<'a> core::marker::Send for termrock::widgets::SeparatorLine<'a>
-impl<'a> core::marker::Sync for termrock::widgets::SeparatorLine<'a>
-impl<'a> core::marker::Unpin for termrock::widgets::SeparatorLine<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::widgets::SeparatorLine<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SeparatorLine<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SeparatorLine<'a>
-impl<T, U> core::convert::Into<U> for termrock::widgets::SeparatorLine<'a> where U: core::convert::From<T>
-pub fn termrock::widgets::SeparatorLine<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SeparatorLine<'a> where U: core::convert::Into<T>
-pub type termrock::widgets::SeparatorLine<'a>::Error = core::convert::Infallible
-pub fn termrock::widgets::SeparatorLine<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::SeparatorLine<'a> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::SeparatorLine<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::SeparatorLine<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::SeparatorLine<'a> where T: core::clone::Clone
-pub type termrock::widgets::SeparatorLine<'a>::Owned = T
-pub fn termrock::widgets::SeparatorLine<'a>::clone_into(&self, &mut T)
-pub fn termrock::widgets::SeparatorLine<'a>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::SeparatorLine<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::SeparatorLine<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::SeparatorLine<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::SeparatorLine<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SeparatorLine<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::SeparatorLine<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::SeparatorLine<'a> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::SeparatorLine<'a>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::SeparatorLine<'a>
-pub fn termrock::widgets::SeparatorLine<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::SeparatorLine<'a>
+pub struct termrock::widgets::Separator<'a>
+impl<'a> termrock::widgets::Separator<'a>
+pub const fn termrock::widgets::Separator<'a>::focus_zone(self) -> Self
+pub const fn termrock::widgets::Separator<'a>::horizontal(&'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Separator<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::Separator<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Separator<'a>::orientation(self, termrock::widgets::SeparatorOrientation) -> Self
+pub fn termrock::widgets::Separator<'a>::paint(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+pub const fn termrock::widgets::Separator<'a>::preferred_cross_size(self) -> u16
+pub const fn termrock::widgets::Separator<'a>::quiet(self) -> Self
+pub fn termrock::widgets::Separator<'a>::register_semantic_if_labeled<Id, Action>(self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::Separator<'a>::section_break(self) -> Self
+pub const fn termrock::widgets::Separator<'a>::strong(self) -> Self
+pub const fn termrock::widgets::Separator<'a>::thickness(self, termrock::widgets::SeparatorThickness) -> Self
+pub const fn termrock::widgets::Separator<'a>::variant(self, termrock::widgets::SeparatorVariant) -> Self
+pub const fn termrock::widgets::Separator<'a>::vertical(&'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Separator<'a>::with_density(self, termrock::style::Density) -> Self
+pub const fn termrock::widgets::Separator<'a>::with_spacing(self, termrock::style::SpacingScale) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Separator<'_>
+pub fn &termrock::widgets::Separator<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Separator<'_>
+pub fn termrock::widgets::Separator<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::Separator<'a>
+pub fn termrock::widgets::Separator<'a>::clone(&self) -> termrock::widgets::Separator<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Separator<'a>
+pub fn termrock::widgets::Separator<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::Separator<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::Separator<'a>
+impl<'a> core::marker::Send for termrock::widgets::Separator<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Separator<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Separator<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Separator<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Separator<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Separator<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Separator<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Separator<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Separator<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Separator<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Separator<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Separator<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Separator<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Separator<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Separator<'a> where T: core::clone::Clone
+pub type termrock::widgets::Separator<'a>::Owned = T
+pub fn termrock::widgets::Separator<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Separator<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Separator<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Separator<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Separator<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Separator<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Separator<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Separator<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Separator<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Separator<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Separator<'a>
+pub fn termrock::widgets::Separator<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Separator<'a>
 pub struct termrock::widgets::SessionItem<'a, Id>
 pub termrock::widgets::SessionItem::id: Id
 pub termrock::widgets::SessionItem::meta: core::option::Option<&'a str>
@@ -30258,4 +30427,4 @@ pub type termrock::widgets::CommandPaletteState<Id> = termrock::widgets::PickerS
 pub type termrock::widgets::ContextMenu<'a, Id> = termrock::widgets::Menu<'a, Id>
 pub type termrock::widgets::IconButtonState = termrock::widgets::ButtonState
 pub type termrock::widgets::SectionAction<'a> = termrock::widgets::PanelAction<'a>
-pub type termrock::widgets::Separator<'a> = termrock::widgets::SeparatorLine<'a>
+pub type termrock::widgets::SeparatorLine<'a> = termrock::widgets::Separator<'a>

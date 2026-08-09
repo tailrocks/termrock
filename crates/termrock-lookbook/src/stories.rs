@@ -2094,12 +2094,57 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "separator/basic",
+            "Separator quiet",
             "Separator",
-            "SeparatorLine",
-            "Horizontal separator rule.",
-            30,
-            3,
+            "Quiet horizontal rule.",
+            48,
+            1,
             separator_story,
+        ),
+        Story::new(
+            "separator/strong",
+            "Separator strong",
+            "Separator",
+            "Strong horizontal rule.",
+            48,
+            1,
+            separator_strong_story,
+        ),
+        Story::new(
+            "separator/labeled",
+            "Separator labeled",
+            "Separator",
+            "Labeled horizontal divider.",
+            48,
+            1,
+            separator_labeled_story,
+        ),
+        Story::new(
+            "separator/section-break",
+            "Separator section break",
+            "Separator",
+            "Band spacing recipe: pad + rule + pad.",
+            48,
+            3,
+            separator_section_break_story,
+        ),
+        Story::new(
+            "separator/vertical",
+            "Separator vertical",
+            "Separator",
+            "Vertical quiet rule.",
+            3,
+            8,
+            separator_vertical_story,
+        ),
+        Story::new(
+            "separator/focus-zone",
+            "Separator focus zone",
+            "Separator",
+            "Non-color zone boundary (not BorderFocused).",
+            48,
+            1,
+            separator_focus_zone_story,
         ),
         Story::new(
             "popover/basic",
@@ -7840,12 +7885,44 @@ fn surface_terminal_default_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn separator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &SeparatorLine::horizontal(&tokens),
-        area,
-        frame.buffer_mut(),
-    );
+    use termrock::widgets::Separator;
+    Separator::horizontal(system)
+        .quiet()
+        .paint(area, frame.buffer_mut());
+}
+
+fn separator_strong_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Separator;
+    Separator::horizontal(system)
+        .strong()
+        .paint(area, frame.buffer_mut());
+}
+
+fn separator_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Separator;
+    Separator::horizontal(system)
+        .label("OR")
+        .paint(area, frame.buffer_mut());
+}
+
+fn separator_section_break_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Separator;
+    Separator::horizontal(system)
+        .section_break()
+        .with_density(system.density)
+        .paint(area, frame.buffer_mut());
+}
+
+fn separator_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Separator;
+    Separator::vertical(system).paint(area, frame.buffer_mut());
+}
+
+fn separator_focus_zone_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Separator;
+    Separator::horizontal(system)
+        .focus_zone()
+        .paint(area, frame.buffer_mut());
 }
 
 fn popover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -8778,12 +8855,10 @@ fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &SeparatorLine::horizontal(&tokens),
-        area,
-        frame.buffer_mut(),
-    );
+    use termrock::widgets::Separator;
+    Separator::horizontal(system)
+        .label("区切")
+        .paint(area, frame.buffer_mut());
     // Distinct label cell so body differs even though rule glyphs match.
     if area.width > 4 && area.height > 0 {
         frame.buffer_mut().set_stringn(
