@@ -10,7 +10,7 @@ use crate::{
     input::KeyEvent,
     interaction::HitRegion,
     scroll::max_offset,
-    style::{DesignTokens, Role},
+    style::{DesignSystem, DesignTokens, ListRowVisualState, Role},
 };
 
 use super::{ComposedRow, Selection};
@@ -76,6 +76,84 @@ impl<'a, Id> TreeNode<'a, Id> {
         }
     }
 
+    /// Creates a branch node (disclosure-capable).
+    #[must_use]
+    pub fn branch(mut self) -> Self {
+        self.branch = true;
+        self
+    }
+
+    /// Marks the branch expanded (consumer owns expansion policy).
+    #[must_use]
+    pub fn expanded(mut self) -> Self {
+        self.expanded = true;
+        self
+    }
+
+    /// Sets leading chrome.
+    #[must_use]
+    pub fn leading(mut self, leading: Line<'a>) -> Self {
+        self.leading = Some(leading);
+        self
+    }
+
+    /// Sets secondary metadata.
+    #[must_use]
+    pub fn secondary(mut self, secondary: Line<'a>) -> Self {
+        self.secondary = Some(secondary);
+        self
+    }
+
+    /// Sets badge chrome.
+    #[must_use]
+    pub fn badge(mut self, badge: Line<'a>) -> Self {
+        self.badge = Some(badge);
+        self
+    }
+
+    /// Sets keyboard shortcut hint.
+    #[must_use]
+    pub fn shortcut(mut self, shortcut: &'a str) -> Self {
+        self.shortcut = Some(shortcut);
+        self
+    }
+
+    /// Sets legacy trailing metadata (badge fallback).
+    #[must_use]
+    pub fn trailing(mut self, trailing: Line<'a>) -> Self {
+        self.trailing = Some(trailing);
+        self
+    }
+
+    /// Marks the node disabled (skipped by keyboard, non-hittable).
+    #[must_use]
+    pub fn disabled(mut self) -> Self {
+        self.enabled = false;
+        self
+    }
+
+    /// Marks loading status (disabled interaction + status chrome).
+    #[must_use]
+    pub fn loading(mut self) -> Self {
+        self.status = TreeNodeStatus::Loading;
+        self.enabled = false;
+        self
+    }
+
+    /// Marks error status (danger tone + status chrome).
+    #[must_use]
+    pub fn error(mut self) -> Self {
+        self.status = TreeNodeStatus::Error;
+        self
+    }
+
+    /// Explicit status override.
+    #[must_use]
+    pub fn with_status(mut self, status: TreeNodeStatus) -> Self {
+        self.status = status;
+        self
+    }
+
     /// Projects hierarchy chrome + label into shared composed anatomy.
     #[must_use]
     pub fn composed(&self) -> ComposedRow<'a, ()> {
@@ -87,8 +165,7 @@ impl<'a, Id> TreeNode<'a, Id> {
             badge: self.badge.clone().or_else(|| self.trailing.clone()),
             shortcut: self.shortcut,
             enabled: self.enabled,
-            // Loading/error use status suffix paint (colorless text), not leading ellipsis.
-            loading: false,
+            loading: matches!(self.status, TreeNodeStatus::Loading),
         }
     }
 }
@@ -107,6 +184,8 @@ pub enum TreeOutcome<Id> {
     CheckToggled(Id),
     /// The identified enabled node requested activation.
     Activated(Id),
+    /// Cancel/close intent (consumer maps Esc policy).
+    Cancelled,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -292,7 +371,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                     TreeOutcome::Activated(node.id.clone())
                 }),
             UiIntent::Toggle => self.toggle_selected(nodes),
-            UiIntent::Cancel | UiIntent::Close => TreeOutcome::Ignored,
+            UiIntent::Cancel | UiIntent::Close => TreeOutcome::Cancelled,
             _ => TreeOutcome::Ignored,
         }
     }
@@ -480,16 +559,43 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 
 #[derive(Debug, Clone, Copy)]
 /// A navigable hierarchical list with disclosure and multi-select support.
+///
+/// Consumer owns the flattened projection and expansion policy. Tree owns
+/// selection, scroll, hover, multi-check, hit geometry, and typed outcomes.
 pub struct Tree<'a, Id> {
     nodes: &'a [TreeNode<'a, Id>],
     tokens: &'a DesignTokens,
+    empty_message: Option<&'a str>,
 }
 
 impl<'a, Id> Tree<'a, Id> {
     #[must_use]
     /// Creates a tree over borrowed flattened nodes and mutable tree state.
     pub const fn new(nodes: &'a [TreeNode<'a, Id>], tokens: &'a DesignTokens) -> Self {
-        Self { nodes, tokens }
+        Self {
+            nodes,
+            tokens,
+            empty_message: None,
+        }
+    }
+
+    /// Preferred paint root from [`DesignSystem`].
+    #[must_use]
+    pub const fn from_system(nodes: &'a [TreeNode<'a, Id>], system: &'a DesignSystem) -> Self {
+        Self::new(nodes, &system.tokens)
+    }
+
+    /// Message painted when `nodes` is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = Some(message);
+        self
+    }
+
+    /// Design tokens used for recipes and glyphs.
+    #[must_use]
+    pub const fn tokens(&self) -> &DesignTokens {
+        self.tokens
     }
 }
 
@@ -502,8 +608,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         state.check_regions.clear();
         state.scrollbar_region = None;
         state.viewport_height = usize::from(area.height);
-        if area.is_empty() || self.nodes.is_empty() {
+        if area.is_empty() {
             state.offset = 0;
+            return;
+        }
+        if self.nodes.is_empty() {
+            state.offset = 0;
+            if let Some(message) = self.empty_message {
+                let style = self.tokens.theme.style(Role::TextMuted);
+                buffer.set_stringn(area.x, area.y, message, usize::from(area.width), style);
+            }
             return;
         }
 
@@ -527,6 +641,12 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             width: area.width.saturating_sub(u16::from(show_scrollbar)),
             ..area
         };
+        // Density indent; collapse under narrow pressure (tiny → 0).
+        let indent_step = match content_area.width {
+            0..=7 => 0,
+            8..=11 => 1,
+            _ => self.tokens.density.tree_indent().max(1),
+        };
         for (visible, node) in self
             .nodes
             .iter()
@@ -544,22 +664,27 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 .selection
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&node.id));
+            let loading = matches!(node.status, TreeNodeStatus::Loading);
+            let recipe = self.tokens.resolve_list_row(ListRowVisualState {
+                selected,
+                focused: state.focused && selected,
+                hovered,
+                enabled: node.enabled,
+                loading,
+                checked,
+            });
             let mut style = match node.status {
-                TreeNodeStatus::Ready if node.enabled => self.tokens.theme.style(Role::Text),
+                TreeNodeStatus::Ready if node.enabled => recipe.label,
                 TreeNodeStatus::Ready => self.tokens.theme.style(Role::TextDisabled),
+                // Loading stays muted even when interaction-disabled.
                 TreeNodeStatus::Loading => self.tokens.theme.style(Role::TextMuted),
                 TreeNodeStatus::Error => self.tokens.theme.style(Role::Danger),
             };
             if !node.enabled {
                 style = style.add_modifier(Modifier::DIM);
             }
-            // Quiet phosphor: selection via DesignTokens recipe (gutter, not full fill).
-            let recipe =
-                self.tokens
-                    .list_row_recipe(selected, state.focused && selected, node.enabled);
             if selected && node.enabled {
                 style = recipe.label;
-                // Non-color cues: unfocused selection underlines; focused selection bolds.
                 if state.focused {
                     style = style.add_modifier(Modifier::BOLD);
                     if recipe.show_focus_underline {
@@ -569,40 +694,93 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                     style = style.add_modifier(Modifier::UNDERLINED);
                 }
             } else if hovered && node.enabled {
-                style = style
-                    .patch(self.tokens.theme.style(Role::Focus))
-                    .add_modifier(Modifier::UNDERLINED);
+                style = recipe.hover.add_modifier(Modifier::UNDERLINED);
             } else if checked && node.enabled {
                 style = style.patch(self.tokens.theme.style(Role::Accent));
             }
+            if recipe.use_fill && selected {
+                buffer.set_style(row, style);
+            } else if recipe.hover_fill {
+                buffer.set_style(row, recipe.hover);
+            }
 
-            let indent = node.depth.saturating_mul(2).min(content_area.width);
-            let disclosure_x = content_area.x.saturating_add(indent);
+            // Quiet selection gutter (aligned with List) when Gutter chrome.
+            let mut x_cursor = content_area.x;
+            if let Some((gutter_glyph, gutter_style)) = recipe.gutter {
+                buffer.set_stringn(x_cursor, y, gutter_glyph, 1, gutter_style);
+                x_cursor = x_cursor.saturating_add(2);
+            } else if recipe.show_gutter_slot
+                && matches!(
+                    self.tokens.selection,
+                    crate::style::SelectionChrome::Gutter
+                        | crate::style::SelectionChrome::Tint
+                        | crate::style::SelectionChrome::Fill
+                )
+            {
+                // Reserve gutter column only when selection chrome uses a slot.
+                // For tree, reserve only if any selection likely — keep 2 cells when
+                // tokens use Gutter default (DesignSystem::phosphor).
+                if matches!(
+                    self.tokens.selection,
+                    crate::style::SelectionChrome::Gutter
+                ) {
+                    x_cursor = x_cursor.saturating_add(2);
+                }
+            }
+
+            let max_indent = content_area
+                .right()
+                .saturating_sub(x_cursor)
+                .saturating_sub(4);
+            let indent = node
+                .depth
+                .saturating_mul(indent_step)
+                .min(max_indent);
+            let disclosure_x = x_cursor.saturating_add(indent);
             let glyph = if node.branch {
-                if node.expanded { "▾" } else { "▸" }
+                if node.expanded {
+                    self.tokens.glyphs.disclosure_open()
+                } else {
+                    self.tokens.glyphs.disclosure_closed()
+                }
             } else {
                 " "
             };
-            if indent < content_area.width {
+            if disclosure_x < content_area.right() {
                 buffer.set_stringn(disclosure_x, y, glyph, 1, style);
             }
             let check_x = disclosure_x.saturating_add(2);
+            let mut check_w = 0u16;
             if state.selection.is_some() && check_x < content_area.right() {
-                buffer.set_stringn(
-                    check_x,
-                    y,
-                    if checked { "[x] " } else { "[ ] " },
-                    usize::from(content_area.right().saturating_sub(check_x).min(4)),
-                    style,
-                );
-                if node.enabled && content_area.right().saturating_sub(check_x) >= 3 {
-                    state.check_regions.push(HitRegion {
-                        id: node.id.clone(),
-                        area: Rect::new(check_x, y, 3, 1),
-                    });
+                let marker = if checked {
+                    recipe.check_on
+                } else {
+                    recipe.check_off
+                };
+                let gw = u16::try_from(crate::text::display_cols(marker)).unwrap_or(1);
+                let available = content_area.right().saturating_sub(check_x);
+                let paint_w = gw.min(available);
+                if paint_w > 0 {
+                    buffer.set_stringn(check_x, y, marker, usize::from(paint_w), style);
+                    check_w = paint_w.saturating_add(u16::from(available > paint_w));
+                    if available > paint_w {
+                        buffer.set_stringn(
+                            check_x.saturating_add(paint_w),
+                            y,
+                            " ",
+                            1,
+                            style,
+                        );
+                    }
+                    if node.enabled {
+                        state.check_regions.push(HitRegion {
+                            id: node.id.clone(),
+                            area: Rect::new(check_x, y, paint_w.max(1), 1),
+                        });
+                    }
                 }
             }
-            let label_x = check_x.saturating_add(u16::from(state.selection.is_some()) * 4);
+            let label_x = check_x.saturating_add(check_w);
             // Colorless status suffixes; composed anatomy owns label/badge/shortcut.
             let status = match node.status {
                 TreeNodeStatus::Ready => None,
@@ -716,6 +894,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                             .min(mid_end.saturating_sub(x));
                         if sw > 0 {
                             buffer.set_line(x, y, secondary, sw);
+                            buffer.set_style(Rect::new(x, y, sw, 1), recipe.secondary);
                         }
                     }
                 }
@@ -724,7 +903,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                     let w = shortcut_w.min(cursor.saturating_sub(label_x));
                     if w > 0 {
                         cursor = cursor.saturating_sub(w);
-                        buffer.set_stringn(cursor, y, shortcut, usize::from(w), style);
+                        buffer.set_stringn(
+                            cursor,
+                            y,
+                            shortcut,
+                            usize::from(w),
+                            recipe.shortcut,
+                        );
                     }
                 }
                 if show_badge && let Some(badge) = badge {
@@ -735,6 +920,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                         }
                         cursor = cursor.saturating_sub(w);
                         buffer.set_line(cursor, y, badge, w);
+                        buffer.set_style(Rect::new(cursor, y, w, 1), recipe.trailing);
                     }
                 }
                 if let Some(status) = status
@@ -800,5 +986,135 @@ impl<Id: Clone + PartialEq> StatefulWidget for Tree<'_, Id> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         <&Self as StatefulWidget>::render(&self, area, buffer, state);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::input::{KeyCode, KeyEvent, KeyModifiers};
+    use crate::interaction::{NavigationMove, UiIntent};
+    use crate::style::{DesignSystem, GlyphSet, SelectionChrome};
+
+    fn sample() -> Vec<TreeNode<'static, &'static str>> {
+        vec![
+            TreeNode::new("root", Line::from("Workspace"), 0)
+                .branch()
+                .expanded(),
+            TreeNode::new("loading", Line::from("Loading child"), 1)
+                .branch()
+                .loading(),
+            TreeNode::new("leaf", Line::from("Wide 🧪"), 1)
+                .secondary(Line::from("meta"))
+                .badge(Line::from("ok")),
+            TreeNode::new("err", Line::from("Broken"), 1).error(),
+        ]
+    }
+
+    #[test]
+    fn handle_intent_expands_collapses_and_cancels() {
+        let nodes = sample();
+        let mut state = TreeState::new(Some("root"));
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Collapse),
+            TreeOutcome::Toggle("root")
+        );
+        // collapsed root: Collapse walks to parent (none) → Ignored or stays
+        let mut collapsed = nodes.clone();
+        collapsed[0].expanded = false;
+        assert_eq!(
+            state.handle_intent(&collapsed, UiIntent::Expand),
+            TreeOutcome::Toggle("root")
+        );
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Cancel),
+            TreeOutcome::Cancelled
+        );
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Move(NavigationMove::Next)),
+            TreeOutcome::SelectionChanged("leaf")
+        );
+    }
+
+    #[test]
+    fn empty_message_and_from_system() {
+        let system = DesignSystem::phosphor();
+        let nodes: [TreeNode<'_, &str>; 0] = [];
+        let mut state = TreeState::<&str>::default();
+        let area = Rect::new(0, 0, 24, 2);
+        let mut buffer = Buffer::empty(area);
+        let tree = Tree::from_system(&nodes, &system).empty_message("No files");
+        tree.render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), "N");
+    }
+
+    #[test]
+    fn ascii_disclosure_and_gutter() {
+        let tokens = DesignTokens::default()
+            .glyphs(GlyphSet::Ascii)
+            .selection(SelectionChrome::Gutter);
+        let nodes = [
+            TreeNode::new("a", Line::from("A"), 0).branch().expanded(),
+            TreeNode::new("b", Line::from("B"), 1),
+        ];
+        let mut state = TreeState::new(Some("a"));
+        let area = Rect::new(0, 0, 20, 2);
+        let mut buffer = Buffer::empty(area);
+        (&Tree::new(&nodes, &tokens)).render(area, &mut buffer, &mut state);
+        // gutter + disclosure
+        assert_eq!(buffer[(0, 0)].symbol(), ">");
+        // disclosure open ascii after gutter slot (2) + indent 0
+        assert_eq!(buffer[(2, 0)].symbol(), "v");
+    }
+
+    #[test]
+    fn density_indent_dashboard_tighter() {
+        let comfortable = DesignTokens::new(
+            crate::style::Theme::default(),
+            crate::style::Density::Comfortable,
+        )
+        .selection(SelectionChrome::Gutter);
+        let dashboard = DesignTokens::new(
+            crate::style::Theme::default(),
+            crate::style::Density::Dashboard,
+        )
+        .selection(SelectionChrome::Gutter);
+        let nodes = [TreeNode::new("c", Line::from("Child"), 2)];
+        let mut state = TreeState::new(None);
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buf_c = Buffer::empty(area);
+        let mut buf_d = Buffer::empty(area);
+        (&Tree::new(&nodes, &comfortable)).render(area, &mut buf_c, &mut state);
+        (&Tree::new(&nodes, &dashboard)).render(area, &mut buf_d, &mut state);
+        // Find first letter 'C' column — dashboard should paint earlier (less indent).
+        let col = |buf: &Buffer| {
+            (0..40)
+                .find(|&x| buf[(x, 0)].symbol() == "C")
+                .expect("label")
+        };
+        assert!(col(&buf_d) < col(&buf_c), "dashboard indent tighter");
+    }
+
+    #[test]
+    fn keyboard_skips_loading_disabled() {
+        let nodes = sample();
+        let mut state = TreeState::new(Some("root"));
+        assert_eq!(
+            state.handle_key(&nodes, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+            TreeOutcome::SelectionChanged("leaf")
+        );
+    }
+
+    #[test]
+    fn stress_visible_only() {
+        let nodes: Vec<TreeNode<'_, usize>> = (0..5_000)
+            .map(|i| TreeNode::new(i, Line::from(format!("n{i}")), (i % 5) as u16))
+            .collect();
+        let tokens = DesignTokens::default();
+        let mut state = TreeState::new(Some(4_900));
+        let area = Rect::new(0, 0, 40, 15);
+        let mut buffer = Buffer::empty(area);
+        (&Tree::new(&nodes, &tokens)).render(area, &mut buffer, &mut state);
+        assert_eq!(state.regions().len(), 15);
     }
 }

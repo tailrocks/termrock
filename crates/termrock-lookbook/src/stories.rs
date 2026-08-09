@@ -249,6 +249,60 @@ pub(crate) fn stories() -> Vec<Story> {
         )
         .with_interactor(tree_interactor),
         Story::new(
+            "tree/empty",
+            "Empty tree",
+            "Tree",
+            "Empty-message projection when the flattened projection is empty.",
+            32,
+            4,
+            tree_empty,
+        ),
+        Story::new(
+            "tree/loading-error",
+            "Tree loading and error",
+            "Tree",
+            "Loading muted and error danger status nodes.",
+            40,
+            6,
+            tree_loading_error,
+        ),
+        Story::new(
+            "tree/ascii",
+            "ASCII tree glyphs",
+            "Tree",
+            "ASCII disclosure and selection gutter fallbacks.",
+            36,
+            6,
+            tree_ascii,
+        ),
+        Story::new(
+            "tree/composed",
+            "Composed tree anatomy",
+            "Tree",
+            "Leading, secondary, badge, and shortcut on hierarchical rows.",
+            48,
+            6,
+            tree_composed,
+        ),
+        Story::new(
+            "tree/tiny",
+            "Tiny tree",
+            "Tree",
+            "Disclosure + primary survive extreme width.",
+            12,
+            5,
+            tree_tiny,
+        ),
+        Story::new(
+            "tree/deep",
+            "Deep indent tree",
+            "Tree",
+            "Deep hierarchy with density indent and clamp.",
+            44,
+            8,
+            tree_deep,
+        ),
+        Story::new(
             "progress/determinate",
             "Progress",
             "Progress",
@@ -2500,6 +2554,98 @@ fn split_pane(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let mut state = SplitPaneState::new(SplitRatio::from_percent(38));
     state.set_focused(true);
     render_split_pane(frame, area, &mut state, theme);
+}
+
+fn tree_empty(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let nodes: [TreeNode<'_, &str>; 0] = [];
+    let mut state = TreeState::<&str>::default();
+    frame.render_stateful_widget(
+        &Tree::new(&nodes, &tokens).empty_message("No files in this folder"),
+        area,
+        &mut state,
+    );
+}
+
+fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default())
+        .selection(termrock::style::SelectionChrome::Gutter);
+    let nodes = [
+        TreeNode::new("root", Line::from("Workspace"), 0)
+            .branch()
+            .expanded(),
+        TreeNode::new("pending", Line::from("Fetching children"), 1)
+            .branch()
+            .loading(),
+        TreeNode::new("bad", Line::from("Permission denied"), 1).error(),
+        TreeNode::new("ok", Line::from("src"), 1).branch().expanded(),
+        TreeNode::new("leaf", Line::from("main.rs"), 2).badge(Line::from("rs")),
+    ];
+    let mut state = TreeState::new(Some("ok"));
+    frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
+}
+
+fn tree_ascii(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default())
+        .glyphs(termrock::style::GlyphSet::Ascii)
+        .selection(termrock::style::SelectionChrome::Gutter);
+    let nodes = tree_nodes();
+    let mut state = TreeState::new(Some("workspace"));
+    state.enable_multi_select();
+    if let Some(sel) = state.selection_mut() {
+        sel.toggle(&"workspace");
+    }
+    frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
+}
+
+fn tree_composed(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::default());
+    let nodes = [
+        TreeNode::new("pkg", Line::from("termrock"), 0)
+            .branch()
+            .expanded()
+            .leading(Line::from("📦"))
+            .badge(Line::from("crate")),
+        TreeNode::new("lib", Line::from("lib.rs"), 1)
+            .leading(Line::from("·"))
+            .secondary(Line::from("public API"))
+            .shortcut("⌘O"),
+        TreeNode::new("mod", Line::from("widgets"), 1)
+            .branch()
+            .expanded()
+            .secondary(Line::from("module")),
+        TreeNode::new("tree", Line::from("tree.rs"), 2).badge(Line::from("rs")),
+    ];
+    let mut state = TreeState::new(Some("lib"));
+    frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
+}
+
+fn tree_tiny(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::Compact)
+        .selection(termrock::style::SelectionChrome::Gutter);
+    let nodes = [
+        TreeNode::new("r", Line::from("Root"), 0).branch().expanded(),
+        TreeNode::new("c", Line::from("Child"), 1)
+            .badge(Line::from("99"))
+            .shortcut("⌘K"),
+    ];
+    let mut state = TreeState::new(Some("c"));
+    frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
+}
+
+fn tree_deep(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), termrock::Density::Comfortable)
+        .selection(termrock::style::SelectionChrome::Gutter);
+    let nodes = [
+        TreeNode::new("d0", Line::from("depth-0"), 0).branch().expanded(),
+        TreeNode::new("d1", Line::from("depth-1"), 1).branch().expanded(),
+        TreeNode::new("d2", Line::from("depth-2"), 2).branch().expanded(),
+        TreeNode::new("d3", Line::from("depth-3"), 3).branch().expanded(),
+        TreeNode::new("d4", Line::from("depth-4 leaf"), 4).secondary(Line::from("file")),
+        TreeNode::new("d4b", Line::from("depth-4 error"), 4).error(),
+    ];
+    let mut state = TreeState::new(Some("d4"));
+    frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
 fn tree(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
