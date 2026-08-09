@@ -397,18 +397,21 @@ pub enum SelectionMode {
     CellRange,
 }
 
-/// Selection state (ids optional — some grids are index-only).
+/// Selection state for data grids (cursor + row membership + cell chrome).
+///
+/// Row membership uses [`crate::interaction::SelectionModel`] (stable IDs,
+/// range/select-all). **Focus row/col** remain grid cursor (not FocusGraph).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SelectionModel<RowId: Ord = u64> {
     /// Mode.
     pub mode: SelectionMode,
-    /// Focused row index (keyboard cursor).
+    /// Focused row index (keyboard cursor — not graph focus).
     pub focus_row: u64,
     /// Focused column ordinal among visible columns.
     pub focus_col: usize,
-    /// Selected row ids (multi).
-    pub selected_rows: BTreeSet<RowId>,
-    /// Anchor for range selection.
+    /// Row selection membership (ordered; multi/single via interaction model).
+    pub rows: crate::interaction::SelectionModel<RowId>,
+    /// Anchor for cell range selection.
     pub anchor: Option<CellCoord>,
     /// Active cell (cell modes).
     pub active_cell: Option<CellCoord>,
@@ -420,7 +423,9 @@ impl<RowId: Ord> Default for SelectionModel<RowId> {
             mode: SelectionMode::None,
             focus_row: 0,
             focus_col: 0,
-            selected_rows: BTreeSet::new(),
+            rows: crate::interaction::SelectionModel::new(
+                crate::interaction::SelectionKind::None,
+            ),
             anchor: None,
             active_cell: None,
         }
@@ -433,6 +438,7 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
     pub fn row() -> Self {
         Self {
             mode: SelectionMode::Row,
+            rows: crate::interaction::SelectionModel::single(),
             ..Self::default()
         }
     }
@@ -442,6 +448,7 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
     pub fn multi_row() -> Self {
         Self {
             mode: SelectionMode::MultiRow,
+            rows: crate::interaction::SelectionModel::range(),
             ..Self::default()
         }
     }
@@ -451,8 +458,23 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
     pub fn cell() -> Self {
         Self {
             mode: SelectionMode::Cell,
+            rows: crate::interaction::SelectionModel::new(
+                crate::interaction::SelectionKind::None,
+            ),
             ..Self::default()
         }
+    }
+
+    /// Selected row ids (ordered).
+    #[must_use]
+    pub fn selected_rows(&self) -> &[RowId] {
+        self.rows.selected()
+    }
+
+    /// BTreeSet view for callers that need set semantics (allocates).
+    #[must_use]
+    pub fn selected_rows_set(&self) -> BTreeSet<RowId> {
+        self.rows.selected().iter().cloned().collect()
     }
 
     /// Move focus by delta; returns whether focus changed.
@@ -475,16 +497,53 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
 
     /// Toggle row id in multi selection.
     pub fn toggle_row(&mut self, id: RowId) {
-        if !self.selected_rows.remove(&id) {
-            self.selected_rows.insert(id);
-        }
+        let _ = self.rows.toggle(&id);
     }
 
-    /// Clear selection sets (keeps focus).
+    /// Select a single row (single mode) or add (multi).
+    pub fn select_row(&mut self, id: RowId) {
+        let _ = self.rows.select(id);
+    }
+
+    /// Range-select rows along `order` from anchor to `to`.
+    pub fn select_row_range(&mut self, order: &[RowId], to: &RowId) {
+        let _ = self.rows.set_range(order, to);
+    }
+
+    /// Select all visible row ids.
+    pub fn select_all_rows(&mut self, visible: &[RowId]) {
+        let _ = self.rows.select_all(visible);
+    }
+
+    /// Drop row selection not in `still_valid`.
+    pub fn reconcile_rows(&mut self, still_valid: &[RowId]) {
+        let _ = self.rows.reconcile(still_valid);
+    }
+
+    /// Clear selection sets (keeps focus cursor).
     pub fn clear_selection(&mut self) {
-        self.selected_rows.clear();
+        let _ = self.rows.clear();
         self.anchor = None;
         self.active_cell = None;
+    }
+
+    /// Whether row id is selected.
+    #[must_use]
+    pub fn is_row_selected(&self, id: &RowId) -> bool {
+        self.rows.is_selected(id)
+    }
+}
+
+/// Compatibility: field-like access for older code using `selected_rows` as set.
+impl<RowId: Ord + Clone> SelectionModel<RowId> {
+    /// Insert row id into multi selection (BTree-style).
+    pub fn insert_row(&mut self, id: RowId) {
+        let _ = self.rows.select(id);
+    }
+
+    /// Remove row id.
+    pub fn remove_row(&mut self, id: &RowId) {
+        let _ = self.rows.deselect(id);
     }
 }
 
@@ -726,9 +785,10 @@ mod tests {
         let mut sel = SelectionModel::multi_row();
         sel.toggle_row(1u64);
         sel.toggle_row(2);
-        assert_eq!(sel.selected_rows.len(), 2);
+        assert_eq!(sel.selected_rows().len(), 2);
         sel.toggle_row(1);
-        assert_eq!(sel.selected_rows.len(), 1);
+        assert_eq!(sel.selected_rows().len(), 1);
+        assert!(sel.is_row_selected(&2));
     }
 
     #[test]

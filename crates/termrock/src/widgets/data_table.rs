@@ -594,7 +594,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                 break;
             }
             let cursor = state.cursor_row == i;
-            let selected = state.selection.selected_rows.contains(id);
+            let selected = state.selection.is_row_selected(id);
             let expanded = state.expand.expanded.contains(id);
             let style = if state.colorless {
                 if selected || (cursor && surface_focused) {
@@ -688,7 +688,7 @@ mod tests {
             &cols,
         );
         assert!(matches!(out, DataTableOutcome::SelectAllRequested));
-        assert!(state.selection.selected_rows.is_empty());
+        assert!(state.selection.selected_rows().is_empty());
     }
 
     #[test]
@@ -702,7 +702,8 @@ mod tests {
             &cols,
         );
         assert!(matches!(out, DataTableOutcome::ToggleRow(10)));
-        assert!(state.selection.selected_rows.contains(&10));
+        // handle_key already toggled membership for the visible cursor row.
+        assert!(state.selection.is_row_selected(&10));
     }
 
     #[test]

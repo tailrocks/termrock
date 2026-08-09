@@ -10,6 +10,7 @@ mod modal;
 mod overlay_stack;
 mod roving;
 mod scene;
+mod selection_model;
 
 pub use collection::{CollectionItem, CollectionOutcome, CollectionState};
 pub use event_result::{
@@ -22,6 +23,9 @@ pub use focus_graph::{
 pub use roving::{
     RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, roving_hint_keymap,
     roving_hint_keymap_horizontal, roving_hint_keymap_vertical,
+};
+pub use selection_model::{
+    SelectionDelta, SelectionKind, SelectionModel, SelectionVisual, select_subtree,
 };
 
 // FocusRing remains crate-private (pre-1.0 M3). Public focus graph is FocusGraph.

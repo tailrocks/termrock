@@ -1,56 +1,100 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! List multi-select membership — thin facade over [`crate::interaction::SelectionModel`].
+//!
+//! Prefer `interaction::SelectionModel` for new code (single/multi/range + deltas).
+
+use crate::interaction::{SelectionDelta, SelectionKind, SelectionModel as Model};
+
+/// An ordered set of checked stable identities (list multi-select).
+///
+/// Implemented as [`SelectionKind::Multiple`] [`crate::interaction::SelectionModel`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// An ordered set of checked stable identities.
 pub struct Selection<Id> {
-    checked: Vec<Id>,
+    inner: Model<Id>,
 }
 
 impl<Id> Default for Selection<Id> {
     fn default() -> Self {
-        Self {
-            checked: Vec::new(),
-        }
+        Self::new()
     }
 }
 
 impl<Id> Selection<Id> {
+    /// Creates an empty ordered multi-selection.
     #[must_use]
-    /// Creates an empty ordered selection.
     pub const fn new() -> Self {
         Self {
-            checked: Vec::new(),
+            inner: Model::multiple(),
         }
-    }
-
-    #[must_use]
-    /// Returns checked identities in their check order.
-    pub fn checked(&self) -> &[Id] {
-        &self.checked
     }
 
     /// Clears the checked-identity set.
     pub fn clear(&mut self) {
-        self.checked.clear();
+        let _ = self.inner.clear();
+    }
+
+    /// Borrow the full selection model.
+    #[must_use]
+    pub const fn model(&self) -> &Model<Id> {
+        &self.inner
+    }
+
+    /// Mutable selection model.
+    pub const fn model_mut(&mut self) -> &mut Model<Id> {
+        &mut self.inner
     }
 }
 
 impl<Id: Clone + PartialEq> Selection<Id> {
+    /// Returns checked identities in their check order.
+    #[must_use]
+    pub fn checked(&self) -> &[Id] {
+        self.inner.selected()
+    }
+
     /// Toggle a stable identity, preserving check order.
     ///
     /// Returns whether the identity is checked after the toggle.
     pub fn toggle(&mut self, id: &Id) -> bool {
-        if let Some(index) = self.checked.iter().position(|checked| checked == id) {
-            self.checked.remove(index);
-            false
-        } else {
-            self.checked.push(id.clone());
-            true
+        match self.inner.toggle(id) {
+            SelectionDelta::Toggled { selected, .. } => selected,
+            _ => self.inner.is_checked(id),
         }
     }
 
-    #[must_use]
     /// Returns whether the stable identity is currently checked.
+    #[must_use]
     pub fn is_checked(&self, id: &Id) -> bool {
-        self.checked.iter().any(|checked| checked == id)
+        self.inner.is_checked(id)
+    }
+
+    /// Select-all visible ids (does not drop off-window checks).
+    pub fn select_all(&mut self, visible: &[Id]) {
+        let _ = self.inner.select_all(visible);
+    }
+
+    /// Invert membership for visible ids.
+    pub fn invert_visible(&mut self, visible: &[Id]) {
+        let _ = self.inner.invert_visible(visible);
+    }
+
+    /// Drop checks not in `still_valid` (deleted rows).
+    pub fn reconcile(&mut self, still_valid: &[Id]) {
+        let _ = self.inner.reconcile(still_valid);
+    }
+}
+
+impl<Id: Clone + PartialEq> From<Model<Id>> for Selection<Id> {
+    fn from(mut inner: Model<Id>) -> Self {
+        if !matches!(
+            inner.kind(),
+            SelectionKind::Multiple | SelectionKind::Range
+        ) {
+            inner.set_kind(SelectionKind::Multiple);
+        }
+        Self { inner }
     }
 }
 
@@ -71,5 +115,14 @@ mod tests {
 
         selection.clear();
         assert!(selection.checked().is_empty());
+    }
+
+    #[test]
+    fn select_all_and_reconcile() {
+        let mut selection = Selection::new();
+        selection.select_all(&["a", "b"]);
+        assert_eq!(selection.checked().len(), 2);
+        selection.reconcile(&["b"]);
+        assert_eq!(selection.checked(), ["b"]);
     }
 }

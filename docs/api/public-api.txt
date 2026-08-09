@@ -2553,6 +2553,164 @@ pub unsafe fn termrock::interaction::SceneError::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::SceneError
 pub fn termrock::interaction::SceneError::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SceneError
+#[non_exhaustive] pub enum termrock::interaction::SelectionDelta<Id>
+pub termrock::interaction::SelectionDelta::Added
+pub termrock::interaction::SelectionDelta::Added::id: Id
+pub termrock::interaction::SelectionDelta::Cleared
+pub termrock::interaction::SelectionDelta::RangeApplied
+pub termrock::interaction::SelectionDelta::RangeApplied::from: Id
+pub termrock::interaction::SelectionDelta::RangeApplied::selected: alloc::vec::Vec<Id>
+pub termrock::interaction::SelectionDelta::RangeApplied::to: Id
+pub termrock::interaction::SelectionDelta::Removed
+pub termrock::interaction::SelectionDelta::Removed::id: Id
+pub termrock::interaction::SelectionDelta::Replaced
+pub termrock::interaction::SelectionDelta::Replaced::selected: alloc::vec::Vec<Id>
+pub termrock::interaction::SelectionDelta::Toggled
+pub termrock::interaction::SelectionDelta::Toggled::id: Id
+pub termrock::interaction::SelectionDelta::Toggled::selected: bool
+impl<Id> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionDelta<Id>::is_noop_clear(&self) -> bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionDelta<Id>::clone(&self) -> termrock::interaction::SelectionDelta<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::SelectionDelta<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionDelta<Id>::eq(&self, &termrock::interaction::SelectionDelta<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::SelectionDelta<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionDelta<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::interaction::SelectionDelta<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::interaction::SelectionDelta<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::interaction::SelectionDelta<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::interaction::SelectionDelta<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::interaction::SelectionDelta<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SelectionDelta<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::SelectionDelta<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SelectionDelta<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SelectionDelta<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SelectionDelta<Id> where U: core::convert::From<T>
+pub fn termrock::interaction::SelectionDelta<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SelectionDelta<Id> where U: core::convert::Into<T>
+pub type termrock::interaction::SelectionDelta<Id>::Error = core::convert::Infallible
+pub fn termrock::interaction::SelectionDelta<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SelectionDelta<Id> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SelectionDelta<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SelectionDelta<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SelectionDelta<Id> where T: core::clone::Clone
+pub type termrock::interaction::SelectionDelta<Id>::Owned = T
+pub fn termrock::interaction::SelectionDelta<Id>::clone_into(&self, &mut T)
+pub fn termrock::interaction::SelectionDelta<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SelectionDelta<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SelectionDelta<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SelectionDelta<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::SelectionDelta<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SelectionDelta<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::SelectionDelta<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SelectionDelta<Id> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SelectionDelta<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionDelta<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SelectionDelta<Id>
+#[non_exhaustive] pub enum termrock::interaction::SelectionKind
+pub termrock::interaction::SelectionKind::Multiple
+pub termrock::interaction::SelectionKind::None
+pub termrock::interaction::SelectionKind::Range
+pub termrock::interaction::SelectionKind::Single
+impl core::clone::Clone for termrock::interaction::SelectionKind
+pub fn termrock::interaction::SelectionKind::clone(&self) -> termrock::interaction::SelectionKind
+impl core::cmp::Eq for termrock::interaction::SelectionKind
+impl core::cmp::PartialEq for termrock::interaction::SelectionKind
+pub fn termrock::interaction::SelectionKind::eq(&self, &termrock::interaction::SelectionKind) -> bool
+impl core::default::Default for termrock::interaction::SelectionKind
+pub fn termrock::interaction::SelectionKind::default() -> termrock::interaction::SelectionKind
+impl core::fmt::Debug for termrock::interaction::SelectionKind
+pub fn termrock::interaction::SelectionKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::SelectionKind
+pub fn termrock::interaction::SelectionKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::SelectionKind
+impl core::marker::StructuralPartialEq for termrock::interaction::SelectionKind
+impl core::marker::Freeze for termrock::interaction::SelectionKind
+impl core::marker::Send for termrock::interaction::SelectionKind
+impl core::marker::Sync for termrock::interaction::SelectionKind
+impl core::marker::Unpin for termrock::interaction::SelectionKind
+impl core::marker::UnsafeUnpin for termrock::interaction::SelectionKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SelectionKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::SelectionKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SelectionKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SelectionKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SelectionKind where U: core::convert::From<T>
+pub fn termrock::interaction::SelectionKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SelectionKind where U: core::convert::Into<T>
+pub type termrock::interaction::SelectionKind::Error = core::convert::Infallible
+pub fn termrock::interaction::SelectionKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SelectionKind where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SelectionKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SelectionKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SelectionKind where T: core::clone::Clone
+pub type termrock::interaction::SelectionKind::Owned = T
+pub fn termrock::interaction::SelectionKind::clone_into(&self, &mut T)
+pub fn termrock::interaction::SelectionKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SelectionKind where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SelectionKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SelectionKind where T: ?core::marker::Sized
+pub fn termrock::interaction::SelectionKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SelectionKind where T: ?core::marker::Sized
+pub fn termrock::interaction::SelectionKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SelectionKind where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SelectionKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SelectionKind
+pub fn termrock::interaction::SelectionKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SelectionKind
+#[non_exhaustive] pub enum termrock::interaction::SelectionVisual
+pub termrock::interaction::SelectionVisual::Check
+pub termrock::interaction::SelectionVisual::Fill
+pub termrock::interaction::SelectionVisual::Gutter
+pub termrock::interaction::SelectionVisual::Tint
+impl termrock::interaction::SelectionVisual
+pub const fn termrock::interaction::SelectionVisual::from_chrome(termrock::style::SelectionChrome) -> Self
+pub const fn termrock::interaction::SelectionVisual::requires_glyph(self) -> bool
+impl core::clone::Clone for termrock::interaction::SelectionVisual
+pub fn termrock::interaction::SelectionVisual::clone(&self) -> termrock::interaction::SelectionVisual
+impl core::cmp::Eq for termrock::interaction::SelectionVisual
+impl core::cmp::PartialEq for termrock::interaction::SelectionVisual
+pub fn termrock::interaction::SelectionVisual::eq(&self, &termrock::interaction::SelectionVisual) -> bool
+impl core::fmt::Debug for termrock::interaction::SelectionVisual
+pub fn termrock::interaction::SelectionVisual::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::SelectionVisual
+pub fn termrock::interaction::SelectionVisual::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::SelectionVisual
+impl core::marker::StructuralPartialEq for termrock::interaction::SelectionVisual
+impl core::marker::Freeze for termrock::interaction::SelectionVisual
+impl core::marker::Send for termrock::interaction::SelectionVisual
+impl core::marker::Sync for termrock::interaction::SelectionVisual
+impl core::marker::Unpin for termrock::interaction::SelectionVisual
+impl core::marker::UnsafeUnpin for termrock::interaction::SelectionVisual
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SelectionVisual
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::SelectionVisual
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SelectionVisual where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SelectionVisual::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SelectionVisual where U: core::convert::From<T>
+pub fn termrock::interaction::SelectionVisual::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SelectionVisual where U: core::convert::Into<T>
+pub type termrock::interaction::SelectionVisual::Error = core::convert::Infallible
+pub fn termrock::interaction::SelectionVisual::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SelectionVisual where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SelectionVisual::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SelectionVisual::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SelectionVisual where T: core::clone::Clone
+pub type termrock::interaction::SelectionVisual::Owned = T
+pub fn termrock::interaction::SelectionVisual::clone_into(&self, &mut T)
+pub fn termrock::interaction::SelectionVisual::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SelectionVisual where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SelectionVisual::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SelectionVisual where T: ?core::marker::Sized
+pub fn termrock::interaction::SelectionVisual::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SelectionVisual where T: ?core::marker::Sized
+pub fn termrock::interaction::SelectionVisual::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SelectionVisual where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SelectionVisual::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SelectionVisual
+pub fn termrock::interaction::SelectionVisual::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SelectionVisual
 #[non_exhaustive] pub enum termrock::interaction::SemanticDiagnostic
 pub termrock::interaction::SemanticDiagnostic::DuplicateId
 pub termrock::interaction::SemanticDiagnostic::DuplicateId::id: alloc::string::String
@@ -3909,6 +4067,79 @@ pub unsafe fn termrock::interaction::RovingFocusGroup<Id>::clone_to_uninit(&self
 impl<T> core::convert::From<T> for termrock::interaction::RovingFocusGroup<Id>
 pub fn termrock::interaction::RovingFocusGroup<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::RovingFocusGroup<Id>
+pub struct termrock::interaction::SelectionModel<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::interaction::SelectionModel<Id>
+pub fn termrock::interaction::SelectionModel<Id>::checked(&self) -> &[Id]
+pub fn termrock::interaction::SelectionModel<Id>::deselect(&mut self, &Id) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::extend_range(&mut self, &[Id], &Id) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::invert_visible(&mut self, &[Id]) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::is_checked(&self, &Id) -> bool
+pub fn termrock::interaction::SelectionModel<Id>::is_selected(&self, &Id) -> bool
+pub fn termrock::interaction::SelectionModel<Id>::reconcile(&mut self, &[Id]) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::reconcile_drop(&mut self, &[Id]) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::replace(&mut self, impl core::iter::traits::collect::IntoIterator<Item = Id>) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::select(&mut self, Id) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::select_all(&mut self, &[Id]) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::selected_in_view(&self, &[Id]) -> alloc::vec::Vec<Id>
+pub fn termrock::interaction::SelectionModel<Id>::set_anchor(&mut self, core::option::Option<Id>)
+pub fn termrock::interaction::SelectionModel<Id>::set_kind(&mut self, termrock::interaction::SelectionKind)
+pub fn termrock::interaction::SelectionModel<Id>::set_range(&mut self, &[Id], &Id) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::toggle(&mut self, &Id) -> termrock::interaction::SelectionDelta<Id>
+impl<Id> termrock::interaction::SelectionModel<Id>
+pub const fn termrock::interaction::SelectionModel<Id>::anchor(&self) -> core::option::Option<&Id>
+pub fn termrock::interaction::SelectionModel<Id>::clear(&mut self) -> termrock::interaction::SelectionDelta<Id>
+pub fn termrock::interaction::SelectionModel<Id>::is_empty(&self) -> bool
+pub const fn termrock::interaction::SelectionModel<Id>::kind(&self) -> termrock::interaction::SelectionKind
+pub fn termrock::interaction::SelectionModel<Id>::len(&self) -> usize
+pub const fn termrock::interaction::SelectionModel<Id>::multiple() -> Self
+pub const fn termrock::interaction::SelectionModel<Id>::new(termrock::interaction::SelectionKind) -> Self
+pub const fn termrock::interaction::SelectionModel<Id>::range() -> Self
+pub fn termrock::interaction::SelectionModel<Id>::selected(&self) -> &[Id]
+pub const fn termrock::interaction::SelectionModel<Id>::single() -> Self
+impl<Id: core::clone::Clone + core::cmp::PartialEq> core::convert::From<termrock::interaction::SelectionModel<Id>> for termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::from(termrock::interaction::SelectionModel<Id>) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::SelectionModel<Id>
+pub fn termrock::interaction::SelectionModel<Id>::clone(&self) -> termrock::interaction::SelectionModel<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::SelectionModel<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::SelectionModel<Id>
+pub fn termrock::interaction::SelectionModel<Id>::eq(&self, &termrock::interaction::SelectionModel<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::SelectionModel<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::SelectionModel<Id>
+pub fn termrock::interaction::SelectionModel<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::interaction::SelectionModel<Id>
+pub fn termrock::interaction::SelectionModel<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::interaction::SelectionModel<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::interaction::SelectionModel<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::interaction::SelectionModel<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::interaction::SelectionModel<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::interaction::SelectionModel<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::SelectionModel<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::interaction::SelectionModel<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::SelectionModel<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::SelectionModel<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::SelectionModel<Id> where U: core::convert::From<T>
+pub fn termrock::interaction::SelectionModel<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::SelectionModel<Id> where U: core::convert::Into<T>
+pub type termrock::interaction::SelectionModel<Id>::Error = core::convert::Infallible
+pub fn termrock::interaction::SelectionModel<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::SelectionModel<Id> where U: core::convert::TryFrom<T>
+pub type termrock::interaction::SelectionModel<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::SelectionModel<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::SelectionModel<Id> where T: core::clone::Clone
+pub type termrock::interaction::SelectionModel<Id>::Owned = T
+pub fn termrock::interaction::SelectionModel<Id>::clone_into(&self, &mut T)
+pub fn termrock::interaction::SelectionModel<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::SelectionModel<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::SelectionModel<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::SelectionModel<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::SelectionModel<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::SelectionModel<Id> where T: ?core::marker::Sized
+pub fn termrock::interaction::SelectionModel<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::SelectionModel<Id> where T: core::clone::Clone
+pub unsafe fn termrock::interaction::SelectionModel<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::SelectionModel<Id>
+pub fn termrock::interaction::SelectionModel<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::SelectionModel<Id>
 pub struct termrock::interaction::SemanticNode<Id, Action>
 pub termrock::interaction::SemanticNode::actions: alloc::vec::Vec<Action>
 pub termrock::interaction::SemanticNode::area: ratatui_core::layout::rect::Rect
@@ -4219,6 +4450,7 @@ pub fn termrock::interaction::render_backdrop(&mut ratatui_core::terminal::frame
 pub fn termrock::interaction::roving_hint_keymap(termrock::interaction::RovingOrientation) -> termrock::keymap::Keymap<&'static str>
 pub fn termrock::interaction::roving_hint_keymap_horizontal() -> termrock::keymap::Keymap<&'static str>
 pub fn termrock::interaction::roving_hint_keymap_vertical() -> termrock::keymap::Keymap<&'static str>
+pub fn termrock::interaction::select_subtree<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::interaction::SelectionModel<Id>, &[Id]) -> termrock::interaction::SelectionDelta<Id>
 pub type termrock::interaction::SemanticElement<Id, Action> = termrock::interaction::SemanticNode<Id, Action>
 pub mod termrock::keymap
 pub mod termrock::keymap::glyph
@@ -15983,13 +16215,13 @@ pub fn termrock::widgets::DataTableState<RowId, ColId>::eq(&self, &termrock::wid
 impl<RowId: core::cmp::PartialEq + core::clone::Clone + core::cmp::Ord, ColId: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::DataTableState<RowId, ColId>
 impl<RowId: core::fmt::Debug + core::clone::Clone + core::cmp::Ord, ColId: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::widgets::DataTableState<RowId, ColId>
 pub fn termrock::widgets::DataTableState<RowId, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<RowId, ColId> core::marker::Freeze for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::marker::Freeze
+impl<RowId, ColId> core::marker::Freeze for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::marker::Freeze, RowId: core::marker::Freeze
 impl<RowId, ColId> core::marker::Send for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::marker::Send, RowId: core::marker::Send
 impl<RowId, ColId> core::marker::Sync for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::marker::Sync, RowId: core::marker::Sync
-impl<RowId, ColId> core::marker::Unpin for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::marker::Unpin
-impl<RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::marker::UnsafeUnpin
+impl<RowId, ColId> core::marker::Unpin for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::marker::Unpin, RowId: core::marker::Unpin
+impl<RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::marker::UnsafeUnpin, RowId: core::marker::UnsafeUnpin
 impl<RowId, ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe
-impl<RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::panic::unwind_safe::UnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe
+impl<RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DataTableState<RowId, ColId> where ColId: core::panic::unwind_safe::UnwindSafe, RowId: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::RefUnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DataTableState<RowId, ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::DataTableState<RowId, ColId>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::DataTableState<RowId, ColId> where U: core::convert::From<T>
@@ -19259,13 +19491,13 @@ pub fn termrock::widgets::OpsDashboardState<RowId, ColId>::eq(&self, &termrock::
 impl<RowId: core::cmp::PartialEq + core::clone::Clone + core::cmp::Ord, ColId: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::OpsDashboardState<RowId, ColId>
 impl<RowId: core::fmt::Debug + core::clone::Clone + core::cmp::Ord, ColId: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::widgets::OpsDashboardState<RowId, ColId>
 pub fn termrock::widgets::OpsDashboardState<RowId, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<RowId, ColId> core::marker::Freeze for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::marker::Freeze
+impl<RowId, ColId> core::marker::Freeze for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::marker::Freeze, RowId: core::marker::Freeze
 impl<RowId, ColId> core::marker::Send for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::marker::Send, RowId: core::marker::Send
 impl<RowId, ColId> core::marker::Sync for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::marker::Sync, RowId: core::marker::Sync
-impl<RowId, ColId> core::marker::Unpin for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::marker::Unpin
-impl<RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::marker::UnsafeUnpin
+impl<RowId, ColId> core::marker::Unpin for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::marker::Unpin, RowId: core::marker::Unpin
+impl<RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::marker::UnsafeUnpin, RowId: core::marker::UnsafeUnpin
 impl<RowId, ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe
-impl<RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::panic::unwind_safe::UnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe
+impl<RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::OpsDashboardState<RowId, ColId> where ColId: core::panic::unwind_safe::UnwindSafe, RowId: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::RefUnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::OpsDashboardState<RowId, ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::OpsDashboardState<RowId, ColId>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::OpsDashboardState<RowId, ColId> where U: core::convert::From<T>
@@ -21213,12 +21445,19 @@ pub fn termrock::widgets::SelectState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SelectState<Id>
 pub struct termrock::widgets::Selection<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::checked(&self) -> &[Id]
+pub fn termrock::widgets::Selection<Id>::invert_visible(&mut self, &[Id])
 pub fn termrock::widgets::Selection<Id>::is_checked(&self, &Id) -> bool
+pub fn termrock::widgets::Selection<Id>::reconcile(&mut self, &[Id])
+pub fn termrock::widgets::Selection<Id>::select_all(&mut self, &[Id])
 pub fn termrock::widgets::Selection<Id>::toggle(&mut self, &Id) -> bool
 impl<Id> termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::checked(&self) -> &[Id]
 pub fn termrock::widgets::Selection<Id>::clear(&mut self)
+pub const fn termrock::widgets::Selection<Id>::model(&self) -> &termrock::interaction::SelectionModel<Id>
+pub const fn termrock::widgets::Selection<Id>::model_mut(&mut self) -> &mut termrock::interaction::SelectionModel<Id>
 pub const fn termrock::widgets::Selection<Id>::new() -> Self
+impl<Id: core::clone::Clone + core::cmp::PartialEq> core::convert::From<termrock::interaction::SelectionModel<Id>> for termrock::widgets::Selection<Id>
+pub fn termrock::widgets::Selection<Id>::from(termrock::interaction::SelectionModel<Id>) -> Self
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Selection<Id>
 pub fn termrock::widgets::Selection<Id>::clone(&self) -> termrock::widgets::Selection<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::Selection<Id>
@@ -21229,11 +21468,11 @@ impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Selection<Id>
 pub fn termrock::widgets::Selection<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<Id> core::default::Default for termrock::widgets::Selection<Id>
 pub fn termrock::widgets::Selection<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::widgets::Selection<Id>
+impl<Id> core::marker::Freeze for termrock::widgets::Selection<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::Selection<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::Selection<Id> where Id: core::marker::Sync
 impl<Id> core::marker::Unpin for termrock::widgets::Selection<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::Selection<Id>
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::Selection<Id> where Id: core::marker::UnsafeUnpin
 impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Selection<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
 impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Selection<Id> where Id: core::panic::unwind_safe::UnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::Selection<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
@@ -21267,14 +21506,24 @@ pub termrock::widgets::SelectionModel::anchor: core::option::Option<termrock::wi
 pub termrock::widgets::SelectionModel::focus_col: usize
 pub termrock::widgets::SelectionModel::focus_row: u64
 pub termrock::widgets::SelectionModel::mode: termrock::widgets::SelectionMode
-pub termrock::widgets::SelectionModel::selected_rows: alloc::collections::btree::set::BTreeSet<RowId>
+pub termrock::widgets::SelectionModel::rows: termrock::interaction::SelectionModel<RowId>
 impl<RowId: core::cmp::Ord + core::clone::Clone> termrock::widgets::SelectionModel<RowId>
 pub fn termrock::widgets::SelectionModel<RowId>::cell() -> Self
 pub fn termrock::widgets::SelectionModel<RowId>::clear_selection(&mut self)
+pub fn termrock::widgets::SelectionModel<RowId>::is_row_selected(&self, &RowId) -> bool
 pub fn termrock::widgets::SelectionModel<RowId>::move_focus(&mut self, i64, i32, u64, usize) -> bool
 pub fn termrock::widgets::SelectionModel<RowId>::multi_row() -> Self
+pub fn termrock::widgets::SelectionModel<RowId>::reconcile_rows(&mut self, &[RowId])
 pub fn termrock::widgets::SelectionModel<RowId>::row() -> Self
+pub fn termrock::widgets::SelectionModel<RowId>::select_all_rows(&mut self, &[RowId])
+pub fn termrock::widgets::SelectionModel<RowId>::select_row(&mut self, RowId)
+pub fn termrock::widgets::SelectionModel<RowId>::select_row_range(&mut self, &[RowId], &RowId)
+pub fn termrock::widgets::SelectionModel<RowId>::selected_rows(&self) -> &[RowId]
+pub fn termrock::widgets::SelectionModel<RowId>::selected_rows_set(&self) -> alloc::collections::btree::set::BTreeSet<RowId>
 pub fn termrock::widgets::SelectionModel<RowId>::toggle_row(&mut self, RowId)
+impl<RowId: core::cmp::Ord + core::clone::Clone> termrock::widgets::SelectionModel<RowId>
+pub fn termrock::widgets::SelectionModel<RowId>::insert_row(&mut self, RowId)
+pub fn termrock::widgets::SelectionModel<RowId>::remove_row(&mut self, &RowId)
 impl<RowId: core::clone::Clone + core::cmp::Ord> core::clone::Clone for termrock::widgets::SelectionModel<RowId>
 pub fn termrock::widgets::SelectionModel<RowId>::clone(&self) -> termrock::widgets::SelectionModel<RowId>
 impl<RowId: core::cmp::Eq + core::cmp::Ord> core::cmp::Eq for termrock::widgets::SelectionModel<RowId>
@@ -21285,13 +21534,13 @@ pub fn termrock::widgets::SelectionModel<RowId>::eq(&self, &termrock::widgets::S
 impl<RowId: core::cmp::PartialEq + core::cmp::Ord> core::marker::StructuralPartialEq for termrock::widgets::SelectionModel<RowId>
 impl<RowId: core::fmt::Debug + core::cmp::Ord> core::fmt::Debug for termrock::widgets::SelectionModel<RowId>
 pub fn termrock::widgets::SelectionModel<RowId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<RowId> core::marker::Freeze for termrock::widgets::SelectionModel<RowId>
+impl<RowId> core::marker::Freeze for termrock::widgets::SelectionModel<RowId> where RowId: core::marker::Freeze
 impl<RowId> core::marker::Send for termrock::widgets::SelectionModel<RowId> where RowId: core::marker::Send
 impl<RowId> core::marker::Sync for termrock::widgets::SelectionModel<RowId> where RowId: core::marker::Sync
-impl<RowId> core::marker::Unpin for termrock::widgets::SelectionModel<RowId>
-impl<RowId> core::marker::UnsafeUnpin for termrock::widgets::SelectionModel<RowId>
+impl<RowId> core::marker::Unpin for termrock::widgets::SelectionModel<RowId> where RowId: core::marker::Unpin
+impl<RowId> core::marker::UnsafeUnpin for termrock::widgets::SelectionModel<RowId> where RowId: core::marker::UnsafeUnpin
 impl<RowId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SelectionModel<RowId> where RowId: core::panic::unwind_safe::RefUnwindSafe
-impl<RowId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SelectionModel<RowId> where RowId: core::panic::unwind_safe::RefUnwindSafe
+impl<RowId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SelectionModel<RowId> where RowId: core::panic::unwind_safe::UnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SelectionModel<RowId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::SelectionModel<RowId>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::SelectionModel<RowId> where U: core::convert::From<T>

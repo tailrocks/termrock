@@ -763,6 +763,15 @@ pub(crate) fn stories() -> Vec<Story> {
             collection_state_story,
         ),
         Story::new(
+            "selection-model/multi",
+            "SelectionModel multi + checks",
+            "SelectionModel",
+            "Ordered multi-select with check glyphs (not color alone).",
+            40,
+            8,
+            selection_model_story,
+        ),
+        Story::new(
             "capability/color-ladder",
             "Capability color ladder",
             "DesignInspector",
@@ -4065,6 +4074,81 @@ fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 
 
+
+
+fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{SelectionModel, SelectionVisual};
+    use termrock::style::SelectionChrome;
+    use termrock::widgets::{List, ListRow, ListState, Panel, PanelChrome, RowRole};
+
+    let rows = [
+        ListRow {
+            id: "a",
+            label: Line::from("Alpha"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "b",
+            label: Line::from("Beta"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+        ListRow {
+            id: "c",
+            label: Line::from("Gamma"),
+            leading: None,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            trailing: None,
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        },
+    ];
+    let mut state = ListState::new(Some("a"));
+    state.enable_multi_select();
+    if let Some(sel) = state.selection_mut() {
+        let _ = sel.toggle(&"a");
+        let _ = sel.toggle(&"c");
+    }
+    let visual = SelectionVisual::from_chrome(SelectionChrome::Gutter);
+    frame.render_widget(
+        Panel::new(system)
+            .title(if visual.requires_glyph() {
+                "SelectionModel (gutter+check)"
+            } else {
+                "SelectionModel"
+            })
+            .chrome(PanelChrome::Focused),
+        area,
+    );
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    frame.render_stateful_widget(
+        List::new(&rows, system).focused(true),
+        inner,
+        &mut state,
+    );
+    let _ = SelectionModel::<&str>::multiple();
+}
 
 fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{NavigationMove, UiIntent};
