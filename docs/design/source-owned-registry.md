@@ -1,6 +1,7 @@
 # Source-owned component ecosystem
 
-**Status:** design SoT (implementation gated — plan 047 spike + maintainer approval)  
+**Status:** design SoT (full target architecture)  
+**Spike (live):** `termrock-cli` offline plan/add/diff/check + `registry/fixtures/*` (plan 047)  
 **Philosophy:** [shadcn/ui](https://ui.shadcn.com/docs) open-code ownership, adapted to Rust/Ratatui  
 **Related:** plan `047-source-registry-cli-spike.md`, `shadcn-quality-roadmap.md` R7, `architecture-foundation.md`  
 **Non-goal:** replace Cargo or force all widgets into copy-paste. The **kernel crate stays**.
