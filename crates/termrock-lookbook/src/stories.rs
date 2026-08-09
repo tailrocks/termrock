@@ -321,6 +321,33 @@ pub(crate) fn stories() -> Vec<Story> {
             grid_narrow_story,
         ),
         Story::new(
+            "grid/settings",
+            "Grid settings template",
+            "Grid",
+            "Label + value columns; host-measured label track.",
+            48,
+            8,
+            grid_settings_story,
+        ),
+        Story::new(
+            "grid/overflow",
+            "Grid overflow clip-tail",
+            "Grid",
+            "ClipTail keeps head tracks; tail collapses.",
+            20,
+            6,
+            grid_overflow_story,
+        ),
+        Story::new(
+            "grid/nav",
+            "Grid spatial neighbor",
+            "Grid",
+            "Focus index 0 → right/down neighbor (debug labels).",
+            36,
+            8,
+            grid_nav_story,
+        ),
+        Story::new(
             "stack/vertical",
             "Stack vertical",
             "Stack",
@@ -3600,6 +3627,150 @@ fn grid_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         let _ = Panel::new(system)
             .title(labels.get(i).copied().unwrap_or("x"))
             .paint(*r, frame.buffer_mut(), None);
+    }
+}
+
+fn grid_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{layout_grid, settings_grid_template, GridItem};
+    let spec = settings_grid_template(area.width, 14, 2);
+    let pairs = [
+        ("Theme", "phosphor"),
+        ("Density", "compact"),
+        ("Keymap", "default"),
+    ];
+    let items: Vec<GridItem> = if spec.col_count() >= 2 {
+        pairs
+            .iter()
+            .enumerate()
+            .flat_map(|(row, _)| {
+                [
+                    GridItem::cell(0, row as u16),
+                    GridItem::cell(1, row as u16),
+                ]
+            })
+            .collect()
+    } else {
+        // Stacked: two auto-rows per setting
+        pairs
+            .iter()
+            .enumerate()
+            .flat_map(|(i, _)| {
+                let r = (i as u16).saturating_mul(2);
+                [GridItem::cell(0, r), GridItem::cell(0, r + 1)]
+            })
+            .collect()
+    };
+    let layout = layout_grid(area, &spec, &items);
+    for (i, r) in layout.cells.iter().enumerate() {
+        if r.width == 0 || r.height == 0 {
+            continue;
+        }
+        let pair_i = i / 2;
+        let is_label = i % 2 == 0;
+        let (label, value) = pairs.get(pair_i).copied().unwrap_or(("", ""));
+        let text = if is_label { label } else { value };
+        let role = if is_label {
+            Role::TextMuted
+        } else {
+            Role::Text
+        };
+        frame.buffer_mut().set_stringn(
+            r.x,
+            r.y,
+            text,
+            usize::from(r.width),
+            system.style(role),
+        );
+    }
+    if area.height > 0 {
+        let dbg = layout.debug_summary();
+        let clipped = if dbg.len() > usize::from(area.width) {
+            &dbg[..usize::from(area.width)]
+        } else {
+            &dbg
+        };
+        // Only paint debug when there is spare bottom row (tiny Studio inspector cue).
+        if layout.content.bottom() < area.bottom() {
+            frame.buffer_mut().set_stringn(
+                area.x,
+                area.bottom().saturating_sub(1),
+                clipped,
+                usize::from(area.width),
+                system.style(Role::TextDisabled),
+            );
+        }
+    }
+}
+
+fn grid_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{
+        layout_grid, GridItem, GridSpec, OverflowPolicy, TrackSize,
+    };
+    use termrock::widgets::Panel;
+    let spec = GridSpec::default()
+        .overflow(OverflowPolicy::ClipTail)
+        .columns([
+            TrackSize::Fixed(10),
+            TrackSize::Fixed(10),
+            TrackSize::Fixed(10),
+        ])
+        .rows([TrackSize::Fixed(4)]);
+    let items = [
+        GridItem::cell(0, 0),
+        GridItem::cell(1, 0),
+        GridItem::cell(2, 0),
+    ];
+    let layout = layout_grid(area, &spec, &items);
+    for (i, label) in ["keep", "mid", "drop"].iter().enumerate() {
+        if let Some(r) = layout.get(i) {
+            if r.width == 0 {
+                continue;
+            }
+            let _ = Panel::new(system)
+                .title(label)
+                .paint(r, frame.buffer_mut(), None);
+        }
+    }
+}
+
+fn grid_nav_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{
+        auto_flow_items, grid_neighbor_2d, layout_grid, GridAutoFlow, GridSpec, TrackSize,
+    };
+    use termrock::widgets::Panel;
+    let spec = GridSpec::columns_fr(3)
+        .gaps(1, 1)
+        .rows([TrackSize::Fixed(3), TrackSize::Fixed(3)]);
+    let items = auto_flow_items(3, 6, GridAutoFlow::Row);
+    let layout = layout_grid(area, &spec, &items);
+    let focus = 0usize;
+    let right = grid_neighbor_2d(&items, focus, 1, 0);
+    let down = grid_neighbor_2d(&items, focus, 0, 1);
+    for (i, r) in layout.cells.iter().enumerate() {
+        if r.height == 0 {
+            continue;
+        }
+        let mark = if i == focus {
+            "F"
+        } else if Some(i) == right {
+            "→"
+        } else if Some(i) == down {
+            "↓"
+        } else {
+            "·"
+        };
+        let body = Panel::new(system)
+            .title(&format!("{i}"))
+            .paint(*r, frame.buffer_mut(), None);
+        if body.width > 0 && body.height > 0 {
+            frame.buffer_mut().set_stringn(
+                body.x,
+                body.y,
+                mark,
+                1,
+                system.style(Role::Accent),
+            );
+        }
     }
 }
 

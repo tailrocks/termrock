@@ -6839,8 +6839,11 @@ pub termrock::layout::TrackSize::MinMax::min: u16
 pub termrock::layout::TrackSize::MinMax::preferred: u16
 pub termrock::layout::TrackSize::Weight(u16)
 impl termrock::layout::TrackSize
+pub const fn termrock::layout::TrackSize::content(u16) -> Self
 pub const fn termrock::layout::TrackSize::fixed(u16) -> Self
 pub const fn termrock::layout::TrackSize::fr(u16) -> Self
+pub const fn termrock::layout::TrackSize::ideal_size(self) -> u16
+pub const fn termrock::layout::TrackSize::max_size(self) -> core::option::Option<u16>
 pub const fn termrock::layout::TrackSize::min_size(self) -> u16
 pub const fn termrock::layout::TrackSize::minmax(u16, u16, u16) -> Self
 impl core::clone::Clone for termrock::layout::TrackSize
@@ -7376,8 +7379,10 @@ pub fn termrock::layout::Grid::gaps(self, u16, u16) -> Self
 pub fn termrock::layout::Grid::layout(&self, ratatui_core::layout::rect::Rect, &[termrock::layout::GridItem]) -> termrock::layout::GridLayout
 pub fn termrock::layout::Grid::layout_flow(&self, ratatui_core::layout::rect::Rect, usize, termrock::layout::GridAutoFlow) -> termrock::layout::GridLayout
 pub fn termrock::layout::Grid::new() -> Self
+pub fn termrock::layout::Grid::overflow(self, termrock::layout::OverflowPolicy) -> Self
 pub fn termrock::layout::Grid::padding(self, u16, u16) -> Self
 pub fn termrock::layout::Grid::row_tracks(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::layout::TrackSize>) -> Self
+pub fn termrock::layout::Grid::spec(&self) -> &termrock::layout::GridSpec
 pub fn termrock::layout::Grid::tracks(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::layout::TrackSize>) -> Self
 pub fn termrock::layout::Grid::with_density(self, termrock::style::Density) -> Self
 impl core::clone::Clone for termrock::layout::Grid
@@ -7476,14 +7481,22 @@ impl<T> either::into_either::IntoEither for termrock::layout::GridItem
 pub struct termrock::layout::GridLayout
 pub termrock::layout::GridLayout::cells: alloc::vec::Vec<ratatui_core::layout::rect::Rect>
 pub termrock::layout::GridLayout::col_count: u16
+pub termrock::layout::GridLayout::column_sizes: alloc::vec::Vec<u16>
 pub termrock::layout::GridLayout::column_tracks: alloc::vec::Vec<ratatui_core::layout::rect::Rect>
 pub termrock::layout::GridLayout::content: ratatui_core::layout::rect::Rect
 pub termrock::layout::GridLayout::overflowed: bool
 pub termrock::layout::GridLayout::row_count: u16
+pub termrock::layout::GridLayout::row_sizes: alloc::vec::Vec<u16>
 pub termrock::layout::GridLayout::row_tracks: alloc::vec::Vec<ratatui_core::layout::rect::Rect>
 impl termrock::layout::GridLayout
+pub fn termrock::layout::GridLayout::debug_summary(&self) -> alloc::string::String
 pub fn termrock::layout::GridLayout::get(&self, usize) -> core::option::Option<ratatui_core::layout::rect::Rect>
 pub fn termrock::layout::GridLayout::hit_cell(&self, u16, u16) -> core::option::Option<usize>
+pub fn termrock::layout::GridLayout::hit_regions(&self) -> alloc::vec::Vec<termrock::interaction::HitRegion<usize>>
+pub fn termrock::layout::GridLayout::is_empty(&self) -> bool
+pub fn termrock::layout::GridLayout::iter(&self) -> impl core::iter::traits::iterator::Iterator<Item = (usize, ratatui_core::layout::rect::Rect)> + '_
+pub fn termrock::layout::GridLayout::len(&self) -> usize
+pub fn termrock::layout::GridLayout::register_semantic_group<Id, Action, F>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, &str, F) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone, F: core::ops::function::FnMut(usize) -> Id
 impl core::clone::Clone for termrock::layout::GridLayout
 pub fn termrock::layout::GridLayout::clone(&self) -> termrock::layout::GridLayout
 impl core::cmp::Eq for termrock::layout::GridLayout
@@ -7528,6 +7541,7 @@ pub struct termrock::layout::GridSpec
 pub termrock::layout::GridSpec::auto_row: termrock::layout::TrackSize
 pub termrock::layout::GridSpec::column_gap: u16
 pub termrock::layout::GridSpec::columns: alloc::vec::Vec<termrock::layout::TrackSize>
+pub termrock::layout::GridSpec::overflow: termrock::layout::OverflowPolicy
 pub termrock::layout::GridSpec::pad_x: u16
 pub termrock::layout::GridSpec::pad_y: u16
 pub termrock::layout::GridSpec::row_gap: u16
@@ -7538,6 +7552,7 @@ pub fn termrock::layout::GridSpec::col_count(&self) -> u16
 pub fn termrock::layout::GridSpec::columns(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::layout::TrackSize>) -> Self
 pub fn termrock::layout::GridSpec::columns_fr(u16) -> Self
 pub const fn termrock::layout::GridSpec::gaps(self, u16, u16) -> Self
+pub const fn termrock::layout::GridSpec::overflow(self, termrock::layout::OverflowPolicy) -> Self
 pub const fn termrock::layout::GridSpec::padding(self, u16, u16) -> Self
 pub fn termrock::layout::GridSpec::rows(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::layout::TrackSize>) -> Self
 pub fn termrock::layout::GridSpec::with_density(self, termrock::style::Density) -> Self
@@ -8551,6 +8566,7 @@ pub fn termrock::layout::grid_neighbor_2d(&[termrock::layout::GridItem], usize, 
 pub fn termrock::layout::grid_reading_neighbor(&[termrock::layout::GridItem], usize, bool) -> core::option::Option<usize>
 pub fn termrock::layout::layout_center(ratatui_core::layout::rect::Rect, &termrock::layout::CenterSpec) -> termrock::layout::CenterLayout
 pub fn termrock::layout::layout_grid(ratatui_core::layout::rect::Rect, &termrock::layout::GridSpec, &[termrock::layout::GridItem]) -> termrock::layout::GridLayout
+pub fn termrock::layout::layout_grid_into(ratatui_core::layout::rect::Rect, &termrock::layout::GridSpec, &[termrock::layout::GridItem], &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>) -> termrock::layout::GridLayout
 pub fn termrock::layout::layout_stack(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize]) -> termrock::layout::StackLayout
 pub fn termrock::layout::layout_stack_into(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)
 pub fn termrock::layout::layout_stack_into_cross(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], core::option::Option<&[u16]>, &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)
@@ -8559,6 +8575,7 @@ pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame:
 pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::scroll::DialogScroll, &termrock::style::DesignSystem) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::responsive_columns(u16, u16, u16, u16) -> termrock::layout::GridSpec
+pub fn termrock::layout::settings_grid_template(u16, u16, u16) -> termrock::layout::GridSpec
 pub fn termrock::layout::status_bar_anatomy() -> [termrock::layout::AnatomyPart; 4]
 pub fn termrock::layout::table_row_shows_optional(u16) -> (bool, bool)
 pub fn termrock::layout::tabs_show_status_glyphs(u16) -> bool

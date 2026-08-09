@@ -1,6 +1,6 @@
 ---
 title: Grid
-description: '2D track grid for dashboards, forms, and card collections.'
+description: '2D track grid for dashboards, forms, settings, and card collections — fixed/fr/content/minmax, gaps, spans, overflow policy.'
 ---
 
 ## Previews
@@ -21,18 +21,34 @@ description: '2D track grid for dashboards, forms, and card collections.'
 
 ![Form template](/component-previews/grid-form.svg)
 
+### `grid/settings`
+
+![Settings template](/component-previews/grid-settings.svg)
+
 ### `grid/narrow`
 
 ![Narrow collapse](/component-previews/grid-narrow.svg)
 
+### `grid/overflow`
+
+![Overflow clip-tail](/component-previews/grid-overflow.svg)
+
+### `grid/nav`
+
+![Spatial neighbor](/component-previews/grid-nav.svg)
+
 ## Anatomy
 
-`content` · `column_tracks[]` · `row_tracks[]` · `cells[]` · `overflowed`
+`content` · `column_tracks[]` · `row_tracks[]` · `cells[]` · `column_sizes` · `row_sizes` · `overflowed`
 
 ## Usage
 
 ```rust
-use termrock::layout::{Grid, TrackSize, GridAutoFlow, form_grid_template};
+use termrock::layout::{
+    Grid, TrackSize, GridAutoFlow, OverflowPolicy,
+    form_grid_template, dashboard_grid_template, settings_grid_template,
+    grid_neighbor_2d,
+};
 
 let layout = Grid::columns(3)
     .gaps(1, 1)
@@ -40,15 +56,30 @@ let layout = Grid::columns(3)
     .layout_flow(area, 6, GridAutoFlow::Row);
 
 let form = form_grid_template(area.width);
+let dash = dashboard_grid_template(area.width, 3, 18, 1);
+let settings = settings_grid_template(area.width, 18, 2);
+
+// Studio
+let _ = layout.debug_summary();
 ```
 
 ## Tracks
 
 | Track | Behavior |
 |-------|----------|
-| `Fixed(n)` | Exact cells |
-| `Weight` / `fr` | Share residual |
-| `MinMax` | Preferred clamped to [min, max] |
+| `Fixed(n)` / `content(n)` | Exact cells (`content` = host-measured intrinsic) |
+| `Weight` / `fr` | Share residual after fixed/minmax |
+| `MinMax` | Preferred clamped to [min, max]; may grow to max |
+
+## Overflow
+
+| Policy | Behavior |
+|--------|----------|
+| `ShrinkFromEnd` (default) | From the end: `min(claim, remaining)` |
+| `ClipTail` | Keep head tracks; tail → 0 |
+| `EqualShare` | Peel cells from the end until fit |
+
+`GridLayout::overflowed` is set when any fixed/minmax track falls below min.
 
 ## Navigation
 
@@ -59,18 +90,28 @@ use termrock::layout::grid_neighbor_2d;
 // Arrow Right → grid_neighbor_2d(items, focus, 1, 0)
 ```
 
-## Overflow
+## Hits & semantics
 
-Track minima that exceed the axis shrink from the end; `overflowed` is set.
+```rust
+let hits = layout.hit_regions();
+layout.register_semantic_group(&mut scene, "g", "grid", |i| format!("c{i}"));
+```
 
-## vs Stack / WorkSurface
+## vs Stack / WorkSurface / VirtualGrid
 
-| | Grid | Stack | WorkSurface |
-|--|------|-------|-------------|
-| Axes | 2D tracks | 1D | 1D named regions |
-| Spans | yes | no | no |
-| Use | forms, dashboards | anatomy | app chrome |
+| | Grid | Stack | WorkSurface | VirtualGrid |
+|--|------|-------|-------------|-------------|
+| Axes | 2D tracks | 1D | 1D named | virtual data |
+| Spans | yes | no | no | cells |
+| Use | forms, dashboards | anatomy | app chrome | large tables |
+
+## Common mistakes
+
+- Making every grid keyboard-focusable — only host-selected cells/controls
+- Using VirtualGrid for static dashboard cards — prefer Grid + Card
+- Ignoring `overflowed` on narrow terminals
+- Nesting Grid for 1D packing — use Stack
 
 ## Migration
 
-`migrations/0098-v0.13.0-grid.md`
+See `migrations/0105-v0.13.0-grid-premium.md` (extends 0098).

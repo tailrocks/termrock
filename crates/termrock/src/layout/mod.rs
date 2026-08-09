@@ -21,8 +21,8 @@ pub use center::{
 pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
 pub use grid::{
     auto_flow_items, dashboard_grid_template, form_grid_template, grid_neighbor, grid_neighbor_2d,
-    grid_reading_neighbor, layout_grid, responsive_columns, Grid, GridAutoFlow, GridItem,
-    GridLayout, GridSpec, TrackSize,
+    grid_reading_neighbor, layout_grid, layout_grid_into, responsive_columns, settings_grid_template,
+    Grid, GridAutoFlow, GridItem, GridLayout, GridSpec, TrackSize,
 };
 pub use responsive::{
     AdaptiveAnatomy, AnatomyPart, Breakpoint, ContentPriority, ContractionStage, HEIGHT_LADDER,
