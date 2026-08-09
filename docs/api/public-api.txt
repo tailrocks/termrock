@@ -42,7 +42,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 6 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.92s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.21s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -17344,14 +17344,31 @@ pub unsafe fn termrock::widgets::DrawerOutcome::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DrawerOutcome
 pub fn termrock::widgets::DrawerOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DrawerOutcome
-pub enum termrock::widgets::EditAction
+#[non_exhaustive] pub enum termrock::widgets::EditAction
 pub termrock::widgets::EditAction::Backspace
+pub termrock::widgets::EditAction::Clear
 pub termrock::widgets::EditAction::Delete
 pub termrock::widgets::EditAction::End
+pub termrock::widgets::EditAction::End::select: bool
 pub termrock::widgets::EditAction::Home
+pub termrock::widgets::EditAction::Home::select: bool
 pub termrock::widgets::EditAction::Insert(char)
 pub termrock::widgets::EditAction::MoveLeft
+pub termrock::widgets::EditAction::MoveLeft::select: bool
 pub termrock::widgets::EditAction::MoveRight
+pub termrock::widgets::EditAction::MoveRight::select: bool
+pub termrock::widgets::EditAction::Redo
+pub termrock::widgets::EditAction::SelectAll
+pub termrock::widgets::EditAction::Undo
+pub termrock::widgets::EditAction::WordLeft
+pub termrock::widgets::EditAction::WordLeft::select: bool
+pub termrock::widgets::EditAction::WordRight
+pub termrock::widgets::EditAction::WordRight::select: bool
+impl termrock::widgets::EditAction
+pub const fn termrock::widgets::EditAction::end() -> Self
+pub const fn termrock::widgets::EditAction::home() -> Self
+pub const fn termrock::widgets::EditAction::move_left() -> Self
+pub const fn termrock::widgets::EditAction::move_right() -> Self
 impl core::clone::Clone for termrock::widgets::EditAction
 pub fn termrock::widgets::EditAction::clone(&self) -> termrock::widgets::EditAction
 impl core::cmp::Eq for termrock::widgets::EditAction
@@ -22936,6 +22953,12 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TextEmphasis
 #[non_exhaustive] pub enum termrock::widgets::TextInputOutcome
 pub termrock::widgets::TextInputOutcome::Cancelled
 pub termrock::widgets::TextInputOutcome::Changed
+pub termrock::widgets::TextInputOutcome::Cleared
+pub termrock::widgets::TextInputOutcome::ClipboardCopy
+pub termrock::widgets::TextInputOutcome::ClipboardCopy::text: alloc::string::String
+pub termrock::widgets::TextInputOutcome::ClipboardCut
+pub termrock::widgets::TextInputOutcome::ClipboardCut::text: alloc::string::String
+pub termrock::widgets::TextInputOutcome::ClipboardPasteRequest
 pub termrock::widgets::TextInputOutcome::Ignored
 pub termrock::widgets::TextInputOutcome::Submitted(alloc::string::String)
 impl core::clone::Clone for termrock::widgets::TextInputOutcome
@@ -39273,9 +39296,17 @@ pub fn termrock::widgets::TextCursor::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TextCursor
 pub struct termrock::widgets::TextInput<'a>
 impl<'a> termrock::widgets::TextInput<'a>
+pub fn termrock::widgets::TextInput<'a>::handle_mouse(&self, &mut termrock::widgets::TextInputState, termrock::input::MouseEvent) -> termrock::widgets::TextInputOutcome
 pub const fn termrock::widgets::TextInput<'a>::label(&self) -> &'a str
 pub const fn termrock::widgets::TextInput<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::TextInput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TextInputState) -> termrock::widgets::TextInputParts
 pub const fn termrock::widgets::TextInput<'a>::placeholder(self, &'a str) -> Self
+pub const fn termrock::widgets::TextInput<'a>::prefix(self, &'a str) -> Self
+pub fn termrock::widgets::TextInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::TextInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::TextInput<'a>::secret(self, bool) -> Self
+pub const fn termrock::widgets::TextInput<'a>::secret_mask(self, char) -> Self
+pub const fn termrock::widgets::TextInput<'a>::show_clear(self, bool) -> Self
+pub const fn termrock::widgets::TextInput<'a>::suffix(self, &'a str) -> Self
 pub const fn termrock::widgets::TextInput<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::TextInput<'_>
 pub type &termrock::widgets::TextInput<'_>::State = termrock::widgets::TextInputState
@@ -39318,16 +39349,76 @@ pub unsafe fn termrock::widgets::TextInput<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::TextInput<'a>
 pub fn termrock::widgets::TextInput<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TextInput<'a>
+pub struct termrock::widgets::TextInputParts
+pub termrock::widgets::TextInputParts::clear: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::TextInputParts::cursor: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::TextInputParts::field: ratatui_core::layout::rect::Rect
+pub termrock::widgets::TextInputParts::prefix: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::TextInputParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::TextInputParts::suffix: core::option::Option<ratatui_core::layout::rect::Rect>
+impl core::clone::Clone for termrock::widgets::TextInputParts
+pub fn termrock::widgets::TextInputParts::clone(&self) -> termrock::widgets::TextInputParts
+impl core::cmp::Eq for termrock::widgets::TextInputParts
+impl core::cmp::PartialEq for termrock::widgets::TextInputParts
+pub fn termrock::widgets::TextInputParts::eq(&self, &termrock::widgets::TextInputParts) -> bool
+impl core::fmt::Debug for termrock::widgets::TextInputParts
+pub fn termrock::widgets::TextInputParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::TextInputParts
+impl core::marker::Freeze for termrock::widgets::TextInputParts
+impl core::marker::Send for termrock::widgets::TextInputParts
+impl core::marker::Sync for termrock::widgets::TextInputParts
+impl core::marker::Unpin for termrock::widgets::TextInputParts
+impl core::marker::UnsafeUnpin for termrock::widgets::TextInputParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TextInputParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TextInputParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TextInputParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TextInputParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TextInputParts where U: core::convert::From<T>
+pub fn termrock::widgets::TextInputParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TextInputParts where U: core::convert::Into<T>
+pub type termrock::widgets::TextInputParts::Error = core::convert::Infallible
+pub fn termrock::widgets::TextInputParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TextInputParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TextInputParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TextInputParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TextInputParts where T: core::clone::Clone
+pub type termrock::widgets::TextInputParts::Owned = T
+pub fn termrock::widgets::TextInputParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::TextInputParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TextInputParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TextInputParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TextInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::TextInputParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TextInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::TextInputParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TextInputParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TextInputParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TextInputParts
+pub fn termrock::widgets::TextInputParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TextInputParts
 pub struct termrock::widgets::TextInputState
 impl termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::apply(&mut self, termrock::widgets::EditAction) -> bool
+pub const fn termrock::widgets::TextInputState::can_edit(&self) -> bool
 pub fn termrock::widgets::TextInputState::clear(&mut self) -> bool
 pub const fn termrock::widgets::TextInputState::cursor_byte(&self) -> usize
+pub fn termrock::widgets::TextInputState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::TextInputOutcome
 pub fn termrock::widgets::TextInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::TextInputOutcome
+pub fn termrock::widgets::TextInputState::handle_key_result(&mut self, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::TextInputOutcome>
+pub fn termrock::widgets::TextInputState::handle_mouse(&mut self, termrock::input::MouseEvent, ratatui_core::layout::rect::Rect) -> termrock::widgets::TextInputOutcome
 pub fn termrock::widgets::TextInputState::insert_str(&mut self, &str) -> termrock::widgets::TextInputOutcome
 pub fn termrock::widgets::TextInputState::is_valid(&self) -> bool
 pub fn termrock::widgets::TextInputState::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::TextInputState::parts(&self) -> core::option::Option<&termrock::widgets::TextInputParts>
+pub fn termrock::widgets::TextInputState::selected_text(&self) -> core::option::Option<&str>
+pub const fn termrock::widgets::TextInputState::selection_anchor(&self) -> core::option::Option<usize>
+pub fn termrock::widgets::TextInputState::selection_range(&self) -> core::option::Option<(usize, usize)>
 pub fn termrock::widgets::TextInputState::set_cursor_byte(&mut self, usize) -> bool
+pub fn termrock::widgets::TextInputState::set_cursor_from_display_col(&mut self, usize) -> bool
+pub const fn termrock::widgets::TextInputState::set_enabled(&mut self, bool)
+pub const fn termrock::widgets::TextInputState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::TextInputState::set_loading(&mut self, bool)
+pub const fn termrock::widgets::TextInputState::set_read_only(&mut self, bool)
 pub fn termrock::widgets::TextInputState::trimmed_value(&self) -> &str
 pub fn termrock::widgets::TextInputState::validity(&self) -> termrock::widgets::TextInputValidity
 pub fn termrock::widgets::TextInputState::value(&self) -> &str
@@ -39340,7 +39431,7 @@ impl core::cmp::Eq for termrock::widgets::TextInputState
 impl core::cmp::PartialEq for termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::eq(&self, &termrock::widgets::TextInputState) -> bool
 impl core::default::Default for termrock::widgets::TextInputState
-pub fn termrock::widgets::TextInputState::default() -> termrock::widgets::TextInputState
+pub fn termrock::widgets::TextInputState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::TextInputState
 pub fn termrock::widgets::TextInputState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::TextInputState

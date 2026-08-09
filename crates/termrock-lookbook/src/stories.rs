@@ -4785,9 +4785,36 @@ pub(crate) fn stories() -> Vec<Story> {
             "Text input",
             "TextInput",
             "Default focused text input.",
-            32,
-            1,
+            40,
+            2,
             text_input_basic_story,
+        ),
+        Story::new(
+            "text-input/secret",
+            "TextInput secret",
+            "TextInput",
+            "Password mask with clear action.",
+            36,
+            2,
+            text_input_secret_story,
+        ),
+        Story::new(
+            "text-input/invalid",
+            "TextInput invalid",
+            "TextInput",
+            "Validation error chrome.",
+            40,
+            3,
+            text_input_invalid_story,
+        ),
+        Story::new(
+            "text-input/prefix",
+            "TextInput prefix/suffix",
+            "TextInput",
+            "Prefix and suffix adornments.",
+            40,
+            2,
+            text_input_prefix_story,
         ),
     ]
 }
@@ -12634,7 +12661,38 @@ fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn text_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    text_input_unicode(frame, area, system);
+    let mut state = TextInputState::new("filter term");
+    state.set_focused(true);
+    let _ = TextInput::new("Query", system)
+        .placeholder("Search…")
+        .show_clear(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn text_input_secret_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TextInputState::new("hunter2");
+    state.set_focused(true);
+    let _ = TextInput::new("Password", system)
+        .secret(true)
+        .show_clear(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn text_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TextInputState::new("taken");
+    state.set_focused(true);
+    let _ = TextInput::new("Username", system)
+        .validation(Validation::Invalid("already taken"))
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn text_input_prefix_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TextInputState::new("termrock");
+    state.set_focused(true);
+    let _ = TextInput::new("URL", system)
+        .prefix("https://")
+        .suffix(".dev")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn completion_menu_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -298,7 +298,8 @@ pub use table::{
 pub use tabs::{TAB_GAP, Tab, TabCell, Tabs, TabsState, lay_out_tabs, tab_at_column};
 pub use text_area::{TextArea, TextAreaOutcome, TextAreaState, TextCursor};
 pub use text_input::{
-    EditAction, TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation,
+    EditAction, TextInput, TextInputOutcome, TextInputParts, TextInputState, TextInputValidity,
+    Validation,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,

@@ -220,9 +220,9 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
 fn text_input_edits_extended_graphemes_atomically() {
     for value in ["e\u{301}", "👩‍💻", "👍🏽", "🌐", "🧪", "\u{200b}"] {
         let mut state = TextInputState::new(value);
-        state.apply(EditAction::MoveLeft);
+        state.apply(EditAction::move_left());
         assert_eq!(state.cursor_byte(), 0, "{value:?}");
-        state.apply(EditAction::MoveRight);
+        state.apply(EditAction::move_right());
         assert_eq!(state.cursor_byte(), value.len(), "{value:?}");
         state.apply(EditAction::Backspace);
         assert_eq!(state.value(), "", "{value:?}");

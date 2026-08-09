@@ -244,9 +244,13 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
             return self.handle_intent(visible, intent);
         }
         match self.query.handle_key(key) {
-            TextInputOutcome::Changed => PickerOutcome::QueryChanged,
+            TextInputOutcome::Changed | TextInputOutcome::Cleared => PickerOutcome::QueryChanged,
             TextInputOutcome::Cancelled => PickerOutcome::Cancelled,
-            TextInputOutcome::Submitted(_) | TextInputOutcome::Ignored => PickerOutcome::Ignored,
+            TextInputOutcome::Submitted(_)
+            | TextInputOutcome::Ignored
+            | TextInputOutcome::ClipboardCopy { .. }
+            | TextInputOutcome::ClipboardCut { .. }
+            | TextInputOutcome::ClipboardPasteRequest => PickerOutcome::Ignored,
         }
     }
 

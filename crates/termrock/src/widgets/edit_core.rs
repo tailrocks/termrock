@@ -114,6 +114,88 @@ pub(crate) fn byte_at_display_column(line: &str, goal: usize) -> usize {
     boundary
 }
 
+/// True if grapheme is considered a "word" character (alphanumeric or `_`).
+pub(crate) fn is_word_grapheme(g: &str) -> bool {
+    g.chars()
+        .next()
+        .is_some_and(|c| c.is_alphanumeric() || c == '_')
+}
+
+/// Previous word-start boundary (Emacs/Vim-style word left).
+pub(crate) fn previous_word_boundary(line: &str, byte: usize) -> usize {
+    let byte = boundary_at_or_before(line, byte.min(line.len()));
+    if byte == 0 {
+        return 0;
+    }
+    let mut pos = byte;
+    // 1) skip whitespace left
+    while let Some(prev) = previous_boundary(line, pos) {
+        let g = &line[prev..pos];
+        if g.chars().all(char::is_whitespace) {
+            pos = prev;
+        } else {
+            break;
+        }
+    }
+    // 2) consume word or non-word cluster leftward
+    if let Some(prev) = previous_boundary(line, pos) {
+        let g = &line[prev..pos];
+        if g.chars().all(char::is_whitespace) {
+            return boundary_at_or_before(line, pos);
+        }
+        let word = is_word_grapheme(g);
+        pos = prev;
+        while let Some(p) = previous_boundary(line, pos) {
+            let gg = &line[p..pos];
+            if gg.chars().all(char::is_whitespace) {
+                break;
+            }
+            if is_word_grapheme(gg) == word {
+                pos = p;
+            } else {
+                break;
+            }
+        }
+    }
+    boundary_at_or_before(line, pos)
+}
+
+/// Next word-end / next word-start boundary (word right).
+pub(crate) fn next_word_boundary(line: &str, byte: usize) -> usize {
+    let byte = boundary_at_or_after(line, byte.min(line.len()));
+    if byte >= line.len() {
+        return line.len();
+    }
+    let mut pos = byte;
+    // skip whitespace
+    while let Some(next) = next_boundary(line, pos) {
+        let g = &line[pos..next];
+        if g.chars().all(char::is_whitespace) {
+            pos = next;
+        } else {
+            break;
+        }
+    }
+    if pos >= line.len() {
+        return line.len();
+    }
+    // consume word or non-word cluster
+    if let Some(next) = next_boundary(line, pos) {
+        let g = &line[pos..next];
+        let word = is_word_grapheme(g);
+        pos = next;
+        while let Some(n) = next_boundary(line, pos) {
+            let gg = &line[pos..n];
+            if is_word_grapheme(gg) == word && !gg.chars().all(char::is_whitespace) {
+                pos = n;
+            } else {
+                break;
+            }
+        }
+    }
+    boundary_at_or_after(line, pos)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
