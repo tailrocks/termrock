@@ -18,6 +18,7 @@ mod section;
 mod badge;
 mod icon;
 mod label;
+mod kbd;
 mod tag_chip;
 mod text;
 mod separator;
@@ -98,6 +99,10 @@ pub use content::{
 };
 pub use badge::{
     Badge, BadgeCount, BadgeFill, BadgeOutcome, BadgeParts, BadgeState, BadgeVariant,
+};
+pub use kbd::{
+    ChordFormat, Kbd, KbdVariant, ModifierStyle, Platform, ShortcutForm, ShortcutHint,
+    format_alternatives, format_binding, format_chord, format_sequence, kbd_from_chord,
 };
 pub use icon::{Icon, IconParts};
 pub use label::{
@@ -182,7 +187,7 @@ pub use picker::{
 };
 pub use primitives::{
     ActivationOutcome, ActivationState, Button, ButtonSize, ButtonState, ButtonVariant, IconButton,
-    IconButtonState, Kbd, Spinner, button_hit,
+    IconButtonState, Spinner, button_hit,
 };
 pub use tag_chip::{
     Chip, ChipOutcome, ChipState, Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts,

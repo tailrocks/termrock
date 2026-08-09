@@ -1,0 +1,47 @@
+---
+title: ShortcutHint
+description: 'Chord + semantic command label derived from Keymap bindings; footer, inline-doc, keycap forms.'
+---
+
+## Previews
+
+### `shortcut-hint/footer`
+
+![Footer](/component-previews/shortcut-hint-footer.svg)
+
+### `shortcut-hint/inline`
+
+![Inline docs](/component-previews/shortcut-hint-inline.svg)
+
+### `shortcut-hint/narrow`
+
+![Narrow](/component-previews/shortcut-hint-narrow.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::ShortcutHint;
+
+// Prefer keymap derivation — no hardcoded chord labels
+let hint = ShortcutHint::for_action(&map, Action::Save, &system)?
+    .footer();
+hint.paint(area, buf);
+
+ShortcutHint::new("C-S", "Save", &system).inline_doc();
+```
+
+## Forms
+
+| Form | Layout |
+|------|--------|
+| Footer | `C-s Save` |
+| InlineDoc | `Save  C-s` |
+| Keycap | `[C-s] Save` |
+
+## Narrow contraction
+
+Command label drops **before** the chord when width is tight so the binding remains visible.
+
+## Migration
+
+See `migrations/0120-v0.13.0-kbd-shortcut-hint.md`.

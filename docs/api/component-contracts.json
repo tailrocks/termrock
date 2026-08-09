@@ -606,5 +606,13 @@
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"
+  },
+  "ShortcutHint": {
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "focus": "not-applicable",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
   }
 }

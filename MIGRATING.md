@@ -133,6 +133,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0117 | `v0.13.0` | [Icon & Glyph](migrations/0117-v0.13.0-icon-glyph.md) |
 | 0118 | `v0.13.0` | [Badge](migrations/0118-v0.13.0-badge.md) |
 | 0119 | `v0.13.0` | [Tag & Chip](migrations/0119-v0.13.0-tag-chip.md) |
+| 0120 | `v0.13.0` | [Kbd & ShortcutHint](migrations/0120-v0.13.0-kbd-shortcut-hint.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

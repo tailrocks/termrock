@@ -18,7 +18,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::HitRegion,
-    keymap::KeyChord,
+
     runtime::FrameTick,
     style::{DesignSystem, Motion, Role},
     text::{display_cols, take_display_cols},
@@ -696,69 +696,7 @@ impl IconButton<'_> {
 // Badge: `widgets/badge.rs`. Tag / Chip / TokenStrip: `widgets/tag_chip.rs`.
 
 // ── Kbd / Separator / Spinner ───────────────────────────────────────────────
-
-/// Renders a key chord for hints (Keymap projection helper).
-#[derive(Debug, Clone, Copy)]
-pub struct Kbd<'a> {
-    label: &'a str,
-    tokens: &'a DesignSystem,
-}
-
-impl<'a> Kbd<'a> {
-    /// Explicit chord label (e.g. from Keymap glyph).
-    #[must_use]
-    pub const fn new(label: &'a str, tokens: &'a DesignSystem) -> Self {
-        Self { label, tokens }
-    }
-
-    /// Format a [`KeyChord`] into a short display label.
-    #[must_use]
-    pub fn from_chord(chord: KeyChord, buf: &'a mut String, tokens: &'a DesignSystem) -> Self {
-        buf.clear();
-        if chord.mods.contains(KeyModifiers::CONTROL) {
-            buf.push_str("C-");
-        }
-        if chord.mods.contains(KeyModifiers::ALT) {
-            buf.push_str("A-");
-        }
-        if chord.mods.contains(KeyModifiers::SHIFT) {
-            buf.push_str("S-");
-        }
-        match chord.key {
-            KeyCode::Char(c) => buf.push(c),
-            KeyCode::Enter => buf.push_str("Enter"),
-            KeyCode::Esc => buf.push_str("Esc"),
-            KeyCode::Tab => buf.push_str("Tab"),
-            KeyCode::Backspace => buf.push_str("BS"),
-            KeyCode::Up => buf.push('↑'),
-            KeyCode::Down => buf.push('↓'),
-            KeyCode::Left => buf.push('←'),
-            KeyCode::Right => buf.push('→'),
-            other => buf.push_str(&format!("{other:?}")),
-        }
-        Self {
-            label: buf.as_str(),
-            tokens,
-        }
-    }
-}
-
-impl Widget for &Kbd<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        let text = format!(" {} ", self.label);
-        let text = take_display_cols(&text, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &text,
-            usize::from(area.width),
-            self.tokens.style(Role::HintKey),
-        );
-    }
-}
+// Kbd + ShortcutHint live in `widgets/kbd.rs`.
 
 // Separator lives in `widgets/separator.rs` (variants, labels, ASCII glyphs).
 

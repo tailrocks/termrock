@@ -2472,12 +2472,48 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "kbd/basic",
+            "Kbd keycap",
             "Kbd",
-            "Kbd",
-            "Key chord chrome for hints.",
+            "Keycap form for a compact chord.",
             16,
             3,
             kbd_story,
+        ),
+        Story::new(
+            "kbd/platform",
+            "Kbd platforms",
+            "Kbd",
+            "Emacs / spelled / Mac symbol modifier styles.",
+            48,
+            4,
+            kbd_platform_story,
+        ),
+        Story::new(
+            "shortcut-hint/footer",
+            "ShortcutHint footer",
+            "ShortcutHint",
+            "Footer form derived from a Keymap binding.",
+            40,
+            3,
+            shortcut_hint_footer_story,
+        ),
+        Story::new(
+            "shortcut-hint/inline",
+            "ShortcutHint inline docs",
+            "ShortcutHint",
+            "Inline documentation form with command first.",
+            44,
+            3,
+            shortcut_hint_inline_story,
+        ),
+        Story::new(
+            "shortcut-hint/narrow",
+            "ShortcutHint narrow",
+            "ShortcutHint",
+            "Command contracts before chord when narrow.",
+            14,
+            2,
+            shortcut_hint_narrow_story,
         ),
         Story::new(
             "paragraph/basic",
@@ -9212,8 +9248,95 @@ fn description_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn kbd_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(&Kbd::new("C-k", &tokens), area, frame.buffer_mut());
+    use termrock::widgets::Kbd;
+    let _ = Kbd::new("C-k", system).keycap().paint(area, frame.buffer_mut());
+}
+
+fn kbd_platform_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::input::KeyCode;
+    use termrock::keymap::KeyChord;
+    use termrock::widgets::{
+        ChordFormat, Kbd, ModifierStyle, Platform, format_chord,
+    };
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let chord = KeyChord::ctrl(KeyCode::Char('s'));
+    let emacs = format_chord(chord, ChordFormat::footer());
+    let spelled = format_chord(
+        chord,
+        ChordFormat::docs().platform(Platform::Other),
+    );
+    let mac = format_chord(
+        chord,
+        ChordFormat {
+            platform: Platform::Mac,
+            modifiers: ModifierStyle::Symbols,
+            ascii: false,
+        },
+    );
+    let ascii = format_chord(KeyChord::plain(KeyCode::Up), ChordFormat::footer().ascii(true));
+    let _ = Kbd::new(emacs, system).paint(chunks[0], frame.buffer_mut());
+    let _ = Kbd::new(spelled, system).inline().paint(chunks[1], frame.buffer_mut());
+    let _ = Kbd::new(mac, system).paint(chunks[2], frame.buffer_mut());
+    let _ = Kbd::new(ascii, system).paint(chunks[3], frame.buffer_mut());
+}
+
+fn shortcut_hint_footer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::input::KeyCode;
+    use termrock::keymap::{KeyBinding, KeyChord, Keymap, Visibility};
+    use termrock::widgets::ShortcutHint;
+    #[derive(Clone, Copy, PartialEq)]
+    enum A {
+        Save,
+        Quit,
+    }
+    let map = Keymap::from_owned(vec![
+        KeyBinding::owned(
+            vec![KeyChord::ctrl(KeyCode::Char('s'))],
+            A::Save,
+            Some("Save".into()),
+            Visibility::Shown,
+            None,
+        ),
+        KeyBinding::owned(
+            vec![KeyChord::ctrl(KeyCode::Char('q'))],
+            A::Quit,
+            Some("Quit".into()),
+            Visibility::Shown,
+            None,
+        ),
+    ]);
+    let chunks = Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).split(area);
+    if let Some(h) = ShortcutHint::for_action(&map, A::Save, system) {
+        h.footer().paint(chunks[0], frame.buffer_mut());
+    }
+    if let Some(h) = ShortcutHint::for_action(&map, A::Quit, system) {
+        h.footer().paint(chunks[1], frame.buffer_mut());
+    }
+}
+
+fn shortcut_hint_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::input::KeyCode;
+    use termrock::keymap::KeyChord;
+    use termrock::widgets::ShortcutHint;
+    let h = ShortcutHint::from_chords(
+        &[KeyChord::ctrl(KeyCode::Char('p'))],
+        "Open command palette",
+        system,
+    )
+    .inline_doc();
+    h.paint(area, frame.buffer_mut());
+}
+
+fn shortcut_hint_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ShortcutHint;
+    let h = ShortcutHint::new("C-S", "Save the current document", system).footer();
+    h.paint(area, frame.buffer_mut());
 }
 
 fn paragraph_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -10364,8 +10487,8 @@ fn surface_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn kbd_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(&Kbd::new("⌘K", &tokens), area, frame.buffer_mut());
+    use termrock::widgets::Kbd;
+    let _ = Kbd::new("⌘K", system).keycap().paint(area, frame.buffer_mut());
 }
 
 fn form_wizard_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
