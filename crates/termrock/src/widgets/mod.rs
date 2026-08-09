@@ -24,6 +24,7 @@ mod badge;
 mod icon;
 mod label;
 mod kbd;
+mod key_value_list;
 mod link;
 mod tag_chip;
 mod text;
@@ -113,6 +114,10 @@ pub use badge::{
 pub use kbd::{
     ChordFormat, Kbd, KbdVariant, ModifierStyle, Platform, ShortcutForm, ShortcutHint,
     format_alternatives, format_binding, format_chord, format_sequence, kbd_from_chord,
+};
+pub use key_value_list::{
+    KeyValueList, KeyValueListOutcome, KeyValueListParts, KeyValueListState, KvDensity, KvEntry,
+    KvEntryParts, KvLayout, KvStatus,
 };
 pub use link::{
     ActionLink, ActionLinkOutcome, DestinationDisplay, Link, LinkDestination, LinkOutcome,

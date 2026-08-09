@@ -17668,6 +17668,215 @@ pub unsafe fn termrock::widgets::KbdVariant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::KbdVariant
 pub fn termrock::widgets::KbdVariant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::KbdVariant
+#[non_exhaustive] pub enum termrock::widgets::KeyValueListOutcome<Id>
+pub termrock::widgets::KeyValueListOutcome::ActivateLink
+pub termrock::widgets::KeyValueListOutcome::ActivateLink::href: alloc::string::String
+pub termrock::widgets::KeyValueListOutcome::ActivateLink::id: Id
+pub termrock::widgets::KeyValueListOutcome::Copy
+pub termrock::widgets::KeyValueListOutcome::Copy::id: Id
+pub termrock::widgets::KeyValueListOutcome::Copy::text: alloc::string::String
+pub termrock::widgets::KeyValueListOutcome::Ignored
+pub termrock::widgets::KeyValueListOutcome::Scrolled
+pub termrock::widgets::KeyValueListOutcome::Scrolled::scroll_y: u16
+pub termrock::widgets::KeyValueListOutcome::SecretHidden(Id)
+pub termrock::widgets::KeyValueListOutcome::SecretRevealed(Id)
+pub termrock::widgets::KeyValueListOutcome::Selected(Id)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::KeyValueListOutcome<Id>
+pub fn termrock::widgets::KeyValueListOutcome<Id>::clone(&self) -> termrock::widgets::KeyValueListOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::KeyValueListOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::KeyValueListOutcome<Id>
+pub fn termrock::widgets::KeyValueListOutcome<Id>::eq(&self, &termrock::widgets::KeyValueListOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::KeyValueListOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::KeyValueListOutcome<Id>
+pub fn termrock::widgets::KeyValueListOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::KeyValueListOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::KeyValueListOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::KeyValueListOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::KeyValueListOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::KeyValueListOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyValueListOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyValueListOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeyValueListOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyValueListOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::KeyValueListOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyValueListOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::KeyValueListOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyValueListOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyValueListOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyValueListOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyValueListOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyValueListOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::KeyValueListOutcome<Id>::Owned = T
+pub fn termrock::widgets::KeyValueListOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyValueListOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyValueListOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyValueListOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyValueListOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyValueListOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyValueListOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyValueListOutcome<Id>
+pub fn termrock::widgets::KeyValueListOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyValueListOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::KvDensity
+pub termrock::widgets::KvDensity::Dense
+pub termrock::widgets::KvDensity::Reading
+impl termrock::widgets::KvDensity
+pub const fn termrock::widgets::KvDensity::group_gap(self) -> u16
+pub const fn termrock::widgets::KvDensity::id(self) -> &'static str
+pub const fn termrock::widgets::KvDensity::stack_below(self) -> u16
+impl core::clone::Clone for termrock::widgets::KvDensity
+pub fn termrock::widgets::KvDensity::clone(&self) -> termrock::widgets::KvDensity
+impl core::cmp::Eq for termrock::widgets::KvDensity
+impl core::cmp::PartialEq for termrock::widgets::KvDensity
+pub fn termrock::widgets::KvDensity::eq(&self, &termrock::widgets::KvDensity) -> bool
+impl core::default::Default for termrock::widgets::KvDensity
+pub fn termrock::widgets::KvDensity::default() -> termrock::widgets::KvDensity
+impl core::fmt::Debug for termrock::widgets::KvDensity
+pub fn termrock::widgets::KvDensity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::KvDensity
+pub fn termrock::widgets::KvDensity::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::KvDensity
+impl core::marker::StructuralPartialEq for termrock::widgets::KvDensity
+impl core::marker::Freeze for termrock::widgets::KvDensity
+impl core::marker::Send for termrock::widgets::KvDensity
+impl core::marker::Sync for termrock::widgets::KvDensity
+impl core::marker::Unpin for termrock::widgets::KvDensity
+impl core::marker::UnsafeUnpin for termrock::widgets::KvDensity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KvDensity
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KvDensity
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KvDensity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KvDensity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KvDensity where U: core::convert::From<T>
+pub fn termrock::widgets::KvDensity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KvDensity where U: core::convert::Into<T>
+pub type termrock::widgets::KvDensity::Error = core::convert::Infallible
+pub fn termrock::widgets::KvDensity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KvDensity where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KvDensity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KvDensity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KvDensity where T: core::clone::Clone
+pub type termrock::widgets::KvDensity::Owned = T
+pub fn termrock::widgets::KvDensity::clone_into(&self, &mut T)
+pub fn termrock::widgets::KvDensity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KvDensity where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KvDensity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KvDensity where T: ?core::marker::Sized
+pub fn termrock::widgets::KvDensity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KvDensity where T: ?core::marker::Sized
+pub fn termrock::widgets::KvDensity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KvDensity where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KvDensity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KvDensity
+pub fn termrock::widgets::KvDensity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KvDensity
+#[non_exhaustive] pub enum termrock::widgets::KvLayout
+pub termrock::widgets::KvLayout::Auto
+pub termrock::widgets::KvLayout::Columns
+pub termrock::widgets::KvLayout::Stacked
+impl termrock::widgets::KvLayout
+pub const fn termrock::widgets::KvLayout::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::KvLayout
+pub fn termrock::widgets::KvLayout::clone(&self) -> termrock::widgets::KvLayout
+impl core::cmp::Eq for termrock::widgets::KvLayout
+impl core::cmp::PartialEq for termrock::widgets::KvLayout
+pub fn termrock::widgets::KvLayout::eq(&self, &termrock::widgets::KvLayout) -> bool
+impl core::default::Default for termrock::widgets::KvLayout
+pub fn termrock::widgets::KvLayout::default() -> termrock::widgets::KvLayout
+impl core::fmt::Debug for termrock::widgets::KvLayout
+pub fn termrock::widgets::KvLayout::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::KvLayout
+pub fn termrock::widgets::KvLayout::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::KvLayout
+impl core::marker::StructuralPartialEq for termrock::widgets::KvLayout
+impl core::marker::Freeze for termrock::widgets::KvLayout
+impl core::marker::Send for termrock::widgets::KvLayout
+impl core::marker::Sync for termrock::widgets::KvLayout
+impl core::marker::Unpin for termrock::widgets::KvLayout
+impl core::marker::UnsafeUnpin for termrock::widgets::KvLayout
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KvLayout
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KvLayout
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KvLayout where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KvLayout::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KvLayout where U: core::convert::From<T>
+pub fn termrock::widgets::KvLayout::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KvLayout where U: core::convert::Into<T>
+pub type termrock::widgets::KvLayout::Error = core::convert::Infallible
+pub fn termrock::widgets::KvLayout::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KvLayout where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KvLayout::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KvLayout::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KvLayout where T: core::clone::Clone
+pub type termrock::widgets::KvLayout::Owned = T
+pub fn termrock::widgets::KvLayout::clone_into(&self, &mut T)
+pub fn termrock::widgets::KvLayout::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KvLayout where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KvLayout::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KvLayout where T: ?core::marker::Sized
+pub fn termrock::widgets::KvLayout::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KvLayout where T: ?core::marker::Sized
+pub fn termrock::widgets::KvLayout::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KvLayout where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KvLayout::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KvLayout
+pub fn termrock::widgets::KvLayout::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KvLayout
+#[non_exhaustive] pub enum termrock::widgets::KvStatus
+pub termrock::widgets::KvStatus::Danger
+pub termrock::widgets::KvStatus::Info
+pub termrock::widgets::KvStatus::Neutral
+pub termrock::widgets::KvStatus::Success
+pub termrock::widgets::KvStatus::Warning
+impl termrock::widgets::KvStatus
+pub const fn termrock::widgets::KvStatus::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::KvStatus
+pub fn termrock::widgets::KvStatus::clone(&self) -> termrock::widgets::KvStatus
+impl core::cmp::Eq for termrock::widgets::KvStatus
+impl core::cmp::PartialEq for termrock::widgets::KvStatus
+pub fn termrock::widgets::KvStatus::eq(&self, &termrock::widgets::KvStatus) -> bool
+impl core::default::Default for termrock::widgets::KvStatus
+pub fn termrock::widgets::KvStatus::default() -> termrock::widgets::KvStatus
+impl core::fmt::Debug for termrock::widgets::KvStatus
+pub fn termrock::widgets::KvStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::KvStatus
+pub fn termrock::widgets::KvStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::KvStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::KvStatus
+impl core::marker::Freeze for termrock::widgets::KvStatus
+impl core::marker::Send for termrock::widgets::KvStatus
+impl core::marker::Sync for termrock::widgets::KvStatus
+impl core::marker::Unpin for termrock::widgets::KvStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::KvStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KvStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KvStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KvStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KvStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KvStatus where U: core::convert::From<T>
+pub fn termrock::widgets::KvStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KvStatus where U: core::convert::Into<T>
+pub type termrock::widgets::KvStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::KvStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KvStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KvStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KvStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KvStatus where T: core::clone::Clone
+pub type termrock::widgets::KvStatus::Owned = T
+pub fn termrock::widgets::KvStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::KvStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KvStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KvStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KvStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::KvStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KvStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::KvStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KvStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KvStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KvStatus
+pub fn termrock::widgets::KvStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KvStatus
 #[non_exhaustive] pub enum termrock::widgets::LabelMark
 pub termrock::widgets::LabelMark::None
 pub termrock::widgets::LabelMark::Optional
@@ -28529,6 +28738,274 @@ pub unsafe fn termrock::widgets::Kbd<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Kbd<'a>
 pub fn termrock::widgets::Kbd<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Kbd<'a>
+pub struct termrock::widgets::KeyValueList<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::KeyValueList<'a, Id>
+pub fn termrock::widgets::KeyValueList<'a, Id>::display_value(&self, &termrock::widgets::KvEntry<'a, Id>, &termrock::widgets::KeyValueListState<Id>) -> alloc::string::String
+pub fn termrock::widgets::KeyValueList<'a, Id>::handle_intent(&self, &mut termrock::widgets::KeyValueListState<Id>, termrock::context::ContextUiIntent) -> termrock::widgets::KeyValueListOutcome<Id>
+pub fn termrock::widgets::KeyValueList<'a, Id>::handle_key(&self, &mut termrock::widgets::KeyValueListState<Id>, termrock::input::KeyEvent) -> termrock::widgets::KeyValueListOutcome<Id>
+pub fn termrock::widgets::KeyValueList<'a, Id>::handle_key_result(&self, &mut termrock::widgets::KeyValueListState<Id>, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::KeyValueListOutcome<Id>>
+pub fn termrock::widgets::KeyValueList<'a, Id>::handle_mouse(&self, &mut termrock::widgets::KeyValueListState<Id>, termrock::input::MouseEvent) -> termrock::widgets::KeyValueListOutcome<Id>
+pub fn termrock::widgets::KeyValueList<'a, Id>::measure_entry_height(&self, &termrock::widgets::KvEntry<'a, Id>, u16, termrock::widgets::KvLayout, &termrock::widgets::KeyValueListState<Id>) -> u16
+pub fn termrock::widgets::KeyValueList<'a, Id>::measure_height(&self, u16, &termrock::widgets::KeyValueListState<Id>) -> u16
+pub fn termrock::widgets::KeyValueList<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::KeyValueListState<Id>) -> termrock::widgets::KeyValueListParts<Id>
+pub fn termrock::widgets::KeyValueList<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::KeyValueListState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+impl<'a, Id> termrock::widgets::KeyValueList<'a, Id>
+pub const fn termrock::widgets::KeyValueList<'a, Id>::dense(&'a [termrock::widgets::KvEntry<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::KeyValueList<'a, Id>::density(self, termrock::widgets::KvDensity) -> Self
+pub const fn termrock::widgets::KeyValueList<'a, Id>::key_width(self, u16) -> Self
+pub const fn termrock::widgets::KeyValueList<'a, Id>::layout(self, termrock::widgets::KvLayout) -> Self
+pub const fn termrock::widgets::KeyValueList<'a, Id>::new(&'a [termrock::widgets::KvEntry<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::KeyValueList<'a, Id>::reading(&'a [termrock::widgets::KvEntry<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::KeyValueList<'a, Id>::resolved_layout(&self, u16) -> termrock::widgets::KvLayout
+pub const fn termrock::widgets::KeyValueList<'a, Id>::separator(self, &'a str) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::KeyValueList<'a, Id>
+pub fn termrock::widgets::KeyValueList<'a, Id>::clone(&self) -> termrock::widgets::KeyValueList<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::KeyValueList<'a, Id>
+pub fn termrock::widgets::KeyValueList<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::KeyValueList<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::KeyValueList<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::KeyValueList<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::KeyValueList<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::KeyValueList<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::KeyValueList<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyValueList<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyValueList<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyValueList<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::KeyValueList<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyValueList<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::KeyValueList<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyValueList<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyValueList<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyValueList<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyValueList<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyValueList<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::KeyValueList<'a, Id>::Owned = T
+pub fn termrock::widgets::KeyValueList<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyValueList<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyValueList<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyValueList<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyValueList<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyValueList<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyValueList<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyValueList<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyValueList<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyValueList<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyValueList<'a, Id>
+pub fn termrock::widgets::KeyValueList<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyValueList<'a, Id>
+pub struct termrock::widgets::KeyValueListParts<Id>
+pub termrock::widgets::KeyValueListParts::entries: alloc::vec::Vec<termrock::widgets::KvEntryParts<Id>>
+pub termrock::widgets::KeyValueListParts::first_row: u16
+pub termrock::widgets::KeyValueListParts::layout: termrock::widgets::KvLayout
+pub termrock::widgets::KeyValueListParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::KeyValueListParts::total_rows: u16
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::KeyValueListParts<Id>
+pub fn termrock::widgets::KeyValueListParts<Id>::clone(&self) -> termrock::widgets::KeyValueListParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::KeyValueListParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::KeyValueListParts<Id>
+pub fn termrock::widgets::KeyValueListParts<Id>::eq(&self, &termrock::widgets::KeyValueListParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::KeyValueListParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::KeyValueListParts<Id>
+pub fn termrock::widgets::KeyValueListParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::KeyValueListParts<Id>
+impl<Id> core::marker::Send for termrock::widgets::KeyValueListParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::KeyValueListParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::KeyValueListParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::KeyValueListParts<Id>
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyValueListParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyValueListParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeyValueListParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyValueListParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::KeyValueListParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyValueListParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::KeyValueListParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyValueListParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyValueListParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyValueListParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyValueListParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyValueListParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::KeyValueListParts<Id>::Owned = T
+pub fn termrock::widgets::KeyValueListParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyValueListParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyValueListParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyValueListParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyValueListParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyValueListParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyValueListParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyValueListParts<Id>
+pub fn termrock::widgets::KeyValueListParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyValueListParts<Id>
+pub struct termrock::widgets::KeyValueListState<Id>
+pub termrock::widgets::KeyValueListState::copied: core::option::Option<Id>
+pub termrock::widgets::KeyValueListState::cursor: core::option::Option<Id>
+pub termrock::widgets::KeyValueListState::focused: bool
+pub termrock::widgets::KeyValueListState::hovered: core::option::Option<Id>
+pub termrock::widgets::KeyValueListState::parts: core::option::Option<termrock::widgets::KeyValueListParts<Id>>
+pub termrock::widgets::KeyValueListState::revealed: alloc::vec::Vec<Id>
+pub termrock::widgets::KeyValueListState::scroll_y: u16
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::KeyValueListState<Id>
+pub fn termrock::widgets::KeyValueListState<Id>::clamp(&mut self)
+pub fn termrock::widgets::KeyValueListState<Id>::is_revealed(&self, &Id) -> bool
+pub fn termrock::widgets::KeyValueListState<Id>::scroll_by(&mut self, i32) -> bool
+pub fn termrock::widgets::KeyValueListState<Id>::toggle_reveal(&mut self, Id) -> bool
+impl<Id> termrock::widgets::KeyValueListState<Id>
+pub const fn termrock::widgets::KeyValueListState<Id>::new() -> Self
+pub const fn termrock::widgets::KeyValueListState<Id>::set_focused(&mut self, bool)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::KeyValueListState<Id>
+pub fn termrock::widgets::KeyValueListState<Id>::clone(&self) -> termrock::widgets::KeyValueListState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::KeyValueListState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::KeyValueListState<Id>
+pub fn termrock::widgets::KeyValueListState<Id>::eq(&self, &termrock::widgets::KeyValueListState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::KeyValueListState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::KeyValueListState<Id>
+pub fn termrock::widgets::KeyValueListState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::KeyValueListState<Id>
+pub fn termrock::widgets::KeyValueListState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::KeyValueListState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::KeyValueListState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::KeyValueListState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::KeyValueListState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::KeyValueListState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyValueListState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyValueListState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeyValueListState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyValueListState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::KeyValueListState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyValueListState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::KeyValueListState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyValueListState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyValueListState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyValueListState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyValueListState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyValueListState<Id> where T: core::clone::Clone
+pub type termrock::widgets::KeyValueListState<Id>::Owned = T
+pub fn termrock::widgets::KeyValueListState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyValueListState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyValueListState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyValueListState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyValueListState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyValueListState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyValueListState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyValueListState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyValueListState<Id>
+pub fn termrock::widgets::KeyValueListState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyValueListState<Id>
+pub struct termrock::widgets::KvEntry<'a, Id>
+pub termrock::widgets::KvEntry::annotation: core::option::Option<&'a str>
+pub termrock::widgets::KvEntry::copyable: bool
+pub termrock::widgets::KvEntry::depth: u8
+pub termrock::widgets::KvEntry::group: bool
+pub termrock::widgets::KvEntry::href: core::option::Option<&'a str>
+pub termrock::widgets::KvEntry::id: Id
+pub termrock::widgets::KvEntry::key: &'a str
+pub termrock::widgets::KvEntry::secret: bool
+pub termrock::widgets::KvEntry::status: core::option::Option<termrock::widgets::KvStatus>
+pub termrock::widgets::KvEntry::value: &'a str
+impl<'a, Id> termrock::widgets::KvEntry<'a, Id>
+pub const fn termrock::widgets::KvEntry<'a, Id>::annotation(self, &'a str) -> Self
+pub fn termrock::widgets::KvEntry<'a, Id>::copy_text(&self) -> &str
+pub const fn termrock::widgets::KvEntry<'a, Id>::copyable(self) -> Self
+pub const fn termrock::widgets::KvEntry<'a, Id>::depth(self, u8) -> Self
+pub const fn termrock::widgets::KvEntry<'a, Id>::group_header(Id, &'a str) -> Self
+pub const fn termrock::widgets::KvEntry<'a, Id>::href(self, &'a str) -> Self
+pub const fn termrock::widgets::KvEntry<'a, Id>::interactive(&self) -> bool
+pub const fn termrock::widgets::KvEntry<'a, Id>::pair(Id, &'a str, &'a str) -> Self
+pub const fn termrock::widgets::KvEntry<'a, Id>::secret(self) -> Self
+pub const fn termrock::widgets::KvEntry<'a, Id>::status(self, termrock::widgets::KvStatus) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::KvEntry<'a, Id>
+pub fn termrock::widgets::KvEntry<'a, Id>::clone(&self) -> termrock::widgets::KvEntry<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::KvEntry<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::KvEntry<'a, Id>
+pub fn termrock::widgets::KvEntry<'a, Id>::eq(&self, &termrock::widgets::KvEntry<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::KvEntry<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::KvEntry<'a, Id>
+pub fn termrock::widgets::KvEntry<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::KvEntry<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::KvEntry<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::KvEntry<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::KvEntry<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::KvEntry<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::KvEntry<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KvEntry<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::KvEntry<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KvEntry<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KvEntry<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KvEntry<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::KvEntry<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KvEntry<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::KvEntry<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::KvEntry<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KvEntry<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KvEntry<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KvEntry<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KvEntry<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::KvEntry<'a, Id>::Owned = T
+pub fn termrock::widgets::KvEntry<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::KvEntry<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KvEntry<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KvEntry<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KvEntry<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KvEntry<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KvEntry<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KvEntry<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KvEntry<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KvEntry<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KvEntry<'a, Id>
+pub fn termrock::widgets::KvEntry<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KvEntry<'a, Id>
+pub struct termrock::widgets::KvEntryParts<Id>
+pub termrock::widgets::KvEntryParts::id: Id
+pub termrock::widgets::KvEntryParts::interactive: bool
+pub termrock::widgets::KvEntryParts::key: ratatui_core::layout::rect::Rect
+pub termrock::widgets::KvEntryParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::KvEntryParts::value: ratatui_core::layout::rect::Rect
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::KvEntryParts<Id>
+pub fn termrock::widgets::KvEntryParts<Id>::clone(&self) -> termrock::widgets::KvEntryParts<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::KvEntryParts<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::KvEntryParts<Id>
+pub fn termrock::widgets::KvEntryParts<Id>::eq(&self, &termrock::widgets::KvEntryParts<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::KvEntryParts<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::KvEntryParts<Id>
+pub fn termrock::widgets::KvEntryParts<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::KvEntryParts<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::KvEntryParts<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::KvEntryParts<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::KvEntryParts<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::KvEntryParts<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KvEntryParts<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::KvEntryParts<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KvEntryParts<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KvEntryParts<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KvEntryParts<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::KvEntryParts<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KvEntryParts<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::KvEntryParts<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::KvEntryParts<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KvEntryParts<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KvEntryParts<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KvEntryParts<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KvEntryParts<Id> where T: core::clone::Clone
+pub type termrock::widgets::KvEntryParts<Id>::Owned = T
+pub fn termrock::widgets::KvEntryParts<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::KvEntryParts<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KvEntryParts<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KvEntryParts<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KvEntryParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KvEntryParts<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KvEntryParts<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::KvEntryParts<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KvEntryParts<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KvEntryParts<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KvEntryParts<Id>
+pub fn termrock::widgets::KvEntryParts<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KvEntryParts<Id>
 pub struct termrock::widgets::Label<'a, Id>
 impl<'a, Id> termrock::widgets::Label<'a, Id>
 pub const fn termrock::widgets::Label<'a, Id>::compact(self) -> Self

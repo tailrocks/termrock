@@ -32,7 +32,8 @@ use termrock::{
         DiffState, DiffView, Drawer, EmptyState, ErrorView, Form, FormField, FormSection,
         FormState, FormWizardState, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
         HintBar, ImageMeta, ImageProtocol, ImageSurface, InspectorField, JumpOverlay, JumpTarget,
-        Kbd, Link, LinkState, List, ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
+        Kbd, KeyValueList, KeyValueListState, KvEntry, KvLayout, KvStatus, Link, LinkState, List,
+        ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
         LogPaneState,
         LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuItem,
@@ -2547,6 +2548,42 @@ pub(crate) fn stories() -> Vec<Story> {
             kbd_story,
         ),
         Story::new(
+            "key-value-list/basic",
+            "KeyValueList reading",
+            "KeyValueList",
+            "Groups, status, copy, secret, and link rows.",
+            48,
+            12,
+            key_value_list_basic_story,
+        ),
+        Story::new(
+            "key-value-list/dense",
+            "KeyValueList dense",
+            "KeyValueList",
+            "Dense recipe for settings drawers.",
+            40,
+            8,
+            key_value_list_dense_story,
+        ),
+        Story::new(
+            "key-value-list/stacked",
+            "KeyValueList stacked",
+            "KeyValueList",
+            "Forced stacked anatomy (narrow/read).",
+            28,
+            12,
+            key_value_list_stacked_story,
+        ),
+        Story::new(
+            "key-value-list/secret",
+            "KeyValueList secret",
+            "KeyValueList",
+            "Redacted secret with reveal affordance.",
+            40,
+            4,
+            key_value_list_secret_story,
+        ),
+        Story::new(
             "kbd/platform",
             "Kbd platforms",
             "Kbd",
@@ -3410,6 +3447,24 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             3,
             ansi_text_unicode_story,
+        ),
+        Story::new(
+            "key-value-list/narrow",
+            "Narrow KeyValueList",
+            "KeyValueList",
+            "Auto-stacks on narrow terminals (24 cols).",
+            24,
+            12,
+            key_value_list_basic_story,
+        ),
+        Story::new(
+            "key-value-list/unicode",
+            "Unicode KeyValueList",
+            "KeyValueList",
+            "Unicode-safe keys and values.",
+            40,
+            6,
+            key_value_list_unicode_story,
         ),
         Story::new(
             "kbd/narrow",
@@ -9564,6 +9619,70 @@ fn description_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 fn kbd_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Kbd;
     let _ = Kbd::new("C-k", system).keycap().paint(area, frame.buffer_mut());
+}
+
+fn key_value_list_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = [
+        KvEntry::group_header("id", "Identity"),
+        KvEntry::pair("name", "Name", "termrock")
+            .copyable()
+            .annotation("crate"),
+        KvEntry::pair("status", "Status", "active").status(KvStatus::Success),
+        KvEntry::pair("token", "Token", "super-secret")
+            .secret()
+            .copyable(),
+        KvEntry::pair("docs", "Docs", "handbook")
+            .href("https://example.invalid")
+            .annotation("external"),
+        KvEntry::group_header("build", "Build").depth(0),
+        KvEntry::pair("target", "Target", "aarch64-apple-darwin").depth(1),
+    ];
+    let mut state = KeyValueListState::new();
+    state.set_focused(true);
+    state.cursor = Some("status");
+    let _ = KeyValueList::reading(&entries, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_list_dense_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = [
+        KvEntry::pair("host", "Host", "localhost"),
+        KvEntry::pair("port", "Port", "8080").status(KvStatus::Info),
+        KvEntry::pair("tls", "TLS", "required").status(KvStatus::Warning),
+        KvEntry::pair("pid", "PID", "4242").copyable(),
+    ];
+    let mut state = KeyValueListState::new();
+    let _ = KeyValueList::dense(&entries, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_list_stacked_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = [
+        KvEntry::pair("path", "Path", "/Users/example/Projects/termrock")
+            .annotation("workspace root"),
+        KvEntry::pair("branch", "Branch", "feat/terminal-design-system"),
+    ];
+    let mut state = KeyValueListState::new();
+    let _ = KeyValueList::reading(&entries, system)
+        .layout(KvLayout::Stacked)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_list_secret_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = [KvEntry::pair("api", "API key", "sk-live-very-secret-value")
+        .secret()
+        .copyable()];
+    let mut state = KeyValueListState::new();
+    state.set_focused(true);
+    state.cursor = Some("api");
+    let _ = KeyValueList::dense(&entries, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_list_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = [
+        KvEntry::pair("name", "名称", "文档 🔗"),
+        KvEntry::pair("ok", "状态", "就绪").status(KvStatus::Success),
+    ];
+    let mut state = KeyValueListState::new();
+    let _ = KeyValueList::reading(&entries, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn link_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
