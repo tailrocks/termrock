@@ -743,12 +743,18 @@ let sessions = [SessionItem { id: "s1", title: "Main", meta: None }];
 let picker = SessionPicker::new(&sessions, &tokens);`,
   },
   Surface: {
-    description: 'Elevation-aware surface fill without focus border ownership.',
-    primaryStory: 'surface/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::{Surface, SurfaceElevation}};
+    description:
+      'Lowest-level visual ownership: fill, padding, border, clip, and hit geometry with canvas→destructive recipes.',
+    primaryStory: 'surface/ladder',
+    usage: `use termrock::{style::DesignSystem, widgets::{Surface, SurfaceRecipe, SurfaceFill}};
 
-let tokens = DesignTokens::default();
-let surface = Surface::new(&tokens).elevation(SurfaceElevation::Elevated);`,
+let system = DesignSystem::default();
+let content = Surface::new(&system)
+    .recipe(SurfaceRecipe::Focused)
+    .paint(area, buf);
+// Children paint only inside content (clip contract).
+// Canvas / terminal-default:
+Surface::new(&system).recipe(SurfaceRecipe::Canvas).fill(SurfaceFill::TerminalDefault);`,
   },
   TaskRail: {
     description: 'Titled task list rail composing Panel + List.',

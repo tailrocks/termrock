@@ -39,7 +39,8 @@ use termrock::{
         PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep,
         RowRole, SegmentedMeter, SeparatorLine, SessionItem, SessionPicker, Severity, Skeleton,
         SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
-        StatusBarState, StatusSlot, Surface, SurfaceElevation, Switch, SwitchState, Tab, Table,
+        StatusBarState, StatusSlot, Surface, SurfaceFill, SurfaceRecipe, Switch, SwitchState, Tab,
+        Table,
         TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
         TextInput, TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
@@ -1643,12 +1644,39 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "surface/basic",
+            "Surface raised",
             "Surface",
-            "Surface",
-            "Elevated surface fill.",
-            20,
-            5,
+            "Raised surface with border (card body).",
+            24,
+            6,
             surface_story,
+        ),
+        Story::new(
+            "surface/ladder",
+            "Surface recipe ladder",
+            "Surface",
+            "Canvas · inset · raised · overlay · interactive · focused · selected · warning · destructive.",
+            72,
+            22,
+            surface_ladder_story,
+        ),
+        Story::new(
+            "surface/focused",
+            "Surface focused",
+            "Surface",
+            "Focused recipe uses Role::BorderFocused, not border weight.",
+            28,
+            6,
+            surface_focused_story,
+        ),
+        Story::new(
+            "surface/terminal-default",
+            "Surface terminal-default",
+            "Surface",
+            "Canvas + transparent fill; compatible with host terminal bg / no-color.",
+            28,
+            5,
+            surface_terminal_default_story,
         ),
         Story::new(
             "separator/basic",
@@ -6097,11 +6125,97 @@ fn paragraph_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn surface_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &Surface::new(&tokens).elevation(SurfaceElevation::Elevated),
-        area,
-        frame.buffer_mut(),
+    let content = Surface::new(&tokens)
+        .recipe(SurfaceRecipe::Raised)
+        .paint(area, frame.buffer_mut());
+    if content.width > 2 && content.height > 0 {
+        frame.buffer_mut().set_stringn(
+            content.x,
+            content.y,
+            "raised body",
+            usize::from(content.width),
+            system.style(Role::Text),
+        );
+    }
+}
+
+fn surface_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let recipes = [
+        SurfaceRecipe::Canvas,
+        SurfaceRecipe::Inset,
+        SurfaceRecipe::Raised,
+        SurfaceRecipe::Overlay,
+        SurfaceRecipe::Interactive,
+        SurfaceRecipe::Focused,
+        SurfaceRecipe::Selected,
+        SurfaceRecipe::Warning,
+        SurfaceRecipe::Destructive,
+    ];
+    let rows = recipes.len() as u16;
+    let row_h = (area.height / rows.max(1)).max(2);
+    for (i, recipe) in recipes.iter().enumerate() {
+        let y = area.y.saturating_add((i as u16).saturating_mul(row_h));
+        if y >= area.bottom() {
+            break;
+        }
+        let h = row_h.min(area.bottom().saturating_sub(y));
+        let row = Rect::new(area.x, y, area.width, h);
+        let content = Surface::new(system)
+            .recipe(*recipe)
+            .padding(1, 0)
+            .paint(row, frame.buffer_mut());
+        if content.width > 2 {
+            frame.buffer_mut().set_stringn(
+                content.x,
+                content.y,
+                recipe.id(),
+                usize::from(content.width),
+                system.style(Role::Text),
+            );
+        }
+    }
+}
+
+fn surface_focused_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let content = Surface::new(system)
+        .recipe(SurfaceRecipe::Focused)
+        .paint(area, frame.buffer_mut());
+    if content.width > 2 {
+        frame.buffer_mut().set_stringn(
+            content.x,
+            content.y,
+            "owns focus · BorderFocused",
+            usize::from(content.width),
+            system.style(Role::TextStrong),
+        );
+    }
+}
+
+fn surface_terminal_default_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    // Canvas underlay + transparent inset body (host terminal bg shows through).
+    let _ = Surface::new(system)
+        .recipe(SurfaceRecipe::Canvas)
+        .paint(area, frame.buffer_mut());
+    let inset = Rect::new(
+        area.x.saturating_add(2),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(4),
+        area.height.saturating_sub(2),
     );
+    let content = Surface::new(system)
+        .recipe(SurfaceRecipe::Inset)
+        .fill(SurfaceFill::Transparent)
+        .bordered(true)
+        .paint(inset, frame.buffer_mut());
+    if content.width > 2 {
+        frame.buffer_mut().set_stringn(
+            content.x,
+            content.y,
+            "terminal-default canvas",
+            usize::from(content.width),
+            system.style(Role::TextMuted),
+        );
+    }
 }
 
 fn separator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -7063,17 +7177,15 @@ fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 
 fn surface_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &Surface::new(&tokens).elevation(SurfaceElevation::Elevated),
-        area,
-        frame.buffer_mut(),
-    );
-    if area.width > 2 {
+    let content = Surface::new(&tokens)
+        .recipe(SurfaceRecipe::Raised)
+        .paint(area, frame.buffer_mut());
+    if content.width > 2 {
         frame.buffer_mut().set_stringn(
-            area.x.saturating_add(1),
-            area.y.saturating_add(area.height / 2),
-            "面 🎴",
-            usize::from(area.width.saturating_sub(2)),
+            content.x,
+            content.y,
+            "面 🎴 raised",
+            usize::from(content.width),
             system.style(Role::Text),
         );
     }

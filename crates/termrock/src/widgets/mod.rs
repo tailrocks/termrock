@@ -39,6 +39,7 @@ mod scroll_area;
 mod selection;
 mod split_pane;
 mod status_bar;
+mod surface;
 mod table;
 mod tabs;
 mod text_area;
@@ -81,7 +82,10 @@ pub use completion_menu::{
 pub use composed_row::{ComposedRow, ComposedRowParts};
 pub use content::{
     Alert, AlertOutcome, AlertState, AlertTone, Callout, CalloutTone, Heading, HeadingLevel,
-    Paragraph, Section, SectionOutcome, SectionState, Surface, SurfaceElevation,
+    Paragraph, Section, SectionOutcome, SectionState,
+};
+pub use surface::{
+    Surface, SurfaceElevation, SurfaceFill, SurfacePaintPlan, SurfaceParts, SurfaceRecipe,
 };
 pub use controls::{
     Checkbox, CheckboxOutcome, CheckboxState, Combobox, ComboboxOutcome, ComboboxState,

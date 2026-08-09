@@ -108,6 +108,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0092 | `v0.13.0` | [FrameClock / Presence](migrations/0092-v0.13.0-frame-clock-presence.md) |
 | 0093 | `v0.13.0` | [ComponentContract registry](migrations/0093-v0.13.0-component-contract-registry.md) |
 | 0094 | `v0.13.0` | [AppShell](migrations/0094-v0.13.0-app-shell.md) |
+| 0095 | `v0.13.0` | [Surface](migrations/0095-v0.13.0-surface.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

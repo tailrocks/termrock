@@ -326,6 +326,100 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
+            id: "Surface".into(),
+            title: "Surface".into(),
+            description: "Lowest-level visual ownership: fill, padding, border, clip, and hit geometry with canvas→destructive recipes.".into(),
+            kind: RegistryItemKind::Primitive,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::widgets::Surface".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![
+                file(
+                    "crates/termrock/src/widgets/surface.rs",
+                    ContractFileRole::Primary,
+                ),
+                file(
+                    "docs/public/component-previews/surface-ladder.svg",
+                    ContractFileRole::Fixture,
+                ),
+            ],
+            dependencies: kernel_dep(),
+            capabilities: {
+                let mut c = caps_basic();
+                c.min_width = Some(1);
+                c.min_height = Some(1);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "root".into(),
+                    label: "Root".into(),
+                },
+                AnatomyPartRef {
+                    id: "content".into(),
+                    label: "Content slot".into(),
+                },
+                AnatomyPartRef {
+                    id: "hit".into(),
+                    label: "Hit region".into(),
+                },
+                AnatomyPartRef {
+                    id: "clip".into(),
+                    label: "Clip contract".into(),
+                },
+            ],
+            semantic_roles: vec![
+                SemanticRoleRef {
+                    id: "Role::Canvas".into(),
+                },
+                SemanticRoleRef {
+                    id: "Role::Surface".into(),
+                },
+                SemanticRoleRef {
+                    id: "Role::Elevated".into(),
+                },
+                SemanticRoleRef {
+                    id: "Role::BorderFocused".into(),
+                },
+            ],
+            variants: vec![
+                VariantRef {
+                    id: "canvas".into(),
+                    description: "Terminal underlay".into(),
+                },
+                VariantRef {
+                    id: "inset".into(),
+                    description: "Default surface".into(),
+                },
+                VariantRef {
+                    id: "raised".into(),
+                    description: "Card / elevated".into(),
+                },
+                VariantRef {
+                    id: "focused".into(),
+                    description: "Interaction owner border".into(),
+                },
+                VariantRef {
+                    id: "destructive".into(),
+                    description: "Danger chrome".into(),
+                },
+            ],
+            outcomes: vec![],
+            stories: vec![
+                "surface/basic".into(),
+                "surface/ladder".into(),
+                "surface/focused".into(),
+                "surface/terminal-default".into(),
+            ],
+            tests: vec!["widgets::surface".into()],
+            migration: Some("migrations/0095-v0.13.0-surface.md".into()),
+            provenance: prov("crates/termrock/src/widgets/surface.rs"),
+            source_hash: None,
+            complete: false,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
             id: "AppShell".into(),
             title: "AppShell".into(),
             description: "Canonical top-level composition: header, sidebar, main, inspector, footer, command, overlays; recipes + responsive collapse.".into(),

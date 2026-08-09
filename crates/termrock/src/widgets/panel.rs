@@ -4,12 +4,15 @@
 //! Token-driven panel chrome with priority-aware title slots.
 //!
 //! Border *weight* never encodes focus — only semantic theme roles do.
+//! Fill and border geometry come from [`crate::widgets::Surface`]; Panel owns
+//! title/footer slots and maps [`PanelChrome`] → [`SurfaceRecipe`].
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Span, widgets::Widget};
 use ratatui_widgets::block::Block;
 
 use crate::style::{DesignSystem, PanelChrome, PanelRecipe};
 use crate::text::display_cols;
+use crate::widgets::surface::{Surface, SurfaceRecipe};
 
 // PanelChrome lives in `style` (sole chrome enum). Re-exported from widgets::mod.
 
@@ -231,15 +234,36 @@ impl<'a> Panel<'a> {
         block
     }
 
+    /// Maps panel emphasis onto the Surface recipe set.
+    #[must_use]
+    pub const fn surface_recipe(&self) -> SurfaceRecipe {
+        match self.emphasis {
+            PanelChrome::Normal => SurfaceRecipe::Inset,
+            PanelChrome::Focused => SurfaceRecipe::Focused,
+            PanelChrome::Danger => SurfaceRecipe::Destructive,
+        }
+    }
+
     #[must_use]
     /// Returns the content rectangle inside panel chrome.
     pub fn inner(&self, area: Rect) -> Rect {
-        self.block_for_width(area.width).inner(area)
+        Surface::new(self.tokens)
+            .recipe(self.surface_recipe())
+            .bordered(true)
+            .padding(0, 0)
+            .layout(area)
+            .content
     }
 }
 
 impl Widget for &Panel<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
+        // Fill via Surface (terminal-default / mono aware); then titled border.
+        let _ = Surface::new(self.tokens)
+            .recipe(self.surface_recipe())
+            .bordered(false)
+            .padding(0, 0)
+            .paint(area, buffer);
         self.block_for_width(area.width).render(area, buffer);
     }
 }

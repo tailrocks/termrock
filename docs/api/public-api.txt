@@ -11430,6 +11430,8 @@ pub fn termrock::style::DesignSystem::quantize(self, termrock::style::ColorCapab
 pub fn termrock::style::DesignSystem::resolve_list_row(&self, termrock::style::ListRowVisualState) -> termrock::style::ListRowRecipe
 pub const fn termrock::style::DesignSystem::selection(self, termrock::style::SelectionChrome) -> Self
 pub fn termrock::style::DesignSystem::style(&self, termrock::style::Role) -> ratatui_core::style::Style
+impl termrock::style::DesignSystem
+pub fn termrock::style::DesignSystem::surface_recipe(&self, termrock::widgets::SurfaceRecipe) -> termrock::widgets::SurfacePaintPlan
 impl core::clone::Clone for termrock::style::DesignSystem
 pub fn termrock::style::DesignSystem::clone(&self) -> termrock::style::DesignSystem
 impl core::cmp::Eq for termrock::style::DesignSystem
@@ -15983,11 +15985,15 @@ impl<T> either::into_either::IntoEither for termrock::widgets::StaleReason
 pub termrock::widgets::SurfaceElevation::Base
 pub termrock::widgets::SurfaceElevation::Canvas
 pub termrock::widgets::SurfaceElevation::Elevated
+impl termrock::widgets::SurfaceElevation
+pub const fn termrock::widgets::SurfaceElevation::recipe(self) -> termrock::widgets::SurfaceRecipe
 impl core::clone::Clone for termrock::widgets::SurfaceElevation
 pub fn termrock::widgets::SurfaceElevation::clone(&self) -> termrock::widgets::SurfaceElevation
 impl core::cmp::Eq for termrock::widgets::SurfaceElevation
 impl core::cmp::PartialEq for termrock::widgets::SurfaceElevation
 pub fn termrock::widgets::SurfaceElevation::eq(&self, &termrock::widgets::SurfaceElevation) -> bool
+impl core::convert::From<termrock::widgets::SurfaceElevation> for termrock::widgets::SurfaceRecipe
+pub fn termrock::widgets::SurfaceRecipe::from(termrock::widgets::SurfaceElevation) -> Self
 impl core::default::Default for termrock::widgets::SurfaceElevation
 pub fn termrock::widgets::SurfaceElevation::default() -> termrock::widgets::SurfaceElevation
 impl core::fmt::Debug for termrock::widgets::SurfaceElevation
@@ -16028,6 +16034,116 @@ pub unsafe fn termrock::widgets::SurfaceElevation::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::SurfaceElevation
 pub fn termrock::widgets::SurfaceElevation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SurfaceElevation
+#[non_exhaustive] pub enum termrock::widgets::SurfaceFill
+pub termrock::widgets::SurfaceFill::Auto
+pub termrock::widgets::SurfaceFill::TerminalDefault
+pub termrock::widgets::SurfaceFill::Transparent
+impl core::clone::Clone for termrock::widgets::SurfaceFill
+pub fn termrock::widgets::SurfaceFill::clone(&self) -> termrock::widgets::SurfaceFill
+impl core::cmp::Eq for termrock::widgets::SurfaceFill
+impl core::cmp::PartialEq for termrock::widgets::SurfaceFill
+pub fn termrock::widgets::SurfaceFill::eq(&self, &termrock::widgets::SurfaceFill) -> bool
+impl core::default::Default for termrock::widgets::SurfaceFill
+pub fn termrock::widgets::SurfaceFill::default() -> termrock::widgets::SurfaceFill
+impl core::fmt::Debug for termrock::widgets::SurfaceFill
+pub fn termrock::widgets::SurfaceFill::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SurfaceFill
+pub fn termrock::widgets::SurfaceFill::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SurfaceFill
+impl core::marker::StructuralPartialEq for termrock::widgets::SurfaceFill
+impl core::marker::Freeze for termrock::widgets::SurfaceFill
+impl core::marker::Send for termrock::widgets::SurfaceFill
+impl core::marker::Sync for termrock::widgets::SurfaceFill
+impl core::marker::Unpin for termrock::widgets::SurfaceFill
+impl core::marker::UnsafeUnpin for termrock::widgets::SurfaceFill
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SurfaceFill
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SurfaceFill
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SurfaceFill where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SurfaceFill::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SurfaceFill where U: core::convert::From<T>
+pub fn termrock::widgets::SurfaceFill::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SurfaceFill where U: core::convert::Into<T>
+pub type termrock::widgets::SurfaceFill::Error = core::convert::Infallible
+pub fn termrock::widgets::SurfaceFill::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SurfaceFill where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SurfaceFill::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SurfaceFill::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SurfaceFill where T: core::clone::Clone
+pub type termrock::widgets::SurfaceFill::Owned = T
+pub fn termrock::widgets::SurfaceFill::clone_into(&self, &mut T)
+pub fn termrock::widgets::SurfaceFill::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SurfaceFill where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SurfaceFill::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SurfaceFill where T: ?core::marker::Sized
+pub fn termrock::widgets::SurfaceFill::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SurfaceFill where T: ?core::marker::Sized
+pub fn termrock::widgets::SurfaceFill::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SurfaceFill where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SurfaceFill::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SurfaceFill
+pub fn termrock::widgets::SurfaceFill::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SurfaceFill
+#[non_exhaustive] pub enum termrock::widgets::SurfaceRecipe
+pub termrock::widgets::SurfaceRecipe::Canvas
+pub termrock::widgets::SurfaceRecipe::Destructive
+pub termrock::widgets::SurfaceRecipe::Focused
+pub termrock::widgets::SurfaceRecipe::Inset
+pub termrock::widgets::SurfaceRecipe::Interactive
+pub termrock::widgets::SurfaceRecipe::Overlay
+pub termrock::widgets::SurfaceRecipe::Raised
+pub termrock::widgets::SurfaceRecipe::Selected
+pub termrock::widgets::SurfaceRecipe::Warning
+impl termrock::widgets::SurfaceRecipe
+pub const fn termrock::widgets::SurfaceRecipe::default_bordered(self) -> bool
+pub const fn termrock::widgets::SurfaceRecipe::id(self) -> &'static str
+pub const fn termrock::widgets::SurfaceRecipe::is_interactive(self) -> bool
+impl core::clone::Clone for termrock::widgets::SurfaceRecipe
+pub fn termrock::widgets::SurfaceRecipe::clone(&self) -> termrock::widgets::SurfaceRecipe
+impl core::cmp::Eq for termrock::widgets::SurfaceRecipe
+impl core::cmp::PartialEq for termrock::widgets::SurfaceRecipe
+pub fn termrock::widgets::SurfaceRecipe::eq(&self, &termrock::widgets::SurfaceRecipe) -> bool
+impl core::convert::From<termrock::widgets::SurfaceElevation> for termrock::widgets::SurfaceRecipe
+pub fn termrock::widgets::SurfaceRecipe::from(termrock::widgets::SurfaceElevation) -> Self
+impl core::default::Default for termrock::widgets::SurfaceRecipe
+pub fn termrock::widgets::SurfaceRecipe::default() -> termrock::widgets::SurfaceRecipe
+impl core::fmt::Debug for termrock::widgets::SurfaceRecipe
+pub fn termrock::widgets::SurfaceRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SurfaceRecipe
+pub fn termrock::widgets::SurfaceRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SurfaceRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::SurfaceRecipe
+impl core::marker::Freeze for termrock::widgets::SurfaceRecipe
+impl core::marker::Send for termrock::widgets::SurfaceRecipe
+impl core::marker::Sync for termrock::widgets::SurfaceRecipe
+impl core::marker::Unpin for termrock::widgets::SurfaceRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::SurfaceRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SurfaceRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SurfaceRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SurfaceRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SurfaceRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SurfaceRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::SurfaceRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SurfaceRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::SurfaceRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::SurfaceRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SurfaceRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SurfaceRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SurfaceRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SurfaceRecipe where T: core::clone::Clone
+pub type termrock::widgets::SurfaceRecipe::Owned = T
+pub fn termrock::widgets::SurfaceRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::SurfaceRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SurfaceRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SurfaceRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SurfaceRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::SurfaceRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SurfaceRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::SurfaceRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SurfaceRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SurfaceRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SurfaceRecipe
+pub fn termrock::widgets::SurfaceRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SurfaceRecipe
 #[non_exhaustive] pub enum termrock::widgets::SwitchOutcome<Id>
 pub termrock::widgets::SwitchOutcome::Ignored
 pub termrock::widgets::SwitchOutcome::ValueChanged
@@ -22147,6 +22263,7 @@ pub const fn termrock::widgets::Panel<'a>::slots(self, termrock::widgets::PanelS
 pub fn termrock::widgets::Panel<'a>::slots_for_width(&self, u16) -> termrock::widgets::PanelSlots<'a>
 pub const fn termrock::widgets::Panel<'a>::style(self, ratatui_core::style::Style) -> Self
 pub const fn termrock::widgets::Panel<'a>::subtitle(self, &'a str) -> Self
+pub const fn termrock::widgets::Panel<'a>::surface_recipe(&self) -> termrock::widgets::SurfaceRecipe
 pub const fn termrock::widgets::Panel<'a>::title(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::trailing(self, &'a str) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Panel<'_>
@@ -25236,10 +25353,21 @@ pub fn termrock::widgets::SubmitPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SubmitPolicy
 pub struct termrock::widgets::Surface<'a>
 impl<'a> termrock::widgets::Surface<'a>
+pub const fn termrock::widgets::Surface<'a>::bordered(self, bool) -> Self
 pub const fn termrock::widgets::Surface<'a>::elevation(self, termrock::widgets::SurfaceElevation) -> Self
+pub const fn termrock::widgets::Surface<'a>::fill(self, termrock::widgets::SurfaceFill) -> Self
+pub const fn termrock::widgets::Surface<'a>::hit_full(self, bool) -> Self
+pub fn termrock::widgets::Surface<'a>::hit_test(&self, ratatui_core::layout::rect::Rect, u16, u16) -> bool
+pub fn termrock::widgets::Surface<'a>::layout(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::SurfaceParts
 pub const fn termrock::widgets::Surface<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Surface<'a>::padding(self, u16, u16) -> Self
+pub fn termrock::widgets::Surface<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::Surface<'a>::plan(&self) -> termrock::widgets::SurfacePaintPlan
+pub const fn termrock::widgets::Surface<'a>::recipe(self, termrock::widgets::SurfaceRecipe) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Surface<'_>
 pub fn &termrock::widgets::Surface<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Surface<'_>
+pub fn termrock::widgets::Surface<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Surface<'a>
 pub fn termrock::widgets::Surface<'a>::clone(&self) -> termrock::widgets::Surface<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Surface<'a>
@@ -25275,6 +25403,105 @@ pub unsafe fn termrock::widgets::Surface<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Surface<'a>
 pub fn termrock::widgets::Surface<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Surface<'a>
+pub struct termrock::widgets::SurfacePaintPlan
+pub termrock::widgets::SurfacePaintPlan::border: core::option::Option<ratatui_core::style::Style>
+pub termrock::widgets::SurfacePaintPlan::fill: core::option::Option<ratatui_core::style::Style>
+pub termrock::widgets::SurfacePaintPlan::pad_x: u16
+pub termrock::widgets::SurfacePaintPlan::pad_y: u16
+pub termrock::widgets::SurfacePaintPlan::recipe: termrock::widgets::SurfaceRecipe
+impl core::clone::Clone for termrock::widgets::SurfacePaintPlan
+pub fn termrock::widgets::SurfacePaintPlan::clone(&self) -> termrock::widgets::SurfacePaintPlan
+impl core::cmp::Eq for termrock::widgets::SurfacePaintPlan
+impl core::cmp::PartialEq for termrock::widgets::SurfacePaintPlan
+pub fn termrock::widgets::SurfacePaintPlan::eq(&self, &termrock::widgets::SurfacePaintPlan) -> bool
+impl core::fmt::Debug for termrock::widgets::SurfacePaintPlan
+pub fn termrock::widgets::SurfacePaintPlan::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::SurfacePaintPlan
+impl core::marker::StructuralPartialEq for termrock::widgets::SurfacePaintPlan
+impl core::marker::Freeze for termrock::widgets::SurfacePaintPlan
+impl core::marker::Send for termrock::widgets::SurfacePaintPlan
+impl core::marker::Sync for termrock::widgets::SurfacePaintPlan
+impl core::marker::Unpin for termrock::widgets::SurfacePaintPlan
+impl core::marker::UnsafeUnpin for termrock::widgets::SurfacePaintPlan
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SurfacePaintPlan
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SurfacePaintPlan
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SurfacePaintPlan where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SurfacePaintPlan::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SurfacePaintPlan where U: core::convert::From<T>
+pub fn termrock::widgets::SurfacePaintPlan::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SurfacePaintPlan where U: core::convert::Into<T>
+pub type termrock::widgets::SurfacePaintPlan::Error = core::convert::Infallible
+pub fn termrock::widgets::SurfacePaintPlan::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SurfacePaintPlan where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SurfacePaintPlan::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SurfacePaintPlan::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SurfacePaintPlan where T: core::clone::Clone
+pub type termrock::widgets::SurfacePaintPlan::Owned = T
+pub fn termrock::widgets::SurfacePaintPlan::clone_into(&self, &mut T)
+pub fn termrock::widgets::SurfacePaintPlan::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SurfacePaintPlan where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SurfacePaintPlan::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SurfacePaintPlan where T: ?core::marker::Sized
+pub fn termrock::widgets::SurfacePaintPlan::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SurfacePaintPlan where T: ?core::marker::Sized
+pub fn termrock::widgets::SurfacePaintPlan::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SurfacePaintPlan where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SurfacePaintPlan::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SurfacePaintPlan
+pub fn termrock::widgets::SurfacePaintPlan::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SurfacePaintPlan
+pub struct termrock::widgets::SurfaceParts
+pub termrock::widgets::SurfaceParts::clip: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SurfaceParts::content: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SurfaceParts::has_border: bool
+pub termrock::widgets::SurfaceParts::hit: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SurfaceParts::root: ratatui_core::layout::rect::Rect
+impl termrock::widgets::SurfaceParts
+pub fn termrock::widgets::SurfaceParts::contains_hit(self, u16, u16) -> bool
+pub const fn termrock::widgets::SurfaceParts::has_content(self) -> bool
+impl core::clone::Clone for termrock::widgets::SurfaceParts
+pub fn termrock::widgets::SurfaceParts::clone(&self) -> termrock::widgets::SurfaceParts
+impl core::cmp::Eq for termrock::widgets::SurfaceParts
+impl core::cmp::PartialEq for termrock::widgets::SurfaceParts
+pub fn termrock::widgets::SurfaceParts::eq(&self, &termrock::widgets::SurfaceParts) -> bool
+impl core::fmt::Debug for termrock::widgets::SurfaceParts
+pub fn termrock::widgets::SurfaceParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SurfaceParts
+pub fn termrock::widgets::SurfaceParts::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SurfaceParts
+impl core::marker::StructuralPartialEq for termrock::widgets::SurfaceParts
+impl core::marker::Freeze for termrock::widgets::SurfaceParts
+impl core::marker::Send for termrock::widgets::SurfaceParts
+impl core::marker::Sync for termrock::widgets::SurfaceParts
+impl core::marker::Unpin for termrock::widgets::SurfaceParts
+impl core::marker::UnsafeUnpin for termrock::widgets::SurfaceParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SurfaceParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SurfaceParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SurfaceParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SurfaceParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SurfaceParts where U: core::convert::From<T>
+pub fn termrock::widgets::SurfaceParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SurfaceParts where U: core::convert::Into<T>
+pub type termrock::widgets::SurfaceParts::Error = core::convert::Infallible
+pub fn termrock::widgets::SurfaceParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SurfaceParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SurfaceParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SurfaceParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SurfaceParts where T: core::clone::Clone
+pub type termrock::widgets::SurfaceParts::Owned = T
+pub fn termrock::widgets::SurfaceParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::SurfaceParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SurfaceParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SurfaceParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SurfaceParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SurfaceParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SurfaceParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SurfaceParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SurfaceParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SurfaceParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SurfaceParts
+pub fn termrock::widgets::SurfaceParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SurfaceParts
 pub struct termrock::widgets::Switch<'a, Id>
 pub termrock::widgets::Switch::id: Id
 impl<'a, Id> termrock::widgets::Switch<'a, Id>

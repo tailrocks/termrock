@@ -143,62 +143,7 @@ impl Widget for &Paragraph<'_> {
     }
 }
 
-/// Surface elevation recipe.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum SurfaceElevation {
-    /// Default surface.
-    #[default]
-    Base,
-    /// Raised (dialog/card).
-    Elevated,
-    /// Canvas under panels.
-    Canvas,
-}
-
-/// Elevated fill region (no border ownership of focus).
-#[derive(Debug, Clone, Copy)]
-pub struct Surface<'a> {
-    tokens: &'a DesignSystem,
-    elevation: SurfaceElevation,
-}
-
-impl<'a> Surface<'a> {
-    /// Surface fill.
-    #[must_use]
-    pub const fn new(tokens: &'a DesignSystem) -> Self {
-        Self {
-            tokens,
-            elevation: SurfaceElevation::Base,
-        }
-    }
-
-    /// Elevation.
-    #[must_use]
-    pub const fn elevation(mut self, elevation: SurfaceElevation) -> Self {
-        self.elevation = elevation;
-        self
-    }
-}
-
-impl Widget for &Surface<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        let role = match self.elevation {
-            SurfaceElevation::Base => Role::Surface,
-            SurfaceElevation::Elevated => Role::Elevated,
-            SurfaceElevation::Canvas => Role::Canvas,
-        };
-        let style = self.tokens.style(role);
-        for y in area.y..area.bottom() {
-            for x in area.x..area.right() {
-                buffer[(x, y)].set_style(style);
-            }
-        }
-    }
-}
+// Surface lives in `widgets/surface.rs` (canonical fill/border/clip/hit).
 
 /// Section collapse outcome.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
