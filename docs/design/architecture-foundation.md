@@ -2,7 +2,9 @@
 
 **Status:** binding product direction (pre-stable)  
 **Date:** 2026-08-09  
-**Related:** [shadcn-tui-direction.md](./shadcn-tui-direction.md), migrations `0029`–`0031`
+**Related:** [shadcn-tui-direction.md](./shadcn-tui-direction.md),
+[terminal-design-system.md](./terminal-design-system.md),
+[product-audit.md](./product-audit.md), migrations `0029`–`0031`
 
 ## Category definition
 

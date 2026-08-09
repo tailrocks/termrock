@@ -9,6 +9,8 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/shadcn-tui-direction.md`](../docs/design/shadcn-tui-direction.md) | Landscape research (executed 0029–0030) |
 | [`docs/design/architecture-foundation.md`](../docs/design/architecture-foundation.md) | Hybrid kernel + progressive capability (0031) |
 | [`docs/design/shadcn-quality-roadmap.md`](../docs/design/shadcn-quality-roadmap.md) | Full R1–R8 recommendations |
+| [`docs/design/terminal-design-system.md`](../docs/design/terminal-design-system.md) | Full token + recipe system (DesignSystem) |
+| [`docs/design/product-audit.md`](../docs/design/product-audit.md) | Product/architecture audit |
 
 ## Open executable plans (do in order)
 
