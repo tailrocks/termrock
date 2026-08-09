@@ -64,9 +64,9 @@ pub use agent_blocks::{
     session_picker_handle_key,
 };
 pub use blocks::{
-    BlockChrome, FormWizardOutcome, FormWizardState, OpsDashboardOutcome, OpsDashboardState,
-    OpsRegion, ResourceBrowserOutcome, ResourceBrowserState, SettingsShellOutcome,
-    SettingsShellState,
+    BlockChrome, FormWizard, FormWizardOutcome, FormWizardState, OpsDashboardOutcome,
+    OpsDashboardState, OpsRegion, ResourceBrowserOutcome, ResourceBrowserState,
+    SettingsShellOutcome, SettingsShellState,
 };
 pub use charts::{BarDatum, BarSeries, MeterSegment, SegmentedMeter, Sparkline};
 pub use code_block::{CodeBlock, PlainSyntax, SyntaxHighlighter};

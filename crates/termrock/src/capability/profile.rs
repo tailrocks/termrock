@@ -462,9 +462,11 @@ mod tests {
 
     #[test]
     fn override_color_wins() {
-        let mut o = CapabilityOverrides::default();
-        o.color = Some(ColorCapability::Monochrome);
-        o.profile = Some(CapabilityProfile::Modern);
+        let o = CapabilityOverrides {
+            color: Some(ColorCapability::Monochrome),
+            profile: Some(CapabilityProfile::Modern),
+            ..CapabilityOverrides::default()
+        };
         let eff = resolve_capabilities(None, o);
         assert!(matches!(eff.set.color, ColorCapability::Monochrome));
         assert_eq!(eff.color_source, CapabilitySource::Override);

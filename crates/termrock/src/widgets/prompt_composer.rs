@@ -42,7 +42,7 @@ pub const PROMPT_COMPLETION_OVERLAY_ID: &str = "termrock.prompt_completion";
 /// Default overlay id when the composer is promoted fullscreen.
 pub const PROMPT_FULLSCREEN_OVERLAY_ID: &str = "termrock.prompt_fullscreen";
 
-/// Bytes above which a paste becomes a [`PasteChip`] instead of inline text.
+/// Bytes above which a paste becomes a [`ComposerChip`] (kind paste) instead of inline text.
 pub const LARGE_PASTE_THRESHOLD: usize = 400;
 
 /// Max undo snapshots retained.

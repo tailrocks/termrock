@@ -5,8 +5,14 @@ const pages: Array<{ output: string; title: string }> = []
 
 for await (const file of new Bun.Glob('**/*.mdx').scan({ cwd: content })) {
   const slug = file.replace(/\.mdx$/, '')
+  // `handbook/index.mdx` prerenders as `docs/handbook/index.html`, not
+  // `docs/handbook/index/index.html`.
   const pageOutput =
-    slug === 'index' ? 'docs/index.html' : `docs/${slug}/index.html`
+    slug === 'index'
+      ? 'docs/index.html'
+      : slug.endsWith('/index')
+        ? `docs/${slug.slice(0, -'/index'.length)}/index.html`
+        : `docs/${slug}/index.html`
   const source = await Bun.file(`${content}/${file}`).text()
   const titleLine = source.split('\n').find((line) => line.startsWith('title: '))
 

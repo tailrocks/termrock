@@ -3,7 +3,7 @@
 
 //! DataTable chrome on stable-ID tables + data_view kits (Plan 052).
 
-use ratatui_core::{buffer::Buffer, layout::Rect};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -262,6 +262,26 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
             y = y.saturating_add(1);
         }
+    }
+}
+
+impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
+    for DataTable<'a, RowId, ColId>
+{
+    type State = DataTableState<RowId, ColId>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        DataTable::render(&self, area, buffer, state);
+    }
+}
+
+impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
+    for &DataTable<'a, RowId, ColId>
+{
+    type State = DataTableState<RowId, ColId>;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        DataTable::render(self, area, buffer, state);
     }
 }
 

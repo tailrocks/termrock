@@ -7,7 +7,11 @@
 //! loading never activate. Press confirms; Release never activates. Effects
 //! remain consumer-owned outcomes.
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
     input::{
@@ -245,6 +249,22 @@ impl Button<'_> {
             area.width.min(self.preferred_width()),
             1,
         ));
+    }
+}
+
+impl StatefulWidget for Button<'_> {
+    type State = ButtonState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        Button::render(&self, area, buffer, state);
+    }
+}
+
+impl StatefulWidget for &Button<'_> {
+    type State = ButtonState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        Button::render(self, area, buffer, state);
     }
 }
 

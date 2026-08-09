@@ -70,8 +70,10 @@ fn handbook_button_action_bar_example() {
         },
     ];
     let bar = ActionBar::new(&actions, &theme);
-    let mut state = ActionBarState::default();
-    state.focused = Some("save");
+    let state = ActionBarState {
+        focused: Some("save"),
+        ..ActionBarState::default()
+    };
     let _ = (bar, state);
 }
 

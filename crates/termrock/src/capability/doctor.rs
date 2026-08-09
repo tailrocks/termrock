@@ -246,8 +246,10 @@ mod tests {
     #[test]
     fn headless_doctor_notes_keyboard_off() {
         // Force headless via overrides so ambient TERMROCK_PROFILE cannot win.
-        let mut overrides = CapabilityOverrides::default();
-        overrides.profile = Some(CapabilityProfile::Headless);
+        let overrides = CapabilityOverrides {
+            profile: Some(CapabilityProfile::Headless),
+            ..CapabilityOverrides::default()
+        };
         let report = build_doctor_report(None, overrides);
         assert!(!report.effective.set.keyboard);
         assert!(

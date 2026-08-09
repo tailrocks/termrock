@@ -10,7 +10,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::Style,
     text::{Line, Span},
-    widgets::Paragraph,
+    widgets::{Paragraph, Widget},
 };
 use termrock::{
     Density, Theme,
@@ -20,25 +20,30 @@ use termrock::{
     style::Role,
     widgets::{
         Action, ActionBar, ActionBarState, Anchor, ApprovalCard, ApprovalCardState, ApprovalRisk,
-        BUILTIN_THEME_PRESETS, Backdrop, Banner, BarDatum, BarSeries, Button, ButtonState,
-        CellAlignment, Checkbox, CheckboxState, ChoiceDialog, ChoiceDialogState, CodeBlock, Column,
-        ColumnWidth, CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
-        CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
-        DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
-        DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView, EmptyState, ErrorView,
-        Form, FormField, FormSection, FormState, FormWizardState, GridCell, GridColumn, GridRow,
-        Hint, HintBar, ImageMeta, ImageProtocol, ImageSurface, JumpOverlay, JumpTarget, List,
-        ListRow, ListState, LoadingView, LogPane, LogPaneState, MarkdownBlock, MarkdownBlockKind,
-        MarkdownView, Menu, MenuItem, MenuState, MessageDialog, MeterSegment, Panel, PanelEmphasis,
-        Picker, PickerState, Progress, ProgressKind, PromptBox, PromptBoxState, PromptComposer,
-        PromptComposerState, RowRole, SegmentedMeter, Severity, Skeleton, SortDirection, Sparkline,
-        SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState,
-        StatusSlot, StreamItem, StreamItemKind, StreamView, Switch, SwitchState, Tab, Table,
-        TableRow, TableState, Tabs, TabsState, TextArea, TextAreaState, TextCursor, TextInput,
-        TextInputState, ThemePicker, ThemePickerState, ThinkingBlock, Timeline, TimelineEvent,
-        Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock, TranscriptKind,
-        TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation, Viewport,
-        VirtualGrid, VirtualGridState,
+        BUILTIN_THEME_PRESETS, Backdrop, Badge, Banner, BarDatum, BarSeries, Button, ButtonState,
+        Callout, CalloutTone, CellAlignment, Checkbox, CheckboxState, ChoiceDialog,
+        ChoiceDialogState, CodeBlock, Column, ColumnWidth, CommandPalette, CommandPaletteState,
+        CompletionCandidate, CompletionMenu, CompletionMenuSize, CompletionMenuState, DataTable,
+        DataTableState, DataTableToolbar, DesignInspector, DesignInspectorFrame, DetailCapability,
+        DetailRow, DetailTable, DetailTableState, Dialog, DiffKind, DiffLine, DiffState, DiffView,
+        Drawer, EmptyState, ErrorView, Form, FormField, FormSection, FormState, FormWizardState,
+        GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint, HintBar, ImageMeta,
+        ImageProtocol, ImageSurface, JumpOverlay, JumpTarget, Kbd, List, ListRow, ListState,
+        LoadingView, LogPane, LogPaneState, MarkdownBlock, MarkdownBlockKind, MarkdownView, Menu,
+        MenuItem, MenuState, MessageDialog, MeterSegment, ModeRibbon, Panel, PanelEmphasis,
+        PermissionActionKind, PermissionPrompt, PermissionPromptState, PermissionProvenance,
+        PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview, PlanReviewState,
+        PlanStep, Popover, Progress, ProgressKind, PromptBox, PromptBoxState, PromptComposer,
+        PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep,
+        RowRole, SegmentedMeter, SeparatorLine, SessionItem, SessionPicker, Severity, Skeleton,
+        SortDirection, Sparkline, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
+        StatusBarState, StatusSlot, StreamItem, StreamItemKind, StreamView, Surface,
+        SurfaceElevation, Switch, SwitchState, Tab, Table, TableRow, TableState, Tabs, TabsState,
+        TaskRail, TextArea, TextAreaState, TextCursor, TextInput, TextInputState, ThemePicker,
+        ThemePickerState, ThinkingBlock, Timeline, TimelineEvent, Toast, TokenMeter, ToolCard,
+        ToolStatus, Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode,
+        TreeNodeStatus, TreeState, Validation, Viewport, VirtualGrid, VirtualGridState,
+        WorkbenchMode,
     },
 };
 
@@ -996,6 +1001,141 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             8,
             menu_story,
+        ),
+        Story::new(
+            "badge/basic",
+            "Badge",
+            "Badge",
+            "Non-interactive status badge.",
+            20,
+            3,
+            badge_story,
+        ),
+        Story::new(
+            "callout/basic",
+            "Callout",
+            "Callout",
+            "Semantic callout with non-color glyph.",
+            40,
+            4,
+            callout_story,
+        ),
+        Story::new(
+            "drawer/basic",
+            "Drawer",
+            "Drawer",
+            "Edge drawer chrome.",
+            24,
+            10,
+            drawer_story,
+        ),
+        Story::new(
+            "heading/basic",
+            "Heading",
+            "Heading",
+            "Terminal typography heading.",
+            40,
+            3,
+            heading_story,
+        ),
+        Story::new(
+            "kbd/basic",
+            "Kbd",
+            "Kbd",
+            "Key chord chrome for hints.",
+            16,
+            3,
+            kbd_story,
+        ),
+        Story::new(
+            "paragraph/basic",
+            "Paragraph",
+            "Paragraph",
+            "Body paragraph wrap.",
+            40,
+            4,
+            paragraph_story,
+        ),
+        Story::new(
+            "surface/basic",
+            "Surface",
+            "Surface",
+            "Elevated surface fill.",
+            20,
+            5,
+            surface_story,
+        ),
+        Story::new(
+            "separator/basic",
+            "Separator",
+            "SeparatorLine",
+            "Horizontal separator rule.",
+            30,
+            3,
+            separator_story,
+        ),
+        Story::new(
+            "popover/basic",
+            "Popover",
+            "Popover",
+            "Anchored non-modal popover chrome.",
+            28,
+            4,
+            popover_story,
+        ),
+        Story::new(
+            "permission-prompt/basic",
+            "Permission prompt",
+            "PermissionPrompt",
+            "Default-deny permission surface.",
+            48,
+            10,
+            permission_prompt_story,
+        ),
+        Story::new(
+            "mode-ribbon/basic",
+            "Mode ribbon",
+            "ModeRibbon",
+            "Agent mode strip.",
+            48,
+            3,
+            mode_ribbon_story,
+        ),
+        Story::new(
+            "plan-review/basic",
+            "Plan review",
+            "PlanReview",
+            "Plan steps review list.",
+            48,
+            8,
+            plan_review_story,
+        ),
+        Story::new(
+            "question-flow/basic",
+            "Question flow",
+            "QuestionFlow",
+            "Multi-step question chrome.",
+            48,
+            8,
+            question_flow_story,
+        ),
+        Story::new(
+            "session-picker/basic",
+            "Session picker",
+            "SessionPicker",
+            "Session list picker.",
+            40,
+            8,
+            session_picker_story,
+        ),
+        Story::new(
+            "task-rail/basic",
+            "Task rail",
+            "TaskRail",
+            "Titled task list rail.",
+            28,
+            10,
+            task_rail_story,
         ),
         Story::new(
             "blocks/form-wizard",
@@ -2485,8 +2625,195 @@ fn menu_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &state);
 }
 
-fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, _theme: &Theme) {
-    let state = FormWizardState::new(3);
-    let line = format!("Wizard step {}/3", state.step() + 1);
-    frame.render_widget(Paragraph::new(line), area);
+fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let mut state = FormWizardState::new(3);
+    frame.render_stateful_widget(
+        &termrock::widgets::FormWizard::new(&tokens, "Wizard"),
+        area,
+        &mut state,
+    );
+}
+
+fn badge_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(&Badge::new("NEW", &tokens), area, frame.buffer_mut());
+}
+
+fn callout_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &Callout::new("Heads up", &tokens)
+            .body("Non-color risk glyph present.")
+            .tone(CalloutTone::Warning),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn drawer_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(&Drawer::new("Drawer", &tokens), area, frame.buffer_mut());
+}
+
+fn heading_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &Heading::new("Section title", &tokens).level(HeadingLevel::H1),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn kbd_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(&Kbd::new("C-k", &tokens), area, frame.buffer_mut());
+}
+
+fn paragraph_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &termrock::widgets::Paragraph::new(
+            "Body text wraps by display columns when height allows.",
+            &tokens,
+        ),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn surface_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &Surface::new(&tokens).elevation(SurfaceElevation::Elevated),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn separator_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &SeparatorLine::horizontal(&tokens),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn popover_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    Widget::render(
+        &Popover::new("Popover tip", &tokens),
+        area,
+        frame.buffer_mut(),
+    );
+}
+
+fn permission_prompt_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let prompt = PermissionPrompt::new(theme);
+    let mut state = PermissionPromptState::new();
+    let req = PermissionRequest::new("r1", "bash", "workspace")
+        .risk(PermissionRisk::High)
+        .action_kind(PermissionActionKind::Shell)
+        .command("rm -rf build/")
+        .provenance(PermissionProvenance::main_agent("a", "agent"));
+    state.enqueue(req);
+    frame.render_stateful_widget(&prompt, area, &mut state);
+}
+
+fn mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let modes = [
+        WorkbenchMode {
+            id: "plan",
+            label: "Plan",
+            active: true,
+            enabled: true,
+        },
+        WorkbenchMode {
+            id: "build",
+            label: "Build",
+            active: false,
+            enabled: true,
+        },
+    ];
+    Widget::render(ModeRibbon::new(&modes, &tokens), area, frame.buffer_mut());
+}
+
+fn plan_review_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let steps = [
+        PlanStep {
+            id: "s1",
+            title: "Inspect",
+            detail: Some("Read files"),
+            accepted: true,
+        },
+        PlanStep {
+            id: "s2",
+            title: "Edit",
+            detail: None,
+            accepted: false,
+        },
+    ];
+    let mut state = PlanReviewState::new(Some("s1"));
+    frame.render_stateful_widget(&PlanReview::new(&steps, &tokens), area, &mut state);
+}
+
+fn question_flow_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let opts = [
+        QuestionOption {
+            id: "y",
+            label: "Yes",
+        },
+        QuestionOption {
+            id: "n",
+            label: "No",
+        },
+    ];
+    let steps = [QuestionStep {
+        id: "q1",
+        prompt: "Continue?",
+        options: &opts,
+        required: true,
+    }];
+    let mut state = QuestionFlowState::new(1);
+    frame.render_stateful_widget(&QuestionFlow::new(&steps, &tokens), area, &mut state);
+}
+
+fn session_picker_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let sessions = [
+        SessionItem {
+            id: "s1",
+            title: "Session A",
+            meta: Some("2m ago"),
+        },
+        SessionItem {
+            id: "s2",
+            title: "Session B",
+            meta: None,
+        },
+    ];
+    let mut state = ListState::new(Some("s1"));
+    frame.render_stateful_widget(&SessionPicker::new(&sessions, &tokens), area, &mut state);
+}
+
+fn task_rail_story(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
+    let tokens = DesignTokens::new(theme.clone(), Density::default());
+    let rows = [ListRow {
+        id: "t1",
+        label: Line::from("Task one"),
+        leading: None,
+        secondary: None,
+        badge: None,
+        shortcut: None,
+        trailing: None,
+        role: RowRole::Item,
+        enabled: true,
+        loading: false,
+    }];
+    let mut state = ListState::new(Some("t1"));
+    frame.render_stateful_widget(&TaskRail::new(&rows, &tokens, "Tasks"), area, &mut state);
 }

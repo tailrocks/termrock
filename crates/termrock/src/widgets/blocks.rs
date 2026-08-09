@@ -357,6 +357,68 @@ impl FormWizardState {
     }
 }
 
+/// Paint chrome for form wizard step progress (domain fields stay consumer-owned).
+#[derive(Debug, Clone, Copy)]
+pub struct FormWizard<'a> {
+    tokens: &'a DesignTokens,
+    label: &'a str,
+}
+
+impl<'a> FormWizard<'a> {
+    /// Create chrome with a progress label.
+    #[must_use]
+    pub const fn new(tokens: &'a DesignTokens, label: &'a str) -> Self {
+        Self { tokens, label }
+    }
+
+    /// Paint progress line.
+    pub fn render(
+        &self,
+        area: ratatui_core::layout::Rect,
+        buffer: &mut ratatui_core::buffer::Buffer,
+        state: &FormWizardState,
+    ) {
+        if area.is_empty() {
+            return;
+        }
+        let line = format!("{}  step {}", self.label, state.step() + 1);
+        let text = crate::text::take_display_cols(&line, usize::from(area.width));
+        buffer.set_stringn(
+            area.x,
+            area.y,
+            &text,
+            usize::from(area.width),
+            self.tokens.theme.style(crate::style::Role::TextStrong),
+        );
+    }
+}
+
+impl ratatui_core::widgets::StatefulWidget for FormWizard<'_> {
+    type State = FormWizardState;
+
+    fn render(
+        self,
+        area: ratatui_core::layout::Rect,
+        buffer: &mut ratatui_core::buffer::Buffer,
+        state: &mut Self::State,
+    ) {
+        FormWizard::render(&self, area, buffer, state);
+    }
+}
+
+impl ratatui_core::widgets::StatefulWidget for &FormWizard<'_> {
+    type State = FormWizardState;
+
+    fn render(
+        self,
+        area: ratatui_core::layout::Rect,
+        buffer: &mut ratatui_core::buffer::Buffer,
+        state: &mut Self::State,
+    ) {
+        FormWizard::render(self, area, buffer, state);
+    }
+}
+
 /// Marker type for block chrome that needs tokens (paint lives in consumer/story).
 #[derive(Debug, Clone, Copy)]
 pub struct BlockChrome<'a> {

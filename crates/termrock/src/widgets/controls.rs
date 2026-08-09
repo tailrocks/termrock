@@ -3,7 +3,7 @@
 
 //! Controlled form controls: checkbox, radio, switch, select, multiselect, combobox (Plan 051).
 
-use ratatui_core::{buffer::Buffer, layout::Rect};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{
@@ -152,6 +152,22 @@ impl<Id> Checkbox<'_, Id> {
             display_cols(&text).min(usize::from(area.width)) as u16,
             1,
         ));
+    }
+}
+
+impl<Id> StatefulWidget for Checkbox<'_, Id> {
+    type State = CheckboxState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        Checkbox::render(&self, area, buffer, state);
+    }
+}
+
+impl<Id> StatefulWidget for &Checkbox<'_, Id> {
+    type State = CheckboxState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        Checkbox::render(self, area, buffer, state);
     }
 }
 

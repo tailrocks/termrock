@@ -13,8 +13,7 @@ export const componentDocs = {
 let theme = Theme::default();
 let actions = [Action { id: "save", label: "Save", enabled: true, style: None }];
 let bar = ActionBar::new(&actions, &theme);
-let mut state = ActionBarState::default();
-state.focused = Some("save");`,
+let state = ActionBarState { focused: Some("save"), ..ActionBarState::default() };`,
   },
   Backdrop: {
     description: 'A configurable themed fill painted behind modal content.',
@@ -67,6 +66,9 @@ let frame = DesignInspectorFrame {
     layer: Some("root"),
     capability: ColorCapability::Truecolor,
     density: "comfortable",
+    layers: &[],
+    recipes: &[],
+    selection_chrome: "gutter",
 };
 let _inspector = DesignInspector::new(frame, &theme);`,
   },
@@ -91,7 +93,7 @@ use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifie
 let theme = Theme::default();
 let columns = [Column { id: "name", title: Line::from("Name"), width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()), alignment: CellAlignment::Left, sortable: true, sort: None }];
 let cells = [Line::from("termrock")];
-let rows = [TableRow { id: "termrock", cells: &cells, enabled: true, emphasis: false, style: None }];
+let rows = [TableRow { id: "termrock", cells: &cells, leading: None, badge: None, enabled: true, emphasis: false, style: None }];
 let tokens = DesignTokens::default();
 let table = Table::new(&columns, &rows, &tokens);
 let mut state = TableState::<&str, &str>::new(Some("termrock"));
@@ -121,6 +123,15 @@ let diff = DiffView::new(&lines, &theme);
 let mut state = DiffState::default();
 state.offset = 1;
 let _visible_offset = state.offset;`,
+  },
+  FormWizard: {
+    description: 'Multi-step form wizard chrome; domain fields and validation stay consumer-owned.',
+    primaryStory: 'blocks/form-wizard',
+    usage: `use termrock::{style::DesignTokens, widgets::{FormWizard, FormWizardState}};
+
+let tokens = DesignTokens::default();
+let mut state = FormWizardState::new(3);
+let wizard = FormWizard::new(&tokens, "Setup");`,
   },
   Form: {
     description: 'A responsive form layout with stable focus, validation, and hit geometry.',
@@ -154,7 +165,7 @@ bar.render(area, &mut Buffer::empty(area));`,
 use termrock::{style::DesignTokens, Theme, widgets::{List, ListRow, ListState, RowRole}};
 
 let theme = Theme::default();
-let rows = [ListRow { id: "alpha", label: Line::from("Alpha"), trailing: None, role: RowRole::Item, enabled: true }];
+let rows = [ListRow { id: "alpha", label: Line::from("Alpha"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true, loading: false }];
 let tokens = DesignTokens::default();
 let list = List::new(&rows, &tokens);
 let mut state = ListState::new(Some("alpha"));
@@ -204,10 +215,10 @@ let outcome = state.select_next(&details);`,
     description: 'A themed bordered container with semantic focus emphasis.',
     primaryStory: 'panel/focused',
     usage: `use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{Panel, PanelEmphasis}};
+use termrock::{style::DesignTokens, widgets::{Panel, PanelEmphasis}};
 
-let theme = Theme::default();
-let panel = Panel::new(&theme).title("Files").emphasis(PanelEmphasis::Focused);
+let tokens = DesignTokens::default();
+let panel = Panel::new(&tokens).title("Files").emphasis(PanelEmphasis::Focused);
 let inner = panel.inner(Rect::new(0, 0, 80, 24));`,
   },
   Picker: {
@@ -220,7 +231,7 @@ let theme = Theme::default();
 let candidates = [("open", "Open file"), ("logs", "Show logs")];
 let project = |query: &str| candidates.iter()
     .filter(|(_, label)| label.to_lowercase().contains(&query.to_lowercase()))
-    .map(|(id, label)| ListRow { id: *id, label: Line::from(*label), trailing: None, role: RowRole::Item, enabled: true })
+    .map(|(id, label)| ListRow { id: *id, label: Line::from(*label), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true, loading: false })
     .collect::<Vec<_>>();
 let mut state = PickerState::new(Some("open"));
 let mut rows = project(state.query_text());
@@ -327,7 +338,7 @@ let rect = toast.rect(Rect::new(0, 0, 80, 24));`,
 use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeNodeStatus, TreeState}};
 
 let theme = Theme::default();
-let nodes = [TreeNode { id: "src", label: Line::from("src"), trailing: None, depth: 0, branch: true, expanded: true, enabled: true, status: TreeNodeStatus::Ready }];
+let nodes = [TreeNode { id: "src", label: Line::from("src"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, depth: 0, branch: true, expanded: true, enabled: true, status: TreeNodeStatus::Ready }];
 let tokens = DesignTokens::default();
 let tree = Tree::new(&nodes, &tokens);
 let mut state = TreeState::new(Some("src"));
@@ -409,7 +420,7 @@ let block = CodeBlock::new(&lines, &theme).language("rust").line_numbers(true);`
 use termrock::{style::DesignTokens, Theme, widgets::{CommandPalette, CommandPaletteState, ListRow, RowRole}};
 
 let theme = Theme::default();
-let rows = [ListRow { id: "quit", label: Line::from("Quit"), trailing: None, enabled: true, role: RowRole::Item }];
+let rows = [ListRow { id: "quit", label: Line::from("Quit"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, enabled: true, role: RowRole::Item, loading: false }];
 let tokens = DesignTokens::default();
 let palette = CommandPalette::new("Commands", &rows, &tokens);
 let state = CommandPaletteState::new(Some("quit"));`,
@@ -565,7 +576,188 @@ let preview = theme_from_preset_id("slate");`,
     usage: `use termrock::{Theme, widgets::{ImageMeta, ImageProtocol, ImageSurface}};
 
 let theme = Theme::default();
-let meta = ImageMeta { label: "shot.png", pixel_width: Some(64), pixel_height: Some(64), protocol: ImageProtocol::Placeholder };
+let meta = ImageMeta { label: "shot.png", pixel_width: Some(64), pixel_height: Some(64), protocol: ImageProtocol::Placeholder, pending: false, stale: false, generation: 0 };
 let surface = ImageSurface::new(meta, &theme);`,
+  },
+
+
+  Button: {
+    description: 'Activation primitive. Enter/Space or pointer activate once; disabled/loading never activate.',
+    primaryStory: 'button/activation',
+    usage: `use termrock::{style::DesignTokens, widgets::{Button, ButtonState}};
+
+let tokens = DesignTokens::default();
+let mut state = ButtonState::new();
+let button = Button::new("Save", &tokens);`,
+  },
+  Checkbox: {
+    description: 'Controlled checkbox with typed value-change outcomes.',
+    primaryStory: 'checkbox/switch',
+    usage: `use termrock::{style::DesignTokens, widgets::{Checkbox, CheckboxState}};
+
+let tokens = DesignTokens::default();
+let mut state = CheckboxState::new(false);
+let box_ = Checkbox::new("enable", "Enable", &tokens);`,
+  },
+  DataTable: {
+    description: 'Scalable table chrome; SelectAll is request-only over projected rows.',
+    primaryStory: 'data-table/toolbar',
+    usage: `use termrock::{style::DesignTokens, widgets::{ColumnModel, DataColumn, DataColumnWidth, DataTable, DataTableState}};
+
+let tokens = DesignTokens::default();
+let columns = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(4))]);
+let rows: [(u64, &[&str]); 0] = [];
+let mut state = DataTableState::<u64, &str>::new();
+let table = DataTable::new(&tokens, &columns, &rows);`,
+  },
+  Menu: {
+    description: 'Menu list with roving focus, disabled skip, and Esc close outcomes.',
+    primaryStory: 'menu/roving',
+    usage: `use termrock::{style::DesignTokens, widgets::{Menu, MenuItem, MenuState}};
+
+let tokens = DesignTokens::default();
+let items = [MenuItem::new("a", "Open")];
+let state = MenuState::new();
+let menu = Menu::new(&items, &tokens);`,
+  },
+
+  Badge: {
+    description: 'Non-interactive status badge with semantic role paint.',
+    primaryStory: 'badge/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::Badge};
+
+let tokens = DesignTokens::default();
+let badge = Badge::new("NEW", &tokens);`,
+  },
+  Callout: {
+    description: 'Inline semantic callout with non-color tone glyphs.',
+    primaryStory: 'callout/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::{Callout, CalloutTone}};
+
+let tokens = DesignTokens::default();
+let callout = Callout::new("Heads up", &tokens).tone(CalloutTone::Warning);`,
+  },
+  Drawer: {
+    description: 'Edge-attached drawer chrome for modal side content.',
+    primaryStory: 'drawer/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::Drawer};
+
+let tokens = DesignTokens::default();
+let drawer = Drawer::new("Settings", &tokens);`,
+  },
+  Heading: {
+    description: 'Semantic heading line with terminal typography levels.',
+    primaryStory: 'heading/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::{Heading, HeadingLevel}};
+
+let tokens = DesignTokens::default();
+let h = Heading::new("Title", &tokens).level(HeadingLevel::H1);`,
+  },
+  Kbd: {
+    description: 'Key chord chrome for keymap hint projection.',
+    primaryStory: 'kbd/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::Kbd};
+
+let tokens = DesignTokens::default();
+let kbd = Kbd::new("C-k", &tokens);`,
+  },
+  ModeRibbon: {
+    description: 'Product-neutral agent mode strip with selection outcomes.',
+    primaryStory: 'mode-ribbon/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::{ModeRibbon, WorkbenchMode}};
+
+let tokens = DesignTokens::default();
+let modes = [WorkbenchMode { id: "plan", label: "Plan", active: true, enabled: true }];
+let ribbon = ModeRibbon::new(&modes, &tokens);`,
+  },
+  Paragraph: {
+    description: 'Body paragraph with grapheme-safe display-column wrap.',
+    primaryStory: 'paragraph/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::Paragraph};
+
+let tokens = DesignTokens::default();
+let p = Paragraph::new("Body text", &tokens);`,
+  },
+  PermissionPrompt: {
+    description: 'Fail-safe permission/trust surface with default-deny focus.',
+    primaryStory: 'permission-prompt/basic',
+    usage: `use termrock::{Theme, widgets::{PermissionPrompt, PermissionPromptState, PermissionRequest}};
+
+let theme = Theme::default();
+let prompt = PermissionPrompt::new(&theme);
+let mut state = PermissionPromptState::new();
+state.enqueue(PermissionRequest::new("r1", "bash", "workspace"));`,
+  },
+  PlanReview: {
+    description: 'Plan step review list with accept markers.',
+    primaryStory: 'plan-review/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::{PlanReview, PlanStep}};
+
+let tokens = DesignTokens::default();
+let steps = [PlanStep { id: "s1", title: "Inspect", detail: None, accepted: false }];
+let review = PlanReview::new(&steps, &tokens);`,
+  },
+  Popover: {
+    description: 'Non-modal anchored popover chrome.',
+    primaryStory: 'popover/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::Popover};
+
+let tokens = DesignTokens::default();
+let pop = Popover::new("Tip", &tokens);`,
+  },
+  PromptComposer: {
+    description: 'Flagship agent prompt composer with chips, policy, and completion overlays.',
+    primaryStory: 'prompt-composer/basic',
+    usage: `use termrock::{style::DesignTokens, Theme, widgets::{PromptComposer, PromptComposerState}};
+
+let tokens = DesignTokens::default();
+let theme = Theme::default();
+let mut state = PromptComposerState::new();
+let composer = PromptComposer::new(&tokens, &theme);`,
+  },
+  QuestionFlow: {
+    description: 'Multi-step interview flow with option selection outcomes.',
+    primaryStory: 'question-flow/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::{QuestionFlow, QuestionOption, QuestionStep}};
+
+let tokens = DesignTokens::default();
+let opts = [QuestionOption { id: "y", label: "Yes" }];
+let steps = [QuestionStep { id: "q1", prompt: "Continue?", options: &opts, required: true }];
+let flow = QuestionFlow::new(&steps, &tokens);`,
+  },
+  SeparatorLine: {
+    description: 'Horizontal or vertical separator rule using border role paint.',
+    primaryStory: 'separator/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::SeparatorLine};
+
+let tokens = DesignTokens::default();
+let sep = SeparatorLine::horizontal(&tokens);`,
+  },
+  SessionPicker: {
+    description: 'Session list picker over borrowed session projections.',
+    primaryStory: 'session-picker/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::{SessionItem, SessionPicker}};
+
+let tokens = DesignTokens::default();
+let sessions = [SessionItem { id: "s1", title: "Main", meta: None }];
+let picker = SessionPicker::new(&sessions, &tokens);`,
+  },
+  Surface: {
+    description: 'Elevation-aware surface fill without focus border ownership.',
+    primaryStory: 'surface/basic',
+    usage: `use termrock::{style::DesignTokens, widgets::{Surface, SurfaceElevation}};
+
+let tokens = DesignTokens::default();
+let surface = Surface::new(&tokens).elevation(SurfaceElevation::Elevated);`,
+  },
+  TaskRail: {
+    description: 'Titled task list rail composing Panel + List.',
+    primaryStory: 'task-rail/basic',
+    usage: `use ratatui_core::text::Line;
+use termrock::{style::DesignTokens, widgets::{ListRow, RowRole, TaskRail}};
+
+let tokens = DesignTokens::default();
+let rows = [ListRow { id: "t1", label: Line::from("Task"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true, loading: false }];
+let rail = TaskRail::new(&rows, &tokens, "Tasks");`,
   },
 } as const satisfies Record<string, ComponentDoc>

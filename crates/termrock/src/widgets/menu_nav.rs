@@ -3,7 +3,11 @@
 
 //! Navigation and menu overlays: sidebar, breadcrumbs, menu, drawer, popover, tooltip (Plan 051).
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
@@ -207,6 +211,22 @@ impl<'a, Id> Menu<'a, Id> {
             buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
             y = y.saturating_add(1);
         }
+    }
+}
+
+impl<Id> StatefulWidget for Menu<'_, Id> {
+    type State = MenuState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        Menu::render(&self, area, buffer, state);
+    }
+}
+
+impl<Id> StatefulWidget for &Menu<'_, Id> {
+    type State = MenuState;
+
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        Menu::render(self, area, buffer, state);
     }
 }
 
