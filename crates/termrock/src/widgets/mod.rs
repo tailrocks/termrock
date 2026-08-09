@@ -171,7 +171,11 @@ pub use jump_overlay::{
 };
 pub use list::{List, ListClickPolicy, ListRow, ListState, RowRole};
 pub use log_pane::{LogPane, LogPaneState};
-pub use markdown::{MarkdownBlock, MarkdownBlockKind, MarkdownView, project_plain_lines};
+pub use markdown::{
+    MarkdownBlock, MarkdownBlockKind, MarkdownInline, MarkdownInlineKind, MarkdownLinkRegion,
+    MarkdownOutcome, MarkdownParts, MarkdownView, MarkdownViewState, SourceAnchor,
+    project_markdown, project_plain_lines,
+};
 pub use menu_nav::{
     BreadcrumbItem, Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, ContextMenu,
     DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuItem, MenuOutcome, MenuState,

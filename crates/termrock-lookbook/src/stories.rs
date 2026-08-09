@@ -34,7 +34,8 @@ use termrock::{
         HintBar, ImageMeta, ImageProtocol, ImageSurface, InspectorField, JumpOverlay, JumpTarget,
         Kbd, Link, LinkState, List, ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
         LogPaneState,
-        LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, Menu, MenuItem,
+        LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
+        Menu, MenuItem,
         MenuState, MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
         Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
         PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
@@ -1871,10 +1872,37 @@ pub(crate) fn stories() -> Vec<Story> {
             "markdown-view/basic",
             "Markdown view",
             "MarkdownView",
-            "Projected markdown blocks.",
-            40,
-            6,
+            "Editorial blocks: heading, list, task, fence, link, table.",
+            48,
+            14,
             markdown_view,
+        ),
+        Story::new(
+            "markdown-view/streaming",
+            "Markdown streaming fence",
+            "MarkdownView",
+            "Unfinished code fence with streaming cue.",
+            40,
+            8,
+            markdown_streaming_story,
+        ),
+        Story::new(
+            "markdown-view/table",
+            "Markdown responsive table",
+            "MarkdownView",
+            "Pipe table with column contraction.",
+            36,
+            6,
+            markdown_table_story,
+        ),
+        Story::new(
+            "markdown-view/no-color",
+            "Markdown no-color",
+            "MarkdownView",
+            "Compact headings and mono hierarchy cues.",
+            40,
+            10,
+            markdown_no_color_story,
         ),
         Story::new(
             "sparkline/basic",
@@ -8301,14 +8329,68 @@ fn code_block_highlights_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn markdown_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::HeadingLevel;
-    let blocks = [
-        MarkdownBlock::heading("Plan", HeadingLevel::H1),
-        MarkdownBlock::new(MarkdownBlockKind::ListItem, "Implement widgets"),
-        MarkdownBlock::new(MarkdownBlockKind::Paragraph, "Ship the PR."),
-        MarkdownBlock::new(MarkdownBlockKind::Code, "cargo test -p termrock"),
-    ];
-    frame.render_widget(MarkdownView::new(&blocks, system), area);
+    use termrock::widgets::project_markdown;
+    let src = "\
+# Plan
+
+Implement the **markdown** surface with [links](https://example.invalid).
+
+- [ ] tasks remain open
+- [x] done items check
+
+1. First ordered
+2. Second ordered
+
+> Quote with hanging indent.
+
+```rust
+fn main() {}
+```
+
+| col | val |
+|-----|-----|
+| a   | 1   |
+| b   | 2   |
+";
+    // Leak-free: project into static-ish by using function-local owned string via once
+    // Stories use short literals only — project_markdown borrows src.
+    let blocks = project_markdown(src);
+    let mut state = MarkdownViewState::new();
+    let _ = MarkdownView::new(&blocks, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn markdown_streaming_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::project_markdown;
+    let src = "```rust\nfn partial() {\n    // still streaming";
+    let blocks = project_markdown(src);
+    let mut state = MarkdownViewState::new();
+    let _ = MarkdownView::new(&blocks, system)
+        .fence_line_numbers(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn markdown_table_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::project_markdown;
+    let src = "\
+| name | status | detail |
+|------|--------|--------|
+| alpha | ok | ready |
+| beta | warn | slow |
+";
+    let blocks = project_markdown(src);
+    let mut state = MarkdownViewState::new();
+    let _ = MarkdownView::new(&blocks, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn markdown_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::project_markdown;
+    let system = system.clone().no_color();
+    let src = "# Title\n\nBody with `code` and a list:\n\n- one\n- two\n";
+    let blocks = project_markdown(src);
+    let mut state = MarkdownViewState::new();
+    let _ = MarkdownView::new(&blocks, &system)
+        .compact_headings(true)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn sparkline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
