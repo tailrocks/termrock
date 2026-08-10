@@ -14,6 +14,7 @@ mod agent_shell;
 mod agent_workbench;
 mod app_shell;
 mod database_workbench;
+mod file_manager;
 mod git_workbench;
 mod observability_dashboard;
 mod ops_dashboard;
@@ -59,6 +60,16 @@ pub use observability_dashboard::{
     ObservabilityLiveState, ObservabilityPane, OBSERVABILITY_SEARCH_HEIGHT,
 };
 pub use observability_dashboard::bench as observability_dashboard_bench;
+pub use file_manager::{
+    burst_file_entries, default_quick_open_providers, dialog_rect, example_empty_ops,
+    example_file_entries, example_file_ops, example_file_preview, example_quick_open_from_entries,
+    file_manager_layout, file_manager_layout_density, quick_open_rect, render_file_manager,
+    seed_conflict_state, seed_delete_confirm, FileClipboardMode, FileConflictResolution,
+    FileManagerDensity, FileManagerDialog, FileManagerOutcome, FileManagerPane, FileManagerState,
+    FileManagerSurfaces, FileOpItem, FileOpKind, FileOpStatus, FILE_MANAGER_BREADCRUMBS_HEIGHT,
+    FILE_MANAGER_SEARCH_HEIGHT,
+};
+pub use file_manager::bench as file_manager_bench;
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,
     AppShellSlots, AppShellZone,

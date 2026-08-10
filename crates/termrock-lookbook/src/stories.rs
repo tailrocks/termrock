@@ -6981,6 +6981,42 @@ pub(crate) fn stories() -> Vec<Story> {
             observability_dashboard_unicode,
         ),
         Story::new(
+            "file-manager/basic",
+            "File manager",
+            "FileManager",
+            "Browse tree + preview + operation queue.",
+            120,
+            36,
+            file_manager_basic,
+        ),
+        Story::new(
+            "file-manager/conflict",
+            "File manager conflict",
+            "FileManager",
+            "Conflict dialog + queue progress/failure.",
+            100,
+            28,
+            file_manager_conflict,
+        ),
+        Story::new(
+            "file-manager/narrow",
+            "File manager narrow",
+            "FileManager",
+            "Narrow density — queue collapsed; preview drawer.",
+            70,
+            24,
+            file_manager_narrow,
+        ),
+        Story::new(
+            "file-manager/unicode",
+            "File manager unicode",
+            "FileManager",
+            "Unicode path/name paint path.",
+            100,
+            28,
+            file_manager_unicode,
+        ),
+        Story::new(
             "permission-prompt/basic",
             "Permission prompt",
             "PermissionPrompt",
@@ -25284,6 +25320,74 @@ fn observability_dashboard_narrow(frame: &mut Frame<'_>, area: Rect, system: &De
 
 fn observability_dashboard_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_observability_story(frame, area, system, ObservabilityStoryKind::Unicode);
+}
+
+#[derive(Clone, Copy)]
+enum FileManagerStoryKind {
+    Basic,
+    Conflict,
+    Narrow,
+    Unicode,
+}
+
+fn paint_file_manager_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    kind: FileManagerStoryKind,
+) {
+    use termrock::patterns::{
+        example_file_entries, example_file_ops, example_file_preview,
+        example_quick_open_from_entries, render_file_manager, seed_conflict_state,
+        FileManagerDensity, FileManagerState, FileManagerSurfaces,
+    };
+
+    let mut state = FileManagerState::new();
+    state.cwd = "/project".into();
+    match kind {
+        FileManagerStoryKind::Narrow => {
+            state.density = Some(FileManagerDensity::Narrow);
+            state.drawer_open = true;
+        }
+        FileManagerStoryKind::Conflict => {
+            seed_conflict_state(&mut state);
+        }
+        FileManagerStoryKind::Unicode | FileManagerStoryKind::Basic => {}
+    }
+
+    let entries = example_file_entries();
+    let ops = example_file_ops();
+    let (preview, _, _) = example_file_preview();
+    let qo = example_quick_open_from_entries(&entries);
+
+    render_file_manager(
+        frame.buffer_mut(),
+        area,
+        FileManagerSurfaces {
+            system,
+            state: &mut state,
+            entries: &entries,
+            ops: &ops,
+            preview: Some(preview),
+            quick_open_items: &qo,
+        },
+    );
+}
+
+fn file_manager_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_file_manager_story(frame, area, system, FileManagerStoryKind::Basic);
+}
+
+fn file_manager_conflict(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_file_manager_story(frame, area, system, FileManagerStoryKind::Conflict);
+}
+
+fn file_manager_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_file_manager_story(frame, area, system, FileManagerStoryKind::Narrow);
+}
+
+fn file_manager_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_file_manager_story(frame, area, system, FileManagerStoryKind::Unicode);
 }
 
 #[derive(Clone, Copy)]
