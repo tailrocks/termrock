@@ -18,6 +18,7 @@ mod file_manager;
 mod git_workbench;
 mod observability_dashboard;
 mod ops_dashboard;
+mod project_launcher;
 mod resource_browser;
 mod settings_screen;
 mod setup_wizard;
@@ -70,6 +71,16 @@ pub use file_manager::{
     FILE_MANAGER_SEARCH_HEIGHT,
 };
 pub use file_manager::bench as file_manager_bench;
+pub use project_launcher::{
+    burst_project_entries, default_project_quick_open_providers, example_project_preview,
+    example_project_quick_open, example_projects, filter_project_entries, project_launcher_layout,
+    project_launcher_layout_density, project_list_rows, project_quick_open_rect,
+    render_project_launcher, seed_error_state, seed_onboarding_state, seed_stale_state,
+    ProjectEntry, ProjectGroup, ProjectLauncherDensity, ProjectLauncherMode,
+    ProjectLauncherOutcome, ProjectLauncherPane, ProjectLauncherState, ProjectLauncherSurfaces,
+    ProjectLocation, ProjectPathStatus, PROJECT_LAUNCHER_SEARCH_HEIGHT,
+};
+pub use project_launcher::bench as project_launcher_bench;
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,
     AppShellSlots, AppShellZone,

@@ -7017,6 +7017,51 @@ pub(crate) fn stories() -> Vec<Story> {
             file_manager_unicode,
         ),
         Story::new(
+            "project-launcher/basic",
+            "Project launcher home",
+            "ProjectLauncher",
+            "Home: projects + sessions + preview.",
+            120,
+            36,
+            project_launcher_basic,
+        ),
+        Story::new(
+            "project-launcher/stale",
+            "Project launcher stale",
+            "ProjectLauncher",
+            "Missing/stale paths + offline status.",
+            100,
+            28,
+            project_launcher_stale,
+        ),
+        Story::new(
+            "project-launcher/narrow",
+            "Project launcher narrow",
+            "ProjectLauncher",
+            "Narrow density — preview collapsed.",
+            70,
+            24,
+            project_launcher_narrow,
+        ),
+        Story::new(
+            "project-launcher/inline",
+            "Project launcher inline",
+            "ProjectLauncher",
+            "Inline quick launcher (search + list).",
+            64,
+            16,
+            project_launcher_inline,
+        ),
+        Story::new(
+            "project-launcher/unicode",
+            "Project launcher unicode",
+            "ProjectLauncher",
+            "Unicode project name paint path.",
+            100,
+            28,
+            project_launcher_unicode,
+        ),
+        Story::new(
             "permission-prompt/basic",
             "Permission prompt",
             "PermissionPrompt",
@@ -25388,6 +25433,89 @@ fn file_manager_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 
 fn file_manager_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_file_manager_story(frame, area, system, FileManagerStoryKind::Unicode);
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ProjectLauncherStoryKind {
+    Basic,
+    Stale,
+    Narrow,
+    Inline,
+    Unicode,
+}
+
+fn paint_project_launcher_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    kind: ProjectLauncherStoryKind,
+) {
+    use termrock::patterns::{
+        example_project_preview, example_project_quick_open, example_projects,
+        render_project_launcher, seed_onboarding_state, seed_stale_state, ProjectLauncherDensity,
+        ProjectLauncherMode, ProjectLauncherState, ProjectLauncherSurfaces,
+    };
+    use termrock::widgets::example_sessions;
+
+    let mut state = match kind {
+        ProjectLauncherStoryKind::Inline => ProjectLauncherState::inline(),
+        _ => ProjectLauncherState::new(),
+    };
+    match kind {
+        ProjectLauncherStoryKind::Narrow => {
+            state.density = Some(ProjectLauncherDensity::Narrow);
+        }
+        ProjectLauncherStoryKind::Stale => {
+            seed_stale_state(&mut state);
+        }
+        ProjectLauncherStoryKind::Inline => {
+            state.mode = ProjectLauncherMode::Inline;
+        }
+        ProjectLauncherStoryKind::Unicode | ProjectLauncherStoryKind::Basic => {}
+    }
+    // empty catalog shows onboarding only when host enables it
+    if kind == ProjectLauncherStoryKind::Basic {
+        seed_onboarding_state(&mut state);
+        state.show_onboarding = false; // keep basic clean; stale uses problems
+    }
+
+    let projects = example_projects();
+    let sessions = example_sessions();
+    let (preview, _, _) = example_project_preview();
+    let qo = example_project_quick_open(&projects);
+
+    render_project_launcher(
+        frame.buffer_mut(),
+        area,
+        ProjectLauncherSurfaces {
+            system,
+            state: &mut state,
+            projects: &projects,
+            sessions: &sessions,
+            preview: Some(preview),
+            quick_open_items: &qo,
+        },
+    );
+}
+
+fn project_launcher_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_project_launcher_story(frame, area, system, ProjectLauncherStoryKind::Basic);
+}
+
+fn project_launcher_stale(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_project_launcher_story(frame, area, system, ProjectLauncherStoryKind::Stale);
+}
+
+fn project_launcher_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_project_launcher_story(frame, area, system, ProjectLauncherStoryKind::Narrow);
+}
+
+fn project_launcher_inline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_project_launcher_story(frame, area, system, ProjectLauncherStoryKind::Inline);
+}
+
+fn project_launcher_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_project_launcher_story(frame, area, system, ProjectLauncherStoryKind::Unicode);
 }
 
 #[derive(Clone, Copy)]

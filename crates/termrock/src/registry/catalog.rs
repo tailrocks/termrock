@@ -1660,6 +1660,100 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "project-launcher".into(),
+            title: "Project Launcher".into(),
+            description: "Fast project/session launcher: SearchInput, grouped projects List, SessionPicker, PreviewCard, QuickOpen, ConnectionStatus chrome, EmptyState onboarding; open/new/import/favorite/session typed requests; home + inline modes; host owns discovery/persistence.".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::project_launcher".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/project_launcher.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec!["termrock/Panel".into()];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("Workbench".into());
+                c.min_width = Some(40);
+                c.min_height = Some(12);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "search".into(),
+                    label: "Filter / search".into(),
+                },
+                AnatomyPartRef {
+                    id: "projects".into(),
+                    label: "Project list".into(),
+                },
+                AnatomyPartRef {
+                    id: "sessions".into(),
+                    label: "Session picker".into(),
+                },
+                AnatomyPartRef {
+                    id: "preview".into(),
+                    label: "Preview card".into(),
+                },
+                AnatomyPartRef {
+                    id: "onboarding".into(),
+                    label: "Onboarding empty".into(),
+                },
+                AnatomyPartRef {
+                    id: "status".into(),
+                    label: "Status bar".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "home".into(),
+                    description: "Full-screen home".into(),
+                },
+                VariantRef {
+                    id: "inline".into(),
+                    description: "Compact quick launcher".into(),
+                },
+                VariantRef {
+                    id: "narrow".into(),
+                    description: "No preview".into(),
+                },
+            ],
+            outcomes: vec![
+                OutcomeRef {
+                    id: "OpenRequested".into(),
+                },
+                OutcomeRef {
+                    id: "NewRequested".into(),
+                },
+                OutcomeRef {
+                    id: "ImportRequested".into(),
+                },
+                OutcomeRef {
+                    id: "SessionResume".into(),
+                },
+            ],
+            stories: vec![
+                "project-launcher/basic".into(),
+                "project-launcher/stale".into(),
+                "project-launcher/narrow".into(),
+                "project-launcher/inline".into(),
+                "project-launcher/unicode".into(),
+            ],
+            tests: vec!["patterns::project_launcher".into()],
+            migration: Some("migrations/0244-v0.13.0-project-launcher.md".into()),
+            provenance: prov("crates/termrock/src/patterns/project_launcher.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 

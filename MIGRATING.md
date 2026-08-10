@@ -257,6 +257,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0241 | `v0.13.0` | [GitWorkbench source-control composition block](migrations/0241-v0.13.0-git-workbench.md) |
 | 0242 | `v0.13.0` | [Logs ObservabilityDashboard composition block](migrations/0242-v0.13.0-logs-observability-dashboard.md) |
 | 0243 | `v0.13.0` | [FileManager composition block](migrations/0243-v0.13.0-file-manager.md) |
+| 0244 | `v0.13.0` | [ProjectLauncher composition block](migrations/0244-v0.13.0-project-launcher.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
