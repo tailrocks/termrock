@@ -197,6 +197,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0181 | `v0.13.0` | [EmptyState](migrations/0181-v0.13.0-empty-state.md) |
 | 0182 | `v0.13.0` | [ErrorState and Recovery](migrations/0182-v0.13.0-error-state-recovery.md) |
 | 0183 | `v0.13.0` | [LoadingOverlay and BusyBoundary](migrations/0183-v0.13.0-loading-overlay-busy-boundary.md) |
+| 0184 | `v0.13.0` | [Offline and ReconnectingState](migrations/0184-v0.13.0-offline-reconnecting-state.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

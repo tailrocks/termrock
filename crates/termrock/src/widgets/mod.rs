@@ -21,6 +21,7 @@ mod command_palette;
 mod quick_open;
 mod completion_menu;
 mod composed_row;
+mod connectivity;
 mod content;
 mod accordion;
 mod collapsible;
@@ -580,6 +581,12 @@ pub use error_state::{
     RecoveryAction, RetrySafety, example_error_conflict, example_error_crash,
     example_error_dialog, example_error_network, example_error_not_found,
     example_error_permission, example_error_unsupported, example_error_validation,
+};
+pub use connectivity::{
+    ConnectivityFocus, ConnectivityOutcome, ConnectivityPhase, ConnectivityPresentation,
+    OfflineBanner, OfflineCapability, OfflineChrome, OfflineSurface, QueuedConnectivityAction,
+    ReconnectingState, example_auth_required, example_disconnected, example_reconnecting_agent,
+    example_server_unavailable,
 };
 pub use loading_overlay::{
     BUSY_BOUNDARY_MAX_NEST, BusyBoundary, BusyBoundaryOutcome, BusyBoundaryState, BusyMode,

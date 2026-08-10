@@ -974,6 +974,30 @@ match busy.route_key(key) {
     _ => {}
 }`,
   },
+  ReconnectingState: {
+    description:
+      'Connectivity model for remote sessions/agents/DBs: phases disconnected/reconnecting/auth/unavailable; target, last-ok, retry, queue, offline caps; projects to StatusBar and NotificationCenter; banner or full OfflineSurface.',
+    primaryStory: 'connectivity/reconnecting',
+    usage: `use termrock::widgets::{ReconnectingState, OfflineBanner, OfflineSurface, ConnectivityPresentation};
+
+let mut conn = ReconnectingState::new("agent://prod-1");
+conn.begin_reconnect(2);
+OfflineBanner::new(&conn, &system).paint(area, buf);
+// StatusBar: StatusSlot::connection(id, &conn.status_bar_content())
+// Notifications: center.ingest_item(conn.to_notification_item("c1"))`,
+  },
+  OfflineBanner: {
+    description:
+      'Unobtrusive single-line connectivity banner (Esc dismisses; StatusBar still shows connection).',
+    primaryStory: 'connectivity/banner',
+    usage: `OfflineBanner::new(&conn, &system).paint(area, buf);`,
+  },
+  OfflineSurface: {
+    description:
+      'Full offline/reconnect recovery: retry, auth, work offline, queue, capabilities, drafts/selection preserved.',
+    primaryStory: 'connectivity/reconnecting',
+    usage: `OfflineSurface::new(&system).paint(area, buf, &mut conn);`,
+  },
   Spinner: {
     description:
       'Semantic activity spinner with verb label, phases (indeterminate/waiting/queued/reconnecting), capability glyphs, reduced-motion static frames, and idle redraw when inactive/hidden.',

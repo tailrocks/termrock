@@ -57,6 +57,9 @@ use termrock::{
         ListRow, ListState, LoadingView, LoadingOverlay, BusyBoundary, BusyBoundaryState, BusyMode,
         example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
         example_busy_optimistic, example_busy_stale,
+        ReconnectingState, OfflineBanner, OfflineSurface, ConnectivityPresentation,
+        example_reconnecting_agent, example_auth_required, example_server_unavailable,
+        example_disconnected,
         LogLevel, LogLine, LogPane,
         LogPaneState,
         LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
@@ -2847,6 +2850,60 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             12,
             loading_overlay_nested_story,
+        ),
+        Story::new(
+            "connectivity/banner",
+            "Offline banner",
+            "OfflineBanner",
+            "Unobtrusive reconnecting banner with queue count.",
+            56,
+            1,
+            connectivity_banner_story,
+        ),
+        Story::new(
+            "connectivity/reconnecting",
+            "Reconnecting full",
+            "OfflineSurface",
+            "Full reconnect surface: attempts, queue, offline caps, drafts.",
+            52,
+            14,
+            connectivity_reconnecting_story,
+        ),
+        Story::new(
+            "connectivity/auth",
+            "Auth required",
+            "OfflineSurface",
+            "Authentication required full recovery surface.",
+            48,
+            12,
+            connectivity_auth_story,
+        ),
+        Story::new(
+            "connectivity/unavailable",
+            "Server unavailable",
+            "OfflineSurface",
+            "Server unavailable with queued query and cached-read caps.",
+            50,
+            14,
+            connectivity_unavailable_story,
+        ),
+        Story::new(
+            "connectivity/status-bar",
+            "Connectivity StatusBar",
+            "ReconnectingState",
+            "StatusBar connection slot projected from ReconnectingState.",
+            64,
+            1,
+            connectivity_status_bar_story,
+        ),
+        Story::new(
+            "connectivity/notification",
+            "Connectivity notification",
+            "ReconnectingState",
+            "NotificationCenter ingest from connectivity state.",
+            48,
+            12,
+            connectivity_notification_story,
         ),
         Story::new(
             "error-view/basic",
@@ -12363,6 +12420,52 @@ fn loading_overlay_nested_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
         loading_tick(),
         Motion::Off,
     );
+}
+
+fn connectivity_banner_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let s = example_reconnecting_agent();
+    OfflineBanner::new(&s, system).paint(area, frame.buffer_mut());
+}
+
+fn connectivity_reconnecting_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut s = example_reconnecting_agent();
+    s.set_presentation(ConnectivityPresentation::Full);
+    OfflineSurface::new(system).paint(area, frame.buffer_mut(), &mut s);
+}
+
+fn connectivity_auth_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut s = example_auth_required();
+    OfflineSurface::new(system).paint(area, frame.buffer_mut(), &mut s);
+}
+
+fn connectivity_unavailable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut s = example_server_unavailable();
+    OfflineSurface::new(system).paint(area, frame.buffer_mut(), &mut s);
+}
+
+fn connectivity_status_bar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{StatusBar, StatusBarState, StatusSlot};
+    let s = example_reconnecting_agent();
+    let content = s.status_bar_content();
+    let left = [StatusSlot::mode("m", "NOR")];
+    let right = [s.status_slot_template("c", content.as_str())];
+    let mut state = StatusBarState::default();
+    frame.render_stateful_widget(
+        &StatusBar::new(&left, &right, system),
+        area,
+        &mut state,
+    );
+}
+
+fn connectivity_notification_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{NotificationCenter, NotificationCenterState, NotificationRecipe};
+    let conn = example_reconnecting_agent();
+    let mut state = NotificationCenterState::new();
+    state.replace_items(vec![conn.to_notification_item("conn-1")]);
+    state.set_recipe(NotificationRecipe::Drawer);
+    let _ = state.open();
+    state.set_focused(true);
+    NotificationCenter::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn error_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

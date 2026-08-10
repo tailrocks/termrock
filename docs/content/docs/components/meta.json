@@ -43,6 +43,7 @@
     "empty-state",
     "error-view",
     "loading-overlay",
+    "connectivity",
     "field",
     "fieldset",
     "file-picker",

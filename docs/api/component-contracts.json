@@ -207,6 +207,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "ConnectivityPhase": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "ContextMenu": {
     "keyboard": "covered",
     "mouse": "covered",
@@ -583,6 +591,22 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "OfflineBanner": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
+  "OfflineSurface": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "Pagination": {
     "keyboard": "covered",
     "mouse": "covered",
@@ -712,6 +736,14 @@
     "narrowTerminal": "covered"
   },
   "RangeSlider": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
+  "ReconnectingState": {
     "keyboard": "covered",
     "mouse": "covered",
     "focus": "covered",

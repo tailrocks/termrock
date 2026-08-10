@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.29s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.30s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -17856,6 +17856,220 @@ pub unsafe fn termrock::widgets::ComposerPresentation::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::ComposerPresentation
 pub fn termrock::widgets::ComposerPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ComposerPresentation
+#[non_exhaustive] pub enum termrock::widgets::ConnectivityFocus
+pub termrock::widgets::ConnectivityFocus::Authenticate
+pub termrock::widgets::ConnectivityFocus::Dismiss
+pub termrock::widgets::ConnectivityFocus::None
+pub termrock::widgets::ConnectivityFocus::Retry
+pub termrock::widgets::ConnectivityFocus::ViewQueue
+pub termrock::widgets::ConnectivityFocus::WorkOffline
+impl core::clone::Clone for termrock::widgets::ConnectivityFocus
+pub fn termrock::widgets::ConnectivityFocus::clone(&self) -> termrock::widgets::ConnectivityFocus
+impl core::cmp::Eq for termrock::widgets::ConnectivityFocus
+impl core::cmp::PartialEq for termrock::widgets::ConnectivityFocus
+pub fn termrock::widgets::ConnectivityFocus::eq(&self, &termrock::widgets::ConnectivityFocus) -> bool
+impl core::default::Default for termrock::widgets::ConnectivityFocus
+pub fn termrock::widgets::ConnectivityFocus::default() -> termrock::widgets::ConnectivityFocus
+impl core::fmt::Debug for termrock::widgets::ConnectivityFocus
+pub fn termrock::widgets::ConnectivityFocus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ConnectivityFocus
+pub fn termrock::widgets::ConnectivityFocus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ConnectivityFocus
+impl core::marker::StructuralPartialEq for termrock::widgets::ConnectivityFocus
+impl core::marker::Freeze for termrock::widgets::ConnectivityFocus
+impl core::marker::Send for termrock::widgets::ConnectivityFocus
+impl core::marker::Sync for termrock::widgets::ConnectivityFocus
+impl core::marker::Unpin for termrock::widgets::ConnectivityFocus
+impl core::marker::UnsafeUnpin for termrock::widgets::ConnectivityFocus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ConnectivityFocus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ConnectivityFocus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ConnectivityFocus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityFocus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ConnectivityFocus where U: core::convert::From<T>
+pub fn termrock::widgets::ConnectivityFocus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ConnectivityFocus where U: core::convert::Into<T>
+pub type termrock::widgets::ConnectivityFocus::Error = core::convert::Infallible
+pub fn termrock::widgets::ConnectivityFocus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ConnectivityFocus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ConnectivityFocus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ConnectivityFocus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ConnectivityFocus where T: core::clone::Clone
+pub type termrock::widgets::ConnectivityFocus::Owned = T
+pub fn termrock::widgets::ConnectivityFocus::clone_into(&self, &mut T)
+pub fn termrock::widgets::ConnectivityFocus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ConnectivityFocus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityFocus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ConnectivityFocus where T: ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityFocus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ConnectivityFocus where T: ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityFocus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ConnectivityFocus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ConnectivityFocus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ConnectivityFocus
+pub fn termrock::widgets::ConnectivityFocus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ConnectivityFocus
+#[non_exhaustive] pub enum termrock::widgets::ConnectivityOutcome
+pub termrock::widgets::ConnectivityOutcome::Authenticate
+pub termrock::widgets::ConnectivityOutcome::Dismiss
+pub termrock::widgets::ConnectivityOutcome::Ignored
+pub termrock::widgets::ConnectivityOutcome::RetryNow
+pub termrock::widgets::ConnectivityOutcome::ViewQueue
+pub termrock::widgets::ConnectivityOutcome::WorkOffline
+impl core::clone::Clone for termrock::widgets::ConnectivityOutcome
+pub fn termrock::widgets::ConnectivityOutcome::clone(&self) -> termrock::widgets::ConnectivityOutcome
+impl core::cmp::Eq for termrock::widgets::ConnectivityOutcome
+impl core::cmp::PartialEq for termrock::widgets::ConnectivityOutcome
+pub fn termrock::widgets::ConnectivityOutcome::eq(&self, &termrock::widgets::ConnectivityOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ConnectivityOutcome
+pub fn termrock::widgets::ConnectivityOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ConnectivityOutcome
+pub fn termrock::widgets::ConnectivityOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ConnectivityOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::ConnectivityOutcome
+impl core::marker::Freeze for termrock::widgets::ConnectivityOutcome
+impl core::marker::Send for termrock::widgets::ConnectivityOutcome
+impl core::marker::Sync for termrock::widgets::ConnectivityOutcome
+impl core::marker::Unpin for termrock::widgets::ConnectivityOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ConnectivityOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ConnectivityOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ConnectivityOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ConnectivityOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ConnectivityOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ConnectivityOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ConnectivityOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ConnectivityOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ConnectivityOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ConnectivityOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ConnectivityOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ConnectivityOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ConnectivityOutcome where T: core::clone::Clone
+pub type termrock::widgets::ConnectivityOutcome::Owned = T
+pub fn termrock::widgets::ConnectivityOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ConnectivityOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ConnectivityOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ConnectivityOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ConnectivityOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ConnectivityOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ConnectivityOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ConnectivityOutcome
+pub fn termrock::widgets::ConnectivityOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ConnectivityOutcome
+#[non_exhaustive] pub enum termrock::widgets::ConnectivityPhase
+pub termrock::widgets::ConnectivityPhase::AuthRequired
+pub termrock::widgets::ConnectivityPhase::Disconnected
+pub termrock::widgets::ConnectivityPhase::Online
+pub termrock::widgets::ConnectivityPhase::Reconnecting
+pub termrock::widgets::ConnectivityPhase::ServerUnavailable
+impl termrock::widgets::ConnectivityPhase
+pub const fn termrock::widgets::ConnectivityPhase::activity_phase(self) -> core::option::Option<termrock::widgets::ActivityPhase>
+pub const fn termrock::widgets::ConnectivityPhase::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::ConnectivityPhase::glyph_ascii(self) -> &'static str
+pub const fn termrock::widgets::ConnectivityPhase::glyph_unicode(self) -> &'static str
+pub const fn termrock::widgets::ConnectivityPhase::id(self) -> &'static str
+pub const fn termrock::widgets::ConnectivityPhase::is_offline_like(self) -> bool
+pub const fn termrock::widgets::ConnectivityPhase::role(self) -> termrock::style::Role
+pub const fn termrock::widgets::ConnectivityPhase::semantic_status(self) -> termrock::widgets::SemanticStatus
+pub const fn termrock::widgets::ConnectivityPhase::toast_kind(self) -> termrock::widgets::ToastKind
+pub const fn termrock::widgets::ConnectivityPhase::verb(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ConnectivityPhase
+pub fn termrock::widgets::ConnectivityPhase::clone(&self) -> termrock::widgets::ConnectivityPhase
+impl core::cmp::Eq for termrock::widgets::ConnectivityPhase
+impl core::cmp::PartialEq for termrock::widgets::ConnectivityPhase
+pub fn termrock::widgets::ConnectivityPhase::eq(&self, &termrock::widgets::ConnectivityPhase) -> bool
+impl core::default::Default for termrock::widgets::ConnectivityPhase
+pub fn termrock::widgets::ConnectivityPhase::default() -> termrock::widgets::ConnectivityPhase
+impl core::fmt::Debug for termrock::widgets::ConnectivityPhase
+pub fn termrock::widgets::ConnectivityPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ConnectivityPhase
+pub fn termrock::widgets::ConnectivityPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ConnectivityPhase
+impl core::marker::StructuralPartialEq for termrock::widgets::ConnectivityPhase
+impl core::marker::Freeze for termrock::widgets::ConnectivityPhase
+impl core::marker::Send for termrock::widgets::ConnectivityPhase
+impl core::marker::Sync for termrock::widgets::ConnectivityPhase
+impl core::marker::Unpin for termrock::widgets::ConnectivityPhase
+impl core::marker::UnsafeUnpin for termrock::widgets::ConnectivityPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ConnectivityPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ConnectivityPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ConnectivityPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ConnectivityPhase where U: core::convert::From<T>
+pub fn termrock::widgets::ConnectivityPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ConnectivityPhase where U: core::convert::Into<T>
+pub type termrock::widgets::ConnectivityPhase::Error = core::convert::Infallible
+pub fn termrock::widgets::ConnectivityPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ConnectivityPhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ConnectivityPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ConnectivityPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ConnectivityPhase where T: core::clone::Clone
+pub type termrock::widgets::ConnectivityPhase::Owned = T
+pub fn termrock::widgets::ConnectivityPhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::ConnectivityPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ConnectivityPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ConnectivityPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ConnectivityPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ConnectivityPhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ConnectivityPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ConnectivityPhase
+pub fn termrock::widgets::ConnectivityPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ConnectivityPhase
+#[non_exhaustive] pub enum termrock::widgets::ConnectivityPresentation
+pub termrock::widgets::ConnectivityPresentation::Banner
+pub termrock::widgets::ConnectivityPresentation::Full
+impl termrock::widgets::ConnectivityPresentation
+pub const fn termrock::widgets::ConnectivityPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ConnectivityPresentation
+pub fn termrock::widgets::ConnectivityPresentation::clone(&self) -> termrock::widgets::ConnectivityPresentation
+impl core::cmp::Eq for termrock::widgets::ConnectivityPresentation
+impl core::cmp::PartialEq for termrock::widgets::ConnectivityPresentation
+pub fn termrock::widgets::ConnectivityPresentation::eq(&self, &termrock::widgets::ConnectivityPresentation) -> bool
+impl core::default::Default for termrock::widgets::ConnectivityPresentation
+pub fn termrock::widgets::ConnectivityPresentation::default() -> termrock::widgets::ConnectivityPresentation
+impl core::fmt::Debug for termrock::widgets::ConnectivityPresentation
+pub fn termrock::widgets::ConnectivityPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ConnectivityPresentation
+pub fn termrock::widgets::ConnectivityPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ConnectivityPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::ConnectivityPresentation
+impl core::marker::Freeze for termrock::widgets::ConnectivityPresentation
+impl core::marker::Send for termrock::widgets::ConnectivityPresentation
+impl core::marker::Sync for termrock::widgets::ConnectivityPresentation
+impl core::marker::Unpin for termrock::widgets::ConnectivityPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::ConnectivityPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ConnectivityPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ConnectivityPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ConnectivityPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ConnectivityPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::ConnectivityPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ConnectivityPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::ConnectivityPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::ConnectivityPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ConnectivityPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ConnectivityPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ConnectivityPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ConnectivityPresentation where T: core::clone::Clone
+pub type termrock::widgets::ConnectivityPresentation::Owned = T
+pub fn termrock::widgets::ConnectivityPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::ConnectivityPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ConnectivityPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ConnectivityPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ConnectivityPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::ConnectivityPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ConnectivityPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ConnectivityPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ConnectivityPresentation
+pub fn termrock::widgets::ConnectivityPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ConnectivityPresentation
 #[non_exhaustive] pub enum termrock::widgets::ControlRender
 pub termrock::widgets::ControlRender::ExpandTabs
 pub termrock::widgets::ControlRender::Placeholder
@@ -45835,6 +46049,164 @@ pub unsafe fn termrock::widgets::ObjectInspectorState::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::ObjectInspectorState
 pub fn termrock::widgets::ObjectInspectorState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ObjectInspectorState
+pub struct termrock::widgets::OfflineBanner<'a>
+impl<'a> termrock::widgets::OfflineBanner<'a>
+pub const fn termrock::widgets::OfflineBanner<'a>::new(&'a termrock::widgets::ReconnectingState, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::OfflineBanner<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+pub fn termrock::widgets::OfflineBanner<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::OfflineBanner<'_>
+pub fn &termrock::widgets::OfflineBanner<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::OfflineBanner<'_>
+pub fn termrock::widgets::OfflineBanner<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::OfflineBanner<'a>
+pub fn termrock::widgets::OfflineBanner<'a>::clone(&self) -> termrock::widgets::OfflineBanner<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::OfflineBanner<'a>
+pub fn termrock::widgets::OfflineBanner<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::OfflineBanner<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::OfflineBanner<'a>
+impl<'a> core::marker::Send for termrock::widgets::OfflineBanner<'a>
+impl<'a> core::marker::Sync for termrock::widgets::OfflineBanner<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::OfflineBanner<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::OfflineBanner<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::OfflineBanner<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::OfflineBanner<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::OfflineBanner<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::OfflineBanner<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::OfflineBanner<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::OfflineBanner<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::OfflineBanner<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::OfflineBanner<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::OfflineBanner<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::OfflineBanner<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::OfflineBanner<'a> where T: core::clone::Clone
+pub type termrock::widgets::OfflineBanner<'a>::Owned = T
+pub fn termrock::widgets::OfflineBanner<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::OfflineBanner<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::OfflineBanner<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::OfflineBanner<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::OfflineBanner<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::OfflineBanner<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::OfflineBanner<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::OfflineBanner<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::OfflineBanner<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::OfflineBanner<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::OfflineBanner<'a>
+pub fn termrock::widgets::OfflineBanner<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::OfflineBanner<'a>
+pub struct termrock::widgets::OfflineCapability
+pub termrock::widgets::OfflineCapability::available: bool
+pub termrock::widgets::OfflineCapability::label: alloc::string::String
+impl termrock::widgets::OfflineCapability
+pub fn termrock::widgets::OfflineCapability::new(impl core::convert::Into<alloc::string::String>, bool) -> Self
+impl core::clone::Clone for termrock::widgets::OfflineCapability
+pub fn termrock::widgets::OfflineCapability::clone(&self) -> termrock::widgets::OfflineCapability
+impl core::cmp::Eq for termrock::widgets::OfflineCapability
+impl core::cmp::PartialEq for termrock::widgets::OfflineCapability
+pub fn termrock::widgets::OfflineCapability::eq(&self, &termrock::widgets::OfflineCapability) -> bool
+impl core::fmt::Debug for termrock::widgets::OfflineCapability
+pub fn termrock::widgets::OfflineCapability::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::OfflineCapability
+pub fn termrock::widgets::OfflineCapability::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::widgets::OfflineCapability
+impl core::marker::Freeze for termrock::widgets::OfflineCapability
+impl core::marker::Send for termrock::widgets::OfflineCapability
+impl core::marker::Sync for termrock::widgets::OfflineCapability
+impl core::marker::Unpin for termrock::widgets::OfflineCapability
+impl core::marker::UnsafeUnpin for termrock::widgets::OfflineCapability
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::OfflineCapability
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::OfflineCapability
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::OfflineCapability where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::OfflineCapability::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::OfflineCapability where U: core::convert::From<T>
+pub fn termrock::widgets::OfflineCapability::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::OfflineCapability where U: core::convert::Into<T>
+pub type termrock::widgets::OfflineCapability::Error = core::convert::Infallible
+pub fn termrock::widgets::OfflineCapability::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::OfflineCapability where U: core::convert::TryFrom<T>
+pub type termrock::widgets::OfflineCapability::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::OfflineCapability::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::OfflineCapability where T: core::clone::Clone
+pub type termrock::widgets::OfflineCapability::Owned = T
+pub fn termrock::widgets::OfflineCapability::clone_into(&self, &mut T)
+pub fn termrock::widgets::OfflineCapability::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::OfflineCapability where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::OfflineCapability::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::OfflineCapability where T: ?core::marker::Sized
+pub fn termrock::widgets::OfflineCapability::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::OfflineCapability where T: ?core::marker::Sized
+pub fn termrock::widgets::OfflineCapability::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::OfflineCapability where T: core::clone::Clone
+pub unsafe fn termrock::widgets::OfflineCapability::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::OfflineCapability
+pub fn termrock::widgets::OfflineCapability::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::OfflineCapability
+pub struct termrock::widgets::OfflineChrome
+impl termrock::widgets::OfflineChrome
+pub fn termrock::widgets::OfflineChrome::paint(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ReconnectingState, &termrock::style::DesignSystem)
+impl core::marker::Freeze for termrock::widgets::OfflineChrome
+impl core::marker::Send for termrock::widgets::OfflineChrome
+impl core::marker::Sync for termrock::widgets::OfflineChrome
+impl core::marker::Unpin for termrock::widgets::OfflineChrome
+impl core::marker::UnsafeUnpin for termrock::widgets::OfflineChrome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::OfflineChrome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::OfflineChrome
+impl<T, U> core::convert::Into<U> for termrock::widgets::OfflineChrome where U: core::convert::From<T>
+pub fn termrock::widgets::OfflineChrome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::OfflineChrome where U: core::convert::Into<T>
+pub type termrock::widgets::OfflineChrome::Error = core::convert::Infallible
+pub fn termrock::widgets::OfflineChrome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::OfflineChrome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::OfflineChrome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::OfflineChrome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> core::any::Any for termrock::widgets::OfflineChrome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::OfflineChrome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::OfflineChrome where T: ?core::marker::Sized
+pub fn termrock::widgets::OfflineChrome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::OfflineChrome where T: ?core::marker::Sized
+pub fn termrock::widgets::OfflineChrome::borrow_mut(&mut self) -> &mut T
+impl<T> core::convert::From<T> for termrock::widgets::OfflineChrome
+pub fn termrock::widgets::OfflineChrome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::OfflineChrome
+pub struct termrock::widgets::OfflineSurface<'a>
+impl<'a> termrock::widgets::OfflineSurface<'a>
+pub const fn termrock::widgets::OfflineSurface<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::OfflineSurface<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ReconnectingState)
+pub fn termrock::widgets::OfflineSurface<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::ReconnectingState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
+impl<'a> core::clone::Clone for termrock::widgets::OfflineSurface<'a>
+pub fn termrock::widgets::OfflineSurface<'a>::clone(&self) -> termrock::widgets::OfflineSurface<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::OfflineSurface<'a>
+pub fn termrock::widgets::OfflineSurface<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::OfflineSurface<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::OfflineSurface<'a>
+impl<'a> core::marker::Send for termrock::widgets::OfflineSurface<'a>
+impl<'a> core::marker::Sync for termrock::widgets::OfflineSurface<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::OfflineSurface<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::OfflineSurface<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::OfflineSurface<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::OfflineSurface<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::OfflineSurface<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::OfflineSurface<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::OfflineSurface<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::OfflineSurface<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::OfflineSurface<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::OfflineSurface<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::OfflineSurface<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::OfflineSurface<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::OfflineSurface<'a> where T: core::clone::Clone
+pub type termrock::widgets::OfflineSurface<'a>::Owned = T
+pub fn termrock::widgets::OfflineSurface<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::OfflineSurface<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::OfflineSurface<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::OfflineSurface<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::OfflineSurface<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::OfflineSurface<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::OfflineSurface<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::OfflineSurface<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::OfflineSurface<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::OfflineSurface<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::OfflineSurface<'a>
+pub fn termrock::widgets::OfflineSurface<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::OfflineSurface<'a>
 pub struct termrock::widgets::OpsDashboardState<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq>
 pub termrock::widgets::OpsDashboardState::inspector: termrock::widgets::ObjectInspectorState
 pub termrock::widgets::OpsDashboardState::log: termrock::widgets::LogStreamState
@@ -49120,6 +49492,53 @@ pub unsafe fn termrock::widgets::QuestionStep<'a, Id>::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::QuestionStep<'a, Id>
 pub fn termrock::widgets::QuestionStep<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::QuestionStep<'a, Id>
+pub struct termrock::widgets::QueuedConnectivityAction
+pub termrock::widgets::QueuedConnectivityAction::id: alloc::string::String
+pub termrock::widgets::QueuedConnectivityAction::label: alloc::string::String
+impl termrock::widgets::QueuedConnectivityAction
+pub fn termrock::widgets::QueuedConnectivityAction::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::QueuedConnectivityAction
+pub fn termrock::widgets::QueuedConnectivityAction::clone(&self) -> termrock::widgets::QueuedConnectivityAction
+impl core::cmp::Eq for termrock::widgets::QueuedConnectivityAction
+impl core::cmp::PartialEq for termrock::widgets::QueuedConnectivityAction
+pub fn termrock::widgets::QueuedConnectivityAction::eq(&self, &termrock::widgets::QueuedConnectivityAction) -> bool
+impl core::fmt::Debug for termrock::widgets::QueuedConnectivityAction
+pub fn termrock::widgets::QueuedConnectivityAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::QueuedConnectivityAction
+pub fn termrock::widgets::QueuedConnectivityAction::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::widgets::QueuedConnectivityAction
+impl core::marker::Freeze for termrock::widgets::QueuedConnectivityAction
+impl core::marker::Send for termrock::widgets::QueuedConnectivityAction
+impl core::marker::Sync for termrock::widgets::QueuedConnectivityAction
+impl core::marker::Unpin for termrock::widgets::QueuedConnectivityAction
+impl core::marker::UnsafeUnpin for termrock::widgets::QueuedConnectivityAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueuedConnectivityAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueuedConnectivityAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueuedConnectivityAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QueuedConnectivityAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueuedConnectivityAction where U: core::convert::From<T>
+pub fn termrock::widgets::QueuedConnectivityAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueuedConnectivityAction where U: core::convert::Into<T>
+pub type termrock::widgets::QueuedConnectivityAction::Error = core::convert::Infallible
+pub fn termrock::widgets::QueuedConnectivityAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueuedConnectivityAction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueuedConnectivityAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueuedConnectivityAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueuedConnectivityAction where T: core::clone::Clone
+pub type termrock::widgets::QueuedConnectivityAction::Owned = T
+pub fn termrock::widgets::QueuedConnectivityAction::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueuedConnectivityAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueuedConnectivityAction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueuedConnectivityAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueuedConnectivityAction where T: ?core::marker::Sized
+pub fn termrock::widgets::QueuedConnectivityAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueuedConnectivityAction where T: ?core::marker::Sized
+pub fn termrock::widgets::QueuedConnectivityAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueuedConnectivityAction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueuedConnectivityAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueuedConnectivityAction
+pub fn termrock::widgets::QueuedConnectivityAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueuedConnectivityAction
 pub struct termrock::widgets::QueuedPrompt
 pub termrock::widgets::QueuedPrompt::chip_ids: alloc::vec::Vec<alloc::string::String>
 pub termrock::widgets::QueuedPrompt::id: alloc::string::String
@@ -49899,6 +50318,92 @@ pub unsafe fn termrock::widgets::RangeSliderState::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::RangeSliderState
 pub fn termrock::widgets::RangeSliderState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RangeSliderState
+pub struct termrock::widgets::ReconnectingState
+impl termrock::widgets::ReconnectingState
+pub const fn termrock::widgets::ReconnectingState::attempt(&self) -> u32
+pub const fn termrock::widgets::ReconnectingState::banner_dismissed(&self) -> bool
+pub fn termrock::widgets::ReconnectingState::banner_line(&self, bool) -> alloc::string::String
+pub fn termrock::widgets::ReconnectingState::begin_reconnect(&mut self, u32)
+pub const fn termrock::widgets::ReconnectingState::drafts_preserved(&self) -> bool
+pub fn termrock::widgets::ReconnectingState::enqueue(&mut self, termrock::widgets::QueuedConnectivityAction)
+pub const fn termrock::widgets::ReconnectingState::focus(&self) -> termrock::widgets::ConnectivityFocus
+pub fn termrock::widgets::ReconnectingState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::ConnectivityOutcome
+pub fn termrock::widgets::ReconnectingState::handle_mouse(&mut self, termrock::input::MouseEvent, ratatui_core::layout::rect::Rect) -> termrock::widgets::ConnectivityOutcome
+pub fn termrock::widgets::ReconnectingState::last_success_label(&self) -> core::option::Option<alloc::string::String>
+pub const fn termrock::widgets::ReconnectingState::last_success_secs(&self) -> core::option::Option<u64>
+pub fn termrock::widgets::ReconnectingState::mark_disconnected(&mut self)
+pub fn termrock::widgets::ReconnectingState::mark_online(&mut self, u64)
+pub fn termrock::widgets::ReconnectingState::mark_server_unavailable(&mut self)
+pub fn termrock::widgets::ReconnectingState::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ReconnectingState::offline_capabilities(&self) -> &[termrock::widgets::OfflineCapability]
+pub const fn termrock::widgets::ReconnectingState::phase(&self) -> termrock::widgets::ConnectivityPhase
+pub const fn termrock::widgets::ReconnectingState::presentation(&self) -> termrock::widgets::ConnectivityPresentation
+pub fn termrock::widgets::ReconnectingState::queued(&self) -> &[termrock::widgets::QueuedConnectivityAction]
+pub fn termrock::widgets::ReconnectingState::require_auth(&mut self)
+pub const fn termrock::widgets::ReconnectingState::selection_preserved(&self) -> bool
+pub const fn termrock::widgets::ReconnectingState::semantic_status(&self) -> termrock::widgets::SemanticStatus
+pub fn termrock::widgets::ReconnectingState::set_ascii(&mut self, bool)
+pub fn termrock::widgets::ReconnectingState::set_auto_retry(&mut self, bool)
+pub fn termrock::widgets::ReconnectingState::set_drafts_preserved(&mut self, bool)
+pub fn termrock::widgets::ReconnectingState::set_focus(&mut self, termrock::widgets::ConnectivityFocus)
+pub fn termrock::widgets::ReconnectingState::set_last_success_secs(&mut self, core::option::Option<u64>)
+pub fn termrock::widgets::ReconnectingState::set_max_attempts(&mut self, core::option::Option<u32>)
+pub fn termrock::widgets::ReconnectingState::set_next_retry_in_secs(&mut self, core::option::Option<u64>)
+pub fn termrock::widgets::ReconnectingState::set_now_secs(&mut self, u64)
+pub fn termrock::widgets::ReconnectingState::set_offline_capabilities(&mut self, alloc::vec::Vec<termrock::widgets::OfflineCapability>)
+pub fn termrock::widgets::ReconnectingState::set_phase(&mut self, termrock::widgets::ConnectivityPhase)
+pub fn termrock::widgets::ReconnectingState::set_presentation(&mut self, termrock::widgets::ConnectivityPresentation)
+pub fn termrock::widgets::ReconnectingState::set_queued(&mut self, alloc::vec::Vec<termrock::widgets::QueuedConnectivityAction>)
+pub fn termrock::widgets::ReconnectingState::set_selection_preserved(&mut self, bool)
+pub fn termrock::widgets::ReconnectingState::should_show_banner(&self) -> bool
+pub fn termrock::widgets::ReconnectingState::should_show_full(&self) -> bool
+pub fn termrock::widgets::ReconnectingState::status_bar_content(&self) -> alloc::string::String
+pub const fn termrock::widgets::ReconnectingState::status_bar_role(&self) -> termrock::style::Role
+pub fn termrock::widgets::ReconnectingState::status_slot_template<'a, Id: core::clone::Clone>(&self, Id, &'a str) -> termrock::widgets::StatusSlot<'a, Id>
+pub fn termrock::widgets::ReconnectingState::target(&self) -> &str
+pub fn termrock::widgets::ReconnectingState::to_notification_item(&self, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::NotificationItem
+impl core::clone::Clone for termrock::widgets::ReconnectingState
+pub fn termrock::widgets::ReconnectingState::clone(&self) -> termrock::widgets::ReconnectingState
+impl core::cmp::Eq for termrock::widgets::ReconnectingState
+impl core::cmp::PartialEq for termrock::widgets::ReconnectingState
+pub fn termrock::widgets::ReconnectingState::eq(&self, &termrock::widgets::ReconnectingState) -> bool
+impl core::default::Default for termrock::widgets::ReconnectingState
+pub fn termrock::widgets::ReconnectingState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ReconnectingState
+pub fn termrock::widgets::ReconnectingState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ReconnectingState
+impl core::marker::Freeze for termrock::widgets::ReconnectingState
+impl core::marker::Send for termrock::widgets::ReconnectingState
+impl core::marker::Sync for termrock::widgets::ReconnectingState
+impl core::marker::Unpin for termrock::widgets::ReconnectingState
+impl core::marker::UnsafeUnpin for termrock::widgets::ReconnectingState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ReconnectingState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ReconnectingState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ReconnectingState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ReconnectingState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ReconnectingState where U: core::convert::From<T>
+pub fn termrock::widgets::ReconnectingState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ReconnectingState where U: core::convert::Into<T>
+pub type termrock::widgets::ReconnectingState::Error = core::convert::Infallible
+pub fn termrock::widgets::ReconnectingState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ReconnectingState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ReconnectingState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ReconnectingState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ReconnectingState where T: core::clone::Clone
+pub type termrock::widgets::ReconnectingState::Owned = T
+pub fn termrock::widgets::ReconnectingState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ReconnectingState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ReconnectingState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ReconnectingState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ReconnectingState where T: ?core::marker::Sized
+pub fn termrock::widgets::ReconnectingState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ReconnectingState where T: ?core::marker::Sized
+pub fn termrock::widgets::ReconnectingState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ReconnectingState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ReconnectingState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ReconnectingState
+pub fn termrock::widgets::ReconnectingState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ReconnectingState
 pub struct termrock::widgets::Recovery<'a>
 pub termrock::widgets::Recovery::alternative: core::option::Option<termrock::widgets::RecoveryAction<'a>>
 pub termrock::widgets::Recovery::copy_diagnostics: bool
@@ -58306,6 +58811,7 @@ pub fn termrock::widgets::entries_from_keymap<A, Id, F>(&termrock::keymap::Keyma
 pub fn termrock::widgets::example_agent_plan_steps() -> alloc::vec::Vec<termrock::widgets::ProgressStep>
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
+pub fn termrock::widgets::example_auth_required() -> termrock::widgets::ReconnectingState
 pub fn termrock::widgets::example_build_pipeline() -> alloc::vec::Vec<termrock::widgets::ProgressStep>
 pub fn termrock::widgets::example_busy_blocking(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
 pub fn termrock::widgets::example_busy_cancellable(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
@@ -58315,6 +58821,7 @@ pub fn termrock::widgets::example_busy_stale(&termrock::style::DesignSystem) -> 
 pub fn termrock::widgets::example_command_catalog() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
 pub fn termrock::widgets::example_command_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::example_database_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
+pub fn termrock::widgets::example_disconnected() -> termrock::widgets::ReconnectingState
 pub fn termrock::widgets::example_docs_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
 pub fn termrock::widgets::example_empty_logs(&termrock::style::DesignSystem) -> termrock::widgets::EmptyState<'_>
 pub fn termrock::widgets::example_empty_permission(&termrock::style::DesignSystem) -> termrock::widgets::EmptyState<'_>
@@ -58340,7 +58847,9 @@ pub fn termrock::widgets::example_project_tree() -> alloc::vec::Vec<termrock::wi
 pub fn termrock::widgets::example_quick_open_files() -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<&'static str>>
 pub fn termrock::widgets::example_quick_open_providers() -> alloc::vec::Vec<termrock::widgets::QuickOpenProvider>
 pub fn termrock::widgets::example_quick_open_symbols() -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<&'static str>>
+pub fn termrock::widgets::example_reconnecting_agent() -> termrock::widgets::ReconnectingState
 pub fn termrock::widgets::example_schema_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
+pub fn termrock::widgets::example_server_unavailable() -> termrock::widgets::ReconnectingState
 pub fn termrock::widgets::example_session_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::example_settings_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_settings_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
