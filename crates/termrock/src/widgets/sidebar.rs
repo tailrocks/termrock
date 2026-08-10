@@ -762,7 +762,7 @@ impl<Id> NavigationListState<Id> {
         }
     }
 
-    /// Intent.
+    /// Intent (same collapse projection as [`Self::handle_key`]).
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
@@ -774,7 +774,9 @@ impl<Id> NavigationListState<Id> {
         if !self.enabled || !self.focused || !self.accepts_input {
             return NavigationListOutcome::Ignored;
         }
-        let coll = Self::collection_items(items);
+        let projected = filter_nav_collapsed(items);
+        let coll = Self::collection_items(&projected);
+        let _ = self.collection.reconcile(&coll);
         match intent {
             UiIntent::Activate | UiIntent::Submit => self.activate_focus(items),
             UiIntent::Search => {
@@ -837,11 +839,12 @@ impl<Id> NavigationListState<Id> {
             return NavigationListOutcome::Ignored;
         }
         self.focused = true;
+        let projected = filter_nav_collapsed(items);
         for r in &self.regions {
             if r.area.contains(event.position) {
                 let id = r.id.clone();
                 self.collection.set_active(Some(id.clone()));
-                if let Some(item) = items.iter().find(|i| i.id == id) {
+                if let Some(item) = projected.iter().find(|i| i.id == id) {
                     if matches!(item.kind, NavItemKind::Group | NavItemKind::Section)
                         && item.has_children
                     {
@@ -1153,8 +1156,24 @@ impl<'a, Id> NavigationList<'a, Id> {
         if area.is_empty() {
             return;
         }
-        let coll = NavigationListState::<Id>::collection_items(self.items);
+        // Reconcile focus/viewport against the same collapsed projection used for paint.
+        let collapsed = filter_nav_collapsed(self.items);
+        let coll = NavigationListState::<Id>::collection_items(&collapsed);
         let _ = state.collection.reconcile(&coll);
+        // Drop active if it pointed at a now-hidden nested row.
+        if let Some(active) = state.collection.active().cloned() {
+            if !coll.iter().any(|c| c.id == active) {
+                if let Some(r) = state.route.clone() {
+                    if coll.iter().any(|c| c.id == r) {
+                        state.collection.set_active(Some(r));
+                    } else {
+                        let _ = state.collection.move_first(&coll);
+                    }
+                } else {
+                    let _ = state.collection.move_first(&coll);
+                }
+            }
+        }
         let vp = usize::from(area.height).max(1);
         state
             .collection
@@ -1178,7 +1197,6 @@ impl<'a, Id> NavigationList<'a, Id> {
 
         let surface = state.focused && state.accepts_input;
         let filter_q = state.filter.to_ascii_lowercase();
-        let collapsed = filter_nav_collapsed(self.items);
         let visible: Vec<&NavItem<Id>> = collapsed
             .iter()
             .filter(|i| {
@@ -1798,6 +1816,84 @@ mod tests {
         assert!(
             matches!(out, NavigationListOutcome::ContextMenuRequested { id: "a" }),
             "{out:?}"
+        );
+    }
+
+    #[test]
+    fn handle_intent_move_skips_collapsed_children() {
+        let items = [
+            NavItem::section("sec", "Section")
+                .has_children(true)
+                .expanded(false),
+            NavItem::new("hidden", "Hidden").depth(1),
+            NavItem::new("visible", "Visible").depth(0),
+        ];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        // Force active onto collapsed child (stale host state)
+        state.collection.set_active(Some("hidden"));
+        let out = state.handle_intent(UiIntent::Move(crate::interaction::NavigationMove::Next), &items);
+        // After reconcile + move on projected list, focus must not land on "hidden"
+        match out {
+            NavigationListOutcome::FocusChanged { id } => {
+                assert_ne!(id.as_deref(), Some("hidden"), "{out:?}");
+                assert!(
+                    id.as_deref() == Some("sec") || id.as_deref() == Some("visible"),
+                    "{out:?}"
+                );
+            }
+            NavigationListOutcome::Ignored | NavigationListOutcome::Changed => {
+                // reconcile alone may have moved active off hidden
+                assert_ne!(state.focus(), Some(&"hidden"));
+            }
+            other => panic!("unexpected {other:?}"),
+        }
+        assert_ne!(state.focus(), Some(&"hidden"));
+        // Multiple Next moves only among sec + visible
+        for _ in 0..4 {
+            let _ = state.handle_intent(
+                UiIntent::Move(crate::interaction::NavigationMove::Next),
+                &items,
+            );
+            assert_ne!(state.focus(), Some(&"hidden"), "focus leaked to collapsed child");
+        }
+    }
+
+    #[test]
+    fn paint_reconcile_drops_focus_on_collapsed_child() {
+        let system = DesignSystem::default();
+        let items = [
+            NavItem::section("sec", "Section")
+                .has_children(true)
+                .expanded(false),
+            NavItem::new("hidden", "Hidden").depth(1),
+            NavItem::new("visible", "Visible").depth(0),
+        ];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        state.collection.set_active(Some("hidden"));
+        assert_eq!(state.focus(), Some(&"hidden"));
+        let area = Rect::new(0, 0, 24, 8);
+        let mut buf = Buffer::empty(area);
+        NavigationList::new(&items, &system)
+            .ascii(true)
+            .paint(area, &mut buf, &mut state);
+        // After paint, focus must not remain on collapsed child
+        assert_ne!(
+            state.focus(),
+            Some(&"hidden"),
+            "paint left focus on collapsed child {:?}",
+            state.focus()
+        );
+        // Regions must only include projected ids
+        let region_ids: Vec<&str> = state.regions.iter().map(|r| r.id).collect();
+        assert!(
+            !region_ids.contains(&"hidden"),
+            "hidden child still has hit region: {region_ids:?}"
+        );
+        assert!(
+            region_ids.contains(&"sec") || region_ids.contains(&"visible"),
+            "{region_ids:?}"
         );
     }
 
