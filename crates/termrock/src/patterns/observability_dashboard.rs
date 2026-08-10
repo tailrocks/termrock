@@ -523,7 +523,7 @@ impl ObservabilityDashboardState {
             StatusSlot::focus_zone("focus", self.focus).priority(40),
             StatusSlot::shortcut(
                 "keys",
-                "space live · b bookmark · a ack drop · C-r reconnect · tab",
+                "space live · m bookmark · a ack drop · C-r reconnect · tab",
             )
             .priority(90),
         ];
@@ -789,6 +789,12 @@ pub fn observability_dashboard_layout(area: Rect, state: &WorkspaceState) -> Vec
     )
 }
 
+/// Search strip height: enough for bordered chrome + SearchInput body.
+///
+/// Workspace splits size by ratio only (Fixed is collapse-pressure, not pixels).
+/// Carving a fixed strip guarantees SearchInput paints at lookbook heights (24–36).
+pub const OBSERVABILITY_SEARCH_HEIGHT: u16 = 3;
+
 /// Explicit density layout.
 #[must_use]
 pub fn observability_dashboard_layout_density(
@@ -796,24 +802,78 @@ pub fn observability_dashboard_layout_density(
     state: &WorkspaceState,
     density: ObservabilityDensity,
 ) -> Vec<PaneGeom> {
+    // Carve search as absolute rows — percent splits at h=36 give ~1–2 rows and
+    // Panel borders then leave height 0 for SearchInput.
+    let search_h = OBSERVABILITY_SEARCH_HEIGHT
+        .min(area.height.saturating_sub(2))
+        .max(if area.height >= 3 { 3 } else { area.height });
+    let search_area = Rect {
+        x: area.x,
+        y: area.y,
+        width: area.width,
+        height: search_h,
+    };
+    let rest = Rect {
+        x: area.x,
+        y: area.y.saturating_add(search_h),
+        width: area.width,
+        height: area.height.saturating_sub(search_h),
+    };
+
+    let search_geom = PaneGeom {
+        id: PaneId::from_static(ObservabilityPane::Search.id()),
+        area: if search_h == 0 {
+            Rect::new(area.x, area.y, 0, 0)
+        } else {
+            search_area
+        },
+        collapsed: search_h == 0,
+    };
+
     let root = match density {
         ObservabilityDensity::Tiny => {
-            // search | logs | status
+            // logs | status
             WorkspaceNode::Split {
                 axis: WorkspaceAxis::Vertical,
-                ratio_percent: 8,
+                ratio_percent: 92,
                 first: Box::new(WorkspaceNode::Leaf {
-                    id: PaneId::from_static(ObservabilityPane::Search.id()),
+                    id: PaneId::from_static(ObservabilityPane::Logs.id()),
+                    constraint: PaneConstraint::Weight(1),
+                    collapse_priority: 1,
+                }),
+                second: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(ObservabilityPane::Status.id()),
                     constraint: PaneConstraint::Fixed(1),
+                    collapse_priority: 3,
+                }),
+            }
+        }
+        ObservabilityDensity::Narrow => {
+            // metrics | logs+events | status  (no inspector)
+            WorkspaceNode::Split {
+                axis: WorkspaceAxis::Vertical,
+                ratio_percent: 28,
+                first: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(ObservabilityPane::Metrics.id()),
+                    constraint: PaneConstraint::Min(4),
                     collapse_priority: 0,
                 }),
                 second: Box::new(WorkspaceNode::Split {
                     axis: WorkspaceAxis::Vertical,
-                    ratio_percent: 92,
-                    first: Box::new(WorkspaceNode::Leaf {
-                        id: PaneId::from_static(ObservabilityPane::Logs.id()),
-                        constraint: PaneConstraint::Weight(1),
-                        collapse_priority: 1,
+                    ratio_percent: 90,
+                    first: Box::new(WorkspaceNode::Split {
+                        axis: WorkspaceAxis::Horizontal,
+                        ratio_percent: 55,
+                        first: Box::new(WorkspaceNode::Leaf {
+                            id: PaneId::from_static(ObservabilityPane::Logs.id()),
+                            constraint: PaneConstraint::Weight(1),
+                            collapse_priority: 1,
+                        }),
+                        second: Box::new(WorkspaceNode::Leaf {
+                            id: PaneId::from_static(ObservabilityPane::Events.id()),
+                            constraint: PaneConstraint::Weight(1),
+                            collapse_priority: 1,
+                        }),
                     }),
                     second: Box::new(WorkspaceNode::Leaf {
                         id: PaneId::from_static(ObservabilityPane::Status.id()),
@@ -823,105 +883,55 @@ pub fn observability_dashboard_layout_density(
                 }),
             }
         }
-        ObservabilityDensity::Narrow => {
-            // search | metrics | logs+events | status  (no inspector)
+        ObservabilityDensity::Normal => {
+            // metrics | (logs | events | inspector) | status
             WorkspaceNode::Split {
                 axis: WorkspaceAxis::Vertical,
-                ratio_percent: 6,
+                ratio_percent: 30,
                 first: Box::new(WorkspaceNode::Leaf {
-                    id: PaneId::from_static(ObservabilityPane::Search.id()),
-                    constraint: PaneConstraint::Fixed(1),
+                    id: PaneId::from_static(ObservabilityPane::Metrics.id()),
+                    constraint: PaneConstraint::Min(5),
                     collapse_priority: 0,
                 }),
                 second: Box::new(WorkspaceNode::Split {
                     axis: WorkspaceAxis::Vertical,
-                    ratio_percent: 28,
-                    first: Box::new(WorkspaceNode::Leaf {
-                        id: PaneId::from_static(ObservabilityPane::Metrics.id()),
-                        constraint: PaneConstraint::Min(4),
-                        collapse_priority: 0,
-                    }),
-                    second: Box::new(WorkspaceNode::Split {
-                        axis: WorkspaceAxis::Vertical,
-                        ratio_percent: 90,
-                        first: Box::new(WorkspaceNode::Split {
+                    ratio_percent: 92,
+                    first: Box::new(WorkspaceNode::Split {
+                        axis: WorkspaceAxis::Horizontal,
+                        ratio_percent: 40,
+                        first: Box::new(WorkspaceNode::Leaf {
+                            id: PaneId::from_static(ObservabilityPane::Logs.id()),
+                            constraint: PaneConstraint::Weight(1),
+                            collapse_priority: 1,
+                        }),
+                        second: Box::new(WorkspaceNode::Split {
                             axis: WorkspaceAxis::Horizontal,
                             ratio_percent: 55,
                             first: Box::new(WorkspaceNode::Leaf {
-                                id: PaneId::from_static(ObservabilityPane::Logs.id()),
-                                constraint: PaneConstraint::Weight(1),
-                                collapse_priority: 1,
-                            }),
-                            second: Box::new(WorkspaceNode::Leaf {
                                 id: PaneId::from_static(ObservabilityPane::Events.id()),
                                 constraint: PaneConstraint::Weight(1),
                                 collapse_priority: 1,
                             }),
-                        }),
-                        second: Box::new(WorkspaceNode::Leaf {
-                            id: PaneId::from_static(ObservabilityPane::Status.id()),
-                            constraint: PaneConstraint::Fixed(1),
-                            collapse_priority: 3,
-                        }),
-                    }),
-                }),
-            }
-        }
-        ObservabilityDensity::Normal => {
-            // search | metrics | (logs | events | inspector) | status
-            WorkspaceNode::Split {
-                axis: WorkspaceAxis::Vertical,
-                ratio_percent: 5,
-                first: Box::new(WorkspaceNode::Leaf {
-                    id: PaneId::from_static(ObservabilityPane::Search.id()),
-                    constraint: PaneConstraint::Fixed(1),
-                    collapse_priority: 0,
-                }),
-                second: Box::new(WorkspaceNode::Split {
-                    axis: WorkspaceAxis::Vertical,
-                    ratio_percent: 30,
-                    first: Box::new(WorkspaceNode::Leaf {
-                        id: PaneId::from_static(ObservabilityPane::Metrics.id()),
-                        constraint: PaneConstraint::Min(5),
-                        collapse_priority: 0,
-                    }),
-                    second: Box::new(WorkspaceNode::Split {
-                        axis: WorkspaceAxis::Vertical,
-                        ratio_percent: 92,
-                        first: Box::new(WorkspaceNode::Split {
-                            axis: WorkspaceAxis::Horizontal,
-                            ratio_percent: 40,
-                            first: Box::new(WorkspaceNode::Leaf {
-                                id: PaneId::from_static(ObservabilityPane::Logs.id()),
-                                constraint: PaneConstraint::Weight(1),
-                                collapse_priority: 1,
-                            }),
-                            second: Box::new(WorkspaceNode::Split {
-                                axis: WorkspaceAxis::Horizontal,
-                                ratio_percent: 55,
-                                first: Box::new(WorkspaceNode::Leaf {
-                                    id: PaneId::from_static(ObservabilityPane::Events.id()),
-                                    constraint: PaneConstraint::Weight(1),
-                                    collapse_priority: 1,
-                                }),
-                                second: Box::new(WorkspaceNode::Leaf {
-                                    id: PaneId::from_static(ObservabilityPane::Inspector.id()),
-                                    constraint: PaneConstraint::Min(18),
-                                    collapse_priority: 0,
-                                }),
+                            second: Box::new(WorkspaceNode::Leaf {
+                                id: PaneId::from_static(ObservabilityPane::Inspector.id()),
+                                constraint: PaneConstraint::Min(18),
+                                collapse_priority: 0,
                             }),
                         }),
-                        second: Box::new(WorkspaceNode::Leaf {
-                            id: PaneId::from_static(ObservabilityPane::Status.id()),
-                            constraint: PaneConstraint::Fixed(1),
-                            collapse_priority: 3,
-                        }),
+                    }),
+                    second: Box::new(WorkspaceNode::Leaf {
+                        id: PaneId::from_static(ObservabilityPane::Status.id()),
+                        constraint: PaneConstraint::Fixed(1),
+                        collapse_priority: 3,
                     }),
                 }),
             }
         }
     };
-    Workspace::new(root).layout(area, state)
+
+    let mut panes = vec![search_geom];
+    panes.extend(Workspace::new(root).layout(rest, state));
+    panes
 }
 
 fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
@@ -974,25 +984,33 @@ pub fn render_observability_dashboard(
     if let Some(r) = pane_area(&panes, "search") {
         let focused = state.focus == "search";
         state.search.set_focused(focused);
-        // Search bar panel
-        let panel = Panel::new(system)
-            .title(match state.live {
-                ObservabilityLiveState::Live => "Query · live",
-                ObservabilityLiveState::Paused => "Query · paused",
-                ObservabilityLiveState::Reconnecting => "Query · reconnecting",
-                ObservabilityLiveState::Offline => "Query · offline",
-            })
-            .emphasis(if focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(r);
-        Widget::render(&panel, r, buffer);
-        if !inner.is_empty() {
+        // Prefer full-height SearchInput. Panel borders on a 1-row carve leave
+        // height 0 — we carve ≥3 rows so a titled panel still has body, and
+        // fall back to chrome-less paint if the strip is only 1–2 rows.
+        if r.height >= 3 {
+            let panel = Panel::new(system)
+                .title(match state.live {
+                    ObservabilityLiveState::Live => "Query · live",
+                    ObservabilityLiveState::Paused => "Query · paused",
+                    ObservabilityLiveState::Reconnecting => "Query · reconnecting",
+                    ObservabilityLiveState::Offline => "Query · offline",
+                })
+                .emphasis(if focused {
+                    PanelChrome::Focused
+                } else {
+                    PanelChrome::Normal
+                });
+            let inner = panel.inner(r);
+            Widget::render(&panel, r, buffer);
+            if !inner.is_empty() {
+                SearchInput::new(system)
+                    .placeholder("filter logs & events…")
+                    .paint(inner, buffer, &mut state.search);
+            }
+        } else if !r.is_empty() {
             SearchInput::new(system)
                 .placeholder("filter logs & events…")
-                .paint(inner, buffer, &mut state.search);
+                .paint(r, buffer, &mut state.search);
         }
     }
 
@@ -1059,6 +1077,16 @@ pub fn render_observability_dashboard(
     }
 
     if let Some(r) = pane_area(&panes, "status") {
+        // Transient must be set *before* paint so single-frame stories see it.
+        if state.logs.dropped > 0 || state.events.dropped() > 0 {
+            state.status.transient = Some(format!(
+                "dropped logs={} events={} · a ack",
+                state.logs.dropped,
+                state.events.dropped()
+            ));
+        } else {
+            state.status.transient = None;
+        }
         let slots = state.status_slots();
         StatefulWidget::render(
             &StatusBar::new(&slots, &[], system),
@@ -1066,15 +1094,6 @@ pub fn render_observability_dashboard(
             buffer,
             &mut state.status,
         );
-        // Dropped banner overlay in status transient
-        if state.logs.dropped > 0 || state.events.dropped() > 0 {
-            let msg = format!(
-                "dropped logs={} events={} · a ack",
-                state.logs.dropped,
-                state.events.dropped()
-            );
-            state.status.transient = Some(msg);
-        }
     }
 }
 
@@ -1272,6 +1291,136 @@ mod tests {
             ));
         }
         assert_eq!(st.focus, "search");
+    }
+
+    fn buffer_contains(buf: &Buffer, area: Rect, needle: &str) -> bool {
+        let mut s = String::new();
+        for y in area.y..area.bottom() {
+            for x in area.x..area.right() {
+                if let Some(cell) = buf.cell((x, y)) {
+                    s.push_str(cell.symbol());
+                }
+            }
+            s.push('\n');
+        }
+        s.contains(needle)
+    }
+
+    #[test]
+    fn search_pane_has_body_at_lookbook_heights() {
+        let ws = WorkspaceState::new();
+        for (w, h) in [(120u16, 36u16), (100, 28), (70, 24), (48, 16)] {
+            let panes = observability_dashboard_layout_density(
+                Rect::new(0, 0, w, h),
+                &ws,
+                ObservabilityDensity::for_width(w),
+            );
+            let search = panes
+                .iter()
+                .find(|p| p.id.0 == "search")
+                .expect("search pane");
+            assert!(
+                search.area.height >= 3 || h < 5,
+                "search height {} at {w}x{h} must be ≥3 for SearchInput body",
+                search.area.height
+            );
+        }
+
+        // Paint: placeholder must appear at lookbook basic 120×36
+        let system = DesignSystem::default();
+        let mut st = open();
+        let logs = example_observability_logs();
+        let events = example_observability_events();
+        let tiles = example_observability_tiles();
+        let alerts = example_observability_alerts();
+        let inspect = example_log_inspect_fields();
+        let area = Rect::new(0, 0, 120, 36);
+        let mut buf = Buffer::empty(area);
+        render_observability_dashboard(
+            &mut buf,
+            area,
+            ObservabilityDashboardSurfaces {
+                system: &system,
+                state: &mut st,
+                logs: &logs,
+                events: &events,
+                tiles: &tiles,
+                alerts: &alerts,
+                inspect_fields: &inspect,
+            },
+        );
+        let search = st
+            .last_panes()
+            .iter()
+            .find(|p| p.id.0 == "search")
+            .expect("search after paint");
+        assert!(search.area.height >= 3, "{}", search.area.height);
+        assert!(
+            buffer_contains(&buf, search.area, "filter")
+                || buffer_contains(&buf, search.area, "Query")
+                || buffer_contains(&buf, search.area, "live"),
+            "SearchInput/query chrome must paint into search pane at 120x36"
+        );
+    }
+
+    #[test]
+    fn status_shortcut_uses_m_for_bookmark() {
+        let st = open();
+        let slots = st.status_slots();
+        let keys = slots
+            .iter()
+            .find(|s| s.id == "keys")
+            .expect("keys slot")
+            .content;
+        assert!(
+            keys.contains("m bookmark"),
+            "status must document LogStream bookmark chord m, got {keys}"
+        );
+        assert!(
+            !keys.contains("b bookmark"),
+            "must not claim b bookmark: {keys}"
+        );
+    }
+
+    #[test]
+    fn dropped_transient_set_before_statusbar_paint() {
+        let system = DesignSystem::default();
+        let mut st = open();
+        seed_failure_state(&mut st);
+        assert!(st.logs.dropped > 0);
+        let logs = example_observability_logs();
+        let events = example_observability_events();
+        let tiles = example_observability_tiles();
+        let alerts = example_observability_alerts();
+        let inspect = example_log_inspect_fields();
+        let area = Rect::new(0, 0, 100, 28);
+        let mut buf = Buffer::empty(area);
+        // Clear any prior transient so we prove paint path sets it
+        st.status.transient = None;
+        render_observability_dashboard(
+            &mut buf,
+            area,
+            ObservabilityDashboardSurfaces {
+                system: &system,
+                state: &mut st,
+                logs: &logs,
+                events: &events,
+                tiles: &tiles,
+                alerts: &alerts,
+                inspect_fields: &inspect,
+            },
+        );
+        let t = st
+            .status
+            .transient
+            .as_deref()
+            .expect("transient must be set during paint when dropped > 0");
+        assert!(t.contains("dropped"), "{t}");
+        // Single-frame: buffer should show dropped chrome (slot and/or transient)
+        assert!(
+            buffer_contains(&buf, area, "dropped") || buffer_contains(&buf, area, "ack"),
+            "first paint must show dropped warning"
+        );
     }
 
     #[test]

@@ -56,7 +56,7 @@ pub use observability_dashboard::{
     observability_dashboard_layout, observability_dashboard_layout_density,
     render_observability_dashboard, seed_failure_state, ObservabilityDashboardOutcome,
     ObservabilityDashboardState, ObservabilityDashboardSurfaces, ObservabilityDensity,
-    ObservabilityLiveState, ObservabilityPane,
+    ObservabilityLiveState, ObservabilityPane, OBSERVABILITY_SEARCH_HEIGHT,
 };
 pub use observability_dashboard::bench as observability_dashboard_bench;
 pub use app_shell::{
