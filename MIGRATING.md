@@ -185,6 +185,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0169 | `v0.13.0` | [AlertDialog](migrations/0169-v0.13.0-alert-dialog.md) |
 | 0170 | `v0.13.0` | [Drawer and Sheet](migrations/0170-v0.13.0-drawer-sheet.md) |
 | 0171 | `v0.13.0` | [FullscreenViewer and SemanticZoom](migrations/0171-v0.13.0-fullscreen-viewer-semantic-zoom.md) |
+| 0172 | `v0.13.0` | [PreviewCard](migrations/0172-v0.13.0-preview-card.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

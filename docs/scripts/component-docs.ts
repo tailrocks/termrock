@@ -1158,6 +1158,25 @@ let _ = state.open_on_stack(&mut stack, bounds, Some("list"));
 FullscreenViewer::new(&system, &actions).paint(entry.rect, buf, &mut state);
 // Host: CodeBlock::…paint(state.body_area(), buf, &mut code_state);`,
   },
+  PreviewCard: {
+    description:
+      'Non-essential delayed resource preview (file/command/symbol/session) with metadata, loading/error, pin-to-open, and generation-gated async — never focus-stealing when unpinned; required facts must exist outside the card.',
+    primaryStory: 'preview-card/file',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{
+    PreviewCard, PreviewCardOutcome, PreviewCardState, example_file_preview,
+};
+
+let system = DesignSystem::default();
+let mut state = PreviewCardState::new();
+let _ = state.set_selection("main.rs");
+if let PreviewCardOutcome::Loading { generation } = state.begin_fetch() {
+    let _ = state.apply_ready(generation); // host async first
+}
+let (content, _, _) = example_file_preview();
+let _ = state.tick_hover(300, true);
+PreviewCard::new(content, &system).paint(area, buf, &mut state);`,
+  },
   Heading: {
     description: 'Semantic heading line with terminal typography levels.',
     primaryStory: 'heading/basic',

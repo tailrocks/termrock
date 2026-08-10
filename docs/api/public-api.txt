@@ -58,7 +58,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 8 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.18s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.35s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -24700,6 +24700,225 @@ pub unsafe fn termrock::widgets::PresenceStatus::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PresenceStatus
 pub fn termrock::widgets::PresenceStatus::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PresenceStatus
+#[non_exhaustive] pub enum termrock::widgets::PreviewCardOutcome
+pub termrock::widgets::PreviewCardOutcome::ContentApplied
+pub termrock::widgets::PreviewCardOutcome::ContentApplied::generation: u64
+pub termrock::widgets::PreviewCardOutcome::Disabled
+pub termrock::widgets::PreviewCardOutcome::EssentialRequiresNonPreview
+pub termrock::widgets::PreviewCardOutcome::GenerationStale
+pub termrock::widgets::PreviewCardOutcome::GenerationStale::generation: u64
+pub termrock::widgets::PreviewCardOutcome::Hidden
+pub termrock::widgets::PreviewCardOutcome::Ignored
+pub termrock::widgets::PreviewCardOutcome::Loading
+pub termrock::widgets::PreviewCardOutcome::Loading::generation: u64
+pub termrock::widgets::PreviewCardOutcome::OpenRequested
+pub termrock::widgets::PreviewCardOutcome::Pending
+pub termrock::widgets::PreviewCardOutcome::Pinned
+pub termrock::widgets::PreviewCardOutcome::SelectionChanged
+pub termrock::widgets::PreviewCardOutcome::SelectionChanged::generation: u64
+pub termrock::widgets::PreviewCardOutcome::SelectionChanged::selection_id: alloc::string::String
+pub termrock::widgets::PreviewCardOutcome::Shown
+pub termrock::widgets::PreviewCardOutcome::Unpinned
+impl core::clone::Clone for termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardOutcome::clone(&self) -> termrock::widgets::PreviewCardOutcome
+impl core::cmp::Eq for termrock::widgets::PreviewCardOutcome
+impl core::cmp::PartialEq for termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardOutcome::eq(&self, &termrock::widgets::PreviewCardOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PreviewCardOutcome
+impl core::marker::Freeze for termrock::widgets::PreviewCardOutcome
+impl core::marker::Send for termrock::widgets::PreviewCardOutcome
+impl core::marker::Sync for termrock::widgets::PreviewCardOutcome
+impl core::marker::Unpin for termrock::widgets::PreviewCardOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::PreviewCardOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PreviewCardOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PreviewCardOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PreviewCardOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PreviewCardOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::PreviewCardOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PreviewCardOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::PreviewCardOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::PreviewCardOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PreviewCardOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PreviewCardOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PreviewCardOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PreviewCardOutcome where T: core::clone::Clone
+pub type termrock::widgets::PreviewCardOutcome::Owned = T
+pub fn termrock::widgets::PreviewCardOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::PreviewCardOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PreviewCardOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PreviewCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PreviewCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PreviewCardOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PreviewCardOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PreviewCardOutcome
+#[non_exhaustive] pub enum termrock::widgets::PreviewLoadState
+pub termrock::widgets::PreviewLoadState::Error
+pub termrock::widgets::PreviewLoadState::Idle
+pub termrock::widgets::PreviewLoadState::Loading
+pub termrock::widgets::PreviewLoadState::Ready
+pub termrock::widgets::PreviewLoadState::Stale
+impl termrock::widgets::PreviewLoadState
+pub const fn termrock::widgets::PreviewLoadState::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PreviewLoadState
+pub fn termrock::widgets::PreviewLoadState::clone(&self) -> termrock::widgets::PreviewLoadState
+impl core::cmp::Eq for termrock::widgets::PreviewLoadState
+impl core::cmp::PartialEq for termrock::widgets::PreviewLoadState
+pub fn termrock::widgets::PreviewLoadState::eq(&self, &termrock::widgets::PreviewLoadState) -> bool
+impl core::default::Default for termrock::widgets::PreviewLoadState
+pub fn termrock::widgets::PreviewLoadState::default() -> termrock::widgets::PreviewLoadState
+impl core::fmt::Debug for termrock::widgets::PreviewLoadState
+pub fn termrock::widgets::PreviewLoadState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PreviewLoadState
+pub fn termrock::widgets::PreviewLoadState::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PreviewLoadState
+impl core::marker::StructuralPartialEq for termrock::widgets::PreviewLoadState
+impl core::marker::Freeze for termrock::widgets::PreviewLoadState
+impl core::marker::Send for termrock::widgets::PreviewLoadState
+impl core::marker::Sync for termrock::widgets::PreviewLoadState
+impl core::marker::Unpin for termrock::widgets::PreviewLoadState
+impl core::marker::UnsafeUnpin for termrock::widgets::PreviewLoadState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PreviewLoadState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PreviewLoadState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PreviewLoadState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PreviewLoadState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PreviewLoadState where U: core::convert::From<T>
+pub fn termrock::widgets::PreviewLoadState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PreviewLoadState where U: core::convert::Into<T>
+pub type termrock::widgets::PreviewLoadState::Error = core::convert::Infallible
+pub fn termrock::widgets::PreviewLoadState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PreviewLoadState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PreviewLoadState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PreviewLoadState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PreviewLoadState where T: core::clone::Clone
+pub type termrock::widgets::PreviewLoadState::Owned = T
+pub fn termrock::widgets::PreviewLoadState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PreviewLoadState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PreviewLoadState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PreviewLoadState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PreviewLoadState where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewLoadState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PreviewLoadState where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewLoadState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PreviewLoadState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PreviewLoadState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PreviewLoadState
+pub fn termrock::widgets::PreviewLoadState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PreviewLoadState
+#[non_exhaustive] pub enum termrock::widgets::PreviewResourceKind
+pub termrock::widgets::PreviewResourceKind::Command
+pub termrock::widgets::PreviewResourceKind::Custom
+pub termrock::widgets::PreviewResourceKind::File
+pub termrock::widgets::PreviewResourceKind::Session
+pub termrock::widgets::PreviewResourceKind::Symbol
+impl termrock::widgets::PreviewResourceKind
+pub const fn termrock::widgets::PreviewResourceKind::badge(self) -> &'static str
+pub const fn termrock::widgets::PreviewResourceKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PreviewResourceKind
+pub fn termrock::widgets::PreviewResourceKind::clone(&self) -> termrock::widgets::PreviewResourceKind
+impl core::cmp::Eq for termrock::widgets::PreviewResourceKind
+impl core::cmp::PartialEq for termrock::widgets::PreviewResourceKind
+pub fn termrock::widgets::PreviewResourceKind::eq(&self, &termrock::widgets::PreviewResourceKind) -> bool
+impl core::default::Default for termrock::widgets::PreviewResourceKind
+pub fn termrock::widgets::PreviewResourceKind::default() -> termrock::widgets::PreviewResourceKind
+impl core::fmt::Debug for termrock::widgets::PreviewResourceKind
+pub fn termrock::widgets::PreviewResourceKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PreviewResourceKind
+pub fn termrock::widgets::PreviewResourceKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PreviewResourceKind
+impl core::marker::StructuralPartialEq for termrock::widgets::PreviewResourceKind
+impl core::marker::Freeze for termrock::widgets::PreviewResourceKind
+impl core::marker::Send for termrock::widgets::PreviewResourceKind
+impl core::marker::Sync for termrock::widgets::PreviewResourceKind
+impl core::marker::Unpin for termrock::widgets::PreviewResourceKind
+impl core::marker::UnsafeUnpin for termrock::widgets::PreviewResourceKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PreviewResourceKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PreviewResourceKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PreviewResourceKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PreviewResourceKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PreviewResourceKind where U: core::convert::From<T>
+pub fn termrock::widgets::PreviewResourceKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PreviewResourceKind where U: core::convert::Into<T>
+pub type termrock::widgets::PreviewResourceKind::Error = core::convert::Infallible
+pub fn termrock::widgets::PreviewResourceKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PreviewResourceKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PreviewResourceKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PreviewResourceKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PreviewResourceKind where T: core::clone::Clone
+pub type termrock::widgets::PreviewResourceKind::Owned = T
+pub fn termrock::widgets::PreviewResourceKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::PreviewResourceKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PreviewResourceKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PreviewResourceKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PreviewResourceKind where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewResourceKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PreviewResourceKind where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewResourceKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PreviewResourceKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PreviewResourceKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PreviewResourceKind
+pub fn termrock::widgets::PreviewResourceKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PreviewResourceKind
+#[non_exhaustive] pub enum termrock::widgets::PreviewTrigger
+pub termrock::widgets::PreviewTrigger::Any
+pub termrock::widgets::PreviewTrigger::Focus
+pub termrock::widgets::PreviewTrigger::Hover
+pub termrock::widgets::PreviewTrigger::Pointer
+pub termrock::widgets::PreviewTrigger::Selection
+impl termrock::widgets::PreviewTrigger
+pub const fn termrock::widgets::PreviewTrigger::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PreviewTrigger
+pub fn termrock::widgets::PreviewTrigger::clone(&self) -> termrock::widgets::PreviewTrigger
+impl core::cmp::Eq for termrock::widgets::PreviewTrigger
+impl core::cmp::PartialEq for termrock::widgets::PreviewTrigger
+pub fn termrock::widgets::PreviewTrigger::eq(&self, &termrock::widgets::PreviewTrigger) -> bool
+impl core::default::Default for termrock::widgets::PreviewTrigger
+pub fn termrock::widgets::PreviewTrigger::default() -> termrock::widgets::PreviewTrigger
+impl core::fmt::Debug for termrock::widgets::PreviewTrigger
+pub fn termrock::widgets::PreviewTrigger::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PreviewTrigger
+pub fn termrock::widgets::PreviewTrigger::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PreviewTrigger
+impl core::marker::StructuralPartialEq for termrock::widgets::PreviewTrigger
+impl core::marker::Freeze for termrock::widgets::PreviewTrigger
+impl core::marker::Send for termrock::widgets::PreviewTrigger
+impl core::marker::Sync for termrock::widgets::PreviewTrigger
+impl core::marker::Unpin for termrock::widgets::PreviewTrigger
+impl core::marker::UnsafeUnpin for termrock::widgets::PreviewTrigger
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PreviewTrigger
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PreviewTrigger
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PreviewTrigger where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PreviewTrigger::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PreviewTrigger where U: core::convert::From<T>
+pub fn termrock::widgets::PreviewTrigger::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PreviewTrigger where U: core::convert::Into<T>
+pub type termrock::widgets::PreviewTrigger::Error = core::convert::Infallible
+pub fn termrock::widgets::PreviewTrigger::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PreviewTrigger where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PreviewTrigger::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PreviewTrigger::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PreviewTrigger where T: core::clone::Clone
+pub type termrock::widgets::PreviewTrigger::Owned = T
+pub fn termrock::widgets::PreviewTrigger::clone_into(&self, &mut T)
+pub fn termrock::widgets::PreviewTrigger::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PreviewTrigger where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PreviewTrigger::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PreviewTrigger where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewTrigger::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PreviewTrigger where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewTrigger::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PreviewTrigger where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PreviewTrigger::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PreviewTrigger
+pub fn termrock::widgets::PreviewTrigger::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PreviewTrigger
 #[non_exhaustive] pub enum termrock::widgets::ProgressKind
 pub termrock::widgets::ProgressKind::Determinate
 pub termrock::widgets::ProgressKind::Determinate::fraction: f64
@@ -45168,6 +45387,298 @@ pub unsafe fn termrock::widgets::PopoverState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PopoverState
 pub fn termrock::widgets::PopoverState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PopoverState
+pub struct termrock::widgets::PreviewCard<'a>
+impl<'a> termrock::widgets::PreviewCard<'a>
+pub const fn termrock::widgets::PreviewCard<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::PreviewCard<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::PreviewCard<'a>::max_width(self, u16) -> Self
+pub const fn termrock::widgets::PreviewCard<'a>::new(termrock::widgets::PreviewCardContent<'a>, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::PreviewCard<'a>::overlay_size(&self) -> termrock::interaction::OverlaySize
+pub fn termrock::widgets::PreviewCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PreviewCardState)
+pub fn termrock::widgets::PreviewCard<'a>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::PreviewCardState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PreviewCard<'_>
+pub type &termrock::widgets::PreviewCard<'_>::State = termrock::widgets::PreviewCardState
+pub fn &termrock::widgets::PreviewCard<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::PreviewCard<'_>
+pub type termrock::widgets::PreviewCard<'_>::State = termrock::widgets::PreviewCardState
+pub fn termrock::widgets::PreviewCard<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::PreviewCard<'a>
+pub fn termrock::widgets::PreviewCard<'a>::clone(&self) -> termrock::widgets::PreviewCard<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::PreviewCard<'a>
+pub fn termrock::widgets::PreviewCard<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::PreviewCard<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::PreviewCard<'a>
+impl<'a> core::marker::Send for termrock::widgets::PreviewCard<'a>
+impl<'a> core::marker::Sync for termrock::widgets::PreviewCard<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::PreviewCard<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::PreviewCard<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PreviewCard<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PreviewCard<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::PreviewCard<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::PreviewCard<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PreviewCard<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::PreviewCard<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::PreviewCard<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PreviewCard<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PreviewCard<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PreviewCard<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PreviewCard<'a> where T: core::clone::Clone
+pub type termrock::widgets::PreviewCard<'a>::Owned = T
+pub fn termrock::widgets::PreviewCard<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PreviewCard<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PreviewCard<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PreviewCard<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PreviewCard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCard<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PreviewCard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCard<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PreviewCard<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PreviewCard<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PreviewCard<'a>
+pub fn termrock::widgets::PreviewCard<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PreviewCard<'a>
+pub struct termrock::widgets::PreviewCardContent<'a>
+pub termrock::widgets::PreviewCardContent::body_lines: &'a [&'a str]
+pub termrock::widgets::PreviewCardContent::error_message: core::option::Option<&'a str>
+pub termrock::widgets::PreviewCardContent::essential_elsewhere: bool
+pub termrock::widgets::PreviewCardContent::kind: termrock::widgets::PreviewResourceKind
+pub termrock::widgets::PreviewCardContent::load: termrock::widgets::PreviewLoadState
+pub termrock::widgets::PreviewCardContent::meta: &'a [termrock::widgets::PreviewMetadata<'a>]
+pub termrock::widgets::PreviewCardContent::open_label: core::option::Option<&'a str>
+pub termrock::widgets::PreviewCardContent::pin_label: core::option::Option<&'a str>
+pub termrock::widgets::PreviewCardContent::subtitle: core::option::Option<&'a str>
+pub termrock::widgets::PreviewCardContent::title: &'a str
+impl<'a> termrock::widgets::PreviewCardContent<'a>
+pub const fn termrock::widgets::PreviewCardContent<'a>::body(self, &'a [&'a str]) -> Self
+pub const fn termrock::widgets::PreviewCardContent<'a>::error(self, &'a str) -> Self
+pub const fn termrock::widgets::PreviewCardContent<'a>::essential_elsewhere(self, bool) -> Self
+pub const fn termrock::widgets::PreviewCardContent<'a>::load(self, termrock::widgets::PreviewLoadState) -> Self
+pub const fn termrock::widgets::PreviewCardContent<'a>::meta(self, &'a [termrock::widgets::PreviewMetadata<'a>]) -> Self
+pub fn termrock::widgets::PreviewCardContent<'a>::preferred_height(self, u16) -> u16
+pub fn termrock::widgets::PreviewCardContent<'a>::preferred_width(self, u16) -> u16
+pub const fn termrock::widgets::PreviewCardContent<'a>::subtitle(self, &'a str) -> Self
+pub const fn termrock::widgets::PreviewCardContent<'a>::title(&'a str, termrock::widgets::PreviewResourceKind) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::PreviewCardContent<'a>
+pub fn termrock::widgets::PreviewCardContent<'a>::clone(&self) -> termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::PreviewCardContent<'a>
+pub fn termrock::widgets::PreviewCardContent<'a>::eq(&self, &termrock::widgets::PreviewCardContent<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::PreviewCardContent<'a>
+pub fn termrock::widgets::PreviewCardContent<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::marker::Send for termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::marker::Sync for termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PreviewCardContent<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PreviewCardContent<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PreviewCardContent<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardContent<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PreviewCardContent<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::PreviewCardContent<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PreviewCardContent<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::PreviewCardContent<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::PreviewCardContent<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PreviewCardContent<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PreviewCardContent<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PreviewCardContent<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PreviewCardContent<'a> where T: core::clone::Clone
+pub type termrock::widgets::PreviewCardContent<'a>::Owned = T
+pub fn termrock::widgets::PreviewCardContent<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PreviewCardContent<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PreviewCardContent<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardContent<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PreviewCardContent<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardContent<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PreviewCardContent<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardContent<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PreviewCardContent<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PreviewCardContent<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PreviewCardContent<'a>
+pub fn termrock::widgets::PreviewCardContent<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PreviewCardContent<'a>
+pub struct termrock::widgets::PreviewCardSlots
+pub termrock::widgets::PreviewCardSlots::body: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PreviewCardSlots::footer: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PreviewCardSlots::header: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PreviewCardSlots::meta: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PreviewCardSlots::root: ratatui_core::layout::rect::Rect
+impl termrock::widgets::PreviewCardSlots
+pub const fn termrock::widgets::PreviewCardSlots::empty() -> Self
+impl core::clone::Clone for termrock::widgets::PreviewCardSlots
+pub fn termrock::widgets::PreviewCardSlots::clone(&self) -> termrock::widgets::PreviewCardSlots
+impl core::cmp::Eq for termrock::widgets::PreviewCardSlots
+impl core::cmp::PartialEq for termrock::widgets::PreviewCardSlots
+pub fn termrock::widgets::PreviewCardSlots::eq(&self, &termrock::widgets::PreviewCardSlots) -> bool
+impl core::default::Default for termrock::widgets::PreviewCardSlots
+pub fn termrock::widgets::PreviewCardSlots::default() -> termrock::widgets::PreviewCardSlots
+impl core::fmt::Debug for termrock::widgets::PreviewCardSlots
+pub fn termrock::widgets::PreviewCardSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::PreviewCardSlots
+impl core::marker::StructuralPartialEq for termrock::widgets::PreviewCardSlots
+impl core::marker::Freeze for termrock::widgets::PreviewCardSlots
+impl core::marker::Send for termrock::widgets::PreviewCardSlots
+impl core::marker::Sync for termrock::widgets::PreviewCardSlots
+impl core::marker::Unpin for termrock::widgets::PreviewCardSlots
+impl core::marker::UnsafeUnpin for termrock::widgets::PreviewCardSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PreviewCardSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PreviewCardSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PreviewCardSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PreviewCardSlots where U: core::convert::From<T>
+pub fn termrock::widgets::PreviewCardSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PreviewCardSlots where U: core::convert::Into<T>
+pub type termrock::widgets::PreviewCardSlots::Error = core::convert::Infallible
+pub fn termrock::widgets::PreviewCardSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PreviewCardSlots where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PreviewCardSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PreviewCardSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PreviewCardSlots where T: core::clone::Clone
+pub type termrock::widgets::PreviewCardSlots::Owned = T
+pub fn termrock::widgets::PreviewCardSlots::clone_into(&self, &mut T)
+pub fn termrock::widgets::PreviewCardSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PreviewCardSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PreviewCardSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PreviewCardSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PreviewCardSlots where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PreviewCardSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PreviewCardSlots
+pub fn termrock::widgets::PreviewCardSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PreviewCardSlots
+pub struct termrock::widgets::PreviewCardState
+impl termrock::widgets::PreviewCardState
+pub fn termrock::widgets::PreviewCardState::advance(&mut self, termrock::runtime::FrameTick, termrock::style::Motion) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::advance_with_triggers(&mut self, termrock::runtime::FrameTick, bool, bool, bool, termrock::style::Motion) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::allow_show_for(&self, &termrock::widgets::PreviewCardContent<'_>) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::apply_error(&mut self, u64) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::apply_ready(&mut self, u64) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::armed(&self) -> bool
+pub fn termrock::widgets::PreviewCardState::begin_fetch(&mut self) -> termrock::widgets::PreviewCardOutcome
+pub const fn termrock::widgets::PreviewCardState::body_area(&self) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::PreviewCardState::clear_selection(&mut self) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::force_hide(&mut self)
+pub const fn termrock::widgets::PreviewCardState::generation(&self) -> u64
+pub fn termrock::widgets::PreviewCardState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PreviewCardOutcome
+pub const fn termrock::widgets::PreviewCardState::is_disabled(&self) -> bool
+pub const fn termrock::widgets::PreviewCardState::is_pinned(&self) -> bool
+pub const fn termrock::widgets::PreviewCardState::is_visible(&self) -> bool
+pub const fn termrock::widgets::PreviewCardState::load(&self) -> termrock::widgets::PreviewLoadState
+pub fn termrock::widgets::PreviewCardState::mark_stale(&mut self)
+pub const fn termrock::widgets::PreviewCardState::new() -> Self
+pub fn termrock::widgets::PreviewCardState::next_deadline(&self) -> core::option::Option<std::time::Instant>
+pub const fn termrock::widgets::PreviewCardState::pending_generation(&self) -> core::option::Option<u64>
+pub fn termrock::widgets::PreviewCardState::pin(&mut self) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::selection_id(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::PreviewCardState::set_ascii(&mut self, bool)
+pub fn termrock::widgets::PreviewCardState::set_disabled(&mut self, bool)
+pub fn termrock::widgets::PreviewCardState::set_enforce_essential_elsewhere(&mut self, bool)
+pub fn termrock::widgets::PreviewCardState::set_focus_within(&mut self, bool)
+pub fn termrock::widgets::PreviewCardState::set_max_width(&mut self, u16)
+pub fn termrock::widgets::PreviewCardState::set_pointer_over(&mut self, bool)
+pub fn termrock::widgets::PreviewCardState::set_selection(&mut self, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::set_selection_active(&mut self, bool)
+pub fn termrock::widgets::PreviewCardState::set_selection_debounce(&mut self, core::time::Duration)
+pub fn termrock::widgets::PreviewCardState::set_trigger(&mut self, termrock::widgets::PreviewTrigger)
+pub const fn termrock::widgets::PreviewCardState::slots(&self) -> termrock::widgets::PreviewCardSlots
+pub fn termrock::widgets::PreviewCardState::sync_with_stack<F>(&mut self, &termrock::interaction::OverlayStack<F>)
+pub fn termrock::widgets::PreviewCardState::tick_hover(&mut self, u64, bool) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::toggle_pin(&mut self) -> termrock::widgets::PreviewCardOutcome
+pub fn termrock::widgets::PreviewCardState::unpin(&mut self) -> termrock::widgets::PreviewCardOutcome
+pub const fn termrock::widgets::PreviewCardState::with_delay(core::time::Duration) -> Self
+impl core::clone::Clone for termrock::widgets::PreviewCardState
+pub fn termrock::widgets::PreviewCardState::clone(&self) -> termrock::widgets::PreviewCardState
+impl core::cmp::Eq for termrock::widgets::PreviewCardState
+impl core::cmp::PartialEq for termrock::widgets::PreviewCardState
+pub fn termrock::widgets::PreviewCardState::eq(&self, &termrock::widgets::PreviewCardState) -> bool
+impl core::default::Default for termrock::widgets::PreviewCardState
+pub fn termrock::widgets::PreviewCardState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::PreviewCardState
+pub fn termrock::widgets::PreviewCardState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PreviewCardState
+impl core::marker::Freeze for termrock::widgets::PreviewCardState
+impl core::marker::Send for termrock::widgets::PreviewCardState
+impl core::marker::Sync for termrock::widgets::PreviewCardState
+impl core::marker::Unpin for termrock::widgets::PreviewCardState
+impl core::marker::UnsafeUnpin for termrock::widgets::PreviewCardState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PreviewCardState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PreviewCardState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PreviewCardState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PreviewCardState where U: core::convert::From<T>
+pub fn termrock::widgets::PreviewCardState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PreviewCardState where U: core::convert::Into<T>
+pub type termrock::widgets::PreviewCardState::Error = core::convert::Infallible
+pub fn termrock::widgets::PreviewCardState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PreviewCardState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PreviewCardState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PreviewCardState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PreviewCardState where T: core::clone::Clone
+pub type termrock::widgets::PreviewCardState::Owned = T
+pub fn termrock::widgets::PreviewCardState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PreviewCardState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PreviewCardState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PreviewCardState where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PreviewCardState where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewCardState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PreviewCardState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PreviewCardState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PreviewCardState
+pub fn termrock::widgets::PreviewCardState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PreviewCardState
+pub struct termrock::widgets::PreviewMetadata<'a>
+pub termrock::widgets::PreviewMetadata::label: &'a str
+pub termrock::widgets::PreviewMetadata::value: &'a str
+impl<'a> termrock::widgets::PreviewMetadata<'a>
+pub const fn termrock::widgets::PreviewMetadata<'a>::new(&'a str, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::PreviewMetadata<'a>
+pub fn termrock::widgets::PreviewMetadata<'a>::clone(&self) -> termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::PreviewMetadata<'a>
+pub fn termrock::widgets::PreviewMetadata<'a>::eq(&self, &termrock::widgets::PreviewMetadata<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::PreviewMetadata<'a>
+pub fn termrock::widgets::PreviewMetadata<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::marker::Send for termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::marker::Sync for termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PreviewMetadata<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PreviewMetadata<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PreviewMetadata<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PreviewMetadata<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PreviewMetadata<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::PreviewMetadata<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PreviewMetadata<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::PreviewMetadata<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::PreviewMetadata<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PreviewMetadata<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PreviewMetadata<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PreviewMetadata<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PreviewMetadata<'a> where T: core::clone::Clone
+pub type termrock::widgets::PreviewMetadata<'a>::Owned = T
+pub fn termrock::widgets::PreviewMetadata<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PreviewMetadata<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PreviewMetadata<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PreviewMetadata<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PreviewMetadata<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewMetadata<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PreviewMetadata<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PreviewMetadata<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PreviewMetadata<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PreviewMetadata<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PreviewMetadata<'a>
+pub fn termrock::widgets::PreviewMetadata<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PreviewMetadata<'a>
 pub struct termrock::widgets::PriorGrant
 pub termrock::widgets::PriorGrant::scope: termrock::widgets::PermissionScope
 pub termrock::widgets::PriorGrant::summary: alloc::string::String
@@ -54112,6 +54623,13 @@ pub const termrock::widgets::PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::POPOVER_CONTRACT_MAX_HEIGHT: u16
 pub const termrock::widgets::POPOVER_CONTRACT_MAX_WIDTH: u16
 pub const termrock::widgets::POPOVER_OVERLAY_ID: &str
+pub const termrock::widgets::PREVIEW_CARD_DEFAULT_DELAY_MS: u64
+pub const termrock::widgets::PREVIEW_CARD_DEFAULT_MAX_HEIGHT: u16
+pub const termrock::widgets::PREVIEW_CARD_DEFAULT_MAX_WIDTH: u16
+pub const termrock::widgets::PREVIEW_CARD_HINT: &str
+pub const termrock::widgets::PREVIEW_CARD_OVERLAY_ID: &str
+pub const termrock::widgets::PREVIEW_CARD_PINNED_HINT: &str
+pub const termrock::widgets::PREVIEW_CARD_SELECTION_DEBOUNCE_MS: u64
 pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::QUICK_OPEN_DEFAULT_LIMIT: usize
@@ -54189,6 +54707,7 @@ pub fn termrock::widgets::dismiss_keyboard_help_overlay<FocusId: core::clone::Cl
 pub fn termrock::widgets::dismiss_menu_bar_overlays<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_popover_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::dismiss_preview_card_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_quick_open_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::drawer_presentation_for(ratatui_core::layout::rect::Rect, termrock::widgets::DrawerEdge, u16) -> termrock::widgets::DrawerPresentation
@@ -54197,8 +54716,10 @@ pub fn termrock::widgets::entries_from_keymap<A, Id, F>(&termrock::keymap::Keyma
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
 pub fn termrock::widgets::example_command_catalog() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
+pub fn termrock::widgets::example_command_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::example_database_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_docs_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
+pub fn termrock::widgets::example_file_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::example_help_entries(&termrock::style::DesignSystem) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::example_help_keymap() -> termrock::keymap::Keymap<termrock::widgets::DemoHelpAction>
 pub fn termrock::widgets::example_history_entries() -> alloc::vec::Vec<termrock::widgets::HistoryEntry<&'static str>>
@@ -54208,8 +54729,10 @@ pub fn termrock::widgets::example_quick_open_files() -> alloc::vec::Vec<termrock
 pub fn termrock::widgets::example_quick_open_providers() -> alloc::vec::Vec<termrock::widgets::QuickOpenProvider>
 pub fn termrock::widgets::example_quick_open_symbols() -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<&'static str>>
 pub fn termrock::widgets::example_schema_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
+pub fn termrock::widgets::example_session_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::example_settings_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_settings_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
+pub fn termrock::widgets::example_symbol_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
 pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
 pub fn termrock::widgets::filter_command_entries<Id: core::clone::Clone>(&[termrock::widgets::CommandEntry<Id>], &str, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>>
@@ -54283,6 +54806,8 @@ pub fn termrock::widgets::open_popover_modal_overlay<FocusId: core::clone::Clone
 pub fn termrock::widgets::open_popover_nested_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, impl core::convert::Into<termrock::interaction::OverlayId>, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_popover_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_popover_with_presentation<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, core::option::Option<FocusId>, termrock::widgets::PopoverModality, core::option::Option<termrock::interaction::OverlayId>, core::option::Option<alloc::string::String>, core::option::Option<termrock::widgets::PopoverPresentation>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_preview_card_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_preview_card_pinned_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_quick_open_fullscreen<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_quick_open_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::QuickOpenSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -54305,10 +54830,12 @@ pub fn termrock::widgets::place_menu_bar_panel(ratatui_core::layout::rect::Rect,
 pub fn termrock::widgets::place_picker(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::PickerSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_popover(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_popover_with_modality(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::widgets::PopoverModality, termrock::widgets::PopoverPresentation) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::place_preview_card(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_quick_open(ratatui_core::layout::rect::Rect, termrock::widgets::QuickOpenSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_tooltip(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::popover_presentation_for(ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> termrock::widgets::PopoverPresentation
 pub fn termrock::widgets::prepare_code_display(&str, usize, termrock::widgets::ControlRender) -> alloc::string::String
+pub fn termrock::widgets::preview_card_overlay_size(&termrock::widgets::PreviewCardContent<'_>, u16) -> termrock::interaction::OverlaySize
 pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String

@@ -1,0 +1,89 @@
+---
+title: PreviewCard
+description: 'Non-essential delayed resource preview (file/command/symbol/session) with metadata, loading/error, pin-to-open, and generation-gated async.'
+---
+
+## Previews
+
+### `preview-card/file`
+
+PreviewCard file
+
+![PreviewCard — file](/component-previews/preview-card-file.svg)
+
+### `preview-card/command`
+
+PreviewCard command
+
+![PreviewCard — command](/component-previews/preview-card-command.svg)
+
+### `preview-card/symbol`
+
+PreviewCard symbol
+
+![PreviewCard — symbol](/component-previews/preview-card-symbol.svg)
+
+### `preview-card/session`
+
+PreviewCard session
+
+![PreviewCard — session](/component-previews/preview-card-session.svg)
+
+### `preview-card/loading`
+
+PreviewCard loading
+
+![PreviewCard — loading](/component-previews/preview-card-loading.svg)
+
+### `preview-card/error`
+
+PreviewCard error
+
+![PreviewCard — error](/component-previews/preview-card-error.svg)
+
+### `preview-card/pinned`
+
+PreviewCard pinned
+
+![PreviewCard — pinned](/component-previews/preview-card-pinned.svg)
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    PreviewCard, PreviewCardOutcome, PreviewCardState, example_file_preview,
+};
+
+let system = DesignSystem::default();
+let mut state = PreviewCardState::new();
+let _ = state.set_selection("main.rs");
+if let PreviewCardOutcome::Loading { generation } = state.begin_fetch() {
+    let _ = state.apply_ready(generation); // host async first
+}
+let (content, _, _) = example_file_preview();
+let _ = state.tick_hover(300, true);
+PreviewCard::new(content, &system).paint(area, buf, &mut state);
+```
+
+## Rules
+
+1. Required facts must also appear outside the preview (`essential_elsewhere`).
+2. Unpinned cards never own keyboard input (Tooltip overlay policy).
+3. Rapid selection debounces show and cancels stale async generations.
+4. Pin → sticky; Esc unpins; Enter → host open (FullscreenViewer, etc.).
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (pinned Esc/Enter/p only) |
+| Mouse | covered (pointer arm + delay) |
+| Focus | covered (anchor focus arm; no theft unpinned) |
+| Non-color cues | covered (kind badge, load glyphs, pin mark) |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `preview-card/file`, `command`, `symbol`, `session`, `loading`, `error`, `pinned`

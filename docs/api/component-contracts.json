@@ -655,6 +655,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "PreviewCard": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "PromptComposer": {
     "keyboard": "covered",
     "mouse": "covered",

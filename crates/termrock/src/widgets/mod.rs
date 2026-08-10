@@ -60,6 +60,7 @@ mod menu_nav;
 mod drawer;
 mod dropdown_menu;
 mod fullscreen_viewer;
+mod preview_card;
 mod popover;
 mod tooltip;
 mod menu_bar;
@@ -318,6 +319,15 @@ pub use dropdown_menu::{
 };
 /// Context menu paint widget (same cascade engine as [`DropdownMenu`]).
 pub type ContextMenu<'a, Id> = DropdownMenu<'a, Id>;
+pub use preview_card::{
+    PREVIEW_CARD_DEFAULT_DELAY_MS, PREVIEW_CARD_DEFAULT_MAX_HEIGHT, PREVIEW_CARD_DEFAULT_MAX_WIDTH,
+    PREVIEW_CARD_HINT, PREVIEW_CARD_OVERLAY_ID, PREVIEW_CARD_PINNED_HINT,
+    PREVIEW_CARD_SELECTION_DEBOUNCE_MS, PreviewCard, PreviewCardContent, PreviewCardOutcome,
+    PreviewCardSlots, PreviewCardState, PreviewLoadState, PreviewMetadata, PreviewResourceKind,
+    PreviewTrigger, dismiss_preview_card_overlay, example_command_preview, example_file_preview,
+    example_session_preview, example_symbol_preview, open_preview_card_overlay,
+    open_preview_card_pinned_overlay, place_preview_card, preview_card_overlay_size,
+};
 pub use popover::{
     POPOVER_CONTRACT_MAX_HEIGHT, POPOVER_CONTRACT_MAX_WIDTH, POPOVER_OVERLAY_ID, Popover,
     PopoverModality, PopoverOutcome, PopoverPresentation, PopoverSlots, PopoverState,

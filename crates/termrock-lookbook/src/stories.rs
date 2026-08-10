@@ -91,6 +91,9 @@ use termrock::{
         Tooltip, TooltipContent, TooltipState, TooltipVariant,
         FullscreenViewer, FullscreenViewerState, SemanticZoomBadge, SemanticZoomState,
         SourceContext, ScrollAnchor, ViewerContentKind,
+        PreviewCard, PreviewCardState, PreviewCardContent, PreviewLoadState, PreviewResourceKind,
+        example_command_preview, example_file_preview, example_session_preview,
+        example_symbol_preview,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -3643,6 +3646,69 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             14,
             fullscreen_viewer_unicode_story,
+        ),
+        Story::new(
+            "preview-card/file",
+            "PreviewCard file",
+            "PreviewCard",
+            "File resource preview with metadata and snippet body.",
+            44,
+            12,
+            preview_card_file_story,
+        ),
+        Story::new(
+            "preview-card/command",
+            "PreviewCard command",
+            "PreviewCard",
+            "Command preview with shell/cwd metadata.",
+            44,
+            10,
+            preview_card_command_story,
+        ),
+        Story::new(
+            "preview-card/symbol",
+            "PreviewCard symbol",
+            "PreviewCard",
+            "Symbol definition preview.",
+            44,
+            10,
+            preview_card_symbol_story,
+        ),
+        Story::new(
+            "preview-card/session",
+            "PreviewCard session",
+            "PreviewCard",
+            "Session transcript excerpt preview.",
+            44,
+            10,
+            preview_card_session_story,
+        ),
+        Story::new(
+            "preview-card/loading",
+            "PreviewCard loading",
+            "PreviewCard",
+            "Async loading chrome while host fetch is in flight.",
+            36,
+            8,
+            preview_card_loading_story,
+        ),
+        Story::new(
+            "preview-card/error",
+            "PreviewCard error",
+            "PreviewCard",
+            "Error state for failed preview fetch.",
+            36,
+            8,
+            preview_card_error_story,
+        ),
+        Story::new(
+            "preview-card/pinned",
+            "PreviewCard pinned",
+            "PreviewCard",
+            "Pinned sticky preview (popover policy; pin mark).",
+            44,
+            12,
+            preview_card_pinned_story,
         ),
         Story::new(
             "text/basic",
@@ -13548,6 +13614,60 @@ fn fullscreen_viewer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &D
     );
     FullscreenViewer::new(system, &actions).paint(area, frame.buffer_mut(), &mut state);
     paint_viewer_body(frame, state.body_area(), system, "メディア · 🖼");
+}
+
+fn preview_card_file_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (content, _, _) = example_file_preview();
+    let mut state = PreviewCardState::with_delay(std::time::Duration::ZERO);
+    let _ = state.tick_hover(1, true);
+    PreviewCard::new(content, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn preview_card_command_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (content, _, _) = example_command_preview();
+    let mut state = PreviewCardState::with_delay(std::time::Duration::ZERO);
+    let _ = state.tick_hover(1, true);
+    PreviewCard::new(content, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn preview_card_symbol_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (content, _, _) = example_symbol_preview();
+    let mut state = PreviewCardState::with_delay(std::time::Duration::ZERO);
+    let _ = state.tick_hover(1, true);
+    PreviewCard::new(content, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn preview_card_session_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (content, _, _) = example_session_preview();
+    let mut state = PreviewCardState::with_delay(std::time::Duration::ZERO);
+    let _ = state.tick_hover(1, true);
+    PreviewCard::new(content, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn preview_card_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let content = PreviewCardContent::title("main.rs", PreviewResourceKind::File)
+        .subtitle("src/main.rs")
+        .load(PreviewLoadState::Loading)
+        .essential_elsewhere(true);
+    let mut state = PreviewCardState::with_delay(std::time::Duration::ZERO);
+    let _ = state.tick_hover(1, true);
+    PreviewCard::new(content, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn preview_card_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let content = PreviewCardContent::title("main.rs", PreviewResourceKind::File)
+        .error("preview timed out")
+        .essential_elsewhere(true);
+    let mut state = PreviewCardState::with_delay(std::time::Duration::ZERO);
+    let _ = state.tick_hover(1, true);
+    PreviewCard::new(content, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn preview_card_pinned_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (content, _, _) = example_file_preview();
+    let mut state = PreviewCardState::new();
+    let _ = state.pin();
+    PreviewCard::new(content, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
