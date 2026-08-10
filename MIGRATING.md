@@ -200,6 +200,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0184 | `v0.13.0` | [Offline and ReconnectingState](migrations/0184-v0.13.0-offline-reconnecting-state.md) |
 | 0185 | `v0.13.0` | [List collection view](migrations/0185-v0.13.0-list-collection-view.md) |
 | 0186 | `v0.13.0` | [VirtualList](migrations/0186-v0.13.0-virtual-list.md) |
+| 0187 | `v0.13.0` | [Tree hierarchy](migrations/0187-v0.13.0-tree-hierarchy.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

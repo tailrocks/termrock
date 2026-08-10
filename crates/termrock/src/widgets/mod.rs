@@ -567,7 +567,10 @@ pub use transcript::{
     Transcript, TranscriptAnchor, TranscriptBlock, TranscriptKind, TranscriptOutcome,
     TranscriptState,
 };
-pub use tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState};
+pub use tree::{
+    TREE_DEFAULT_OVERSCAN, Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState,
+    filter_tree_with_ancestors,
+};
 pub use tree_navigation::{
     TREE_NAV_INDENT, TREE_NAV_MAX_INDENT_DEPTH, TREE_NAV_NARROW_MAX_WIDTH, TreeNavNode,
     TreeNavStatus, TreeNavigation, TreeNavigationOutcome, TreeNavigationState,

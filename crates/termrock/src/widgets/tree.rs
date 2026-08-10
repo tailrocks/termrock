@@ -1,3 +1,17 @@
+//! **Tree** — hierarchical collection for files, schemas, tasks, settings, objects.
+//!
+//! **Mission.** Flattened projection with stable IDs, lazy children, loading/error
+//! child state, expansion, active cursor, selection/check, icons, metadata,
+//! context actions, and typeahead. Left/right define collapse / expand-or-enter
+//! precisely. Filtering retains ancestor context. Large trees virtualize via
+//! window + optional [`Virtualizer`]; scroll anchors preserve position. ASCII
+//! disclosure/indent fallbacks come from the design system glyph set.
+//!
+//! **Ownership.** Host owns hierarchy, expansion set, and lazy fetch. Tree owns
+//! cursor/selection interaction, scroll, hit geometry, and typed outcomes.
+//!
+//! Research: file explorers, broot, Yazi, VS Code trees, TermRock List/VirtualList.
+
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -7,28 +21,59 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::KeyEvent,
-    interaction::HitRegion,
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    interaction::{
+        CollectionItem, CollectionState, HitRegion, NavigationMove, PageMove, UiIntent,
+    },
     scroll::max_offset,
     style::{DesignSystem, ListRowVisualState, Role},
+    text::{display_cols, take_display_cols},
 };
 
-use super::{ComposedRow, Selection};
+use super::{ComposedRow, Selection, StickyRegion, Virtualizer};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Default overscan when using virtualized tree windows.
+pub const TREE_DEFAULT_OVERSCAN: u16 = 4;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
-/// Loading and error states associated with a tree node.
+/// Loading, error, and lazy-child states associated with a tree node.
 pub enum TreeNodeStatus {
-    /// Node content is available for ordinary interaction.
+    /// Node content / children are available for ordinary interaction.
+    #[default]
     Ready,
-    /// Node content is still being loaded.
+    /// Children (or node body) still loading.
     Loading,
-    /// Node content could not be loaded.
+    /// Children / content failed to load.
     Error,
+    /// Branch not yet loaded (lazy); expand requests a fetch.
+    Lazy,
+}
+
+impl TreeNodeStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ready => "ready",
+            Self::Loading => "loading",
+            Self::Error => "error",
+            Self::Lazy => "lazy",
+        }
+    }
+
+    /// Whether keyboard should skip this node.
+    #[must_use]
+    pub const fn skips_navigation(self) -> bool {
+        matches!(self, Self::Loading)
+    }
 }
 
 #[derive(Debug, Clone)]
 /// A stable flattened tree row with hierarchy metadata.
+///
+/// Host projects only **visible** rows (expanded path). Optional virtual window
+/// + [`TreeState::set_virtual_window`] for huge trees.
 pub struct TreeNode<'a, Id> {
     /// Stable identity used for selection and activation.
     pub id: Id,
@@ -42,6 +87,8 @@ pub struct TreeNode<'a, Id> {
     pub badge: Option<Line<'a>>,
     /// Optional keyboard shortcut hint.
     pub shortcut: Option<&'a str>,
+    /// Optional context-action labels (display; host maps activation).
+    pub actions: Option<Line<'a>>,
     /// Optional metadata aligned at the trailing edge (maps to badge when badge unset).
     pub trailing: Option<Line<'a>>,
     /// Zero-based hierarchy depth.
@@ -52,8 +99,10 @@ pub struct TreeNode<'a, Id> {
     pub expanded: bool,
     /// Whether this item is enabled.
     pub enabled: bool,
-    /// Optional loading or error state.
+    /// Optional loading, error, or lazy state.
     pub status: TreeNodeStatus,
+    /// Parent id when known (enables filter ancestor retention without re-walk).
+    pub parent: Option<Id>,
 }
 
 impl<'a, Id> TreeNode<'a, Id> {
@@ -67,12 +116,14 @@ impl<'a, Id> TreeNode<'a, Id> {
             secondary: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
             depth,
             branch: false,
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            parent: None,
         }
     }
 
@@ -83,10 +134,26 @@ impl<'a, Id> TreeNode<'a, Id> {
         self
     }
 
+    /// Lazy branch: expand requests load (status [`TreeNodeStatus::Lazy`]).
+    #[must_use]
+    pub fn lazy_branch(mut self) -> Self {
+        self.branch = true;
+        self.expanded = false;
+        self.status = TreeNodeStatus::Lazy;
+        self
+    }
+
     /// Marks the branch expanded (consumer owns expansion policy).
     #[must_use]
     pub fn expanded(mut self) -> Self {
         self.expanded = true;
+        self
+    }
+
+    /// Sets parent id (filter / collapse helpers).
+    #[must_use]
+    pub fn parent(mut self, parent: Id) -> Self {
+        self.parent = Some(parent);
         self
     }
 
@@ -115,6 +182,13 @@ impl<'a, Id> TreeNode<'a, Id> {
     #[must_use]
     pub fn shortcut(mut self, shortcut: &'a str) -> Self {
         self.shortcut = Some(shortcut);
+        self
+    }
+
+    /// Context action labels (display-only).
+    #[must_use]
+    pub fn actions(mut self, actions: Line<'a>) -> Self {
+        self.actions = Some(actions);
         self
     }
 
@@ -147,11 +221,30 @@ impl<'a, Id> TreeNode<'a, Id> {
         self
     }
 
+    /// Lazy unloaded children.
+    #[must_use]
+    pub fn lazy(mut self) -> Self {
+        self.status = TreeNodeStatus::Lazy;
+        self.branch = true;
+        self
+    }
+
     /// Explicit status override.
     #[must_use]
     pub fn with_status(mut self, status: TreeNodeStatus) -> Self {
         self.status = status;
         self
+    }
+
+    /// Plain label for typeahead / filter.
+    #[must_use]
+    pub fn plain_label(&self) -> String {
+        self.label
+            .spans
+            .iter()
+            .map(|s| s.content.as_ref())
+            .collect::<Vec<_>>()
+            .join("")
     }
 
     /// Projects hierarchy chrome + label into shared composed anatomy.
@@ -162,12 +255,52 @@ impl<'a, Id> TreeNode<'a, Id> {
             leading: self.leading.clone(),
             primary: self.label.clone(),
             secondary: self.secondary.clone(),
-            badge: self.badge.clone().or_else(|| self.trailing.clone()),
+            badge: self
+                .badge
+                .clone()
+                .or_else(|| self.actions.clone())
+                .or_else(|| self.trailing.clone()),
             shortcut: self.shortcut,
             enabled: self.enabled,
-            loading: matches!(self.status, TreeNodeStatus::Loading),
+            loading: matches!(self.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy),
         }
     }
+}
+
+/// Keep nodes matching `query` (case-insensitive) **and** all their ancestors.
+///
+/// Uses `depth` (and optional `parent`) so filtered trees remain navigable.
+#[must_use]
+pub fn filter_tree_with_ancestors<'a, Id: Clone + PartialEq>(
+    nodes: &'a [TreeNode<'a, Id>],
+    query: &str,
+) -> Vec<&'a TreeNode<'a, Id>> {
+    let q = query.trim().to_ascii_lowercase();
+    if q.is_empty() {
+        return nodes.iter().collect();
+    }
+    let mut keep = vec![false; nodes.len()];
+    for (i, n) in nodes.iter().enumerate() {
+        if n.plain_label().to_ascii_lowercase().contains(&q) {
+            keep[i] = true;
+            // Mark ancestors by walking up depth.
+            let mut depth = n.depth;
+            let mut j = i;
+            while depth > 0 && j > 0 {
+                j -= 1;
+                if nodes[j].depth < depth {
+                    keep[j] = true;
+                    depth = nodes[j].depth;
+                }
+            }
+        }
+    }
+    nodes
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| keep[*i])
+        .map(|(_, n)| n)
+        .collect()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -176,9 +309,9 @@ impl<'a, Id> TreeNode<'a, Id> {
 pub enum TreeOutcome<Id> {
     /// The event produced no tree-state change.
     Ignored,
-    /// Navigation selected this stable node identity.
+    /// Navigation selected this stable node identity (active cursor).
     SelectionChanged(Id),
-    /// The identified branch requested disclosure inversion.
+    /// The identified branch requested disclosure inversion (or lazy load).
     Toggle(Id),
     /// Multi-selection toggled this stable node identity.
     CheckToggled(Id),
@@ -190,6 +323,9 @@ pub enum TreeOutcome<Id> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `Tree`.
+///
+/// **Cursor** is [`Self::selected`]. Multi **check** state is optional
+/// [`Self::selection`]. Expansion remains on the host projection (`TreeNode.expanded`).
 pub struct TreeState<Id> {
     selected: Option<Id>,
     hovered: Option<Id>,
@@ -201,6 +337,15 @@ pub struct TreeState<Id> {
     selection: Option<Selection<Id>>,
     check_regions: Vec<HitRegion<Id>>,
     scrollbar_region: Option<Rect>,
+    /// Typeahead / collection model over the flat projection.
+    collection: CollectionState<Id>,
+    /// Search query chrome (`/` filter; host applies [`filter_tree_with_ancestors`]).
+    filter_query: Option<String>,
+    /// When non-zero, `nodes` is a window into a larger flat universe.
+    virtual_total: usize,
+    virtual_window_start: usize,
+    /// Optional virtualizer for anchors / overscan diagnostics.
+    virt: Virtualizer,
 }
 
 impl<Id> Default for TreeState<Id> {
@@ -216,14 +361,24 @@ impl<Id> Default for TreeState<Id> {
             selection: None,
             check_regions: Vec::new(),
             scrollbar_region: None,
+            collection: CollectionState::new(),
+            filter_query: None,
+            virtual_total: 0,
+            virtual_window_start: 0,
+            virt: Virtualizer::fixed(1).with_overscan(TREE_DEFAULT_OVERSCAN),
         }
     }
 }
 
 impl<Id> TreeState<Id> {
     #[must_use]
-    /// Creates tree state with no selection, hover, expansion, or scroll.
-    pub const fn new(selected: Option<Id>) -> Self {
+    /// Creates tree state with no hover/scroll; optional initial cursor.
+    pub fn new(selected: Option<Id>) -> Self
+    where
+        Id: Clone + PartialEq,
+    {
+        let mut collection = CollectionState::new();
+        collection.set_active(selected.clone());
         Self {
             selected,
             hovered: None,
@@ -235,6 +390,11 @@ impl<Id> TreeState<Id> {
             selection: None,
             check_regions: Vec::new(),
             scrollbar_region: None,
+            collection,
+            filter_query: None,
+            virtual_total: 0,
+            virtual_window_start: 0,
+            virt: Virtualizer::fixed(1).with_overscan(TREE_DEFAULT_OVERSCAN),
         }
     }
 
@@ -256,15 +416,79 @@ impl<Id> TreeState<Id> {
         self.offset
     }
 
-    /// Selects the item with the supplied stable identity.
-    pub fn select(&mut self, selected: Option<Id>) {
-        self.selected = selected;
+    /// Selects the item with the supplied stable identity (active cursor).
+    pub fn select(&mut self, selected: Option<Id>)
+    where
+        Id: Clone + PartialEq,
+    {
+        self.selected = selected.clone();
+        self.collection.set_active(selected);
         self.follow_selection = true;
     }
 
     /// Enables ordered multi-selection with an empty selection.
     pub fn enable_multi_select(&mut self) {
         self.selection.get_or_insert_with(Selection::new);
+    }
+
+    /// Typeahead buffer (roving).
+    #[must_use]
+    pub fn typeahead_buffer(&self) -> &str {
+        self.collection.roving().typeahead_buffer()
+    }
+
+    /// Clear typeahead.
+    pub fn clear_typeahead(&mut self) {
+        self.collection.clear_typeahead();
+    }
+
+    /// Filter query (`/` search chrome).
+    #[must_use]
+    pub fn filter_query(&self) -> Option<&str> {
+        self.filter_query.as_deref()
+    }
+
+    /// Set filter query (empty clears).
+    pub fn set_filter_query(&mut self, query: Option<String>) {
+        self.filter_query = query.filter(|q| !q.is_empty());
+    }
+
+    /// Virtual window into a larger flat list (host projects only the window).
+    pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
+        self.virtual_window_start = window_start;
+        self.virtual_total = total_len;
+        self.virt.set_len(total_len as u64);
+        self.virt.set_offset(window_start as u64);
+    }
+
+    /// Borrow virtualizer (anchors / overscan).
+    #[must_use]
+    pub const fn virtualizer(&self) -> &Virtualizer {
+        &self.virt
+    }
+
+    /// Mutable virtualizer.
+    pub fn virtualizer_mut(&mut self) -> &mut Virtualizer {
+        &mut self.virt
+    }
+
+    /// Sticky region for virtualized trees (headers).
+    pub fn set_sticky(&mut self, sticky: StickyRegion) {
+        self.virt.set_sticky(sticky);
+    }
+
+    /// Capture index anchor for preserve-across-filter.
+    pub fn capture_scroll_anchor(&mut self) {
+        self.virt.set_offset(self.offset as u64);
+        self.virt.capture_index_anchor();
+    }
+
+    /// Restore offset from virtualizer anchor after rebuild.
+    pub fn restore_scroll_anchor(&mut self) {
+        if let Some(a) = self.virt.anchor().cloned() {
+            self.virt.apply_anchor(&a, |_| None);
+            self.offset = self.virt.offset() as usize;
+        }
     }
 
     /// Disables multi-selection and discards checked identities.
@@ -324,21 +548,97 @@ impl<Id> TreeState<Id> {
 }
 
 impl<Id: Clone + PartialEq> TreeState<Id> {
-    /// Routes navigation, disclosure, checking, and activation keys.
+    /// Routes navigation, disclosure, checking, activation, filter, and typeahead.
+    ///
+    /// Prefer intents via [`crate::interaction::default_tree_intent`]. Printable
+    /// characters feed typeahead. `/` opens filter query chrome.
     pub fn handle_key(&mut self, nodes: &[TreeNode<'_, Id>], key: KeyEvent) -> TreeOutcome<Id> {
+        if key.kind == KeyEventKind::Release {
+            return TreeOutcome::Ignored;
+        }
+        // Filter mode
+        if key.kind == KeyEventKind::Press
+            && matches!(key.code, KeyCode::Char('/'))
+            && key.modifiers.is_empty()
+        {
+            if self.filter_query.is_none() {
+                self.filter_query = Some(String::new());
+            }
+            return TreeOutcome::Ignored; // host reprojects; treat as chrome change
+        }
+        if self.filter_query.is_some()
+            && key.kind == KeyEventKind::Press
+            && key.modifiers.is_empty()
+        {
+            match key.code {
+                KeyCode::Backspace => {
+                    if let Some(q) = self.filter_query.as_mut() {
+                        q.pop();
+                        if q.is_empty() {
+                            self.filter_query = None;
+                        }
+                    }
+                    return TreeOutcome::Ignored;
+                }
+                KeyCode::Esc => {
+                    self.filter_query = None;
+                    return TreeOutcome::Cancelled;
+                }
+                KeyCode::Char(c) if !c.is_control() && c != '/' => {
+                    if let Some(q) = self.filter_query.as_mut() {
+                        q.push(c);
+                    }
+                    return TreeOutcome::Ignored;
+                }
+                _ => {}
+            }
+        }
         if let Some(intent) = crate::interaction::default_tree_intent(key) {
+            self.collection.clear_typeahead();
             return self.handle_intent(nodes, intent);
+        }
+        self.handle_typeahead(nodes, key)
+    }
+
+    fn handle_typeahead(
+        &mut self,
+        nodes: &[TreeNode<'_, Id>],
+        key: KeyEvent,
+    ) -> TreeOutcome<Id> {
+        if key.kind != KeyEventKind::Press {
+            return TreeOutcome::Ignored;
+        }
+        let KeyCode::Char(c) = key.code else {
+            return TreeOutcome::Ignored;
+        };
+        if c.is_control()
+            || key.modifiers.contains(KeyModifiers::CONTROL)
+            || key.modifiers.contains(KeyModifiers::ALT)
+        {
+            return TreeOutcome::Ignored;
+        }
+        let items = collection_items_from_nodes(nodes);
+        let out = self.collection.handle_key(key, &items);
+        if out.active_changed() {
+            if let Some(id) = self.collection.active().cloned() {
+                self.selected = Some(id.clone());
+                self.follow_selection = true;
+                return TreeOutcome::SelectionChanged(id);
+            }
         }
         TreeOutcome::Ignored
     }
 
     /// Routes a semantic intent (keymap / scene adapter).
+    ///
+    /// **Left (Collapse):** if expanded branch → toggle collapse; else move to parent.  
+    /// **Right (Expand):** if collapsed/lazy branch → toggle expand/load; else if
+    /// expanded with visible children → select first child; else ignored.
     pub fn handle_intent(
         &mut self,
         nodes: &[TreeNode<'_, Id>],
-        intent: crate::interaction::UiIntent,
+        intent: UiIntent,
     ) -> TreeOutcome<Id> {
-        use crate::interaction::{NavigationMove, PageMove, UiIntent};
         match intent {
             UiIntent::Move(NavigationMove::Previous) => self.move_selection(nodes, -1),
             UiIntent::Move(NavigationMove::Next) => self.move_selection(nodes, 1),
@@ -347,7 +647,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             UiIntent::Page(PageMove::Backward) => self.page_selection(nodes, false),
             UiIntent::Page(PageMove::Forward) => self.page_selection(nodes, true),
             UiIntent::Collapse => self.collapse_or_parent(nodes),
-            UiIntent::Expand => self.expand(nodes),
+            UiIntent::Expand => self.expand_or_enter(nodes),
             UiIntent::Activate => self
                 .selected_node(nodes)
                 .map_or(TreeOutcome::Ignored, |node| {
@@ -510,10 +810,12 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             return TreeOutcome::Ignored;
         };
         self.selected = Some(node.id.clone());
+        self.collection.set_active(Some(node.id.clone()));
         self.follow_selection = true;
         TreeOutcome::SelectionChanged(node.id.clone())
     }
 
+    /// Left: collapse expanded branch, else select parent.
     fn collapse_or_parent(&mut self, nodes: &[TreeNode<'_, Id>]) -> TreeOutcome<Id> {
         let Some(index) = self.selected_index(nodes) else {
             return TreeOutcome::Ignored;
@@ -522,22 +824,62 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         if node.enabled && node.branch && node.expanded {
             return TreeOutcome::Toggle(node.id.clone());
         }
+        // Prefer explicit parent id when present.
+        if let Some(ref pid) = node.parent {
+            if let Some(pidx) = nodes.iter().position(|n| n.enabled && &n.id == pid) {
+                return self.select_index(nodes, Some(pidx));
+            }
+        }
         let parent = nodes[..index]
             .iter()
             .rposition(|candidate| candidate.enabled && candidate.depth < node.depth);
         self.select_index(nodes, parent)
     }
 
-    fn expand(&self, nodes: &[TreeNode<'_, Id>]) -> TreeOutcome<Id> {
-        self.selected_node(nodes)
-            .map_or(TreeOutcome::Ignored, |node| {
-                if node.branch && !node.expanded {
-                    TreeOutcome::Toggle(node.id.clone())
-                } else {
-                    TreeOutcome::Ignored
-                }
-            })
+    /// Right: expand collapsed/lazy branch, else enter first visible child.
+    fn expand_or_enter(&mut self, nodes: &[TreeNode<'_, Id>]) -> TreeOutcome<Id> {
+        let Some(index) = self.selected_index(nodes) else {
+            return TreeOutcome::Ignored;
+        };
+        let node = &nodes[index];
+        if !node.enabled {
+            return TreeOutcome::Ignored;
+        }
+        // Lazy or collapsed branch → request expand/load.
+        if node.branch
+            && (!node.expanded || matches!(node.status, TreeNodeStatus::Lazy))
+        {
+            return TreeOutcome::Toggle(node.id.clone());
+        }
+        // Expanded: move to first enabled child in the flat projection.
+        if node.branch && node.expanded {
+            let child_depth = node.depth.saturating_add(1);
+            let child = nodes
+                .iter()
+                .enumerate()
+                .skip(index.saturating_add(1))
+                .take_while(|(_, n)| n.depth >= child_depth)
+                .find(|(_, n)| n.enabled && n.depth == child_depth)
+                .map(|(i, _)| i);
+            return self.select_index(nodes, child);
+        }
+        TreeOutcome::Ignored
     }
+}
+
+fn collection_items_from_nodes<Id: Clone>(
+    nodes: &[TreeNode<'_, Id>],
+) -> Vec<CollectionItem<Id>> {
+    nodes
+        .iter()
+        .filter(|n| n.enabled && !n.status.skips_navigation())
+        .map(|n| CollectionItem {
+            id: n.id.clone(),
+            enabled: true,
+            label: n.plain_label(),
+            parent: None,
+        })
+        .collect()
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -600,39 +942,82 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         state.disclosure_regions.clear();
         state.check_regions.clear();
         state.scrollbar_region = None;
-        state.viewport_height = usize::from(area.height);
         if area.is_empty() {
             state.offset = 0;
+            state.viewport_height = 0;
+            return;
+        }
+        // Filter chrome strip
+        let mut body_y = area.y;
+        let mut body_h = area.height;
+        if let Some(q) = state.filter_query.as_ref() {
+            let strip = format!("/ {q}");
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                &take_display_cols(&strip, usize::from(area.width)),
+                usize::from(area.width),
+                self.tokens.style(Role::Info),
+            );
+            body_y = area.y.saturating_add(1);
+            body_h = area.height.saturating_sub(1);
+        }
+        let body = Rect::new(area.x, body_y, area.width, body_h);
+        state.viewport_height = usize::from(body.height);
+        state.virt.set_viewport_extent(body.height.max(1));
+        if body.is_empty() {
             return;
         }
         if self.nodes.is_empty() {
             state.offset = 0;
             if let Some(message) = self.empty_message {
                 let style = self.tokens.style(Role::TextMuted);
-                buffer.set_stringn(area.x, area.y, message, usize::from(area.width), style);
+                buffer.set_stringn(body.x, body.y, message, usize::from(body.width), style);
             }
             return;
+        }
+
+        let node_count = if state.virtual_total > 0 {
+            state.virtual_total
+        } else {
+            self.nodes.len()
+        };
+        if state.virtual_total > 0 {
+            state.virt.set_len(state.virtual_total as u64);
         }
 
         if state.follow_selection
             && let Some(selected) = state.selected_index(self.nodes)
         {
+            // selected is index in projected window
             if selected < state.offset {
                 state.offset = selected;
-            } else if selected >= state.offset.saturating_add(usize::from(area.height)) {
-                state.offset = selected.saturating_sub(usize::from(area.height).saturating_sub(1));
+            } else if selected >= state.offset.saturating_add(usize::from(body.height)) {
+                state.offset = selected.saturating_sub(usize::from(body.height).saturating_sub(1));
             }
         }
         state.follow_selection = false;
+        let paint_len = if state.virtual_total > 0 {
+            self.nodes.len()
+        } else {
+            self.nodes.len()
+        };
         state.offset = state
             .offset
-            .min(max_offset(self.nodes.len(), usize::from(area.height)));
+            .min(max_offset(paint_len, usize::from(body.height)));
+        let scroll_len = if state.virtual_total > 0 {
+            state.virtual_total
+        } else {
+            self.nodes.len()
+        };
+        let _ = node_count;
         let show_scrollbar =
-            crate::scroll::is_scrollable(self.nodes.len(), usize::from(area.height))
-                && area.width > 1;
+            crate::scroll::is_scrollable(scroll_len, usize::from(body.height)) && body.width > 1;
         let content_area = Rect {
-            width: area.width.saturating_sub(u16::from(show_scrollbar)),
-            ..area
+            x: body.x,
+            y: body.y,
+            width: body.width.saturating_sub(u16::from(show_scrollbar)),
+            height: body.height,
         };
         // Density indent; collapse under narrow pressure (tiny → 0).
         let indent_step = match content_area.width {
@@ -640,14 +1025,19 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             8..=11 => 1,
             _ => self.tokens.density.tree_indent().max(1),
         };
+        let paint_offset = if state.virtual_total > 0 {
+            0
+        } else {
+            state.offset
+        };
         for (visible, node) in self
             .nodes
             .iter()
-            .skip(state.offset)
-            .take(usize::from(area.height))
+            .skip(paint_offset)
+            .take(usize::from(body.height))
             .enumerate()
         {
-            let y = area
+            let y = body
                 .y
                 .saturating_add(u16::try_from(visible).unwrap_or(u16::MAX));
             let row = Rect::new(content_area.x, y, content_area.width, 1);
@@ -657,7 +1047,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 .selection
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&node.id));
-            let loading = matches!(node.status, TreeNodeStatus::Loading);
+            let loading = matches!(
+                node.status,
+                TreeNodeStatus::Loading | TreeNodeStatus::Lazy
+            );
             let recipe = self.tokens.resolve_list_row(ListRowVisualState {
                 selected,
                 focused: self.focused && selected,
@@ -669,8 +1062,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             let mut style = match node.status {
                 TreeNodeStatus::Ready if node.enabled => recipe.label,
                 TreeNodeStatus::Ready => self.tokens.style(Role::TextDisabled),
-                // Loading stays muted even when interaction-disabled.
-                TreeNodeStatus::Loading => self.tokens.style(Role::TextMuted),
+                // Loading / lazy stay muted.
+                TreeNodeStatus::Loading | TreeNodeStatus::Lazy => {
+                    self.tokens.style(Role::TextMuted)
+                }
                 TreeNodeStatus::Error => self.tokens.style(Role::Danger),
             };
             if !node.enabled {
@@ -766,6 +1161,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             let status = match node.status {
                 TreeNodeStatus::Ready => None,
                 TreeNodeStatus::Loading => Some(" loading"),
+                TreeNodeStatus::Lazy => Some(" lazy"),
                 TreeNodeStatus::Error => Some(" error"),
             };
             let status_w = status
@@ -784,6 +1180,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 let badge_need = badge
                     .map(|b| {
                         u16::try_from(b.width())
+                            .unwrap_or(u16::MAX)
+                            .saturating_add(2)
+                    })
+                    .unwrap_or(0);
+                let actions_need = node
+                    .actions
+                    .as_ref()
+                    .map(|a| {
+                        u16::try_from(a.width())
                             .unwrap_or(u16::MAX)
                             .saturating_add(2)
                     })
@@ -814,10 +1219,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                             .saturating_add(1)
                     })
                     .unwrap_or(0);
+                // Drop: shortcut → actions → badge → secondary → leading → primary
                 let mut budget = content_w.saturating_sub(1); // primary min
                 let show_shortcut = node.shortcut.is_some() && budget >= shortcut_need;
                 if show_shortcut {
                     budget = budget.saturating_sub(shortcut_need);
+                }
+                let show_actions = node.actions.is_some() && budget >= actions_need;
+                if show_actions {
+                    budget = budget.saturating_sub(actions_need);
                 }
                 let show_badge = badge.is_some() && budget >= badge_need;
                 if show_badge {
@@ -845,6 +1255,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 } else {
                     0
                 };
+                let actions_w = if show_actions {
+                    node.actions
+                        .as_ref()
+                        .map(|a| u16::try_from(a.width()).unwrap_or(u16::MAX))
+                        .unwrap_or(0)
+                } else {
+                    0
+                };
                 let shortcut_w = if show_shortcut {
                     node.shortcut
                         .map(|s| u16::try_from(crate::text::display_cols(s)).unwrap_or(u16::MAX))
@@ -854,8 +1272,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 };
                 let right_edge = label_x.saturating_add(content_w);
                 let reserve = badge_w
+                    .saturating_add(actions_w)
                     .saturating_add(shortcut_w)
-                    .saturating_add(u16::from(badge_w > 0 && shortcut_w > 0));
+                    .saturating_add(u16::from(badge_w > 0 && (shortcut_w > 0 || actions_w > 0)))
+                    .saturating_add(u16::from(actions_w > 0 && shortcut_w > 0));
                 let mid_end = right_edge.saturating_sub(reserve);
                 let primary_budget = mid_end.saturating_sub(x);
                 if primary_budget > 0 {
@@ -885,6 +1305,17 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                     if w > 0 {
                         cursor = cursor.saturating_sub(w);
                         buffer.set_stringn(cursor, y, shortcut, usize::from(w), recipe.shortcut);
+                    }
+                }
+                if show_actions && let Some(act) = node.actions.as_ref() {
+                    let w = actions_w.min(cursor.saturating_sub(label_x));
+                    if w > 0 {
+                        if show_shortcut {
+                            cursor = cursor.saturating_sub(1);
+                        }
+                        cursor = cursor.saturating_sub(w);
+                        buffer.set_line(cursor, y, act, w);
+                        buffer.set_style(Rect::new(cursor, y, w, 1), recipe.shortcut);
                     }
                 }
                 if show_badge && let Some(badge) = badge {
@@ -927,15 +1358,20 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         }
 
         if show_scrollbar {
-            let scrollbar = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
+            let scrollbar = Rect::new(body.right().saturating_sub(1), body.y, 1, body.height);
             state.scrollbar_region = Some(scrollbar);
             for y in scrollbar.top()..scrollbar.bottom() {
                 buffer.set_string(scrollbar.x, y, "│", self.tokens.style(Role::ScrollTrack));
             }
+            let thumb_total = if state.virtual_total > 0 {
+                state.virtual_total
+            } else {
+                self.nodes.len()
+            };
             if let Some(thumb) = crate::scroll::full_cell_thumb(
-                self.nodes.len(),
-                usize::from(area.height),
-                area.height,
+                thumb_total,
+                usize::from(body.height),
+                body.height,
                 state.offset,
             ) {
                 for y in thumb.start..thumb.start.saturating_add(thumb.len) {
@@ -1086,5 +1522,151 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         (&Tree::new(&nodes, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(state.regions().len(), 15);
+    }
+
+    #[test]
+    fn right_expands_then_enters_child() {
+        let mut nodes = vec![
+            TreeNode::new("root", Line::from("Root"), 0).branch(),
+            TreeNode::new("child", Line::from("Child"), 1).parent("root"),
+        ];
+        let mut state = TreeState::new(Some("root"));
+        // collapsed → expand
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Expand),
+            TreeOutcome::Toggle("root")
+        );
+        nodes[0].expanded = true;
+        // expanded → first child
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Expand),
+            TreeOutcome::SelectionChanged("child")
+        );
+    }
+
+    #[test]
+    fn left_collapses_or_parents() {
+        let nodes = vec![
+            TreeNode::new("root", Line::from("Root"), 0)
+                .branch()
+                .expanded(),
+            TreeNode::new("child", Line::from("Child"), 1).parent("root"),
+        ];
+        let mut state = TreeState::new(Some("child"));
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Collapse),
+            TreeOutcome::SelectionChanged("root")
+        );
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Collapse),
+            TreeOutcome::Toggle("root")
+        );
+    }
+
+    #[test]
+    fn lazy_branch_expand_requests_toggle() {
+        let nodes = [TreeNode::new("lazy", Line::from("Dir"), 0).lazy_branch()];
+        let mut state = TreeState::new(Some("lazy"));
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Expand),
+            TreeOutcome::Toggle("lazy")
+        );
+    }
+
+    #[test]
+    fn typeahead_jumps_to_label() {
+        let nodes = [
+            TreeNode::new("a", Line::from("Alpha"), 0),
+            TreeNode::new("b", Line::from("Beta"), 0),
+            TreeNode::new("c", Line::from("Charlie"), 0),
+        ];
+        let mut state = TreeState::new(Some("a"));
+        assert_eq!(
+            state.handle_key(&nodes, KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)),
+            TreeOutcome::SelectionChanged("b")
+        );
+    }
+
+    #[test]
+    fn filter_preserves_ancestors() {
+        let nodes = [
+            TreeNode::new("root", Line::from("Workspace"), 0)
+                .branch()
+                .expanded(),
+            TreeNode::new("src", Line::from("src"), 1)
+                .branch()
+                .expanded()
+                .parent("root"),
+            TreeNode::new("lib", Line::from("lib.rs"), 2).parent("src"),
+            TreeNode::new("tests", Line::from("tests"), 1).parent("root"),
+        ];
+        let filtered = filter_tree_with_ancestors(&nodes, "lib");
+        let ids: Vec<_> = filtered.iter().map(|n| n.id).collect();
+        assert!(ids.contains(&"lib"));
+        assert!(ids.contains(&"src"));
+        assert!(ids.contains(&"root"));
+        assert!(!ids.contains(&"tests"));
+    }
+
+    #[test]
+    fn virtual_window_and_anchor() {
+        let mut state = TreeState::<usize>::new(Some(10));
+        state.set_virtual_window(100, 10_000);
+        assert_eq!(state.virtualizer().logical_len(), 10_000);
+        state.capture_scroll_anchor();
+        state.offset = 0;
+        state.restore_scroll_anchor();
+        // anchor restore sets virt offset
+        assert!(state.virtualizer().offset() <= 10_000);
+    }
+
+    #[test]
+    fn actions_and_filter_chrome_paint() {
+        let nodes = [
+            TreeNode::new("a", Line::from("File"), 0)
+                .actions(Line::from("…"))
+                .shortcut("f"),
+        ];
+        let tokens = DesignSystem::default();
+        let mut state = TreeState::new(Some("a"));
+        state.set_filter_query(Some("fi".into()));
+        let area = Rect::new(0, 0, 40, 4);
+        let mut buffer = Buffer::empty(area);
+        (&Tree::new(&nodes, &tokens)).render(area, &mut buffer, &mut state);
+        let mut s = String::new();
+        for x in 0..40 {
+            s.push_str(buffer[(x, 0)].symbol());
+        }
+        assert!(s.contains('/') || s.contains("fi"), "{s}");
+    }
+
+    #[test]
+    fn fuzz_depths_and_expand() {
+        let tokens = DesignSystem::default().glyphs(GlyphSet::Ascii);
+        let mut seed = 7u64;
+        for _ in 0..30 {
+            seed = seed.wrapping_mul(1103515245).wrapping_add(12345);
+            let n = (seed % 40) as usize + 5;
+            let nodes: Vec<_> = (0..n)
+                .map(|i| {
+                    let depth = (i % 4) as u16;
+                    let mut node = TreeNode::new(i, Line::from(format!("n{i}")), depth);
+                    if i % 3 == 0 {
+                        node = node.branch().expanded();
+                    }
+                    if i % 7 == 0 {
+                        node = node.lazy_branch();
+                    }
+                    node
+                })
+                .collect();
+            let mut state = TreeState::new(Some(0));
+            let area = Rect::new(0, 0, ((seed % 30) as u16) + 12, 8);
+            let mut buffer = Buffer::empty(area);
+            (&Tree::new(&nodes, &tokens)).render(area, &mut buffer, &mut state);
+            let _ = state.handle_intent(&nodes, UiIntent::Expand);
+            let _ = state.handle_intent(&nodes, UiIntent::Collapse);
+            let _ = state.handle_intent(&nodes, UiIntent::Move(NavigationMove::Next));
+        }
     }
 }

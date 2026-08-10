@@ -717,17 +717,21 @@ NotificationCenter::new(&system).paint(area, buf, &mut state);
 // Host persists: state.items().to_vec()`,
   },
   Tree: {
-    description: 'A navigable flattened hierarchy with disclosure and multi-select support.',
+    description:
+      'Hierarchical collection: stable IDs, lazy children, loading/error, expansion, cursor/selection/check, icons, metadata, context actions, typeahead; Left collapse/parent, Right expand/enter; ancestor-preserving filter; virtual window + scroll anchors; ASCII glyphs.',
     primaryStory: 'tree/navigation',
     usage: `use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Tree, TreeNode, TreeNodeStatus, TreeState}};
+use termrock::style::DesignSystem;
+use termrock::widgets::{Tree, TreeNode, TreeState, filter_tree_with_ancestors};
 
-let theme = Theme::default();
-let nodes = [TreeNode { id: "src", label: Line::from("src"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, depth: 0, branch: true, expanded: true, enabled: true, status: TreeNodeStatus::Ready }];
-let tokens = DesignTokens::default();
-let tree = Tree::new(&nodes, &tokens);
+let system = DesignSystem::default();
+let nodes = [
+    TreeNode::new("src", Line::from("src"), 0).branch().expanded(),
+    TreeNode::new("lazy", Line::from("vendor"), 1).lazy_branch().parent("src"),
+];
 let mut state = TreeState::new(Some("src"));
-let outcome = state.handle_key(&nodes, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
+// filter: filter_tree_with_ancestors(&nodes, "ven")
+Tree::new(&nodes, &system);`,
   },
   VirtualGrid: {
     description: 'A two-axis virtualized grid whose paint cost is bounded by caller-projected resident rows.',

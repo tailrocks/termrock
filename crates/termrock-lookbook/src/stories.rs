@@ -56,7 +56,7 @@ use termrock::{
         MatchTruncate, PresenceStatus,
         ListRow, ListState, ListDensity, ListSelectionMode, filter_list_rows,
         VirtualList, VirtualListState, VirtualListItem, VirtualListFollow, VirtualPageStatus,
-        StickyRegion,
+        StickyRegion, filter_tree_with_ancestors,
         LoadingView, LoadingOverlay, BusyBoundary, BusyBoundaryState, BusyMode,
         example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
         example_busy_optimistic, example_busy_stale,
@@ -1502,6 +1502,33 @@ pub(crate) fn stories() -> Vec<Story> {
             44,
             8,
             tree_deep,
+        ),
+        Story::new(
+            "tree/lazy",
+            "Tree lazy children",
+            "Tree",
+            "Lazy/unloaded branch, loading child, error child.",
+            44,
+            8,
+            tree_lazy_story,
+        ),
+        Story::new(
+            "tree/filter",
+            "Tree filter ancestors",
+            "Tree",
+            "Filter keeps matching nodes and ancestors.",
+            44,
+            8,
+            tree_filter_story,
+        ),
+        Story::new(
+            "tree/actions",
+            "Tree context actions",
+            "Tree",
+            "Context actions + typeahead-ready labels.",
+            48,
+            6,
+            tree_actions_story,
         ),
         Story::new(
             "progress/determinate",
@@ -8534,12 +8561,14 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: Some(Line::from("4 items")),
             depth: 0,
             branch: true,
             expanded: true,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            parent: None,
         },
         TreeNode {
             id: "documents",
@@ -8548,12 +8577,14 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: Some(Line::from("2 items")),
             depth: 1,
             branch: true,
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            parent: None,
         },
         TreeNode {
             id: "loading",
@@ -8562,12 +8593,14 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
             depth: 1,
             branch: true,
             expanded: false,
             enabled: false,
             status: TreeNodeStatus::Loading,
+            parent: None,
         },
         TreeNode {
             id: "notes",
@@ -8576,12 +8609,14 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: Some(Line::from("12 KiB")),
             depth: 1,
             branch: false,
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            parent: None,
         },
     ]
 }
@@ -8872,6 +8907,72 @@ fn tree_deep(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     ];
     let mut state = TreeState::new(Some("d4"));
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
+}
+
+fn tree_lazy_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().selection(termrock::style::SelectionChrome::Gutter);
+    let nodes = [
+        TreeNode::new("root", Line::from("project"), 0)
+            .branch()
+            .expanded(),
+        TreeNode::new("lazy", Line::from("node_modules"), 1)
+            .lazy_branch()
+            .parent("root")
+            .secondary(Line::from("not loaded")),
+        TreeNode::new("load", Line::from("fetching…"), 1)
+            .branch()
+            .loading()
+            .parent("root"),
+        TreeNode::new("err", Line::from("broken link"), 1)
+            .error()
+            .parent("root"),
+        TreeNode::new("src", Line::from("src"), 1)
+            .branch()
+            .expanded()
+            .parent("root"),
+        TreeNode::new("main", Line::from("main.rs"), 2)
+            .parent("src")
+            .actions(Line::from("open")),
+    ];
+    let mut state = TreeState::new(Some("lazy"));
+    frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
+}
+
+fn tree_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let all = [
+        TreeNode::new("root", Line::from("Workspace"), 0)
+            .branch()
+            .expanded(),
+        TreeNode::new("src", Line::from("src"), 1)
+            .branch()
+            .expanded()
+            .parent("root"),
+        TreeNode::new("lib", Line::from("lib.rs"), 2).parent("src"),
+        TreeNode::new("mod", Line::from("mod.rs"), 2).parent("src"),
+        TreeNode::new("docs", Line::from("docs"), 1).parent("root"),
+    ];
+    let mut state = TreeState::new(Some("lib"));
+    state.set_filter_query(Some("lib".into()));
+    let filtered: Vec<_> = filter_tree_with_ancestors(&all, "lib")
+        .into_iter()
+        .cloned()
+        .collect();
+    frame.render_stateful_widget(&Tree::new(&filtered, system), area, &mut state);
+}
+
+fn tree_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = [
+        TreeNode::new("f1", Line::from("README.md"), 0)
+            .leading(Line::from("·"))
+            .actions(Line::from("⏎ ⋯"))
+            .shortcut("o")
+            .badge(Line::from("md")),
+        TreeNode::new("f2", Line::from("Cargo.toml"), 0)
+            .actions(Line::from("edit"))
+            .secondary(Line::from("manifest")),
+    ];
+    let mut state = TreeState::new(Some("f1"));
+    frame.render_stateful_widget(&Tree::new(&nodes, system), area, &mut state);
 }
 
 fn tree(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -16505,12 +16606,14 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             secondary: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
             depth: 0,
             branch: true,
             expanded: true,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            parent: None,
         },
         TreeNode {
             id: "src",
@@ -16519,12 +16622,14 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             secondary: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
             depth: 1,
             branch: false,
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            parent: None,
         },
     ];
     let mut state = TreeState::new(Some("ws"));

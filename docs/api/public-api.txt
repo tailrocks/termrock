@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.31s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.61s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -32611,15 +32611,23 @@ pub fn termrock::widgets::TreeNavigationOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TreeNavigationOutcome<Id>
 #[non_exhaustive] pub enum termrock::widgets::TreeNodeStatus
 pub termrock::widgets::TreeNodeStatus::Error
+pub termrock::widgets::TreeNodeStatus::Lazy
 pub termrock::widgets::TreeNodeStatus::Loading
 pub termrock::widgets::TreeNodeStatus::Ready
+impl termrock::widgets::TreeNodeStatus
+pub const fn termrock::widgets::TreeNodeStatus::id(self) -> &'static str
+pub const fn termrock::widgets::TreeNodeStatus::skips_navigation(self) -> bool
 impl core::clone::Clone for termrock::widgets::TreeNodeStatus
 pub fn termrock::widgets::TreeNodeStatus::clone(&self) -> termrock::widgets::TreeNodeStatus
 impl core::cmp::Eq for termrock::widgets::TreeNodeStatus
 impl core::cmp::PartialEq for termrock::widgets::TreeNodeStatus
 pub fn termrock::widgets::TreeNodeStatus::eq(&self, &termrock::widgets::TreeNodeStatus) -> bool
+impl core::default::Default for termrock::widgets::TreeNodeStatus
+pub fn termrock::widgets::TreeNodeStatus::default() -> termrock::widgets::TreeNodeStatus
 impl core::fmt::Debug for termrock::widgets::TreeNodeStatus
 pub fn termrock::widgets::TreeNodeStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TreeNodeStatus
+pub fn termrock::widgets::TreeNodeStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for termrock::widgets::TreeNodeStatus
 impl core::marker::StructuralPartialEq for termrock::widgets::TreeNodeStatus
 impl core::marker::Freeze for termrock::widgets::TreeNodeStatus
@@ -58117,6 +58125,7 @@ impl<T> core::convert::From<T> for termrock::widgets::TreeNavigationState<Id>
 pub fn termrock::widgets::TreeNavigationState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TreeNavigationState<Id>
 pub struct termrock::widgets::TreeNode<'a, Id>
+pub termrock::widgets::TreeNode::actions: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::TreeNode::badge: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::TreeNode::branch: bool
 pub termrock::widgets::TreeNode::depth: u16
@@ -58125,20 +58134,26 @@ pub termrock::widgets::TreeNode::expanded: bool
 pub termrock::widgets::TreeNode::id: Id
 pub termrock::widgets::TreeNode::label: ratatui_core::text::line::Line<'a>
 pub termrock::widgets::TreeNode::leading: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::TreeNode::parent: core::option::Option<Id>
 pub termrock::widgets::TreeNode::secondary: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::TreeNode::shortcut: core::option::Option<&'a str>
 pub termrock::widgets::TreeNode::status: termrock::widgets::TreeNodeStatus
 pub termrock::widgets::TreeNode::trailing: core::option::Option<ratatui_core::text::line::Line<'a>>
 impl<'a, Id> termrock::widgets::TreeNode<'a, Id>
+pub fn termrock::widgets::TreeNode<'a, Id>::actions(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::badge(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::branch(self) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::composed(&self) -> termrock::widgets::ComposedRow<'a, ()>
 pub fn termrock::widgets::TreeNode<'a, Id>::disabled(self) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::error(self) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::expanded(self) -> Self
+pub fn termrock::widgets::TreeNode<'a, Id>::lazy(self) -> Self
+pub fn termrock::widgets::TreeNode<'a, Id>::lazy_branch(self) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::leading(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::loading(self) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::new(Id, ratatui_core::text::line::Line<'a>, u16) -> Self
+pub fn termrock::widgets::TreeNode<'a, Id>::parent(self, Id) -> Self
+pub fn termrock::widgets::TreeNode<'a, Id>::plain_label(&self) -> alloc::string::String
 pub fn termrock::widgets::TreeNode<'a, Id>::secondary(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::shortcut(self, &'a str) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::trailing(self, ratatui_core::text::line::Line<'a>) -> Self
@@ -58184,18 +58199,28 @@ pub fn termrock::widgets::TreeState<Id>::handle_intent(&mut self, &[termrock::wi
 pub fn termrock::widgets::TreeState<Id>::handle_key(&mut self, &[termrock::widgets::TreeNode<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::TreeOutcome<Id>
 pub fn termrock::widgets::TreeState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id> termrock::widgets::TreeState<Id>
+pub fn termrock::widgets::TreeState<Id>::capture_scroll_anchor(&mut self)
+pub fn termrock::widgets::TreeState<Id>::clear_typeahead(&mut self)
 pub fn termrock::widgets::TreeState<Id>::disable_multi_select(&mut self)
 pub fn termrock::widgets::TreeState<Id>::enable_multi_select(&mut self)
+pub fn termrock::widgets::TreeState<Id>::filter_query(&self) -> core::option::Option<&str>
 pub const fn termrock::widgets::TreeState<Id>::hovered(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::TreeState<Id>::new(core::option::Option<Id>) -> Self
+pub fn termrock::widgets::TreeState<Id>::new(core::option::Option<Id>) -> Self where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::TreeState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::TreeState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
+pub fn termrock::widgets::TreeState<Id>::restore_scroll_anchor(&mut self)
 pub fn termrock::widgets::TreeState<Id>::scroll_by(&mut self, isize, usize) -> bool
 pub fn termrock::widgets::TreeState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
-pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::TreeState<Id>::selected(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::TreeState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
 pub fn termrock::widgets::TreeState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
+pub fn termrock::widgets::TreeState<Id>::set_filter_query(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::TreeState<Id>::set_sticky(&mut self, termrock::widgets::StickyRegion)
+pub fn termrock::widgets::TreeState<Id>::set_virtual_window(&mut self, usize, usize)
+pub fn termrock::widgets::TreeState<Id>::typeahead_buffer(&self) -> &str
+pub const fn termrock::widgets::TreeState<Id>::virtualizer(&self) -> &termrock::widgets::Virtualizer
+pub fn termrock::widgets::TreeState<Id>::virtualizer_mut(&mut self) -> &mut termrock::widgets::Virtualizer
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::clone(&self) -> termrock::widgets::TreeState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TreeState<Id>
@@ -59192,6 +59217,7 @@ pub const termrock::widgets::TOAST_STACK_GAP: u16
 pub const termrock::widgets::TOOLTIP_DEFAULT_DELAY_MS: u64
 pub const termrock::widgets::TOOLTIP_DEFAULT_MAX_WIDTH: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str
+pub const termrock::widgets::TREE_DEFAULT_OVERSCAN: u16
 pub const termrock::widgets::TREE_NAV_INDENT: u16
 pub const termrock::widgets::TREE_NAV_MAX_INDENT_DEPTH: u16
 pub const termrock::widgets::TREE_NAV_NARROW_MAX_WIDTH: u16
@@ -59310,6 +59336,7 @@ pub fn termrock::widgets::filter_help_entries(&[termrock::widgets::HelpEntry], &
 pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termrock::widgets::HistoryEntry<Id>], &str) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<Id>>
 pub fn termrock::widgets::filter_list_rows<'a, Id: core::clone::Clone>(&'a [termrock::widgets::ListRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::ListRow<'a, Id>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
+pub fn termrock::widgets::filter_tree_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeNode<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeNode<'a, Id>>
 pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>
 pub const fn termrock::widgets::fixed_visible_range(u64, u16, u64) -> (u64, u64)
 pub fn termrock::widgets::flatten_menu_commands<Id: core::clone::Clone>(&[termrock::widgets::MenuBarMenu<Id>]) -> alloc::vec::Vec<termrock::widgets::MenuCommandRef<Id>>
