@@ -1474,6 +1474,99 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "observability-dashboard".into(),
+            title: "Observability Dashboard".into(),
+            description: "Logs and metrics operational monitoring composition: SearchInput, LogStream, EventStream, MetricsDashboard, ObjectInspector, StatusBar; live/pause, dropped/reconnect, bookmarks, drill-down; host owns acquisition.".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::observability_dashboard".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/observability_dashboard.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec!["termrock/Panel".into()];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("Workbench".into());
+                c.min_width = Some(40);
+                c.min_height = Some(12);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "search".into(),
+                    label: "Query / filter".into(),
+                },
+                AnatomyPartRef {
+                    id: "metrics".into(),
+                    label: "Metrics + alerts".into(),
+                },
+                AnatomyPartRef {
+                    id: "logs".into(),
+                    label: "Log stream".into(),
+                },
+                AnatomyPartRef {
+                    id: "events".into(),
+                    label: "Event stream".into(),
+                },
+                AnatomyPartRef {
+                    id: "inspector".into(),
+                    label: "Details inspector".into(),
+                },
+                AnatomyPartRef {
+                    id: "status".into(),
+                    label: "Status summary".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "normal".into(),
+                    description: "Full multi-pane".into(),
+                },
+                VariantRef {
+                    id: "narrow".into(),
+                    description: "No inspector".into(),
+                },
+                VariantRef {
+                    id: "tiny".into(),
+                    description: "Search + logs + status".into(),
+                },
+            ],
+            outcomes: vec![
+                OutcomeRef {
+                    id: "LiveToggled".into(),
+                },
+                OutcomeRef {
+                    id: "BookmarkToggled".into(),
+                },
+                OutcomeRef {
+                    id: "AckDropped".into(),
+                },
+                OutcomeRef {
+                    id: "DrillDown".into(),
+                },
+            ],
+            stories: vec![
+                "observability-dashboard/basic".into(),
+                "observability-dashboard/failure".into(),
+                "observability-dashboard/narrow".into(),
+                "observability-dashboard/unicode".into(),
+            ],
+            tests: vec!["patterns::observability_dashboard".into()],
+            migration: Some("migrations/0242-v0.13.0-logs-observability-dashboard.md".into()),
+            provenance: prov("crates/termrock/src/patterns/observability_dashboard.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 

@@ -6945,6 +6945,42 @@ pub(crate) fn stories() -> Vec<Story> {
             git_workbench_empty,
         ),
         Story::new(
+            "observability-dashboard/basic",
+            "Observability dashboard",
+            "ObservabilityDashboard",
+            "Live logs + events + metrics composition.",
+            120,
+            36,
+            observability_dashboard_basic,
+        ),
+        Story::new(
+            "observability-dashboard/failure",
+            "Observability reconnect/dropped",
+            "ObservabilityDashboard",
+            "Reconnecting acquisition + dropped-data warning.",
+            100,
+            28,
+            observability_dashboard_failure,
+        ),
+        Story::new(
+            "observability-dashboard/narrow",
+            "Observability narrow",
+            "ObservabilityDashboard",
+            "Narrow density — inspector collapsed.",
+            70,
+            24,
+            observability_dashboard_narrow,
+        ),
+        Story::new(
+            "observability-dashboard/unicode",
+            "Observability unicode",
+            "ObservabilityDashboard",
+            "Unicode-safe log line paint path.",
+            100,
+            28,
+            observability_dashboard_unicode,
+        ),
+        Story::new(
             "permission-prompt/basic",
             "Permission prompt",
             "PermissionPrompt",
@@ -25177,6 +25213,77 @@ fn git_workbench_clean(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 
 fn git_workbench_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Empty);
+}
+
+#[derive(Clone, Copy)]
+enum ObservabilityStoryKind {
+    Basic,
+    Failure,
+    Narrow,
+    Unicode,
+}
+
+fn paint_observability_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    kind: ObservabilityStoryKind,
+) {
+    use termrock::patterns::{
+        example_log_inspect_fields, example_observability_alerts, example_observability_events,
+        example_observability_logs, example_observability_tiles, render_observability_dashboard,
+        seed_failure_state, ObservabilityDashboardState, ObservabilityDashboardSurfaces,
+        ObservabilityDensity, ObservabilityLiveState,
+    };
+
+    let mut state = ObservabilityDashboardState::new();
+    match kind {
+        ObservabilityStoryKind::Narrow => {
+            state.density = Some(ObservabilityDensity::Narrow);
+        }
+        ObservabilityStoryKind::Failure => {
+            seed_failure_state(&mut state);
+        }
+        ObservabilityStoryKind::Unicode | ObservabilityStoryKind::Basic => {
+            state.live = ObservabilityLiveState::Live;
+        }
+    }
+
+    let logs = example_observability_logs();
+    let events = example_observability_events();
+    let tiles = example_observability_tiles();
+    let alerts = example_observability_alerts();
+    let inspect = example_log_inspect_fields();
+
+    render_observability_dashboard(
+        frame.buffer_mut(),
+        area,
+        ObservabilityDashboardSurfaces {
+            system,
+            state: &mut state,
+            logs: &logs,
+            events: &events,
+            tiles: &tiles,
+            alerts: &alerts,
+            inspect_fields: &inspect,
+        },
+    );
+}
+
+fn observability_dashboard_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_observability_story(frame, area, system, ObservabilityStoryKind::Basic);
+}
+
+fn observability_dashboard_failure(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_observability_story(frame, area, system, ObservabilityStoryKind::Failure);
+}
+
+fn observability_dashboard_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_observability_story(frame, area, system, ObservabilityStoryKind::Narrow);
+}
+
+fn observability_dashboard_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_observability_story(frame, area, system, ObservabilityStoryKind::Unicode);
 }
 
 #[derive(Clone, Copy)]

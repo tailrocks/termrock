@@ -15,6 +15,7 @@ mod agent_workbench;
 mod app_shell;
 mod database_workbench;
 mod git_workbench;
+mod observability_dashboard;
 mod ops_dashboard;
 mod resource_browser;
 mod settings_screen;
@@ -49,6 +50,15 @@ pub use git_workbench::{
     GitWorkbenchPane, GitWorkbenchState, GitWorkbenchSurfaces,
 };
 pub use git_workbench::bench as git_workbench_bench;
+pub use observability_dashboard::{
+    burst_observability_logs, example_log_inspect_fields, example_observability_alerts,
+    example_observability_events, example_observability_logs, example_observability_tiles,
+    observability_dashboard_layout, observability_dashboard_layout_density,
+    render_observability_dashboard, seed_failure_state, ObservabilityDashboardOutcome,
+    ObservabilityDashboardState, ObservabilityDashboardSurfaces, ObservabilityDensity,
+    ObservabilityLiveState, ObservabilityPane,
+};
+pub use observability_dashboard::bench as observability_dashboard_bench;
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,
     AppShellSlots, AppShellZone,
