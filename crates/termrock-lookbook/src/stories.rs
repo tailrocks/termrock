@@ -7152,6 +7152,24 @@ pub(crate) fn stories() -> Vec<Story> {
             auth_entry_basic,
         ),
         Story::new(
+            "auth-entry/sign-in",
+            "Auth entry sign-in",
+            "AuthEntry",
+            "Password login gate (login-01 peer).",
+            56,
+            14,
+            auth_entry_sign_in,
+        ),
+        Story::new(
+            "auth-entry/email-only",
+            "Auth entry email-only",
+            "AuthEntry",
+            "Passwordless magic-link request (login-05 peer).",
+            48,
+            10,
+            auth_entry_email_only,
+        ),
+        Story::new(
             "input-otp/basic",
             "Input OTP",
             "InputOtp",
@@ -25805,6 +25823,26 @@ fn auth_entry_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut surfaces = AuthEntrySurfaces::english(system, &mut st);
     surfaces.aside_lines = example_auth_aside_lines();
     render_auth_entry(frame.buffer_mut(), area, surfaces);
+}
+
+fn auth_entry_sign_in(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{render_auth_entry, AuthEntryState, AuthEntrySurfaces};
+    let mut st = AuthEntryState::sign_in();
+    render_auth_entry(
+        frame.buffer_mut(),
+        area,
+        AuthEntrySurfaces::english(system, &mut st),
+    );
+}
+
+fn auth_entry_email_only(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{render_auth_entry, AuthEntryState, AuthEntrySurfaces};
+    let mut st = AuthEntryState::email_only();
+    render_auth_entry(
+        frame.buffer_mut(),
+        area,
+        AuthEntrySurfaces::english(system, &mut st),
+    );
 }
 
 fn input_otp_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

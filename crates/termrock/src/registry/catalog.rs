@@ -1937,7 +1937,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             schema: CONTRACT_SCHEMA,
             id: "auth-entry".into(),
             title: "Auth Entry".into(),
-            description: "Keyboard-first sign-up/sign-in gate: identity + password (+ confirm/terms), validation, submit/cancel, mode switch; host owns auth I/O and secrets.".into(),
+            description: "Keyboard-first sign-up/sign-in/email-only gate: identity + password (+ confirm/terms) or passwordless request, validation, submit/cancel, forgot/oauth secondaries; host owns auth I/O and secrets.".into(),
             kind: RegistryItemKind::Block,
             license: "Apache-2.0".into(),
             module: Some("termrock::patterns::auth_entry".into()),
@@ -1979,7 +1979,11 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                 },
                 VariantRef {
                     id: "sign-in".into(),
-                    description: "Existing account".into(),
+                    description: "Existing account password login".into(),
+                },
+                VariantRef {
+                    id: "email-only".into(),
+                    description: "Passwordless magic-link request".into(),
                 },
             ],
             outcomes: vec![
@@ -1995,10 +1999,17 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                 OutcomeRef {
                     id: "Cancelled".into(),
                 },
+                OutcomeRef {
+                    id: "SecondaryAction".into(),
+                },
             ],
-            stories: vec!["auth-entry/basic".into()],
+            stories: vec![
+                "auth-entry/basic".into(),
+                "auth-entry/sign-in".into(),
+                "auth-entry/email-only".into(),
+            ],
             tests: vec!["patterns::auth_entry".into()],
-            migration: Some("migrations/0248-v0.13.0-auth-entry-signup-blocks.md".into()),
+            migration: Some("migrations/0249-v0.13.0-auth-entry-login-email-only.md".into()),
             provenance: prov("crates/termrock/src/patterns/auth_entry.rs"),
             source_hash: None,
             complete: true,

@@ -1,20 +1,22 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **AuthEntry** — keyboard-first sign-up / sign-in composition (shadcn signup
-//! blocks peer for TUI).
+//! **AuthEntry** — keyboard-first sign-up / sign-in / email-only composition
+//! (shadcn signup + login blocks peer for TUI).
 //!
 //! **Mission.** Multi-field credential entry (identity + password, optional
-//! confirm + terms), validation feedback, primary submit + cancel, and mode
-//! switch (sign-up ↔ sign-in). **Host owns** network auth, OAuth, CAPTCHA,
-//! email verification, and secret storage — outcomes never embed password
-//! plaintext; host reads secrets via accessors on this state.
+//! confirm + terms, or **email-only** passwordless request), validation
+//! feedback, primary submit + cancel, secondary actions (forgot-password,
+//! host OAuth id), and mode switch. **Host owns** network auth, OAuth,
+//! CAPTCHA, magic-link delivery, and secret storage — outcomes never embed
+//! password plaintext; host reads secrets via accessors on this state.
 //!
 //! **vs bare Form / SetupWizard account step.** Focused single-gate auth
 //! surface for CLI login/register flows; not a multi-step onboarding wizard and
 //! not a product-branded splash.
 //!
-//! Research: shadcn signup-01…04, CLI login prompts, cloud auth TUI gates.
+//! Research: shadcn signup-01…04, login-01…05, CLI login prompts, cloud auth
+//! TUI gates.
 
 use ratatui_core::{
     buffer::Buffer,
@@ -41,8 +43,10 @@ pub enum AuthEntryMode {
     /// Create account (confirm + optional terms).
     #[default]
     SignUp,
-    /// Existing account.
+    /// Existing account (identity + password).
     SignIn,
+    /// Passwordless / magic-link request (identity only; host delivers).
+    EmailOnly,
 }
 
 impl AuthEntryMode {
@@ -52,6 +56,7 @@ impl AuthEntryMode {
         match self {
             Self::SignUp => "sign-up",
             Self::SignIn => "sign-in",
+            Self::EmailOnly => "email-only",
         }
     }
 
@@ -61,15 +66,23 @@ impl AuthEntryMode {
         match self {
             Self::SignUp => "Create account",
             Self::SignIn => "Sign in",
+            Self::EmailOnly => "Continue with email",
         }
     }
 
-    /// Toggle peer mode.
+    /// Whether password field is part of this mode.
+    #[must_use]
+    pub const fn requires_password(self) -> bool {
+        !matches!(self, Self::EmailOnly)
+    }
+
+    /// Toggle peer mode (sign-up ↔ sign-in; email-only ↔ sign-in).
     #[must_use]
     pub const fn toggle(self) -> Self {
         match self {
             Self::SignUp => Self::SignIn,
             Self::SignIn => Self::SignUp,
+            Self::EmailOnly => Self::SignIn,
         }
     }
 }
@@ -134,7 +147,8 @@ pub enum AuthEntryOutcome {
         errors: Vec<AuthFieldError>,
     },
     /// Valid submit — host reads secrets via [`AuthEntryState::password_secret`]
-    /// / [`AuthEntryState::take_password_secret`] (and confirm accessors if needed).
+    /// / [`AuthEntryState::take_password_secret`] when `password_filled`.
+    /// For [`AuthEntryMode::EmailOnly`], host sends magic-link / OTP request.
     Submitted {
         /// Mode at submit time.
         mode: AuthEntryMode,
@@ -146,6 +160,8 @@ pub enum AuthEntryOutcome {
         confirm_filled: bool,
         /// Terms accepted flag.
         terms_accepted: bool,
+        /// Passwordless request (email-only / magic-link gate).
+        passwordless: bool,
     },
     /// Esc / cancel.
     Cancelled,
@@ -201,10 +217,19 @@ impl AuthEntryState {
         s
     }
 
-    /// Sign-in defaults (no confirm / terms).
+    /// Sign-in defaults (identity + password; no confirm / terms).
     #[must_use]
     pub fn sign_in() -> Self {
         let mut s = Self::blank(AuthEntryMode::SignIn);
+        s.require_confirm = false;
+        s.require_terms = false;
+        s
+    }
+
+    /// Email-only / passwordless request (login-05 peer). Host delivers magic link.
+    #[must_use]
+    pub fn email_only() -> Self {
+        let mut s = Self::blank(AuthEntryMode::EmailOnly);
         s.require_confirm = false;
         s.require_terms = false;
         s
@@ -232,6 +257,12 @@ impl AuthEntryState {
             shell_focused: true,
             pending: false,
         }
+    }
+
+    /// Whether this gate requires a password field.
+    #[must_use]
+    pub const fn is_passwordless(&self) -> bool {
+        !self.mode.requires_password()
     }
 
     /// Mode.
@@ -346,9 +377,17 @@ impl AuthEntryState {
         AuthEntryOutcome::ModeSwitched { mode }
     }
 
+    /// Switch to email-only passwordless gate (login-05).
+    pub fn set_email_only(&mut self) -> AuthEntryOutcome {
+        self.set_mode(AuthEntryMode::EmailOnly)
+    }
+
     /// Visible field order for current mode / flags.
     #[must_use]
     pub fn field_order(&self) -> Vec<AuthEntryField> {
+        if matches!(self.mode, AuthEntryMode::EmailOnly) {
+            return vec![AuthEntryField::Identity];
+        }
         let mut v = vec![AuthEntryField::Identity, AuthEntryField::Password];
         if self.require_confirm && matches!(self.mode, AuthEntryMode::SignUp) {
             v.push(AuthEntryField::Confirm);
@@ -407,7 +446,7 @@ impl AuthEntryState {
                 message: "Identity is required".into(),
             });
         }
-        if self.secrets.password.is_empty() {
+        if self.mode.requires_password() && self.secrets.password.is_empty() {
             self.field_errors.push(AuthFieldError {
                 field: AuthEntryField::Password,
                 message: "Password is required".into(),
@@ -453,12 +492,14 @@ impl AuthEntryState {
             };
         }
         self.host_error = None;
+        let passwordless = self.is_passwordless();
         AuthEntryOutcome::Submitted {
             mode: self.mode,
             identity: self.identity.value().trim().to_owned(),
-            password_filled: !self.secrets.password.is_empty(),
-            confirm_filled: !self.secrets.confirm.is_empty(),
+            password_filled: !passwordless && !self.secrets.password.is_empty(),
+            confirm_filled: !passwordless && !self.secrets.confirm.is_empty(),
             terms_accepted: self.terms.is_checked(),
+            passwordless,
         }
     }
 
@@ -483,11 +524,16 @@ impl AuthEntryState {
             return AuthEntryOutcome::Cancelled;
         }
 
-        // Ctrl+G / Alt+M — switch mode
+        // Ctrl+G / Alt+M — switch sign-up ↔ sign-in (email-only → sign-in)
         if (ctrl && matches!(key.code, KeyCode::Char('g' | 'G')))
             || (alt && matches!(key.code, KeyCode::Char('m' | 'M')))
         {
             return self.set_mode(self.mode.toggle());
+        }
+
+        // Ctrl+E — email-only / passwordless gate (login-05)
+        if ctrl && matches!(key.code, KeyCode::Char('e' | 'E')) {
+            return self.set_email_only();
         }
 
         // Ctrl+Enter always submit
@@ -495,7 +541,7 @@ impl AuthEntryState {
             return self.try_submit();
         }
 
-        // Tab focus
+        // Tab focus (single-field email-only: Tab still FocusMoved same wrap)
         if key.code == KeyCode::Tab && !ctrl && !alt {
             return self.move_focus(if shift { -1 } else { 1 });
         }
@@ -509,7 +555,7 @@ impl AuthEntryState {
                 id: "oauth:default".into(),
             };
         }
-        // Ctrl+F → forgot password (sign-in)
+        // Ctrl+F → forgot password (sign-in password path only)
         if ctrl
             && matches!(key.code, KeyCode::Char('f' | 'F'))
             && matches!(self.mode, AuthEntryMode::SignIn)
@@ -760,8 +806,8 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
         y = y.saturating_add(field_h.saturating_add(1));
     }
 
-    // Password
-    if y.saturating_add(1) < bottom && w > 0 {
+    // Password (not for email-only)
+    if state.mode.requires_password() && y.saturating_add(1) < bottom && w > 0 {
         let field_h = 2u16.min(bottom.saturating_sub(y));
         let fa = Rect::new(x, y, w, field_h);
         let val = if let Some(m) = pw_err {
@@ -818,7 +864,10 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
         let hint = match state.mode {
             AuthEntryMode::SignUp => "Tab fields · Enter submit · Esc cancel · Ctrl+G sign in",
             AuthEntryMode::SignIn => {
-                "Tab fields · Enter submit · Esc cancel · Ctrl+G sign up · Ctrl+F forgot"
+                "Tab · Enter submit · Esc · Ctrl+G sign up · Ctrl+F forgot · Ctrl+E email"
+            }
+            AuthEntryMode::EmailOnly => {
+                "Enter request link · Esc cancel · Ctrl+G password · Ctrl+O oauth"
             }
         };
         buffer.set_stringn(
@@ -973,6 +1022,7 @@ mod tests {
                 password_filled: true,
                 confirm_filled: true,
                 terms_accepted: true,
+                passwordless: false,
             } => {
                 assert_eq!(identity, "a@b.co");
                 // host still reads secret separately
@@ -985,6 +1035,142 @@ mod tests {
         assert!(
             !dbg.contains("hunter2x"),
             "secret leaked in outcome debug: {dbg}"
+        );
+    }
+
+    #[test]
+    fn sign_in_submit_and_forgot_password() {
+        let mut st = AuthEntryState::sign_in();
+        assert_eq!(st.mode(), AuthEntryMode::SignIn);
+        assert_eq!(
+            st.field_order(),
+            vec![AuthEntryField::Identity, AuthEntryField::Password]
+        );
+        // empty submit blocked
+        let out = st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        assert!(
+            matches!(out, AuthEntryOutcome::ValidationFailed { .. }),
+            "{out:?}"
+        );
+        type_identity(&mut st, "user@cli.dev");
+        type_password(&mut st, "s3cret!!");
+        let out = st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        match out {
+            AuthEntryOutcome::Submitted {
+                mode: AuthEntryMode::SignIn,
+                ref identity,
+                password_filled: true,
+                passwordless: false,
+                ..
+            } => {
+                assert_eq!(identity, "user@cli.dev");
+                assert_eq!(st.password_secret(), "s3cret!!");
+            }
+            other => panic!("{other:?}"),
+        }
+        let dbg = format!("{out:?}");
+        assert!(!dbg.contains("s3cret!!"), "secret in outcome: {dbg}");
+        // forgot-password secondary
+        let out = st.handle_key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::CONTROL));
+        assert!(
+            matches!(
+                out,
+                AuthEntryOutcome::SecondaryAction { ref id } if id == "forgot-password"
+            ),
+            "{out:?}"
+        );
+        // oauth secondary
+        let out = st.handle_key(KeyEvent::new(KeyCode::Char('o'), KeyModifiers::CONTROL));
+        assert!(
+            matches!(
+                out,
+                AuthEntryOutcome::SecondaryAction { ref id } if id == "oauth:default"
+            ),
+            "{out:?}"
+        );
+    }
+
+    #[test]
+    fn email_only_passwordless_submit() {
+        let mut st = AuthEntryState::email_only();
+        assert!(st.is_passwordless());
+        assert_eq!(st.field_order(), vec![AuthEntryField::Identity]);
+        // no password required
+        let out = st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        assert!(
+            matches!(out, AuthEntryOutcome::ValidationFailed { ref errors } if errors
+                .iter()
+                .any(|e| e.field == AuthEntryField::Identity)
+                && !errors.iter().any(|e| e.field == AuthEntryField::Password)),
+            "{out:?}"
+        );
+        type_identity(&mut st, "magic@link.test");
+        let out = st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        match out {
+            AuthEntryOutcome::Submitted {
+                mode: AuthEntryMode::EmailOnly,
+                ref identity,
+                password_filled: false,
+                passwordless: true,
+                ..
+            } => {
+                assert_eq!(identity, "magic@link.test");
+                assert!(st.password_secret().is_empty());
+            }
+            other => panic!("{other:?}"),
+        }
+        // Ctrl+G → sign-in
+        let out = st.handle_key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::CONTROL));
+        assert!(
+            matches!(
+                out,
+                AuthEntryOutcome::ModeSwitched {
+                    mode: AuthEntryMode::SignIn
+                }
+            ),
+            "{out:?}"
+        );
+    }
+
+    #[test]
+    fn sign_in_ctrl_e_switches_to_email_only() {
+        let mut st = AuthEntryState::sign_in();
+        let out = st.handle_key(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL));
+        assert!(
+            matches!(
+                out,
+                AuthEntryOutcome::ModeSwitched {
+                    mode: AuthEntryMode::EmailOnly
+                }
+            ),
+            "{out:?}"
+        );
+        assert!(st.is_passwordless());
+    }
+
+    #[test]
+    fn paint_sign_in_smoke() {
+        let system = DesignSystem::default();
+        let mut st = AuthEntryState::sign_in();
+        type_identity(&mut st, "a@b.c");
+        let area = Rect::new(0, 0, 60, 16);
+        let mut buf = Buffer::empty(area);
+        render_auth_entry(
+            &mut buf,
+            area,
+            AuthEntrySurfaces::english(&system, &mut st),
+        );
+        let mut sample = String::new();
+        for y in 0..3 {
+            for x in 0..16 {
+                if let Some(c) = buf.cell((x, y)) {
+                    sample.push_str(c.symbol());
+                }
+            }
+        }
+        assert!(
+            sample.contains("Sign") || sample.contains("Email") || sample.contains('S'),
+            "{sample:?}"
         );
     }
 
