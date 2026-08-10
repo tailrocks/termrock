@@ -58,7 +58,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 8 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.32s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.80s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -25260,6 +25260,7 @@ pub termrock::widgets::ProgressKind::Determinate::fraction: f64
 pub termrock::widgets::ProgressKind::Indeterminate
 pub termrock::widgets::ProgressKind::Indeterminate::tick: u64
 impl termrock::widgets::ProgressKind
+pub fn termrock::widgets::ProgressKind::fraction(self) -> core::option::Option<f64>
 pub fn termrock::widgets::ProgressKind::indeterminate_from(termrock::runtime::FrameTick, termrock::style::Motion) -> Self
 impl core::clone::Clone for termrock::widgets::ProgressKind
 pub fn termrock::widgets::ProgressKind::clone(&self) -> termrock::widgets::ProgressKind
@@ -25299,6 +25300,166 @@ pub unsafe fn termrock::widgets::ProgressKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ProgressKind
 pub fn termrock::widgets::ProgressKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ProgressKind
+#[non_exhaustive] pub enum termrock::widgets::ProgressRecipe
+pub termrock::widgets::ProgressRecipe::Compact
+pub termrock::widgets::ProgressRecipe::Detailed
+pub termrock::widgets::ProgressRecipe::MultiLine
+impl termrock::widgets::ProgressRecipe
+pub const fn termrock::widgets::ProgressRecipe::id(self) -> &'static str
+pub const fn termrock::widgets::ProgressRecipe::preferred_height(self) -> u16
+impl core::clone::Clone for termrock::widgets::ProgressRecipe
+pub fn termrock::widgets::ProgressRecipe::clone(&self) -> termrock::widgets::ProgressRecipe
+impl core::cmp::Eq for termrock::widgets::ProgressRecipe
+impl core::cmp::PartialEq for termrock::widgets::ProgressRecipe
+pub fn termrock::widgets::ProgressRecipe::eq(&self, &termrock::widgets::ProgressRecipe) -> bool
+impl core::default::Default for termrock::widgets::ProgressRecipe
+pub fn termrock::widgets::ProgressRecipe::default() -> termrock::widgets::ProgressRecipe
+impl core::fmt::Debug for termrock::widgets::ProgressRecipe
+pub fn termrock::widgets::ProgressRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ProgressRecipe
+pub fn termrock::widgets::ProgressRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ProgressRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::ProgressRecipe
+impl core::marker::Freeze for termrock::widgets::ProgressRecipe
+impl core::marker::Send for termrock::widgets::ProgressRecipe
+impl core::marker::Sync for termrock::widgets::ProgressRecipe
+impl core::marker::Unpin for termrock::widgets::ProgressRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::ProgressRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProgressRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProgressRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProgressRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProgressRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProgressRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::ProgressRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProgressRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::ProgressRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::ProgressRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProgressRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProgressRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProgressRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProgressRecipe where T: core::clone::Clone
+pub type termrock::widgets::ProgressRecipe::Owned = T
+pub fn termrock::widgets::ProgressRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProgressRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProgressRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProgressRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProgressRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProgressRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProgressRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProgressRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProgressRecipe
+pub fn termrock::widgets::ProgressRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProgressRecipe
+#[non_exhaustive] pub enum termrock::widgets::ProgressStatus
+pub termrock::widgets::ProgressStatus::Buffering
+pub termrock::widgets::ProgressStatus::Cancelled
+pub termrock::widgets::ProgressStatus::Complete
+pub termrock::widgets::ProgressStatus::Failed
+pub termrock::widgets::ProgressStatus::Paused
+pub termrock::widgets::ProgressStatus::Running
+impl termrock::widgets::ProgressStatus
+pub const fn termrock::widgets::ProgressStatus::animates(self) -> bool
+pub const fn termrock::widgets::ProgressStatus::id(self) -> &'static str
+pub const fn termrock::widgets::ProgressStatus::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::widgets::ProgressStatus
+pub fn termrock::widgets::ProgressStatus::clone(&self) -> termrock::widgets::ProgressStatus
+impl core::cmp::Eq for termrock::widgets::ProgressStatus
+impl core::cmp::PartialEq for termrock::widgets::ProgressStatus
+pub fn termrock::widgets::ProgressStatus::eq(&self, &termrock::widgets::ProgressStatus) -> bool
+impl core::default::Default for termrock::widgets::ProgressStatus
+pub fn termrock::widgets::ProgressStatus::default() -> termrock::widgets::ProgressStatus
+impl core::fmt::Debug for termrock::widgets::ProgressStatus
+pub fn termrock::widgets::ProgressStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ProgressStatus
+pub fn termrock::widgets::ProgressStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ProgressStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::ProgressStatus
+impl core::marker::Freeze for termrock::widgets::ProgressStatus
+impl core::marker::Send for termrock::widgets::ProgressStatus
+impl core::marker::Sync for termrock::widgets::ProgressStatus
+impl core::marker::Unpin for termrock::widgets::ProgressStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::ProgressStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProgressStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProgressStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProgressStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProgressStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProgressStatus where U: core::convert::From<T>
+pub fn termrock::widgets::ProgressStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProgressStatus where U: core::convert::Into<T>
+pub type termrock::widgets::ProgressStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::ProgressStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProgressStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProgressStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProgressStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProgressStatus where T: core::clone::Clone
+pub type termrock::widgets::ProgressStatus::Owned = T
+pub fn termrock::widgets::ProgressStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProgressStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProgressStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProgressStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProgressStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProgressStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProgressStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProgressStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProgressStatus
+pub fn termrock::widgets::ProgressStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProgressStatus
+#[non_exhaustive] pub enum termrock::widgets::ProgressUnit
+pub termrock::widgets::ProgressUnit::Bytes
+pub termrock::widgets::ProgressUnit::Custom
+pub termrock::widgets::ProgressUnit::Items
+pub termrock::widgets::ProgressUnit::None
+impl termrock::widgets::ProgressUnit
+pub const fn termrock::widgets::ProgressUnit::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ProgressUnit
+pub fn termrock::widgets::ProgressUnit::clone(&self) -> termrock::widgets::ProgressUnit
+impl core::cmp::Eq for termrock::widgets::ProgressUnit
+impl core::cmp::PartialEq for termrock::widgets::ProgressUnit
+pub fn termrock::widgets::ProgressUnit::eq(&self, &termrock::widgets::ProgressUnit) -> bool
+impl core::default::Default for termrock::widgets::ProgressUnit
+pub fn termrock::widgets::ProgressUnit::default() -> termrock::widgets::ProgressUnit
+impl core::fmt::Debug for termrock::widgets::ProgressUnit
+pub fn termrock::widgets::ProgressUnit::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ProgressUnit
+pub fn termrock::widgets::ProgressUnit::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ProgressUnit
+impl core::marker::StructuralPartialEq for termrock::widgets::ProgressUnit
+impl core::marker::Freeze for termrock::widgets::ProgressUnit
+impl core::marker::Send for termrock::widgets::ProgressUnit
+impl core::marker::Sync for termrock::widgets::ProgressUnit
+impl core::marker::Unpin for termrock::widgets::ProgressUnit
+impl core::marker::UnsafeUnpin for termrock::widgets::ProgressUnit
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProgressUnit
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProgressUnit
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProgressUnit where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProgressUnit::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProgressUnit where U: core::convert::From<T>
+pub fn termrock::widgets::ProgressUnit::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProgressUnit where U: core::convert::Into<T>
+pub type termrock::widgets::ProgressUnit::Error = core::convert::Infallible
+pub fn termrock::widgets::ProgressUnit::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProgressUnit where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProgressUnit::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProgressUnit::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProgressUnit where T: core::clone::Clone
+pub type termrock::widgets::ProgressUnit::Owned = T
+pub fn termrock::widgets::ProgressUnit::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProgressUnit::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProgressUnit where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProgressUnit::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProgressUnit where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressUnit::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProgressUnit where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressUnit::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProgressUnit where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProgressUnit::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProgressUnit
+pub fn termrock::widgets::ProgressUnit::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProgressUnit
 #[non_exhaustive] pub enum termrock::widgets::PromptComposerOutcome
 pub termrock::widgets::PromptComposerOutcome::AttachRequest
 pub termrock::widgets::PromptComposerOutcome::Blur
@@ -46793,50 +46954,139 @@ pub unsafe fn termrock::widgets::PriorGrant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PriorGrant
 pub fn termrock::widgets::PriorGrant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PriorGrant
-pub struct termrock::widgets::Progress<'a>
-impl<'a> termrock::widgets::Progress<'a>
-pub const fn termrock::widgets::Progress<'a>::frames(self, &'a [&'a str]) -> Self
-pub const fn termrock::widgets::Progress<'a>::label(self, &'a str) -> Self
-pub const fn termrock::widgets::Progress<'a>::new(termrock::widgets::ProgressKind, &'a termrock::style::DesignSystem) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Progress<'_>
-pub fn &termrock::widgets::Progress<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::Progress<'_>
-pub fn termrock::widgets::Progress<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl<'a> core::clone::Clone for termrock::widgets::Progress<'a>
-pub fn termrock::widgets::Progress<'a>::clone(&self) -> termrock::widgets::Progress<'a>
-impl<'a> core::fmt::Debug for termrock::widgets::Progress<'a>
-pub fn termrock::widgets::Progress<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::Progress<'a>
-impl<'a> core::marker::Freeze for termrock::widgets::Progress<'a>
-impl<'a> core::marker::Send for termrock::widgets::Progress<'a>
-impl<'a> core::marker::Sync for termrock::widgets::Progress<'a>
-impl<'a> core::marker::Unpin for termrock::widgets::Progress<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Progress<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Progress<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Progress<'a>
-impl<T, U> core::convert::Into<U> for termrock::widgets::Progress<'a> where U: core::convert::From<T>
-pub fn termrock::widgets::Progress<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Progress<'a> where U: core::convert::Into<T>
-pub type termrock::widgets::Progress<'a>::Error = core::convert::Infallible
-pub fn termrock::widgets::Progress<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::Progress<'a> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::Progress<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::Progress<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::Progress<'a> where T: core::clone::Clone
-pub type termrock::widgets::Progress<'a>::Owned = T
-pub fn termrock::widgets::Progress<'a>::clone_into(&self, &mut T)
-pub fn termrock::widgets::Progress<'a>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::Progress<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::Progress<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::Progress<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::Progress<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Progress<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::Progress<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::Progress<'a> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::Progress<'a>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::Progress<'a>
-pub fn termrock::widgets::Progress<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::Progress<'a>
+pub struct termrock::widgets::ProgressBar<'a>
+impl<'a> termrock::widgets::ProgressBar<'a>
+pub const fn termrock::widgets::ProgressBar<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ProgressBar<'a>::frames(self, &'a [&'a str]) -> Self
+pub fn termrock::widgets::ProgressBar<'a>::from_state(&termrock::widgets::ProgressBarState, &'a termrock::style::DesignSystem, termrock::runtime::FrameTick, termrock::style::Motion) -> Self
+pub const fn termrock::widgets::ProgressBar<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::ProgressBar<'a>::meta(self, &'a str) -> Self
+pub const fn termrock::widgets::ProgressBar<'a>::new(termrock::widgets::ProgressKind, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::ProgressBar<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+pub fn termrock::widgets::ProgressBar<'a>::paint_state(&termrock::style::DesignSystem, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ProgressBarState, termrock::runtime::FrameTick, termrock::style::Motion)
+pub const fn termrock::widgets::ProgressBar<'a>::phase(self, &'a str) -> Self
+pub const fn termrock::widgets::ProgressBar<'a>::recipe(self, termrock::widgets::ProgressRecipe) -> Self
+pub fn termrock::widgets::ProgressBar<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
+pub const fn termrock::widgets::ProgressBar<'a>::status(self, termrock::widgets::ProgressStatus) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::ProgressBar<'_>
+pub fn &termrock::widgets::ProgressBar<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::ProgressBar<'_>
+pub fn termrock::widgets::ProgressBar<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::ProgressBar<'a>
+pub fn termrock::widgets::ProgressBar<'a>::clone(&self) -> termrock::widgets::ProgressBar<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ProgressBar<'a>
+pub fn termrock::widgets::ProgressBar<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ProgressBar<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ProgressBar<'a>
+impl<'a> core::marker::Send for termrock::widgets::ProgressBar<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ProgressBar<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ProgressBar<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ProgressBar<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProgressBar<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProgressBar<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProgressBar<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ProgressBar<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProgressBar<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ProgressBar<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ProgressBar<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProgressBar<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProgressBar<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProgressBar<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProgressBar<'a> where T: core::clone::Clone
+pub type termrock::widgets::ProgressBar<'a>::Owned = T
+pub fn termrock::widgets::ProgressBar<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProgressBar<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProgressBar<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProgressBar<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProgressBar<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressBar<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProgressBar<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressBar<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProgressBar<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProgressBar<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProgressBar<'a>
+pub fn termrock::widgets::ProgressBar<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProgressBar<'a>
+pub struct termrock::widgets::ProgressBarState
+impl termrock::widgets::ProgressBarState
+pub fn termrock::widgets::ProgressBarState::animation_demand(&self, termrock::runtime::FrameTick, termrock::style::Motion) -> termrock::runtime::AnimationDemand
+pub fn termrock::widgets::ProgressBarState::eta_text(&self) -> core::option::Option<alloc::string::String>
+pub fn termrock::widgets::ProgressBarState::fraction(&self) -> f64
+pub const fn termrock::widgets::ProgressBarState::generation(&self) -> u64
+pub fn termrock::widgets::ProgressBarState::is_active(&self) -> bool
+pub fn termrock::widgets::ProgressBarState::is_determinate(&self) -> bool
+pub fn termrock::widgets::ProgressBarState::kind(&self, termrock::runtime::FrameTick, termrock::style::Motion) -> termrock::widgets::ProgressKind
+pub fn termrock::widgets::ProgressBarState::label(&self) -> &str
+pub fn termrock::widgets::ProgressBarState::mark_painted(&mut self)
+pub fn termrock::widgets::ProgressBarState::meta_line(&self) -> alloc::string::String
+pub const fn termrock::widgets::ProgressBarState::needs_paint(&self) -> bool
+pub fn termrock::widgets::ProgressBarState::new() -> Self
+pub fn termrock::widgets::ProgressBarState::percentage_text(&self) -> alloc::string::String
+pub fn termrock::widgets::ProgressBarState::phase(&self) -> &str
+pub fn termrock::widgets::ProgressBarState::rate_text(&self) -> core::option::Option<alloc::string::String>
+pub const fn termrock::widgets::ProgressBarState::recipe(&self) -> termrock::widgets::ProgressRecipe
+pub fn termrock::widgets::ProgressBarState::recompute_eta(&mut self)
+pub fn termrock::widgets::ProgressBarState::set_active(&mut self, bool)
+pub fn termrock::widgets::ProgressBarState::set_ascii(&mut self, bool)
+pub fn termrock::widgets::ProgressBarState::set_eta_secs(&mut self, core::option::Option<u64>)
+pub fn termrock::widgets::ProgressBarState::set_fraction(&mut self, f64)
+pub fn termrock::widgets::ProgressBarState::set_label(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::ProgressBarState::set_phase(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::ProgressBarState::set_rate(&mut self, core::option::Option<f64>)
+pub fn termrock::widgets::ProgressBarState::set_recipe(&mut self, termrock::widgets::ProgressRecipe)
+pub fn termrock::widgets::ProgressBarState::set_status(&mut self, termrock::widgets::ProgressStatus)
+pub fn termrock::widgets::ProgressBarState::set_throttle(&mut self, core::time::Duration)
+pub fn termrock::widgets::ProgressBarState::set_total(&mut self, f64)
+pub fn termrock::widgets::ProgressBarState::set_unit(&mut self, termrock::widgets::ProgressUnit)
+pub fn termrock::widgets::ProgressBarState::set_unit_label(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::ProgressBarState::set_value(&mut self, f64)
+pub fn termrock::widgets::ProgressBarState::set_value_throttled(&mut self, f64, std::time::Instant) -> bool
+pub fn termrock::widgets::ProgressBarState::set_visible(&mut self, bool)
+pub const fn termrock::widgets::ProgressBarState::status(&self) -> termrock::widgets::ProgressStatus
+pub fn termrock::widgets::ProgressBarState::task(u64, u64) -> Self
+pub const fn termrock::widgets::ProgressBarState::total(&self) -> f64
+pub fn termrock::widgets::ProgressBarState::transfer(u64, u64) -> Self
+pub fn termrock::widgets::ProgressBarState::units_text(&self) -> core::option::Option<alloc::string::String>
+pub const fn termrock::widgets::ProgressBarState::value(&self) -> f64
+impl core::clone::Clone for termrock::widgets::ProgressBarState
+pub fn termrock::widgets::ProgressBarState::clone(&self) -> termrock::widgets::ProgressBarState
+impl core::cmp::PartialEq for termrock::widgets::ProgressBarState
+pub fn termrock::widgets::ProgressBarState::eq(&self, &termrock::widgets::ProgressBarState) -> bool
+impl core::default::Default for termrock::widgets::ProgressBarState
+pub fn termrock::widgets::ProgressBarState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ProgressBarState
+pub fn termrock::widgets::ProgressBarState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ProgressBarState
+impl core::marker::Freeze for termrock::widgets::ProgressBarState
+impl core::marker::Send for termrock::widgets::ProgressBarState
+impl core::marker::Sync for termrock::widgets::ProgressBarState
+impl core::marker::Unpin for termrock::widgets::ProgressBarState
+impl core::marker::UnsafeUnpin for termrock::widgets::ProgressBarState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProgressBarState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProgressBarState
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProgressBarState where U: core::convert::From<T>
+pub fn termrock::widgets::ProgressBarState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProgressBarState where U: core::convert::Into<T>
+pub type termrock::widgets::ProgressBarState::Error = core::convert::Infallible
+pub fn termrock::widgets::ProgressBarState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProgressBarState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProgressBarState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProgressBarState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProgressBarState where T: core::clone::Clone
+pub type termrock::widgets::ProgressBarState::Owned = T
+pub fn termrock::widgets::ProgressBarState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProgressBarState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProgressBarState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProgressBarState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProgressBarState where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressBarState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProgressBarState where T: ?core::marker::Sized
+pub fn termrock::widgets::ProgressBarState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProgressBarState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProgressBarState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProgressBarState
+pub fn termrock::widgets::ProgressBarState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProgressBarState
 pub struct termrock::widgets::PromptComposer<'a>
 impl<'a> termrock::widgets::PromptComposer<'a>
 pub const fn termrock::widgets::PromptComposer<'a>::new(&'a termrock::style::DesignSystem) -> Self
@@ -55948,6 +56198,7 @@ pub const termrock::widgets::DEFAULT_COMBO_RECENT_LIMIT: usize
 pub const termrock::widgets::DEFAULT_DEBOUNCE: core::time::Duration
 pub const termrock::widgets::DEFAULT_HISTORY_LIMIT: usize
 pub const termrock::widgets::DEFAULT_PATH_HISTORY_LIMIT: usize
+pub const termrock::widgets::DEFAULT_PROGRESS_FRAMES: [&str; 8]
 pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::DIALOG_NESTED_OVERLAY_PREFIX: &str
@@ -55990,6 +56241,7 @@ pub const termrock::widgets::MENU_PROMOTE_MAX_HEIGHT: u16
 pub const termrock::widgets::MENU_PROMOTE_MAX_ITEMS: usize
 pub const termrock::widgets::MENU_PROMOTE_MAX_WIDTH: u16
 pub const termrock::widgets::MENU_PROMOTE_MIN_DEPTH: usize
+pub const termrock::widgets::MIN_WIDTH_WITH_PERCENTAGE: u16
 pub const termrock::widgets::NOTIFICATION_CENTER_DEFAULT_CAPACITY: usize
 pub const termrock::widgets::NOTIFICATION_CENTER_HINT: &str
 pub const termrock::widgets::NOTIFICATION_CENTER_OVERLAY_ID: &str
@@ -56007,6 +56259,8 @@ pub const termrock::widgets::PREVIEW_CARD_HINT: &str
 pub const termrock::widgets::PREVIEW_CARD_OVERLAY_ID: &str
 pub const termrock::widgets::PREVIEW_CARD_PINNED_HINT: &str
 pub const termrock::widgets::PREVIEW_CARD_SELECTION_DEBOUNCE_MS: u64
+pub const termrock::widgets::PROGRESS_ASCII_FRAMES: [&str; 4]
+pub const termrock::widgets::PROGRESS_DEFAULT_THROTTLE_MS: u64
 pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::QUICK_OPEN_DEFAULT_LIMIT: usize
@@ -56272,6 +56526,7 @@ pub type termrock::widgets::FormField<'a, Id> = termrock::widgets::Field<'a, Id>
 pub type termrock::widgets::FormSection<'a, Id> = termrock::widgets::Fieldset<'a, Id>
 pub type termrock::widgets::JumpMode<'a, Id> = termrock::widgets::JumpOverlay<'a, Id>
 pub type termrock::widgets::JumpModeState = termrock::widgets::JumpOverlayState
+pub type termrock::widgets::Progress<'a> = termrock::widgets::ProgressBar<'a>
 pub type termrock::widgets::SectionAction<'a> = termrock::widgets::PanelAction<'a>
 pub type termrock::widgets::SeparatorLine<'a> = termrock::widgets::Separator<'a>
 pub type termrock::widgets::Sheet<'a> = termrock::widgets::Drawer<'a>

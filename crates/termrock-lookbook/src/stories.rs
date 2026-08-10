@@ -1495,6 +1495,33 @@ pub(crate) fn stories() -> Vec<Story> {
             progress,
         ),
         Story::new(
+            "progress/detailed",
+            "ProgressBar detailed",
+            "Progress",
+            "Transfer units, rate, and ETA meta on one row.",
+            56,
+            1,
+            progress_detailed_story,
+        ),
+        Story::new(
+            "progress/multi-line",
+            "ProgressBar multi-line",
+            "Progress",
+            "Title, track, and phase/rate meta stack.",
+            48,
+            3,
+            progress_multiline_story,
+        ),
+        Story::new(
+            "progress/failed",
+            "ProgressBar failed",
+            "Progress",
+            "Failed status with danger fill role.",
+            40,
+            1,
+            progress_failed_story,
+        ),
+        Story::new(
             "progress/narrow",
             "Narrow progress",
             "Progress",
@@ -7477,6 +7504,45 @@ fn progress(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
         );
     }
+}
+
+fn progress_detailed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use std::time::{Duration, Instant};
+    use termrock::runtime::FrameTick;
+    use termrock::style::Motion;
+    use termrock::widgets::{ProgressBar, ProgressBarState, ProgressRecipe, ProgressStatus};
+    let mut state = ProgressBarState::transfer(12_582_912, 31_457_280);
+    state.set_label("Download");
+    state.set_rate(Some(2_200_000.0));
+    state.recompute_eta();
+    state.set_recipe(ProgressRecipe::Detailed);
+    state.set_status(ProgressStatus::Running);
+    ProgressBar::paint_state(
+        system,
+        area,
+        frame.buffer_mut(),
+        &mut state,
+        FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO),
+        Motion::Off,
+    );
+}
+
+fn progress_multiline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ProgressBar, ProgressKind, ProgressRecipe, ProgressStatus};
+    ProgressBar::new(ProgressKind::Determinate { fraction: 0.4 }, system)
+        .label("Compile")
+        .recipe(ProgressRecipe::MultiLine)
+        .meta("phase: codegen · 40/100 · ETA 12s")
+        .status(ProgressStatus::Running)
+        .paint(area, frame.buffer_mut());
+}
+
+fn progress_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ProgressBar, ProgressKind, ProgressStatus};
+    ProgressBar::new(ProgressKind::Determinate { fraction: 0.72 }, system)
+        .label("Build")
+        .status(ProgressStatus::Failed)
+        .paint(area, frame.buffer_mut());
 }
 
 fn progress_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

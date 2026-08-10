@@ -312,22 +312,26 @@ let tokens = DesignTokens::default();
 let picker = Picker::new(&rows, &tokens);`,
   },
   Progress: {
-    description: 'A deterministic determinate bar or caller-ticked indeterminate indicator.',
+    description:
+      'Determinate/indeterminate progress with percentage, units, rate, ETA, phases, buffering/paused/cancelled/complete/failed; compact/detailed/multi-line recipes; ASCII/tiny widths; throttled state updates for task/transfer models.',
     primaryStory: 'progress/determinate',
-    usage: `use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
-use termrock::{Theme, widgets::{Progress, ProgressKind}};
+    usage: `use termrock::style::{DesignSystem, Motion};
+use termrock::widgets::{
+    Progress, ProgressBar, ProgressBarState, ProgressKind, ProgressRecipe, ProgressStatus,
+};
 
-let theme = Theme::default();
-// Below 16 columns, the percentage yields space to the glyph track.
-let progress = Progress::new(ProgressKind::Determinate { fraction: 0.72 }, &theme)
-    .label("Indexing");
-let area = Rect::new(0, 0, 40, 1);
-progress.render(area, &mut Buffer::empty(area));
-
-let frames = ["|", "/", "-", "\\\\"];
-let spinner = Progress::new(ProgressKind::Indeterminate { tick: 3 }, &theme)
-    .frames(&frames)
-    .label("Waiting");`,
+let system = DesignSystem::default();
+// Legacy one-shot:
+Progress::new(ProgressKind::Determinate { fraction: 0.72 }, &system)
+    .label("Indexing")
+    .paint(area, buf);
+// Task/transfer state (throttle + ETA):
+let mut state = ProgressBarState::transfer(12_000_000, 30_000_000);
+state.set_label("Download");
+state.set_rate(Some(2_000_000.0));
+state.recompute_eta();
+state.set_recipe(ProgressRecipe::Detailed);
+ProgressBar::paint_state(&system, area, buf, &mut state, tick, Motion::Off);`,
   },
   SplitPane: {
     description: 'A resizable two-pane layout with bounded ratios and collapse support.',

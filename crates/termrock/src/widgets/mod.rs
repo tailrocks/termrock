@@ -411,7 +411,11 @@ pub use toolbar::{
     Toolbar, ToolbarItem, ToolbarItemKind, ToolbarOrientation, ToolbarOutcome, ToolbarPlan,
     ToolbarState, ToolbarVariant,
 };
-pub use progress::{Progress, ProgressKind};
+pub use progress::{
+    DEFAULT_PROGRESS_FRAMES, MIN_WIDTH_WITH_PERCENTAGE, PROGRESS_ASCII_FRAMES,
+    PROGRESS_DEFAULT_THROTTLE_MS, Progress, ProgressBar, ProgressBarState, ProgressKind,
+    ProgressRecipe, ProgressStatus, ProgressUnit,
+};
 pub use slider::{
     RangeSlider, RangeSliderOutcome, RangeSliderParts, RangeSliderState, RangeThumb, Slider,
     SliderBounds, SliderMark, SliderOrientation, SliderOutcome, SliderParts, SliderState,
