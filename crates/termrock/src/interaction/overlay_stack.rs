@@ -96,6 +96,10 @@ pub enum PlacementPrefer {
     DrawerStart,
     /// Right edge drawer.
     DrawerEnd,
+    /// Top edge drawer / sheet.
+    DrawerTop,
+    /// Bottom edge drawer / sheet.
+    DrawerBottom,
     /// At pointer / exact origin (context menu).
     AtOrigin,
 }
@@ -1352,17 +1356,36 @@ fn resolve_placement(
     }
     if matches!(prefer, PlacementPrefer::DrawerStart) {
         let w = width
-            .min(bounds.width / 2)
+            .min(bounds.width.saturating_sub(1).max(1))
             .max(size.min_width.min(bounds.width));
+        let w = w.min(bounds.width);
         result.rect = Rect::new(bounds.x, bounds.y, w, bounds.height);
         return result;
     }
     if matches!(prefer, PlacementPrefer::DrawerEnd) {
         let w = width
-            .min(bounds.width / 2)
+            .min(bounds.width.saturating_sub(1).max(1))
             .max(size.min_width.min(bounds.width));
+        let w = w.min(bounds.width);
         let x = bounds.x.saturating_add(bounds.width.saturating_sub(w));
         result.rect = Rect::new(x, bounds.y, w, bounds.height);
+        return result;
+    }
+    if matches!(prefer, PlacementPrefer::DrawerTop) {
+        let h = height
+            .min(bounds.height.saturating_sub(1).max(1))
+            .max(size.min_height.min(bounds.height));
+        let h = h.min(bounds.height);
+        result.rect = Rect::new(bounds.x, bounds.y, bounds.width, h);
+        return result;
+    }
+    if matches!(prefer, PlacementPrefer::DrawerBottom) {
+        let h = height
+            .min(bounds.height.saturating_sub(1).max(1))
+            .max(size.min_height.min(bounds.height));
+        let h = h.min(bounds.height);
+        let y = bounds.y.saturating_add(bounds.height.saturating_sub(h));
+        result.rect = Rect::new(bounds.x, y, bounds.width, h);
         return result;
     }
 
@@ -1396,9 +1419,11 @@ fn resolve_placement(
             ));
             place_anchored(bounds, anchor, width, height, prefer, policy.cover_anchor)
         }
-        PlacementPrefer::Fullscreen | PlacementPrefer::DrawerStart | PlacementPrefer::DrawerEnd => {
-            (bounds, false, false, false)
-        }
+        PlacementPrefer::Fullscreen
+        | PlacementPrefer::DrawerStart
+        | PlacementPrefer::DrawerEnd
+        | PlacementPrefer::DrawerTop
+        | PlacementPrefer::DrawerBottom => (bounds, false, false, false),
     };
     result.rect = rect;
     result.flipped_vertical = flip_v;

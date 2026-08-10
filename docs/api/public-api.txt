@@ -3355,8 +3355,10 @@ pub termrock::interaction::PlacementPrefer::AboveStart
 pub termrock::interaction::PlacementPrefer::AtOrigin
 pub termrock::interaction::PlacementPrefer::BelowStart
 pub termrock::interaction::PlacementPrefer::Center
+pub termrock::interaction::PlacementPrefer::DrawerBottom
 pub termrock::interaction::PlacementPrefer::DrawerEnd
 pub termrock::interaction::PlacementPrefer::DrawerStart
+pub termrock::interaction::PlacementPrefer::DrawerTop
 pub termrock::interaction::PlacementPrefer::EndAligned
 pub termrock::interaction::PlacementPrefer::Fullscreen
 impl core::clone::Clone for termrock::interaction::PlacementPrefer
@@ -18709,21 +18711,127 @@ pub unsafe fn termrock::widgets::DiffReviewOutcome::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffReviewOutcome
+#[non_exhaustive] pub enum termrock::widgets::DrawerEdge
+pub termrock::widgets::DrawerEdge::Bottom
+pub termrock::widgets::DrawerEdge::Left
+pub termrock::widgets::DrawerEdge::Right
+pub termrock::widgets::DrawerEdge::Top
+impl termrock::widgets::DrawerEdge
+pub const fn termrock::widgets::DrawerEdge::id(self) -> &'static str
+pub const fn termrock::widgets::DrawerEdge::is_horizontal(self) -> bool
+pub const fn termrock::widgets::DrawerEdge::placement(self) -> termrock::interaction::PlacementPrefer
+impl core::clone::Clone for termrock::widgets::DrawerEdge
+pub fn termrock::widgets::DrawerEdge::clone(&self) -> termrock::widgets::DrawerEdge
+impl core::cmp::Eq for termrock::widgets::DrawerEdge
+impl core::cmp::PartialEq for termrock::widgets::DrawerEdge
+pub fn termrock::widgets::DrawerEdge::eq(&self, &termrock::widgets::DrawerEdge) -> bool
+impl core::default::Default for termrock::widgets::DrawerEdge
+pub fn termrock::widgets::DrawerEdge::default() -> termrock::widgets::DrawerEdge
+impl core::fmt::Debug for termrock::widgets::DrawerEdge
+pub fn termrock::widgets::DrawerEdge::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DrawerEdge
+pub fn termrock::widgets::DrawerEdge::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DrawerEdge
+impl core::marker::StructuralPartialEq for termrock::widgets::DrawerEdge
+impl core::marker::Freeze for termrock::widgets::DrawerEdge
+impl core::marker::Send for termrock::widgets::DrawerEdge
+impl core::marker::Sync for termrock::widgets::DrawerEdge
+impl core::marker::Unpin for termrock::widgets::DrawerEdge
+impl core::marker::UnsafeUnpin for termrock::widgets::DrawerEdge
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DrawerEdge
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DrawerEdge
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DrawerEdge where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DrawerEdge::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DrawerEdge where U: core::convert::From<T>
+pub fn termrock::widgets::DrawerEdge::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DrawerEdge where U: core::convert::Into<T>
+pub type termrock::widgets::DrawerEdge::Error = core::convert::Infallible
+pub fn termrock::widgets::DrawerEdge::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DrawerEdge where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DrawerEdge::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DrawerEdge::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DrawerEdge where T: core::clone::Clone
+pub type termrock::widgets::DrawerEdge::Owned = T
+pub fn termrock::widgets::DrawerEdge::clone_into(&self, &mut T)
+pub fn termrock::widgets::DrawerEdge::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DrawerEdge where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DrawerEdge::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DrawerEdge where T: ?core::marker::Sized
+pub fn termrock::widgets::DrawerEdge::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DrawerEdge where T: ?core::marker::Sized
+pub fn termrock::widgets::DrawerEdge::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DrawerEdge where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DrawerEdge::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DrawerEdge
+pub fn termrock::widgets::DrawerEdge::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DrawerEdge
+#[non_exhaustive] pub enum termrock::widgets::DrawerModality
+pub termrock::widgets::DrawerModality::Modal
+pub termrock::widgets::DrawerModality::NonModal
+impl termrock::widgets::DrawerModality
+pub const fn termrock::widgets::DrawerModality::id(self) -> &'static str
+pub const fn termrock::widgets::DrawerModality::policy(self, termrock::widgets::DrawerEdge) -> termrock::interaction::OverlayPolicy
+impl core::clone::Clone for termrock::widgets::DrawerModality
+pub fn termrock::widgets::DrawerModality::clone(&self) -> termrock::widgets::DrawerModality
+impl core::cmp::Eq for termrock::widgets::DrawerModality
+impl core::cmp::PartialEq for termrock::widgets::DrawerModality
+pub fn termrock::widgets::DrawerModality::eq(&self, &termrock::widgets::DrawerModality) -> bool
+impl core::default::Default for termrock::widgets::DrawerModality
+pub fn termrock::widgets::DrawerModality::default() -> termrock::widgets::DrawerModality
+impl core::fmt::Debug for termrock::widgets::DrawerModality
+pub fn termrock::widgets::DrawerModality::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DrawerModality
+pub fn termrock::widgets::DrawerModality::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DrawerModality
+impl core::marker::StructuralPartialEq for termrock::widgets::DrawerModality
+impl core::marker::Freeze for termrock::widgets::DrawerModality
+impl core::marker::Send for termrock::widgets::DrawerModality
+impl core::marker::Sync for termrock::widgets::DrawerModality
+impl core::marker::Unpin for termrock::widgets::DrawerModality
+impl core::marker::UnsafeUnpin for termrock::widgets::DrawerModality
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DrawerModality
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DrawerModality
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DrawerModality where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DrawerModality::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DrawerModality where U: core::convert::From<T>
+pub fn termrock::widgets::DrawerModality::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DrawerModality where U: core::convert::Into<T>
+pub type termrock::widgets::DrawerModality::Error = core::convert::Infallible
+pub fn termrock::widgets::DrawerModality::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DrawerModality where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DrawerModality::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DrawerModality::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DrawerModality where T: core::clone::Clone
+pub type termrock::widgets::DrawerModality::Owned = T
+pub fn termrock::widgets::DrawerModality::clone_into(&self, &mut T)
+pub fn termrock::widgets::DrawerModality::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DrawerModality where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DrawerModality::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DrawerModality where T: ?core::marker::Sized
+pub fn termrock::widgets::DrawerModality::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DrawerModality where T: ?core::marker::Sized
+pub fn termrock::widgets::DrawerModality::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DrawerModality where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DrawerModality::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DrawerModality
+pub fn termrock::widgets::DrawerModality::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DrawerModality
 #[non_exhaustive] pub enum termrock::widgets::DrawerOutcome
 pub termrock::widgets::DrawerOutcome::Closed
+pub termrock::widgets::DrawerOutcome::FocusEntered
 pub termrock::widgets::DrawerOutcome::Ignored
+pub termrock::widgets::DrawerOutcome::Opened
+pub termrock::widgets::DrawerOutcome::PresentationChanged
+pub termrock::widgets::DrawerOutcome::PresentationChanged::presentation: termrock::widgets::DrawerPresentation
+pub termrock::widgets::DrawerOutcome::Resized
+pub termrock::widgets::DrawerOutcome::Resized::depth: u16
 impl core::clone::Clone for termrock::widgets::DrawerOutcome
 pub fn termrock::widgets::DrawerOutcome::clone(&self) -> termrock::widgets::DrawerOutcome
 impl core::cmp::Eq for termrock::widgets::DrawerOutcome
 impl core::cmp::PartialEq for termrock::widgets::DrawerOutcome
 pub fn termrock::widgets::DrawerOutcome::eq(&self, &termrock::widgets::DrawerOutcome) -> bool
-impl core::default::Default for termrock::widgets::DrawerOutcome
-pub fn termrock::widgets::DrawerOutcome::default() -> termrock::widgets::DrawerOutcome
 impl core::fmt::Debug for termrock::widgets::DrawerOutcome
 pub fn termrock::widgets::DrawerOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::DrawerOutcome
-pub fn termrock::widgets::DrawerOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::DrawerOutcome
 impl core::marker::StructuralPartialEq for termrock::widgets::DrawerOutcome
 impl core::marker::Freeze for termrock::widgets::DrawerOutcome
 impl core::marker::Send for termrock::widgets::DrawerOutcome
@@ -18757,6 +18865,57 @@ pub unsafe fn termrock::widgets::DrawerOutcome::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DrawerOutcome
 pub fn termrock::widgets::DrawerOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DrawerOutcome
+#[non_exhaustive] pub enum termrock::widgets::DrawerPresentation
+pub termrock::widgets::DrawerPresentation::Compact
+pub termrock::widgets::DrawerPresentation::Expanded
+pub termrock::widgets::DrawerPresentation::Fullscreen
+impl termrock::widgets::DrawerPresentation
+pub const fn termrock::widgets::DrawerPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DrawerPresentation
+pub fn termrock::widgets::DrawerPresentation::clone(&self) -> termrock::widgets::DrawerPresentation
+impl core::cmp::Eq for termrock::widgets::DrawerPresentation
+impl core::cmp::PartialEq for termrock::widgets::DrawerPresentation
+pub fn termrock::widgets::DrawerPresentation::eq(&self, &termrock::widgets::DrawerPresentation) -> bool
+impl core::default::Default for termrock::widgets::DrawerPresentation
+pub fn termrock::widgets::DrawerPresentation::default() -> termrock::widgets::DrawerPresentation
+impl core::fmt::Debug for termrock::widgets::DrawerPresentation
+pub fn termrock::widgets::DrawerPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DrawerPresentation
+pub fn termrock::widgets::DrawerPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DrawerPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::DrawerPresentation
+impl core::marker::Freeze for termrock::widgets::DrawerPresentation
+impl core::marker::Send for termrock::widgets::DrawerPresentation
+impl core::marker::Sync for termrock::widgets::DrawerPresentation
+impl core::marker::Unpin for termrock::widgets::DrawerPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::DrawerPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DrawerPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DrawerPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DrawerPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DrawerPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DrawerPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::DrawerPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DrawerPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::DrawerPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::DrawerPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DrawerPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DrawerPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DrawerPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DrawerPresentation where T: core::clone::Clone
+pub type termrock::widgets::DrawerPresentation::Owned = T
+pub fn termrock::widgets::DrawerPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::DrawerPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DrawerPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DrawerPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DrawerPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::DrawerPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DrawerPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::DrawerPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DrawerPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DrawerPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DrawerPresentation
+pub fn termrock::widgets::DrawerPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DrawerPresentation
 #[non_exhaustive] pub enum termrock::widgets::DropdownMenuOutcome<Id>
 pub termrock::widgets::DropdownMenuOutcome::Activated
 pub termrock::widgets::DropdownMenuOutcome::Activated::command: core::option::Option<alloc::string::String>
@@ -36192,9 +36351,24 @@ pub fn termrock::widgets::DiffView<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffView<'a>
 pub struct termrock::widgets::Drawer<'a>
 impl<'a> termrock::widgets::Drawer<'a>
+pub const fn termrock::widgets::Drawer<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Drawer<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Drawer<'a>::footer(self, core::option::Option<&'a str>) -> Self
 pub const fn termrock::widgets::Drawer<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Drawer<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DrawerState)
+pub fn termrock::widgets::Drawer<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::DrawerState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::Drawer<'a>::slots(&'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Drawer<'a>::title(self, core::option::Option<&'a str>) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Drawer<'_>
+pub type &termrock::widgets::Drawer<'_>::State = termrock::widgets::DrawerState
+pub fn &termrock::widgets::Drawer<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Drawer<'_>
+pub type termrock::widgets::Drawer<'_>::State = termrock::widgets::DrawerState
+pub fn termrock::widgets::Drawer<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Drawer<'_>
 pub fn &termrock::widgets::Drawer<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Drawer<'_>
+pub fn termrock::widgets::Drawer<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Drawer<'a>
 pub fn termrock::widgets::Drawer<'a>::clone(&self) -> termrock::widgets::Drawer<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Drawer<'a>
@@ -36230,23 +36404,103 @@ pub unsafe fn termrock::widgets::Drawer<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Drawer<'a>
 pub fn termrock::widgets::Drawer<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Drawer<'a>
+pub struct termrock::widgets::DrawerSlots
+pub termrock::widgets::DrawerSlots::body: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DrawerSlots::footer: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DrawerSlots::handle: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DrawerSlots::header: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DrawerSlots::root: ratatui_core::layout::rect::Rect
+impl termrock::widgets::DrawerSlots
+pub const fn termrock::widgets::DrawerSlots::empty() -> Self
+impl core::clone::Clone for termrock::widgets::DrawerSlots
+pub fn termrock::widgets::DrawerSlots::clone(&self) -> termrock::widgets::DrawerSlots
+impl core::cmp::Eq for termrock::widgets::DrawerSlots
+impl core::cmp::PartialEq for termrock::widgets::DrawerSlots
+pub fn termrock::widgets::DrawerSlots::eq(&self, &termrock::widgets::DrawerSlots) -> bool
+impl core::default::Default for termrock::widgets::DrawerSlots
+pub fn termrock::widgets::DrawerSlots::default() -> termrock::widgets::DrawerSlots
+impl core::fmt::Debug for termrock::widgets::DrawerSlots
+pub fn termrock::widgets::DrawerSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::DrawerSlots
+impl core::marker::StructuralPartialEq for termrock::widgets::DrawerSlots
+impl core::marker::Freeze for termrock::widgets::DrawerSlots
+impl core::marker::Send for termrock::widgets::DrawerSlots
+impl core::marker::Sync for termrock::widgets::DrawerSlots
+impl core::marker::Unpin for termrock::widgets::DrawerSlots
+impl core::marker::UnsafeUnpin for termrock::widgets::DrawerSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DrawerSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DrawerSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DrawerSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DrawerSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DrawerSlots where U: core::convert::From<T>
+pub fn termrock::widgets::DrawerSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DrawerSlots where U: core::convert::Into<T>
+pub type termrock::widgets::DrawerSlots::Error = core::convert::Infallible
+pub fn termrock::widgets::DrawerSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DrawerSlots where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DrawerSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DrawerSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DrawerSlots where T: core::clone::Clone
+pub type termrock::widgets::DrawerSlots::Owned = T
+pub fn termrock::widgets::DrawerSlots::clone_into(&self, &mut T)
+pub fn termrock::widgets::DrawerSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DrawerSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DrawerSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DrawerSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::DrawerSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DrawerSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::DrawerSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DrawerSlots where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DrawerSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DrawerSlots
+pub fn termrock::widgets::DrawerSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DrawerSlots
 pub struct termrock::widgets::DrawerState
 impl termrock::widgets::DrawerState
+pub const fn termrock::widgets::DrawerState::body_area(&self) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::DrawerState::close_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>) -> termrock::interaction::OverlayOutcome<F>
+pub const fn termrock::widgets::DrawerState::depth(&self) -> u16
+pub const fn termrock::widgets::DrawerState::edge(&self) -> termrock::widgets::DrawerEdge
+pub fn termrock::widgets::DrawerState::enter_focus(&mut self) -> termrock::widgets::DrawerOutcome
+pub fn termrock::widgets::DrawerState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::DrawerOutcome
 pub fn termrock::widgets::DrawerState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::DrawerOutcome
-pub const fn termrock::widgets::DrawerState::is_open(self) -> bool
+pub fn termrock::widgets::DrawerState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::DrawerOutcome
+pub const fn termrock::widgets::DrawerState::is_focused(&self) -> bool
+pub const fn termrock::widgets::DrawerState::is_open(&self) -> bool
+pub const fn termrock::widgets::DrawerState::modality(&self) -> termrock::widgets::DrawerModality
 pub const fn termrock::widgets::DrawerState::new() -> Self
+pub const fn termrock::widgets::DrawerState::non_modal() -> Self
 pub const fn termrock::widgets::DrawerState::open(&mut self)
-pub fn termrock::widgets::DrawerState::open_on_stack<F: core::clone::Clone + core::cmp::Eq>(&mut self, &mut termrock::interaction::OverlayStack<F>, ratatui_core::layout::rect::Rect, &'static str) -> termrock::interaction::OverlayOutcome<F>
+pub fn termrock::widgets::DrawerState::open_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>, ratatui_core::layout::rect::Rect, core::option::Option<F>) -> termrock::interaction::OverlayOutcome<F>
+pub fn termrock::widgets::DrawerState::overlay_size(&self, ratatui_core::layout::rect::Rect) -> termrock::interaction::OverlaySize
+pub const fn termrock::widgets::DrawerState::presentation(&self) -> termrock::widgets::DrawerPresentation
+pub fn termrock::widgets::DrawerState::request_close(&mut self) -> termrock::widgets::DrawerOutcome
+pub fn termrock::widgets::DrawerState::request_open(&mut self, ratatui_core::layout::rect::Rect) -> termrock::widgets::DrawerOutcome
+pub fn termrock::widgets::DrawerState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::DrawerState::set_depth(&mut self, u16)
+pub fn termrock::widgets::DrawerState::set_depth_limits(&mut self, u16, u16)
+pub fn termrock::widgets::DrawerState::set_edge(&mut self, termrock::widgets::DrawerEdge)
+pub fn termrock::widgets::DrawerState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::DrawerState::set_focused(&mut self, bool)
+pub fn termrock::widgets::DrawerState::set_footer_rows(&mut self, u16)
+pub fn termrock::widgets::DrawerState::set_handle_only(&mut self, bool)
+pub fn termrock::widgets::DrawerState::set_header_rows(&mut self, u16)
+pub fn termrock::widgets::DrawerState::set_modality(&mut self, termrock::widgets::DrawerModality)
+pub fn termrock::widgets::DrawerState::set_motion(&mut self, termrock::style::Motion)
+pub fn termrock::widgets::DrawerState::set_presentation_override(&mut self, core::option::Option<termrock::widgets::DrawerPresentation>)
+pub const fn termrock::widgets::DrawerState::sheet() -> Self
+pub const fn termrock::widgets::DrawerState::slots(&self) -> termrock::widgets::DrawerSlots
+pub fn termrock::widgets::DrawerState::sync_presentation(&mut self, ratatui_core::layout::rect::Rect) -> termrock::widgets::DrawerOutcome
+pub fn termrock::widgets::DrawerState::sync_with_stack<F>(&mut self, &termrock::interaction::OverlayStack<F>, &termrock::interaction::OverlayId)
 impl core::clone::Clone for termrock::widgets::DrawerState
 pub fn termrock::widgets::DrawerState::clone(&self) -> termrock::widgets::DrawerState
 impl core::cmp::Eq for termrock::widgets::DrawerState
 impl core::cmp::PartialEq for termrock::widgets::DrawerState
 pub fn termrock::widgets::DrawerState::eq(&self, &termrock::widgets::DrawerState) -> bool
 impl core::default::Default for termrock::widgets::DrawerState
-pub fn termrock::widgets::DrawerState::default() -> termrock::widgets::DrawerState
+pub fn termrock::widgets::DrawerState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::DrawerState
 pub fn termrock::widgets::DrawerState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::widgets::DrawerState
 impl core::marker::StructuralPartialEq for termrock::widgets::DrawerState
 impl core::marker::Freeze for termrock::widgets::DrawerState
 impl core::marker::Send for termrock::widgets::DrawerState
@@ -53152,6 +53406,12 @@ pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::DIALOG_NESTED_OVERLAY_PREFIX: &str
 pub const termrock::widgets::DIALOG_OVERLAY_ID: &str
+pub const termrock::widgets::DRAWER_DEFAULT_HEIGHT: u16
+pub const termrock::widgets::DRAWER_DEFAULT_WIDTH: u16
+pub const termrock::widgets::DRAWER_FULLSCREEN_MAX_HEIGHT: u16
+pub const termrock::widgets::DRAWER_FULLSCREEN_MAX_WIDTH: u16
+pub const termrock::widgets::DRAWER_HANDLE_CELLS: u16
+pub const termrock::widgets::DRAWER_NESTED_OVERLAY_PREFIX: &str
 pub const termrock::widgets::DRAWER_OVERLAY_ID: &str
 pub const termrock::widgets::DROPDOWN_MENU_OVERLAY_ID: &str
 pub const termrock::widgets::DROPDOWN_MENU_SUBMENU_PREFIX: &str
@@ -53266,6 +53526,7 @@ pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&m
 pub fn termrock::widgets::dismiss_popover_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_quick_open_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::drawer_presentation_for(ratatui_core::layout::rect::Rect, termrock::widgets::DrawerEdge, u16) -> termrock::widgets::DrawerPresentation
 pub fn termrock::widgets::dropdown_menu_presentation_for(ratatui_core::layout::rect::Rect, &[termrock::widgets::MenuNode<impl core::marker::Sized>]) -> termrock::widgets::DropdownMenuPresentation
 pub fn termrock::widgets::entries_from_keymap<A, Id, F>(&termrock::keymap::Keymap<A>, F) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A, &termrock::keymap::KeyBinding<A>) -> (Id, alloc::string::String, core::option::Option<alloc::string::String>)
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
@@ -53336,6 +53597,8 @@ pub fn termrock::widgets::open_context_menu_overlay<FocusId: core::clone::Clone>
 pub fn termrock::widgets::open_dialog_child_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, &str, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_dialog_configured<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>, termrock::widgets::DialogClosePolicy, core::option::Option<termrock::widgets::DialogRecipe>, core::option::Option<alloc::string::String>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_drawer_configured<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, impl core::convert::Into<termrock::interaction::OverlayId>, termrock::interaction::OverlaySize, core::option::Option<FocusId>, termrock::widgets::DrawerEdge, termrock::widgets::DrawerModality, core::option::Option<termrock::widgets::DrawerPresentation>, core::option::Option<termrock::interaction::OverlayId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_drawer_nested_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, termrock::widgets::DrawerEdge, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, impl core::convert::Into<termrock::interaction::OverlayId>, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_dropdown_menu_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_history_picker_fullscreen<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -53365,6 +53628,7 @@ pub fn termrock::widgets::place_context_menu(ratatui_core::layout::rect::Rect, r
 pub fn termrock::widgets::place_dialog(ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_dialog_recipe(ratatui_core::layout::rect::Rect, termrock::widgets::DialogRecipe) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_drawer(ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::place_drawer_on_edge(ratatui_core::layout::rect::Rect, termrock::widgets::DrawerEdge, termrock::interaction::OverlaySize, termrock::widgets::DrawerPresentation) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_dropdown_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_history_picker(ratatui_core::layout::rect::Rect, termrock::widgets::HistoryPickerSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_history_picker_popover(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::HistoryPickerSize) -> ratatui_core::layout::rect::Rect
@@ -53421,6 +53685,8 @@ pub type termrock::widgets::JumpMode<'a, Id> = termrock::widgets::JumpOverlay<'a
 pub type termrock::widgets::JumpModeState = termrock::widgets::JumpOverlayState
 pub type termrock::widgets::SectionAction<'a> = termrock::widgets::PanelAction<'a>
 pub type termrock::widgets::SeparatorLine<'a> = termrock::widgets::Separator<'a>
+pub type termrock::widgets::Sheet<'a> = termrock::widgets::Drawer<'a>
+pub type termrock::widgets::SheetState = termrock::widgets::DrawerState
 pub type termrock::widgets::SidebarItem<Id> = termrock::widgets::NavItem<Id>
 pub type termrock::widgets::WizardStep = termrock::widgets::StepItem
 pub type termrock::widgets::WizardStepStatus = termrock::widgets::StepStatus

@@ -57,6 +57,7 @@ mod list;
 mod log_pane;
 mod markdown;
 mod menu_nav;
+mod drawer;
 mod dropdown_menu;
 mod popover;
 mod tooltip;
@@ -288,9 +289,13 @@ pub use markdown::{
     MarkdownOutcome, MarkdownParts, MarkdownView, MarkdownViewState, SourceAnchor,
     project_markdown, project_plain_lines,
 };
-pub use menu_nav::{
-    DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuOutcome, MenuState,
-    dismiss_drawer_overlay, open_drawer_overlay, place_drawer,
+pub use menu_nav::{Menu, MenuOutcome, MenuState};
+pub use drawer::{
+    DRAWER_DEFAULT_HEIGHT, DRAWER_DEFAULT_WIDTH, DRAWER_FULLSCREEN_MAX_HEIGHT,
+    DRAWER_FULLSCREEN_MAX_WIDTH, DRAWER_HANDLE_CELLS, DRAWER_NESTED_OVERLAY_PREFIX, DRAWER_OVERLAY_ID,
+    Drawer, DrawerEdge, DrawerModality, DrawerOutcome, DrawerPresentation, DrawerSlots, DrawerState,
+    Sheet, SheetState, dismiss_drawer_overlay, drawer_presentation_for, open_drawer_configured,
+    open_drawer_nested_overlay, open_drawer_overlay, place_drawer, place_drawer_on_edge,
 };
 pub use dropdown_menu::{
     CONTEXT_MENU_OVERLAY_ID, CONTEXT_MENU_SUBMENU_PREFIX, DROPDOWN_MENU_OVERLAY_ID,

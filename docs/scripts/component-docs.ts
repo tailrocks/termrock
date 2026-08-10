@@ -1108,12 +1108,33 @@ let tokens = DesignTokens::default();
 let callout = Callout::new("Heads up", &tokens).tone(CalloutTone::Warning);`,
   },
   Drawer: {
-    description: 'Edge-attached drawer chrome for modal side content.',
+    description:
+      'Edge-mounted secondary surface for inspectors, task rails, filters, details — left/right/top/bottom, modal/non-modal, resizable depth, focus trap, opener restore, nested overlays, compact handle, fullscreen promotion; preserves host selection/scroll.',
     primaryStory: 'drawer/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::Drawer};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{
+    Drawer, DrawerState, DrawerEdge, DrawerModality, open_drawer_overlay,
+};
 
-let tokens = DesignTokens::default();
-let drawer = Drawer::new("Settings", &tokens);`,
+let system = DesignSystem::default();
+let mut state = DrawerState::new(); // or ::sheet() / ::non_modal()
+state.set_edge(DrawerEdge::Right);
+let _ = state.open_on_stack(&mut stack, bounds, Some("main"));
+// Host keeps list selection/scroll of underlying view.
+Drawer::new("Inspector", &system)
+    .footer(Some("esc · [ ] resize"))
+    .paint(entry.rect, buf, &mut state);
+// Host paints domain content into state.body_area().`,
+  },
+  Sheet: {
+    description:
+      'Bottom-edge drawer (shadcn Sheet metaphor) — same engine as Drawer with DrawerEdge::Bottom default.',
+    primaryStory: 'drawer/sheet',
+    usage: `use termrock::widgets::{Sheet, DrawerState};
+
+let mut state = DrawerState::sheet();
+state.open();
+Sheet::new("Actions", &system).paint(area, buf, &mut state);`,
   },
   Heading: {
     description: 'Semantic heading line with terminal typography levels.',

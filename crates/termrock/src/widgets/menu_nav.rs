@@ -21,8 +21,6 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
-/// Default overlay id for drawers opened via helpers.
-pub const DRAWER_OVERLAY_ID: &str = "termrock.drawer";
 
 // ── Menu (flat adapter) ─────────────────────────────────────────────────────
 // Hierarchical DropdownMenu / ContextMenu live in `dropdown_menu` module.
@@ -391,154 +389,16 @@ impl<Id> StatefulWidget for &Menu<'_, Id> {
 
 // Breadcrumbs live in breadcrumbs.rs (0155 redesign).
 
-// ── Drawer / Popover / Tooltip ──────────────────────────────────────────────
-
-/// Drawer outcome.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum DrawerOutcome {
-    /// No change.
-    #[default]
-    Ignored,
-    /// Closed.
-    Closed,
-}
-
-/// Drawer open state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct DrawerState {
-    open: bool,
-}
-
-impl DrawerState {
-    /// Closed.
-    #[must_use]
-    pub const fn new() -> Self {
-        Self { open: false }
-    }
-
-    #[must_use]
-    /// Open.
-    pub const fn is_open(self) -> bool {
-        self.open
-    }
-
-    /// Open drawer.
-    pub const fn open(&mut self) {
-        self.open = true;
-    }
-
-    /// Esc closes.
-    pub fn handle_key(&mut self, key: KeyEvent) -> DrawerOutcome {
-        if self.open && key.kind == KeyEventKind::Press && key.code == KeyCode::Esc {
-            self.open = false;
-            DrawerOutcome::Closed
-        } else {
-            DrawerOutcome::Ignored
-        }
-    }
-
-    /// Open drawer overlay on stack (modal-like edge panel).
-    pub fn open_on_stack<F: Clone + Eq>(
-        &mut self,
-        stack: &mut OverlayStack<F>,
-        bounds: Rect,
-        id: &'static str,
-    ) -> OverlayOutcome<F> {
-        self.open = true;
-        open_drawer_overlay(
-            stack,
-            bounds,
-            id,
-            OverlaySize {
-                width: 32,
-                height: bounds.height.max(3),
-                min_width: 16,
-                min_height: 3,
-                max_width: 48,
-                max_height: 0,
-            },
-            None,
-        )
-    }
-}
-
-/// Places a drawer using [`OverlayKind::Drawer`] policy.
-#[must_use]
-pub fn place_drawer(bounds: Rect, size: OverlaySize) -> Rect {
-    if bounds.is_empty() {
-        return Rect::default();
-    }
-    place_overlay(
-        bounds,
-        None,
-        size,
-        OverlayPolicy::for_kind(OverlayKind::Drawer),
-    )
-}
-
-/// Opens (or replaces) a drawer overlay.
-pub fn open_drawer_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-    bounds: Rect,
-    id: impl Into<OverlayId>,
-    size: OverlaySize,
-    opener_focus: Option<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.open(bounds, OverlaySpec::drawer(id, size, opener_focus))
-}
-
-/// Dismisses the default drawer overlay when present.
-pub fn dismiss_drawer_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.dismiss(&OverlayId::from_static(DRAWER_OVERLAY_ID))
-}
-
-// Popover / Tooltip: canonical homes are `popover` and `tooltip` modules
-// (`widgets::{Popover, …}` / `widgets::{Tooltip, …}`).
-
-/// Drawer chrome (edge panel).
-#[derive(Debug, Clone, Copy)]
-pub struct Drawer<'a> {
-    title: &'a str,
-    tokens: &'a DesignSystem,
-}
-
-impl<'a> Drawer<'a> {
-    /// Title.
-    #[must_use]
-    pub const fn new(title: &'a str, tokens: &'a DesignSystem) -> Self {
-        Self { title, tokens }
-    }
-}
-
-impl Widget for &Drawer<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        let style = self.tokens.style(Role::Elevated);
-        for y in area.y..area.bottom() {
-            for x in area.x..area.right() {
-                buffer[(x, y)].set_style(style);
-            }
-        }
-        let text = take_display_cols(self.title, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &text,
-            usize::from(area.width),
-            self.tokens.style(Role::TextStrong),
-        );
-    }
-}
+// Drawer / Sheet: canonical home is `drawer` module.
+// Popover / Tooltip: canonical homes are `popover` and `tooltip` modules.
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::widgets::drawer::{
+        DRAWER_OVERLAY_ID, DrawerOutcome, DrawerState, open_drawer_overlay,
+    };
     use crate::widgets::popover::{open_popover_overlay, place_popover};
     use crate::widgets::tooltip::{TooltipState, open_tooltip_overlay};
 

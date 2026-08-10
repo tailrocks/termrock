@@ -3554,12 +3554,39 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "drawer/basic",
+            "Drawer right",
             "Drawer",
-            "Drawer",
-            "Edge drawer chrome.",
-            24,
-            10,
+            "Right-edge inspector with handle, header, body, footer.",
+            28,
+            14,
             drawer_story,
+        ),
+        Story::new(
+            "drawer/left",
+            "Drawer left",
+            "Drawer",
+            "Left-edge navigation rail drawer.",
+            24,
+            12,
+            drawer_left_story,
+        ),
+        Story::new(
+            "drawer/sheet",
+            "Sheet bottom",
+            "Sheet",
+            "Bottom sheet (DrawerEdge::Bottom) for mobile-style secondary content.",
+            48,
+            10,
+            drawer_sheet_story,
+        ),
+        Story::new(
+            "drawer/non-modal",
+            "Drawer non-modal",
+            "Drawer",
+            "Non-modal task rail — no focus trap; main selection preserved by host.",
+            28,
+            12,
+            drawer_non_modal_story,
         ),
         Story::new(
             "text/basic",
@@ -4754,9 +4781,9 @@ pub(crate) fn stories() -> Vec<Story> {
             "drawer/narrow",
             "Narrow Drawer",
             "Drawer",
-            "Narrow-terminal geometry for Drawer (16 cols).",
+            "Compact/fullscreen contraction path (16 cols).",
             16,
-            10,
+            12,
             drawer_story,
         ),
         Story::new(
@@ -4765,7 +4792,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "Drawer",
             "Unicode-safe paint path for Drawer (CJK/emoji-capable layout).",
             28,
-            10,
+            12,
             drawer_unicode_story,
         ),
         Story::new(
@@ -13283,8 +13310,57 @@ fn callout_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(&Drawer::new("Drawer", &tokens), area, frame.buffer_mut());
+    let mut state = termrock::widgets::DrawerState::new();
+    state.open();
+    state.set_header_rows(1);
+    state.set_footer_rows(1);
+    Drawer::new("Inspector", system)
+        .footer(Some("esc · [ ] resize"))
+        .paint(area, frame.buffer_mut(), &mut state);
+    let body = state.body_area();
+    if !body.is_empty() {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "filters · details",
+            usize::from(body.width),
+            system.style(termrock::style::Role::Text),
+        );
+    }
+}
+
+fn drawer_left_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = termrock::widgets::DrawerState::new();
+    state.set_edge(termrock::widgets::DrawerEdge::Left);
+    state.open();
+    Drawer::new("Nav", system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn drawer_sheet_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = termrock::widgets::DrawerState::sheet();
+    state.open();
+    state.set_header_rows(1);
+    termrock::widgets::Sheet::new("Sheet", system)
+        .footer(Some("drag handle"))
+        .paint(area, frame.buffer_mut(), &mut state);
+    let body = state.body_area();
+    if !body.is_empty() {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "bottom sheet content",
+            usize::from(body.width),
+            system.style(termrock::style::Role::TextMuted),
+        );
+    }
+}
+
+fn drawer_non_modal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = termrock::widgets::DrawerState::non_modal();
+    state.open();
+    Drawer::new("Task rail", system)
+        .footer(Some("non-modal"))
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -15263,8 +15339,9 @@ fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn drawer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(&Drawer::new("設定 ⚙️", &tokens), area, frame.buffer_mut());
+    let mut state = termrock::widgets::DrawerState::new();
+    state.open();
+    Drawer::new("設定 ⚙️", system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
