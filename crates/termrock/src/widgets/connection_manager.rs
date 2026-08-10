@@ -845,6 +845,11 @@ pub struct ConnectionManagerState {
     /// Focused.
     pub focused: bool,
     accepts_input: bool,
+    /// Browse search entry mode (`/` activates; Esc leaves).
+    ///
+    /// When false, letter hotkeys (`t` test, `n` add, …) apply. When true,
+    /// printable keys feed the query (including letters that are hotkeys).
+    search_mode: bool,
     /// Row hit regions.
     pub row_hits: Vec<(String, Rect)>,
     /// Confirm hits (proceed?).
@@ -868,6 +873,7 @@ impl fmt::Debug for ConnectionManagerState {
             .field("secret", &self.secret) // PasswordInputState redacts
             .field("edit_id", &self.edit_id)
             .field("focused", &self.focused)
+            .field("search_mode", &self.search_mode)
             .finish()
     }
 }
@@ -893,6 +899,7 @@ impl Clone for ConnectionManagerState {
             edit_id: self.edit_id.clone(),
             focused: self.focused,
             accepts_input: self.accepts_input,
+            search_mode: self.search_mode,
             row_hits: self.row_hits.clone(),
             confirm_hits: self.confirm_hits.clone(),
         }
@@ -915,6 +922,7 @@ impl PartialEq for ConnectionManagerState {
             && self.edit_id == other.edit_id
             && self.focused == other.focused
             && self.accepts_input == other.accepts_input
+            && self.search_mode == other.search_mode
         // secret intentionally omitted from equality (never compare secrets)
     }
 }
@@ -949,6 +957,7 @@ impl ConnectionManagerState {
             edit_id: None,
             focused: true,
             accepts_input: true,
+            search_mode: false,
             row_hits: Vec::new(),
             confirm_hits: Vec::new(),
         }
@@ -957,7 +966,16 @@ impl ConnectionManagerState {
     /// Set search query and refilter.
     pub fn set_query(&mut self, q: impl Into<String>) {
         self.query = q.into();
+        if !self.query.is_empty() {
+            self.search_mode = true;
+        }
         self.refilter();
+    }
+
+    /// Whether browse search mode is active (`/` entry).
+    #[must_use]
+    pub const fn search_mode(&self) -> bool {
+        self.search_mode
     }
 
     /// Replace catalog and refilter.
@@ -1192,6 +1210,7 @@ impl ConnectionManagerState {
     }
 
     fn begin_add(&mut self) -> ConnectionManagerOutcome {
+        self.search_mode = false;
         self.phase = ConnectionManagerPhase::Add;
         self.edit_id = None;
         self.form = ConnectionFormDraft {
@@ -1213,6 +1232,7 @@ impl ConnectionManagerState {
         if !e.enabled {
             return ConnectionManagerOutcome::Ignored;
         }
+        self.search_mode = false;
         self.phase = ConnectionManagerPhase::Edit;
         self.edit_id = Some(e.id.clone());
         self.form = ConnectionFormDraft::from_entry(&e);
@@ -1278,10 +1298,31 @@ impl ConnectionManagerState {
             ConnectionManagerPhase::Browse => {}
         }
 
+        // Browse: `/` enters search mode; Esc leaves search (or cancels when idle).
+        // Letter hotkeys only apply when !search_mode so typing "test" works.
         match key.code {
+            KeyCode::Esc if self.search_mode => {
+                let had_query = !self.query.is_empty();
+                self.query.clear();
+                self.search_mode = false;
+                if had_query {
+                    self.refilter();
+                    ConnectionManagerOutcome::QueryChanged {
+                        query: String::new(),
+                    }
+                } else {
+                    ConnectionManagerOutcome::Ignored
+                }
+            }
             KeyCode::Esc => ConnectionManagerOutcome::Cancelled,
-            KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() => self.move_cursor(-1),
-            KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() => self.move_cursor(1),
+            KeyCode::Up => self.move_cursor(-1),
+            KeyCode::Down => self.move_cursor(1),
+            KeyCode::Char('k') if key.modifiers.is_empty() && !self.search_mode => {
+                self.move_cursor(-1)
+            }
+            KeyCode::Char('j') if key.modifiers.is_empty() && !self.search_mode => {
+                self.move_cursor(1)
+            }
             KeyCode::Enter => {
                 let Some(c) = self.current() else {
                     return ConnectionManagerOutcome::Ignored;
@@ -1293,7 +1334,9 @@ impl ConnectionManagerState {
                     id: c.id.clone(),
                 }
             }
-            KeyCode::Char('t') if key.modifiers.is_empty() && self.query.is_empty() => {
+            KeyCode::Char('t')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 let Some(c) = self.current() else {
                     return ConnectionManagerOutcome::Ignored;
                 };
@@ -1304,7 +1347,9 @@ impl ConnectionManagerState {
                 self.phase = ConnectionManagerPhase::TestBusy;
                 ConnectionManagerOutcome::TestRequested { id }
             }
-            KeyCode::Char('r') if key.modifiers.is_empty() && self.query.is_empty() => {
+            KeyCode::Char('r')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 let Some(c) = self.current() else {
                     return ConnectionManagerOutcome::Ignored;
                 };
@@ -1315,13 +1360,19 @@ impl ConnectionManagerState {
                     id: c.id.clone(),
                 }
             }
-            KeyCode::Char('n') if key.modifiers.is_empty() && self.query.is_empty() => {
+            KeyCode::Char('n')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 self.begin_add()
             }
-            KeyCode::Char('e') if key.modifiers.is_empty() && self.query.is_empty() => {
+            KeyCode::Char('e')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 self.begin_edit()
             }
-            KeyCode::Char('f') if key.modifiers.is_empty() && self.query.is_empty() => {
+            KeyCode::Char('f')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 let Some((id, fav)) = self.current().map(|c| (c.id.clone(), !c.favorite)) else {
                     return ConnectionManagerOutcome::Ignored;
                 };
@@ -1336,36 +1387,44 @@ impl ConnectionManagerState {
                     favorite: fav,
                 }
             }
-            KeyCode::Char('F') if key.modifiers.contains(KeyModifiers::SHIFT) => {
-                // Promote to full management
+            KeyCode::Char('F') if key.modifiers.contains(KeyModifiers::SHIFT) && !self.search_mode => {
                 self.presentation = ConnectionManagerPresentation::Full;
                 ConnectionManagerOutcome::FullRequested
             }
-            KeyCode::Char('L') if key.modifiers.contains(KeyModifiers::SHIFT) => {
+            KeyCode::Char('L') if key.modifiers.contains(KeyModifiers::SHIFT) && !self.search_mode => {
                 self.presentation = ConnectionManagerPresentation::Launcher;
                 ConnectionManagerOutcome::LauncherRequested
             }
-            KeyCode::Delete => self.open_confirm_delete(),
-            KeyCode::Char('d') if key.modifiers.is_empty() && self.query.is_empty() => {
+            KeyCode::Delete if !self.search_mode => self.open_confirm_delete(),
+            KeyCode::Char('d')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 self.open_confirm_delete()
             }
-            KeyCode::Char('1') if key.modifiers.is_empty() && self.query.is_empty() => {
+            KeyCode::Char('1')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 self.list_view = ConnectionListView::All;
                 self.refilter();
                 ConnectionManagerOutcome::ViewChanged(ConnectionListView::All)
             }
-            KeyCode::Char('2') if key.modifiers.is_empty() && self.query.is_empty() => {
+            KeyCode::Char('2')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 self.list_view = ConnectionListView::Favorites;
                 self.refilter();
                 ConnectionManagerOutcome::ViewChanged(ConnectionListView::Favorites)
             }
-            KeyCode::Char('3') if key.modifiers.is_empty() && self.query.is_empty() => {
+            KeyCode::Char('3')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 self.list_view = ConnectionListView::Recent;
                 self.refilter();
                 ConnectionManagerOutcome::ViewChanged(ConnectionListView::Recent)
             }
-            KeyCode::Char('g') if key.modifiers.is_empty() && self.query.is_empty() => {
-                // Cycle groups: none → first → … → all
+            KeyCode::Char('g')
+                if key.modifiers.is_empty() && !self.search_mode =>
+            {
                 let groups = self.groups();
                 if groups.is_empty() {
                     return ConnectionManagerOutcome::Ignored;
@@ -1386,42 +1445,33 @@ impl ConnectionManagerState {
                 self.refilter();
                 ConnectionManagerOutcome::ViewChanged(next)
             }
-            KeyCode::Char('/') if key.modifiers.is_empty() => ConnectionManagerOutcome::Ignored,
+            KeyCode::Char('/') if key.modifiers.is_empty() && !self.search_mode => {
+                self.search_mode = true;
+                ConnectionManagerOutcome::Ignored
+            }
             KeyCode::Backspace => {
-                if !self.query.is_empty() {
+                if self.search_mode && !self.query.is_empty() {
                     self.query.pop();
                     self.refilter();
                     return ConnectionManagerOutcome::QueryChanged {
                         query: self.query.clone(),
                     };
                 }
+                if self.search_mode && self.query.is_empty() {
+                    self.search_mode = false;
+                    return ConnectionManagerOutcome::Ignored;
+                }
                 ConnectionManagerOutcome::Ignored
             }
-            KeyCode::Char('y') | KeyCode::Char('Y') => ConnectionManagerOutcome::Ignored,
+            KeyCode::Char('y') | KeyCode::Char('Y') if !self.search_mode => {
+                ConnectionManagerOutcome::Ignored
+            }
             KeyCode::Char(c)
-                if !c.is_control()
+                if self.search_mode
+                    && !c.is_control()
                     && !key.modifiers.contains(KeyModifiers::CONTROL)
                     && !key.modifiers.contains(KeyModifiers::ALT) =>
             {
-                if self.query.is_empty()
-                    && matches!(
-                        c,
-                        'j' | 'k'
-                            | 'n'
-                            | 'e'
-                            | 'f'
-                            | 'r'
-                            | 't'
-                            | 'd'
-                            | 'g'
-                            | '1'
-                            | '2'
-                            | '3'
-                            | '/'
-                    )
-                {
-                    return ConnectionManagerOutcome::Ignored;
-                }
                 self.query.push(c);
                 self.refilter();
                 ConnectionManagerOutcome::QueryChanged {
@@ -1782,8 +1832,9 @@ impl<'a> ConnectionManager<'a> {
         if y < max_y {
             let line = match state.phase {
                 ConnectionManagerPhase::Browse => {
+                    let mode = if state.search_mode { "search" } else { "keys" };
                     format!(
-                        "/{}  [{}] ({})",
+                        "/{}  [{mode}·{}] ({})",
                         state.query,
                         state.list_view.label(),
                         state.filtered_len()
@@ -2627,13 +2678,60 @@ mod tests {
             !state_dbg.contains("s3cr3t-VALUE-never-leak"),
             "secret leaked in state Debug: {state_dbg}"
         );
-        // Host can still take secret
-        // (after save, secret still present until take)
-        assert!(st.has_secret_draft() || true); // may still hold until take
-        // Re-seed after phase browse
-        st.test_set_secret("s3cr3t-VALUE-never-leak");
+        // Secret retained after Save until host takes it (not embedded in outcome).
+        assert!(
+            st.has_secret_draft(),
+            "secret draft must remain available for host take_form_secret after Save"
+        );
         let taken = st.take_form_secret();
         assert_eq!(taken, "s3cr3t-VALUE-never-leak");
+        assert!(
+            !st.has_secret_draft(),
+            "take_form_secret must clear the draft"
+        );
+    }
+
+    #[test]
+    fn search_mode_slash_then_test_types_query() {
+        let mut st = open();
+        // Without search mode, 't' is TestRequested
+        let out = st.handle_key(press(KeyCode::Char('t')));
+        assert!(
+            matches!(out, ConnectionManagerOutcome::TestRequested { .. }),
+            "empty browse: t is test hotkey, got {out:?}"
+        );
+        st.clear_test_busy();
+
+        // '/' enters search mode; typing "test" is query, never TestRequested
+        let out = st.handle_key(press(KeyCode::Char('/')));
+        assert!(matches!(out, ConnectionManagerOutcome::Ignored));
+        assert!(st.search_mode());
+
+        let mut last = ConnectionManagerOutcome::Ignored;
+        for c in "test".chars() {
+            last = st.handle_key(press(KeyCode::Char(c)));
+            assert!(
+                matches!(last, ConnectionManagerOutcome::QueryChanged { .. }),
+                "search_mode char {c:?} must QueryChanged, got {last:?}"
+            );
+            assert!(
+                !matches!(last, ConnectionManagerOutcome::TestRequested { .. }),
+                "must not fire TestRequested while searching"
+            );
+        }
+        assert_eq!(st.query, "test");
+        assert!(matches!(
+            last,
+            ConnectionManagerOutcome::QueryChanged { ref query } if query == "test"
+        ));
+        // Esc leaves search mode and clears query
+        let out = st.handle_key(press(KeyCode::Esc));
+        assert!(matches!(
+            out,
+            ConnectionManagerOutcome::QueryChanged { ref query } if query.is_empty()
+        ));
+        assert!(!st.search_mode());
+        assert!(st.query.is_empty());
     }
 
     #[test]
