@@ -7205,6 +7205,96 @@ pub(crate) fn stories() -> Vec<Story> {
             12,
             form_wizard_resume_story,
         ),
+        Story::new(
+            "settings-screen/basic",
+            "Settings screen",
+            "SettingsScreen",
+            "Searchable settings: Sidebar, SearchInput, Form, footer.",
+            100,
+            28,
+            settings_screen_basic,
+        ),
+        Story::new(
+            "settings-screen/search",
+            "Settings search filter",
+            "SettingsScreen",
+            "Search focused with filtered categories.",
+            100,
+            28,
+            settings_screen_search,
+        ),
+        Story::new(
+            "settings-screen/validation",
+            "Settings validation",
+            "SettingsScreen",
+            "Required field error + dirty modified cue.",
+            100,
+            28,
+            settings_screen_validation,
+        ),
+        Story::new(
+            "settings-screen/conflicts",
+            "Settings conflicts",
+            "SettingsScreen",
+            "Keybinding conflict + restart-required banner.",
+            100,
+            28,
+            settings_screen_conflicts,
+        ),
+        Story::new(
+            "settings-screen/theme",
+            "Settings theme preview",
+            "SettingsScreen",
+            "ThemePicker body mode with live paint system.",
+            100,
+            28,
+            settings_screen_theme,
+        ),
+        Story::new(
+            "settings-screen/keybinding",
+            "Settings keybinding",
+            "SettingsScreen",
+            "KeybindingRecorder integrated body.",
+            80,
+            16,
+            settings_screen_keybinding,
+        ),
+        Story::new(
+            "settings-screen/narrow",
+            "Settings narrow",
+            "SettingsScreen",
+            "Narrow density with category drawer open.",
+            60,
+            22,
+            settings_screen_narrow,
+        ),
+        Story::new(
+            "settings-screen/tiny",
+            "Settings tiny",
+            "SettingsScreen",
+            "Tiny density — body + search only.",
+            40,
+            16,
+            settings_screen_tiny,
+        ),
+        Story::new(
+            "settings-screen/no-results",
+            "Settings no results",
+            "SettingsScreen",
+            "Empty search guidance.",
+            80,
+            20,
+            settings_screen_no_results,
+        ),
+        Story::new(
+            "settings-screen/help",
+            "Settings keyboard help",
+            "SettingsScreen",
+            "Keyboard help overlay.",
+            80,
+            22,
+            settings_screen_help,
+        ),
         // --- Catalog state-axis stories (narrow/unicode/depth) ---
         Story::new(
             "action-bar/narrow",
@@ -24463,6 +24553,176 @@ fn agent_workbench_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn agent_workbench_no_color(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::NoColor);
+}
+
+#[derive(Clone, Copy)]
+enum SettingsScreenStoryKind {
+    Basic,
+    Search,
+    Validation,
+    Conflicts,
+    Theme,
+    Keybinding,
+    Narrow,
+    Tiny,
+    NoResults,
+    Help,
+}
+
+fn paint_settings_screen_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    kind: SettingsScreenStoryKind,
+) {
+    use termrock::patterns::{
+        example_settings_appearance_fields, example_settings_categories,
+        example_settings_keys_fields, example_settings_profile_fields, filter_settings_nav,
+        render_settings_screen, SettingsBodyMode, SettingsDensity, SettingsRegion,
+        SettingsScreenState, SettingsScreenSurfaces,
+    };
+    use termrock::widgets::{
+        Fieldset, KeybindingRecorderState, StatusBarState, BUILTIN_THEME_PRESETS,
+    };
+
+    let mut state = SettingsScreenState::<&str>::new();
+    let mut nav = example_settings_categories();
+    let appearance = example_settings_appearance_fields();
+    let profile = example_settings_profile_fields();
+    let keys = example_settings_keys_fields();
+    let mut sstate = StatusBarState::default();
+
+    let (fieldsets, title, body_mode): (Vec<Fieldset<'_, &str>>, &str, SettingsBodyMode) =
+        match kind {
+            SettingsScreenStoryKind::Basic | SettingsScreenStoryKind::Search => {
+                state.region = SettingsRegion::Body;
+                let _ = state.select_section("appearance");
+                (
+                    vec![Fieldset::new("Appearance", &appearance)],
+                    "Appearance",
+                    SettingsBodyMode::Form,
+                )
+            }
+            SettingsScreenStoryKind::Validation => {
+                let _ = state.select_section("profile");
+                (
+                    vec![Fieldset::new("Profile", &profile)],
+                    "Profile",
+                    SettingsBodyMode::Form,
+                )
+            }
+            SettingsScreenStoryKind::Conflicts => {
+                let _ = state.select_section("tools");
+                state.has_conflicts = true;
+                state.restart_required = true;
+                state.dirty = true;
+                (
+                    vec![
+                        Fieldset::new("Keys", &keys),
+                        Fieldset::new("Appearance", &appearance),
+                    ],
+                    "Keys & chrome",
+                    SettingsBodyMode::Form,
+                )
+            }
+            SettingsScreenStoryKind::Theme => {
+                let _ = state.select_section("appearance");
+                (vec![], "Theme", SettingsBodyMode::Theme)
+            }
+            SettingsScreenStoryKind::Keybinding => {
+                let _ = state.select_section("tools");
+                state.keybinding = KeybindingRecorderState::new("submit", "Submit chord");
+                (vec![], "Keybindings", SettingsBodyMode::Keybinding)
+            }
+            SettingsScreenStoryKind::Narrow => {
+                state.density = Some(SettingsDensity::Narrow);
+                let _ = state.select_section("appearance");
+                state.drawer_open = true;
+                (
+                    vec![Fieldset::new("Appearance", &appearance)],
+                    "Appearance",
+                    SettingsBodyMode::Form,
+                )
+            }
+            SettingsScreenStoryKind::Tiny => {
+                state.density = Some(SettingsDensity::Tiny);
+                let _ = state.select_section("appearance");
+                (
+                    vec![Fieldset::new("Appearance", &appearance)],
+                    "Appearance",
+                    SettingsBodyMode::Form,
+                )
+            }
+            SettingsScreenStoryKind::NoResults => {
+                state.body_mode = SettingsBodyMode::NoResults;
+                state.search.set_query("zzzz-nope");
+                (vec![], "Search", SettingsBodyMode::NoResults)
+            }
+            SettingsScreenStoryKind::Help => {
+                state.help_open = true;
+                let _ = state.select_section("appearance");
+                (
+                    vec![Fieldset::new("Appearance", &appearance)],
+                    "Appearance",
+                    SettingsBodyMode::Form,
+                )
+            }
+        };
+
+    state.body_mode = body_mode;
+    if matches!(kind, SettingsScreenStoryKind::Search) {
+        state.region = SettingsRegion::Search;
+        state.search.set_query("appear");
+        state.search.set_focused(true);
+        nav = filter_settings_nav(&nav, "appear");
+    }
+
+    render_settings_screen(
+        frame.buffer_mut(),
+        area,
+        SettingsScreenSurfaces {
+            system,
+            state: &mut state,
+            nav: &nav,
+            fieldsets: &fieldsets,
+            theme_presets: BUILTIN_THEME_PRESETS,
+            theme_paint: Some(system),
+            status_slots: &[],
+            status_state: &mut sstate,
+            section_title: title,
+        },
+    );
+}
+
+fn settings_screen_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Basic);
+}
+fn settings_screen_search(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Search);
+}
+fn settings_screen_validation(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Validation);
+}
+fn settings_screen_conflicts(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Conflicts);
+}
+fn settings_screen_theme(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Theme);
+}
+fn settings_screen_keybinding(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Keybinding);
+}
+fn settings_screen_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Narrow);
+}
+fn settings_screen_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Tiny);
+}
+fn settings_screen_no_results(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::NoResults);
+}
+fn settings_screen_help(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Help);
 }
 
 fn transcript_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

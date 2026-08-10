@@ -1042,6 +1042,80 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "settings-screen".into(),
+            title: "Settings Screen".into(),
+            description: "Searchable settings block: Sidebar, SearchInput, Form, theme, keybindings."
+                .into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::settings_screen".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/settings_screen.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec![
+                    "termrock/Sidebar".into(),
+                    "termrock/SearchInput".into(),
+                    "termrock/Form".into(),
+                    "termrock/ThemePicker".into(),
+                    "termrock/KeybindingRecorder".into(),
+                    "termrock/KeyboardHelp".into(),
+                    "termrock/Panel".into(),
+                ];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("SettingsDensity".into());
+                c.min_width = Some(40);
+                c.min_height = Some(12);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "search".into(),
+                    label: "Search".into(),
+                },
+                AnatomyPartRef {
+                    id: "nav".into(),
+                    label: "Category sidebar".into(),
+                },
+                AnatomyPartRef {
+                    id: "body".into(),
+                    label: "Form / theme / keybinding body".into(),
+                },
+                AnatomyPartRef {
+                    id: "footer".into(),
+                    label: "Save / reset strip".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![],
+            outcomes: vec![],
+            stories: vec![
+                "settings-screen/basic".into(),
+                "settings-screen/search".into(),
+                "settings-screen/validation".into(),
+                "settings-screen/conflicts".into(),
+                "settings-screen/theme".into(),
+                "settings-screen/keybinding".into(),
+                "settings-screen/narrow".into(),
+                "settings-screen/tiny".into(),
+                "settings-screen/no-results".into(),
+                "settings-screen/help".into(),
+            ],
+            tests: vec!["patterns::settings_screen".into()],
+            migration: Some("migrations/0237-v0.13.0-settings-screen.md".into()),
+            provenance: prov("crates/termrock/src/patterns/settings_screen.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 

@@ -2,14 +2,14 @@
   "schema": 1,
   "name": "settings-shell",
   "version": "0.1.0",
-  "description": "SettingsShell source-owned block",
+  "description": "SettingsScreen source-owned block (elevated searchable settings)",
   "license": "Apache-2.0",
   "kernel": "0.11.0",
   "files": [
     {
       "source": "src/lib.rs",
       "dest": "src/ui/blocks/settings_shell.rs",
-      "sha256": "3eb9ea10069edcd772d28538b4d4c1d5ea82e12bb0f28c81d5dbad3130c04460"
+      "sha256": "ebfd5dc56c7ed3a5b8d7f21d3f7755f1a726c3f40d4c6ca51d0ada2f6ced3b4b"
     }
   ]
 }

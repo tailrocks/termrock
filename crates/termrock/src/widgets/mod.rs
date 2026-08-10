@@ -364,8 +364,9 @@ pub use context_meter::{
 pub use context_meter::bench as context_meter_bench;
 pub use blocks::{
     BlockChrome, OpsDashboardOutcome, OpsDashboardState, OpsRegion, ResourceBrowserOutcome,
-    ResourceBrowserState, SettingsShellOutcome, SettingsShellState,
+    ResourceBrowserState,
 };
+// SettingsShell elevated to `termrock::patterns::{SettingsScreenState, …}` (0237).
 pub use charts::{
     BarDatum, BarSeries, Chart, ChartSeries, Gauge, HistBucket, Histogram, MeterSegment,
     ScaleDomain, ScaleMode, SegmentedMeter, Sparkline, VizGlyphSet, glyph_for_fraction,

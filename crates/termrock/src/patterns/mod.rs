@@ -15,6 +15,7 @@ mod agent_workbench;
 mod app_shell;
 mod ops_dashboard;
 mod resource_browser;
+mod settings_screen;
 mod studio_shell;
 
 pub use agent_shell::{AgentShellLayout, AgentShellSlots, layout_agent_shell};
@@ -32,5 +33,13 @@ pub use app_shell::{
 pub use ops_dashboard::{OpsDashboardLayout, OpsDashboardSlots, layout_ops_dashboard};
 pub use resource_browser::{
     ResourceBrowserLayout, ResourceBrowserSlots, layout_resource_browser, wire_resource_preview,
+};
+pub use settings_screen::{
+    filter_settings_fieldsets, filter_settings_nav, layout_settings_screen,
+    example_settings_appearance_fields, example_settings_categories, example_settings_help_entries,
+    example_settings_keys_fields, example_settings_profile_fields, render_settings_screen,
+    settings_query_matches, SettingsBodyMode, SettingsDensity, SettingsRegion,
+    SettingsScreenOutcome, SettingsScreenSlots, SettingsScreenState, SettingsScreenSurfaces,
+    SettingsShellOutcome, SettingsShellState,
 };
 pub use studio_shell::{StudioShellLayout, StudioShellSlots, layout_studio_shell};

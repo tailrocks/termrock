@@ -181,92 +181,7 @@ impl<Id: Clone + PartialEq> Default for ResourceBrowserState<Id> {
     }
 }
 
-// ── SettingsShell ───────────────────────────────────────────────────────────
-
-/// Settings shell outcomes.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum SettingsShellOutcome<SectionId> {
-    /// No change.
-    Ignored,
-    /// Section selected.
-    SectionSelected(SectionId),
-    /// Save requested.
-    SaveRequested,
-    /// Reset section.
-    ResetRequested,
-    /// Discard dirty.
-    DiscardRequested,
-    /// Search query changed (consumer filters).
-    SearchChanged,
-}
-
-/// Settings shell state.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SettingsShellState<SectionId: Clone + PartialEq> {
-    /// Selected section.
-    pub section: Option<SectionId>,
-    /// Dirty flag projection.
-    pub dirty: bool,
-    /// Search text.
-    pub search: String,
-    /// Focus in search field.
-    pub search_focused: bool,
-}
-
-impl<SectionId: Clone + PartialEq> SettingsShellState<SectionId> {
-    /// Fresh.
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            section: None,
-            dirty: false,
-            search: String::new(),
-            search_focused: false,
-        }
-    }
-
-    /// Keys.
-    pub fn handle_key(&mut self, key: KeyEvent) -> SettingsShellOutcome<SectionId> {
-        if key.kind != KeyEventKind::Press && key.kind != KeyEventKind::Repeat {
-            return SettingsShellOutcome::Ignored;
-        }
-        if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
-            return SettingsShellOutcome::SaveRequested;
-        }
-        if self.search_focused {
-            match key.code {
-                KeyCode::Esc => {
-                    self.search_focused = false;
-                    SettingsShellOutcome::Ignored
-                }
-                KeyCode::Backspace => {
-                    self.search.pop();
-                    SettingsShellOutcome::SearchChanged
-                }
-                KeyCode::Char(c) if !c.is_control() && key.modifiers.is_empty() => {
-                    self.search.push(c);
-                    SettingsShellOutcome::SearchChanged
-                }
-                _ => SettingsShellOutcome::Ignored,
-            }
-        } else {
-            SettingsShellOutcome::Ignored
-        }
-    }
-
-    /// Select section (controlled).
-    pub fn select_section(&mut self, id: SectionId) -> SettingsShellOutcome<SectionId> {
-        self.section = Some(id.clone());
-        SettingsShellOutcome::SectionSelected(id)
-    }
-}
-
-impl<SectionId: Clone + PartialEq> Default for SettingsShellState<SectionId> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// SettingsShell elevated to `patterns::settings_screen` (migration 0237).
 
 /// Marker type for block chrome that needs tokens (paint lives in consumer/story).
 #[derive(Debug, Clone, Copy)]
@@ -314,12 +229,4 @@ mod tests {
         assert_eq!(state.selection_generation, 1);
     }
 
-    #[test]
-    fn settings_save_shortcut() {
-        let mut s = SettingsShellState::<&str>::new();
-        assert!(matches!(
-            s.handle_key(KeyEvent::new(KeyCode::Char('s'), KeyModifiers::CONTROL)),
-            SettingsShellOutcome::SaveRequested
-        ));
-    }
 }

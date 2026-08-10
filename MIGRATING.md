@@ -250,6 +250,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0234 | `v0.13.0` | [WorkingStateCard agent work summary](migrations/0234-v0.13.0-working-state-card.md) |
 | 0235 | `v0.13.0` | [ApprovalQueue human decisions inbox](migrations/0235-v0.13.0-approval-queue.md) |
 | 0236 | `v0.13.0` | [AgentWorkbench elevated composition block](migrations/0236-v0.13.0-agent-workbench.md) |
+| 0237 | `v0.13.0` | [SettingsScreen elevated searchable settings](migrations/0237-v0.13.0-settings-screen.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

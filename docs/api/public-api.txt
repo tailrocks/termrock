@@ -9388,6 +9388,209 @@ pub unsafe fn termrock::patterns::AppShellZone::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::patterns::AppShellZone
 pub fn termrock::patterns::AppShellZone::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::AppShellZone
+#[non_exhaustive] pub enum termrock::patterns::SettingsBodyMode
+pub termrock::patterns::SettingsBodyMode::Form
+pub termrock::patterns::SettingsBodyMode::Keybinding
+pub termrock::patterns::SettingsBodyMode::NoResults
+pub termrock::patterns::SettingsBodyMode::Theme
+impl core::clone::Clone for termrock::patterns::SettingsBodyMode
+pub fn termrock::patterns::SettingsBodyMode::clone(&self) -> termrock::patterns::SettingsBodyMode
+impl core::fmt::Debug for termrock::patterns::SettingsBodyMode
+pub fn termrock::patterns::SettingsBodyMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::patterns::SettingsBodyMode
+impl core::marker::Freeze for termrock::patterns::SettingsBodyMode
+impl core::marker::Send for termrock::patterns::SettingsBodyMode
+impl core::marker::Sync for termrock::patterns::SettingsBodyMode
+impl core::marker::Unpin for termrock::patterns::SettingsBodyMode
+impl core::marker::UnsafeUnpin for termrock::patterns::SettingsBodyMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::SettingsBodyMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::SettingsBodyMode
+impl<T, U> core::convert::Into<U> for termrock::patterns::SettingsBodyMode where U: core::convert::From<T>
+pub fn termrock::patterns::SettingsBodyMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::SettingsBodyMode where U: core::convert::Into<T>
+pub type termrock::patterns::SettingsBodyMode::Error = core::convert::Infallible
+pub fn termrock::patterns::SettingsBodyMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::SettingsBodyMode where U: core::convert::TryFrom<T>
+pub type termrock::patterns::SettingsBodyMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::SettingsBodyMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::SettingsBodyMode where T: core::clone::Clone
+pub type termrock::patterns::SettingsBodyMode::Owned = T
+pub fn termrock::patterns::SettingsBodyMode::clone_into(&self, &mut T)
+pub fn termrock::patterns::SettingsBodyMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::SettingsBodyMode where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::SettingsBodyMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::SettingsBodyMode where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsBodyMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::SettingsBodyMode where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsBodyMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::SettingsBodyMode where T: core::clone::Clone
+pub unsafe fn termrock::patterns::SettingsBodyMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::SettingsBodyMode
+pub fn termrock::patterns::SettingsBodyMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::SettingsBodyMode
+#[non_exhaustive] pub enum termrock::patterns::SettingsDensity
+pub termrock::patterns::SettingsDensity::Narrow
+pub termrock::patterns::SettingsDensity::Normal
+pub termrock::patterns::SettingsDensity::Tiny
+impl termrock::patterns::SettingsDensity
+pub const fn termrock::patterns::SettingsDensity::for_width(u16) -> Self
+pub const fn termrock::patterns::SettingsDensity::id(self) -> &'static str
+impl core::clone::Clone for termrock::patterns::SettingsDensity
+pub fn termrock::patterns::SettingsDensity::clone(&self) -> termrock::patterns::SettingsDensity
+impl core::cmp::Eq for termrock::patterns::SettingsDensity
+impl core::cmp::PartialEq for termrock::patterns::SettingsDensity
+pub fn termrock::patterns::SettingsDensity::eq(&self, &termrock::patterns::SettingsDensity) -> bool
+impl core::default::Default for termrock::patterns::SettingsDensity
+pub fn termrock::patterns::SettingsDensity::default() -> termrock::patterns::SettingsDensity
+impl core::fmt::Debug for termrock::patterns::SettingsDensity
+pub fn termrock::patterns::SettingsDensity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::patterns::SettingsDensity
+pub fn termrock::patterns::SettingsDensity::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::patterns::SettingsDensity
+impl core::marker::StructuralPartialEq for termrock::patterns::SettingsDensity
+impl core::marker::Freeze for termrock::patterns::SettingsDensity
+impl core::marker::Send for termrock::patterns::SettingsDensity
+impl core::marker::Sync for termrock::patterns::SettingsDensity
+impl core::marker::Unpin for termrock::patterns::SettingsDensity
+impl core::marker::UnsafeUnpin for termrock::patterns::SettingsDensity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::SettingsDensity
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::SettingsDensity
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::SettingsDensity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::SettingsDensity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::SettingsDensity where U: core::convert::From<T>
+pub fn termrock::patterns::SettingsDensity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::SettingsDensity where U: core::convert::Into<T>
+pub type termrock::patterns::SettingsDensity::Error = core::convert::Infallible
+pub fn termrock::patterns::SettingsDensity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::SettingsDensity where U: core::convert::TryFrom<T>
+pub type termrock::patterns::SettingsDensity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::SettingsDensity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::SettingsDensity where T: core::clone::Clone
+pub type termrock::patterns::SettingsDensity::Owned = T
+pub fn termrock::patterns::SettingsDensity::clone_into(&self, &mut T)
+pub fn termrock::patterns::SettingsDensity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::SettingsDensity where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::SettingsDensity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::SettingsDensity where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsDensity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::SettingsDensity where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsDensity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::SettingsDensity where T: core::clone::Clone
+pub unsafe fn termrock::patterns::SettingsDensity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::SettingsDensity
+pub fn termrock::patterns::SettingsDensity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::SettingsDensity
+#[non_exhaustive] pub enum termrock::patterns::SettingsRegion
+pub termrock::patterns::SettingsRegion::Body
+pub termrock::patterns::SettingsRegion::Footer
+pub termrock::patterns::SettingsRegion::Nav
+pub termrock::patterns::SettingsRegion::Search
+impl termrock::patterns::SettingsRegion
+pub fn termrock::patterns::SettingsRegion::focus_order() -> &'static [termrock::patterns::SettingsRegion]
+pub const fn termrock::patterns::SettingsRegion::id(self) -> &'static str
+impl core::clone::Clone for termrock::patterns::SettingsRegion
+pub fn termrock::patterns::SettingsRegion::clone(&self) -> termrock::patterns::SettingsRegion
+impl core::cmp::Eq for termrock::patterns::SettingsRegion
+impl core::cmp::PartialEq for termrock::patterns::SettingsRegion
+pub fn termrock::patterns::SettingsRegion::eq(&self, &termrock::patterns::SettingsRegion) -> bool
+impl core::default::Default for termrock::patterns::SettingsRegion
+pub fn termrock::patterns::SettingsRegion::default() -> termrock::patterns::SettingsRegion
+impl core::fmt::Debug for termrock::patterns::SettingsRegion
+pub fn termrock::patterns::SettingsRegion::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::patterns::SettingsRegion
+pub fn termrock::patterns::SettingsRegion::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::patterns::SettingsRegion
+impl core::marker::StructuralPartialEq for termrock::patterns::SettingsRegion
+impl core::marker::Freeze for termrock::patterns::SettingsRegion
+impl core::marker::Send for termrock::patterns::SettingsRegion
+impl core::marker::Sync for termrock::patterns::SettingsRegion
+impl core::marker::Unpin for termrock::patterns::SettingsRegion
+impl core::marker::UnsafeUnpin for termrock::patterns::SettingsRegion
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::SettingsRegion
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::SettingsRegion
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::SettingsRegion where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::SettingsRegion::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::SettingsRegion where U: core::convert::From<T>
+pub fn termrock::patterns::SettingsRegion::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::SettingsRegion where U: core::convert::Into<T>
+pub type termrock::patterns::SettingsRegion::Error = core::convert::Infallible
+pub fn termrock::patterns::SettingsRegion::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::SettingsRegion where U: core::convert::TryFrom<T>
+pub type termrock::patterns::SettingsRegion::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::SettingsRegion::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::SettingsRegion where T: core::clone::Clone
+pub type termrock::patterns::SettingsRegion::Owned = T
+pub fn termrock::patterns::SettingsRegion::clone_into(&self, &mut T)
+pub fn termrock::patterns::SettingsRegion::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::SettingsRegion where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::SettingsRegion::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::SettingsRegion where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsRegion::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::SettingsRegion where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsRegion::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::SettingsRegion where T: core::clone::Clone
+pub unsafe fn termrock::patterns::SettingsRegion::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::SettingsRegion
+pub fn termrock::patterns::SettingsRegion::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::SettingsRegion
+#[non_exhaustive] pub enum termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>
+pub termrock::patterns::SettingsScreenOutcome::DeepLink(SectionId)
+pub termrock::patterns::SettingsScreenOutcome::DiscardRequested
+pub termrock::patterns::SettingsScreenOutcome::DrawerToggled
+pub termrock::patterns::SettingsScreenOutcome::DrawerToggled::open: bool
+pub termrock::patterns::SettingsScreenOutcome::Form(termrock::widgets::FormOutcome<FieldId>)
+pub termrock::patterns::SettingsScreenOutcome::HelpClosed
+pub termrock::patterns::SettingsScreenOutcome::HelpOpened
+pub termrock::patterns::SettingsScreenOutcome::Ignored
+pub termrock::patterns::SettingsScreenOutcome::Keybinding(termrock::widgets::KeybindingRecorderOutcome)
+pub termrock::patterns::SettingsScreenOutcome::RegionChanged(termrock::patterns::SettingsRegion)
+pub termrock::patterns::SettingsScreenOutcome::ResetAllRequested
+pub termrock::patterns::SettingsScreenOutcome::ResetFieldRequested(FieldId)
+pub termrock::patterns::SettingsScreenOutcome::ResetSectionRequested
+pub termrock::patterns::SettingsScreenOutcome::SaveRequested
+pub termrock::patterns::SettingsScreenOutcome::SearchChanged
+pub termrock::patterns::SettingsScreenOutcome::SectionSelected(SectionId)
+pub termrock::patterns::SettingsScreenOutcome::Theme(termrock::widgets::ThemePickerOutcome)
+impl<SectionId: core::clone::Clone, FieldId: core::clone::Clone> core::clone::Clone for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::clone(&self) -> termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>
+impl<SectionId: core::cmp::Eq, FieldId: core::cmp::Eq> core::cmp::Eq for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>
+impl<SectionId: core::cmp::PartialEq, FieldId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::eq(&self, &termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>) -> bool
+impl<SectionId: core::cmp::PartialEq, FieldId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>
+impl<SectionId: core::fmt::Debug, FieldId: core::fmt::Debug> core::fmt::Debug for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<SectionId, FieldId> core::marker::Freeze for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where SectionId: core::marker::Freeze, FieldId: core::marker::Freeze
+impl<SectionId, FieldId> core::marker::Send for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where SectionId: core::marker::Send, FieldId: core::marker::Send
+impl<SectionId, FieldId> core::marker::Sync for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where SectionId: core::marker::Sync, FieldId: core::marker::Sync
+impl<SectionId, FieldId> core::marker::Unpin for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where SectionId: core::marker::Unpin, FieldId: core::marker::Unpin
+impl<SectionId, FieldId> core::marker::UnsafeUnpin for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where SectionId: core::marker::UnsafeUnpin, FieldId: core::marker::UnsafeUnpin
+impl<SectionId, FieldId> core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where SectionId: core::panic::unwind_safe::RefUnwindSafe, FieldId: core::panic::unwind_safe::RefUnwindSafe
+impl<SectionId, FieldId> core::panic::unwind_safe::UnwindSafe for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where SectionId: core::panic::unwind_safe::UnwindSafe, FieldId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where U: core::convert::From<T>
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where U: core::convert::Into<T>
+pub type termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::Error = core::convert::Infallible
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where U: core::convert::TryFrom<T>
+pub type termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where T: core::clone::Clone
+pub type termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::Owned = T
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::clone_into(&self, &mut T)
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId> where T: core::clone::Clone
+pub unsafe fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>
+pub fn termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::SettingsScreenOutcome<SectionId, FieldId>
 #[non_exhaustive] pub enum termrock::patterns::WorkbenchDensity
 pub termrock::patterns::WorkbenchDensity::Narrow
 pub termrock::patterns::WorkbenchDensity::Normal
@@ -10006,6 +10209,142 @@ pub unsafe fn termrock::patterns::ResourceBrowserSlots::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::patterns::ResourceBrowserSlots
 pub fn termrock::patterns::ResourceBrowserSlots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::ResourceBrowserSlots
+pub struct termrock::patterns::SettingsScreenSlots
+pub termrock::patterns::SettingsScreenSlots::banner: ratatui_core::layout::rect::Rect
+pub termrock::patterns::SettingsScreenSlots::body: ratatui_core::layout::rect::Rect
+pub termrock::patterns::SettingsScreenSlots::drawer: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::SettingsScreenSlots::footer: ratatui_core::layout::rect::Rect
+pub termrock::patterns::SettingsScreenSlots::help: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::SettingsScreenSlots::nav: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::SettingsScreenSlots::search: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::patterns::SettingsScreenSlots
+pub fn termrock::patterns::SettingsScreenSlots::clone(&self) -> termrock::patterns::SettingsScreenSlots
+impl core::cmp::Eq for termrock::patterns::SettingsScreenSlots
+impl core::cmp::PartialEq for termrock::patterns::SettingsScreenSlots
+pub fn termrock::patterns::SettingsScreenSlots::eq(&self, &termrock::patterns::SettingsScreenSlots) -> bool
+impl core::fmt::Debug for termrock::patterns::SettingsScreenSlots
+pub fn termrock::patterns::SettingsScreenSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::patterns::SettingsScreenSlots
+impl core::marker::StructuralPartialEq for termrock::patterns::SettingsScreenSlots
+impl core::marker::Freeze for termrock::patterns::SettingsScreenSlots
+impl core::marker::Send for termrock::patterns::SettingsScreenSlots
+impl core::marker::Sync for termrock::patterns::SettingsScreenSlots
+impl core::marker::Unpin for termrock::patterns::SettingsScreenSlots
+impl core::marker::UnsafeUnpin for termrock::patterns::SettingsScreenSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::SettingsScreenSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::SettingsScreenSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::SettingsScreenSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::SettingsScreenSlots where U: core::convert::From<T>
+pub fn termrock::patterns::SettingsScreenSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::SettingsScreenSlots where U: core::convert::Into<T>
+pub type termrock::patterns::SettingsScreenSlots::Error = core::convert::Infallible
+pub fn termrock::patterns::SettingsScreenSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::SettingsScreenSlots where U: core::convert::TryFrom<T>
+pub type termrock::patterns::SettingsScreenSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::SettingsScreenSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::SettingsScreenSlots where T: core::clone::Clone
+pub type termrock::patterns::SettingsScreenSlots::Owned = T
+pub fn termrock::patterns::SettingsScreenSlots::clone_into(&self, &mut T)
+pub fn termrock::patterns::SettingsScreenSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::SettingsScreenSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::SettingsScreenSlots where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::SettingsScreenSlots where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::SettingsScreenSlots where T: core::clone::Clone
+pub unsafe fn termrock::patterns::SettingsScreenSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::SettingsScreenSlots
+pub fn termrock::patterns::SettingsScreenSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::SettingsScreenSlots
+pub struct termrock::patterns::SettingsScreenState<SectionId: core::clone::Clone + core::cmp::PartialEq>
+pub termrock::patterns::SettingsScreenState::ascii: bool
+pub termrock::patterns::SettingsScreenState::body_mode: termrock::patterns::SettingsBodyMode
+pub termrock::patterns::SettingsScreenState::colorless: bool
+pub termrock::patterns::SettingsScreenState::density: core::option::Option<termrock::patterns::SettingsDensity>
+pub termrock::patterns::SettingsScreenState::dirty: bool
+pub termrock::patterns::SettingsScreenState::drawer_open: bool
+pub termrock::patterns::SettingsScreenState::focused_field: core::option::Option<&'static str>
+pub termrock::patterns::SettingsScreenState::form: termrock::widgets::FormState<&'static str>
+pub termrock::patterns::SettingsScreenState::has_conflicts: bool
+pub termrock::patterns::SettingsScreenState::help: termrock::widgets::KeyboardHelpState
+pub termrock::patterns::SettingsScreenState::help_open: bool
+pub termrock::patterns::SettingsScreenState::keybinding: termrock::widgets::KeybindingRecorderState
+pub termrock::patterns::SettingsScreenState::region: termrock::patterns::SettingsRegion
+pub termrock::patterns::SettingsScreenState::restart_required: bool
+pub termrock::patterns::SettingsScreenState::search: termrock::widgets::SearchInputState
+pub termrock::patterns::SettingsScreenState::sidebar: termrock::widgets::SidebarState<SectionId>
+pub termrock::patterns::SettingsScreenState::theme: termrock::widgets::ThemePickerState
+impl<SectionId: core::clone::Clone + core::cmp::PartialEq> termrock::patterns::SettingsScreenState<SectionId>
+pub fn termrock::patterns::SettingsScreenState<SectionId>::cycle_region(&mut self, bool) -> termrock::patterns::SettingsScreenOutcome<SectionId, &'static str>
+pub fn termrock::patterns::SettingsScreenState<SectionId>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::NavItem<SectionId>], &[termrock::widgets::Fieldset<'_, &'static str>], &[termrock::widgets::ThemePreset]) -> termrock::patterns::SettingsScreenOutcome<SectionId, &'static str>
+pub fn termrock::patterns::SettingsScreenState<SectionId>::new() -> Self
+pub fn termrock::patterns::SettingsScreenState<SectionId>::open_deep_link(&mut self, SectionId) -> termrock::patterns::SettingsScreenOutcome<SectionId, &'static str>
+pub fn termrock::patterns::SettingsScreenState<SectionId>::project_from_fieldsets(&mut self, &[termrock::widgets::Fieldset<'_, &'static str>])
+pub fn termrock::patterns::SettingsScreenState<SectionId>::select_section(&mut self, SectionId) -> termrock::patterns::SettingsScreenOutcome<SectionId, &'static str> where SectionId: core::clone::Clone + core::cmp::PartialEq
+impl<SectionId: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::patterns::SettingsScreenState<SectionId>
+pub fn termrock::patterns::SettingsScreenState<SectionId>::default() -> Self
+impl<SectionId: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::patterns::SettingsScreenState<SectionId>
+pub fn termrock::patterns::SettingsScreenState<SectionId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<SectionId> core::marker::Freeze for termrock::patterns::SettingsScreenState<SectionId> where SectionId: core::marker::Freeze
+impl<SectionId> core::marker::Send for termrock::patterns::SettingsScreenState<SectionId> where SectionId: core::marker::Send
+impl<SectionId> core::marker::Sync for termrock::patterns::SettingsScreenState<SectionId> where SectionId: core::marker::Sync
+impl<SectionId> core::marker::Unpin for termrock::patterns::SettingsScreenState<SectionId> where SectionId: core::marker::Unpin
+impl<SectionId> core::marker::UnsafeUnpin for termrock::patterns::SettingsScreenState<SectionId> where SectionId: core::marker::UnsafeUnpin
+impl<SectionId> core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::SettingsScreenState<SectionId> where SectionId: core::panic::unwind_safe::RefUnwindSafe
+impl<SectionId> core::panic::unwind_safe::UnwindSafe for termrock::patterns::SettingsScreenState<SectionId> where SectionId: core::panic::unwind_safe::UnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::patterns::SettingsScreenState<SectionId> where U: core::convert::From<T>
+pub fn termrock::patterns::SettingsScreenState<SectionId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::SettingsScreenState<SectionId> where U: core::convert::Into<T>
+pub type termrock::patterns::SettingsScreenState<SectionId>::Error = core::convert::Infallible
+pub fn termrock::patterns::SettingsScreenState<SectionId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::SettingsScreenState<SectionId> where U: core::convert::TryFrom<T>
+pub type termrock::patterns::SettingsScreenState<SectionId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::SettingsScreenState<SectionId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> core::any::Any for termrock::patterns::SettingsScreenState<SectionId> where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenState<SectionId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::SettingsScreenState<SectionId> where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenState<SectionId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::SettingsScreenState<SectionId> where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenState<SectionId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::convert::From<T> for termrock::patterns::SettingsScreenState<SectionId>
+pub fn termrock::patterns::SettingsScreenState<SectionId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::SettingsScreenState<SectionId>
+pub struct termrock::patterns::SettingsScreenSurfaces<'a, SectionId: core::clone::Clone + core::cmp::PartialEq>
+pub termrock::patterns::SettingsScreenSurfaces::fieldsets: &'a [termrock::widgets::Fieldset<'a, &'static str>]
+pub termrock::patterns::SettingsScreenSurfaces::nav: &'a [termrock::widgets::NavItem<SectionId>]
+pub termrock::patterns::SettingsScreenSurfaces::section_title: &'a str
+pub termrock::patterns::SettingsScreenSurfaces::state: &'a mut termrock::patterns::SettingsScreenState<SectionId>
+pub termrock::patterns::SettingsScreenSurfaces::status_slots: &'a [termrock::widgets::StatusSlot<'a, &'static str>]
+pub termrock::patterns::SettingsScreenSurfaces::status_state: &'a mut termrock::widgets::StatusBarState<&'static str>
+pub termrock::patterns::SettingsScreenSurfaces::system: &'a termrock::style::DesignSystem
+pub termrock::patterns::SettingsScreenSurfaces::theme_paint: core::option::Option<&'a termrock::style::DesignSystem>
+pub termrock::patterns::SettingsScreenSurfaces::theme_presets: &'a [termrock::widgets::ThemePreset]
+impl<'a, SectionId> core::marker::Freeze for termrock::patterns::SettingsScreenSurfaces<'a, SectionId>
+impl<'a, SectionId> core::marker::Send for termrock::patterns::SettingsScreenSurfaces<'a, SectionId> where SectionId: core::marker::Sync + core::marker::Send
+impl<'a, SectionId> core::marker::Sync for termrock::patterns::SettingsScreenSurfaces<'a, SectionId> where SectionId: core::marker::Sync
+impl<'a, SectionId> core::marker::Unpin for termrock::patterns::SettingsScreenSurfaces<'a, SectionId>
+impl<'a, SectionId> core::marker::UnsafeUnpin for termrock::patterns::SettingsScreenSurfaces<'a, SectionId>
+impl<'a, SectionId> core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::SettingsScreenSurfaces<'a, SectionId> where SectionId: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, SectionId> !core::panic::unwind_safe::UnwindSafe for termrock::patterns::SettingsScreenSurfaces<'a, SectionId>
+impl<T, U> core::convert::Into<U> for termrock::patterns::SettingsScreenSurfaces<'a, SectionId> where U: core::convert::From<T>
+pub fn termrock::patterns::SettingsScreenSurfaces<'a, SectionId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::SettingsScreenSurfaces<'a, SectionId> where U: core::convert::Into<T>
+pub type termrock::patterns::SettingsScreenSurfaces<'a, SectionId>::Error = core::convert::Infallible
+pub fn termrock::patterns::SettingsScreenSurfaces<'a, SectionId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::SettingsScreenSurfaces<'a, SectionId> where U: core::convert::TryFrom<T>
+pub type termrock::patterns::SettingsScreenSurfaces<'a, SectionId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::SettingsScreenSurfaces<'a, SectionId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> core::any::Any for termrock::patterns::SettingsScreenSurfaces<'a, SectionId> where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenSurfaces<'a, SectionId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::SettingsScreenSurfaces<'a, SectionId> where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenSurfaces<'a, SectionId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::SettingsScreenSurfaces<'a, SectionId> where T: ?core::marker::Sized
+pub fn termrock::patterns::SettingsScreenSurfaces<'a, SectionId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::convert::From<T> for termrock::patterns::SettingsScreenSurfaces<'a, SectionId>
+pub fn termrock::patterns::SettingsScreenSurfaces<'a, SectionId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::SettingsScreenSurfaces<'a, SectionId>
 pub struct termrock::patterns::StudioShellLayout
 pub termrock::patterns::StudioShellLayout::density: termrock::style::Density
 pub termrock::patterns::StudioShellLayout::inspector_height: u16
@@ -10193,18 +10532,30 @@ pub fn termrock::patterns::default_modes(&'static str) -> [termrock::widgets::Wo
 pub fn termrock::patterns::dialog_modal_rect(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::patterns::diff_modal_rect(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::patterns::empty_task_row() -> termrock::widgets::ListRow<'static, &'static str>
+pub fn termrock::patterns::example_settings_appearance_fields() -> [termrock::widgets::Field<'static, &'static str>; 3]
+pub fn termrock::patterns::example_settings_categories() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
+pub fn termrock::patterns::example_settings_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
+pub fn termrock::patterns::example_settings_keys_fields() -> [termrock::widgets::Field<'static, &'static str>; 2]
+pub fn termrock::patterns::example_settings_profile_fields() -> [termrock::widgets::Field<'static, &'static str>; 2]
 pub fn termrock::patterns::example_workbench_activities() -> alloc::vec::Vec<termrock::widgets::ActivityItem>
 pub fn termrock::patterns::example_workbench_tasks() -> alloc::vec::Vec<termrock::widgets::ActivityModel>
+pub fn termrock::patterns::filter_settings_fieldsets<'a>(&'a [termrock::widgets::Fieldset<'a, &'static str>], &str) -> alloc::vec::Vec<termrock::widgets::Fieldset<'a, &'static str>>
+pub fn termrock::patterns::filter_settings_nav<'a, SectionId: core::clone::Clone>(&'a [termrock::widgets::NavItem<SectionId>], &str) -> alloc::vec::Vec<termrock::widgets::NavItem<SectionId>>
 pub fn termrock::patterns::layout_agent_shell(ratatui_core::layout::rect::Rect, termrock::patterns::AgentShellLayout) -> termrock::patterns::AgentShellSlots
 pub fn termrock::patterns::layout_app_shell(ratatui_core::layout::rect::Rect, termrock::patterns::AppShellConfig) -> termrock::patterns::AppShellSlots
 pub fn termrock::patterns::layout_ops_dashboard(ratatui_core::layout::rect::Rect, termrock::patterns::OpsDashboardLayout) -> termrock::patterns::OpsDashboardSlots
 pub fn termrock::patterns::layout_resource_browser(ratatui_core::layout::rect::Rect, termrock::patterns::ResourceBrowserLayout) -> termrock::patterns::ResourceBrowserSlots
+pub fn termrock::patterns::layout_settings_screen(ratatui_core::layout::rect::Rect, termrock::patterns::SettingsDensity, bool, bool, bool) -> termrock::patterns::SettingsScreenSlots
 pub fn termrock::patterns::layout_studio_shell(ratatui_core::layout::rect::Rect, termrock::patterns::StudioShellLayout) -> termrock::patterns::StudioShellSlots
 pub fn termrock::patterns::permission_modal_rect(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::patterns::register_workbench_scene(&mut termrock::interaction::InteractionScene<&'static str, &'static str, ()>, &[termrock::layout::PaneGeom])
 pub fn termrock::patterns::render_agent_workbench(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::WorkbenchSurfaces<'_, '_>)
+pub fn termrock::patterns::render_settings_screen<SectionId: core::clone::Clone + core::cmp::PartialEq>(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::SettingsScreenSurfaces<'_, SectionId>)
+pub fn termrock::patterns::settings_query_matches(&[termrock::widgets::Fieldset<'_, &'static str>], &str) -> bool
 pub fn termrock::patterns::sync_workbench_scene(&mut termrock::interaction::InteractionScene<&'static str, &'static str, ()>, &[termrock::layout::PaneGeom], termrock::patterns::WorkbenchModals)
 pub fn termrock::patterns::wire_resource_preview(&mut termrock::style::CapabilityPreviewHost, &termrock::patterns::ResourceBrowserSlots, core::option::Option<&str>, bool, bool)
+pub type termrock::patterns::SettingsShellOutcome<SectionId> = termrock::patterns::SettingsScreenOutcome<SectionId, &'static str>
+pub type termrock::patterns::SettingsShellState<SectionId> = termrock::patterns::SettingsScreenState<SectionId>
 pub mod termrock::perf
 #[non_exhaustive] pub enum termrock::perf::BackpressureSignal
 pub termrock::perf::BackpressureSignal::Hard
@@ -37224,53 +37575,6 @@ pub unsafe fn termrock::widgets::SessionStatus::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SessionStatus
 pub fn termrock::widgets::SessionStatus::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SessionStatus
-#[non_exhaustive] pub enum termrock::widgets::SettingsShellOutcome<SectionId>
-pub termrock::widgets::SettingsShellOutcome::DiscardRequested
-pub termrock::widgets::SettingsShellOutcome::Ignored
-pub termrock::widgets::SettingsShellOutcome::ResetRequested
-pub termrock::widgets::SettingsShellOutcome::SaveRequested
-pub termrock::widgets::SettingsShellOutcome::SearchChanged
-pub termrock::widgets::SettingsShellOutcome::SectionSelected(SectionId)
-impl<SectionId: core::clone::Clone> core::clone::Clone for termrock::widgets::SettingsShellOutcome<SectionId>
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::clone(&self) -> termrock::widgets::SettingsShellOutcome<SectionId>
-impl<SectionId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SettingsShellOutcome<SectionId>
-impl<SectionId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SettingsShellOutcome<SectionId>
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::eq(&self, &termrock::widgets::SettingsShellOutcome<SectionId>) -> bool
-impl<SectionId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SettingsShellOutcome<SectionId>
-impl<SectionId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SettingsShellOutcome<SectionId>
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<SectionId> core::marker::Freeze for termrock::widgets::SettingsShellOutcome<SectionId> where SectionId: core::marker::Freeze
-impl<SectionId> core::marker::Send for termrock::widgets::SettingsShellOutcome<SectionId> where SectionId: core::marker::Send
-impl<SectionId> core::marker::Sync for termrock::widgets::SettingsShellOutcome<SectionId> where SectionId: core::marker::Sync
-impl<SectionId> core::marker::Unpin for termrock::widgets::SettingsShellOutcome<SectionId> where SectionId: core::marker::Unpin
-impl<SectionId> core::marker::UnsafeUnpin for termrock::widgets::SettingsShellOutcome<SectionId> where SectionId: core::marker::UnsafeUnpin
-impl<SectionId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SettingsShellOutcome<SectionId> where SectionId: core::panic::unwind_safe::RefUnwindSafe
-impl<SectionId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SettingsShellOutcome<SectionId> where SectionId: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SettingsShellOutcome<SectionId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::SettingsShellOutcome<SectionId> where U: core::convert::From<T>
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SettingsShellOutcome<SectionId> where U: core::convert::Into<T>
-pub type termrock::widgets::SettingsShellOutcome<SectionId>::Error = core::convert::Infallible
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::SettingsShellOutcome<SectionId> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::SettingsShellOutcome<SectionId>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::SettingsShellOutcome<SectionId> where T: core::clone::Clone
-pub type termrock::widgets::SettingsShellOutcome<SectionId>::Owned = T
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::clone_into(&self, &mut T)
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::SettingsShellOutcome<SectionId> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::SettingsShellOutcome<SectionId> where T: ?core::marker::Sized
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SettingsShellOutcome<SectionId> where T: ?core::marker::Sized
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::SettingsShellOutcome<SectionId> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::SettingsShellOutcome<SectionId>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::SettingsShellOutcome<SectionId>
-pub fn termrock::widgets::SettingsShellOutcome<SectionId>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::SettingsShellOutcome<SectionId>
 #[non_exhaustive] pub enum termrock::widgets::Severity
 pub termrock::widgets::Severity::Error
 pub termrock::widgets::Severity::Info
@@ -72840,57 +73144,6 @@ pub unsafe fn termrock::widgets::SessionPickerState::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::SessionPickerState
 pub fn termrock::widgets::SessionPickerState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SessionPickerState
-pub struct termrock::widgets::SettingsShellState<SectionId: core::clone::Clone + core::cmp::PartialEq>
-pub termrock::widgets::SettingsShellState::dirty: bool
-pub termrock::widgets::SettingsShellState::search: alloc::string::String
-pub termrock::widgets::SettingsShellState::search_focused: bool
-pub termrock::widgets::SettingsShellState::section: core::option::Option<SectionId>
-impl<SectionId: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::SettingsShellState<SectionId>
-pub fn termrock::widgets::SettingsShellState<SectionId>::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::SettingsShellOutcome<SectionId>
-pub fn termrock::widgets::SettingsShellState<SectionId>::new() -> Self
-pub fn termrock::widgets::SettingsShellState<SectionId>::select_section(&mut self, SectionId) -> termrock::widgets::SettingsShellOutcome<SectionId>
-impl<SectionId: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq> core::clone::Clone for termrock::widgets::SettingsShellState<SectionId>
-pub fn termrock::widgets::SettingsShellState<SectionId>::clone(&self) -> termrock::widgets::SettingsShellState<SectionId>
-impl<SectionId: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::SettingsShellState<SectionId>
-pub fn termrock::widgets::SettingsShellState<SectionId>::default() -> Self
-impl<SectionId: core::cmp::Eq + core::clone::Clone + core::cmp::PartialEq> core::cmp::Eq for termrock::widgets::SettingsShellState<SectionId>
-impl<SectionId: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SettingsShellState<SectionId>
-pub fn termrock::widgets::SettingsShellState<SectionId>::eq(&self, &termrock::widgets::SettingsShellState<SectionId>) -> bool
-impl<SectionId: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SettingsShellState<SectionId>
-impl<SectionId: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::widgets::SettingsShellState<SectionId>
-pub fn termrock::widgets::SettingsShellState<SectionId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<SectionId> core::marker::Freeze for termrock::widgets::SettingsShellState<SectionId> where SectionId: core::marker::Freeze
-impl<SectionId> core::marker::Send for termrock::widgets::SettingsShellState<SectionId> where SectionId: core::marker::Send
-impl<SectionId> core::marker::Sync for termrock::widgets::SettingsShellState<SectionId> where SectionId: core::marker::Sync
-impl<SectionId> core::marker::Unpin for termrock::widgets::SettingsShellState<SectionId> where SectionId: core::marker::Unpin
-impl<SectionId> core::marker::UnsafeUnpin for termrock::widgets::SettingsShellState<SectionId> where SectionId: core::marker::UnsafeUnpin
-impl<SectionId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SettingsShellState<SectionId> where SectionId: core::panic::unwind_safe::RefUnwindSafe
-impl<SectionId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SettingsShellState<SectionId> where SectionId: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SettingsShellState<SectionId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::SettingsShellState<SectionId>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::SettingsShellState<SectionId> where U: core::convert::From<T>
-pub fn termrock::widgets::SettingsShellState<SectionId>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SettingsShellState<SectionId> where U: core::convert::Into<T>
-pub type termrock::widgets::SettingsShellState<SectionId>::Error = core::convert::Infallible
-pub fn termrock::widgets::SettingsShellState<SectionId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::SettingsShellState<SectionId> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::SettingsShellState<SectionId>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::SettingsShellState<SectionId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::SettingsShellState<SectionId> where T: core::clone::Clone
-pub type termrock::widgets::SettingsShellState<SectionId>::Owned = T
-pub fn termrock::widgets::SettingsShellState<SectionId>::clone_into(&self, &mut T)
-pub fn termrock::widgets::SettingsShellState<SectionId>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::SettingsShellState<SectionId> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::SettingsShellState<SectionId>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::SettingsShellState<SectionId> where T: ?core::marker::Sized
-pub fn termrock::widgets::SettingsShellState<SectionId>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SettingsShellState<SectionId> where T: ?core::marker::Sized
-pub fn termrock::widgets::SettingsShellState<SectionId>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::SettingsShellState<SectionId> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::SettingsShellState<SectionId>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::SettingsShellState<SectionId>
-pub fn termrock::widgets::SettingsShellState<SectionId>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::SettingsShellState<SectionId>
 pub struct termrock::widgets::ShortcutHint<'a>
 impl<'a> termrock::widgets::ShortcutHint<'a>
 pub fn termrock::widgets::ShortcutHint<'a>::chord(&self) -> &str
