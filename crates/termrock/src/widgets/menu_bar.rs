@@ -47,7 +47,7 @@ pub const MENU_BAR_SUBMENU_OVERLAY_PREFIX: &str = "termrock.menu-bar.sub";
 
 // ── Model ───────────────────────────────────────────────────────────────────
 
-/// Kind of one row inside a menu panel.
+/// Kind of one row inside a menu panel (shared by MenuBar, DropdownMenu, ContextMenu).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum MenuRowKind {
@@ -70,8 +70,12 @@ pub enum MenuRowKind {
     Submenu,
     /// Non-interactive separator line.
     Separator,
-    /// Non-interactive section label (e.g. "Recent").
+    /// Non-interactive section label (e.g. "Recent"). Alias: label rows.
     Section,
+    /// Non-interactive loading placeholder (async host fetch).
+    Loading,
+    /// Non-interactive custom preview row; host paints into hit rect.
+    CustomPreview,
 }
 
 impl MenuRowKind {
@@ -85,17 +89,25 @@ impl MenuRowKind {
             Self::Submenu => "submenu",
             Self::Separator => "separator",
             Self::Section => "section",
+            Self::Loading => "loading",
+            Self::CustomPreview => "custom-preview",
         }
     }
 
     /// Whether the row can receive keyboard cursor / activation.
     #[must_use]
     pub const fn is_interactive(&self) -> bool {
-        !matches!(self, Self::Separator | Self::Section)
+        !matches!(
+            self,
+            Self::Separator | Self::Section | Self::Loading | Self::CustomPreview
+        )
     }
 }
 
 /// One hierarchical menu row (commands, submenus, separators).
+///
+/// Shared model for [`super::MenuBar`], [`super::DropdownMenu`], and
+/// [`super::ContextMenu`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MenuNode<Id> {
     /// Stable identity for outcomes and host command maps.
@@ -118,112 +130,96 @@ pub struct MenuNode<Id> {
     pub disabled_reason: Option<String>,
     /// Marks a recent-items row (ordering/grouping is host-owned).
     pub recent: bool,
+    /// Destructive / danger styling (delete, force-push, …).
+    pub destructive: bool,
 }
 
 impl<Id> MenuNode<Id> {
-    /// Enabled command leaf.
-    #[must_use]
-    pub fn command(id: Id, label: impl Into<String>) -> Self {
+    fn base(id: Id, label: String, kind: MenuRowKind) -> Self {
         Self {
             id,
-            label: label.into(),
+            label,
             mnemonic: None,
             shortcut: None,
             enabled: true,
-            kind: MenuRowKind::Command,
+            kind,
             children: Vec::new(),
             command: None,
             disabled_reason: None,
             recent: false,
+            destructive: false,
         }
+    }
+
+    /// Enabled command leaf.
+    #[must_use]
+    pub fn command(id: Id, label: impl Into<String>) -> Self {
+        Self::base(id, label.into(), MenuRowKind::Command)
     }
 
     /// Submenu parent.
     #[must_use]
     pub fn submenu(id: Id, label: impl Into<String>, children: Vec<MenuNode<Id>>) -> Self {
-        Self {
-            id,
-            label: label.into(),
-            mnemonic: None,
-            shortcut: None,
-            enabled: true,
-            kind: MenuRowKind::Submenu,
-            children,
-            command: None,
-            disabled_reason: None,
-            recent: false,
-        }
+        let mut n = Self::base(id, label.into(), MenuRowKind::Submenu);
+        n.children = children;
+        n
     }
 
     /// Separator (id still required for stable tree identity).
     #[must_use]
     pub fn separator(id: Id) -> Self {
-        Self {
-            id,
-            label: String::new(),
-            mnemonic: None,
-            shortcut: None,
-            enabled: false,
-            kind: MenuRowKind::Separator,
-            children: Vec::new(),
-            command: None,
-            disabled_reason: None,
-            recent: false,
-        }
+        let mut n = Self::base(id, String::new(), MenuRowKind::Separator);
+        n.enabled = false;
+        n
     }
 
-    /// Section header (e.g. "Recent").
+    /// Section / label header (e.g. "Recent").
     #[must_use]
     pub fn section(id: Id, label: impl Into<String>) -> Self {
-        Self {
-            id,
-            label: label.into(),
-            mnemonic: None,
-            shortcut: None,
-            enabled: false,
-            kind: MenuRowKind::Section,
-            children: Vec::new(),
-            command: None,
-            disabled_reason: None,
-            recent: false,
-        }
+        let mut n = Self::base(id, label.into(), MenuRowKind::Section);
+        n.enabled = false;
+        n
+    }
+
+    /// Alias for [`Self::section`] (Radix / a11y "label" row).
+    #[must_use]
+    pub fn label_row(id: Id, label: impl Into<String>) -> Self {
+        Self::section(id, label)
     }
 
     /// Checkbox row.
     #[must_use]
     pub fn checkbox(id: Id, label: impl Into<String>, checked: bool) -> Self {
-        Self {
-            id,
-            label: label.into(),
-            mnemonic: None,
-            shortcut: None,
-            enabled: true,
-            kind: MenuRowKind::Checkbox { checked },
-            children: Vec::new(),
-            command: None,
-            disabled_reason: None,
-            recent: false,
-        }
+        Self::base(id, label.into(), MenuRowKind::Checkbox { checked })
     }
 
     /// Radio row in a group.
     #[must_use]
     pub fn radio(id: Id, label: impl Into<String>, group: impl Into<String>, selected: bool) -> Self {
-        Self {
+        Self::base(
             id,
-            label: label.into(),
-            mnemonic: None,
-            shortcut: None,
-            enabled: true,
-            kind: MenuRowKind::Radio {
+            label.into(),
+            MenuRowKind::Radio {
                 group: group.into(),
                 selected,
             },
-            children: Vec::new(),
-            command: None,
-            disabled_reason: None,
-            recent: false,
-        }
+        )
+    }
+
+    /// Loading placeholder (async host content).
+    #[must_use]
+    pub fn loading(id: Id, label: impl Into<String>) -> Self {
+        let mut n = Self::base(id, label.into(), MenuRowKind::Loading);
+        n.enabled = false;
+        n
+    }
+
+    /// Custom preview row (host paints into hit geometry).
+    #[must_use]
+    pub fn custom_preview(id: Id, label: impl Into<String>) -> Self {
+        let mut n = Self::base(id, label.into(), MenuRowKind::CustomPreview);
+        n.enabled = false;
+        n
     }
 
     /// Mnemonic letter.
@@ -265,6 +261,13 @@ impl<Id> MenuNode<Id> {
     #[must_use]
     pub fn recent(mut self, on: bool) -> Self {
         self.recent = on;
+        self
+    }
+
+    /// Destructive styling / semantics.
+    #[must_use]
+    pub fn destructive(mut self, on: bool) -> Self {
+        self.destructive = on;
         self
     }
 
@@ -790,7 +793,10 @@ impl MenuBarState {
                 self.close_all();
                 MenuBarOutcome::Activated { id, command }
             }
-            MenuRowKind::Separator | MenuRowKind::Section => MenuBarOutcome::Ignored,
+            MenuRowKind::Separator
+            | MenuRowKind::Section
+            | MenuRowKind::Loading
+            | MenuRowKind::CustomPreview => MenuBarOutcome::Ignored,
         }
     }
 
@@ -1198,7 +1204,10 @@ fn flatten_nodes<Id: Clone>(
 ) {
     for n in nodes {
         match &n.kind {
-            MenuRowKind::Separator | MenuRowKind::Section => {}
+            MenuRowKind::Separator
+            | MenuRowKind::Section
+            | MenuRowKind::Loading
+            | MenuRowKind::CustomPreview => {}
             MenuRowKind::Submenu => {
                 let next = if prefix.is_empty() {
                     n.label.clone()
@@ -1599,6 +1608,41 @@ impl<'a, Id> MenuBar<'a, Id> {
                 y = y.saturating_add(1);
                 continue;
             }
+            if matches!(item.kind, MenuRowKind::Loading) {
+                let prefix = if self.ascii { "... " } else { "… " };
+                let text = take_display_cols(
+                    &format!("{prefix}{}", item.label),
+                    usize::from(inner.width),
+                );
+                buffer.set_stringn(
+                    inner.x,
+                    y,
+                    &text,
+                    usize::from(inner.width),
+                    self.system.style(Role::TextMuted),
+                );
+                state
+                    .panel_hits
+                    .push((depth, i, Rect::new(inner.x, y, inner.width, 1)));
+                y = y.saturating_add(1);
+                continue;
+            }
+            if matches!(item.kind, MenuRowKind::CustomPreview) {
+                // Host paints into hit rect; show muted label as fallback.
+                let text = take_display_cols(&item.label, usize::from(inner.width));
+                buffer.set_stringn(
+                    inner.x,
+                    y,
+                    &text,
+                    usize::from(inner.width),
+                    self.system.style(Role::TextMuted),
+                );
+                state
+                    .panel_hits
+                    .push((depth, i, Rect::new(inner.x, y, inner.width, 1)));
+                y = y.saturating_add(1);
+                continue;
+            }
 
             let active = cursor == i && surface_focus;
             let style = if self.colorless {
@@ -1611,6 +1655,8 @@ impl<'a, Id> MenuBar<'a, Id> {
                 }
             } else if !item.enabled {
                 self.system.style(Role::TextDisabled)
+            } else if item.destructive && !active {
+                self.system.style(Role::Danger)
             } else if active {
                 self.system.style(Role::Selection)
             } else {

@@ -49,7 +49,8 @@ use termrock::{
         ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
         LogPaneState,
         LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
-        Menu, MenuBar, MenuBarState, MenuItem, MenuState, example_app_menus,
+        Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
+        DropdownMenuState, example_app_menus,
         MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
         Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
         PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
@@ -1147,6 +1148,51 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             2,
             tooltip_ascii_story,
+        ),
+        Story::new(
+            "dropdown-menu/basic",
+            "DropdownMenu basic",
+            "DropdownMenu",
+            "Trigger-opened cascade with shortcuts and checkbox.",
+            40,
+            14,
+            dropdown_menu_basic_story,
+        ),
+        Story::new(
+            "dropdown-menu/nested",
+            "DropdownMenu nested",
+            "DropdownMenu",
+            "Submenu open (Export › Image).",
+            56,
+            14,
+            dropdown_menu_nested_story,
+        ),
+        Story::new(
+            "dropdown-menu/kinds",
+            "DropdownMenu item kinds",
+            "DropdownMenu",
+            "Checkbox, radio, separator, label, loading, destructive.",
+            44,
+            16,
+            dropdown_menu_kinds_story,
+        ),
+        Story::new(
+            "context-menu/basic",
+            "ContextMenu basic",
+            "ContextMenu",
+            "Pointer-origin context menu (AtOrigin placement).",
+            36,
+            12,
+            context_menu_basic_story,
+        ),
+        Story::new(
+            "context-menu/nested",
+            "ContextMenu nested",
+            "ContextMenu",
+            "Nested context cascade with parent dismiss.",
+            52,
+            14,
+            context_menu_nested_story,
         ),
         Story::new(
             "menu-bar/basic",
@@ -12547,6 +12593,149 @@ fn menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     ];
     let mut state = MenuState::new();
     Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn example_dropdown_nodes() -> Vec<MenuNode<&'static str>> {
+    vec![
+        MenuNode::command("open", "Open")
+            .shortcut("C-o")
+            .mnemonic('O'),
+        MenuNode::command("save", "Save").shortcut("C-s"),
+        MenuNode::separator("sep"),
+        MenuNode::checkbox("wrap", "Word wrap", true),
+        MenuNode::submenu(
+            "export",
+            "Export",
+            vec![
+                MenuNode::command("pdf", "PDF"),
+                MenuNode::submenu(
+                    "image",
+                    "Image",
+                    vec![
+                        MenuNode::command("png", "PNG"),
+                        MenuNode::command("svg", "SVG"),
+                    ],
+                ),
+            ],
+        ),
+        MenuNode::command("delete", "Delete").destructive(true),
+    ]
+}
+
+fn dropdown_menu_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = example_dropdown_nodes();
+    let mut state = DropdownMenuState::new();
+    let _ = state.open_from_keyboard(&nodes, area);
+    DropdownMenu::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn dropdown_menu_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = example_dropdown_nodes();
+    let mut state = DropdownMenuState::new();
+    let _ = state.open_from_keyboard(&nodes, area);
+    // Cursor on Export + open submenu + Image
+    if let Some(i) = nodes.iter().position(|n| n.id == "export") {
+        // set via repeated Down is fragile; use internal path via open then keys
+        let _ = i;
+    }
+    // Walk: move to export (index 4 after open,save,sep,wrap)
+    for _ in 0..4 {
+        let _ = state.handle_key(
+            termrock::input::KeyEvent::new(
+                termrock::input::KeyCode::Down,
+                termrock::input::KeyModifiers::NONE,
+            ),
+            &nodes,
+        );
+    }
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Right,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &nodes,
+    );
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Down,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &nodes,
+    );
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Right,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &nodes,
+    );
+    DropdownMenu::new(&nodes, system).paint_cascade(area, area, frame.buffer_mut(), &mut state);
+}
+
+fn dropdown_menu_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = vec![
+        MenuNode::section("lab", "Appearance"),
+        MenuNode::checkbox("line", "Line numbers", true),
+        MenuNode::radio("dark", "Dark", "theme", true),
+        MenuNode::radio("light", "Light", "theme", false),
+        MenuNode::separator("s1"),
+        MenuNode::loading("load", "Syncing…"),
+        MenuNode::custom_preview("prev", "Preview slot"),
+        MenuNode::command("rm", "Remove")
+            .destructive(true)
+            .enabled(false)
+            .disabled_reason("read-only"),
+    ];
+    let mut state = DropdownMenuState::new();
+    let _ = state.open_from_keyboard(&nodes, area);
+    DropdownMenu::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn context_menu_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = vec![
+        MenuNode::command("cut", "Cut").shortcut("C-x"),
+        MenuNode::command("copy", "Copy").shortcut("C-c"),
+        MenuNode::command("paste", "Paste").shortcut("C-v"),
+        MenuNode::separator("s"),
+        MenuNode::command("rename", "Rename"),
+        MenuNode::command("delete", "Delete").destructive(true),
+    ];
+    let mut state = DropdownMenuState::context();
+    let _ = state.open_from_context_pointer(&nodes, area);
+    DropdownMenu::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn context_menu_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = vec![
+        MenuNode::command("open", "Open"),
+        MenuNode::submenu(
+            "git",
+            "Git",
+            vec![
+                MenuNode::command("stage", "Stage"),
+                MenuNode::command("commit", "Commit"),
+                MenuNode::command("push", "Push").destructive(true),
+            ],
+        ),
+        MenuNode::command("reveal", "Reveal in Finder"),
+    ];
+    let mut state = DropdownMenuState::context();
+    let _ = state.open_from_context_key(&nodes, area);
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Down,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &nodes,
+    );
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Right,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &nodes,
+    );
+    DropdownMenu::new(&nodes, system).paint_cascade(area, area, frame.buffer_mut(), &mut state);
 }
 
 fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

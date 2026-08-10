@@ -983,14 +983,53 @@ let mut state = DataTableState::<u64, &str>::new();
 let table = DataTable::new(&tokens, &columns, &rows);`,
   },
   Menu: {
-    description: 'Menu list with roving focus, disabled skip, and Esc close outcomes.',
+    description:
+      'Flat single-panel menu adapter over MenuItem (prefer DropdownMenu/MenuNode for nested command menus).',
     primaryStory: 'menu/roving',
-    usage: `use termrock::{style::DesignTokens, widgets::{Menu, MenuItem, MenuState}};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Menu, MenuItem, MenuState};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let items = [MenuItem::new("a", "Open")];
-let state = MenuState::new();
-let menu = Menu::new(&items, &tokens);`,
+let mut state = MenuState::new();
+Menu::new(&items, &system).render(area, buf, &mut state);`,
+  },
+  DropdownMenu: {
+    description:
+      'Anchored command menu with nested items, checkbox/radio, shortcuts, typeahead, OverlayStack cascade, and CommandPalette promotion when deep or oversized.',
+    primaryStory: 'dropdown-menu/basic',
+    usage: `use ratatui_core::layout::Rect;
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    DropdownMenu, DropdownMenuState, MenuNode, open_dropdown_menu_overlay, measure_menu_panel,
+};
+
+let system = DesignSystem::default();
+let nodes = vec![
+    MenuNode::command("open", "Open").shortcut("C-o"),
+    MenuNode::submenu("more", "More", vec![MenuNode::command("a", "A")]),
+];
+let mut state = DropdownMenuState::new();
+let bounds = Rect::new(0, 0, 80, 24);
+let _ = state.open_from_keyboard(&nodes, bounds);
+// stack: open_dropdown_menu_overlay(...); paint: DropdownMenu::new(&nodes, &system).paint(...)`,
+  },
+  ContextMenu: {
+    description:
+      'Pointer/context-key command menu at origin with nested cascade, same item model as DropdownMenu, OverlayKind::ContextMenu placement.',
+    primaryStory: 'context-menu/basic',
+    usage: `use termrock::widgets::{
+    ContextMenu, DropdownMenuState, MenuNode, open_context_menu_overlay,
+};
+
+let nodes = vec![
+    MenuNode::command("copy", "Copy").shortcut("C-c"),
+    MenuNode::command("delete", "Delete").destructive(true),
+];
+let mut state = DropdownMenuState::context();
+let _ = state.open_from_context_pointer(&nodes, bounds);
+// open_context_menu_overlay(&mut stack, bounds, origin, size, opener);
+// ContextMenu::new(&nodes, &system).paint(rect, buf, &mut state);`,
   },
   MenuBar: {
     description:

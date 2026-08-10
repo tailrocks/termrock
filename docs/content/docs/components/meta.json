@@ -33,6 +33,8 @@
     "dialog",
     "diff-view",
     "drawer",
+    "dropdown-menu",
+    "context-menu",
     "empty-state",
     "error-view",
     "field",

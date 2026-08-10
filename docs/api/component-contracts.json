@@ -775,6 +775,22 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "DropdownMenu": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
+  "ContextMenu": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "MenuBar": {
     "keyboard": "covered",
     "mouse": "covered",

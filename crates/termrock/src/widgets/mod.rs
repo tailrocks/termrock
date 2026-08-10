@@ -56,6 +56,7 @@ mod list;
 mod log_pane;
 mod markdown;
 mod menu_nav;
+mod dropdown_menu;
 mod popover;
 mod tooltip;
 mod menu_bar;
@@ -276,9 +277,21 @@ pub use markdown::{
     project_markdown, project_plain_lines,
 };
 pub use menu_nav::{
-    ContextMenu, DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuItem, MenuOutcome,
-    MenuState, dismiss_drawer_overlay, open_drawer_overlay, place_drawer,
+    DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuOutcome, MenuState,
+    dismiss_drawer_overlay, open_drawer_overlay, place_drawer,
 };
+pub use dropdown_menu::{
+    CONTEXT_MENU_OVERLAY_ID, CONTEXT_MENU_SUBMENU_PREFIX, DROPDOWN_MENU_OVERLAY_ID,
+    DROPDOWN_MENU_SUBMENU_PREFIX, MENU_PROMOTE_MAX_HEIGHT, MENU_PROMOTE_MAX_ITEMS,
+    MENU_PROMOTE_MAX_WIDTH, MENU_PROMOTE_MIN_DEPTH, ContextMenuState, ContextMenuWidget,
+    DropdownMenu, DropdownMenuOutcome, DropdownMenuPresentation, DropdownMenuState, MenuItem,
+    MenuOpenTrigger, dismiss_context_menu_overlays, dismiss_dropdown_menu_overlays,
+    dropdown_menu_presentation_for, flatten_menu_nodes, measure_menu_panel, menu_items_to_nodes,
+    open_context_menu_overlay, open_dropdown_menu_overlay, open_menu_submenu_overlay,
+    place_context_menu, place_dropdown_menu,
+};
+/// Context menu paint widget (same cascade engine as [`DropdownMenu`]).
+pub type ContextMenu<'a, Id> = DropdownMenu<'a, Id>;
 pub use popover::{
     POPOVER_CONTRACT_MAX_HEIGHT, POPOVER_CONTRACT_MAX_WIDTH, POPOVER_OVERLAY_ID, Popover,
     PopoverModality, PopoverOutcome, PopoverPresentation, PopoverSlots, PopoverState,

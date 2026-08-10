@@ -24,67 +24,12 @@ use crate::{
 /// Default overlay id for drawers opened via helpers.
 pub const DRAWER_OVERLAY_ID: &str = "termrock.drawer";
 
-// ── Menu ────────────────────────────────────────────────────────────────────
+// ── Menu (flat adapter) ─────────────────────────────────────────────────────
+// Hierarchical DropdownMenu / ContextMenu live in `dropdown_menu` module.
+// Flat `MenuItem` is re-exported from there; `Menu` / `MenuState` remain here
+// for simple single-panel lists.
 
-/// One menu row.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MenuItem<Id> {
-    /// Stable id.
-    pub id: Id,
-    /// Label.
-    pub label: String,
-    /// Optional shortcut hint.
-    pub shortcut: Option<String>,
-    /// Disabled.
-    pub enabled: bool,
-    /// Checked (toggle item).
-    pub checked: Option<bool>,
-    /// Separator before this item.
-    pub separator_before: bool,
-}
-
-impl<Id> MenuItem<Id> {
-    /// Enabled item.
-    #[must_use]
-    pub fn new(id: Id, label: impl Into<String>) -> Self {
-        Self {
-            id,
-            label: label.into(),
-            shortcut: None,
-            enabled: true,
-            checked: None,
-            separator_before: false,
-        }
-    }
-
-    /// Disabled.
-    #[must_use]
-    pub fn enabled(mut self, enabled: bool) -> Self {
-        self.enabled = enabled;
-        self
-    }
-
-    /// Shortcut hint text.
-    #[must_use]
-    pub fn shortcut(mut self, shortcut: impl Into<String>) -> Self {
-        self.shortcut = Some(shortcut.into());
-        self
-    }
-
-    /// Checked / unchecked toggle item.
-    #[must_use]
-    pub fn checked(mut self, checked: bool) -> Self {
-        self.checked = Some(checked);
-        self
-    }
-
-    /// Separator before.
-    #[must_use]
-    pub fn separator_before(mut self, sep: bool) -> Self {
-        self.separator_before = sep;
-        self
-    }
-}
+pub use super::dropdown_menu::MenuItem;
 
 /// Menu outcome (cursor is menu-local; scene owns surface focus).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -440,8 +385,7 @@ impl<Id> StatefulWidget for &Menu<'_, Id> {
     }
 }
 
-/// Context menu reuses Menu at pointer (placement via OverlayStack).
-pub type ContextMenu<'a, Id> = Menu<'a, Id>;
+// ContextMenu → `dropdown_menu::{DropdownMenu, ContextMenuState, open_context_menu_overlay}`.
 
 // Sidebar / NavigationList live in `sidebar.rs` (0153 redesign).
 

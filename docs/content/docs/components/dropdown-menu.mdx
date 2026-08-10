@@ -1,0 +1,61 @@
+---
+title: DropdownMenu
+description: 'Anchored command menu with nested items, checkbox/radio, shortcuts, typeahead, OverlayStack cascade, and CommandPalette promotion when deep or oversized.'
+---
+
+## Previews
+
+### `dropdown-menu/basic`
+
+DropdownMenu basic
+
+![DropdownMenu — basic](/component-previews/dropdown-menu-basic.svg)
+
+### `dropdown-menu/nested`
+
+DropdownMenu nested
+
+![DropdownMenu — nested](/component-previews/dropdown-menu-nested.svg)
+
+### `dropdown-menu/kinds`
+
+DropdownMenu item kinds
+
+![DropdownMenu — kinds](/component-previews/dropdown-menu-kinds.svg)
+
+## Usage
+
+```rust
+use ratatui_core::layout::Rect;
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    DropdownMenu, DropdownMenuState, MenuNode, open_dropdown_menu_overlay, measure_menu_panel,
+};
+
+let system = DesignSystem::default();
+let nodes = vec![
+    MenuNode::command("open", "Open").shortcut("C-o"),
+    MenuNode::submenu("more", "More", vec![MenuNode::command("a", "A")]),
+];
+let mut state = DropdownMenuState::new();
+let bounds = Rect::new(0, 0, 80, 24);
+let _ = state.open_from_keyboard(&nodes, bounds);
+// open_dropdown_menu_overlay(...); DropdownMenu::new(&nodes, &system).paint(...)
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (roving, typeahead, Esc layers, Right submenu) |
+| Mouse | covered (hit activate, scroll, outside dismiss via stack) |
+| Focus | covered (opener restore on OverlayStack) |
+| Non-color cues | covered (marks, ASCII, disabled ⊘, shortcuts) |
+| Unicode | covered |
+| Narrow terminal | covered (PreferCommandPalette) |
+
+## Stories
+
+- `dropdown-menu/basic`
+- `dropdown-menu/nested`
+- `dropdown-menu/kinds`
