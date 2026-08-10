@@ -1,0 +1,74 @@
+---
+title: TreeTable
+description: Hierarchical rows with columns — process trees, schemas, tasks, dependencies.
+---
+
+# TreeTable
+
+**Purpose.** Hierarchy plus multi-column metadata without ambiguous Left/Right
+behavior. Host projects a **flattened** visible-expanded window; TermRock owns
+indent, disclosure, sticky headers, selection, and outcomes.
+
+Use [Tree](/docs/handbook/list) for single-column trees and
+[DataTable](/docs/handbook/data-table) for flat grids.
+
+## When to use
+
+| Use TreeTable | Prefer |
+|---------------|--------|
+| Process / PID trees with CPU·MEM | — |
+| DB schema browsers | — |
+| Task / epic hierarchies | — |
+| Dependency graphs (tree form) | Graph when cycles dominate |
+| Single-column files | Tree |
+| Flat query results | DataTable |
+
+## Nav modes
+
+| Mode | Left / Right |
+|------|----------------|
+| `Hierarchy` (default) | Collapse·parent / expand·enter child |
+| `Cell` | Column cursor (Shift = hierarchy) |
+| `Scroll` | Horizontal scroll only |
+
+Cycle with `\`.
+
+## Projection law
+
+```rust
+// logical_len = count of visible expanded rows in universe
+state.set_logical_rows(expanded_count);
+let (start, end) = state.window.visible_range();
+// project ONLY [start, end) of the flat expanded stream
+```
+
+## Basic example
+
+```rust
+use termrock::widgets::{
+    ColumnModel, DataColumn, DataColumnWidth, TreeTable, TreeTableRow, TreeTableState,
+};
+
+let columns = ColumnModel::new(vec![
+    DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
+    DataColumn::new("cpu", "CPU", DataColumnWidth::Fixed(6)).sortable(),
+]);
+let root: &[&str] = &["systemd", "0.1"];
+let child: &[&str] = &["sshd", "0.0"];
+let rows = [
+    TreeTableRow::new(1u64, 0, root).branch().expanded(),
+    TreeTableRow::new(2, 1, child).parent(1),
+];
+let mut state = TreeTableState::new(Some(1));
+let _ = (columns, rows, &mut state);
+```
+
+## Anatomy
+
+`gutter` · sticky header · **indent + disclosure + primary** · data columns ·
+group bands · aggregate Σ rows · footer (`nav:` mode)
+
+## Related
+
+- Migration `0190-v0.13.0-tree-table`
+- `TreeNodeStatus` for lazy / loading / error branches

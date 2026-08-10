@@ -56,6 +56,17 @@ navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
 
+`TreeTable` combines hierarchical rows with columns (process trees, schema
+browsers, tasks, dependencies). Host projects a flattened **visible-expanded**
+window; TermRock paints compact indent, disclosure glyphs, sticky headers, and
+data columns via `ColumnModel`. `TreeTableNavMode` makes Left/Right explicit:
+Hierarchy (default expand/collapse/parent), Cell (column cursor; Shift =
+hierarchy), Scroll (h-scroll only). Supports lazy/loading/error via
+`TreeNodeStatus`, multi-check, group bands, aggregate rows, sort on data
+columns (not the hierarchy label), filter-with-ancestors, and virtual windows
+for large expanded sets. Distinct from `Tree` (single column) and `DataTable`
+(flat grid).
+
 `DataTable` is the interactive / virtualized flagship grid for professional
 developer tools. Consumers project only `window.visible_range()`; TermRock never
 allocates the logical universe. Kits in `data_view` supply `ColumnModel` (width,

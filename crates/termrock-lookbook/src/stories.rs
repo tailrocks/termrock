@@ -36,6 +36,7 @@ use termrock::{
         example_quick_open_providers, example_quick_open_symbols, filter_quick_open_items,
         CompletionCandidate, CompletionMenu,
         CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
+        TreeTable, TreeTableRow, TreeTableState,
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
         InspectorPanel,
         DetailTableState, Dialog, DialogRecipe, AlertDialog, AlertDialogState, AlertKind,
@@ -6476,6 +6477,60 @@ pub(crate) fn stories() -> Vec<Story> {
             60,
             8,
             data_table_empty_story,
+        ),
+        Story::new(
+            "tree-table/process",
+            "TreeTable process",
+            "TreeTable",
+            "Process tree with CPU/MEM columns; hierarchy nav.",
+            64,
+            12,
+            tree_table_process,
+        ),
+        Story::new(
+            "tree-table/schema",
+            "TreeTable schema",
+            "TreeTable",
+            "Database schema browser with types and nullability.",
+            64,
+            12,
+            tree_table_schema,
+        ),
+        Story::new(
+            "tree-table/tasks",
+            "TreeTable tasks",
+            "TreeTable",
+            "Task hierarchy with status and owner columns.",
+            60,
+            12,
+            tree_table_tasks,
+        ),
+        Story::new(
+            "tree-table/deps",
+            "TreeTable dependencies",
+            "TreeTable",
+            "Package dependency tree with versions.",
+            60,
+            12,
+            tree_table_deps,
+        ),
+        Story::new(
+            "tree-table/narrow",
+            "TreeTable narrow",
+            "TreeTable",
+            "Priority drop under width pressure; compact indent.",
+            28,
+            10,
+            tree_table_narrow,
+        ),
+        Story::new(
+            "tree-table/aggregate",
+            "TreeTable aggregate",
+            "TreeTable",
+            "Group band plus aggregate totals row.",
+            56,
+            10,
+            tree_table_aggregate,
         ),
         Story::new(
             "text-input/basic",
@@ -16758,6 +16813,176 @@ fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     };
     DataTable::new(&tokens, &columns, &rows)
         .toolbar(&toolbar)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        ColumnModel, DataColumn, DataColumnWidth, LoadState, SortSpec,
+    };
+    let tokens = system.clone().density(Density::Compact);
+    let columns = ColumnModel::new(vec![
+        DataColumn::new("name", "PROCESS", DataColumnWidth::Min(14)).priority(100),
+        DataColumn::new("pid", "PID", DataColumnWidth::Fixed(6)).priority(90).sortable(),
+        DataColumn::new("cpu", "CPU%", DataColumnWidth::Fixed(6)).priority(70).sortable(),
+        DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(7)).priority(50),
+    ]);
+    let r0: &[&str] = &["systemd", "1", "0.1", "4.2M"];
+    let r1: &[&str] = &["sshd", "482", "0.0", "8.1M"];
+    let r2: &[&str] = &["bash", "1204", "1.2", "12M"];
+    let r3: &[&str] = &["cargo", "1888", "42.0", "640M"];
+    let r4: &[&str] = &["rustc", "1902", "88.4", "1.1G"];
+    let rows = [
+        TreeTableRow::new(1u64, 0, r0).branch().expanded(),
+        TreeTableRow::new(482, 1, r1).branch().expanded().parent(1),
+        TreeTableRow::new(1204, 2, r2).branch().expanded().parent(482),
+        TreeTableRow::new(1888, 3, r3).branch().expanded().parent(1204),
+        TreeTableRow::new(1902, 4, r4).parent(1888),
+    ];
+    let mut state = TreeTableState::new(Some(1888));
+    state.load = LoadState::Ready { count: 5 };
+    state.sort = Some(SortSpec {
+        column: "cpu",
+        ascending: false,
+    });
+    TreeTable::new(&tokens, &columns, &rows)
+        .focused(true)
+        .compact_indent(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_table_schema(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    let tokens = system.clone().density(Density::default());
+    let columns = ColumnModel::new(vec![
+        DataColumn::new("name", "Name", DataColumnWidth::Min(16)).priority(100),
+        DataColumn::new("type", "Type", DataColumnWidth::Min(10)).priority(80).sortable(),
+        DataColumn::new("null", "Null", DataColumnWidth::Fixed(5)).priority(40),
+        DataColumn::new("key", "Key", DataColumnWidth::Fixed(4)).priority(60),
+    ]);
+    let r0: &[&str] = &["public", "schema", "", ""];
+    let r1: &[&str] = &["users", "table", "", ""];
+    let r2: &[&str] = &["id", "uuid", "NO", "PK"];
+    let r3: &[&str] = &["email", "text", "NO", "UQ"];
+    let r4: &[&str] = &["orders", "table", "", ""];
+    let r5: &[&str] = &["user_id", "uuid", "NO", "FK"];
+    let rows = [
+        TreeTableRow::new("s", 0, r0).branch().expanded(),
+        TreeTableRow::new("t1", 1, r1).branch().expanded().parent("s"),
+        TreeTableRow::new("c1", 2, r2).parent("t1"),
+        TreeTableRow::new("c2", 2, r3).parent("t1"),
+        TreeTableRow::new("t2", 1, r4).branch().expanded().parent("s"),
+        TreeTableRow::new("c3", 2, r5).parent("t2"),
+    ];
+    let mut state = TreeTableState::new(Some("c1"));
+    state.load = LoadState::Ready { count: 6 };
+    TreeTable::new(&tokens, &columns, &rows)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_table_tasks(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    let tokens = system.clone().density(Density::default());
+    let columns = ColumnModel::new(vec![
+        DataColumn::new("task", "Task", DataColumnWidth::Min(18)).priority(100),
+        DataColumn::new("status", "Status", DataColumnWidth::Fixed(8)).priority(70).sortable(),
+        DataColumn::new("owner", "Owner", DataColumnWidth::Min(8)).priority(50),
+    ]);
+    let r0: &[&str] = &["Release v0.13", "active", "team"];
+    let r1: &[&str] = &["Ship TreeTable", "doing", "alex"];
+    let r2: &[&str] = &["Write stories", "todo", "alex"];
+    let r3: &[&str] = &["Docs pass", "todo", "docs"];
+    let r4: &[&str] = &["lazy epic", "…", "—"];
+    let rows = [
+        TreeTableRow::new("e1", 0, r0).branch().expanded(),
+        TreeTableRow::new("t1", 1, r1).branch().expanded().parent("e1"),
+        TreeTableRow::new("t2", 2, r2).parent("t1"),
+        TreeTableRow::new("t3", 1, r3).parent("e1"),
+        TreeTableRow::new("lazy", 0, r4).lazy_branch(),
+    ];
+    let mut state = TreeTableState::new(Some("t1"));
+    state.load = LoadState::Ready { count: 5 };
+    state.enable_multi_select();
+    state.selection.toggle_row("t2");
+    TreeTable::new(&tokens, &columns, &rows)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_table_deps(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    let tokens = system.clone().density(Density::Compact);
+    let columns = ColumnModel::new(vec![
+        DataColumn::new("pkg", "Package", DataColumnWidth::Min(16)).priority(100),
+        DataColumn::new("ver", "Version", DataColumnWidth::Fixed(10)).priority(80).sortable(),
+        DataColumn::new("lic", "License", DataColumnWidth::Fixed(8)).priority(40),
+    ]);
+    let r0: &[&str] = &["termrock", "0.11.0", "Apache"];
+    let r1: &[&str] = &["ratatui-core", "0.1.2", "MIT"];
+    let r2: &[&str] = &["unicode-width", "0.2", "MIT/Apache"];
+    let r3: &[&str] = &["serde", "1.0", "MIT/Apache"];
+    let rows = [
+        TreeTableRow::new("root", 0, r0).branch().expanded(),
+        TreeTableRow::new("rt", 1, r1).branch().expanded().parent("root"),
+        TreeTableRow::new("uw", 2, r2).parent("rt"),
+        TreeTableRow::new("se", 1, r3).parent("root"),
+    ];
+    let mut state = TreeTableState::new(Some("rt"));
+    state.load = LoadState::Ready { count: 4 };
+    TreeTable::new(&tokens, &columns, &rows)
+        .focused(true)
+        .compact_indent(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    let tokens = system.clone().density(Density::Compact);
+    let mut columns = ColumnModel::new(vec![
+        DataColumn::new("name", "Name", DataColumnWidth::Min(10)).priority(100),
+        DataColumn::new("meta", "Meta", DataColumnWidth::Min(8)).priority(20),
+        DataColumn::new("extra", "Extra", DataColumnWidth::Min(8)).priority(5),
+    ]);
+    if area.width < 40 {
+        columns.contract_to_budget(2, 90);
+    }
+    let r0: &[&str] = &["root", "m0", "e0"];
+    let r1: &[&str] = &["child", "m1", "e1"];
+    let rows = [
+        TreeTableRow::new(1u64, 0, r0).branch().expanded(),
+        TreeTableRow::new(2, 1, r1).parent(1),
+    ];
+    let mut state = TreeTableState::new(Some(1));
+    state.load = LoadState::Ready { count: 2 };
+    TreeTable::new(&tokens, &columns, &rows)
+        .focused(true)
+        .compact_indent(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_table_aggregate(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    let tokens = system.clone().density(Density::default());
+    let columns = ColumnModel::new(vec![
+        DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
+        DataColumn::new("n", "N", DataColumnWidth::Fixed(5)).priority(80).sortable(),
+        DataColumn::new("bytes", "Bytes", DataColumnWidth::Fixed(8)).priority(60),
+    ]);
+    let g: &[&str] = &["eu-west", "", ""];
+    let r0: &[&str] = &["api", "12", "4.2M"];
+    let r1: &[&str] = &["worker", "4", "1.1M"];
+    let tot: &[&str] = &["TOTAL", "16", "5.3M"];
+    let rows = [
+        TreeTableRow::new("g", 0, g).group().expanded(),
+        TreeTableRow::new("a", 1, r0).parent("g"),
+        TreeTableRow::new("w", 1, r1).parent("g"),
+        TreeTableRow::new("t", 0, tot).aggregate(),
+    ];
+    let mut state = TreeTableState::new(Some("a"));
+    state.load = LoadState::Ready { count: 3 };
+    TreeTable::new(&tokens, &columns, &rows)
+        .focused(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
 

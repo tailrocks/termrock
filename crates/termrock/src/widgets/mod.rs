@@ -112,6 +112,7 @@ mod notification_center;
 mod toast;
 mod transcript;
 mod tree;
+mod tree_table;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -574,6 +575,11 @@ pub use transcript::{
 pub use tree::{
     TREE_DEFAULT_OVERSCAN, Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState,
     filter_tree_with_ancestors,
+};
+pub use tree_table::{
+    TreeTable, TreeTableHeaderRegion, TreeTableNavMode, TreeTableOutcome, TreeTableRow,
+    TreeTableRowKind, TreeTableRowRegion, TreeTableState, default_tree_table_intent,
+    filter_tree_table_with_ancestors,
 };
 pub use tree_navigation::{
     TREE_NAV_INDENT, TREE_NAV_MAX_INDENT_DEPTH, TREE_NAV_NARROW_MAX_WIDTH, TreeNavNode,
