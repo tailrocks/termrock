@@ -6828,6 +6828,60 @@ pub(crate) fn stories() -> Vec<Story> {
             agent_workbench_no_color,
         ),
         Story::new(
+            "database-workbench/basic",
+            "Database workbench",
+            "DatabaseWorkbench",
+            "Flagship DB composition: connections, schema, query, results, inspector.",
+            120,
+            36,
+            database_workbench_basic,
+        ),
+        Story::new(
+            "database-workbench/disconnected",
+            "Database workbench disconnected",
+            "DatabaseWorkbench",
+            "Disconnected gate blocks run; offline chrome.",
+            100,
+            28,
+            database_workbench_disconnected,
+        ),
+        Story::new(
+            "database-workbench/error",
+            "Database workbench error",
+            "DatabaseWorkbench",
+            "Query error + failed transaction status projection.",
+            100,
+            28,
+            database_workbench_error,
+        ),
+        Story::new(
+            "database-workbench/running",
+            "Database workbench running",
+            "DatabaseWorkbench",
+            "In-flight query run chrome.",
+            100,
+            28,
+            database_workbench_running,
+        ),
+        Story::new(
+            "database-workbench/narrow",
+            "Database workbench narrow",
+            "DatabaseWorkbench",
+            "Narrow density — inspector collapsed.",
+            70,
+            24,
+            database_workbench_narrow,
+        ),
+        Story::new(
+            "database-workbench/unicode",
+            "Database workbench unicode",
+            "DatabaseWorkbench",
+            "Unicode titles / schema path paint.",
+            100,
+            28,
+            database_workbench_unicode,
+        ),
+        Story::new(
             "permission-prompt/basic",
             "Permission prompt",
             "PermissionPrompt",
@@ -24817,6 +24871,124 @@ fn agent_workbench_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn agent_workbench_no_color(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::NoColor);
+}
+
+#[derive(Clone, Copy)]
+enum DatabaseWorkbenchStoryKind {
+    Basic,
+    Disconnected,
+    Error,
+    Running,
+    Narrow,
+    Unicode,
+}
+
+fn paint_database_workbench_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    kind: DatabaseWorkbenchStoryKind,
+) {
+    use termrock::patterns::{
+        example_db_commands, example_db_history, example_disconnected_connections,
+        example_inspect_fields, example_result_columns, example_result_row_refs,
+        example_result_rows, example_schema_entries, render_database_workbench,
+        DatabaseConnGate, DatabaseTxStatus, DatabaseWorkbenchDensity, DatabaseWorkbenchState,
+        DatabaseWorkbenchSurfaces,
+    };
+    use termrock::widgets::SchemaBrowserEntry;
+
+    let mut state = DatabaseWorkbenchState::new();
+    match kind {
+        DatabaseWorkbenchStoryKind::Narrow => {
+            state.density = Some(DatabaseWorkbenchDensity::Narrow);
+        }
+        DatabaseWorkbenchStoryKind::Disconnected => {
+            state
+                .connections
+                .set_connections(example_disconnected_connections());
+            state.sync_conn_gate_from_selection();
+        }
+        DatabaseWorkbenchStoryKind::Error => {
+            state.conn_gate = DatabaseConnGate::Connected;
+            state.finish_run_error("syntax error near FROM");
+            state.set_tx_status(DatabaseTxStatus::Failed);
+        }
+        DatabaseWorkbenchStoryKind::Running => {
+            state.conn_gate = DatabaseConnGate::Connected;
+            state.begin_run("story-run-1");
+            state.set_tx_status(DatabaseTxStatus::Active);
+        }
+        DatabaseWorkbenchStoryKind::Unicode => {
+            state.tabs[0].title = "ユーザー".into();
+            state.tabs[0].draft = "SELECT * FROM ユーザー LIMIT 10;".into();
+            state.query.set_text(&state.tabs[0].draft);
+            state.query.title = Some("ユーザー".into());
+        }
+        DatabaseWorkbenchStoryKind::Basic => {
+            state.conn_gate = DatabaseConnGate::Connected;
+            state.finish_run_success(3, 12);
+        }
+    }
+
+    let schema = if matches!(kind, DatabaseWorkbenchStoryKind::Unicode) {
+        vec![
+            SchemaBrowserEntry::connection("c", "本番", "prod")
+                .branch()
+                .expanded(),
+            SchemaBrowserEntry::table("t", "ユーザー", "prod/ユーザー", 1)
+                .parent("c")
+                .secondary("≈1万"),
+        ]
+    } else {
+        example_schema_entries()
+    };
+    let cols = example_result_columns();
+    let data = example_result_rows();
+    let mut cell_store = Vec::new();
+    let rows = example_result_row_refs(&data, &mut cell_store);
+    let inspect = example_inspect_fields();
+    let history = example_db_history();
+    let commands = example_db_commands();
+
+    render_database_workbench(
+        frame.buffer_mut(),
+        area,
+        DatabaseWorkbenchSurfaces {
+            system,
+            state: &mut state,
+            schema_entries: &schema,
+            result_columns: &cols,
+            result_rows: &rows,
+            inspect_fields: &inspect,
+            history: &history,
+            commands: &commands,
+        },
+    );
+}
+
+fn database_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_database_workbench_story(frame, area, system, DatabaseWorkbenchStoryKind::Basic);
+}
+
+fn database_workbench_disconnected(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_database_workbench_story(frame, area, system, DatabaseWorkbenchStoryKind::Disconnected);
+}
+
+fn database_workbench_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_database_workbench_story(frame, area, system, DatabaseWorkbenchStoryKind::Error);
+}
+
+fn database_workbench_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_database_workbench_story(frame, area, system, DatabaseWorkbenchStoryKind::Running);
+}
+
+fn database_workbench_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_database_workbench_story(frame, area, system, DatabaseWorkbenchStoryKind::Narrow);
+}
+
+fn database_workbench_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_database_workbench_story(frame, area, system, DatabaseWorkbenchStoryKind::Unicode);
 }
 
 #[derive(Clone, Copy)]

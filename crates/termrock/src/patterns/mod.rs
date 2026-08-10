@@ -13,6 +13,7 @@
 mod agent_shell;
 mod agent_workbench;
 mod app_shell;
+mod database_workbench;
 mod ops_dashboard;
 mod resource_browser;
 mod settings_screen;
@@ -27,6 +28,16 @@ pub use agent_workbench::{
     example_workbench_tasks, permission_modal_rect, register_workbench_scene,
     render_agent_workbench, sync_workbench_scene,
 };
+pub use database_workbench::{
+    database_workbench_layout, database_workbench_layout_density, example_db_commands,
+    example_db_history, example_disconnected_connections, example_inspect_fields,
+    example_query_tabs, example_result_columns, example_result_row_refs, example_result_rows,
+    example_schema_entries, example_workbench_connections, large_result_row_data,
+    render_database_workbench, DatabaseConnGate, DatabaseQueryTab, DatabaseRunBlockReason,
+    DatabaseTxStatus, DatabaseWorkbenchDensity, DatabaseWorkbenchOutcome, DatabaseWorkbenchPane,
+    DatabaseWorkbenchState, DatabaseWorkbenchSurfaces,
+};
+pub use database_workbench::bench as database_workbench_bench;
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,
     AppShellSlots, AppShellZone,

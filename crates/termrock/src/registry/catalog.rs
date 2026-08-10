@@ -1278,6 +1278,104 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "database-workbench".into(),
+            title: "Database Workbench".into(),
+            description: "Source-owned database application composition: ConnectionManager, SchemaBrowser, QueryEditor, ResultGrid, ObjectInspector, HistoryPicker, StatusBar, CommandPalette; focus zones, density collapse, typed run/cancel/export messages; host owns SQL I/O.".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::database_workbench".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/database_workbench.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec![
+                    "termrock/ConnectionManager".into(),
+                    "termrock/Panel".into(),
+                ];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("Workbench".into());
+                c.min_width = Some(30);
+                c.min_height = Some(12);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "connections".into(),
+                    label: "Connection inventory".into(),
+                },
+                AnatomyPartRef {
+                    id: "schema".into(),
+                    label: "Schema browser".into(),
+                },
+                AnatomyPartRef {
+                    id: "query".into(),
+                    label: "Query tabs/editor".into(),
+                },
+                AnatomyPartRef {
+                    id: "results".into(),
+                    label: "Result grid".into(),
+                },
+                AnatomyPartRef {
+                    id: "inspector".into(),
+                    label: "Object inspector".into(),
+                },
+                AnatomyPartRef {
+                    id: "status".into(),
+                    label: "Status bar".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "normal".into(),
+                    description: "Full multi-pane".into(),
+                },
+                VariantRef {
+                    id: "narrow".into(),
+                    description: "Inspector collapsed".into(),
+                },
+                VariantRef {
+                    id: "tiny".into(),
+                    description: "Query + results + status".into(),
+                },
+            ],
+            outcomes: vec![
+                OutcomeRef {
+                    id: "RunRequested".into(),
+                },
+                OutcomeRef {
+                    id: "CancelRequested".into(),
+                },
+                OutcomeRef {
+                    id: "ExportRequested".into(),
+                },
+                OutcomeRef {
+                    id: "RunBlocked".into(),
+                },
+            ],
+            stories: vec![
+                "database-workbench/basic".into(),
+                "database-workbench/disconnected".into(),
+                "database-workbench/error".into(),
+                "database-workbench/running".into(),
+                "database-workbench/narrow".into(),
+                "database-workbench/unicode".into(),
+            ],
+            tests: vec!["patterns::database_workbench".into()],
+            migration: Some("migrations/0240-v0.13.0-database-workbench.md".into()),
+            provenance: prov("crates/termrock/src/patterns/database_workbench.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 
