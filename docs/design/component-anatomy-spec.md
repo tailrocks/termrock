@@ -820,6 +820,33 @@ Every component below uses sections **1–24**:
 23. **Tests:** priority, auto-contract, no provider I/O  
 24. **Perf:** O(slots)
 
+## IntegrationStatus
+
+1. **Purpose:** MCP/plugin/extension/tool/external health and management.  
+2. **Anatomy:** list/badge · provenance · health · caps/perms/logs · action strip  
+3. **Public properties:** `IntegrationEntry[]`, presentation, tab  
+4. **State:** cursor, actions, log_scroll  
+5. **Variants:** Badge · CompactList · Panel  
+6. **Sizes:** badge 1 row; list multi; panel tabs  
+7. **Visual:** health roles; 3rd-party Warning; egress ↗  
+8. **Interaction:** restart/enable/disable/details/logs/permit/update  
+9. **Keyboard:** j/k · ←/→ actions · Enter · r/e/x/d/g/p/u · Tab · b badge · w egress  
+10. **Mouse:** row select; action hits  
+11. **Focus:** list + action strip  
+12. **Disabled:** accepts_input  
+13. **Loading:** Starting health  
+14. **Error:** Error health + last_error  
+15. **Narrow:** badge or list clip  
+16. **Tiny:** badge aggregate  
+17. **Unicode/ASCII:** kind/health glyphs  
+18. **Colorless:** letters  
+19. **Composition:** PermissionPrompt via PermissionRequested; not connectivity Offline  
+20. **Outcomes:** Restart/Enable/Disable/Details/Logs/Permission/UpdateRequested · Selected  
+21. **Stories:** `integration-status/{list,panel,badge,narrow,unicode}`  
+22. **Snapshots:** permission-required third-party egress  
+23. **Tests:** provenance, egress language, no process I/O  
+24. **Perf:** O(visible rows)
+
 ## TextInput
 
 1. **Purpose:** Single-line grapheme-safe editor.  

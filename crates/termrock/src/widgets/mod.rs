@@ -128,6 +128,7 @@ mod checkpoint_timeline;
 mod session_picker;
 mod prompt_queue;
 mod agent_status_header;
+mod integration_status;
 mod event_stream;
 mod log_stream;
 mod diagnostic;
@@ -767,6 +768,14 @@ pub use agent_status_header::{
     example_agent_status_idle,
 };
 pub use agent_status_header::bench as agent_status_header_bench;
+pub use integration_status::{
+    INTEGRATION_LIST_WINDOW, INTEGRATION_LOG_WINDOW, INTEGRATION_STATUS_OVERLAY_ID,
+    IntegrationAction, IntegrationCapability, IntegrationDetailTab, IntegrationEntry,
+    IntegrationHealth, IntegrationKind, IntegrationPermission, IntegrationProvenance,
+    IntegrationStatus, IntegrationStatusOutcome, IntegrationStatusPresentation,
+    IntegrationStatusState, example_integrations,
+};
+pub use integration_status::bench as integration_status_bench;
 pub use object_inspector::{
     InspectKind, InspectMode, InspectNodeStatus, InspectPresentation, InspectRegion,
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,

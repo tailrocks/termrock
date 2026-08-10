@@ -4649,6 +4649,33 @@ pub(crate) fn stories() -> Vec<Story> {
             prompt_composer_busy,
         ),
         Story::new(
+            "integration-status/list",
+            "IntegrationStatus list",
+            "IntegrationStatus",
+            "MCP/plugin inventory with provenance and egress cues.",
+            64,
+            14,
+            integration_status_list_story,
+        ),
+        Story::new(
+            "integration-status/panel",
+            "IntegrationStatus panel",
+            "IntegrationStatus",
+            "Diagnostic panel — permissions and egress language.",
+            64,
+            16,
+            integration_status_panel_story,
+        ),
+        Story::new(
+            "integration-status/badge",
+            "IntegrationStatus badge",
+            "IntegrationStatus",
+            "Compact single-line badge.",
+            48,
+            1,
+            integration_status_badge_story,
+        ),
+        Story::new(
             "agent-status-header/basic",
             "AgentStatusHeader",
             "AgentStatusHeader",
@@ -7997,6 +8024,24 @@ pub(crate) fn stories() -> Vec<Story> {
             22,
             12,
             prompt_queue_expanded_story,
+        ),
+        Story::new(
+            "integration-status/narrow",
+            "Narrow IntegrationStatus",
+            "IntegrationStatus",
+            "Narrow-terminal geometry (22 cols).",
+            22,
+            12,
+            integration_status_list_story,
+        ),
+        Story::new(
+            "integration-status/unicode",
+            "Unicode IntegrationStatus",
+            "IntegrationStatus",
+            "Unicode-safe paint path.",
+            48,
+            10,
+            integration_status_unicode_story,
         ),
         Story::new(
             "agent-status-header/unicode",
@@ -17591,6 +17636,63 @@ fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         label: "model".into(),
     }));
     frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
+}
+
+
+fn integration_status_list_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_integrations, IntegrationStatus, IntegrationStatusPresentation,
+        IntegrationStatusState,
+    };
+    let mut state = IntegrationStatusState::new();
+    state.set_entries(example_integrations());
+    state.presentation = IntegrationStatusPresentation::CompactList;
+    state.focused = true;
+    frame.render_stateful_widget(&IntegrationStatus::new(system), area, &mut state);
+}
+
+fn integration_status_panel_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_integrations, IntegrationDetailTab, IntegrationStatus,
+        IntegrationStatusPresentation, IntegrationStatusState,
+    };
+    let mut state = IntegrationStatusState::new();
+    state.set_entries(example_integrations());
+    state.presentation = IntegrationStatusPresentation::Panel;
+    if let Some(i) = state.entries.iter().position(|e| e.id == "mcp-web") {
+        state.cursor = i;
+    }
+    state.tab = IntegrationDetailTab::Permissions;
+    state.focused = true;
+    frame.render_stateful_widget(&IntegrationStatus::new(system), area, &mut state);
+}
+
+fn integration_status_badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_integrations, IntegrationStatus, IntegrationStatusPresentation,
+        IntegrationStatusState,
+    };
+    let mut state = IntegrationStatusState::new();
+    state.set_entries(example_integrations());
+    state.presentation = IntegrationStatusPresentation::Badge;
+    state.focused = true;
+    frame.render_stateful_widget(&IntegrationStatus::new(system), area, &mut state);
+}
+
+fn integration_status_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        IntegrationEntry, IntegrationHealth, IntegrationKind, IntegrationProvenance,
+        IntegrationStatus, IntegrationStatusPresentation, IntegrationStatusState,
+    };
+    let mut state = IntegrationStatusState::new();
+    state.set_entries(vec![
+        IntegrationEntry::new("u1", "検査 MCP 🔍", IntegrationKind::McpServer)
+            .health(IntegrationHealth::Connected)
+            .provenance(IntegrationProvenance::third_party("発行者", "pkg:日本語", "1.0")),
+    ]);
+    state.presentation = IntegrationStatusPresentation::CompactList;
+    state.focused = true;
+    frame.render_stateful_widget(&IntegrationStatus::new(system), area, &mut state);
 }
 
 fn agent_status_header_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -379,6 +379,18 @@ let pane = SplitPane::new(SplitDirection::Horizontal, 20, 20, &theme);
 let mut state = SplitPaneState::new(SplitRatio::from_percent(40));
 let layout = pane.layout(Rect::new(0, 0, 100, 24), &mut state);`,
   },
+  IntegrationStatus: {
+    description:
+      'MCP/plugin/extension health — provenance, egress language, restart/enable/details requests.',
+    primaryStory: 'integration-status/list',
+    usage: `use termrock::widgets::{
+    example_integrations, IntegrationStatus, IntegrationStatusState,
+};
+
+let mut state = IntegrationStatusState::new();
+state.set_entries(example_integrations());
+IntegrationStatus::new(&system).paint(area, buf, &mut state);`,
+  },
   AgentStatusHeader: {
     description:
       'Compact agent/session status — actionable first; narrow contracts to StatusBar; quick actions.',

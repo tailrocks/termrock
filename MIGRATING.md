@@ -246,6 +246,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0230 | `v0.13.0` | [SessionPicker agent sessions](migrations/0230-v0.13.0-session-picker.md) |
 | 0231 | `v0.13.0` | [PromptQueue agent prompt queue](migrations/0231-v0.13.0-prompt-queue.md) |
 | 0232 | `v0.13.0` | [AgentStatusHeader agent chrome](migrations/0232-v0.13.0-agent-status-header.md) |
+| 0233 | `v0.13.0` | [IntegrationStatus MCP/plugins](migrations/0233-v0.13.0-integration-status.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
