@@ -355,16 +355,15 @@ pub fn default_diff_review_intent(key: KeyEvent) -> Option<UiIntent> {
 ///
 /// - Arrows / j/k / page / Home → scroll (host maps to Detach/Scrolled)
 /// - End → [`NavigationMove::Last`] (re-follow tail)
-/// - Space → [`UiIntent::Toggle`] follow
-/// - `f` is a product chord on [`LogStreamState::handle_key`] (also Toggle)
+/// - `f` is a product chord on [`LogStreamState::handle_key`] (Toggle follow)
+/// - Space is a product chord for multi-select (not mapped here)
 ///
-/// Esc / Enter are not mapped — host owns dismiss and line activate if any.
+/// Esc / Enter stay on the state path (search cancel / copy).
 #[must_use]
 pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
     if key.kind == KeyEventKind::Release {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
     match key.code {
         KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
         KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
@@ -372,7 +371,6 @@ pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
         KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
         KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
-        KeyCode::Char(' ') if is_press => Some(UiIntent::Toggle),
         _ => None,
     }
 }
@@ -610,7 +608,7 @@ mod tests {
     }
 
     #[test]
-    fn default_log_stream_intent_maps_scroll_and_toggle() {
+    fn default_log_stream_intent_maps_scroll() {
         assert_eq!(
             default_log_stream_intent(KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)),
             Some(UiIntent::Page(PageMove::Backward))
@@ -619,9 +617,10 @@ mod tests {
             default_log_stream_intent(KeyEvent::new(KeyCode::End, KeyModifiers::NONE)),
             Some(UiIntent::Move(NavigationMove::Last))
         );
+        // Space is multi-select on LogStreamState::handle_key (not intent-mapped).
         assert_eq!(
             default_log_stream_intent(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
-            Some(UiIntent::Toggle)
+            None
         );
         assert_eq!(
             default_log_stream_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),

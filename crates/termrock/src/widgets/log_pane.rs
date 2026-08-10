@@ -1,8 +1,15 @@
 //! Append-oriented scrollback deliberately owns its buffered lines.
 //!
-//! Unlike projection widgets that borrow an application model each frame,
-//! [`LogPaneState`] receives a stream over time. Owning that bounded history
-//! keeps eviction, frozen-view offsets, and tail-follow transitions atomic.
+//! Unlike projection widgets ([`super::LogStream`]) that borrow an application
+//! model each frame, [`LogPaneState`] receives a stream over time. Owning that
+//! bounded history keeps eviction, frozen-view offsets, and tail-follow
+//! transitions atomic.
+//!
+//! **Migration path.** Prefer [`super::LogStream`] for multi-source / stern-class
+//! professional viewing (search, level floor, bookmarks, copy/export). Keep
+//! LogPane when a single local process/build buffer must own append+evict.
+//! Project owned lines with [`super::log_stream::log_lines_from_plain`] or map
+//! each frame into [`super::LogLine`] when severity/source are known.
 
 use std::fmt::Write as _;
 

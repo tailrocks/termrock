@@ -117,6 +117,7 @@ mod key_value_table;
 mod object_inspector;
 mod timeline;
 mod event_stream;
+mod log_stream;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -149,6 +150,11 @@ pub use event_stream::{
     StreamEvent, StreamRowKind, filter_stream_events,
 };
 pub use event_stream::bench as event_stream_bench;
+pub use log_stream::{
+    LogLevel, LogLine, LogLineRecipe, LogStream, LogStreamOutcome, LogStreamRegion, LogStreamState,
+    LogWrap, escape_log_text, filter_log_lines, log_lines_from_plain,
+};
+pub use log_stream::bench as log_stream_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,
@@ -472,10 +478,7 @@ pub use object_inspector::{
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,
     escape_inspect_value, filter_inspect_fields,
 };
-pub use review::{
-    DiffHunk, DiffReview, DiffReviewOutcome, DiffReviewState, LogLevel, LogLine, LogStream,
-    LogStreamOutcome, LogStreamState,
-};
+pub use review::{DiffHunk, DiffReview, DiffReviewOutcome, DiffReviewState};
 pub use scroll_area::{
     ScrollArea, ScrollAreaState, ScrollBarVisibility, ScrollChain, ScrollOutcome, VisibleRange,
 };

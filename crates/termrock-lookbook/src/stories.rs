@@ -1829,10 +1829,64 @@ pub(crate) fn stories() -> Vec<Story> {
             "log-stream/follow",
             "Log stream follow",
             "LogStream",
-            "Tail-follow chip with structured levels.",
-            48,
-            8,
+            "Tail-follow chip with timestamp/source/level recipe.",
+            72,
+            10,
             log_stream_follow,
+        ),
+        Story::new(
+            "log-stream/structured",
+            "Log stream detailed",
+            "LogStream",
+            "Detailed recipe + pin + multi-level projection.",
+            72,
+            10,
+            log_stream_structured,
+        ),
+        Story::new(
+            "log-stream/filter",
+            "Log stream filter",
+            "LogStream",
+            "Search + level floor chrome on follow chip.",
+            72,
+            10,
+            log_stream_filter,
+        ),
+        Story::new(
+            "log-stream/dropped",
+            "Log stream dropped",
+            "LogStream",
+            "Bounded history drop + reconnect banner + batch.",
+            72,
+            10,
+            log_stream_dropped,
+        ),
+        Story::new(
+            "log-stream/empty",
+            "Log stream empty",
+            "LogStream",
+            "Empty-log non-color mark.",
+            32,
+            3,
+            log_stream_empty,
+        ),
+        Story::new(
+            "log-stream/narrow",
+            "Log stream narrow",
+            "LogStream",
+            "Narrow log geometry (22 cols).",
+            22,
+            6,
+            log_stream_follow,
+        ),
+        Story::new(
+            "log-stream/ascii",
+            "Log stream ASCII",
+            "LogStream",
+            "ASCII level letters and follow chip.",
+            40,
+            6,
+            log_stream_ascii,
         ),
         Story::new(
             "event-stream/basic",
@@ -1878,42 +1932,6 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             10,
             event_stream_narrow,
-        ),
-        Story::new(
-            "log-stream/structured",
-            "Log stream structured",
-            "LogStream",
-            "Pinned scroll + multi-level projection.",
-            48,
-            8,
-            log_stream_structured,
-        ),
-        Story::new(
-            "log-stream/empty",
-            "Log stream empty",
-            "LogStream",
-            "Empty-log non-color mark.",
-            32,
-            3,
-            log_stream_empty,
-        ),
-        Story::new(
-            "log-stream/narrow",
-            "Log stream narrow",
-            "LogStream",
-            "Narrow log geometry (22 cols).",
-            22,
-            6,
-            log_stream_follow,
-        ),
-        Story::new(
-            "log-stream/ascii",
-            "Log stream ASCII",
-            "LogStream",
-            "ASCII level letters and follow chip.",
-            40,
-            6,
-            log_stream_ascii,
         ),
         Story::new(
             "diff-review/hunks",
@@ -10596,64 +10614,85 @@ fn object_inspector_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &Desig
 
 fn log_stream_sample_lines() -> [LogLine<'static>; 8] {
     [
-        LogLine {
-            id: "1",
-            level: LogLevel::Info,
-            text: "scheduler start",
-        },
-        LogLine {
-            id: "2",
-            level: LogLevel::Debug,
-            text: "load config 東京",
-        },
-        LogLine {
-            id: "3",
-            level: LogLevel::Warn,
-            text: "retry connect",
-        },
-        LogLine {
-            id: "4",
-            level: LogLevel::Error,
-            text: "upstream timeout",
-        },
-        LogLine {
-            id: "5",
-            level: LogLevel::Info,
-            text: "recovered",
-        },
-        LogLine {
-            id: "6",
-            level: LogLevel::Trace,
-            text: "tick 1",
-        },
-        LogLine {
-            id: "7",
-            level: LogLevel::Info,
-            text: "ready 🧪",
-        },
-        LogLine {
-            id: "8",
-            level: LogLevel::Info,
-            text: "serving :8080",
-        },
+        LogLine::new("1", LogLevel::Info, "scheduler start")
+            .timestamp("12:00:00")
+            .source("main"),
+        LogLine::new("2", LogLevel::Debug, "load config 東京")
+            .timestamp("12:00:01")
+            .source("cfg"),
+        LogLine::new("3", LogLevel::Warn, "retry connect")
+            .timestamp("12:00:02")
+            .source("net")
+            .batch_count(3),
+        LogLine::new("4", LogLevel::Error, "upstream timeout")
+            .timestamp("12:00:03")
+            .source("api"),
+        LogLine::new("5", LogLevel::Info, "recovered")
+            .timestamp("12:00:04")
+            .source("api"),
+        LogLine::new("6", LogLevel::Trace, "tick 1")
+            .timestamp("12:00:05")
+            .batch_count(8),
+        LogLine::new("7", LogLevel::Info, "ready 🧪")
+            .timestamp("12:00:06")
+            .source("main"),
+        LogLine::new("8", LogLevel::Info, "serving :8080")
+            .timestamp("12:00:07")
+            .source("http"),
     ]
 }
 
 fn log_stream_follow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let lines = log_stream_sample_lines();
     let mut state = LogStreamState::new();
+    state.recipe = termrock::widgets::LogLineRecipe::Detailed;
     state.on_append(lines.len() as u16, area.height.saturating_sub(1));
-    LogStream::new(&lines, system).render(area, frame.buffer_mut(), &mut state);
+    LogStream::new(&lines, system)
+        .title("app.log")
+        .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn log_stream_structured(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let lines = log_stream_sample_lines();
     let mut state = LogStreamState::new();
+    state.recipe = termrock::widgets::LogLineRecipe::Detailed;
     state.on_append(lines.len() as u16, area.height.saturating_sub(1));
-    let _ = state.handle_key(termrock::input::KeyEvent::new(
-        termrock::input::KeyCode::Home,
-        termrock::input::KeyModifiers::NONE,
-    ));
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Home,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &lines,
+    );
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char('m'),
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &lines,
+    );
+    LogStream::new(&lines, system)
+        .title("stern · pods/*")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn log_stream_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let lines = log_stream_sample_lines();
+    let mut state = LogStreamState::new();
+    state.set_following(false);
+    state.search = Some("timeout".into());
+    state.level_floor = LogLevel::Warn;
+    state.on_append(lines.len() as u16, area.height.saturating_sub(1));
+    LogStream::new(&lines, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn log_stream_dropped(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let lines = log_stream_sample_lines();
+    let mut state = LogStreamState::new();
+    state.report_dropped(128);
+    state.report_batched(64);
+    state.set_reconnect_message(Some("stream resumed after gap".into()));
+    state.on_append(lines.len() as u16, area.height.saturating_sub(1));
     LogStream::new(&lines, system).render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -10665,6 +10704,7 @@ fn log_stream_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn log_stream_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let lines = log_stream_sample_lines();
     let mut state = LogStreamState::new();
+    state.recipe = termrock::widgets::LogLineRecipe::Compact;
     state.on_append(lines.len() as u16, area.height.saturating_sub(1));
     LogStream::new(&lines, system)
         .ascii(true)

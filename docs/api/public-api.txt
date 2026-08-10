@@ -1,72 +1,3 @@
- Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
-warning: unresolved link to `DataTableState::handle_key`
-   --> crates/termrock/src/interaction/intent.rs:281:7
-    |
-281 | /// [`DataTableState::handle_key`].
-    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
-    |
-    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
-
-warning: unresolved link to `LogStreamState::handle_key`
-   --> crates/termrock/src/interaction/intent.rs:359:35
-    |
-359 | /// - `f` is a product chord on [`LogStreamState::handle_key`] (also Toggle)
-    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `LogStreamState` in scope
-
-warning: unresolved link to `Self::reconcile_retain`
-   --> crates/termrock/src/interaction/selection_model.rs:462:11
-    |
-462 |     /// [`Self::reconcile_retain`] when off-window selection must survive.
-    |           ^^^^^^^^^^^^^^^^^^^^^^ the struct `SelectionModel` has no field or associated item named `reconcile_retain`
-
-warning: unresolved link to `Hint`
-   --> crates/termrock/src/widgets/keyboard_help.rs:539:31
-    |
-539 | /// Convert help entries to [`Hint`] for [`HintBar`] footer paint (borrowed chords).
-    |                               ^^^^ no item named `Hint` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `HintBar`
-   --> crates/termrock/src/widgets/keyboard_help.rs:539:44
-    |
-539 | /// Convert help entries to [`Hint`] for [`HintBar`] footer paint (borrowed chords).
-    |                                            ^^^^^^^ no item named `HintBar` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `Stack`
-   --> crates/termrock/src/widgets/card.rs:257:69
-    |
-257 |     /// Layout with optional description row carved from body via [`Stack`].
-    |                                                                     ^^^^^ no item named `Stack` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `TaskRail`
-   --> crates/termrock/src/widgets/progress_steps.rs:930:32
-    |
-930 | /// Project to list rows for [`TaskRail`] / List.
-    |                                ^^^^^^^^ no item named `TaskRail` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `Theme`
-   --> crates/termrock/src/widgets/prompt_composer.rs:553:39
-    |
-553 |     /// pass a monochrome-quantized [`Theme`]).
-    |                                       ^^^^^ no item named `Theme` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `Self::from_slots`
-   --> crates/termrock/src/widgets/status_bar.rs:423:17
-    |
-423 |     /// using [`Self::from_slots`].
-    |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
-
-warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.39s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -14722,6 +14653,12 @@ pub const termrock::widgets::event_stream_bench::BURST_BATCH: u32
 pub const termrock::widgets::event_stream_bench::EVENTS_PER_SEC: u32
 pub const termrock::widgets::event_stream_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::event_stream_bench::VIEWPORT: u16
+pub mod termrock::widgets::log_stream_bench
+pub const termrock::widgets::log_stream_bench::BOUNDED_HISTORY: usize
+pub const termrock::widgets::log_stream_bench::BURST_BATCH: u32
+pub const termrock::widgets::log_stream_bench::LINES_PER_SEC: u32
+pub const termrock::widgets::log_stream_bench::MAX_PAINT_CELLS: u32
+pub const termrock::widgets::log_stream_bench::VIEWPORT: u16
 pub mod termrock::widgets::pagination_guidance
 pub const termrock::widgets::pagination_guidance::WHEN_VIRTUALIZE: &str
 #[non_exhaustive] pub enum termrock::widgets::AccordionMode
@@ -23459,11 +23396,17 @@ pub termrock::widgets::LogLevel::Trace
 pub termrock::widgets::LogLevel::Warn
 impl termrock::widgets::LogLevel
 pub const fn termrock::widgets::LogLevel::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::LogLevel::id(self) -> &'static str
+pub const fn termrock::widgets::LogLevel::letter(self) -> char
 impl core::clone::Clone for termrock::widgets::LogLevel
 pub fn termrock::widgets::LogLevel::clone(&self) -> termrock::widgets::LogLevel
 impl core::cmp::Eq for termrock::widgets::LogLevel
+impl core::cmp::Ord for termrock::widgets::LogLevel
+pub fn termrock::widgets::LogLevel::cmp(&self, &termrock::widgets::LogLevel) -> core::cmp::Ordering
 impl core::cmp::PartialEq for termrock::widgets::LogLevel
 pub fn termrock::widgets::LogLevel::eq(&self, &termrock::widgets::LogLevel) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::LogLevel
+pub fn termrock::widgets::LogLevel::partial_cmp(&self, &termrock::widgets::LogLevel) -> core::option::Option<core::cmp::Ordering>
 impl core::default::Default for termrock::widgets::LogLevel
 pub fn termrock::widgets::LogLevel::default() -> termrock::widgets::LogLevel
 impl core::fmt::Debug for termrock::widgets::LogLevel
@@ -23479,6 +23422,8 @@ impl core::marker::Unpin for termrock::widgets::LogLevel
 impl core::marker::UnsafeUnpin for termrock::widgets::LogLevel
 impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::LogLevel
 impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::LogLevel
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::LogLevel where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::LogLevel::compare(&self, &K) -> core::cmp::Ordering
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::LogLevel where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::LogLevel::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::LogLevel where U: core::convert::From<T>
@@ -23504,24 +23449,84 @@ pub unsafe fn termrock::widgets::LogLevel::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::LogLevel
 pub fn termrock::widgets::LogLevel::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LogLevel
+#[non_exhaustive] pub enum termrock::widgets::LogLineRecipe
+pub termrock::widgets::LogLineRecipe::Compact
+pub termrock::widgets::LogLineRecipe::Detailed
+impl termrock::widgets::LogLineRecipe
+pub const fn termrock::widgets::LogLineRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::LogLineRecipe
+pub fn termrock::widgets::LogLineRecipe::clone(&self) -> termrock::widgets::LogLineRecipe
+impl core::cmp::Eq for termrock::widgets::LogLineRecipe
+impl core::cmp::PartialEq for termrock::widgets::LogLineRecipe
+pub fn termrock::widgets::LogLineRecipe::eq(&self, &termrock::widgets::LogLineRecipe) -> bool
+impl core::default::Default for termrock::widgets::LogLineRecipe
+pub fn termrock::widgets::LogLineRecipe::default() -> termrock::widgets::LogLineRecipe
+impl core::fmt::Debug for termrock::widgets::LogLineRecipe
+pub fn termrock::widgets::LogLineRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::LogLineRecipe
+pub fn termrock::widgets::LogLineRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::LogLineRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::LogLineRecipe
+impl core::marker::Freeze for termrock::widgets::LogLineRecipe
+impl core::marker::Send for termrock::widgets::LogLineRecipe
+impl core::marker::Sync for termrock::widgets::LogLineRecipe
+impl core::marker::Unpin for termrock::widgets::LogLineRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::LogLineRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::LogLineRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::LogLineRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::LogLineRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::LogLineRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::LogLineRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::LogLineRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::LogLineRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::LogLineRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::LogLineRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::LogLineRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::LogLineRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::LogLineRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::LogLineRecipe where T: core::clone::Clone
+pub type termrock::widgets::LogLineRecipe::Owned = T
+pub fn termrock::widgets::LogLineRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::LogLineRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::LogLineRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::LogLineRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::LogLineRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::LogLineRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::LogLineRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::LogLineRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::LogLineRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::LogLineRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::LogLineRecipe
+pub fn termrock::widgets::LogLineRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::LogLineRecipe
 #[non_exhaustive] pub enum termrock::widgets::LogStreamOutcome
+pub termrock::widgets::LogStreamOutcome::AckDropped
+pub termrock::widgets::LogStreamOutcome::BookmarkToggled
+pub termrock::widgets::LogStreamOutcome::BookmarkToggled::id: alloc::string::String
+pub termrock::widgets::LogStreamOutcome::BookmarkToggled::on: bool
+pub termrock::widgets::LogStreamOutcome::Cancelled
+pub termrock::widgets::LogStreamOutcome::Copy
+pub termrock::widgets::LogStreamOutcome::Copy::text: alloc::string::String
 pub termrock::widgets::LogStreamOutcome::Detach
+pub termrock::widgets::LogStreamOutcome::Export
+pub termrock::widgets::LogStreamOutcome::Export::text: alloc::string::String
 pub termrock::widgets::LogStreamOutcome::Follow
+pub termrock::widgets::LogStreamOutcome::HScrolled
+pub termrock::widgets::LogStreamOutcome::HScrolled::h_offset: u16
 pub termrock::widgets::LogStreamOutcome::Ignored
+pub termrock::widgets::LogStreamOutcome::LevelFilter(termrock::widgets::LogLevel)
 pub termrock::widgets::LogStreamOutcome::Scrolled
 pub termrock::widgets::LogStreamOutcome::Scrolled::offset: u16
+pub termrock::widgets::LogStreamOutcome::SearchChanged(alloc::string::String)
+pub termrock::widgets::LogStreamOutcome::SelectionChanged
+pub termrock::widgets::LogStreamOutcome::SelectionChanged::ids: alloc::vec::Vec<alloc::string::String>
 impl core::clone::Clone for termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamOutcome::clone(&self) -> termrock::widgets::LogStreamOutcome
 impl core::cmp::Eq for termrock::widgets::LogStreamOutcome
 impl core::cmp::PartialEq for termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamOutcome::eq(&self, &termrock::widgets::LogStreamOutcome) -> bool
-impl core::default::Default for termrock::widgets::LogStreamOutcome
-pub fn termrock::widgets::LogStreamOutcome::default() -> termrock::widgets::LogStreamOutcome
 impl core::fmt::Debug for termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::LogStreamOutcome
-pub fn termrock::widgets::LogStreamOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::LogStreamOutcome
 impl core::marker::StructuralPartialEq for termrock::widgets::LogStreamOutcome
 impl core::marker::Freeze for termrock::widgets::LogStreamOutcome
 impl core::marker::Send for termrock::widgets::LogStreamOutcome
@@ -23555,6 +23560,56 @@ pub unsafe fn termrock::widgets::LogStreamOutcome::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LogStreamOutcome
+#[non_exhaustive] pub enum termrock::widgets::LogWrap
+pub termrock::widgets::LogWrap::Clip
+pub termrock::widgets::LogWrap::Wrap
+impl termrock::widgets::LogWrap
+pub const fn termrock::widgets::LogWrap::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::LogWrap
+pub fn termrock::widgets::LogWrap::clone(&self) -> termrock::widgets::LogWrap
+impl core::cmp::Eq for termrock::widgets::LogWrap
+impl core::cmp::PartialEq for termrock::widgets::LogWrap
+pub fn termrock::widgets::LogWrap::eq(&self, &termrock::widgets::LogWrap) -> bool
+impl core::default::Default for termrock::widgets::LogWrap
+pub fn termrock::widgets::LogWrap::default() -> termrock::widgets::LogWrap
+impl core::fmt::Debug for termrock::widgets::LogWrap
+pub fn termrock::widgets::LogWrap::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::LogWrap
+pub fn termrock::widgets::LogWrap::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::LogWrap
+impl core::marker::StructuralPartialEq for termrock::widgets::LogWrap
+impl core::marker::Freeze for termrock::widgets::LogWrap
+impl core::marker::Send for termrock::widgets::LogWrap
+impl core::marker::Sync for termrock::widgets::LogWrap
+impl core::marker::Unpin for termrock::widgets::LogWrap
+impl core::marker::UnsafeUnpin for termrock::widgets::LogWrap
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::LogWrap
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::LogWrap
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::LogWrap where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::LogWrap::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::LogWrap where U: core::convert::From<T>
+pub fn termrock::widgets::LogWrap::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::LogWrap where U: core::convert::Into<T>
+pub type termrock::widgets::LogWrap::Error = core::convert::Infallible
+pub fn termrock::widgets::LogWrap::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::LogWrap where U: core::convert::TryFrom<T>
+pub type termrock::widgets::LogWrap::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::LogWrap::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::LogWrap where T: core::clone::Clone
+pub type termrock::widgets::LogWrap::Owned = T
+pub fn termrock::widgets::LogWrap::clone_into(&self, &mut T)
+pub fn termrock::widgets::LogWrap::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::LogWrap where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::LogWrap::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::LogWrap where T: ?core::marker::Sized
+pub fn termrock::widgets::LogWrap::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::LogWrap where T: ?core::marker::Sized
+pub fn termrock::widgets::LogWrap::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::LogWrap where T: core::clone::Clone
+pub unsafe fn termrock::widgets::LogWrap::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::LogWrap
+pub fn termrock::widgets::LogWrap::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::LogWrap
 #[non_exhaustive] pub enum termrock::widgets::MarkdownBlockKind
 pub termrock::widgets::MarkdownBlockKind::Blank
 pub termrock::widgets::MarkdownBlockKind::Code
@@ -45851,9 +45906,19 @@ impl<T> core::convert::From<T> for termrock::widgets::LoadingView<'a>
 pub fn termrock::widgets::LoadingView<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LoadingView<'a>
 pub struct termrock::widgets::LogLine<'a>
+pub termrock::widgets::LogLine::batch_count: u32
 pub termrock::widgets::LogLine::id: &'a str
 pub termrock::widgets::LogLine::level: termrock::widgets::LogLevel
+pub termrock::widgets::LogLine::source: core::option::Option<&'a str>
+pub termrock::widgets::LogLine::styled: core::option::Option<&'a ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::LogLine::text: &'a str
+pub termrock::widgets::LogLine::timestamp: core::option::Option<&'a str>
+impl<'a> termrock::widgets::LogLine<'a>
+pub const fn termrock::widgets::LogLine<'a>::batch_count(self, u32) -> Self
+pub const fn termrock::widgets::LogLine<'a>::new(&'a str, termrock::widgets::LogLevel, &'a str) -> Self
+pub const fn termrock::widgets::LogLine<'a>::source(self, &'a str) -> Self
+pub const fn termrock::widgets::LogLine<'a>::styled(self, &'a ratatui_core::text::line::Line<'a>) -> Self
+pub const fn termrock::widgets::LogLine<'a>::timestamp(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::LogLine<'a>
 pub fn termrock::widgets::LogLine<'a>::clone(&self) -> termrock::widgets::LogLine<'a>
 impl<'a> core::cmp::Eq for termrock::widgets::LogLine<'a>
@@ -46002,11 +46067,17 @@ pub const fn termrock::widgets::LogStream<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::LogStream<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::LogStream<'a>::new(&'a [termrock::widgets::LogLine<'a>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::LogStream<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::LogStreamState)
+pub const fn termrock::widgets::LogStream<'a>::title(self, &'a str) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::LogStream<'_>
+pub type &termrock::widgets::LogStream<'_>::State = termrock::widgets::LogStreamState
+pub fn &termrock::widgets::LogStream<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::LogStream<'_>
+pub type termrock::widgets::LogStream<'_>::State = termrock::widgets::LogStreamState
+pub fn termrock::widgets::LogStream<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a> core::clone::Clone for termrock::widgets::LogStream<'a>
 pub fn termrock::widgets::LogStream<'a>::clone(&self) -> termrock::widgets::LogStream<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::LogStream<'a>
 pub fn termrock::widgets::LogStream<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::LogStream<'a>
 impl<'a> core::marker::Freeze for termrock::widgets::LogStream<'a>
 impl<'a> core::marker::Send for termrock::widgets::LogStream<'a>
 impl<'a> core::marker::Sync for termrock::widgets::LogStream<'a>
@@ -46037,19 +46108,87 @@ pub unsafe fn termrock::widgets::LogStream<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::LogStream<'a>
 pub fn termrock::widgets::LogStream<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LogStream<'a>
+pub struct termrock::widgets::LogStreamRegion
+pub termrock::widgets::LogStreamRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::LogStreamRegion::id: alloc::string::String
+pub termrock::widgets::LogStreamRegion::index: usize
+impl core::clone::Clone for termrock::widgets::LogStreamRegion
+pub fn termrock::widgets::LogStreamRegion::clone(&self) -> termrock::widgets::LogStreamRegion
+impl core::cmp::Eq for termrock::widgets::LogStreamRegion
+impl core::cmp::PartialEq for termrock::widgets::LogStreamRegion
+pub fn termrock::widgets::LogStreamRegion::eq(&self, &termrock::widgets::LogStreamRegion) -> bool
+impl core::fmt::Debug for termrock::widgets::LogStreamRegion
+pub fn termrock::widgets::LogStreamRegion::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::LogStreamRegion
+impl core::marker::Freeze for termrock::widgets::LogStreamRegion
+impl core::marker::Send for termrock::widgets::LogStreamRegion
+impl core::marker::Sync for termrock::widgets::LogStreamRegion
+impl core::marker::Unpin for termrock::widgets::LogStreamRegion
+impl core::marker::UnsafeUnpin for termrock::widgets::LogStreamRegion
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::LogStreamRegion
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::LogStreamRegion
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::LogStreamRegion where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::LogStreamRegion::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::LogStreamRegion where U: core::convert::From<T>
+pub fn termrock::widgets::LogStreamRegion::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::LogStreamRegion where U: core::convert::Into<T>
+pub type termrock::widgets::LogStreamRegion::Error = core::convert::Infallible
+pub fn termrock::widgets::LogStreamRegion::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::LogStreamRegion where U: core::convert::TryFrom<T>
+pub type termrock::widgets::LogStreamRegion::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::LogStreamRegion::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::LogStreamRegion where T: core::clone::Clone
+pub type termrock::widgets::LogStreamRegion::Owned = T
+pub fn termrock::widgets::LogStreamRegion::clone_into(&self, &mut T)
+pub fn termrock::widgets::LogStreamRegion::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::LogStreamRegion where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::LogStreamRegion::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::LogStreamRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::LogStreamRegion::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::LogStreamRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::LogStreamRegion::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::LogStreamRegion where T: core::clone::Clone
+pub unsafe fn termrock::widgets::LogStreamRegion::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::LogStreamRegion
+pub fn termrock::widgets::LogStreamRegion::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::LogStreamRegion
 pub struct termrock::widgets::LogStreamState
+pub termrock::widgets::LogStreamState::ascii: bool
+pub termrock::widgets::LogStreamState::batched: u64
+pub termrock::widgets::LogStreamState::colorless: bool
+pub termrock::widgets::LogStreamState::cursor: usize
+pub termrock::widgets::LogStreamState::dropped: u64
+pub termrock::widgets::LogStreamState::h_offset: u16
+pub termrock::widgets::LogStreamState::level_floor: termrock::widgets::LogLevel
+pub termrock::widgets::LogStreamState::recipe: termrock::widgets::LogLineRecipe
+pub termrock::widgets::LogStreamState::reconnect_message: core::option::Option<alloc::string::String>
+pub termrock::widgets::LogStreamState::regions: alloc::vec::Vec<termrock::widgets::LogStreamRegion>
+pub termrock::widgets::LogStreamState::search: core::option::Option<alloc::string::String>
+pub termrock::widgets::LogStreamState::wrap: termrock::widgets::LogWrap
 impl termrock::widgets::LogStreamState
 pub const fn termrock::widgets::LogStreamState::accepts_input(&self) -> bool
-pub fn termrock::widgets::LogStreamState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::LogStreamOutcome
-pub fn termrock::widgets::LogStreamState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::LogStreamOutcome
-pub fn termrock::widgets::LogStreamState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::LogStreamOutcome
+pub fn termrock::widgets::LogStreamState::ack_dropped(&mut self)
+pub fn termrock::widgets::LogStreamState::bookmarks(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
+pub fn termrock::widgets::LogStreamState::capture_anchor(&mut self, &[termrock::widgets::LogLine<'_>])
+pub fn termrock::widgets::LogStreamState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::LogLine<'_>]) -> termrock::widgets::LogStreamOutcome
+pub fn termrock::widgets::LogStreamState::handle_intent_scroll(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::LogStreamOutcome
+pub fn termrock::widgets::LogStreamState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::LogLine<'_>]) -> termrock::widgets::LogStreamOutcome
+pub fn termrock::widgets::LogStreamState::handle_key_scroll(&mut self, termrock::input::KeyEvent) -> termrock::widgets::LogStreamOutcome
+pub fn termrock::widgets::LogStreamState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::LogLine<'_>]) -> termrock::widgets::LogStreamOutcome
+pub fn termrock::widgets::LogStreamState::handle_mouse_scroll(&mut self, termrock::input::MouseEvent) -> termrock::widgets::LogStreamOutcome
 pub const fn termrock::widgets::LogStreamState::is_following(&self) -> bool
 pub fn termrock::widgets::LogStreamState::new() -> Self
 pub const fn termrock::widgets::LogStreamState::offset(&self) -> u16
 pub fn termrock::widgets::LogStreamState::on_append(&mut self, u16, u16)
+pub fn termrock::widgets::LogStreamState::report_batched(&mut self, u64)
+pub fn termrock::widgets::LogStreamState::report_dropped(&mut self, u64)
+pub fn termrock::widgets::LogStreamState::restore_anchor(&mut self, &[termrock::widgets::LogLine<'_>])
 pub const fn termrock::widgets::LogStreamState::scroll(&self) -> &termrock::widgets::ScrollAreaState
+pub fn termrock::widgets::LogStreamState::selected_ids(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
 pub fn termrock::widgets::LogStreamState::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::LogStreamState::set_following(&mut self, bool)
+pub fn termrock::widgets::LogStreamState::set_reconnect_message(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::LogStreamState::unread(&self) -> u64
 impl core::clone::Clone for termrock::widgets::LogStreamState
 pub fn termrock::widgets::LogStreamState::clone(&self) -> termrock::widgets::LogStreamState
 impl core::cmp::Eq for termrock::widgets::LogStreamState
@@ -61653,6 +61792,7 @@ pub fn termrock::widgets::drawer_presentation_for(ratatui_core::layout::rect::Re
 pub fn termrock::widgets::dropdown_menu_presentation_for(ratatui_core::layout::rect::Rect, &[termrock::widgets::MenuNode<impl core::marker::Sized>]) -> termrock::widgets::DropdownMenuPresentation
 pub fn termrock::widgets::entries_from_keymap<A, Id, F>(&termrock::keymap::Keymap<A>, F) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A, &termrock::keymap::KeyBinding<A>) -> (Id, alloc::string::String, core::option::Option<alloc::string::String>)
 pub fn termrock::widgets::escape_inspect_value(&str) -> alloc::string::String
+pub fn termrock::widgets::escape_log_text(&str) -> alloc::string::String
 pub fn termrock::widgets::example_agent_plan_steps() -> alloc::vec::Vec<termrock::widgets::ProgressStep>
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
@@ -61708,6 +61848,7 @@ pub fn termrock::widgets::filter_help_entries(&[termrock::widgets::HelpEntry], &
 pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termrock::widgets::HistoryEntry<Id>], &str) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<Id>>
 pub fn termrock::widgets::filter_inspect_fields<'a>(&'a [termrock::widgets::InspectorField<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::InspectorField<'a>>
 pub fn termrock::widgets::filter_list_rows<'a, Id: core::clone::Clone>(&'a [termrock::widgets::ListRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::ListRow<'a, Id>>
+pub fn termrock::widgets::filter_log_lines<'a>(&'a [termrock::widgets::LogLine<'a>], &str, termrock::widgets::LogLevel) -> alloc::vec::Vec<&'a termrock::widgets::LogLine<'a>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::filter_stream_events<'a, Id>(&'a [termrock::widgets::StreamEvent<'a, Id>], &str, termrock::widgets::EventSeverity, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> alloc::vec::Vec<&'a termrock::widgets::StreamEvent<'a, Id>>
 pub fn termrock::widgets::filter_timeline_events<'a, Id>(&'a [termrock::widgets::TimelineEvent<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TimelineEvent<'a, Id>>
@@ -61744,6 +61885,7 @@ pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::ve
 pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
 pub fn termrock::widgets::line_plain(&ratatui_core::text::line::Line<'_>) -> alloc::string::String
 pub fn termrock::widgets::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
+pub fn termrock::widgets::log_lines_from_plain<'a>(&'a [ratatui_core::text::line::Line<'static>], &'a mut alloc::vec::Vec<alloc::string::String>, &'a mut alloc::vec::Vec<alloc::string::String>) -> alloc::vec::Vec<termrock::widgets::LogLine<'a>>
 pub fn termrock::widgets::mark_remapped_help_entries(&mut [termrock::widgets::HelpEntry], &[&str])
 pub fn termrock::widgets::match_range_from_display_cols(&str, usize, usize, termrock::widgets::MatchKind) -> termrock::widgets::MatchRange
 pub fn termrock::widgets::measure_menu_panel<Id>(&[termrock::widgets::MenuNode<Id>], bool) -> termrock::interaction::OverlaySize

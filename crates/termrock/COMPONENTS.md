@@ -56,6 +56,15 @@ navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
 
+`LogStream` is the continuous **professional log viewer** (stern/k9s-class). Host
+projects a window of `LogLine` (id, level, text, optional timestamp/source/
+styled ANSI, batch count). State owns follow/pause/unread via `ScrollAreaState`,
+cursor, multi-select, bookmarks, search, level floor, wrap/h-scroll, compact or
+detailed recipes, dropped/reconnect/batch chrome, and stable anchors. Outcomes
+include copy/export (host I/O). `LogPane` still owns single-buffer append/evict
+and may project via `log_lines_from_plain`. Distinct from `EventStream`
+(structured events) and `Timeline` (chronological recipes).
+
 `EventStream` is the high-volume **structured** event viewer (k8s events, agent
 activity, observability). Rows carry type, timestamp, severity, source, pluggable
 summary, optional fields/detail/correlation, and batch counts. Follow/pause and

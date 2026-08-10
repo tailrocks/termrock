@@ -1552,30 +1552,30 @@ Every component below uses sections **1–24**:
 
 ## LogStream
 
-1. **Purpose:** Append-only log with follow (LogPane evolution).  
-2. **Anatomy:** `root` · `line[]` · `follow_chip` · `level_glyph` · empty mark  
-3. **Public properties:** lines projection, `system`, `focused`, `ascii`, `colorless`  
-4. **State:** offset, follow, `accepts_input`; host owns history buffer.  
-5. **Variants:** structured levels (Trace…Error).  
-6. **Sizes/density:** one row per line; chip reserves last row when height ≥ 2.  
-7. **Visual states:** following · pinned · unfocused surface mute.  
-8. **Interaction states:** scroll · toggle follow · chip activate.  
-9. **Keyboard:** j/k arrows page Home/End; `f`/Space toggle (`default_log_stream_intent`).  
-10. **Mouse:** wheel scrolls + detaches; click chip re-follows.  
-11. **Focus:** scene owns surface; stream owns scroll/follow.  
+1. **Purpose:** Continuous professional log viewer (stern/k9s-class; LogPane projects into it).  
+2. **Anatomy:** `root` · `title?` · `reconnect_banner?` · `line[]` · `follow_chip` · `level_glyph` · empty mark  
+3. **Public properties:** `LogLine` projection (id, level, text, timestamp?, source?, styled?, batch), `system`, `focused`, `ascii`, `colorless`, `title`  
+4. **State:** `ScrollAreaState` follow/unread, cursor, multi-select, bookmarks, search, level floor, wrap/h-scroll, recipe, dropped/reconnect/batch, anchors, regions, `accepts_input`.  
+5. **Variants:** levels Trace…Error; recipes Compact | Detailed; wrap Clip | Wrap.  
+6. **Sizes/density:** virtualized window; chip last row when height ≥ 2; detailed vs compact recipes.  
+7. **Visual states:** following · pinned · unread · dropped · reconnect · search/filter chip · selection · bookmark.  
+8. **Interaction states:** scroll · follow · select · search · filter · bookmark · copy/export · h-scroll · wrap/recipe.  
+9. **Keyboard:** j/k page Home/End; `f` follow; Space select; `/` search; `[` level; `m` bookmark; `c` copy; `C-e` export; `b` ack; `w`/`d` wrap/recipe; h/l h-scroll.  
+10. **Mouse:** wheel scrolls + detaches; click chip re-follows; click line sets cursor; Shift+click multi-select.  
+11. **Focus:** scene owns surface; stream owns scroll/follow/cursor.  
 12. **Disabled:** `accepts_input = false`.  
-13. **Loading/async:** `on_append` O(1) rejoin when following.  
-14. **Error:** error-level Danger / colorless strong.  
-15. **Narrow:** glyph + text.  
-16. **Tiny:** text only (no glyph).  
-17. **Unicode/ASCII:** glyphs `i!x` vs `IWE`; chip `↓`/`v`.  
-18. **Colorless:** strong warn/error; muted trace/debug.  
-19. **Composition:** OpsDashboard; ToolCallCard expanded log.  
-20. **Outcomes:** `Scrolled` · `Follow` · `Detach` · `Ignored`  
-21. **Stories:** `log-stream/{follow,structured,empty,narrow,ascii}`  
-22. **Snapshots:** levels, chip, empty, narrow.  
-23. **Interaction tests:** append keeps follow; scroll detaches; chip/f re-follow.  
-24. **Perf:** O(visible lines); append must not repaint full history buffers.
+13. **Loading/async:** `on_append` O(1) rejoin when following; host reports drop/batch/reconnect.  
+14. **Error:** error-level Danger / colorless strong; reconnect banner Warning.  
+15. **Narrow:** severity + body (drop timestamp/source).  
+16. **Tiny:** body only.  
+17. **Unicode/ASCII:** glyphs `i!x` vs `IWE`; chip `↓`/`v`; bookmark `★`/`*`.  
+18. **Colorless:** letter marks + strong/muted.  
+19. **Composition:** OpsDashboard; LogPane via `log_lines_from_plain`; EventStream for structured.  
+20. **Outcomes:** `Scrolled` · `Follow` · `Detach` · `SelectionChanged` · `Copy` · `Export` · `BookmarkToggled` · `SearchChanged` · `LevelFilter` · `HScrolled` · `Cancelled` · `AckDropped` · `Ignored`  
+21. **Stories:** `log-stream/{follow,structured,filter,dropped,empty,narrow,ascii}`  
+22. **Snapshots:** levels, chip, empty, narrow, filter, drop.  
+23. **Interaction tests:** append keeps follow; scroll detaches; chip/f re-follow; search/level; copy/bookmark; anchors.  
+24. **Perf:** O(visible lines); `log_stream_bench`; sustained paint test; host projects window.
 
 ## Timeline
 

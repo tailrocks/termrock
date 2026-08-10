@@ -13,7 +13,7 @@ use crate::{
         data_table::{DataTableOutcome, DataTableState},
         sidebar::{SidebarOutcome, SidebarState},
         object_inspector::ObjectInspectorState,
-        review::{LogStreamOutcome, LogStreamState},
+        log_stream::{LogStreamOutcome, LogStreamState},
         scroll_area::ScrollAreaState,
     },
 };
@@ -113,7 +113,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColI
             OpsRegion::Main => {
                 OpsDashboardOutcome::Table(self.table.handle_key(key, visible_rows, columns))
             }
-            OpsRegion::Log => OpsDashboardOutcome::Log(self.log.handle_key(key)),
+            // Scroll/follow without a projected window (host may re-route with lines).
+            OpsRegion::Log => OpsDashboardOutcome::Log(self.log.handle_key_scroll(key)),
             _ => OpsDashboardOutcome::Ignored,
         }
     }
