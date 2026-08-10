@@ -500,8 +500,11 @@ pub struct HelpCenterState {
     pub selected_command: Option<String>,
     /// Context help line (host: current focus widget).
     pub context_label: Option<String>,
-    /// Show diagnostics pane when findings present (host can force).
+    /// Host wants diagnostics pane when content exists.
     pub show_diagnostics: bool,
+    /// Live this frame: diagnostics pane is laid out (findings or component ids).
+    /// Synced from doctor/component surfaces in handle_key and render.
+    pub diagnostics_live: bool,
     /// ASCII.
     pub ascii: bool,
     /// Colorless.
@@ -522,9 +525,12 @@ impl HelpCenterState {
     pub fn new() -> Self {
         let mut search = SearchInputState::new();
         search.set_focused(false);
+        // Dedicated keyboard map pane needs Modal + open (Footer paints 1-line strip only).
         let mut keyboard = KeyboardHelpState::new();
         keyboard.set_focused(false);
         keyboard.set_accepts_input(false);
+        let _ = keyboard.set_mode(KeyboardHelpMode::Modal);
+        let _ = keyboard.open_modal();
         let mut body = MarkdownViewState::new();
         body.set_focused(false);
         Self {
@@ -543,6 +549,7 @@ impl HelpCenterState {
             selected_command: None,
             context_label: None,
             show_diagnostics: true,
+            diagnostics_live: false,
             ascii: false,
             colorless: false,
             last_panes: Vec::new(),
@@ -556,8 +563,39 @@ impl HelpCenterState {
         let mut s = Self::new();
         s.mode = HelpCenterMode::Compact;
         s.focus = HelpCenterPane::Search.id();
-        s.keyboard.set_mode(KeyboardHelpMode::Modal);
+        // Modal already open from new()
         s
+    }
+
+    /// Whether diagnostics pane is painted this frame (same predicate as layout).
+    #[must_use]
+    pub fn diagnostics_pane_visible(
+        &self,
+        doctor: Option<&DoctorReport>,
+        component_ids: &[String],
+    ) -> bool {
+        self.show_diagnostics
+            && (doctor.map(|d| !d.findings.is_empty()).unwrap_or(false)
+                || !component_ids.is_empty())
+    }
+
+    /// Sync diagnostics_live from surfaces (call before Tab/clamp).
+    pub fn sync_diagnostics_live(
+        &mut self,
+        doctor: Option<&DoctorReport>,
+        component_ids: &[String],
+    ) {
+        self.diagnostics_live = self.diagnostics_pane_visible(doctor, component_ids);
+    }
+
+    /// Ensure keyboard map is Modal + open for navigable multi-row paint.
+    pub fn ensure_keyboard_map_modal(&mut self) {
+        if !matches!(self.keyboard.mode(), KeyboardHelpMode::Modal) {
+            let _ = self.keyboard.set_mode(KeyboardHelpMode::Modal);
+        }
+        if !self.keyboard.is_open() {
+            let _ = self.keyboard.open_modal();
+        }
     }
 
     /// Last panes.
@@ -573,7 +611,7 @@ impl HelpCenterState {
             .unwrap_or_else(|| HelpCenterDensity::for_width(self.last_area_width.unwrap_or(120)))
     }
 
-    /// Visible focus panes.
+    /// Visible focus panes (diagnostics only when `diagnostics_live` — same as layout paint).
     #[must_use]
     pub fn visible_focus_panes(&self, density: HelpCenterDensity) -> Vec<HelpCenterPane> {
         match (self.mode, density) {
@@ -594,7 +632,7 @@ impl HelpCenterState {
                     HelpCenterPane::Commands,
                     HelpCenterPane::Body,
                 ];
-                if self.show_diagnostics {
+                if self.diagnostics_live {
                     v.push(HelpCenterPane::Diagnostics);
                 }
                 v
@@ -607,7 +645,7 @@ impl HelpCenterState {
                     HelpCenterPane::Commands,
                     HelpCenterPane::Body,
                 ];
-                if self.show_diagnostics {
+                if self.diagnostics_live {
                     v.push(HelpCenterPane::Diagnostics);
                 }
                 v
@@ -680,11 +718,8 @@ impl HelpCenterState {
             return HelpCenterOutcome::Ignored;
         }
         self.mode = mode;
-        if mode == HelpCenterMode::Compact {
-            let _ = self.keyboard.set_mode(KeyboardHelpMode::Modal);
-        } else {
-            let _ = self.keyboard.set_mode(KeyboardHelpMode::Footer);
-        }
+        // Full and compact both use Modal map in the keyboard pane (not Footer strip).
+        self.ensure_keyboard_map_modal();
         let density = self.effective_density();
         self.clamp_focus_to_density(density);
         self.apply_focus_gates();
@@ -725,6 +760,9 @@ impl HelpCenterState {
         if key.kind == KeyEventKind::Release {
             return HelpCenterOutcome::Ignored;
         }
+        // Keep focus cycle / clamp aligned with painted diagnostics pane.
+        self.sync_diagnostics_live(doctor, component_ids);
+        self.ensure_keyboard_map_modal();
         let is_press = key.kind == KeyEventKind::Press;
 
         if is_press {
@@ -1034,10 +1072,11 @@ impl HelpCenterState {
         if key.kind == KeyEventKind::Press {
             match key.code {
                 KeyCode::Char('i') if key.modifiers.is_empty() => {
-                    if let Some(id) = self.diagnostics.selected().cloned().or_else(|| {
-                        component_ids.first().cloned()
-                    }) {
-                        return HelpCenterOutcome::InspectComponent { id };
+                    // Only component registry ids — not DoctorFinding codes.
+                    if let Some(id) = self.diagnostics.selected().cloned() {
+                        if component_ids.iter().any(|c| c == &id) {
+                            return HelpCenterOutcome::InspectComponent { id };
+                        }
                     }
                 }
                 KeyCode::Char('d') if key.modifiers.is_empty() => {
@@ -1335,8 +1374,9 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
 
     state.last_area_width = Some(area.width);
     let density = state.effective_density();
-    let show_diag = state.show_diagnostics
-        && (doctor.map(|d| !d.findings.is_empty()).unwrap_or(false) || !component_ids.is_empty());
+    state.sync_diagnostics_live(doctor, component_ids);
+    state.ensure_keyboard_map_modal();
+    let show_diag = state.diagnostics_live;
     let panes =
         help_center_layout_density(area, &state.workspace, density, state.mode, show_diag);
     state.last_panes = panes.clone();
@@ -1399,9 +1439,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         }
     }
 
-    // Keyboard map — live HelpEntry only
+    // Keyboard map — live HelpEntry only (Modal+open for multi-row navigable map)
     if let Some(r) = pane_area(&panes, "keyboard") {
         let focused = state.focus == "keyboard";
+        state.ensure_keyboard_map_modal();
         state.keyboard.set_focused(focused);
         state.keyboard.set_accepts_input(focused);
         KeyboardHelp::new(&filtered_help, system)
@@ -2026,54 +2067,167 @@ mod tests {
     }
 
     #[test]
-    fn keyboard_focused_tracks_zone() {
+    fn keyboard_map_full_mode_modal_navigable() {
+        let system = DesignSystem::default();
         let mut st = open();
-        st.focus = "nav";
-        st.apply_focus_gates();
-        // keyboard.focused is private-ish — check via set state is false when not keyboard
-        // We assert accepts via behavior: when not keyboard, focus gates set focused false
+        assert_eq!(
+            st.mode,
+            HelpCenterMode::Full,
+            "open() is full docs"
+        );
+        assert_eq!(
+            st.keyboard.mode(),
+            KeyboardHelpMode::Modal,
+            "full mode must use Modal map, not Footer strip"
+        );
+        assert!(
+            st.keyboard.is_open(),
+            "keyboard modal must be open for navigable map"
+        );
+
+        let topics = example_help_topics();
+        let help = example_help_center_entries(&system);
+        assert!(!help.is_empty(), "need HelpEntry content");
+        let cmds = command_entries_from_help(&help);
+        let area = Rect::new(0, 0, 120, 40);
+        let mut buf = Buffer::empty(area);
+        st.focus = "keyboard";
+        render_help_center(
+            &mut buf,
+            area,
+            HelpCenterSurfaces {
+                system: &system,
+                state: &mut st,
+                topics: &topics,
+                help_entries: &help,
+                commands: &cmds,
+                doctor: None,
+                component_ids: &[],
+            },
+        );
+        let kb = st
+            .last_panes()
+            .iter()
+            .find(|p| p.id.0.as_str() == "keyboard")
+            .expect("keyboard pane in full normal layout");
+        assert!(
+            !kb.collapsed && kb.area.height >= 3,
+            "keyboard pane must be multi-row for map, got h={}",
+            kb.area.height
+        );
+        // Buffer should show HelpEntry action/chord text from live SoT
+        let mut painted = String::new();
+        for y in kb.area.y..kb.area.y.saturating_add(kb.area.height) {
+            for x in kb.area.x..kb.area.x.saturating_add(kb.area.width) {
+                if let Some(cell) = buf.cell((x, y)) {
+                    painted.push_str(cell.symbol());
+                }
+            }
+            painted.push('\n');
+        }
+        let hit = help.iter().any(|e| {
+            painted.contains(&e.action) || painted.contains(&e.chord) || painted.contains("Keyboard")
+        });
+        assert!(
+            hit,
+            "keyboard pane must paint HelpEntry content, sample={painted:?}"
+        );
+
+        // Down through real handle_key path — Modal+focused yields CursorMoved / Child
         st.focus = "keyboard";
         st.apply_focus_gates();
-        // paint path also sets focused
+        st.ensure_keyboard_map_modal();
+        let before = st.keyboard.cursor_index();
+        let out = st.handle_key(press(KeyCode::Down), &topics, &help, &cmds, None, &[]);
+        assert!(
+            !matches!(out, HelpCenterOutcome::Ignored)
+                || st.keyboard.cursor_index() != before
+                || help.len() <= 1,
+            "Down on non-empty keyboard map must not be dead Footer path, got {out:?} cursor {before}→{}",
+            st.keyboard.cursor_index()
+        );
+        if help.len() > 1 {
+            assert!(
+                matches!(out, HelpCenterOutcome::Child { .. })
+                    || st.keyboard.cursor_index() != before,
+                "expected cursor move or child outcome, got {out:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn diagnostics_tab_not_when_unpainted() {
+        let mut st = open();
         let system = DesignSystem::default();
         let topics = example_help_topics();
         let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
-        let area = Rect::new(0, 0, 120, 40);
-        let mut buf = Buffer::empty(area);
-        st.focus = "body";
-        render_help_center(
-            &mut buf,
-            area,
-            HelpCenterSurfaces {
-                system: &system,
-                state: &mut st,
-                topics: &topics,
-                help_entries: &help,
-                commands: &cmds,
-                doctor: None,
-                component_ids: &[],
-            },
+        // No doctor findings, no components → diagnostics not live
+        st.show_diagnostics = true;
+        st.sync_diagnostics_live(None, &[]);
+        assert!(!st.diagnostics_live);
+        let vis = st.visible_focus_panes(HelpCenterDensity::Normal);
+        assert!(!vis.contains(&HelpCenterPane::Diagnostics));
+        for _ in 0..10 {
+            let _ = st.handle_key(press(KeyCode::Tab), &topics, &help, &cmds, None, &[]);
+            assert_ne!(st.focus, "diagnostics");
+        }
+        // With findings, diagnostics enters Tab cycle
+        let doctor = example_help_doctor_report();
+        st.sync_diagnostics_live(Some(&doctor), &[]);
+        assert!(st.diagnostics_live || doctor.findings.is_empty());
+        if !doctor.findings.is_empty() {
+            assert!(st
+                .visible_focus_panes(HelpCenterDensity::Normal)
+                .contains(&HelpCenterPane::Diagnostics));
+        }
+    }
+
+    #[test]
+    fn inspect_only_for_component_ids_not_findings() {
+        let mut st = open();
+        let system = DesignSystem::default();
+        let topics = example_help_topics();
+        let help = example_help_center_entries(&system);
+        let cmds = command_entries_from_help(&help);
+        let doctor = example_help_doctor_report();
+        let components = vec!["keyboard-help".into()];
+        st.show_diagnostics = true;
+        st.focus = "diagnostics";
+        st.sync_diagnostics_live(Some(&doctor), &components);
+        // Select a finding code (not a component id)
+        if let Some(code) = doctor.findings.first().map(|f| f.code.clone()) {
+            st.diagnostics = ListState::new(Some(code.clone()));
+            st.apply_focus_gates();
+            let out = st.handle_key(
+                press(KeyCode::Char('i')),
+                &topics,
+                &help,
+                &cmds,
+                Some(&doctor),
+                &components,
+            );
+            assert!(
+                !matches!(out, HelpCenterOutcome::InspectComponent { .. }),
+                "i on finding code must not InspectComponent, got {out:?}"
+            );
+        }
+        st.diagnostics = ListState::new(Some("keyboard-help".into()));
+        let out = st.handle_key(
+            press(KeyCode::Char('i')),
+            &topics,
+            &help,
+            &cmds,
+            Some(&doctor),
+            &components,
         );
-        // After paint with body focus, keyboard should not accept as primary
-        st.focus = "keyboard";
-        render_help_center(
-            &mut buf,
-            area,
-            HelpCenterSurfaces {
-                system: &system,
-                state: &mut st,
-                topics: &topics,
-                help_entries: &help,
-                commands: &cmds,
-                doctor: None,
-                component_ids: &[],
-            },
+        assert!(
+            matches!(
+                out,
+                HelpCenterOutcome::InspectComponent { ref id } if id == "keyboard-help"
+            ),
+            "got {out:?}"
         );
-        // If keyboard focused, selecting with Enter path works through handle_key
-        let out = st.handle_key(press(KeyCode::Down), &topics, &help, &cmds, None, &[]);
-        // Not ignored-only: keyboard may return Selected/Changed or Ignored for empty move
-        let _ = out;
     }
 
     #[test]
