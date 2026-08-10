@@ -23,8 +23,6 @@ use crate::{
 
 /// Default overlay id for drawers opened via helpers.
 pub const DRAWER_OVERLAY_ID: &str = "termrock.drawer";
-/// Default overlay id for popovers.
-pub const POPOVER_OVERLAY_ID: &str = "termrock.popover";
 
 // ── Menu ────────────────────────────────────────────────────────────────────
 
@@ -553,40 +551,8 @@ pub fn dismiss_drawer_overlay<FocusId: Clone>(
     stack.dismiss(&OverlayId::from_static(DRAWER_OVERLAY_ID))
 }
 
-/// Places a popover under `anchor` (flip/clamp via stack policy).
-#[must_use]
-pub fn place_popover(bounds: Rect, anchor: Rect, size: OverlaySize) -> Rect {
-    if bounds.is_empty() || size.width == 0 || size.height == 0 {
-        return Rect::default();
-    }
-    place_overlay(
-        bounds,
-        Some(anchor),
-        size,
-        OverlayPolicy::for_kind(OverlayKind::Popover),
-    )
-}
-
-/// Opens an anchored popover on the stack.
-pub fn open_popover_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-    bounds: Rect,
-    anchor: Rect,
-    size: OverlaySize,
-    opener_focus: Option<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.open(
-        bounds,
-        OverlaySpec::popover(POPOVER_OVERLAY_ID, anchor, size, opener_focus),
-    )
-}
-
-// Tooltip placement / open / state / paint live in `tooltip` module.
-pub use super::tooltip::{
-    TOOLTIP_DEFAULT_DELAY_MS, TOOLTIP_DEFAULT_MAX_WIDTH, TOOLTIP_OVERLAY_ID, Tooltip,
-    TooltipContent, TooltipOutcome, TooltipPrefer, TooltipState, TooltipTrigger, TooltipVariant,
-    dismiss_tooltip_overlay, open_tooltip_overlay, place_tooltip, tooltip_overlay_size,
-};
+// Popover / Tooltip: canonical homes are `popover` and `tooltip` modules
+// (`widgets::{Popover, …}` / `widgets::{Tooltip, …}`).
 
 /// Drawer chrome (edge panel).
 #[derive(Debug, Clone, Copy)]
@@ -625,41 +591,12 @@ impl Widget for &Drawer<'_> {
     }
 }
 
-/// Popover non-modal chrome.
-#[derive(Debug, Clone, Copy)]
-pub struct Popover<'a> {
-    title: &'a str,
-    tokens: &'a DesignSystem,
-}
-
-impl<'a> Popover<'a> {
-    /// Title.
-    #[must_use]
-    pub const fn new(title: &'a str, tokens: &'a DesignSystem) -> Self {
-        Self { title, tokens }
-    }
-}
-
-impl Widget for &Popover<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        let text = take_display_cols(self.title, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &text,
-            usize::from(area.width),
-            self.tokens.style(Role::Elevated),
-        );
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::widgets::popover::{open_popover_overlay, place_popover};
+    use crate::widgets::tooltip::{TooltipState, open_tooltip_overlay};
 
     #[test]
     fn menu_cursor_moved_not_focus_changed() {

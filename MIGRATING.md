@@ -178,6 +178,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0162 | `v0.13.0` | [HistoryPicker](migrations/0162-v0.13.0-history-picker.md) |
 | 0163 | `v0.13.0` | [KeyboardHelp](migrations/0163-v0.13.0-keyboard-help.md) |
 | 0164 | `v0.13.0` | [Tooltip](migrations/0164-v0.13.0-tooltip.md) |
+| 0165 | `v0.13.0` | [Popover](migrations/0165-v0.13.0-popover.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

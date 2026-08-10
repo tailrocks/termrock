@@ -56,6 +56,7 @@ mod list;
 mod log_pane;
 mod markdown;
 mod menu_nav;
+mod popover;
 mod tooltip;
 mod menu_bar;
 mod sidebar;
@@ -276,8 +277,14 @@ pub use markdown::{
 };
 pub use menu_nav::{
     ContextMenu, DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuItem, MenuOutcome,
-    MenuState, POPOVER_OVERLAY_ID, Popover, dismiss_drawer_overlay, open_drawer_overlay,
-    open_popover_overlay, place_drawer, place_popover,
+    MenuState, dismiss_drawer_overlay, open_drawer_overlay, place_drawer,
+};
+pub use popover::{
+    POPOVER_CONTRACT_MAX_HEIGHT, POPOVER_CONTRACT_MAX_WIDTH, POPOVER_OVERLAY_ID, Popover,
+    PopoverModality, PopoverOutcome, PopoverPresentation, PopoverSlots, PopoverState,
+    dismiss_popover_overlay, open_popover_configured, open_popover_modal_overlay,
+    open_popover_nested_overlay, open_popover_overlay, open_popover_with_presentation,
+    place_popover, place_popover_with_modality, popover_presentation_for,
 };
 pub use tooltip::{
     TOOLTIP_DEFAULT_DELAY_MS, TOOLTIP_DEFAULT_MAX_WIDTH, TOOLTIP_OVERLAY_ID, Tooltip,

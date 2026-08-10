@@ -53,7 +53,7 @@ use termrock::{
         MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
         Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
         PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
-        PlanReviewState, PlanStep, Popover, Progress, ProgressKind, PromptComposer,
+        PlanReviewState, PlanStep, Popover, PopoverState, Progress, ProgressKind, PromptComposer,
         PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep,
         RadioGroup, RadioOption, RadioState, RowRole, SegmentedMeter, SeparatorLine, SessionItem,
         SessionPicker, Severity, Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane,
@@ -3975,12 +3975,30 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "popover/basic",
+            "Popover basic",
             "Popover",
-            "Popover",
-            "Anchored non-modal popover chrome.",
-            28,
-            4,
+            "Anchored non-modal popover with header/body slots.",
+            32,
+            10,
             popover_story,
+        ),
+        Story::new(
+            "popover/slots",
+            "Popover slots",
+            "Popover",
+            "Header / body / footer slots without Panel.",
+            36,
+            12,
+            popover_slots_story,
+        ),
+        Story::new(
+            "popover/modal",
+            "Popover modal",
+            "Popover",
+            "Modal modality: focus trap + dim chrome.",
+            36,
+            12,
+            popover_modal_story,
         ),
         Story::new(
             "app-shell/workbench",
@@ -5085,18 +5103,18 @@ pub(crate) fn stories() -> Vec<Story> {
             "popover/narrow",
             "Narrow Popover",
             "Popover",
-            "Narrow-terminal geometry for Popover (14 cols).",
+            "Contract path toward drawer/fullscreen (14 cols).",
             14,
-            4,
-            popover_story,
+            12,
+            popover_narrow_story,
         ),
         Story::new(
             "popover/unicode",
             "Unicode Popover",
             "Popover",
             "Unicode-safe paint path for Popover (CJK/emoji-capable layout).",
-            28,
-            4,
+            32,
+            10,
             popover_unicode_story,
         ),
         Story::new(
@@ -13792,13 +13810,104 @@ fn separator_focus_zone_story(frame: &mut Frame<'_>, area: Rect, system: &Design
         .paint(area, frame.buffer_mut());
 }
 
+fn popover_open_state() -> PopoverState {
+    let mut state = PopoverState::new();
+    state.set_open(true);
+    state.set_focused(true);
+    state.set_header_rows(1);
+    state.set_footer_rows(0);
+    state
+}
+
 fn popover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &Popover::new("Popover tip", &tokens),
-        area,
-        frame.buffer_mut(),
-    );
+    let mut state = popover_open_state();
+    Popover::new("Settings", system).paint(area, frame.buffer_mut(), &mut state);
+    // Host paints body content into slots (not forced Panel).
+    let body = state.slots().body;
+    if !body.is_empty() {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "filter · sort · density",
+            usize::from(body.width),
+            system.style(termrock::style::Role::Text),
+        );
+    }
+}
+
+fn popover_slots_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PopoverState::new();
+    state.set_open(true);
+    state.set_focused(true);
+    state.set_header_rows(1);
+    state.set_footer_rows(1);
+    Popover::slots(system)
+        .header(Some("Filters"))
+        .footer(Some("esc · close"))
+        .paint(area, frame.buffer_mut(), &mut state);
+    let body = state.slots().body;
+    if body.height > 0 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "• status: open",
+            usize::from(body.width),
+            system.style(termrock::style::Role::Text),
+        );
+        if body.height > 1 {
+            frame.buffer_mut().set_stringn(
+                body.x,
+                body.y + 1,
+                "• owner: you",
+                usize::from(body.width),
+                system.style(termrock::style::Role::TextMuted),
+            );
+        }
+    }
+}
+
+fn popover_modal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PopoverState::modal();
+    state.set_open(true);
+    state.set_focused(true);
+    state.set_header_rows(1);
+    state.set_footer_rows(1);
+    Popover::new("Confirm scope", system)
+        .footer(Some("modal · esc"))
+        .paint(area, frame.buffer_mut(), &mut state);
+    let body = state.slots().body;
+    if !body.is_empty() {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "focus trap + dim",
+            usize::from(body.width),
+            system.style(termrock::style::Role::Text),
+        );
+    }
+}
+
+fn popover_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PopoverState::new();
+    state.set_open(true);
+    state.set_focused(true);
+    state.set_header_rows(1);
+    state.set_footer_rows(1);
+    // Presentation would be Drawer/Fullscreen at this width; paint still slots.
+    Popover::new("More", system)
+        .footer(Some("esc"))
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+    let body = state.slots().body;
+    if !body.is_empty() {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "drawer",
+            usize::from(body.width),
+            system.style(termrock::style::Role::Text),
+        );
+    }
 }
 
 fn permission_prompt_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -14715,12 +14824,21 @@ fn drawer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    Widget::render(
-        &Popover::new("ヒント 💡", &tokens),
-        area,
-        frame.buffer_mut(),
-    );
+    let mut state = popover_open_state();
+    state.set_footer_rows(1);
+    Popover::new("ヒント 💡", system)
+        .footer(Some("閉じる"))
+        .paint(area, frame.buffer_mut(), &mut state);
+    let body = state.slots().body;
+    if !body.is_empty() {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y,
+            "設定 · フィルター",
+            usize::from(body.width),
+            system.style(termrock::style::Role::Text),
+        );
+    }
 }
 
 fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

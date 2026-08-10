@@ -1084,12 +1084,25 @@ let steps = [PlanStep { id: "s1", title: "Inspect", detail: None, accepted: fals
 let review = PlanReview::new(&steps, &tokens);`,
   },
   Popover: {
-    description: 'Non-modal anchored popover chrome.',
+    description:
+      'Anchored interactive surface for settings, filters, pickers, and details — OverlayStack placement, non-modal default with explicit modal policy, presentation contraction, and header/body/footer slots without forcing Panel.',
     primaryStory: 'popover/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::Popover};
+    usage: `use ratatui_core::layout::Rect;
+use termrock::interaction::{OverlaySize, OverlayStack};
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    Popover, PopoverState, open_popover_overlay, POPOVER_OVERLAY_ID,
+};
 
-let tokens = DesignTokens::default();
-let pop = Popover::new("Tip", &tokens);`,
+let system = DesignSystem::default();
+let mut stack = OverlayStack::<&str>::new();
+let bounds = Rect::new(0, 0, 80, 24);
+let anchor = Rect::new(10, 5, 8, 1);
+let size = OverlaySize::menu(28, 10);
+let mut state = PopoverState::new();
+let _ = state.open_on_stack(&mut stack, bounds, anchor, size, Some("trigger"));
+// Paint: Popover::new("Settings", &system).paint(entry.rect, buf, &mut state);
+// Host fills state.slots().body. Dismiss via stack → opener focus restored.`,
   },
   PromptComposer: {
     description: 'Flagship agent prompt composer with chips, policy, and completion overlays.',
