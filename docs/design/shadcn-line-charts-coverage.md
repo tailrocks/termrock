@@ -22,7 +22,7 @@
 | 3 | chart-line-step | covered | `Chart::step()` | Hold floor sample (0254) |
 | 4 | chart-line-multiple | covered | multi `ChartSeries` | Distinct series markers |
 | 5 | chart-line-dots | covered | series markers | Multi-row plot glyphs |
-| 6 | chart-line-custom-dots | partial | glyph ladder / host | Custom React dots N/A |
+| 6 | chart-line-dots-custom | partial | glyph ladder / host | registry id dots-custom (not custom-dots) |
 | 7 | chart-line-dots-colors | covered | series roles + no-color markers | |
 | 8 | chart-line-label | covered | title / legend | |
 | 9 | chart-line-label-custom | partial | host strings | registry `label-custom` spelling |

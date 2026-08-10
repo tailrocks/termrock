@@ -43,7 +43,7 @@
 | 23 | chart-line-step | covered | `Chart::step()` (0254) | Hold floor sample |
 | 24 | chart-line-multiple | covered | multi `ChartSeries` | Distinct markers on plot |
 | 25 | chart-line-dots | covered | series markers | |
-| 26 | chart-line-custom-dots | partial | glyph ladder | |
+| 26 | chart-line-dots-custom | partial | glyph ladder | registry id dots-custom |
 | 27 | chart-line-dots-colors | covered | series roles | No-color markers |
 | 28 | chart-line-label | covered | title/legend | |
 | 29 | chart-line-label-custom | partial | host strings | registry label-custom |
