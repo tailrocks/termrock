@@ -20514,6 +20514,174 @@ pub unsafe fn termrock::widgets::MultiSelectOutcome<Id>::clone_to_uninit(&self, 
 impl<T> core::convert::From<T> for termrock::widgets::MultiSelectOutcome<Id>
 pub fn termrock::widgets::MultiSelectOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MultiSelectOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::NavItemKind
+pub termrock::widgets::NavItemKind::Group
+pub termrock::widgets::NavItemKind::Item
+pub termrock::widgets::NavItemKind::Section
+pub termrock::widgets::NavItemKind::Separator
+impl termrock::widgets::NavItemKind
+pub const fn termrock::widgets::NavItemKind::id(self) -> &'static str
+pub const fn termrock::widgets::NavItemKind::is_focusable(self) -> bool
+pub const fn termrock::widgets::NavItemKind::is_route(self) -> bool
+impl core::clone::Clone for termrock::widgets::NavItemKind
+pub fn termrock::widgets::NavItemKind::clone(&self) -> termrock::widgets::NavItemKind
+impl core::cmp::Eq for termrock::widgets::NavItemKind
+impl core::cmp::PartialEq for termrock::widgets::NavItemKind
+pub fn termrock::widgets::NavItemKind::eq(&self, &termrock::widgets::NavItemKind) -> bool
+impl core::default::Default for termrock::widgets::NavItemKind
+pub fn termrock::widgets::NavItemKind::default() -> termrock::widgets::NavItemKind
+impl core::fmt::Debug for termrock::widgets::NavItemKind
+pub fn termrock::widgets::NavItemKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::NavItemKind
+pub fn termrock::widgets::NavItemKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::NavItemKind
+impl core::marker::StructuralPartialEq for termrock::widgets::NavItemKind
+impl core::marker::Freeze for termrock::widgets::NavItemKind
+impl core::marker::Send for termrock::widgets::NavItemKind
+impl core::marker::Sync for termrock::widgets::NavItemKind
+impl core::marker::Unpin for termrock::widgets::NavItemKind
+impl core::marker::UnsafeUnpin for termrock::widgets::NavItemKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NavItemKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NavItemKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NavItemKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NavItemKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NavItemKind where U: core::convert::From<T>
+pub fn termrock::widgets::NavItemKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NavItemKind where U: core::convert::Into<T>
+pub type termrock::widgets::NavItemKind::Error = core::convert::Infallible
+pub fn termrock::widgets::NavItemKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NavItemKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NavItemKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NavItemKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NavItemKind where T: core::clone::Clone
+pub type termrock::widgets::NavItemKind::Owned = T
+pub fn termrock::widgets::NavItemKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::NavItemKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NavItemKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NavItemKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NavItemKind where T: ?core::marker::Sized
+pub fn termrock::widgets::NavItemKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NavItemKind where T: ?core::marker::Sized
+pub fn termrock::widgets::NavItemKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NavItemKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NavItemKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NavItemKind
+pub fn termrock::widgets::NavItemKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NavItemKind
+#[non_exhaustive] pub enum termrock::widgets::NavItemStatus
+pub termrock::widgets::NavItemStatus::Dirty
+pub termrock::widgets::NavItemStatus::Error
+pub termrock::widgets::NavItemStatus::None
+pub termrock::widgets::NavItemStatus::Running
+pub termrock::widgets::NavItemStatus::Success
+pub termrock::widgets::NavItemStatus::Warning
+impl termrock::widgets::NavItemStatus
+pub const fn termrock::widgets::NavItemStatus::id(self) -> &'static str
+pub const fn termrock::widgets::NavItemStatus::mark(self, bool) -> core::option::Option<&'static str>
+impl core::clone::Clone for termrock::widgets::NavItemStatus
+pub fn termrock::widgets::NavItemStatus::clone(&self) -> termrock::widgets::NavItemStatus
+impl core::cmp::Eq for termrock::widgets::NavItemStatus
+impl core::cmp::PartialEq for termrock::widgets::NavItemStatus
+pub fn termrock::widgets::NavItemStatus::eq(&self, &termrock::widgets::NavItemStatus) -> bool
+impl core::default::Default for termrock::widgets::NavItemStatus
+pub fn termrock::widgets::NavItemStatus::default() -> termrock::widgets::NavItemStatus
+impl core::fmt::Debug for termrock::widgets::NavItemStatus
+pub fn termrock::widgets::NavItemStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::NavItemStatus
+pub fn termrock::widgets::NavItemStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::NavItemStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::NavItemStatus
+impl core::marker::Freeze for termrock::widgets::NavItemStatus
+impl core::marker::Send for termrock::widgets::NavItemStatus
+impl core::marker::Sync for termrock::widgets::NavItemStatus
+impl core::marker::Unpin for termrock::widgets::NavItemStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::NavItemStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NavItemStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NavItemStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NavItemStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NavItemStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NavItemStatus where U: core::convert::From<T>
+pub fn termrock::widgets::NavItemStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NavItemStatus where U: core::convert::Into<T>
+pub type termrock::widgets::NavItemStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::NavItemStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NavItemStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NavItemStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NavItemStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NavItemStatus where T: core::clone::Clone
+pub type termrock::widgets::NavItemStatus::Owned = T
+pub fn termrock::widgets::NavItemStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::NavItemStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NavItemStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NavItemStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NavItemStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::NavItemStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NavItemStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::NavItemStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NavItemStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NavItemStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NavItemStatus
+pub fn termrock::widgets::NavItemStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NavItemStatus
+#[non_exhaustive] pub enum termrock::widgets::NavigationListOutcome<Id>
+pub termrock::widgets::NavigationListOutcome::Changed
+pub termrock::widgets::NavigationListOutcome::CommandRequested
+pub termrock::widgets::NavigationListOutcome::CommandRequested::command: alloc::string::String
+pub termrock::widgets::NavigationListOutcome::CommandRequested::id: Id
+pub termrock::widgets::NavigationListOutcome::ContextMenuRequested
+pub termrock::widgets::NavigationListOutcome::ContextMenuRequested::id: Id
+pub termrock::widgets::NavigationListOutcome::ExpandToggled
+pub termrock::widgets::NavigationListOutcome::ExpandToggled::expanded: bool
+pub termrock::widgets::NavigationListOutcome::ExpandToggled::id: Id
+pub termrock::widgets::NavigationListOutcome::FilterChanged
+pub termrock::widgets::NavigationListOutcome::FilterChanged::query: alloc::string::String
+pub termrock::widgets::NavigationListOutcome::FocusChanged
+pub termrock::widgets::NavigationListOutcome::FocusChanged::id: core::option::Option<Id>
+pub termrock::widgets::NavigationListOutcome::Ignored
+pub termrock::widgets::NavigationListOutcome::RouteChanged
+pub termrock::widgets::NavigationListOutcome::RouteChanged::id: Id
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::NavigationListOutcome<Id>
+pub fn termrock::widgets::NavigationListOutcome<Id>::clone(&self) -> termrock::widgets::NavigationListOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::NavigationListOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::NavigationListOutcome<Id>
+pub fn termrock::widgets::NavigationListOutcome<Id>::eq(&self, &termrock::widgets::NavigationListOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::NavigationListOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::NavigationListOutcome<Id>
+pub fn termrock::widgets::NavigationListOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::convert::From<termrock::widgets::NavigationListOutcome<Id>> for termrock::widgets::SidebarOutcome<Id>
+pub fn termrock::widgets::SidebarOutcome<Id>::from(termrock::widgets::NavigationListOutcome<Id>) -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::NavigationListOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::NavigationListOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::NavigationListOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::NavigationListOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::NavigationListOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NavigationListOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::NavigationListOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NavigationListOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NavigationListOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NavigationListOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::NavigationListOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NavigationListOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::NavigationListOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::NavigationListOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NavigationListOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NavigationListOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NavigationListOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NavigationListOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::NavigationListOutcome<Id>::Owned = T
+pub fn termrock::widgets::NavigationListOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::NavigationListOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NavigationListOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NavigationListOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NavigationListOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::NavigationListOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NavigationListOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::NavigationListOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NavigationListOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NavigationListOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NavigationListOutcome<Id>
+pub fn termrock::widgets::NavigationListOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NavigationListOutcome<Id>
 #[non_exhaustive] pub enum termrock::widgets::NumberInputOutcome
 pub termrock::widgets::NumberInputOutcome::Cancelled
 pub termrock::widgets::NumberInputOutcome::Changed
@@ -23942,7 +24110,25 @@ impl<T> core::convert::From<T> for termrock::widgets::ShortcutForm
 pub fn termrock::widgets::ShortcutForm::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ShortcutForm
 #[non_exhaustive] pub enum termrock::widgets::SidebarOutcome<Id>
+pub termrock::widgets::SidebarOutcome::Blurred
+pub termrock::widgets::SidebarOutcome::Changed
+pub termrock::widgets::SidebarOutcome::CommandRequested
+pub termrock::widgets::SidebarOutcome::CommandRequested::command: alloc::string::String
+pub termrock::widgets::SidebarOutcome::CommandRequested::id: Id
+pub termrock::widgets::SidebarOutcome::ContextMenuRequested
+pub termrock::widgets::SidebarOutcome::ContextMenuRequested::id: Id
+pub termrock::widgets::SidebarOutcome::ExpandToggled
+pub termrock::widgets::SidebarOutcome::ExpandToggled::expanded: bool
+pub termrock::widgets::SidebarOutcome::ExpandToggled::id: Id
+pub termrock::widgets::SidebarOutcome::FilterChanged
+pub termrock::widgets::SidebarOutcome::FilterChanged::query: alloc::string::String
+pub termrock::widgets::SidebarOutcome::FocusChanged
+pub termrock::widgets::SidebarOutcome::FocusChanged::id: core::option::Option<Id>
 pub termrock::widgets::SidebarOutcome::Ignored
+pub termrock::widgets::SidebarOutcome::OpenDrawer
+pub termrock::widgets::SidebarOutcome::OpenPalette
+pub termrock::widgets::SidebarOutcome::PresentationChanged
+pub termrock::widgets::SidebarOutcome::PresentationChanged::presentation: termrock::widgets::SidebarPresentation
 pub termrock::widgets::SidebarOutcome::Selected(Id)
 pub termrock::widgets::SidebarOutcome::ToggleRail
 pub termrock::widgets::SidebarOutcome::ToggleRail::expanded: bool
@@ -23954,6 +24140,8 @@ pub fn termrock::widgets::SidebarOutcome<Id>::eq(&self, &termrock::widgets::Side
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SidebarOutcome<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SidebarOutcome<Id>
 pub fn termrock::widgets::SidebarOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::convert::From<termrock::widgets::NavigationListOutcome<Id>> for termrock::widgets::SidebarOutcome<Id>
+pub fn termrock::widgets::SidebarOutcome<Id>::from(termrock::widgets::NavigationListOutcome<Id>) -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::SidebarOutcome<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::SidebarOutcome<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::SidebarOutcome<Id> where Id: core::marker::Sync
@@ -23986,6 +24174,58 @@ pub unsafe fn termrock::widgets::SidebarOutcome<Id>::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::SidebarOutcome<Id>
 pub fn termrock::widgets::SidebarOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SidebarOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::SidebarPresentation
+pub termrock::widgets::SidebarPresentation::Drawer
+pub termrock::widgets::SidebarPresentation::Expanded
+pub termrock::widgets::SidebarPresentation::Palette
+pub termrock::widgets::SidebarPresentation::Rail
+impl termrock::widgets::SidebarPresentation
+pub const fn termrock::widgets::SidebarPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SidebarPresentation
+pub fn termrock::widgets::SidebarPresentation::clone(&self) -> termrock::widgets::SidebarPresentation
+impl core::cmp::Eq for termrock::widgets::SidebarPresentation
+impl core::cmp::PartialEq for termrock::widgets::SidebarPresentation
+pub fn termrock::widgets::SidebarPresentation::eq(&self, &termrock::widgets::SidebarPresentation) -> bool
+impl core::default::Default for termrock::widgets::SidebarPresentation
+pub fn termrock::widgets::SidebarPresentation::default() -> termrock::widgets::SidebarPresentation
+impl core::fmt::Debug for termrock::widgets::SidebarPresentation
+pub fn termrock::widgets::SidebarPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SidebarPresentation
+pub fn termrock::widgets::SidebarPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SidebarPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::SidebarPresentation
+impl core::marker::Freeze for termrock::widgets::SidebarPresentation
+impl core::marker::Send for termrock::widgets::SidebarPresentation
+impl core::marker::Sync for termrock::widgets::SidebarPresentation
+impl core::marker::Unpin for termrock::widgets::SidebarPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::SidebarPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SidebarPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SidebarPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SidebarPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SidebarPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SidebarPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::SidebarPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SidebarPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::SidebarPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::SidebarPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SidebarPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SidebarPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SidebarPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SidebarPresentation where T: core::clone::Clone
+pub type termrock::widgets::SidebarPresentation::Owned = T
+pub fn termrock::widgets::SidebarPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::SidebarPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SidebarPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SidebarPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SidebarPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SidebarPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SidebarPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SidebarPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SidebarPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SidebarPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SidebarPresentation
+pub fn termrock::widgets::SidebarPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SidebarPresentation
 #[non_exhaustive] pub enum termrock::widgets::SliderOrientation
 pub termrock::widgets::SliderOrientation::Horizontal
 pub termrock::widgets::SliderOrientation::Vertical
@@ -37111,6 +37351,181 @@ pub unsafe fn termrock::widgets::MultiSelectState<Id>::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::MultiSelectState<Id>
 pub fn termrock::widgets::MultiSelectState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MultiSelectState<Id>
+pub struct termrock::widgets::NavItem<Id>
+pub termrock::widgets::NavItem::badge: core::option::Option<alloc::string::String>
+pub termrock::widgets::NavItem::command: core::option::Option<alloc::string::String>
+pub termrock::widgets::NavItem::depth: u8
+pub termrock::widgets::NavItem::enabled: bool
+pub termrock::widgets::NavItem::expanded: bool
+pub termrock::widgets::NavItem::has_children: bool
+pub termrock::widgets::NavItem::icon: core::option::Option<alloc::string::String>
+pub termrock::widgets::NavItem::id: Id
+pub termrock::widgets::NavItem::kind: termrock::widgets::NavItemKind
+pub termrock::widgets::NavItem::label: alloc::string::String
+pub termrock::widgets::NavItem::status: termrock::widgets::NavItemStatus
+impl<Id> termrock::widgets::NavItem<Id>
+pub fn termrock::widgets::NavItem<Id>::badge(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::NavItem<Id>::command(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::NavItem<Id>::depth(self, u8) -> Self
+pub const fn termrock::widgets::NavItem<Id>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::NavItem<Id>::expanded(self, bool) -> Self
+pub fn termrock::widgets::NavItem<Id>::group(Id, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::NavItem<Id>::has_children(self, bool) -> Self
+pub fn termrock::widgets::NavItem<Id>::icon(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::NavItem<Id>::new(Id, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::NavItem<Id>::section(Id, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::NavItem<Id>::separator(Id) -> Self
+pub const fn termrock::widgets::NavItem<Id>::status(self, termrock::widgets::NavItemStatus) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::NavItem<Id>
+pub fn termrock::widgets::NavItem<Id>::clone(&self) -> termrock::widgets::NavItem<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::NavItem<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::NavItem<Id>
+pub fn termrock::widgets::NavItem<Id>::eq(&self, &termrock::widgets::NavItem<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::NavItem<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::NavItem<Id>
+pub fn termrock::widgets::NavItem<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::NavItem<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::NavItem<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::NavItem<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::NavItem<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::NavItem<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NavItem<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::NavItem<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NavItem<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NavItem<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NavItem<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::NavItem<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NavItem<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::NavItem<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::NavItem<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NavItem<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NavItem<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NavItem<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NavItem<Id> where T: core::clone::Clone
+pub type termrock::widgets::NavItem<Id>::Owned = T
+pub fn termrock::widgets::NavItem<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::NavItem<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NavItem<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NavItem<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NavItem<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::NavItem<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NavItem<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::NavItem<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NavItem<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NavItem<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NavItem<Id>
+pub fn termrock::widgets::NavItem<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NavItem<Id>
+pub struct termrock::widgets::NavigationList<'a, Id>
+impl<'a, Id> termrock::widgets::NavigationList<'a, Id>
+pub const fn termrock::widgets::NavigationList<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::NavigationList<'a, Id>::new(&'a [termrock::widgets::NavItem<Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::NavigationList<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::NavigationListState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
+pub const fn termrock::widgets::NavigationList<'a, Id>::rail(self, bool) -> Self
+pub const fn termrock::widgets::NavigationList<'a, Id>::show_filter(self, bool) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::NavigationList<'a, Id>
+pub fn termrock::widgets::NavigationList<'a, Id>::clone(&self) -> termrock::widgets::NavigationList<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::NavigationList<'a, Id>
+pub fn termrock::widgets::NavigationList<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::NavigationList<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::NavigationList<'_, Id>
+pub type &termrock::widgets::NavigationList<'_, Id>::State = termrock::widgets::NavigationListState<Id>
+pub fn &termrock::widgets::NavigationList<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::NavigationList<'_, Id>
+pub type termrock::widgets::NavigationList<'_, Id>::State = termrock::widgets::NavigationListState<Id>
+pub fn termrock::widgets::NavigationList<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::NavigationList<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::NavigationList<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::NavigationList<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::NavigationList<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::NavigationList<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NavigationList<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::NavigationList<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::NavigationList<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::NavigationList<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NavigationList<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::NavigationList<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::NavigationList<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NavigationList<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NavigationList<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NavigationList<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NavigationList<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::NavigationList<'a, Id>::Owned = T
+pub fn termrock::widgets::NavigationList<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::NavigationList<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NavigationList<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NavigationList<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NavigationList<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::NavigationList<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NavigationList<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::NavigationList<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NavigationList<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NavigationList<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NavigationList<'a, Id>
+pub fn termrock::widgets::NavigationList<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NavigationList<'a, Id>
+pub struct termrock::widgets::NavigationListState<Id>
+pub termrock::widgets::NavigationListState::accepts_input: bool
+impl<Id> termrock::widgets::NavigationListState<Id>
+pub fn termrock::widgets::NavigationListState<Id>::activate_focus(&mut self, &[termrock::widgets::NavItem<Id>]) -> termrock::widgets::NavigationListOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::NavigationListState<Id>::cursor_index(&self) -> usize
+pub fn termrock::widgets::NavigationListState<Id>::cursor_index_in(&self, &[termrock::widgets::NavItem<Id>]) -> usize where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::NavigationListState<Id>::filter(&self) -> &str
+pub fn termrock::widgets::NavigationListState<Id>::focus(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::NavigationListState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::NavItem<Id>]) -> termrock::widgets::NavigationListOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::NavigationListState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::NavItem<Id>]) -> termrock::widgets::NavigationListOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::NavigationListState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::NavItem<Id>]) -> termrock::widgets::NavigationListOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub const fn termrock::widgets::NavigationListState<Id>::is_filter_active(&self) -> bool
+pub fn termrock::widgets::NavigationListState<Id>::new(core::option::Option<Id>) -> Self
+pub const fn termrock::widgets::NavigationListState<Id>::route(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::NavigationListState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::NavigationListState<Id>::set_enabled(&mut self, bool)
+pub fn termrock::widgets::NavigationListState<Id>::set_filter(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::NavigationListState<Id>::set_focused(&mut self, bool)
+pub fn termrock::widgets::NavigationListState<Id>::set_route(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::NavigationListState<Id>::set_route_and_focus(&mut self, Id) where Id: core::clone::Clone + core::cmp::PartialEq
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::NavigationListState<Id>
+pub fn termrock::widgets::NavigationListState<Id>::clone(&self) -> termrock::widgets::NavigationListState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::NavigationListState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::NavigationListState<Id>
+pub fn termrock::widgets::NavigationListState<Id>::eq(&self, &termrock::widgets::NavigationListState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::NavigationListState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::NavigationListState<Id>
+pub fn termrock::widgets::NavigationListState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::NavigationListState<Id>
+pub fn termrock::widgets::NavigationListState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::NavigationListState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::NavigationListState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::NavigationListState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::NavigationListState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::NavigationListState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NavigationListState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::NavigationListState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NavigationListState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NavigationListState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NavigationListState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::NavigationListState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NavigationListState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::NavigationListState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::NavigationListState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NavigationListState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NavigationListState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NavigationListState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NavigationListState<Id> where T: core::clone::Clone
+pub type termrock::widgets::NavigationListState<Id>::Owned = T
+pub fn termrock::widgets::NavigationListState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::NavigationListState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NavigationListState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NavigationListState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NavigationListState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::NavigationListState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NavigationListState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::NavigationListState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NavigationListState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NavigationListState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NavigationListState<Id>
+pub fn termrock::widgets::NavigationListState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NavigationListState<Id>
 pub struct termrock::widgets::NumberConstraints
 pub termrock::widgets::NumberConstraints::max: core::option::Option<f64>
 pub termrock::widgets::NumberConstraints::min: core::option::Option<f64>
@@ -41945,13 +42360,23 @@ pub struct termrock::widgets::Sidebar<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Sidebar<'a, Id>
 pub const fn termrock::widgets::Sidebar<'a, Id>::ascii(self, bool) -> Self
 pub const fn termrock::widgets::Sidebar<'a, Id>::focused(self, bool) -> Self
-pub const fn termrock::widgets::Sidebar<'a, Id>::new(&'a [termrock::widgets::SidebarItem<Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Sidebar<'a, Id>::new(&'a [termrock::widgets::NavItem<Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Sidebar<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SidebarState<Id>)
+pub fn termrock::widgets::Sidebar<'a, Id>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::SidebarState<Id>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub fn termrock::widgets::Sidebar<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::SidebarState<Id>)
+pub const fn termrock::widgets::Sidebar<'a, Id>::show_panel(self, bool) -> Self
+pub const fn termrock::widgets::Sidebar<'a, Id>::title(self, &'a str) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Sidebar<'a, Id>
 pub fn termrock::widgets::Sidebar<'a, Id>::clone(&self) -> termrock::widgets::Sidebar<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Sidebar<'a, Id>
 pub fn termrock::widgets::Sidebar<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Sidebar<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Sidebar<'_, Id>
+pub type &termrock::widgets::Sidebar<'_, Id>::State = termrock::widgets::SidebarState<Id>
+pub fn &termrock::widgets::Sidebar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Sidebar<'_, Id>
+pub type termrock::widgets::Sidebar<'_, Id>::State = termrock::widgets::SidebarState<Id>
+pub fn termrock::widgets::Sidebar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Sidebar<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::Sidebar<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::Sidebar<'a, Id> where Id: core::marker::Sync
@@ -41982,60 +42407,28 @@ pub unsafe fn termrock::widgets::Sidebar<'a, Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::Sidebar<'a, Id>
 pub fn termrock::widgets::Sidebar<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Sidebar<'a, Id>
-pub struct termrock::widgets::SidebarItem<Id>
-pub termrock::widgets::SidebarItem::enabled: bool
-pub termrock::widgets::SidebarItem::id: Id
-pub termrock::widgets::SidebarItem::label: alloc::string::String
-impl<Id> termrock::widgets::SidebarItem<Id>
-pub fn termrock::widgets::SidebarItem<Id>::new(Id, impl core::convert::Into<alloc::string::String>) -> Self
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SidebarItem<Id>
-pub fn termrock::widgets::SidebarItem<Id>::clone(&self) -> termrock::widgets::SidebarItem<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SidebarItem<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SidebarItem<Id>
-pub fn termrock::widgets::SidebarItem<Id>::eq(&self, &termrock::widgets::SidebarItem<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SidebarItem<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SidebarItem<Id>
-pub fn termrock::widgets::SidebarItem<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::widgets::SidebarItem<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::SidebarItem<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::SidebarItem<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::SidebarItem<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SidebarItem<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SidebarItem<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SidebarItem<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SidebarItem<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::SidebarItem<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::SidebarItem<Id> where U: core::convert::From<T>
-pub fn termrock::widgets::SidebarItem<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SidebarItem<Id> where U: core::convert::Into<T>
-pub type termrock::widgets::SidebarItem<Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::SidebarItem<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::SidebarItem<Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::SidebarItem<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::SidebarItem<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::SidebarItem<Id> where T: core::clone::Clone
-pub type termrock::widgets::SidebarItem<Id>::Owned = T
-pub fn termrock::widgets::SidebarItem<Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::SidebarItem<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::SidebarItem<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::SidebarItem<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::SidebarItem<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::SidebarItem<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SidebarItem<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::SidebarItem<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::SidebarItem<Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::SidebarItem<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::SidebarItem<Id>
-pub fn termrock::widgets::SidebarItem<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::SidebarItem<Id>
 pub struct termrock::widgets::SidebarState<Id>
 pub termrock::widgets::SidebarState::accepts_input: bool
-impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::SidebarState<Id>
-pub const fn termrock::widgets::SidebarState<Id>::cursor_index(&self) -> usize
-pub fn termrock::widgets::SidebarState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::SidebarItem<Id>]) -> termrock::widgets::SidebarOutcome<Id>
+pub termrock::widgets::SidebarState::nav: termrock::widgets::NavigationListState<Id>
+impl<Id> termrock::widgets::SidebarState<Id>
+pub fn termrock::widgets::SidebarState<Id>::apply_width(&mut self, u16) -> termrock::widgets::SidebarOutcome<Id>
+pub fn termrock::widgets::SidebarState<Id>::cursor_index(&self) -> usize
+pub fn termrock::widgets::SidebarState<Id>::cursor_index_in(&self, &[termrock::widgets::NavItem<Id>]) -> usize where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::SidebarState<Id>::focus(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::SidebarState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::NavItem<Id>]) -> termrock::widgets::SidebarOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::SidebarState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::NavItem<Id>]) -> termrock::widgets::SidebarOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::SidebarState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::NavItem<Id>]) -> termrock::widgets::SidebarOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::SidebarState<Id>::is_expanded(&self) -> bool
 pub fn termrock::widgets::SidebarState<Id>::new(core::option::Option<Id>) -> Self
-pub fn termrock::widgets::SidebarState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::SidebarState<Id>::open_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub const fn termrock::widgets::SidebarState<Id>::presentation(&self) -> termrock::widgets::SidebarPresentation
+pub const fn termrock::widgets::SidebarState<Id>::route(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::SidebarState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::SidebarState<Id>::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::SidebarState<Id>::set_focused(&mut self, bool)
+pub fn termrock::widgets::SidebarState<Id>::set_presentation(&mut self, termrock::widgets::SidebarPresentation)
+pub fn termrock::widgets::SidebarState<Id>::toggle_rail(&mut self) -> termrock::widgets::SidebarOutcome<Id>
+pub const fn termrock::widgets::SidebarState<Id>::with_presentation(self, termrock::widgets::SidebarPresentation) -> Self
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SidebarState<Id>
 pub fn termrock::widgets::SidebarState<Id>::clone(&self) -> termrock::widgets::SidebarState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SidebarState<Id>
@@ -42044,6 +42437,8 @@ pub fn termrock::widgets::SidebarState<Id>::eq(&self, &termrock::widgets::Sideba
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SidebarState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SidebarState<Id>
 pub fn termrock::widgets::SidebarState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::SidebarState<Id>
+pub fn termrock::widgets::SidebarState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::SidebarState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::SidebarState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::SidebarState<Id> where Id: core::marker::Sync
@@ -47309,6 +47704,9 @@ pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::SELECT_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::SELECT_FULLSCREEN_MAX_WIDTH: u16
+pub const termrock::widgets::SIDEBAR_DRAWER_MAX_WIDTH: u16
+pub const termrock::widgets::SIDEBAR_DRAWER_OVERLAY_ID: &str
+pub const termrock::widgets::SIDEBAR_RAIL_MAX_WIDTH: u16
 pub const termrock::widgets::SLIDER_MIN_TRACK: u16
 pub const termrock::widgets::SLIDER_NUMERIC_FALLBACK_WIDTH: u16
 pub const termrock::widgets::TABS_OVERFLOW_MAX_WIDTH: u16
@@ -47342,6 +47740,9 @@ pub fn termrock::widgets::dismiss_dialog_overlay<FocusId: core::clone::Clone>(&m
 pub fn termrock::widgets::dismiss_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
+pub fn termrock::widgets::example_database_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
+pub fn termrock::widgets::example_settings_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
 pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
 pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>
@@ -47392,6 +47793,7 @@ pub fn termrock::widgets::required_filled<Id>(&[termrock::widgets::Fieldset<'_, 
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::role_for_seed(u64) -> termrock::style::Role
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
+pub fn termrock::widgets::sidebar_presentation_for_width(u16) -> termrock::widgets::SidebarPresentation
 pub fn termrock::widgets::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::widgets::strip_str(&str) -> alloc::string::String
 pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
@@ -47415,3 +47817,4 @@ pub type termrock::widgets::FormField<'a, Id> = termrock::widgets::Field<'a, Id>
 pub type termrock::widgets::FormSection<'a, Id> = termrock::widgets::Fieldset<'a, Id>
 pub type termrock::widgets::SectionAction<'a> = termrock::widgets::PanelAction<'a>
 pub type termrock::widgets::SeparatorLine<'a> = termrock::widgets::Separator<'a>
+pub type termrock::widgets::SidebarItem<Id> = termrock::widgets::NavItem<Id>

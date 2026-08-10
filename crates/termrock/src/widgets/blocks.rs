@@ -11,7 +11,7 @@ use crate::{
     style::DesignSystem,
     widgets::{
         data_table::{DataTableOutcome, DataTableState},
-        menu_nav::{SidebarOutcome, SidebarState},
+        sidebar::{SidebarOutcome, SidebarState},
         review::{LogStreamOutcome, LogStreamState, ObjectInspectorState},
         scroll_area::ScrollAreaState,
     },
@@ -160,7 +160,7 @@ impl<Id: Clone + PartialEq> ResourceBrowserState<Id> {
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
-        items: &[crate::widgets::menu_nav::SidebarItem<Id>],
+        items: &[crate::widgets::SidebarItem<Id>],
     ) -> ResourceBrowserOutcome<Id> {
         let out = self.sidebar.handle_key(key, items);
         match out {
@@ -285,7 +285,7 @@ impl<'a> BlockChrome<'a> {
 mod tests {
     use super::*;
     use crate::widgets::data_view::{ColumnModel, DataColumn, DataColumnWidth};
-    use crate::widgets::menu_nav::SidebarItem;
+    use crate::widgets::SidebarItem;
 
     #[test]
     fn ops_tab_cycles_region() {

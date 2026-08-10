@@ -322,6 +322,29 @@ let mut state = TabsState::new().with_selected("logs");
 state.set_focused(true);
 let _ = Tabs::new(&tabs, &system).gap(1);`,
   },
+  Sidebar: {
+    description:
+      'Primary application navigation with sections, hierarchy, badges, status, and rail/drawer collapse. Route state is distinct from keyboard focus.',
+    primaryStory: 'sidebar/settings',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Sidebar, SidebarState, example_settings_nav};
+
+let system = DesignSystem::default();
+let items = example_settings_nav();
+let mut state = SidebarState::new(Some("profile"));
+state.set_focused(true);
+let _ = Sidebar::new(&items, &system).title("Settings").show_panel(true);`,
+  },
+  NavigationList: {
+    description:
+      'Route-oriented navigation list with hierarchy, filter, and focus distinct from active route.',
+    primaryStory: 'navigation-list/basic',
+    usage: `use termrock::widgets::{NavItem, NavigationList, NavigationListState};
+
+let items = [NavItem::new("a", "Inbox"), NavItem::new("b", "Starred")];
+let mut state = NavigationListState::new(Some("a"));
+state.set_focused(true);`,
+  },
   TextArea: {
     description:
       'A multi-line grapheme-safe editor with selection, undo/redo, soft wrap, line numbers, and host clipboard/external-editor hooks.',

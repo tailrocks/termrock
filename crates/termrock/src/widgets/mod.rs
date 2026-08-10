@@ -53,6 +53,7 @@ mod list;
 mod log_pane;
 mod markdown;
 mod menu_nav;
+mod sidebar;
 mod card;
 mod panel;
 mod permission;
@@ -236,9 +237,15 @@ pub use markdown::{
 pub use menu_nav::{
     BreadcrumbItem, Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, ContextMenu,
     DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuItem, MenuOutcome, MenuState,
-    POPOVER_OVERLAY_ID, Popover, Sidebar, SidebarItem, SidebarOutcome, SidebarState,
-    TOOLTIP_OVERLAY_ID, Tooltip, TooltipState, dismiss_drawer_overlay, open_drawer_overlay,
-    open_popover_overlay, open_tooltip_overlay, place_drawer, place_popover, place_tooltip,
+    POPOVER_OVERLAY_ID, Popover, TOOLTIP_OVERLAY_ID, Tooltip, TooltipState, dismiss_drawer_overlay,
+    open_drawer_overlay, open_popover_overlay, open_tooltip_overlay, place_drawer, place_popover,
+    place_tooltip,
+};
+pub use sidebar::{
+    SIDEBAR_DRAWER_MAX_WIDTH, SIDEBAR_DRAWER_OVERLAY_ID, SIDEBAR_RAIL_MAX_WIDTH, NavItem,
+    NavItemKind, NavItemStatus, NavigationList, NavigationListOutcome, NavigationListState, Sidebar,
+    SidebarItem, SidebarOutcome, SidebarPresentation, SidebarState, example_agent_workbench_nav,
+    example_database_nav, example_settings_nav, sidebar_presentation_for_width,
 };
 pub use card::{Card, CardParts};
 pub use panel::{

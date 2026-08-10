@@ -69,6 +69,8 @@ use termrock::{
         CivilDate, CivilDateRange, CivilTime, DateTimePicker, DateTimePickerKind,
         DateTimePickerState, TimeDisplayFormat,
         KeybindingRecorder, KeybindingRecorderState,
+        NavItem, NavigationList, NavigationListState, Sidebar, SidebarPresentation, SidebarState,
+        example_agent_workbench_nav, example_database_nav, example_settings_nav,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -850,6 +852,51 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             1,
             toolbar_compact_story,
+        ),
+        Story::new(
+            "sidebar/settings",
+            "Sidebar settings",
+            "Sidebar",
+            "Settings navigation with sections and badges.",
+            28,
+            14,
+            sidebar_settings_story,
+        ),
+        Story::new(
+            "sidebar/database",
+            "Sidebar database",
+            "Sidebar",
+            "Database explorer hierarchy projection.",
+            28,
+            16,
+            sidebar_database_story,
+        ),
+        Story::new(
+            "sidebar/agent",
+            "Sidebar agent workbench",
+            "Sidebar",
+            "Agent workbench nav with status and separator.",
+            24,
+            12,
+            sidebar_agent_story,
+        ),
+        Story::new(
+            "sidebar/rail",
+            "Sidebar rail",
+            "Sidebar",
+            "Compact rail presentation.",
+            8,
+            12,
+            sidebar_rail_story,
+        ),
+        Story::new(
+            "navigation-list/basic",
+            "NavigationList",
+            "NavigationList",
+            "Route distinct from focus; filterable list.",
+            28,
+            12,
+            navigation_list_basic_story,
         ),
         Story::new(
             "tabs/status",
@@ -7333,6 +7380,69 @@ fn tree(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     state.enable_multi_select();
     state.selection_mut().unwrap().toggle(&"notes");
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
+}
+
+fn sidebar_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_settings_nav();
+    let mut state = SidebarState::new(Some("profile"));
+    state.set_focused(true);
+    Sidebar::new(&items, system)
+        .ascii(true)
+        .show_panel(true)
+        .title("Settings")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn sidebar_database_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_database_nav();
+    let mut state = SidebarState::new(Some("users"));
+    state.set_focused(true);
+    Sidebar::new(&items, system)
+        .ascii(true)
+        .show_panel(true)
+        .title("Database")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn sidebar_agent_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_agent_workbench_nav();
+    let mut state = SidebarState::new(Some("plan"));
+    state.set_focused(true);
+    Sidebar::new(&items, system)
+        .ascii(true)
+        .show_panel(true)
+        .title("Workbench")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn sidebar_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_agent_workbench_nav();
+    let mut state = SidebarState::new(Some("chat")).with_presentation(SidebarPresentation::Rail);
+    state.set_focused(true);
+    Sidebar::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn navigation_list_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        NavItem::new("a", "Inbox").badge("3"),
+        NavItem::new("b", "Starred"),
+        NavItem::new("c", "Archive"),
+    ];
+    let mut state = NavigationListState::new(Some("a"));
+    state.set_focused(true);
+    // focus moved to b, route still a
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Down,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &items,
+    );
+    NavigationList::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn tabs(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
