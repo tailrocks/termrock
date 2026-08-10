@@ -14775,6 +14775,9 @@ pub mod termrock::widgets::terminal_output_bench
 pub const termrock::widgets::terminal_output_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::terminal_output_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::terminal_output_bench::VIEWPORT: u16
+pub mod termrock::widgets::tool_call_card_bench
+pub const termrock::widgets::tool_call_card_bench::CARD_COUNT: usize
+pub const termrock::widgets::tool_call_card_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::trace_waterfall_bench
 pub const termrock::widgets::trace_waterfall_bench::PAINT_FRAMES: u32
 pub const termrock::widgets::trace_waterfall_bench::SPAN_COUNT: usize
@@ -38378,14 +38381,253 @@ pub unsafe fn termrock::widgets::TokenStripOutcome<Id>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::TokenStripOutcome<Id>
 pub fn termrock::widgets::TokenStripOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TokenStripOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::ToolCallAction
+pub termrock::widgets::ToolCallAction::Cancel
+pub termrock::widgets::ToolCallAction::CopyArgs
+pub termrock::widgets::ToolCallAction::CopyResult
+pub termrock::widgets::ToolCallAction::Fullscreen
+pub termrock::widgets::ToolCallAction::OpenDiff
+pub termrock::widgets::ToolCallAction::OpenLog
+pub termrock::widgets::ToolCallAction::PermissionFocus
+pub termrock::widgets::ToolCallAction::Retry
+pub termrock::widgets::ToolCallAction::ToggleExpand
+impl termrock::widgets::ToolCallAction
+pub const fn termrock::widgets::ToolCallAction::chord(self) -> &'static str
+pub const fn termrock::widgets::ToolCallAction::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToolCallAction
+pub fn termrock::widgets::ToolCallAction::clone(&self) -> termrock::widgets::ToolCallAction
+impl core::cmp::Eq for termrock::widgets::ToolCallAction
+impl core::cmp::PartialEq for termrock::widgets::ToolCallAction
+pub fn termrock::widgets::ToolCallAction::eq(&self, &termrock::widgets::ToolCallAction) -> bool
+impl core::fmt::Debug for termrock::widgets::ToolCallAction
+pub fn termrock::widgets::ToolCallAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToolCallAction
+pub fn termrock::widgets::ToolCallAction::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToolCallAction
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolCallAction
+impl core::marker::Freeze for termrock::widgets::ToolCallAction
+impl core::marker::Send for termrock::widgets::ToolCallAction
+impl core::marker::Sync for termrock::widgets::ToolCallAction
+impl core::marker::Unpin for termrock::widgets::ToolCallAction
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolCallAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolCallAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolCallAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolCallAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolCallAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolCallAction where U: core::convert::From<T>
+pub fn termrock::widgets::ToolCallAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolCallAction where U: core::convert::Into<T>
+pub type termrock::widgets::ToolCallAction::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolCallAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolCallAction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolCallAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolCallAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolCallAction where T: core::clone::Clone
+pub type termrock::widgets::ToolCallAction::Owned = T
+pub fn termrock::widgets::ToolCallAction::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolCallAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolCallAction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolCallAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolCallAction where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolCallAction where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolCallAction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolCallAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolCallAction
+pub fn termrock::widgets::ToolCallAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolCallAction
+#[non_exhaustive] pub enum termrock::widgets::ToolCallCardOutcome
+pub termrock::widgets::ToolCallCardOutcome::Activated
+pub termrock::widgets::ToolCallCardOutcome::Activated::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::CancelRequested
+pub termrock::widgets::ToolCallCardOutcome::CancelRequested::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::Collapsed
+pub termrock::widgets::ToolCallCardOutcome::Collapsed::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::CopyArgs
+pub termrock::widgets::ToolCallCardOutcome::CopyArgs::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::CopyArgs::text: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::CopyResult
+pub termrock::widgets::ToolCallCardOutcome::CopyResult::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::CopyResult::text: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::Expanded
+pub termrock::widgets::ToolCallCardOutcome::Expanded::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::FullscreenRequested
+pub termrock::widgets::ToolCallCardOutcome::FullscreenRequested::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::Ignored
+pub termrock::widgets::ToolCallCardOutcome::OpenDiff
+pub termrock::widgets::ToolCallCardOutcome::OpenDiff::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::OpenLog
+pub termrock::widgets::ToolCallCardOutcome::OpenLog::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::PermissionFocus
+pub termrock::widgets::ToolCallCardOutcome::PermissionFocus::id: alloc::string::String
+pub termrock::widgets::ToolCallCardOutcome::RetryRequested
+pub termrock::widgets::ToolCallCardOutcome::RetryRequested::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::ToolCallCardOutcome
+pub fn termrock::widgets::ToolCallCardOutcome::clone(&self) -> termrock::widgets::ToolCallCardOutcome
+impl core::cmp::Eq for termrock::widgets::ToolCallCardOutcome
+impl core::cmp::PartialEq for termrock::widgets::ToolCallCardOutcome
+pub fn termrock::widgets::ToolCallCardOutcome::eq(&self, &termrock::widgets::ToolCallCardOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ToolCallCardOutcome
+pub fn termrock::widgets::ToolCallCardOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolCallCardOutcome
+impl core::marker::Freeze for termrock::widgets::ToolCallCardOutcome
+impl core::marker::Send for termrock::widgets::ToolCallCardOutcome
+impl core::marker::Sync for termrock::widgets::ToolCallCardOutcome
+impl core::marker::Unpin for termrock::widgets::ToolCallCardOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolCallCardOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolCallCardOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolCallCardOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolCallCardOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCardOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolCallCardOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ToolCallCardOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolCallCardOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ToolCallCardOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolCallCardOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolCallCardOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolCallCardOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolCallCardOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolCallCardOutcome where T: core::clone::Clone
+pub type termrock::widgets::ToolCallCardOutcome::Owned = T
+pub fn termrock::widgets::ToolCallCardOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolCallCardOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolCallCardOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCardOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolCallCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCardOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolCallCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCardOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolCallCardOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolCallCardOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolCallCardOutcome
+pub fn termrock::widgets::ToolCallCardOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolCallCardOutcome
+#[non_exhaustive] pub enum termrock::widgets::ToolCallPresentation
+pub termrock::widgets::ToolCallPresentation::Compact
+pub termrock::widgets::ToolCallPresentation::Expanded
+pub termrock::widgets::ToolCallPresentation::Fullscreen
+impl termrock::widgets::ToolCallPresentation
+pub const fn termrock::widgets::ToolCallPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToolCallPresentation
+pub fn termrock::widgets::ToolCallPresentation::clone(&self) -> termrock::widgets::ToolCallPresentation
+impl core::cmp::Eq for termrock::widgets::ToolCallPresentation
+impl core::cmp::PartialEq for termrock::widgets::ToolCallPresentation
+pub fn termrock::widgets::ToolCallPresentation::eq(&self, &termrock::widgets::ToolCallPresentation) -> bool
+impl core::default::Default for termrock::widgets::ToolCallPresentation
+pub fn termrock::widgets::ToolCallPresentation::default() -> termrock::widgets::ToolCallPresentation
+impl core::fmt::Debug for termrock::widgets::ToolCallPresentation
+pub fn termrock::widgets::ToolCallPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToolCallPresentation
+pub fn termrock::widgets::ToolCallPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToolCallPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolCallPresentation
+impl core::marker::Freeze for termrock::widgets::ToolCallPresentation
+impl core::marker::Send for termrock::widgets::ToolCallPresentation
+impl core::marker::Sync for termrock::widgets::ToolCallPresentation
+impl core::marker::Unpin for termrock::widgets::ToolCallPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolCallPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolCallPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolCallPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolCallPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolCallPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolCallPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::ToolCallPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolCallPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::ToolCallPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolCallPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolCallPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolCallPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolCallPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolCallPresentation where T: core::clone::Clone
+pub type termrock::widgets::ToolCallPresentation::Owned = T
+pub fn termrock::widgets::ToolCallPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolCallPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolCallPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolCallPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolCallPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolCallPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolCallPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolCallPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolCallPresentation
+pub fn termrock::widgets::ToolCallPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolCallPresentation
+#[non_exhaustive] pub enum termrock::widgets::ToolRisk
+pub termrock::widgets::ToolRisk::High
+pub termrock::widgets::ToolRisk::Network
+pub termrock::widgets::ToolRisk::None
+pub termrock::widgets::ToolRisk::Read
+pub termrock::widgets::ToolRisk::Write
+impl termrock::widgets::ToolRisk
+pub const fn termrock::widgets::ToolRisk::id(self) -> &'static str
+pub const fn termrock::widgets::ToolRisk::is_elevated(self) -> bool
+pub const fn termrock::widgets::ToolRisk::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::ToolRisk
+pub fn termrock::widgets::ToolRisk::clone(&self) -> termrock::widgets::ToolRisk
+impl core::cmp::Eq for termrock::widgets::ToolRisk
+impl core::cmp::PartialEq for termrock::widgets::ToolRisk
+pub fn termrock::widgets::ToolRisk::eq(&self, &termrock::widgets::ToolRisk) -> bool
+impl core::default::Default for termrock::widgets::ToolRisk
+pub fn termrock::widgets::ToolRisk::default() -> termrock::widgets::ToolRisk
+impl core::fmt::Debug for termrock::widgets::ToolRisk
+pub fn termrock::widgets::ToolRisk::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToolRisk
+pub fn termrock::widgets::ToolRisk::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToolRisk
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolRisk
+impl core::marker::Freeze for termrock::widgets::ToolRisk
+impl core::marker::Send for termrock::widgets::ToolRisk
+impl core::marker::Sync for termrock::widgets::ToolRisk
+impl core::marker::Unpin for termrock::widgets::ToolRisk
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolRisk
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolRisk
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolRisk
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolRisk where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolRisk::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolRisk where U: core::convert::From<T>
+pub fn termrock::widgets::ToolRisk::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolRisk where U: core::convert::Into<T>
+pub type termrock::widgets::ToolRisk::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolRisk::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolRisk where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolRisk::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolRisk::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolRisk where T: core::clone::Clone
+pub type termrock::widgets::ToolRisk::Owned = T
+pub fn termrock::widgets::ToolRisk::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolRisk::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolRisk where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolRisk::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolRisk where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolRisk::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolRisk where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolRisk::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolRisk where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolRisk::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolRisk
+pub fn termrock::widgets::ToolRisk::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolRisk
 #[non_exhaustive] pub enum termrock::widgets::ToolStatus
 pub termrock::widgets::ToolStatus::Cancelled
-pub termrock::widgets::ToolStatus::Done
-pub termrock::widgets::ToolStatus::Error
-pub termrock::widgets::ToolStatus::Pending
+pub termrock::widgets::ToolStatus::Detached
+pub termrock::widgets::ToolStatus::Failed
+pub termrock::widgets::ToolStatus::Preparing
+pub termrock::widgets::ToolStatus::Queued
 pub termrock::widgets::ToolStatus::Running
+pub termrock::widgets::ToolStatus::Streaming
+pub termrock::widgets::ToolStatus::Success
+pub termrock::widgets::ToolStatus::WaitingInput
+pub termrock::widgets::ToolStatus::WaitingPermission
+pub termrock::widgets::ToolStatus::Warning
 impl termrock::widgets::ToolStatus
+pub const fn termrock::widgets::ToolStatus::badge(self) -> &'static str
+pub const fn termrock::widgets::ToolStatus::can_cancel(self) -> bool
+pub const fn termrock::widgets::ToolStatus::can_retry(self) -> bool
 pub const fn termrock::widgets::ToolStatus::glyph(self) -> &'static str
+pub const fn termrock::widgets::ToolStatus::id(self) -> &'static str
+pub const fn termrock::widgets::ToolStatus::letter(self) -> char
 pub const fn termrock::widgets::ToolStatus::role(self) -> termrock::style::Role
 pub const fn termrock::widgets::ToolStatus::semantic(self) -> termrock::widgets::SemanticStatus
 impl core::clone::Clone for termrock::widgets::ToolStatus
@@ -38393,6 +38635,8 @@ pub fn termrock::widgets::ToolStatus::clone(&self) -> termrock::widgets::ToolSta
 impl core::cmp::Eq for termrock::widgets::ToolStatus
 impl core::cmp::PartialEq for termrock::widgets::ToolStatus
 pub fn termrock::widgets::ToolStatus::eq(&self, &termrock::widgets::ToolStatus) -> bool
+impl core::default::Default for termrock::widgets::ToolStatus
+pub fn termrock::widgets::ToolStatus::default() -> termrock::widgets::ToolStatus
 impl core::fmt::Debug for termrock::widgets::ToolStatus
 pub fn termrock::widgets::ToolStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for termrock::widgets::ToolStatus
@@ -71671,6 +71915,177 @@ pub unsafe fn termrock::widgets::TokenSyntax<'a>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::TokenSyntax<'a>
 pub fn termrock::widgets::TokenSyntax<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TokenSyntax<'a>
+pub struct termrock::widgets::ToolCall
+pub termrock::widgets::ToolCall::actor: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToolCall::args_detail: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToolCall::args_summary: alloc::string::String
+pub termrock::widgets::ToolCall::duration: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToolCall::egress: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToolCall::has_diff: bool
+pub termrock::widgets::ToolCall::has_log: bool
+pub termrock::widgets::ToolCall::id: alloc::string::String
+pub termrock::widgets::ToolCall::name: alloc::string::String
+pub termrock::widgets::ToolCall::result_detail: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToolCall::result_summary: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToolCall::revision: u64
+pub termrock::widgets::ToolCall::risk: termrock::widgets::ToolRisk
+pub termrock::widgets::ToolCall::secrets_redacted: bool
+pub termrock::widgets::ToolCall::status: termrock::widgets::ToolStatus
+pub termrock::widgets::ToolCall::verb: alloc::string::String
+impl termrock::widgets::ToolCall
+pub fn termrock::widgets::ToolCall::actor(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ToolCall::args_detail(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ToolCall::args_summary(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ToolCall::duration(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ToolCall::egress(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ToolCall::has_diff(self, bool) -> Self
+pub const fn termrock::widgets::ToolCall::has_log(self, bool) -> Self
+pub fn termrock::widgets::ToolCall::header_line(&self, bool) -> alloc::string::String
+pub fn termrock::widgets::ToolCall::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ToolCall::result_detail(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ToolCall::result_summary(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ToolCall::revision(self, u64) -> Self
+pub const fn termrock::widgets::ToolCall::risk(self, termrock::widgets::ToolRisk) -> Self
+pub const fn termrock::widgets::ToolCall::secrets_redacted(self, bool) -> Self
+pub const fn termrock::widgets::ToolCall::status(self, termrock::widgets::ToolStatus) -> Self
+impl core::clone::Clone for termrock::widgets::ToolCall
+pub fn termrock::widgets::ToolCall::clone(&self) -> termrock::widgets::ToolCall
+impl core::cmp::Eq for termrock::widgets::ToolCall
+impl core::cmp::PartialEq for termrock::widgets::ToolCall
+pub fn termrock::widgets::ToolCall::eq(&self, &termrock::widgets::ToolCall) -> bool
+impl core::fmt::Debug for termrock::widgets::ToolCall
+pub fn termrock::widgets::ToolCall::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolCall
+impl core::marker::Freeze for termrock::widgets::ToolCall
+impl core::marker::Send for termrock::widgets::ToolCall
+impl core::marker::Sync for termrock::widgets::ToolCall
+impl core::marker::Unpin for termrock::widgets::ToolCall
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolCall
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolCall
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolCall
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolCall where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolCall::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolCall where U: core::convert::From<T>
+pub fn termrock::widgets::ToolCall::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolCall where U: core::convert::Into<T>
+pub type termrock::widgets::ToolCall::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolCall::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolCall where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolCall::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolCall::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolCall where T: core::clone::Clone
+pub type termrock::widgets::ToolCall::Owned = T
+pub fn termrock::widgets::ToolCall::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolCall::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolCall where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolCall::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolCall where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCall::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolCall where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCall::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolCall where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolCall::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolCall
+pub fn termrock::widgets::ToolCall::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolCall
+pub struct termrock::widgets::ToolCallCard<'a>
+impl<'a> termrock::widgets::ToolCallCard<'a>
+pub const fn termrock::widgets::ToolCallCard<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ToolCallCard<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::ToolCallCard<'a>::new(&'a termrock::widgets::ToolCall, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::ToolCallCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToolCallCardState)
+pub fn termrock::widgets::ToolCallCard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToolCallCardState)
+impl<'a> core::clone::Clone for termrock::widgets::ToolCallCard<'a>
+pub fn termrock::widgets::ToolCallCard<'a>::clone(&self) -> termrock::widgets::ToolCallCard<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ToolCallCard<'a>
+pub fn termrock::widgets::ToolCallCard<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ToolCallCard<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ToolCallCard<'a>
+impl<'a> core::marker::Send for termrock::widgets::ToolCallCard<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ToolCallCard<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ToolCallCard<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ToolCallCard<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolCallCard<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolCallCard<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolCallCard<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ToolCallCard<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolCallCard<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ToolCallCard<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolCallCard<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolCallCard<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolCallCard<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolCallCard<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolCallCard<'a> where T: core::clone::Clone
+pub type termrock::widgets::ToolCallCard<'a>::Owned = T
+pub fn termrock::widgets::ToolCallCard<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolCallCard<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolCallCard<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCard<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolCallCard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCard<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolCallCard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCard<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolCallCard<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolCallCard<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolCallCard<'a>
+pub fn termrock::widgets::ToolCallCard<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolCallCard<'a>
+pub struct termrock::widgets::ToolCallCardState
+pub termrock::widgets::ToolCallCardState::action_cursor: usize
+pub termrock::widgets::ToolCallCardState::action_hits: alloc::vec::Vec<(termrock::widgets::ToolCallAction, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::ToolCallCardState::focused: bool
+pub termrock::widgets::ToolCallCardState::header_hit: ratatui_core::layout::rect::Rect
+pub termrock::widgets::ToolCallCardState::presentation: termrock::widgets::ToolCallPresentation
+impl termrock::widgets::ToolCallCardState
+pub fn termrock::widgets::ToolCallCardState::handle_key(&mut self, termrock::input::KeyEvent, &termrock::widgets::ToolCall) -> termrock::widgets::ToolCallCardOutcome
+pub fn termrock::widgets::ToolCallCardState::handle_mouse(&mut self, termrock::input::MouseEvent, &termrock::widgets::ToolCall) -> termrock::widgets::ToolCallCardOutcome
+pub const fn termrock::widgets::ToolCallCardState::is_expanded(&self) -> bool
+pub fn termrock::widgets::ToolCallCardState::new() -> Self
+pub fn termrock::widgets::ToolCallCardState::set_accepts_input(&mut self, bool)
+pub const fn termrock::widgets::ToolCallCardState::set_focused(&mut self, bool)
+pub fn termrock::widgets::ToolCallCardState::toggle_expand(&mut self, &str) -> termrock::widgets::ToolCallCardOutcome
+impl core::clone::Clone for termrock::widgets::ToolCallCardState
+pub fn termrock::widgets::ToolCallCardState::clone(&self) -> termrock::widgets::ToolCallCardState
+impl core::cmp::Eq for termrock::widgets::ToolCallCardState
+impl core::cmp::PartialEq for termrock::widgets::ToolCallCardState
+pub fn termrock::widgets::ToolCallCardState::eq(&self, &termrock::widgets::ToolCallCardState) -> bool
+impl core::default::Default for termrock::widgets::ToolCallCardState
+pub fn termrock::widgets::ToolCallCardState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ToolCallCardState
+pub fn termrock::widgets::ToolCallCardState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToolCallCardState
+impl core::marker::Freeze for termrock::widgets::ToolCallCardState
+impl core::marker::Send for termrock::widgets::ToolCallCardState
+impl core::marker::Sync for termrock::widgets::ToolCallCardState
+impl core::marker::Unpin for termrock::widgets::ToolCallCardState
+impl core::marker::UnsafeUnpin for termrock::widgets::ToolCallCardState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToolCallCardState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToolCallCardState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToolCallCardState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCardState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToolCallCardState where U: core::convert::From<T>
+pub fn termrock::widgets::ToolCallCardState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToolCallCardState where U: core::convert::Into<T>
+pub type termrock::widgets::ToolCallCardState::Error = core::convert::Infallible
+pub fn termrock::widgets::ToolCallCardState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToolCallCardState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToolCallCardState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToolCallCardState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToolCallCardState where T: core::clone::Clone
+pub type termrock::widgets::ToolCallCardState::Owned = T
+pub fn termrock::widgets::ToolCallCardState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToolCallCardState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToolCallCardState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCardState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToolCallCardState where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCardState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToolCallCardState where T: ?core::marker::Sized
+pub fn termrock::widgets::ToolCallCardState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToolCallCardState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToolCallCardState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToolCallCardState
+pub fn termrock::widgets::ToolCallCardState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToolCallCardState
 pub struct termrock::widgets::ToolCard<'a>
 impl<'a> termrock::widgets::ToolCard<'a>
 pub const fn termrock::widgets::ToolCard<'a>::detail(self, &'a str) -> Self
@@ -74156,6 +74571,8 @@ pub const termrock::widgets::TOAST_STACK_GAP: u16
 pub const termrock::widgets::TOOLTIP_DEFAULT_DELAY_MS: u64
 pub const termrock::widgets::TOOLTIP_DEFAULT_MAX_WIDTH: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str
+pub const termrock::widgets::TOOL_CALL_EXPAND_LINE_CAP: usize
+pub const termrock::widgets::TOOL_CALL_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::TRACE_NAME_COL_DEFAULT: u16
 pub const termrock::widgets::TRACE_NAME_COL_MAX: u16
 pub const termrock::widgets::TRACE_NAME_COL_MIN: u16
@@ -74316,6 +74733,7 @@ pub fn termrock::widgets::example_settings_tree() -> alloc::vec::Vec<termrock::w
 pub fn termrock::widgets::example_slash_catalog() -> alloc::vec::Vec<termrock::widgets::SlashCommand>
 pub fn termrock::widgets::example_status_catalog() -> [(termrock::widgets::SemanticStatus, &'static str); 11]
 pub fn termrock::widgets::example_symbol_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
+pub fn termrock::widgets::example_tool_calls() -> alloc::vec::Vec<termrock::widgets::ToolCall>
 pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
 pub fn termrock::widgets::expand_tabs(&str, usize) -> alloc::string::String
 pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
@@ -74510,6 +74928,7 @@ pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::wi
 pub fn termrock::widgets::project_message_thread(&[termrock::widgets::MessageEntry], termrock::widgets::MessageZoom, core::option::Option<&str>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> (alloc::vec::Vec<termrock::widgets::ProjectedEntryMeta>, alloc::vec::Vec<alloc::vec::Vec<alloc::string::String>>)
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_result_rows(&[termrock::widgets::ResultRow<'_>], &[termrock::widgets::ResultColumn], termrock::widgets::ResultRedaction, bool, bool) -> alloc::vec::Vec<(u64, alloc::vec::Vec<alloc::string::String>)>
+pub fn termrock::widgets::project_tool_call_lines(&termrock::widgets::ToolCall, bool, bool) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::prompt_composer_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
 pub fn termrock::widgets::protocol_limitations(termrock::widgets::Platform) -> alloc::vec::Vec<&'static str>
@@ -74518,6 +74937,7 @@ pub fn termrock::widgets::quick_open_jump_targets<Id: core::clone::Clone>(&[term
 pub fn termrock::widgets::quick_open_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::QuickOpenPresentation
 pub fn termrock::widgets::redact_env_value(&str, &str) -> (alloc::string::String, bool)
 pub fn termrock::widgets::redact_history_text(&str, termrock::widgets::HistoryRedaction) -> alloc::string::String
+pub fn termrock::widgets::redact_tool_secrets(&str) -> alloc::string::String
 pub fn termrock::widgets::remove_label(&str) -> alloc::string::String
 pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem)
 pub fn termrock::widgets::replay_jump_keys<Id: core::clone::Clone>(&mut termrock::widgets::JumpOverlayState, &[termrock::widgets::JumpTarget<Id>], &str) -> termrock::widgets::JumpOutcome<Id>
@@ -74558,6 +74978,7 @@ pub fn termrock::widgets::system_from_preset_id(&str) -> core::option::Option<te
 pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>
 pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<termrock::style::RolePalette>
 pub fn termrock::widgets::token_at_cursor(&termrock::widgets::TextAreaState) -> (alloc::string::String, termrock::widgets::TextCursor)
+pub fn termrock::widgets::tool_actions_for(termrock::widgets::ToolStatus, bool, bool) -> alloc::vec::Vec<termrock::widgets::ToolCallAction>
 pub fn termrock::widgets::toolbar_icon_action<'a, Id>(Id, &'a str, &'a str) -> termrock::widgets::ToolbarItem<'a, Id>
 pub fn termrock::widgets::tooltip_overlay_size(u16, u16, u16) -> termrock::interaction::OverlaySize
 pub fn termrock::widgets::trace_total_ms(&[termrock::widgets::TraceSpan<'_>]) -> u64

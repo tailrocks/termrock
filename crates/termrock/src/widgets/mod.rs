@@ -42,6 +42,7 @@ mod model_mode_selectors;
 mod message_thread;
 mod streaming_markdown;
 mod citation;
+mod tool_call_card;
 mod text;
 mod separator;
 mod toolbar;
@@ -622,6 +623,12 @@ pub use citation::{
     citation_link, citation_to_stream, example_citations, group_citations,
 };
 pub use citation::bench as citation_bench;
+pub use tool_call_card::{
+    TOOL_CALL_EXPAND_LINE_CAP, TOOL_CALL_FULLSCREEN_OVERLAY_ID, ToolCall, ToolCallAction,
+    ToolCallCard, ToolCallCardOutcome, ToolCallCardState, ToolCallPresentation, ToolRisk,
+    example_tool_calls, project_tool_call_lines, redact_tool_secrets, tool_actions_for,
+};
+pub use tool_call_card::bench as tool_call_card_bench;
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
 };

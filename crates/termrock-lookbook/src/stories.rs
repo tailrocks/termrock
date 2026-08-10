@@ -5549,6 +5549,51 @@ pub(crate) fn stories() -> Vec<Story> {
             citation_list_narrow_story,
         ),
         Story::new(
+            "tool-call-card/running",
+            "ToolCallCard running",
+            "ToolCallCard",
+            "Running tool with risk and actor.",
+            48,
+            6,
+            tool_call_card_running_story,
+        ),
+        Story::new(
+            "tool-call-card/error",
+            "ToolCallCard error",
+            "ToolCallCard",
+            "Failed tool with redacted args detail.",
+            48,
+            8,
+            tool_call_card_error_story,
+        ),
+        Story::new(
+            "tool-call-card/expanded",
+            "ToolCallCard expanded",
+            "ToolCallCard",
+            "Success card expanded with action strip.",
+            52,
+            10,
+            tool_call_card_expanded_story,
+        ),
+        Story::new(
+            "tool-call-card/permission",
+            "ToolCallCard permission",
+            "ToolCallCard",
+            "Waiting permission + network egress note.",
+            48,
+            7,
+            tool_call_card_permission_story,
+        ),
+        Story::new(
+            "tool-call-card/narrow",
+            "ToolCallCard narrow",
+            "ToolCallCard",
+            "Narrow ASCII tool card.",
+            28,
+            6,
+            tool_call_card_narrow_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -18820,6 +18865,77 @@ fn citation_list_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     st.expand();
     st.no_hyperlink = true;
     CitationList::new(&src, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn tool_call_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+    };
+    let calls = example_tool_calls();
+    let call = calls
+        .iter()
+        .find(|c| c.id == "t2")
+        .unwrap_or(&calls[1]);
+    let mut st = ToolCallCardState::new();
+    st.focused = true;
+    st.presentation = ToolCallPresentation::Compact;
+    ToolCallCard::new(call, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn tool_call_card_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+    };
+    let calls = example_tool_calls();
+    let call = calls
+        .iter()
+        .find(|c| c.id == "t4")
+        .unwrap_or(&calls[3]);
+    let mut st = ToolCallCardState::new();
+    st.focused = true;
+    st.presentation = ToolCallPresentation::Expanded;
+    ToolCallCard::new(call, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn tool_call_card_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+    };
+    let calls = example_tool_calls();
+    let call = &calls[0];
+    let mut st = ToolCallCardState::new();
+    st.focused = true;
+    st.presentation = ToolCallPresentation::Expanded;
+    ToolCallCard::new(call, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn tool_call_card_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+    };
+    let calls = example_tool_calls();
+    let call = calls
+        .iter()
+        .find(|c| c.id == "t3")
+        .unwrap_or(&calls[2]);
+    let mut st = ToolCallCardState::new();
+    st.focused = true;
+    st.presentation = ToolCallPresentation::Expanded;
+    ToolCallCard::new(call, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn tool_call_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+    };
+    let calls = example_tool_calls();
+    let call = &calls[0];
+    let mut st = ToolCallCardState::new();
+    st.focused = true;
+    st.presentation = ToolCallPresentation::Compact;
+    ToolCallCard::new(call, system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut st);
 }

@@ -50,11 +50,14 @@ impl SemanticStatus {
     #[must_use]
     pub const fn from_tool_status(s: ToolStatus) -> Self {
         match s {
-            ToolStatus::Pending => Self::Queued,
-            ToolStatus::Running => Self::Running,
-            ToolStatus::Done => Self::Success,
-            ToolStatus::Error => Self::Failed,
-            ToolStatus::Cancelled => Self::Paused,
+            ToolStatus::Queued | ToolStatus::Preparing => Self::Queued,
+            ToolStatus::Running | ToolStatus::Streaming | ToolStatus::Detached => Self::Running,
+            ToolStatus::WaitingInput | ToolStatus::WaitingPermission | ToolStatus::Cancelled => {
+                Self::Paused
+            }
+            ToolStatus::Success => Self::Success,
+            ToolStatus::Warning => Self::Warning,
+            ToolStatus::Failed => Self::Failed,
         }
     }
 
@@ -491,7 +494,7 @@ mod tests {
     #[test]
     fn mapping_tool_status() {
         assert_eq!(
-            SemanticStatus::from_tool_status(ToolStatus::Pending),
+            SemanticStatus::from_tool_status(ToolStatus::Queued),
             SemanticStatus::Queued
         );
         assert_eq!(
@@ -499,15 +502,19 @@ mod tests {
             SemanticStatus::Running
         );
         assert_eq!(
-            SemanticStatus::from_tool_status(ToolStatus::Done),
+            SemanticStatus::from_tool_status(ToolStatus::Success),
             SemanticStatus::Success
         );
         assert_eq!(
-            SemanticStatus::from_tool_status(ToolStatus::Error),
+            SemanticStatus::from_tool_status(ToolStatus::Failed),
             SemanticStatus::Failed
         );
         assert_eq!(
             SemanticStatus::from_tool_status(ToolStatus::Cancelled),
+            SemanticStatus::Paused
+        );
+        assert_eq!(
+            SemanticStatus::from_tool_status(ToolStatus::WaitingPermission),
             SemanticStatus::Paused
         );
     }

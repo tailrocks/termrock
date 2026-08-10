@@ -2229,30 +2229,30 @@ Every component below uses sections **1–24**:
 
 ## ToolCallCard
 
-1. **Purpose:** Tool invocation status card (ToolCard).  
-2. **Anatomy:** `frame` · `status_glyph` · `name` · `summary` · `body` · `expand`  
-3. **Public properties:** status, name, summary, detail, expanded, `design`  
-4. **State:** expanded controlled or uncontrolled.  
-5. **Variants:** `compact` · `expanded`  
-6. **Sizes/density:** compact 1–2 rows.  
-7. **Visual states:** pending/running/ok/error (ToolStatus).  
-8. **Interaction states:** expand · activate full.  
-9. **Keyboard:** Enter toggle expand when focused.  
-10. **Mouse:** click expand/header.  
-11. **Focus:** optional tab stop in transcript.  
-12. **Disabled:** N/A.  
-13. **Loading:** running status + spinner; streaming detail append.  
-14. **Error:** error status tone + body.  
-15. **Narrow:** drop summary; keep name+status.  
-16. **Tiny:** status glyph + name.  
-17. **Unicode/ASCII:** status glyphs.  
-18. **Colorless:** status letter `R`/`E`/`OK`.  
-19. **Composition:** Transcript stream items.  
-20. **Outcomes:** `ToggledExpand` · `Activated`  
-21. **Stories:** `tool-call-card/running`, `tool-call-card/error`, `tool-call-card/expanded`  
-22. **Snapshots:** each ToolStatus.  
-23. **Interaction tests:** expand toggle.  
-24. **Perf:** O(visible detail lines).
+1. **Purpose:** Interactive compact-to-expanded agent tool execution card.  
+2. **Anatomy:** `frame` · `status_glyph` · `name` · `verb` · `args` · `result` · `risk/egress` · `actions` · `expand`  
+3. **Public properties:** `ToolCall` (id, name, verb, actor, status, args/result, duration, risk, egress, secrets_redacted, revision), presentation, `design`  
+4. **State:** `ToolCallCardState` — presentation, focus, action hits, accepts_input.  
+5. **Variants:** `Compact` · `Expanded` · `Fullscreen`  
+6. **Sizes/density:** compact 2–3 rows; expand capped (`TOOL_CALL_EXPAND_LINE_CAP`).  
+7. **Visual states:** Queued/Preparing/Running/WaitingInput/WaitingPermission/Streaming/Success/Warning/Failed/Cancelled/Detached.  
+8. **Interaction states:** expand · cancel · retry · permission · copy · fullscreen.  
+9. **Keyboard:** Enter/Space expand; `c` cancel; `r` retry; `p` permission; `f` fullscreen; Esc exit zoom; Ctrl+A/C copy.  
+10. **Mouse:** header toggle; action strip hits.  
+11. **Focus:** optional tab stop in transcript / MessageThread.  
+12. **Disabled:** `accepts_input=false` → outcomes Ignored.  
+13. **Loading:** Running/Streaming/Preparing chrome Focused; host streams detail.  
+14. **Error:** Failed/Warning status role + result summary.  
+15. **Narrow:** keep name+status; truncate args/result.  
+16. **Tiny:** status letter + name.  
+17. **Unicode/ASCII:** SemanticStatus glyphs; letter fallback.  
+18. **Colorless:** status letter; risk id text; no hue-only cues.  
+19. **Composition:** MessageThread `project_tool_call_lines`; TerminalOutput for full log; PermissionPrompt on PermissionFocus.  
+20. **Outcomes:** Expanded/Collapsed · Cancel/RetryRequested · OpenDiff/OpenLog · PermissionFocus · CopyArgs/CopyResult · FullscreenRequested · Activated  
+21. **Stories:** `tool-call-card/{running,error,expanded,permission,narrow}`  
+22. **Snapshots:** each ToolStatus; redacted args.  
+23. **Interaction tests:** expand, cancel gate, retry, permission, copy redaction, mouse header.  
+24. **Perf:** O(visible detail lines); paint budget under many cards.
 
 ## TaskRail
 

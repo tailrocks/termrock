@@ -232,6 +232,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0216 | `v0.13.0` | [MessageThread conversation transcript](migrations/0216-v0.13.0-message-thread.md) |
 | 0217 | `v0.13.0` | [StreamingMarkdown incomplete-fence stream](migrations/0217-v0.13.0-streaming-markdown.md) |
 | 0218 | `v0.13.0` | [SourceCitation and CitationList](migrations/0218-v0.13.0-source-citation.md) |
+| 0219 | `v0.13.0` | [ToolCallCard and elevated ToolStatus](migrations/0219-v0.13.0-tool-call-card.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

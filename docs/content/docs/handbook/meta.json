@@ -18,6 +18,7 @@
     "streaming-markdown",
     "citation-list",
     "source-citation",
+    "tool-call-card",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

@@ -196,30 +196,84 @@ impl Widget for ThinkingBlock<'_> {
 // ── Tool card ───────────────────────────────────────────────────────────────
 
 /// Lifecycle status for a tool invocation card.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+///
+/// Elevated for [`crate::widgets::ToolCallCard`] (migration `0219`). Prefer these
+/// names over historical Pending/Done/Error.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum ToolStatus {
     /// Queued, not started.
-    Pending,
+    #[default]
+    Queued,
+    /// Preparing / resolving args.
+    Preparing,
     /// Currently executing.
     Running,
+    /// Waiting for host / user input.
+    WaitingInput,
+    /// Waiting for permission grant.
+    WaitingPermission,
+    /// Streaming tool output.
+    Streaming,
     /// Completed successfully.
-    Done,
+    Success,
+    /// Completed with warning.
+    Warning,
     /// Failed.
-    Error,
+    Failed,
     /// Cancelled by user or policy.
     Cancelled,
+    /// Detached / backgrounded (host still owns process).
+    Detached,
 }
 
 impl ToolStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Queued => "queued",
+            Self::Preparing => "preparing",
+            Self::Running => "running",
+            Self::WaitingInput => "waiting-input",
+            Self::WaitingPermission => "waiting-permission",
+            Self::Streaming => "streaming",
+            Self::Success => "success",
+            Self::Warning => "warning",
+            Self::Failed => "failed",
+            Self::Cancelled => "cancelled",
+            Self::Detached => "detached",
+        }
+    }
+
+    /// Short badge label.
+    #[must_use]
+    pub const fn badge(self) -> &'static str {
+        match self {
+            Self::Queued => "queued",
+            Self::Preparing => "prep",
+            Self::Running => "run",
+            Self::WaitingInput => "input",
+            Self::WaitingPermission => "perm",
+            Self::Streaming => "stream",
+            Self::Success => "ok",
+            Self::Warning => "warn",
+            Self::Failed => "err",
+            Self::Cancelled => "cancel",
+            Self::Detached => "bg",
+        }
+    }
+
     /// Shared vocabulary projection.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Pending => SemanticStatus::Queued,
-            Self::Running => SemanticStatus::Running,
-            Self::Done => SemanticStatus::Success,
-            Self::Error => SemanticStatus::Failed,
+            Self::Queued | Self::Preparing => SemanticStatus::Queued,
+            Self::Running | Self::Streaming | Self::Detached => SemanticStatus::Running,
+            Self::WaitingInput | Self::WaitingPermission => SemanticStatus::Paused,
+            Self::Success => SemanticStatus::Success,
+            Self::Warning => SemanticStatus::Warning,
+            Self::Failed => SemanticStatus::Failed,
             Self::Cancelled => SemanticStatus::Paused,
         }
     }
@@ -228,6 +282,45 @@ impl ToolStatus {
     #[must_use]
     pub const fn glyph(self) -> &'static str {
         self.semantic().glyph_unicode()
+    }
+
+    /// ASCII / letter fallback for colorless.
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Queued => 'Q',
+            Self::Preparing => 'P',
+            Self::Running => 'R',
+            Self::WaitingInput => 'I',
+            Self::WaitingPermission => 'A',
+            Self::Streaming => 'S',
+            Self::Success => '✓',
+            Self::Warning => '!',
+            Self::Failed => 'E',
+            Self::Cancelled => 'X',
+            Self::Detached => 'D',
+        }
+    }
+
+    /// Whether cancel action is meaningful.
+    #[must_use]
+    pub const fn can_cancel(self) -> bool {
+        matches!(
+            self,
+            Self::Queued
+                | Self::Preparing
+                | Self::Running
+                | Self::Streaming
+                | Self::WaitingInput
+                | Self::WaitingPermission
+                | Self::Detached
+        )
+    }
+
+    /// Whether retry is meaningful.
+    #[must_use]
+    pub const fn can_retry(self) -> bool {
+        matches!(self, Self::Failed | Self::Cancelled | Self::Warning)
     }
 
     /// Theme role for the status (aligned with [`SemanticStatus`]).
@@ -291,13 +384,7 @@ impl Widget for &ToolCard<'_> {
             return;
         }
         use crate::widgets::Card;
-        let status_label = match self.status {
-            ToolStatus::Pending => "pending",
-            ToolStatus::Running => "run",
-            ToolStatus::Done => "done",
-            ToolStatus::Error => "err",
-            ToolStatus::Cancelled => "cancel",
-        };
+        let status_label = self.status.badge();
         // Chrome owns name / status badge / summary; body owns tool output only.
         let kind = self.status.semantic();
         let card = Card::new(self.system)
@@ -306,8 +393,11 @@ impl Widget for &ToolCard<'_> {
             .badge(status_label)
             .subtitle(self.summary)
             .emphasis(match self.status {
-                ToolStatus::Error => PanelChrome::Danger,
-                ToolStatus::Running => PanelChrome::Focused,
+                ToolStatus::Failed => PanelChrome::Danger,
+                ToolStatus::Running | ToolStatus::Streaming | ToolStatus::WaitingPermission => {
+                    PanelChrome::Focused
+                }
+                ToolStatus::Warning => PanelChrome::Normal,
                 _ => PanelChrome::Normal,
             });
         let body = card.paint(area, buffer, None);
@@ -357,13 +447,19 @@ mod tests {
 
     #[test]
     fn tool_status_glyphs_are_non_color() {
-        assert_eq!(ToolStatus::Done.glyph(), SemanticStatus::Success.glyph_unicode());
-        assert_eq!(ToolStatus::Error.glyph(), SemanticStatus::Failed.glyph_unicode());
+        assert_eq!(
+            ToolStatus::Success.glyph(),
+            SemanticStatus::Success.glyph_unicode()
+        );
+        assert_eq!(
+            ToolStatus::Failed.glyph(),
+            SemanticStatus::Failed.glyph_unicode()
+        );
         assert_eq!(
             ToolStatus::Cancelled.glyph(),
             SemanticStatus::Paused.glyph_unicode()
         );
-        assert_eq!(ToolStatus::Pending.semantic(), SemanticStatus::Queued);
+        assert_eq!(ToolStatus::Queued.semantic(), SemanticStatus::Queued);
     }
 
     #[test]
