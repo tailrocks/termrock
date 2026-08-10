@@ -2362,6 +2362,33 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** action gates by phase  
 24. **Perf:** O(preview lines)
 
+## BackgroundTaskPanel
+
+1. **Purpose:** Persistent monitor for detached commands/watchers/servers.  
+2. **Anatomy:** `list` · `detail_output` · `dropped_banner` · `footer_hints`  
+3. **Public properties:** `BackgroundTask[]` (status, restarts, ports, resources, bounded output)  
+4. **State:** selection, follow, hide_completed, presentation, open  
+5. **Variants:** CompactRail · Pane · Fullscreen  
+6. **Sizes/density:** list|detail split; rail when narrow  
+7. **Visual states:** Running/Reconnecting/Lost/terminal; drop banner  
+8. **Interaction states:** open · stop · restart · detach · clear completed · follow  
+9. **Keyboard:** j/k · enter · x/r/d · f · Shift+C · esc  
+10. **Mouse:** list click; output wheel follow detach  
+11. **Focus:** panel + list  
+12. **Disabled:** accepts_input false  
+13. **Loading:** Running + live lines  
+14. **Error:** Failed/Lost chrome  
+15. **Narrow:** CompactRail  
+16. **Tiny:** title + status letter  
+17. **Unicode/ASCII:** status glyphs  
+18. **Colorless:** status letters  
+19. **Composition:** TerminalOutput body; TaskRail/notification bridges  
+20. **Outcomes:** Stop/Restart/DetachRequested · ClearCompleted · FollowChanged · Closed · Opened  
+21. **Stories:** `background-tasks/{mixed-statuses,clear-completed,rail,lost,dropped-lines}`  
+22. **Snapshots:** drop banner; lost process  
+23. **Interaction tests:** clear only terminal; no process APIs  
+24. **Perf:** O(visible tasks + viewport lines)  
+
 ## SessionPicker
 
 1. **Purpose:** Resume/pick agent sessions.  

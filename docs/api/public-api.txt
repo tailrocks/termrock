@@ -14647,6 +14647,10 @@ pub const termrock::widgets::attachment_chips_bench::ATTACHMENT_COUNT: usize
 pub const termrock::widgets::attachment_chips_bench::PAINT_FRAMES: u32
 pub const termrock::widgets::attachment_chips_bench::PASTE_BODY_BYTES: usize
 pub const termrock::widgets::attachment_chips_bench::PASTE_COUNT: usize
+pub mod termrock::widgets::background_task_panel_bench
+pub const termrock::widgets::background_task_panel_bench::LINES: usize
+pub const termrock::widgets::background_task_panel_bench::PAINT_FRAMES: u32
+pub const termrock::widgets::background_task_panel_bench::TASK_COUNT: usize
 pub mod termrock::widgets::charts_bench
 pub const termrock::widgets::charts_bench::SAMPLES_PER_SEC: u32
 pub const termrock::widgets::charts_bench::STREAM_WINDOW: usize
@@ -16233,6 +16237,238 @@ pub unsafe fn termrock::widgets::AvatarSize::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::AvatarSize
 pub fn termrock::widgets::AvatarSize::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::AvatarSize
+#[non_exhaustive] pub enum termrock::widgets::BackgroundTaskKind
+pub termrock::widgets::BackgroundTaskKind::Command
+pub termrock::widgets::BackgroundTaskKind::Job
+pub termrock::widgets::BackgroundTaskKind::Server
+pub termrock::widgets::BackgroundTaskKind::Watcher
+impl termrock::widgets::BackgroundTaskKind
+pub const fn termrock::widgets::BackgroundTaskKind::id(self) -> &'static str
+pub const fn termrock::widgets::BackgroundTaskKind::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::BackgroundTaskKind
+pub fn termrock::widgets::BackgroundTaskKind::clone(&self) -> termrock::widgets::BackgroundTaskKind
+impl core::cmp::Eq for termrock::widgets::BackgroundTaskKind
+impl core::cmp::PartialEq for termrock::widgets::BackgroundTaskKind
+pub fn termrock::widgets::BackgroundTaskKind::eq(&self, &termrock::widgets::BackgroundTaskKind) -> bool
+impl core::default::Default for termrock::widgets::BackgroundTaskKind
+pub fn termrock::widgets::BackgroundTaskKind::default() -> termrock::widgets::BackgroundTaskKind
+impl core::fmt::Debug for termrock::widgets::BackgroundTaskKind
+pub fn termrock::widgets::BackgroundTaskKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BackgroundTaskKind
+pub fn termrock::widgets::BackgroundTaskKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BackgroundTaskKind
+impl core::marker::StructuralPartialEq for termrock::widgets::BackgroundTaskKind
+impl core::marker::Freeze for termrock::widgets::BackgroundTaskKind
+impl core::marker::Send for termrock::widgets::BackgroundTaskKind
+impl core::marker::Sync for termrock::widgets::BackgroundTaskKind
+impl core::marker::Unpin for termrock::widgets::BackgroundTaskKind
+impl core::marker::UnsafeUnpin for termrock::widgets::BackgroundTaskKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BackgroundTaskKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BackgroundTaskKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BackgroundTaskKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BackgroundTaskKind where U: core::convert::From<T>
+pub fn termrock::widgets::BackgroundTaskKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BackgroundTaskKind where U: core::convert::Into<T>
+pub type termrock::widgets::BackgroundTaskKind::Error = core::convert::Infallible
+pub fn termrock::widgets::BackgroundTaskKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BackgroundTaskKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BackgroundTaskKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BackgroundTaskKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BackgroundTaskKind where T: core::clone::Clone
+pub type termrock::widgets::BackgroundTaskKind::Owned = T
+pub fn termrock::widgets::BackgroundTaskKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::BackgroundTaskKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BackgroundTaskKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BackgroundTaskKind where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BackgroundTaskKind where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BackgroundTaskKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BackgroundTaskKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BackgroundTaskKind
+pub fn termrock::widgets::BackgroundTaskKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BackgroundTaskKind
+#[non_exhaustive] pub enum termrock::widgets::BackgroundTaskPanelOutcome
+pub termrock::widgets::BackgroundTaskPanelOutcome::ClearCompleted
+pub termrock::widgets::BackgroundTaskPanelOutcome::ClearCompleted::ids: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::BackgroundTaskPanelOutcome::Closed
+pub termrock::widgets::BackgroundTaskPanelOutcome::DetachRequested
+pub termrock::widgets::BackgroundTaskPanelOutcome::DetachRequested::id: alloc::string::String
+pub termrock::widgets::BackgroundTaskPanelOutcome::FollowChanged
+pub termrock::widgets::BackgroundTaskPanelOutcome::FollowChanged::following: bool
+pub termrock::widgets::BackgroundTaskPanelOutcome::Ignored
+pub termrock::widgets::BackgroundTaskPanelOutcome::NotifyToggled
+pub termrock::widgets::BackgroundTaskPanelOutcome::NotifyToggled::id: alloc::string::String
+pub termrock::widgets::BackgroundTaskPanelOutcome::NotifyToggled::on: bool
+pub termrock::widgets::BackgroundTaskPanelOutcome::Opened
+pub termrock::widgets::BackgroundTaskPanelOutcome::Opened::id: alloc::string::String
+pub termrock::widgets::BackgroundTaskPanelOutcome::PresentationChanged
+pub termrock::widgets::BackgroundTaskPanelOutcome::PresentationChanged::presentation: termrock::widgets::BackgroundTaskPresentation
+pub termrock::widgets::BackgroundTaskPanelOutcome::RestartRequested
+pub termrock::widgets::BackgroundTaskPanelOutcome::RestartRequested::id: alloc::string::String
+pub termrock::widgets::BackgroundTaskPanelOutcome::ScrollDetached
+pub termrock::widgets::BackgroundTaskPanelOutcome::Selected
+pub termrock::widgets::BackgroundTaskPanelOutcome::Selected::id: alloc::string::String
+pub termrock::widgets::BackgroundTaskPanelOutcome::StopRequested
+pub termrock::widgets::BackgroundTaskPanelOutcome::StopRequested::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::BackgroundTaskPanelOutcome
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::clone(&self) -> termrock::widgets::BackgroundTaskPanelOutcome
+impl core::cmp::Eq for termrock::widgets::BackgroundTaskPanelOutcome
+impl core::cmp::PartialEq for termrock::widgets::BackgroundTaskPanelOutcome
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::eq(&self, &termrock::widgets::BackgroundTaskPanelOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::BackgroundTaskPanelOutcome
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::BackgroundTaskPanelOutcome
+impl core::marker::Freeze for termrock::widgets::BackgroundTaskPanelOutcome
+impl core::marker::Send for termrock::widgets::BackgroundTaskPanelOutcome
+impl core::marker::Sync for termrock::widgets::BackgroundTaskPanelOutcome
+impl core::marker::Unpin for termrock::widgets::BackgroundTaskPanelOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::BackgroundTaskPanelOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BackgroundTaskPanelOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BackgroundTaskPanelOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BackgroundTaskPanelOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BackgroundTaskPanelOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BackgroundTaskPanelOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::BackgroundTaskPanelOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BackgroundTaskPanelOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BackgroundTaskPanelOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BackgroundTaskPanelOutcome where T: core::clone::Clone
+pub type termrock::widgets::BackgroundTaskPanelOutcome::Owned = T
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BackgroundTaskPanelOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BackgroundTaskPanelOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BackgroundTaskPanelOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BackgroundTaskPanelOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BackgroundTaskPanelOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BackgroundTaskPanelOutcome
+pub fn termrock::widgets::BackgroundTaskPanelOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BackgroundTaskPanelOutcome
+#[non_exhaustive] pub enum termrock::widgets::BackgroundTaskPresentation
+pub termrock::widgets::BackgroundTaskPresentation::CompactRail
+pub termrock::widgets::BackgroundTaskPresentation::Fullscreen
+pub termrock::widgets::BackgroundTaskPresentation::Pane
+impl termrock::widgets::BackgroundTaskPresentation
+pub const fn termrock::widgets::BackgroundTaskPresentation::for_width(u16) -> Self
+pub const fn termrock::widgets::BackgroundTaskPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::BackgroundTaskPresentation
+pub fn termrock::widgets::BackgroundTaskPresentation::clone(&self) -> termrock::widgets::BackgroundTaskPresentation
+impl core::cmp::Eq for termrock::widgets::BackgroundTaskPresentation
+impl core::cmp::PartialEq for termrock::widgets::BackgroundTaskPresentation
+pub fn termrock::widgets::BackgroundTaskPresentation::eq(&self, &termrock::widgets::BackgroundTaskPresentation) -> bool
+impl core::default::Default for termrock::widgets::BackgroundTaskPresentation
+pub fn termrock::widgets::BackgroundTaskPresentation::default() -> termrock::widgets::BackgroundTaskPresentation
+impl core::fmt::Debug for termrock::widgets::BackgroundTaskPresentation
+pub fn termrock::widgets::BackgroundTaskPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BackgroundTaskPresentation
+pub fn termrock::widgets::BackgroundTaskPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BackgroundTaskPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::BackgroundTaskPresentation
+impl core::marker::Freeze for termrock::widgets::BackgroundTaskPresentation
+impl core::marker::Send for termrock::widgets::BackgroundTaskPresentation
+impl core::marker::Sync for termrock::widgets::BackgroundTaskPresentation
+impl core::marker::Unpin for termrock::widgets::BackgroundTaskPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::BackgroundTaskPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BackgroundTaskPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BackgroundTaskPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BackgroundTaskPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BackgroundTaskPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::BackgroundTaskPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BackgroundTaskPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::BackgroundTaskPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::BackgroundTaskPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BackgroundTaskPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BackgroundTaskPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BackgroundTaskPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BackgroundTaskPresentation where T: core::clone::Clone
+pub type termrock::widgets::BackgroundTaskPresentation::Owned = T
+pub fn termrock::widgets::BackgroundTaskPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::BackgroundTaskPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BackgroundTaskPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BackgroundTaskPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BackgroundTaskPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BackgroundTaskPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BackgroundTaskPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BackgroundTaskPresentation
+pub fn termrock::widgets::BackgroundTaskPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BackgroundTaskPresentation
+#[non_exhaustive] pub enum termrock::widgets::BackgroundTaskStatus
+pub termrock::widgets::BackgroundTaskStatus::Detached
+pub termrock::widgets::BackgroundTaskStatus::Failed
+pub termrock::widgets::BackgroundTaskStatus::Lost
+pub termrock::widgets::BackgroundTaskStatus::Pending
+pub termrock::widgets::BackgroundTaskStatus::Reconnecting
+pub termrock::widgets::BackgroundTaskStatus::Running
+pub termrock::widgets::BackgroundTaskStatus::Stopped
+pub termrock::widgets::BackgroundTaskStatus::Succeeded
+impl termrock::widgets::BackgroundTaskStatus
+pub const fn termrock::widgets::BackgroundTaskStatus::can_restart(self) -> bool
+pub const fn termrock::widgets::BackgroundTaskStatus::can_stop(self) -> bool
+pub const fn termrock::widgets::BackgroundTaskStatus::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::BackgroundTaskStatus::id(self) -> &'static str
+pub const fn termrock::widgets::BackgroundTaskStatus::is_terminal(self) -> bool
+pub const fn termrock::widgets::BackgroundTaskStatus::label(self) -> &'static str
+pub const fn termrock::widgets::BackgroundTaskStatus::role(self) -> termrock::style::Role
+pub const fn termrock::widgets::BackgroundTaskStatus::semantic(self) -> termrock::widgets::SemanticStatus
+pub const fn termrock::widgets::BackgroundTaskStatus::to_terminal_status(self) -> termrock::widgets::TerminalRunStatus
+impl core::clone::Clone for termrock::widgets::BackgroundTaskStatus
+pub fn termrock::widgets::BackgroundTaskStatus::clone(&self) -> termrock::widgets::BackgroundTaskStatus
+impl core::cmp::Eq for termrock::widgets::BackgroundTaskStatus
+impl core::cmp::PartialEq for termrock::widgets::BackgroundTaskStatus
+pub fn termrock::widgets::BackgroundTaskStatus::eq(&self, &termrock::widgets::BackgroundTaskStatus) -> bool
+impl core::default::Default for termrock::widgets::BackgroundTaskStatus
+pub fn termrock::widgets::BackgroundTaskStatus::default() -> termrock::widgets::BackgroundTaskStatus
+impl core::fmt::Debug for termrock::widgets::BackgroundTaskStatus
+pub fn termrock::widgets::BackgroundTaskStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BackgroundTaskStatus
+pub fn termrock::widgets::BackgroundTaskStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BackgroundTaskStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::BackgroundTaskStatus
+impl core::marker::Freeze for termrock::widgets::BackgroundTaskStatus
+impl core::marker::Send for termrock::widgets::BackgroundTaskStatus
+impl core::marker::Sync for termrock::widgets::BackgroundTaskStatus
+impl core::marker::Unpin for termrock::widgets::BackgroundTaskStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::BackgroundTaskStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BackgroundTaskStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BackgroundTaskStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BackgroundTaskStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BackgroundTaskStatus where U: core::convert::From<T>
+pub fn termrock::widgets::BackgroundTaskStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BackgroundTaskStatus where U: core::convert::Into<T>
+pub type termrock::widgets::BackgroundTaskStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::BackgroundTaskStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BackgroundTaskStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BackgroundTaskStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BackgroundTaskStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BackgroundTaskStatus where T: core::clone::Clone
+pub type termrock::widgets::BackgroundTaskStatus::Owned = T
+pub fn termrock::widgets::BackgroundTaskStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::BackgroundTaskStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BackgroundTaskStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BackgroundTaskStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BackgroundTaskStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BackgroundTaskStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BackgroundTaskStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BackgroundTaskStatus
+pub fn termrock::widgets::BackgroundTaskStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BackgroundTaskStatus
 #[non_exhaustive] pub enum termrock::widgets::BadgeFill
 pub termrock::widgets::BadgeFill::None
 pub termrock::widgets::BadgeFill::Soft
@@ -43418,6 +43654,289 @@ pub unsafe fn termrock::widgets::Backdrop::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Backdrop
 pub fn termrock::widgets::Backdrop::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Backdrop
+pub struct termrock::widgets::BackgroundOutputBuffer
+pub termrock::widgets::BackgroundOutputBuffer::dropped: u64
+pub termrock::widgets::BackgroundOutputBuffer::total_appended: u64
+impl termrock::widgets::BackgroundOutputBuffer
+pub fn termrock::widgets::BackgroundOutputBuffer::append(&mut self, termrock::widgets::BackgroundOutputLine)
+pub fn termrock::widgets::BackgroundOutputBuffer::append_all<I: core::iter::traits::collect::IntoIterator<Item = termrock::widgets::BackgroundOutputLine>>(&mut self, I)
+pub fn termrock::widgets::BackgroundOutputBuffer::as_terminal_lines(&self) -> alloc::vec::Vec<(alloc::string::String, termrock::widgets::TerminalStream, alloc::string::String)>
+pub fn termrock::widgets::BackgroundOutputBuffer::default_history() -> Self
+pub fn termrock::widgets::BackgroundOutputBuffer::dropped_banner(&self, bool) -> core::option::Option<alloc::string::String>
+pub fn termrock::widgets::BackgroundOutputBuffer::is_empty(&self) -> bool
+pub fn termrock::widgets::BackgroundOutputBuffer::len(&self) -> usize
+pub fn termrock::widgets::BackgroundOutputBuffer::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::widgets::BackgroundOutputLine>
+pub const fn termrock::widgets::BackgroundOutputBuffer::max_lines(&self) -> usize
+pub fn termrock::widgets::BackgroundOutputBuffer::new(usize) -> Self
+impl core::clone::Clone for termrock::widgets::BackgroundOutputBuffer
+pub fn termrock::widgets::BackgroundOutputBuffer::clone(&self) -> termrock::widgets::BackgroundOutputBuffer
+impl core::cmp::Eq for termrock::widgets::BackgroundOutputBuffer
+impl core::cmp::PartialEq for termrock::widgets::BackgroundOutputBuffer
+pub fn termrock::widgets::BackgroundOutputBuffer::eq(&self, &termrock::widgets::BackgroundOutputBuffer) -> bool
+impl core::fmt::Debug for termrock::widgets::BackgroundOutputBuffer
+pub fn termrock::widgets::BackgroundOutputBuffer::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::BackgroundOutputBuffer
+impl core::marker::Freeze for termrock::widgets::BackgroundOutputBuffer
+impl core::marker::Send for termrock::widgets::BackgroundOutputBuffer
+impl core::marker::Sync for termrock::widgets::BackgroundOutputBuffer
+impl core::marker::Unpin for termrock::widgets::BackgroundOutputBuffer
+impl core::marker::UnsafeUnpin for termrock::widgets::BackgroundOutputBuffer
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BackgroundOutputBuffer
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BackgroundOutputBuffer
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BackgroundOutputBuffer where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundOutputBuffer::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BackgroundOutputBuffer where U: core::convert::From<T>
+pub fn termrock::widgets::BackgroundOutputBuffer::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BackgroundOutputBuffer where U: core::convert::Into<T>
+pub type termrock::widgets::BackgroundOutputBuffer::Error = core::convert::Infallible
+pub fn termrock::widgets::BackgroundOutputBuffer::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BackgroundOutputBuffer where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BackgroundOutputBuffer::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BackgroundOutputBuffer::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BackgroundOutputBuffer where T: core::clone::Clone
+pub type termrock::widgets::BackgroundOutputBuffer::Owned = T
+pub fn termrock::widgets::BackgroundOutputBuffer::clone_into(&self, &mut T)
+pub fn termrock::widgets::BackgroundOutputBuffer::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BackgroundOutputBuffer where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundOutputBuffer::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BackgroundOutputBuffer where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundOutputBuffer::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BackgroundOutputBuffer where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundOutputBuffer::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BackgroundOutputBuffer where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BackgroundOutputBuffer::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BackgroundOutputBuffer
+pub fn termrock::widgets::BackgroundOutputBuffer::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BackgroundOutputBuffer
+pub struct termrock::widgets::BackgroundOutputLine
+pub termrock::widgets::BackgroundOutputLine::id: alloc::string::String
+pub termrock::widgets::BackgroundOutputLine::stream: termrock::widgets::TerminalStream
+pub termrock::widgets::BackgroundOutputLine::text: alloc::string::String
+impl termrock::widgets::BackgroundOutputLine
+pub fn termrock::widgets::BackgroundOutputLine::stderr(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::BackgroundOutputLine::stdout(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::BackgroundOutputLine::system(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::BackgroundOutputLine
+pub fn termrock::widgets::BackgroundOutputLine::clone(&self) -> termrock::widgets::BackgroundOutputLine
+impl core::cmp::Eq for termrock::widgets::BackgroundOutputLine
+impl core::cmp::PartialEq for termrock::widgets::BackgroundOutputLine
+pub fn termrock::widgets::BackgroundOutputLine::eq(&self, &termrock::widgets::BackgroundOutputLine) -> bool
+impl core::fmt::Debug for termrock::widgets::BackgroundOutputLine
+pub fn termrock::widgets::BackgroundOutputLine::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::BackgroundOutputLine
+impl core::marker::Freeze for termrock::widgets::BackgroundOutputLine
+impl core::marker::Send for termrock::widgets::BackgroundOutputLine
+impl core::marker::Sync for termrock::widgets::BackgroundOutputLine
+impl core::marker::Unpin for termrock::widgets::BackgroundOutputLine
+impl core::marker::UnsafeUnpin for termrock::widgets::BackgroundOutputLine
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BackgroundOutputLine
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BackgroundOutputLine
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BackgroundOutputLine where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundOutputLine::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BackgroundOutputLine where U: core::convert::From<T>
+pub fn termrock::widgets::BackgroundOutputLine::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BackgroundOutputLine where U: core::convert::Into<T>
+pub type termrock::widgets::BackgroundOutputLine::Error = core::convert::Infallible
+pub fn termrock::widgets::BackgroundOutputLine::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BackgroundOutputLine where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BackgroundOutputLine::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BackgroundOutputLine::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BackgroundOutputLine where T: core::clone::Clone
+pub type termrock::widgets::BackgroundOutputLine::Owned = T
+pub fn termrock::widgets::BackgroundOutputLine::clone_into(&self, &mut T)
+pub fn termrock::widgets::BackgroundOutputLine::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BackgroundOutputLine where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundOutputLine::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BackgroundOutputLine where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundOutputLine::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BackgroundOutputLine where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundOutputLine::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BackgroundOutputLine where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BackgroundOutputLine::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BackgroundOutputLine
+pub fn termrock::widgets::BackgroundOutputLine::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BackgroundOutputLine
+pub struct termrock::widgets::BackgroundTask
+pub termrock::widgets::BackgroundTask::command: core::option::Option<alloc::string::String>
+pub termrock::widgets::BackgroundTask::cwd: core::option::Option<alloc::string::String>
+pub termrock::widgets::BackgroundTask::duration_ms: core::option::Option<u64>
+pub termrock::widgets::BackgroundTask::id: alloc::string::String
+pub termrock::widgets::BackgroundTask::kind: termrock::widgets::BackgroundTaskKind
+pub termrock::widgets::BackgroundTask::notify_on_finish: bool
+pub termrock::widgets::BackgroundTask::output: termrock::widgets::BackgroundOutputBuffer
+pub termrock::widgets::BackgroundTask::pid: core::option::Option<u32>
+pub termrock::widgets::BackgroundTask::ports: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::BackgroundTask::resources: core::option::Option<alloc::string::String>
+pub termrock::widgets::BackgroundTask::restart_count: u32
+pub termrock::widgets::BackgroundTask::revision: u64
+pub termrock::widgets::BackgroundTask::status: termrock::widgets::BackgroundTaskStatus
+pub termrock::widgets::BackgroundTask::status_note: core::option::Option<alloc::string::String>
+pub termrock::widgets::BackgroundTask::title: alloc::string::String
+impl termrock::widgets::BackgroundTask
+pub fn termrock::widgets::BackgroundTask::command(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::BackgroundTask::cwd(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::BackgroundTask::duration_ms(self, u64) -> Self
+pub const fn termrock::widgets::BackgroundTask::kind(self, termrock::widgets::BackgroundTaskKind) -> Self
+pub fn termrock::widgets::BackgroundTask::meta_line(&self) -> alloc::string::String
+pub fn termrock::widgets::BackgroundTask::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::BackgroundTask::notify_on_finish(self, bool) -> Self
+pub const fn termrock::widgets::BackgroundTask::pid(self, u32) -> Self
+pub fn termrock::widgets::BackgroundTask::port(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::BackgroundTask::resources(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::BackgroundTask::restart_count(self, u32) -> Self
+pub fn termrock::widgets::BackgroundTask::row_label(&self, bool) -> alloc::string::String
+pub const fn termrock::widgets::BackgroundTask::status(self, termrock::widgets::BackgroundTaskStatus) -> Self
+pub fn termrock::widgets::BackgroundTask::status_note(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::BackgroundTask::with_output(self, termrock::widgets::BackgroundOutputBuffer) -> Self
+impl core::clone::Clone for termrock::widgets::BackgroundTask
+pub fn termrock::widgets::BackgroundTask::clone(&self) -> termrock::widgets::BackgroundTask
+impl core::cmp::Eq for termrock::widgets::BackgroundTask
+impl core::cmp::PartialEq for termrock::widgets::BackgroundTask
+pub fn termrock::widgets::BackgroundTask::eq(&self, &termrock::widgets::BackgroundTask) -> bool
+impl core::fmt::Debug for termrock::widgets::BackgroundTask
+pub fn termrock::widgets::BackgroundTask::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::BackgroundTask
+impl core::marker::Freeze for termrock::widgets::BackgroundTask
+impl core::marker::Send for termrock::widgets::BackgroundTask
+impl core::marker::Sync for termrock::widgets::BackgroundTask
+impl core::marker::Unpin for termrock::widgets::BackgroundTask
+impl core::marker::UnsafeUnpin for termrock::widgets::BackgroundTask
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BackgroundTask
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BackgroundTask
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BackgroundTask where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTask::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BackgroundTask where U: core::convert::From<T>
+pub fn termrock::widgets::BackgroundTask::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BackgroundTask where U: core::convert::Into<T>
+pub type termrock::widgets::BackgroundTask::Error = core::convert::Infallible
+pub fn termrock::widgets::BackgroundTask::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BackgroundTask where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BackgroundTask::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BackgroundTask::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BackgroundTask where T: core::clone::Clone
+pub type termrock::widgets::BackgroundTask::Owned = T
+pub fn termrock::widgets::BackgroundTask::clone_into(&self, &mut T)
+pub fn termrock::widgets::BackgroundTask::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BackgroundTask where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTask::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BackgroundTask where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTask::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BackgroundTask where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTask::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BackgroundTask where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BackgroundTask::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BackgroundTask
+pub fn termrock::widgets::BackgroundTask::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BackgroundTask
+pub struct termrock::widgets::BackgroundTaskPanel<'a>
+impl<'a> termrock::widgets::BackgroundTaskPanel<'a>
+pub const fn termrock::widgets::BackgroundTaskPanel<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::BackgroundTaskPanel<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::BackgroundTaskPanel<'a>::new(&'a [termrock::widgets::BackgroundTask], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::BackgroundTaskPanelState)
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::BackgroundTaskPanelState)
+pub const fn termrock::widgets::BackgroundTaskPanel<'a>::title(self, &'a str) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::BackgroundTaskPanel<'_>
+pub type &termrock::widgets::BackgroundTaskPanel<'_>::State = termrock::widgets::BackgroundTaskPanelState
+pub fn &termrock::widgets::BackgroundTaskPanel<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::BackgroundTaskPanel<'_>
+pub type termrock::widgets::BackgroundTaskPanel<'_>::State = termrock::widgets::BackgroundTaskPanelState
+pub fn termrock::widgets::BackgroundTaskPanel<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::BackgroundTaskPanel<'a>
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::clone(&self) -> termrock::widgets::BackgroundTaskPanel<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::BackgroundTaskPanel<'a>
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::BackgroundTaskPanel<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::BackgroundTaskPanel<'a>
+impl<'a> core::marker::Send for termrock::widgets::BackgroundTaskPanel<'a>
+impl<'a> core::marker::Sync for termrock::widgets::BackgroundTaskPanel<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::BackgroundTaskPanel<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::BackgroundTaskPanel<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BackgroundTaskPanel<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::BackgroundTaskPanel<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::BackgroundTaskPanel<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BackgroundTaskPanel<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::BackgroundTaskPanel<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BackgroundTaskPanel<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BackgroundTaskPanel<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BackgroundTaskPanel<'a> where T: core::clone::Clone
+pub type termrock::widgets::BackgroundTaskPanel<'a>::Owned = T
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BackgroundTaskPanel<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BackgroundTaskPanel<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BackgroundTaskPanel<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BackgroundTaskPanel<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BackgroundTaskPanel<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BackgroundTaskPanel<'a>
+pub fn termrock::widgets::BackgroundTaskPanel<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BackgroundTaskPanel<'a>
+pub struct termrock::widgets::BackgroundTaskPanelState
+pub termrock::widgets::BackgroundTaskPanelState::focused: bool
+pub termrock::widgets::BackgroundTaskPanelState::force_presentation: core::option::Option<termrock::widgets::BackgroundTaskPresentation>
+pub termrock::widgets::BackgroundTaskPanelState::hide_completed: bool
+pub termrock::widgets::BackgroundTaskPanelState::list: termrock::widgets::ListState<alloc::string::String>
+pub termrock::widgets::BackgroundTaskPanelState::open: bool
+pub termrock::widgets::BackgroundTaskPanelState::output: termrock::widgets::TerminalOutputState
+pub termrock::widgets::BackgroundTaskPanelState::presentation: termrock::widgets::BackgroundTaskPresentation
+impl termrock::widgets::BackgroundTaskPanelState
+pub fn termrock::widgets::BackgroundTaskPanelState::close(&mut self) -> termrock::widgets::BackgroundTaskPanelOutcome
+pub fn termrock::widgets::BackgroundTaskPanelState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::BackgroundTask]) -> termrock::widgets::BackgroundTaskPanelOutcome
+pub fn termrock::widgets::BackgroundTaskPanelState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::BackgroundTask]) -> termrock::widgets::BackgroundTaskPanelOutcome
+pub fn termrock::widgets::BackgroundTaskPanelState::new() -> Self
+pub fn termrock::widgets::BackgroundTaskPanelState::open_panel(&mut self)
+pub fn termrock::widgets::BackgroundTaskPanelState::selected_id(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::BackgroundTaskPanelState::set_accepts_input(&mut self, bool)
+pub const fn termrock::widgets::BackgroundTaskPanelState::set_focused(&mut self, bool)
+pub fn termrock::widgets::BackgroundTaskPanelState::visible_tasks<'a>(&self, &'a [termrock::widgets::BackgroundTask]) -> alloc::vec::Vec<&'a termrock::widgets::BackgroundTask>
+impl core::clone::Clone for termrock::widgets::BackgroundTaskPanelState
+pub fn termrock::widgets::BackgroundTaskPanelState::clone(&self) -> termrock::widgets::BackgroundTaskPanelState
+impl core::cmp::Eq for termrock::widgets::BackgroundTaskPanelState
+impl core::cmp::PartialEq for termrock::widgets::BackgroundTaskPanelState
+pub fn termrock::widgets::BackgroundTaskPanelState::eq(&self, &termrock::widgets::BackgroundTaskPanelState) -> bool
+impl core::default::Default for termrock::widgets::BackgroundTaskPanelState
+pub fn termrock::widgets::BackgroundTaskPanelState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::BackgroundTaskPanelState
+pub fn termrock::widgets::BackgroundTaskPanelState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::BackgroundTaskPanelState
+impl core::marker::Freeze for termrock::widgets::BackgroundTaskPanelState
+impl core::marker::Send for termrock::widgets::BackgroundTaskPanelState
+impl core::marker::Sync for termrock::widgets::BackgroundTaskPanelState
+impl core::marker::Unpin for termrock::widgets::BackgroundTaskPanelState
+impl core::marker::UnsafeUnpin for termrock::widgets::BackgroundTaskPanelState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BackgroundTaskPanelState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BackgroundTaskPanelState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BackgroundTaskPanelState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanelState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BackgroundTaskPanelState where U: core::convert::From<T>
+pub fn termrock::widgets::BackgroundTaskPanelState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BackgroundTaskPanelState where U: core::convert::Into<T>
+pub type termrock::widgets::BackgroundTaskPanelState::Error = core::convert::Infallible
+pub fn termrock::widgets::BackgroundTaskPanelState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BackgroundTaskPanelState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BackgroundTaskPanelState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BackgroundTaskPanelState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BackgroundTaskPanelState where T: core::clone::Clone
+pub type termrock::widgets::BackgroundTaskPanelState::Owned = T
+pub fn termrock::widgets::BackgroundTaskPanelState::clone_into(&self, &mut T)
+pub fn termrock::widgets::BackgroundTaskPanelState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BackgroundTaskPanelState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanelState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BackgroundTaskPanelState where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanelState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BackgroundTaskPanelState where T: ?core::marker::Sized
+pub fn termrock::widgets::BackgroundTaskPanelState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BackgroundTaskPanelState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BackgroundTaskPanelState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BackgroundTaskPanelState
+pub fn termrock::widgets::BackgroundTaskPanelState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BackgroundTaskPanelState
 pub struct termrock::widgets::Badge<'a>
 impl<'a> termrock::widgets::Badge<'a>
 pub fn termrock::widgets::Badge<'a>::body_text(&self) -> alloc::string::String
@@ -76315,6 +76834,9 @@ pub const termrock::widgets::ACTIVITY_SHELF_TINY_WIDTH: u16
 pub const termrock::widgets::ALERT_DIALOG_DEFAULT_HEIGHT: u16
 pub const termrock::widgets::ALERT_DIALOG_DEFAULT_WIDTH: u16
 pub const termrock::widgets::ALERT_DIALOG_OVERLAY_ID: &str
+pub const termrock::widgets::BACKGROUND_TASKS_OVERLAY_ID: &str
+pub const termrock::widgets::BACKGROUND_TASK_DEFAULT_HISTORY: usize
+pub const termrock::widgets::BACKGROUND_TASK_RAIL_WIDTH: u16
 pub const termrock::widgets::BREADCRUMBS_COLLAPSE_MAX_WIDTH: u16
 pub const termrock::widgets::BREADCRUMBS_ELLIPSIS: &str
 pub const termrock::widgets::BREADCRUMBS_ELLIPSIS_ASCII: &str
@@ -76542,6 +77064,8 @@ pub fn termrock::widgets::attachment_semantic_summary(&termrock::widgets::Attach
 pub fn termrock::widgets::attachment_to_composer_chip(&termrock::widgets::AttachmentItem) -> termrock::widgets::ComposerChip
 pub fn termrock::widgets::attachment_token_items<'a>(&'a [termrock::widgets::AttachmentItem], &'a [termrock::widgets::PastePayload], &'a [alloc::string::String]) -> alloc::vec::Vec<termrock::widgets::TokenItem<'a, &'a str>>
 pub fn termrock::widgets::auto_bytes_per_row(u16, u8) -> u8
+pub fn termrock::widgets::background_task_to_activity(&termrock::widgets::BackgroundTask) -> termrock::widgets::ActivityModel
+pub fn termrock::widgets::background_task_to_notification(&termrock::widgets::BackgroundTask, u64) -> core::option::Option<termrock::widgets::NotificationItem>
 pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
 pub fn termrock::widgets::breadcrumbs_from_path(&str) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::build_task_rail_rows(&[termrock::widgets::ActivityModel], &alloc::collections::btree::set::BTreeSet<termrock::widgets::ActivityScope>, bool) -> alloc::vec::Vec<termrock::widgets::TaskRailRow>
@@ -76622,6 +77146,7 @@ pub fn termrock::widgets::example_agent_plan_steps() -> alloc::vec::Vec<termrock
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
 pub fn termrock::widgets::example_auth_required() -> termrock::widgets::ReconnectingState
+pub fn termrock::widgets::example_background_tasks() -> alloc::vec::Vec<termrock::widgets::BackgroundTask>
 pub fn termrock::widgets::example_build_pipeline() -> alloc::vec::Vec<termrock::widgets::ProgressStep>
 pub fn termrock::widgets::example_busy_blocking(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
 pub fn termrock::widgets::example_busy_cancellable(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)

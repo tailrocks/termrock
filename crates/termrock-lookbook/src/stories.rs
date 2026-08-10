@@ -6746,6 +6746,51 @@ pub(crate) fn stories() -> Vec<Story> {
             subagent_card_result_story,
         ),
         Story::new(
+            "background-tasks/mixed-statuses",
+            "BackgroundTaskPanel mixed",
+            "BackgroundTaskPanel",
+            "Runners, lost, reconnect, failed with output.",
+            88,
+            20,
+            background_tasks_mixed_story,
+        ),
+        Story::new(
+            "background-tasks/clear-completed",
+            "BackgroundTaskPanel clear",
+            "BackgroundTaskPanel",
+            "Hide completed filter view.",
+            72,
+            16,
+            background_tasks_clear_story,
+        ),
+        Story::new(
+            "background-tasks/rail",
+            "BackgroundTaskPanel rail",
+            "BackgroundTaskPanel",
+            "Compact rail list.",
+            26,
+            14,
+            background_tasks_rail_story,
+        ),
+        Story::new(
+            "background-tasks/lost",
+            "BackgroundTaskPanel lost",
+            "BackgroundTaskPanel",
+            "Lost process detail chrome.",
+            80,
+            16,
+            background_tasks_lost_story,
+        ),
+        Story::new(
+            "background-tasks/dropped-lines",
+            "BackgroundTaskPanel drops",
+            "BackgroundTaskPanel",
+            "Bounded history dropped-line banner.",
+            80,
+            16,
+            background_tasks_dropped_story,
+        ),
+        Story::new(
             "blocks/form-wizard",
             "FormWizard",
             "FormWizard",
@@ -21060,6 +21105,64 @@ fn subagent_card_result_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     st.focused = true;
     st.presentation = SubagentPresentation::Card;
     SubagentCard::new(run, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn background_tasks_mixed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+    };
+    let tasks = example_background_tasks();
+    let mut st = BackgroundTaskPanelState::new();
+    st.focused = true;
+    st.list.select(Some("b1".into()));
+    BackgroundTaskPanel::new(&tasks, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn background_tasks_clear_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+    };
+    let tasks = example_background_tasks();
+    let mut st = BackgroundTaskPanelState::new();
+    st.hide_completed = true;
+    st.focused = true;
+    BackgroundTaskPanel::new(&tasks, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn background_tasks_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+        BackgroundTaskPresentation,
+    };
+    let tasks = example_background_tasks();
+    let mut st = BackgroundTaskPanelState::new();
+    st.force_presentation = Some(BackgroundTaskPresentation::CompactRail);
+    st.focused = true;
+    BackgroundTaskPanel::new(&tasks, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn background_tasks_lost_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+    };
+    let tasks = example_background_tasks();
+    let mut st = BackgroundTaskPanelState::new();
+    st.list.select(Some("b4".into()));
+    st.focused = true;
+    BackgroundTaskPanel::new(&tasks, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn background_tasks_dropped_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+    };
+    let tasks = example_background_tasks();
+    let mut st = BackgroundTaskPanelState::new();
+    st.list.select(Some("b3".into())); // has dropped lines from small buffer
+    st.focused = true;
+    BackgroundTaskPanel::new(&tasks, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 // ── State-axis story helpers ────────────────────────────────────────────────

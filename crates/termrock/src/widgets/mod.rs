@@ -132,6 +132,7 @@ mod terminal_run_card;
 mod activity_shelf;
 mod task_rail;
 mod subagent_card;
+mod background_task_panel;
 mod hex_viewer;
 mod file_tree;
 mod process_table;
@@ -308,6 +309,14 @@ pub use subagent_card::{
     subagent_actions_for, subagent_to_activity_model,
 };
 pub use subagent_card::bench as subagent_card_bench;
+pub use background_task_panel::{
+    BACKGROUND_TASKS_OVERLAY_ID, BACKGROUND_TASK_DEFAULT_HISTORY, BACKGROUND_TASK_RAIL_WIDTH,
+    BackgroundOutputBuffer, BackgroundOutputLine, BackgroundTask, BackgroundTaskKind,
+    BackgroundTaskPanel, BackgroundTaskPanelOutcome, BackgroundTaskPanelState,
+    BackgroundTaskPresentation, BackgroundTaskStatus, background_task_to_activity,
+    background_task_to_notification, example_background_tasks,
+};
+pub use background_task_panel::bench as background_task_panel_bench;
 pub use blocks::{
     BlockChrome, OpsDashboardOutcome, OpsDashboardState, OpsRegion, ResourceBrowserOutcome,
     ResourceBrowserState, SettingsShellOutcome, SettingsShellState,

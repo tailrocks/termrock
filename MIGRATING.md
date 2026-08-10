@@ -237,6 +237,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0221 | `v0.13.0` | [ActivityShelf concurrent activity strip](migrations/0221-v0.13.0-activity-shelf.md) |
 | 0222 | `v0.13.0` | [TaskRail ActivityModel side panel](migrations/0222-v0.13.0-task-rail.md) |
 | 0223 | `v0.13.0` | [SubagentCard delegated agent work](migrations/0223-v0.13.0-subagent-card.md) |
+| 0224 | `v0.13.0` | [BackgroundTaskPanel long-job monitor](migrations/0224-v0.13.0-background-task-panel.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

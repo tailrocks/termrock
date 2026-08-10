@@ -23,6 +23,7 @@
     "activity-shelf",
     "task-rail",
     "subagent-card",
+    "background-task-panel",
     "model-selector",
     "permission-prompt",
     "agent-workbench",
