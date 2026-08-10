@@ -60,6 +60,7 @@ use termrock::{
         RevealPolicy, NumberConstraints, NumberInput, NumberInputState, NumberKind,
         SearchFilterChip, SearchInput, SearchInputState, SearchStatus,
         PathExpect, PathFsStatus, PathInput, PathInputState, PathRisk, PathStyle,
+        FieldToken, TokenField, TokenFieldState, TokenStatus,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -4972,6 +4973,42 @@ pub(crate) fn stories() -> Vec<Story> {
             52,
             3,
             path_input_relative_story,
+        ),
+        Story::new(
+            "token-field/basic",
+            "Token field",
+            "TokenField",
+            "Recipients-style tokens with draft input.",
+            52,
+            2,
+            token_field_basic_story,
+        ),
+        Story::new(
+            "token-field/overflow",
+            "Token field overflow",
+            "TokenField",
+            "Overflow +N when many tokens.",
+            40,
+            2,
+            token_field_overflow_story,
+        ),
+        Story::new(
+            "token-field/error",
+            "Token field error",
+            "TokenField",
+            "Invalid token status chrome.",
+            48,
+            2,
+            token_field_error_story,
+        ),
+        Story::new(
+            "token-field/multiselect",
+            "Token field multi-select",
+            "TokenField",
+            "Filter chips multi-select mode.",
+            48,
+            2,
+            token_field_multiselect_story,
         ),
         Story::new(
             "text-input/invalid",
@@ -13062,6 +13099,57 @@ fn path_input_relative_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     let _ = PathInput::new(system)
         .label("Source")
         .show_base(true)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn token_field_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TokenFieldState::new();
+    state.set_focused(true);
+    let _ = state.push_token(FieldToken::new("1".into(), "alice@ex.com"));
+    let _ = state.push_token(FieldToken::new("2".into(), "bob@ex.com"));
+    let _ = TokenField::new(system)
+        .label("To")
+        .placeholder("Add recipient…")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn token_field_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TokenFieldState::new().with_max_visible(3);
+    state.set_focused(true);
+    for i in 0..8 {
+        let _ = state.push_token(FieldToken::new(format!("{i}"), format!("tag{i}")));
+    }
+    let _ = TokenField::new(system)
+        .label("Tags")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn token_field_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TokenFieldState::new();
+    state.set_focused(true);
+    let _ = state.push_token(
+        FieldToken::new("1".into(), "bad@")
+            .status(TokenStatus::Error),
+    );
+    let _ = state.push_token(FieldToken::new("2".into(), "ok@ex.com"));
+    let _ = TokenField::new(system)
+        .label("To")
+        .validation(Validation::Invalid("invalid address"))
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn token_field_multiselect_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TokenFieldState::new().with_multi_select(true);
+    state.set_focused(true);
+    let _ = state.push_token(FieldToken::new("rs".into(), "rust").selected(true));
+    let _ = state.push_token(FieldToken::new("go".into(), "go"));
+    let _ = state.push_token(FieldToken::new("ts".into(), "typescript").selected(true));
+    let _ = TokenField::new(system)
+        .label("Filters")
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }

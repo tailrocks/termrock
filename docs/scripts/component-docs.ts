@@ -393,6 +393,19 @@ state.set_focused(true);
 state.set_fs_status(PathFsStatus::Directory);
 let _ = PathInput::new(&system).label("Install dir").show_browse(true);`,
   },
+  TokenField: {
+    description:
+      'An editable token/chip collection with free-text draft, completion hooks, and single-surface focus.',
+    primaryStory: 'token-field/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{FieldToken, TokenField, TokenFieldState};
+
+let system = DesignSystem::default();
+let mut state = TokenFieldState::new();
+state.set_focused(true);
+let _ = state.push_token(FieldToken::new("1".into(), "alice@ex.com"));
+let _ = TokenField::new(&system).label("To").placeholder("Add…");`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

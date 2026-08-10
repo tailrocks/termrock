@@ -74,6 +74,7 @@ mod password_input;
 mod number_input;
 mod search_input;
 mod path_input;
+mod token_field;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -323,6 +324,10 @@ pub use path_input::{
     DEFAULT_PATH_HISTORY_LIMIT, PathCompletionPrefix, PathExpect, PathFsStatus, PathInput,
     PathInputOutcome, PathInputParts, PathInputState, PathRisk, PathStyle, completion_prefix,
     expand_env_vars, expand_tilde, is_absolute_path, join_path, normalize_separators,
+};
+pub use token_field::{
+    CommitSeparators, DuplicatePolicy, FieldToken, TokenField, TokenFieldOutcome, TokenFieldParts,
+    TokenFieldState, TokenFieldZone,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,
