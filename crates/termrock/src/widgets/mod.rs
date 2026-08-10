@@ -134,6 +134,7 @@ mod task_rail;
 mod subagent_card;
 mod background_task_panel;
 mod context_meter;
+mod question_flow;
 mod hex_viewer;
 mod file_tree;
 mod process_table;
@@ -290,9 +291,16 @@ pub use dependency_graph::{
 pub use dependency_graph::bench as dependency_graph_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
-    PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,
-    SessionItem, SessionPicker, SessionPickerOutcome, WorkbenchMode, session_picker_handle_key,
+    PlanStep, SessionItem, SessionPicker, SessionPickerOutcome, WorkbenchMode,
+    session_picker_handle_key,
 };
+pub use question_flow::{
+    QUESTION_FLOW_FULLSCREEN_OVERLAY_ID, QUESTION_FLOW_OPTION_WINDOW, Question, QuestionAnswer,
+    QuestionAnswerSet, QuestionFlow, QuestionFlowOutcome, QuestionFlowPhase,
+    QuestionFlowPresentation, QuestionFlowState, QuestionKind, QuestionOption, QuestionProvenance,
+    QuestionSet, QuestionStepState, example_question_set, validate_question_answer,
+};
+pub use question_flow::bench as question_flow_bench;
 pub use task_rail::{
     TASK_RAIL_COMPACT_WIDTH, TASK_RAIL_DEP_CAP, TASK_RAIL_DRAWER_OVERLAY_ID, TASK_RAIL_DRAWER_WIDTH,
     ActivityActionKind, ActivityDependency, ActivityModel, ActivityScope, TaskRail,

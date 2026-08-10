@@ -93,8 +93,8 @@ pub struct AgentWorkbenchState {
     pub task_list: ListState<&'static str>,
     /// Mode ribbon selection (plan/build/…).
     pub mode_ribbon: ModeRibbonState<&'static str>,
-    /// Optional question-flow step state.
-    pub question: QuestionFlowState<&'static str>,
+    /// Optional question-flow state (structured answers; never owns composer draft).
+    pub question: QuestionFlowState,
     /// Whether a permission layer is currently registered.
     permission_open: bool,
     /// Whether a question-flow layer is open.
@@ -424,7 +424,7 @@ pub struct WorkbenchSurfaces<'a, 'b> {
     /// Optional permission overlay (opens/keeps permission scene layer).
     pub permission: Option<(&'a PermissionPrompt<'a>, &'a mut PermissionPromptState)>,
     /// Optional question-flow overlay.
-    pub question: Option<&'a QuestionFlow<'a, &'static str>>,
+    pub question: Option<&'a QuestionFlow<'a>>,
 }
 
 /// Permission modal geometry clamped for narrow terminals.
@@ -623,7 +623,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyEventKind, KeyModifiers};
     use crate::widgets::{
-        PermissionRequest, PermissionRisk, QuestionOption, QuestionStep, TranscriptBlock,
+        PermissionRequest, PermissionRisk, Question, QuestionOption, QuestionSet, TranscriptBlock,
         TranscriptKind,
     };
     use ratatui_core::backend::TestBackend;
@@ -640,7 +640,7 @@ mod tests {
         modes: &[WorkbenchMode<'_, &'static str>],
         blocks: &[TranscriptBlock<'_, &str>],
         permission: Option<(&PermissionPrompt<'_>, &mut PermissionPromptState)>,
-        question: Option<&QuestionFlow<'_, &'static str>>,
+        question: Option<&QuestionFlow<'_>>,
         width: u16,
         height: u16,
     ) -> Terminal<TestBackend> {
@@ -768,18 +768,18 @@ mod tests {
         );
         assert!(!workbench.permission_open());
 
-        let opts = [QuestionOption {
-            id: "yes",
-            label: "Yes",
-        }];
-        let steps = [QuestionStep {
-            id: "s1",
-            prompt: "Proceed?",
-            options: &opts,
-            required: true,
-        }];
-        let flow = QuestionFlow::new(&steps, &system);
-        workbench.question = QuestionFlowState::new(1);
+        let set = QuestionSet::new(
+            "s1",
+            "Proceed?",
+            vec![Question::single(
+                "q1",
+                "Proceed?",
+                vec![QuestionOption::new("yes", "Yes")],
+            )],
+        );
+        workbench.question = QuestionFlowState::new();
+        workbench.question.open_set(set);
+        let flow = QuestionFlow::new(&system);
         let _ = paint(
             &mut workbench,
             &system,

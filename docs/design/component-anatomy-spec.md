@@ -2175,30 +2175,30 @@ Every component below uses sections **1–24**:
 
 ## QuestionFlow
 
-1. **Purpose:** Multi-step agent interview questions.  
-2. **Anatomy:** `root` · `progress` · `question` · `options` · `nav` (back/skip/next)  
-3. **Public properties:** steps projection, `design`  
-4. **State:** step_index; answers controlled by consumer.  
-5. **Variants:** `single` · `multi` per step.  
-6. **Sizes/density:** progress 1 row.  
-7. **Visual states:** current step; answered check.  
-8. **Interaction states:** answer · navigate.  
-9. **Keyboard:** as Radio/MultiSelect; `[` back; `]` next if valid.  
-10. **Mouse:** option + nav buttons.  
-11. **Focus:** options then nav.  
-12. **Disabled:** nav next until valid if required.  
-13. **Loading:** step load skeleton.  
-14. **Error:** validation on next.  
-15. **Narrow:** stack nav.  
-16. **Tiny:** question + options only.  
-17. **Unicode/ASCII:** radio/check glyphs; progress bar blocks catalog.  
-18. **Colorless:** selected option reverse; progress via fill density.  
-19. **Composition:** plan mode overlay.  
-20. **Outcomes:** `Answered { step, values }` · `Back` · `Skip` · `Finished`  
-21. **Stories:** `question-flow/basic`, `question-flow/required`  
-22. **Snapshots:** mid-step.  
-23. **Interaction tests:** back/next bounds; required blocks next.  
-24. **Perf:** O(options).
+1. **Purpose:** Multi-question agent HITL with structured answers (no workflow policy).  
+2. **Anatomy:** `progress/tabs` · `prompt` · `options|text` · `review` · `provenance` · `footer`  
+3. **Public properties:** `QuestionSet` / `Question` (kind, options, required, other), design  
+4. **State:** set + queue; per-question cursor/scroll/text; answers; phase Answering|Review  
+5. **Variants:** Steps · Tabs · Fullscreen; single/multi/text  
+6. **Sizes/density:** option window scroll; fullscreen promote  
+7. **Visual states:** cursor; multi checks; validation error; review list  
+8. **Interaction states:** answer · step · review · submit · cancel  
+9. **Keyboard:** j/k · Enter · Space multi · [] · v review · f full · esc  
+10. **Mouse:** option hit select/toggle  
+11. **Focus:** focused flag + accepts_input  
+12. **Disabled:** accepts_input false  
+13. **Loading:** N/A  
+14. **Error:** ValidationFailed message line  
+15. **Narrow:** clip options; keep prompt  
+16. **Tiny:** progress + prompt  
+17. **Unicode/ASCII:** › / > markers  
+18. **Colorless:** reverse cursor  
+19. **Composition:** AgentWorkbench overlay; **never** clears PromptComposer draft  
+20. **Outcomes:** Answered · Submitted{answers} · ValidationFailed · ReviewOpened · Cancelled · FullscreenRequested · QueueChanged  
+21. **Stories:** `question-flow/{basic,review,multi,text,narrow,unicode}`  
+22. **Snapshots:** review phase; multi checks  
+23. **Interaction tests:** required blocks next; optional skip; other text; submit set  
+24. **Perf:** O(visible options)
 
 ## PlanReview
 

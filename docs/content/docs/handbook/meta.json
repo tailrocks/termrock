@@ -25,6 +25,7 @@
     "subagent-card",
     "background-task-panel",
     "context-meter",
+    "question-flow",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

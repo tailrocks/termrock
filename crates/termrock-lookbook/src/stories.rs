@@ -97,7 +97,7 @@ use termrock::{
         Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
         PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
         PlanReviewState, PlanStep, Popover, PopoverState, Progress, ProgressKind, PromptComposer,
-        PromptComposerState, QuestionFlow, QuestionFlowState, QuestionOption, QuestionStep,
+        PromptComposerState, QuestionFlow, QuestionFlowState,
         RadioGroup, RadioOption, RadioState, RowRole, SegmentedMeter, SeparatorLine, SessionItem,
         SessionPicker, Severity, Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane,
         SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Surface, SurfaceFill,
@@ -6641,10 +6641,37 @@ pub(crate) fn stories() -> Vec<Story> {
             "question-flow/basic",
             "Question flow",
             "QuestionFlow",
-            "Multi-step question chrome.",
+            "Multi-step interview with provenance.",
+            52,
+            14,
+            question_flow_story,
+        ),
+        Story::new(
+            "question-flow/review",
+            "QuestionFlow review",
+            "QuestionFlow",
+            "Review-before-submit phase.",
+            52,
+            12,
+            question_flow_review_story,
+        ),
+        Story::new(
+            "question-flow/multi",
+            "QuestionFlow multi",
+            "QuestionFlow",
+            "Multi-select question step.",
+            48,
+            12,
+            question_flow_multi_story,
+        ),
+        Story::new(
+            "question-flow/text",
+            "QuestionFlow free text",
+            "QuestionFlow",
+            "Free-text question.",
             48,
             8,
-            question_flow_story,
+            question_flow_text_story,
         ),
         Story::new(
             "session-picker/basic",
@@ -21006,25 +21033,59 @@ fn plan_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn question_flow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let opts = [
-        QuestionOption {
-            id: "y",
-            label: "Yes",
+    use termrock::widgets::{example_question_set, QuestionFlow, QuestionFlowState};
+    let mut state = QuestionFlowState::new();
+    state.open_set(example_question_set());
+    state.focused = true;
+    frame.render_stateful_widget(&QuestionFlow::new(system), area, &mut state);
+}
+
+fn question_flow_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_question_set, QuestionAnswer, QuestionFlow, QuestionFlowPhase, QuestionFlowState,
+    };
+    let mut state = QuestionFlowState::new();
+    state.open_set(example_question_set());
+    state.answers.set(
+        "q1",
+        QuestionAnswer::Single {
+            option_id: "canary".into(),
+            other_text: None,
         },
-        QuestionOption {
-            id: "n",
-            label: "No",
+    );
+    state.answers.set("q2", QuestionAnswer::Skipped);
+    state.answers.set(
+        "q3",
+        QuestionAnswer::FreeText {
+            text: "latency".into(),
         },
-    ];
-    let steps = [QuestionStep {
-        id: "q1",
-        prompt: "Continue?",
-        options: &opts,
-        required: true,
-    }];
-    let mut state = QuestionFlowState::new(1);
-    frame.render_stateful_widget(&QuestionFlow::new(&steps, &tokens), area, &mut state);
+    );
+    state.phase = QuestionFlowPhase::Review;
+    state.focused = true;
+    frame.render_stateful_widget(&QuestionFlow::new(system), area, &mut state);
+}
+
+fn question_flow_multi_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_question_set, QuestionFlow, QuestionFlowState};
+    let mut state = QuestionFlowState::new();
+    state.open_set(example_question_set());
+    // jump to multi step
+    state.step_index = 1;
+    state.step_states[1].multi_selected.insert("eng".into());
+    state.step_states[1].multi_selected.insert("sre".into());
+    state.focused = true;
+    frame.render_stateful_widget(&QuestionFlow::new(system), area, &mut state);
+}
+
+fn question_flow_text_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_question_set, QuestionFlow, QuestionFlowState};
+    let mut state = QuestionFlowState::new();
+    state.open_set(example_question_set());
+    state.step_index = 2;
+    state.step_states[2].text = "risk: rollback window".into();
+    state.step_states[2].text_mode = true;
+    state.focused = true;
+    frame.render_stateful_widget(&QuestionFlow::new(system), area, &mut state);
 }
 
 fn session_picker_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -22347,25 +22408,25 @@ fn plan_review_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let opts = [
-        QuestionOption {
-            id: "y",
-            label: "はい ✅",
-        },
-        QuestionOption {
-            id: "n",
-            label: "いいえ ❌",
-        },
-    ];
-    let steps = [QuestionStep {
-        id: "q1",
-        prompt: "続行しますか？",
-        options: &opts,
-        required: true,
-    }];
-    let mut state = QuestionFlowState::new(1);
-    frame.render_stateful_widget(&QuestionFlow::new(&steps, &tokens), area, &mut state);
+    use termrock::widgets::{
+        Question, QuestionFlow, QuestionFlowState, QuestionOption, QuestionSet,
+    };
+    let set = QuestionSet::new(
+        "u1",
+        "確認",
+        vec![Question::single(
+            "q1",
+            "続行しますか？",
+            vec![
+                QuestionOption::new("y", "はい ✅"),
+                QuestionOption::new("n", "いいえ ❌"),
+            ],
+        )],
+    );
+    let mut state = QuestionFlowState::new();
+    state.open_set(set);
+    state.focused = true;
+    frame.render_stateful_widget(&QuestionFlow::new(system), area, &mut state);
 }
 
 fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

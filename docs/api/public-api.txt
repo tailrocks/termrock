@@ -9580,7 +9580,7 @@ pub fn termrock::patterns::AgentShellSlots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::AgentShellSlots
 pub struct termrock::patterns::AgentWorkbenchState
 pub termrock::patterns::AgentWorkbenchState::mode_ribbon: termrock::widgets::ModeRibbonState<&'static str>
-pub termrock::patterns::AgentWorkbenchState::question: termrock::widgets::QuestionFlowState<&'static str>
+pub termrock::patterns::AgentWorkbenchState::question: termrock::widgets::QuestionFlowState
 pub termrock::patterns::AgentWorkbenchState::scene: termrock::interaction::InteractionScene<&'static str, &'static str, ()>
 pub termrock::patterns::AgentWorkbenchState::task_list: termrock::widgets::ListState<&'static str>
 pub termrock::patterns::AgentWorkbenchState::workspace: termrock::layout::WorkspaceState
@@ -10062,7 +10062,7 @@ pub termrock::patterns::WorkbenchSurfaces::modes: &'a [termrock::widgets::Workbe
 pub termrock::patterns::WorkbenchSurfaces::permission: core::option::Option<(&'a termrock::widgets::PermissionPrompt<'a>, &'a mut termrock::widgets::PermissionPromptState)>
 pub termrock::patterns::WorkbenchSurfaces::prompt: &'a termrock::widgets::PromptComposer<'a>
 pub termrock::patterns::WorkbenchSurfaces::prompt_state: &'a mut termrock::widgets::PromptComposerState
-pub termrock::patterns::WorkbenchSurfaces::question: core::option::Option<&'a termrock::widgets::QuestionFlow<'a, &'static str>>
+pub termrock::patterns::WorkbenchSurfaces::question: core::option::Option<&'a termrock::widgets::QuestionFlow<'a>>
 pub termrock::patterns::WorkbenchSurfaces::state: &'a mut termrock::patterns::AgentWorkbenchState
 pub termrock::patterns::WorkbenchSurfaces::status_slots: &'a [termrock::widgets::StatusSlot<'a, &'b str>]
 pub termrock::patterns::WorkbenchSurfaces::status_state: &'a mut termrock::widgets::StatusBarState<&'b str>
@@ -14751,6 +14751,8 @@ pub const termrock::widgets::query_editor_bench::DIAGNOSTIC_COUNT: usize
 pub const termrock::widgets::query_editor_bench::DRAFT_CHARS: usize
 pub const termrock::widgets::query_editor_bench::DRAFT_LINES: usize
 pub const termrock::widgets::query_editor_bench::PAINT_FRAMES: u32
+pub mod termrock::widgets::question_flow_bench
+pub const termrock::widgets::question_flow_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::result_grid_bench
 pub const termrock::widgets::result_grid_bench::PAGE_ROWS: usize
 pub const termrock::widgets::result_grid_bench::PAINT_FRAMES: u32
@@ -32037,54 +32039,268 @@ pub unsafe fn termrock::widgets::QueryRunStatus::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::QueryRunStatus
 pub fn termrock::widgets::QueryRunStatus::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::QueryRunStatus
-#[non_exhaustive] pub enum termrock::widgets::QuestionFlowOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::QuestionAnswer
+pub termrock::widgets::QuestionAnswer::FreeText
+pub termrock::widgets::QuestionAnswer::FreeText::text: alloc::string::String
+pub termrock::widgets::QuestionAnswer::Multi
+pub termrock::widgets::QuestionAnswer::Multi::option_ids: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::QuestionAnswer::Multi::other_text: core::option::Option<alloc::string::String>
+pub termrock::widgets::QuestionAnswer::Single
+pub termrock::widgets::QuestionAnswer::Single::option_id: alloc::string::String
+pub termrock::widgets::QuestionAnswer::Single::other_text: core::option::Option<alloc::string::String>
+pub termrock::widgets::QuestionAnswer::Skipped
+impl termrock::widgets::QuestionAnswer
+pub fn termrock::widgets::QuestionAnswer::is_present(&self) -> bool
+impl core::clone::Clone for termrock::widgets::QuestionAnswer
+pub fn termrock::widgets::QuestionAnswer::clone(&self) -> termrock::widgets::QuestionAnswer
+impl core::cmp::Eq for termrock::widgets::QuestionAnswer
+impl core::cmp::PartialEq for termrock::widgets::QuestionAnswer
+pub fn termrock::widgets::QuestionAnswer::eq(&self, &termrock::widgets::QuestionAnswer) -> bool
+impl core::fmt::Debug for termrock::widgets::QuestionAnswer
+pub fn termrock::widgets::QuestionAnswer::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionAnswer
+impl core::marker::Freeze for termrock::widgets::QuestionAnswer
+impl core::marker::Send for termrock::widgets::QuestionAnswer
+impl core::marker::Sync for termrock::widgets::QuestionAnswer
+impl core::marker::Unpin for termrock::widgets::QuestionAnswer
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionAnswer
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionAnswer
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionAnswer
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionAnswer where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionAnswer::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionAnswer where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionAnswer::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionAnswer where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionAnswer::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionAnswer::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionAnswer where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionAnswer::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionAnswer::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionAnswer where T: core::clone::Clone
+pub type termrock::widgets::QuestionAnswer::Owned = T
+pub fn termrock::widgets::QuestionAnswer::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionAnswer::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionAnswer where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionAnswer::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionAnswer where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionAnswer::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionAnswer where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionAnswer::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionAnswer where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionAnswer::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionAnswer
+pub fn termrock::widgets::QuestionAnswer::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionAnswer
+#[non_exhaustive] pub enum termrock::widgets::QuestionFlowOutcome
 pub termrock::widgets::QuestionFlowOutcome::Answered
-pub termrock::widgets::QuestionFlowOutcome::Answered::option: Id
-pub termrock::widgets::QuestionFlowOutcome::Answered::step: Id
-pub termrock::widgets::QuestionFlowOutcome::Back
-pub termrock::widgets::QuestionFlowOutcome::Finished
+pub termrock::widgets::QuestionFlowOutcome::Answered::answer: termrock::widgets::QuestionAnswer
+pub termrock::widgets::QuestionFlowOutcome::Answered::question_id: alloc::string::String
+pub termrock::widgets::QuestionFlowOutcome::Cancelled
+pub termrock::widgets::QuestionFlowOutcome::FullscreenRequested
 pub termrock::widgets::QuestionFlowOutcome::Ignored
-pub termrock::widgets::QuestionFlowOutcome::Skip
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::QuestionFlowOutcome<Id>
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::clone(&self) -> termrock::widgets::QuestionFlowOutcome<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::QuestionFlowOutcome<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::QuestionFlowOutcome<Id>
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::eq(&self, &termrock::widgets::QuestionFlowOutcome<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::QuestionFlowOutcome<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::QuestionFlowOutcome<Id>
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::widgets::QuestionFlowOutcome<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::QuestionFlowOutcome<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::QuestionFlowOutcome<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::QuestionFlowOutcome<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::QuestionFlowOutcome<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionFlowOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionFlowOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionFlowOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionFlowOutcome<Id> where U: core::convert::From<T>
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionFlowOutcome<Id> where U: core::convert::Into<T>
-pub type termrock::widgets::QuestionFlowOutcome<Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionFlowOutcome<Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::QuestionFlowOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionFlowOutcome<Id> where T: core::clone::Clone
-pub type termrock::widgets::QuestionFlowOutcome<Id>::Owned = T
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::QuestionFlowOutcome<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionFlowOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionFlowOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionFlowOutcome<Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::QuestionFlowOutcome<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::QuestionFlowOutcome<Id>
-pub fn termrock::widgets::QuestionFlowOutcome<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::QuestionFlowOutcome<Id>
+pub termrock::widgets::QuestionFlowOutcome::QueueChanged
+pub termrock::widgets::QuestionFlowOutcome::QueueChanged::remaining: usize
+pub termrock::widgets::QuestionFlowOutcome::ReviewClosed
+pub termrock::widgets::QuestionFlowOutcome::ReviewClosed::index: usize
+pub termrock::widgets::QuestionFlowOutcome::ReviewOpened
+pub termrock::widgets::QuestionFlowOutcome::StepChanged
+pub termrock::widgets::QuestionFlowOutcome::StepChanged::index: usize
+pub termrock::widgets::QuestionFlowOutcome::Submitted
+pub termrock::widgets::QuestionFlowOutcome::Submitted::answers: termrock::widgets::QuestionAnswerSet
+pub termrock::widgets::QuestionFlowOutcome::Submitted::set_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::QuestionFlowOutcome::ValidationFailed
+pub termrock::widgets::QuestionFlowOutcome::ValidationFailed::message: alloc::string::String
+pub termrock::widgets::QuestionFlowOutcome::ValidationFailed::question_id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::QuestionFlowOutcome
+pub fn termrock::widgets::QuestionFlowOutcome::clone(&self) -> termrock::widgets::QuestionFlowOutcome
+impl core::cmp::Eq for termrock::widgets::QuestionFlowOutcome
+impl core::cmp::PartialEq for termrock::widgets::QuestionFlowOutcome
+pub fn termrock::widgets::QuestionFlowOutcome::eq(&self, &termrock::widgets::QuestionFlowOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::QuestionFlowOutcome
+pub fn termrock::widgets::QuestionFlowOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionFlowOutcome
+impl core::marker::Freeze for termrock::widgets::QuestionFlowOutcome
+impl core::marker::Send for termrock::widgets::QuestionFlowOutcome
+impl core::marker::Sync for termrock::widgets::QuestionFlowOutcome
+impl core::marker::Unpin for termrock::widgets::QuestionFlowOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionFlowOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionFlowOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionFlowOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionFlowOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionFlowOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionFlowOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionFlowOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionFlowOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionFlowOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionFlowOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionFlowOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionFlowOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionFlowOutcome where T: core::clone::Clone
+pub type termrock::widgets::QuestionFlowOutcome::Owned = T
+pub fn termrock::widgets::QuestionFlowOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionFlowOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionFlowOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionFlowOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionFlowOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionFlowOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionFlowOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionFlowOutcome
+pub fn termrock::widgets::QuestionFlowOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionFlowOutcome
+#[non_exhaustive] pub enum termrock::widgets::QuestionFlowPhase
+pub termrock::widgets::QuestionFlowPhase::Answering
+pub termrock::widgets::QuestionFlowPhase::Review
+impl core::clone::Clone for termrock::widgets::QuestionFlowPhase
+pub fn termrock::widgets::QuestionFlowPhase::clone(&self) -> termrock::widgets::QuestionFlowPhase
+impl core::cmp::Eq for termrock::widgets::QuestionFlowPhase
+impl core::cmp::PartialEq for termrock::widgets::QuestionFlowPhase
+pub fn termrock::widgets::QuestionFlowPhase::eq(&self, &termrock::widgets::QuestionFlowPhase) -> bool
+impl core::default::Default for termrock::widgets::QuestionFlowPhase
+pub fn termrock::widgets::QuestionFlowPhase::default() -> termrock::widgets::QuestionFlowPhase
+impl core::fmt::Debug for termrock::widgets::QuestionFlowPhase
+pub fn termrock::widgets::QuestionFlowPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::QuestionFlowPhase
+pub fn termrock::widgets::QuestionFlowPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::QuestionFlowPhase
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionFlowPhase
+impl core::marker::Freeze for termrock::widgets::QuestionFlowPhase
+impl core::marker::Send for termrock::widgets::QuestionFlowPhase
+impl core::marker::Sync for termrock::widgets::QuestionFlowPhase
+impl core::marker::Unpin for termrock::widgets::QuestionFlowPhase
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionFlowPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionFlowPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionFlowPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionFlowPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionFlowPhase where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionFlowPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionFlowPhase where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionFlowPhase::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionFlowPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionFlowPhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionFlowPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionFlowPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionFlowPhase where T: core::clone::Clone
+pub type termrock::widgets::QuestionFlowPhase::Owned = T
+pub fn termrock::widgets::QuestionFlowPhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionFlowPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionFlowPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionFlowPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionFlowPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionFlowPhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionFlowPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionFlowPhase
+pub fn termrock::widgets::QuestionFlowPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionFlowPhase
+#[non_exhaustive] pub enum termrock::widgets::QuestionFlowPresentation
+pub termrock::widgets::QuestionFlowPresentation::Fullscreen
+pub termrock::widgets::QuestionFlowPresentation::Steps
+pub termrock::widgets::QuestionFlowPresentation::Tabs
+impl termrock::widgets::QuestionFlowPresentation
+pub const fn termrock::widgets::QuestionFlowPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::QuestionFlowPresentation
+pub fn termrock::widgets::QuestionFlowPresentation::clone(&self) -> termrock::widgets::QuestionFlowPresentation
+impl core::cmp::Eq for termrock::widgets::QuestionFlowPresentation
+impl core::cmp::PartialEq for termrock::widgets::QuestionFlowPresentation
+pub fn termrock::widgets::QuestionFlowPresentation::eq(&self, &termrock::widgets::QuestionFlowPresentation) -> bool
+impl core::default::Default for termrock::widgets::QuestionFlowPresentation
+pub fn termrock::widgets::QuestionFlowPresentation::default() -> termrock::widgets::QuestionFlowPresentation
+impl core::fmt::Debug for termrock::widgets::QuestionFlowPresentation
+pub fn termrock::widgets::QuestionFlowPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::QuestionFlowPresentation
+pub fn termrock::widgets::QuestionFlowPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::QuestionFlowPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionFlowPresentation
+impl core::marker::Freeze for termrock::widgets::QuestionFlowPresentation
+impl core::marker::Send for termrock::widgets::QuestionFlowPresentation
+impl core::marker::Sync for termrock::widgets::QuestionFlowPresentation
+impl core::marker::Unpin for termrock::widgets::QuestionFlowPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionFlowPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionFlowPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionFlowPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionFlowPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionFlowPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionFlowPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionFlowPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionFlowPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionFlowPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionFlowPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionFlowPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionFlowPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionFlowPresentation where T: core::clone::Clone
+pub type termrock::widgets::QuestionFlowPresentation::Owned = T
+pub fn termrock::widgets::QuestionFlowPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionFlowPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionFlowPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionFlowPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionFlowPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionFlowPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionFlowPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionFlowPresentation
+pub fn termrock::widgets::QuestionFlowPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionFlowPresentation
+#[non_exhaustive] pub enum termrock::widgets::QuestionKind
+pub termrock::widgets::QuestionKind::FreeText
+pub termrock::widgets::QuestionKind::MultiChoice
+pub termrock::widgets::QuestionKind::SingleChoice
+impl termrock::widgets::QuestionKind
+pub const fn termrock::widgets::QuestionKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::QuestionKind
+pub fn termrock::widgets::QuestionKind::clone(&self) -> termrock::widgets::QuestionKind
+impl core::cmp::Eq for termrock::widgets::QuestionKind
+impl core::cmp::PartialEq for termrock::widgets::QuestionKind
+pub fn termrock::widgets::QuestionKind::eq(&self, &termrock::widgets::QuestionKind) -> bool
+impl core::default::Default for termrock::widgets::QuestionKind
+pub fn termrock::widgets::QuestionKind::default() -> termrock::widgets::QuestionKind
+impl core::fmt::Debug for termrock::widgets::QuestionKind
+pub fn termrock::widgets::QuestionKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::QuestionKind
+pub fn termrock::widgets::QuestionKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::QuestionKind
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionKind
+impl core::marker::Freeze for termrock::widgets::QuestionKind
+impl core::marker::Send for termrock::widgets::QuestionKind
+impl core::marker::Sync for termrock::widgets::QuestionKind
+impl core::marker::Unpin for termrock::widgets::QuestionKind
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionKind where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionKind where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionKind::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionKind where T: core::clone::Clone
+pub type termrock::widgets::QuestionKind::Owned = T
+pub fn termrock::widgets::QuestionKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionKind where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionKind where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionKind
+pub fn termrock::widgets::QuestionKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionKind
 #[non_exhaustive] pub enum termrock::widgets::QuickOpenOutcome<Id>
 pub termrock::widgets::QuickOpenOutcome::Activated
 pub termrock::widgets::QuickOpenOutcome::Activated::id: Id
@@ -64460,189 +64676,418 @@ pub unsafe fn termrock::widgets::QueryResultSummary::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::QueryResultSummary
 pub fn termrock::widgets::QueryResultSummary::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::QueryResultSummary
-pub struct termrock::widgets::QuestionFlow<'a, Id>
-impl<'a, Id> termrock::widgets::QuestionFlow<'a, Id>
-pub const fn termrock::widgets::QuestionFlow<'a, Id>::new(&'a [termrock::widgets::QuestionStep<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::QuestionFlow<'a, Id>
-pub fn termrock::widgets::QuestionFlow<'a, Id>::clone(&self) -> termrock::widgets::QuestionFlow<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::QuestionFlow<'a, Id>
-pub fn termrock::widgets::QuestionFlow<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::QuestionFlow<'a, Id>
-impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::QuestionFlow<'_, Id>
-pub type &termrock::widgets::QuestionFlow<'_, Id>::State = termrock::widgets::QuestionFlowState<Id>
-pub fn &termrock::widgets::QuestionFlow<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
-impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::QuestionFlow<'_, Id>
-pub type termrock::widgets::QuestionFlow<'_, Id>::State = termrock::widgets::QuestionFlowState<Id>
-pub fn termrock::widgets::QuestionFlow<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
-impl<'a, Id> core::marker::Freeze for termrock::widgets::QuestionFlow<'a, Id>
-impl<'a, Id> core::marker::Send for termrock::widgets::QuestionFlow<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Sync for termrock::widgets::QuestionFlow<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::QuestionFlow<'a, Id>
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::QuestionFlow<'a, Id>
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionFlow<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionFlow<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionFlow<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::QuestionFlow<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionFlow<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::QuestionFlow<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::QuestionFlow<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionFlow<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::QuestionFlow<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::QuestionFlow<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionFlow<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::QuestionFlow<'a, Id>::Owned = T
-pub fn termrock::widgets::QuestionFlow<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::QuestionFlow<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::QuestionFlow<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlow<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionFlow<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlow<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionFlow<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlow<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionFlow<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::QuestionFlow<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::QuestionFlow<'a, Id>
-pub fn termrock::widgets::QuestionFlow<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::QuestionFlow<'a, Id>
-pub struct termrock::widgets::QuestionFlowState<Id>
-impl<Id: core::clone::Clone> termrock::widgets::QuestionFlowState<Id>
-pub fn termrock::widgets::QuestionFlowState<Id>::answer(&self, usize) -> core::option::Option<&Id>
-pub fn termrock::widgets::QuestionFlowState<Id>::handle_key(&mut self, &[termrock::widgets::QuestionStep<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::QuestionFlowOutcome<Id> where Id: core::cmp::PartialEq
-pub fn termrock::widgets::QuestionFlowState<Id>::new(usize) -> Self
-pub const fn termrock::widgets::QuestionFlowState<Id>::set_focused(&mut self, bool)
-pub const fn termrock::widgets::QuestionFlowState<Id>::step_index(&self) -> usize
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::QuestionFlowState<Id>
-pub fn termrock::widgets::QuestionFlowState<Id>::clone(&self) -> termrock::widgets::QuestionFlowState<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::QuestionFlowState<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::QuestionFlowState<Id>
-pub fn termrock::widgets::QuestionFlowState<Id>::eq(&self, &termrock::widgets::QuestionFlowState<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::QuestionFlowState<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::QuestionFlowState<Id>
-pub fn termrock::widgets::QuestionFlowState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::default::Default for termrock::widgets::QuestionFlowState<Id>
-pub fn termrock::widgets::QuestionFlowState<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::widgets::QuestionFlowState<Id>
-impl<Id> core::marker::Send for termrock::widgets::QuestionFlowState<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::QuestionFlowState<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::QuestionFlowState<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::QuestionFlowState<Id>
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionFlowState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionFlowState<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionFlowState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlowState<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionFlowState<Id> where U: core::convert::From<T>
-pub fn termrock::widgets::QuestionFlowState<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionFlowState<Id> where U: core::convert::Into<T>
-pub type termrock::widgets::QuestionFlowState<Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::QuestionFlowState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionFlowState<Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::QuestionFlowState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::QuestionFlowState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionFlowState<Id> where T: core::clone::Clone
-pub type termrock::widgets::QuestionFlowState<Id>::Owned = T
-pub fn termrock::widgets::QuestionFlowState<Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::QuestionFlowState<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::QuestionFlowState<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlowState<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionFlowState<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlowState<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionFlowState<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionFlowState<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionFlowState<Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::QuestionFlowState<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::QuestionFlowState<Id>
-pub fn termrock::widgets::QuestionFlowState<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::QuestionFlowState<Id>
-pub struct termrock::widgets::QuestionOption<'a, Id>
-pub termrock::widgets::QuestionOption::id: Id
-pub termrock::widgets::QuestionOption::label: &'a str
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::QuestionOption<'a, Id>
-pub fn termrock::widgets::QuestionOption<'a, Id>::clone(&self) -> termrock::widgets::QuestionOption<'a, Id>
-impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::QuestionOption<'a, Id>
-impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::QuestionOption<'a, Id>
-pub fn termrock::widgets::QuestionOption<'a, Id>::eq(&self, &termrock::widgets::QuestionOption<'a, Id>) -> bool
-impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::QuestionOption<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::QuestionOption<'a, Id>
-pub fn termrock::widgets::QuestionOption<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::QuestionOption<'a, Id>
-impl<'a, Id> core::marker::Freeze for termrock::widgets::QuestionOption<'a, Id> where Id: core::marker::Freeze
-impl<'a, Id> core::marker::Send for termrock::widgets::QuestionOption<'a, Id> where Id: core::marker::Send
-impl<'a, Id> core::marker::Sync for termrock::widgets::QuestionOption<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::QuestionOption<'a, Id> where Id: core::marker::Unpin
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::QuestionOption<'a, Id> where Id: core::marker::UnsafeUnpin
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionOption<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionOption<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionOption<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::QuestionOption<'a, Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionOption<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::QuestionOption<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionOption<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::QuestionOption<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::QuestionOption<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionOption<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::QuestionOption<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::QuestionOption<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionOption<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::QuestionOption<'a, Id>::Owned = T
-pub fn termrock::widgets::QuestionOption<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::QuestionOption<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::QuestionOption<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::QuestionOption<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionOption<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionOption<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionOption<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionOption<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionOption<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::QuestionOption<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::QuestionOption<'a, Id>
-pub fn termrock::widgets::QuestionOption<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::QuestionOption<'a, Id>
-pub struct termrock::widgets::QuestionStep<'a, Id>
-pub termrock::widgets::QuestionStep::id: Id
-pub termrock::widgets::QuestionStep::options: &'a [termrock::widgets::QuestionOption<'a, Id>]
-pub termrock::widgets::QuestionStep::prompt: &'a str
-pub termrock::widgets::QuestionStep::required: bool
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::QuestionStep<'a, Id>
-pub fn termrock::widgets::QuestionStep<'a, Id>::clone(&self) -> termrock::widgets::QuestionStep<'a, Id>
-impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::QuestionStep<'a, Id>
-impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::QuestionStep<'a, Id>
-pub fn termrock::widgets::QuestionStep<'a, Id>::eq(&self, &termrock::widgets::QuestionStep<'a, Id>) -> bool
-impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::QuestionStep<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::QuestionStep<'a, Id>
-pub fn termrock::widgets::QuestionStep<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::QuestionStep<'a, Id>
-impl<'a, Id> core::marker::Freeze for termrock::widgets::QuestionStep<'a, Id> where Id: core::marker::Freeze
-impl<'a, Id> core::marker::Send for termrock::widgets::QuestionStep<'a, Id> where Id: core::marker::Send + core::marker::Sync
-impl<'a, Id> core::marker::Sync for termrock::widgets::QuestionStep<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::QuestionStep<'a, Id> where Id: core::marker::Unpin
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::QuestionStep<'a, Id> where Id: core::marker::UnsafeUnpin
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionStep<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionStep<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::RefUnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionStep<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::QuestionStep<'a, Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionStep<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::QuestionStep<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionStep<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::QuestionStep<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::QuestionStep<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionStep<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::QuestionStep<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::QuestionStep<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionStep<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::QuestionStep<'a, Id>::Owned = T
-pub fn termrock::widgets::QuestionStep<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::QuestionStep<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::QuestionStep<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::QuestionStep<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionStep<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionStep<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionStep<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::QuestionStep<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionStep<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::QuestionStep<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::QuestionStep<'a, Id>
-pub fn termrock::widgets::QuestionStep<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::QuestionStep<'a, Id>
+pub struct termrock::widgets::Question
+pub termrock::widgets::Question::allow_other: bool
+pub termrock::widgets::Question::help: core::option::Option<alloc::string::String>
+pub termrock::widgets::Question::id: alloc::string::String
+pub termrock::widgets::Question::kind: termrock::widgets::QuestionKind
+pub termrock::widgets::Question::options: alloc::vec::Vec<termrock::widgets::QuestionOption>
+pub termrock::widgets::Question::prompt: alloc::string::String
+pub termrock::widgets::Question::required: bool
+pub termrock::widgets::Question::validation_hint: core::option::Option<alloc::string::String>
+impl termrock::widgets::Question
+pub const fn termrock::widgets::Question::allow_other(self, bool) -> Self
+pub fn termrock::widgets::Question::help(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::Question::multi(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, alloc::vec::Vec<termrock::widgets::QuestionOption>) -> Self
+pub const fn termrock::widgets::Question::optional(self) -> Self
+pub const fn termrock::widgets::Question::required(self, bool) -> Self
+pub fn termrock::widgets::Question::single(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, alloc::vec::Vec<termrock::widgets::QuestionOption>) -> Self
+pub fn termrock::widgets::Question::text(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::Question::validation_hint(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::Question
+pub fn termrock::widgets::Question::clone(&self) -> termrock::widgets::Question
+impl core::cmp::Eq for termrock::widgets::Question
+impl core::cmp::PartialEq for termrock::widgets::Question
+pub fn termrock::widgets::Question::eq(&self, &termrock::widgets::Question) -> bool
+impl core::fmt::Debug for termrock::widgets::Question
+pub fn termrock::widgets::Question::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::Question
+impl core::marker::Freeze for termrock::widgets::Question
+impl core::marker::Send for termrock::widgets::Question
+impl core::marker::Sync for termrock::widgets::Question
+impl core::marker::Unpin for termrock::widgets::Question
+impl core::marker::UnsafeUnpin for termrock::widgets::Question
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Question
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::Question
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::Question where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::Question::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::Question where U: core::convert::From<T>
+pub fn termrock::widgets::Question::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Question where U: core::convert::Into<T>
+pub type termrock::widgets::Question::Error = core::convert::Infallible
+pub fn termrock::widgets::Question::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Question where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Question::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Question::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Question where T: core::clone::Clone
+pub type termrock::widgets::Question::Owned = T
+pub fn termrock::widgets::Question::clone_into(&self, &mut T)
+pub fn termrock::widgets::Question::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Question where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Question::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Question where T: ?core::marker::Sized
+pub fn termrock::widgets::Question::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Question where T: ?core::marker::Sized
+pub fn termrock::widgets::Question::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Question where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Question::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Question
+pub fn termrock::widgets::Question::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Question
+pub struct termrock::widgets::QuestionAnswerSet
+pub termrock::widgets::QuestionAnswerSet::items: alloc::vec::Vec<(alloc::string::String, termrock::widgets::QuestionAnswer)>
+impl termrock::widgets::QuestionAnswerSet
+pub fn termrock::widgets::QuestionAnswerSet::get(&self, &str) -> core::option::Option<&termrock::widgets::QuestionAnswer>
+pub fn termrock::widgets::QuestionAnswerSet::new() -> Self
+pub fn termrock::widgets::QuestionAnswerSet::set(&mut self, impl core::convert::Into<alloc::string::String>, termrock::widgets::QuestionAnswer)
+impl core::clone::Clone for termrock::widgets::QuestionAnswerSet
+pub fn termrock::widgets::QuestionAnswerSet::clone(&self) -> termrock::widgets::QuestionAnswerSet
+impl core::cmp::Eq for termrock::widgets::QuestionAnswerSet
+impl core::cmp::PartialEq for termrock::widgets::QuestionAnswerSet
+pub fn termrock::widgets::QuestionAnswerSet::eq(&self, &termrock::widgets::QuestionAnswerSet) -> bool
+impl core::default::Default for termrock::widgets::QuestionAnswerSet
+pub fn termrock::widgets::QuestionAnswerSet::default() -> termrock::widgets::QuestionAnswerSet
+impl core::fmt::Debug for termrock::widgets::QuestionAnswerSet
+pub fn termrock::widgets::QuestionAnswerSet::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionAnswerSet
+impl core::marker::Freeze for termrock::widgets::QuestionAnswerSet
+impl core::marker::Send for termrock::widgets::QuestionAnswerSet
+impl core::marker::Sync for termrock::widgets::QuestionAnswerSet
+impl core::marker::Unpin for termrock::widgets::QuestionAnswerSet
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionAnswerSet
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionAnswerSet
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionAnswerSet
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionAnswerSet where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionAnswerSet::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionAnswerSet where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionAnswerSet::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionAnswerSet where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionAnswerSet::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionAnswerSet::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionAnswerSet where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionAnswerSet::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionAnswerSet::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionAnswerSet where T: core::clone::Clone
+pub type termrock::widgets::QuestionAnswerSet::Owned = T
+pub fn termrock::widgets::QuestionAnswerSet::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionAnswerSet::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionAnswerSet where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionAnswerSet::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionAnswerSet where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionAnswerSet::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionAnswerSet where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionAnswerSet::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionAnswerSet where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionAnswerSet::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionAnswerSet
+pub fn termrock::widgets::QuestionAnswerSet::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionAnswerSet
+pub struct termrock::widgets::QuestionFlow<'a>
+impl<'a> termrock::widgets::QuestionFlow<'a>
+pub const fn termrock::widgets::QuestionFlow<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::QuestionFlow<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::QuestionFlow<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::QuestionFlow<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::QuestionFlowState)
+pub fn termrock::widgets::QuestionFlow<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::QuestionFlowState)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::QuestionFlow<'_>
+pub type &termrock::widgets::QuestionFlow<'_>::State = termrock::widgets::QuestionFlowState
+pub fn &termrock::widgets::QuestionFlow<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::QuestionFlow<'_>
+pub type termrock::widgets::QuestionFlow<'_>::State = termrock::widgets::QuestionFlowState
+pub fn termrock::widgets::QuestionFlow<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::QuestionFlow<'a>
+pub fn termrock::widgets::QuestionFlow<'a>::clone(&self) -> termrock::widgets::QuestionFlow<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::QuestionFlow<'a>
+pub fn termrock::widgets::QuestionFlow<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::QuestionFlow<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::QuestionFlow<'a>
+impl<'a> core::marker::Send for termrock::widgets::QuestionFlow<'a>
+impl<'a> core::marker::Sync for termrock::widgets::QuestionFlow<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::QuestionFlow<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::QuestionFlow<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionFlow<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionFlow<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionFlow<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionFlow<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionFlow<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionFlow<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionFlow<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionFlow<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionFlow<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionFlow<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionFlow<'a> where T: core::clone::Clone
+pub type termrock::widgets::QuestionFlow<'a>::Owned = T
+pub fn termrock::widgets::QuestionFlow<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionFlow<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionFlow<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlow<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionFlow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlow<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionFlow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlow<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionFlow<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionFlow<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionFlow<'a>
+pub fn termrock::widgets::QuestionFlow<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionFlow<'a>
+pub struct termrock::widgets::QuestionFlowState
+pub termrock::widgets::QuestionFlowState::answers: termrock::widgets::QuestionAnswerSet
+pub termrock::widgets::QuestionFlowState::focused: bool
+pub termrock::widgets::QuestionFlowState::last_error: core::option::Option<alloc::string::String>
+pub termrock::widgets::QuestionFlowState::option_hits: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::QuestionFlowState::phase: termrock::widgets::QuestionFlowPhase
+pub termrock::widgets::QuestionFlowState::presentation: termrock::widgets::QuestionFlowPresentation
+pub termrock::widgets::QuestionFlowState::queue: alloc::vec::Vec<termrock::widgets::QuestionSet>
+pub termrock::widgets::QuestionFlowState::set: core::option::Option<termrock::widgets::QuestionSet>
+pub termrock::widgets::QuestionFlowState::step_index: usize
+pub termrock::widgets::QuestionFlowState::step_states: alloc::vec::Vec<termrock::widgets::QuestionStepState>
+impl termrock::widgets::QuestionFlowState
+pub fn termrock::widgets::QuestionFlowState::current_question(&self) -> core::option::Option<&termrock::widgets::Question>
+pub fn termrock::widgets::QuestionFlowState::enqueue(&mut self, termrock::widgets::QuestionSet)
+pub fn termrock::widgets::QuestionFlowState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::QuestionFlowOutcome
+pub fn termrock::widgets::QuestionFlowState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::QuestionFlowOutcome
+pub const fn termrock::widgets::QuestionFlowState::is_open(&self) -> bool
+pub fn termrock::widgets::QuestionFlowState::new() -> Self
+pub fn termrock::widgets::QuestionFlowState::open_set(&mut self, termrock::widgets::QuestionSet)
+pub fn termrock::widgets::QuestionFlowState::questions(&self) -> &[termrock::widgets::Question]
+pub fn termrock::widgets::QuestionFlowState::set_accepts_input(&mut self, bool)
+pub const fn termrock::widgets::QuestionFlowState::set_focused(&mut self, bool)
+pub fn termrock::widgets::QuestionFlowState::with_capacity(usize) -> Self
+impl core::clone::Clone for termrock::widgets::QuestionFlowState
+pub fn termrock::widgets::QuestionFlowState::clone(&self) -> termrock::widgets::QuestionFlowState
+impl core::cmp::Eq for termrock::widgets::QuestionFlowState
+impl core::cmp::PartialEq for termrock::widgets::QuestionFlowState
+pub fn termrock::widgets::QuestionFlowState::eq(&self, &termrock::widgets::QuestionFlowState) -> bool
+impl core::default::Default for termrock::widgets::QuestionFlowState
+pub fn termrock::widgets::QuestionFlowState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::QuestionFlowState
+pub fn termrock::widgets::QuestionFlowState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionFlowState
+impl core::marker::Freeze for termrock::widgets::QuestionFlowState
+impl core::marker::Send for termrock::widgets::QuestionFlowState
+impl core::marker::Sync for termrock::widgets::QuestionFlowState
+impl core::marker::Unpin for termrock::widgets::QuestionFlowState
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionFlowState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionFlowState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionFlowState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionFlowState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionFlowState where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionFlowState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionFlowState where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionFlowState::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionFlowState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionFlowState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionFlowState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionFlowState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionFlowState where T: core::clone::Clone
+pub type termrock::widgets::QuestionFlowState::Owned = T
+pub fn termrock::widgets::QuestionFlowState::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionFlowState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionFlowState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionFlowState where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionFlowState where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionFlowState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionFlowState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionFlowState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionFlowState
+pub fn termrock::widgets::QuestionFlowState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionFlowState
+pub struct termrock::widgets::QuestionOption
+pub termrock::widgets::QuestionOption::id: alloc::string::String
+pub termrock::widgets::QuestionOption::is_other: bool
+pub termrock::widgets::QuestionOption::label: alloc::string::String
+impl termrock::widgets::QuestionOption
+pub fn termrock::widgets::QuestionOption::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::QuestionOption::other(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::QuestionOption
+pub fn termrock::widgets::QuestionOption::clone(&self) -> termrock::widgets::QuestionOption
+impl core::cmp::Eq for termrock::widgets::QuestionOption
+impl core::cmp::PartialEq for termrock::widgets::QuestionOption
+pub fn termrock::widgets::QuestionOption::eq(&self, &termrock::widgets::QuestionOption) -> bool
+impl core::fmt::Debug for termrock::widgets::QuestionOption
+pub fn termrock::widgets::QuestionOption::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionOption
+impl core::marker::Freeze for termrock::widgets::QuestionOption
+impl core::marker::Send for termrock::widgets::QuestionOption
+impl core::marker::Sync for termrock::widgets::QuestionOption
+impl core::marker::Unpin for termrock::widgets::QuestionOption
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionOption
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionOption
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionOption
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionOption where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionOption::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionOption where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionOption::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionOption where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionOption::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionOption::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionOption where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionOption::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionOption::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionOption where T: core::clone::Clone
+pub type termrock::widgets::QuestionOption::Owned = T
+pub fn termrock::widgets::QuestionOption::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionOption::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionOption where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionOption::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionOption where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionOption::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionOption where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionOption::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionOption where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionOption::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionOption
+pub fn termrock::widgets::QuestionOption::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionOption
+pub struct termrock::widgets::QuestionProvenance
+pub termrock::widgets::QuestionProvenance::actor: core::option::Option<alloc::string::String>
+pub termrock::widgets::QuestionProvenance::path: core::option::Option<alloc::string::String>
+impl termrock::widgets::QuestionProvenance
+pub fn termrock::widgets::QuestionProvenance::actor(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::QuestionProvenance::path(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::QuestionProvenance
+pub fn termrock::widgets::QuestionProvenance::clone(&self) -> termrock::widgets::QuestionProvenance
+impl core::cmp::Eq for termrock::widgets::QuestionProvenance
+impl core::cmp::PartialEq for termrock::widgets::QuestionProvenance
+pub fn termrock::widgets::QuestionProvenance::eq(&self, &termrock::widgets::QuestionProvenance) -> bool
+impl core::default::Default for termrock::widgets::QuestionProvenance
+pub fn termrock::widgets::QuestionProvenance::default() -> termrock::widgets::QuestionProvenance
+impl core::fmt::Debug for termrock::widgets::QuestionProvenance
+pub fn termrock::widgets::QuestionProvenance::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionProvenance
+impl core::marker::Freeze for termrock::widgets::QuestionProvenance
+impl core::marker::Send for termrock::widgets::QuestionProvenance
+impl core::marker::Sync for termrock::widgets::QuestionProvenance
+impl core::marker::Unpin for termrock::widgets::QuestionProvenance
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionProvenance
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionProvenance
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionProvenance
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionProvenance where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionProvenance::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionProvenance where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionProvenance::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionProvenance where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionProvenance::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionProvenance::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionProvenance where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionProvenance::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionProvenance::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionProvenance where T: core::clone::Clone
+pub type termrock::widgets::QuestionProvenance::Owned = T
+pub fn termrock::widgets::QuestionProvenance::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionProvenance::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionProvenance where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionProvenance::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionProvenance where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionProvenance::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionProvenance where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionProvenance::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionProvenance where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionProvenance::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionProvenance
+pub fn termrock::widgets::QuestionProvenance::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionProvenance
+pub struct termrock::widgets::QuestionSet
+pub termrock::widgets::QuestionSet::id: alloc::string::String
+pub termrock::widgets::QuestionSet::provenance: termrock::widgets::QuestionProvenance
+pub termrock::widgets::QuestionSet::questions: alloc::vec::Vec<termrock::widgets::Question>
+pub termrock::widgets::QuestionSet::review_before_submit: bool
+pub termrock::widgets::QuestionSet::title: alloc::string::String
+impl termrock::widgets::QuestionSet
+pub fn termrock::widgets::QuestionSet::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, alloc::vec::Vec<termrock::widgets::Question>) -> Self
+pub fn termrock::widgets::QuestionSet::provenance(self, termrock::widgets::QuestionProvenance) -> Self
+pub const fn termrock::widgets::QuestionSet::review_before_submit(self, bool) -> Self
+impl core::clone::Clone for termrock::widgets::QuestionSet
+pub fn termrock::widgets::QuestionSet::clone(&self) -> termrock::widgets::QuestionSet
+impl core::cmp::Eq for termrock::widgets::QuestionSet
+impl core::cmp::PartialEq for termrock::widgets::QuestionSet
+pub fn termrock::widgets::QuestionSet::eq(&self, &termrock::widgets::QuestionSet) -> bool
+impl core::fmt::Debug for termrock::widgets::QuestionSet
+pub fn termrock::widgets::QuestionSet::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionSet
+impl core::marker::Freeze for termrock::widgets::QuestionSet
+impl core::marker::Send for termrock::widgets::QuestionSet
+impl core::marker::Sync for termrock::widgets::QuestionSet
+impl core::marker::Unpin for termrock::widgets::QuestionSet
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionSet
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionSet
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionSet
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionSet where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionSet::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionSet where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionSet::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionSet where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionSet::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionSet::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionSet where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionSet::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionSet::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionSet where T: core::clone::Clone
+pub type termrock::widgets::QuestionSet::Owned = T
+pub fn termrock::widgets::QuestionSet::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionSet::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionSet where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionSet::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionSet where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionSet::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionSet where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionSet::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionSet where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionSet::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionSet
+pub fn termrock::widgets::QuestionSet::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionSet
+pub struct termrock::widgets::QuestionStepState
+pub termrock::widgets::QuestionStepState::multi_selected: alloc::collections::btree::set::BTreeSet<alloc::string::String>
+pub termrock::widgets::QuestionStepState::option_cursor: usize
+pub termrock::widgets::QuestionStepState::scroll: usize
+pub termrock::widgets::QuestionStepState::text: alloc::string::String
+pub termrock::widgets::QuestionStepState::text_mode: bool
+impl core::clone::Clone for termrock::widgets::QuestionStepState
+pub fn termrock::widgets::QuestionStepState::clone(&self) -> termrock::widgets::QuestionStepState
+impl core::cmp::Eq for termrock::widgets::QuestionStepState
+impl core::cmp::PartialEq for termrock::widgets::QuestionStepState
+pub fn termrock::widgets::QuestionStepState::eq(&self, &termrock::widgets::QuestionStepState) -> bool
+impl core::default::Default for termrock::widgets::QuestionStepState
+pub fn termrock::widgets::QuestionStepState::default() -> termrock::widgets::QuestionStepState
+impl core::fmt::Debug for termrock::widgets::QuestionStepState
+pub fn termrock::widgets::QuestionStepState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QuestionStepState
+impl core::marker::Freeze for termrock::widgets::QuestionStepState
+impl core::marker::Send for termrock::widgets::QuestionStepState
+impl core::marker::Sync for termrock::widgets::QuestionStepState
+impl core::marker::Unpin for termrock::widgets::QuestionStepState
+impl core::marker::UnsafeUnpin for termrock::widgets::QuestionStepState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QuestionStepState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QuestionStepState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QuestionStepState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QuestionStepState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QuestionStepState where U: core::convert::From<T>
+pub fn termrock::widgets::QuestionStepState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QuestionStepState where U: core::convert::Into<T>
+pub type termrock::widgets::QuestionStepState::Error = core::convert::Infallible
+pub fn termrock::widgets::QuestionStepState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QuestionStepState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QuestionStepState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QuestionStepState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QuestionStepState where T: core::clone::Clone
+pub type termrock::widgets::QuestionStepState::Owned = T
+pub fn termrock::widgets::QuestionStepState::clone_into(&self, &mut T)
+pub fn termrock::widgets::QuestionStepState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QuestionStepState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QuestionStepState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QuestionStepState where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionStepState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QuestionStepState where T: ?core::marker::Sized
+pub fn termrock::widgets::QuestionStepState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QuestionStepState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QuestionStepState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QuestionStepState
+pub fn termrock::widgets::QuestionStepState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QuestionStepState
 pub struct termrock::widgets::QueuedConnectivityAction
 pub termrock::widgets::QueuedConnectivityAction::id: alloc::string::String
 pub termrock::widgets::QueuedConnectivityAction::label: alloc::string::String
@@ -77491,6 +77936,8 @@ pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_HISTORY_LIMIT: usize
 pub const termrock::widgets::PROMPT_UNDO_LIMIT: usize
+pub const termrock::widgets::QUESTION_FLOW_FULLSCREEN_OVERLAY_ID: &str
+pub const termrock::widgets::QUESTION_FLOW_OPTION_WINDOW: usize
 pub const termrock::widgets::QUICK_OPEN_DEFAULT_LIMIT: usize
 pub const termrock::widgets::QUICK_OPEN_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::QUICK_OPEN_FULLSCREEN_MAX_WIDTH: u16
@@ -77714,6 +78161,7 @@ pub fn termrock::widgets::example_notifications(u64) -> alloc::vec::Vec<termrock
 pub fn termrock::widgets::example_onboarding_steps() -> alloc::vec::Vec<termrock::widgets::StepItem>
 pub fn termrock::widgets::example_project_million(&termrock::widgets::VirtualListState<&'static str>, &mut alloc::vec::Vec<u64>)
 pub fn termrock::widgets::example_project_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
+pub fn termrock::widgets::example_question_set() -> termrock::widgets::QuestionSet
 pub fn termrock::widgets::example_quick_open_files() -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<&'static str>>
 pub fn termrock::widgets::example_quick_open_providers() -> alloc::vec::Vec<termrock::widgets::QuickOpenProvider>
 pub fn termrock::widgets::example_quick_open_symbols() -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<&'static str>>
@@ -78000,6 +78448,7 @@ pub fn termrock::widgets::toolbar_icon_action<'a, Id>(Id, &'a str, &'a str) -> t
 pub fn termrock::widgets::tooltip_overlay_size(u16, u16, u16) -> termrock::interaction::OverlaySize
 pub fn termrock::widgets::trace_total_ms(&[termrock::widgets::TraceSpan<'_>]) -> u64
 pub fn termrock::widgets::truncate_snippet_keep_match(&str, core::option::Option<&[termrock::widgets::MatchRange]>, usize) -> alloc::string::String
+pub fn termrock::widgets::validate_question_answer(&termrock::widgets::Question, core::option::Option<&termrock::widgets::QuestionAnswer>) -> core::result::Result<(), alloc::string::String>
 pub fn termrock::widgets::window_samples(&[f64], usize) -> &[f64]
 pub fn termrock::widgets::workbench_panels() -> [termrock::widgets::ResizablePanelSpec; 3]
 pub fn termrock::widgets::wrapped_hint_lines(&[termrock::widgets::HintSpan<'_>], u16, &termrock::style::DesignSystem) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>

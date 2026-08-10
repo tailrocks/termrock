@@ -1,0 +1,29 @@
+---
+title: QuestionFlow
+description: Multi-question agent HITL — structured answers, review, composer draft preserved.
+---
+
+# QuestionFlow
+
+Agent/workflow interview surface. Returns structured `QuestionAnswerSet` only;
+hosts own workflow policy. **Never clears** PromptComposer draft.
+
+## When to use / when not
+
+| Use QuestionFlow | Prefer |
+|------------------|--------|
+| Multi-step agent questions | — |
+| Multi-field data forms | [FormWizard](/docs/handbook/form-wizard) |
+| Trust gates | [PermissionPrompt](/docs/handbook/permission-prompt) |
+
+## Kinds
+
+Single · Multi · Free text · Other option · optional · validation · review
+
+## Keys
+
+j/k options · Enter answer · Space multi · [] step · v review · f fullscreen · esc cancel
+
+## Related
+
+FormWizard · PromptComposer · migration `0227`
