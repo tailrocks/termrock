@@ -441,6 +441,8 @@ pub struct DatabaseWorkbenchState {
     palette_open: bool,
     /// Last painted pane rects (for tests).
     last_panes: Vec<PaneGeom>,
+    /// Last layout/paint width — drives density when `density` override is `None`.
+    last_area_width: Option<u16>,
 }
 
 impl Default for DatabaseWorkbenchState {
@@ -508,9 +510,49 @@ impl DatabaseWorkbenchState {
             history_open: false,
             palette_open: false,
             last_panes: Vec::new(),
+            last_area_width: None,
         };
         state.sync_conn_gate_from_selection();
         state
+    }
+
+    /// Effective density for focus/layout: override, else last paint width, else Normal.
+    #[must_use]
+    pub fn effective_density(&self) -> DatabaseWorkbenchDensity {
+        if let Some(d) = self.density {
+            return d;
+        }
+        if let Some(w) = self.last_area_width {
+            return DatabaseWorkbenchDensity::for_width(w);
+        }
+        // Infer from last painted panes when width not recorded yet.
+        if !self.last_panes.is_empty() {
+            let has_inspector = self
+                .last_panes
+                .iter()
+                .any(|p| p.id.0.as_str() == "inspector" && !p.collapsed && p.area.width > 0);
+            let has_connections = self
+                .last_panes
+                .iter()
+                .any(|p| p.id.0.as_str() == "connections" && !p.collapsed && p.area.width > 0);
+            if !has_connections && !has_inspector {
+                return DatabaseWorkbenchDensity::Tiny;
+            }
+            if !has_inspector {
+                return DatabaseWorkbenchDensity::Narrow;
+            }
+            return DatabaseWorkbenchDensity::Normal;
+        }
+        DatabaseWorkbenchDensity::Normal
+    }
+
+    /// Clamp `focus` to panes visible at the given density.
+    pub fn clamp_focus_to_density(&mut self, density: DatabaseWorkbenchDensity) {
+        let order = self.focus_order_for(density);
+        if !order.iter().any(|id| *id == self.focus) {
+            self.focus = order.first().copied().unwrap_or("query");
+            self.apply_focus_gates();
+        }
     }
 
     /// History overlay open.
@@ -702,19 +744,13 @@ impl DatabaseWorkbenchState {
         DatabaseWorkbenchOutcome::FocusChanged(self.focus)
     }
 
-    /// Layout for area (stores into `last_panes`).
+    /// Layout for area (stores into `last_panes` + width for density).
     pub fn layout(&mut self, area: Rect) -> Vec<PaneGeom> {
-        let density = self
-            .density
-            .unwrap_or_else(|| DatabaseWorkbenchDensity::for_width(area.width));
+        self.last_area_width = Some(area.width);
+        let density = self.effective_density();
         let panes = database_workbench_layout_density(area, &self.workspace, density);
         self.last_panes = panes.clone();
-        // Clamp focus if pane gone
-        let order = self.focus_order_for(density);
-        if !order.iter().any(|id| *id == self.focus) {
-            self.focus = order.first().copied().unwrap_or("query");
-            self.apply_focus_gates();
-        }
+        self.clamp_focus_to_density(density);
         panes
     }
 
@@ -755,6 +791,9 @@ impl DatabaseWorkbenchState {
     }
 
     /// Keyboard routing.
+    ///
+    /// `inspect_fields` is the same host projection used for paint so inspector
+    /// keys are not dead (`ObjectInspectorState::handle_key` needs field count).
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
@@ -762,14 +801,16 @@ impl DatabaseWorkbenchState {
         history_entries: &[HistoryEntry<&'static str>],
         commands: &[CommandEntry<&'static str>],
         result_rows_len: usize,
+        inspect_fields: &[InspectorField<'_>],
     ) -> DatabaseWorkbenchOutcome {
         if key.kind != KeyEventKind::Press {
             return DatabaseWorkbenchOutcome::Ignored;
         }
 
-        let density = self
-            .density
-            .unwrap_or(DatabaseWorkbenchDensity::Normal);
+        // Match render: override or last paint width — never assume Normal when
+        // density is None (narrow/tiny would still Tab into missing panes).
+        let density = self.effective_density();
+        self.clamp_focus_to_density(density);
 
         // Overlay: palette
         if self.palette_open {
@@ -1032,7 +1073,10 @@ impl DatabaseWorkbenchState {
                 }
             }
             "inspector" => {
-                let out = self.inspector.handle_key_count(key, 0);
+                if inspect_fields.is_empty() {
+                    return DatabaseWorkbenchOutcome::Ignored;
+                }
+                let out = self.inspector.handle_key(key, inspect_fields);
                 match out {
                     ObjectInspectorOutcome::Ignored => DatabaseWorkbenchOutcome::Ignored,
                     other => {
@@ -1317,11 +1361,11 @@ pub fn render_database_workbench(buffer: &mut Buffer, area: Rect, surfaces: Data
         return;
     }
 
-    let density = state
-        .density
-        .unwrap_or_else(|| DatabaseWorkbenchDensity::for_width(area.width));
+    state.last_area_width = Some(area.width);
+    let density = state.effective_density();
     let panes = database_workbench_layout_density(area, &state.workspace, density);
     state.last_panes = panes.clone();
+    state.clamp_focus_to_density(density);
     state.apply_focus_gates();
 
     // Offline / disconnect banner over full width above status when gated
@@ -1830,7 +1874,7 @@ mod tests {
             "{out:?}"
         );
         // Ctrl+Enter path
-        let out = st.handle_key(ctrl(KeyCode::Enter), &[], &[], &[], 0);
+        let out = st.handle_key(ctrl(KeyCode::Enter), &[], &[], &[], 0, &[]);
         assert!(
             matches!(out, DatabaseWorkbenchOutcome::RunBlocked { .. }),
             "{out:?}"
@@ -1887,7 +1931,7 @@ mod tests {
         st.focus = "results";
         st.conn_gate = DatabaseConnGate::Connected;
         // Drive export via Ctrl+E
-        let out = st.handle_key(ctrl(KeyCode::Char('e')), &[], &[], &[], 3);
+        let out = st.handle_key(ctrl(KeyCode::Char('e')), &[], &[], &[], 3, &[]);
         assert!(
             matches!(
                 out,
@@ -2070,19 +2114,101 @@ mod tests {
         let mut st = open();
         let cmds = example_db_commands();
         let hist = example_db_history();
-        let out = st.handle_key(ctrl(KeyCode::Char('p')), &[], &hist, &cmds, 0);
+        let out = st.handle_key(ctrl(KeyCode::Char('p')), &[], &hist, &cmds, 0, &[]);
         assert!(matches!(out, DatabaseWorkbenchOutcome::OpenPalette));
         assert!(st.palette_open());
-        let out = st.handle_key(press(KeyCode::Esc), &[], &hist, &cmds, 0);
+        let out = st.handle_key(press(KeyCode::Esc), &[], &hist, &cmds, 0, &[]);
         assert!(matches!(
             out,
             DatabaseWorkbenchOutcome::Palette { .. }
         ));
         assert!(!st.palette_open());
 
-        let out = st.handle_key(ctrl(KeyCode::Char('h')), &[], &hist, &cmds, 0);
+        let out = st.handle_key(ctrl(KeyCode::Char('h')), &[], &hist, &cmds, 0, &[]);
         assert!(matches!(out, DatabaseWorkbenchOutcome::OpenHistory));
         assert!(st.history_open());
+    }
+
+    #[test]
+    fn inspector_keys_with_fields() {
+        let mut st = open();
+        st.density = Some(DatabaseWorkbenchDensity::Normal);
+        st.set_focus(DatabaseWorkbenchPane::Inspector);
+        st.inspector.set_accepts_input(true);
+        let fields = example_inspect_fields();
+        assert!(!fields.is_empty());
+        // Dead path: empty fields must not panic and stays Ignored
+        assert!(matches!(
+            st.handle_key(press(KeyCode::Down), &[], &[], &[], 0, &[]),
+            DatabaseWorkbenchOutcome::Ignored
+        ));
+        // Live path: real fields drive CursorMoved (or Inspector kind)
+        let out = st.handle_key(press(KeyCode::Down), &[], &[], &[], 0, &fields);
+        assert!(
+            matches!(
+                out,
+                DatabaseWorkbenchOutcome::Inspector { ref kind }
+                    if kind == "CursorMoved" || kind == "Scrolled" || kind == "Activate"
+            ) || matches!(out, DatabaseWorkbenchOutcome::Ignored),
+            // At least not stuck on handle_key_count(0) always-Ignored without accepting input
+            "{out:?}"
+        );
+        // Force a second down from index 0 after ensuring focus/accepts
+        st.set_focus(DatabaseWorkbenchPane::Inspector);
+        let out = st.handle_key(press(KeyCode::Down), &[], &[], &[], 0, &fields);
+        assert!(
+            matches!(out, DatabaseWorkbenchOutcome::Inspector { ref kind } if kind != "Ignored"),
+            "inspector with fields must emit non-Ignored on Down, got {out:?}"
+        );
+    }
+
+    #[test]
+    fn density_none_narrow_width_clamps_focus_cycle() {
+        let mut st = open();
+        // Explicit None override path (default)
+        st.density = None;
+        // Simulate last paint at narrow width without density override
+        let _ = st.layout(Rect::new(0, 0, 70, 24));
+        assert_eq!(
+            st.effective_density(),
+            DatabaseWorkbenchDensity::Narrow,
+            "width 70 must be Narrow when density=None"
+        );
+        // Focus inspector then Tab/handle_key must clamp off inspector
+        st.focus = "inspector";
+        let out = st.handle_key(press(KeyCode::Tab), &[], &[], &[], 0, &[]);
+        assert!(
+            matches!(out, DatabaseWorkbenchOutcome::FocusChanged(_)),
+            "{out:?}"
+        );
+        assert_ne!(
+            st.focus, "inspector",
+            "narrow paint must not keep focus on unpainted inspector"
+        );
+        // Full Tab cycle never lands on inspector
+        st.focus = "connections";
+        for _ in 0..8 {
+            let _ = st.focus_next(st.effective_density());
+            assert_ne!(st.focus, "inspector");
+        }
+        // Tiny width
+        let _ = st.layout(Rect::new(0, 0, 40, 16));
+        assert_eq!(st.effective_density(), DatabaseWorkbenchDensity::Tiny);
+        st.focus = "connections";
+        st.clamp_focus_to_density(st.effective_density());
+        assert!(
+            st.focus == "query" || st.focus == "results",
+            "tiny clamps to query/results, got {}",
+            st.focus
+        );
+        for _ in 0..6 {
+            let _ = st.handle_key(press(KeyCode::Tab), &[], &[], &[], 0, &[]);
+            assert!(
+                st.focus == "query" || st.focus == "results",
+                "tiny Tab cycle, got {}",
+                st.focus
+            );
+        }
     }
 
     #[test]
