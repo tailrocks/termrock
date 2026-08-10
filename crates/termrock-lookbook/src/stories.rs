@@ -74,6 +74,7 @@ use termrock::{
         TerminalOutput, TerminalOutputState, TerminalCommandMeta, TerminalLine, TerminalRunStatus,
         TerminalEnvEntry, TerminalOutputRecipe, TerminalPaintMode,
         HexViewer, HexViewerState, HexWindow, HexEndian, HexAsciiMode,
+        FileTree, FileTreeState, FileTreeEntry, FileTreeKind, FileGitStatus,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2200,6 +2201,69 @@ pub(crate) fn stories() -> Vec<Story> {
             64,
             10,
             hex_viewer_ascii,
+        ),
+        Story::new(
+            "file-tree/basic",
+            "FileTree basic",
+            "FileTree",
+            "Git status, kinds, lazy dir chrome.",
+            40,
+            14,
+            file_tree_basic,
+        ),
+        Story::new(
+            "file-tree/filter",
+            "FileTree filter",
+            "FileTree",
+            "Search filter with ancestor retention.",
+            40,
+            12,
+            file_tree_filter,
+        ),
+        Story::new(
+            "file-tree/hidden",
+            "FileTree hidden",
+            "FileTree",
+            "Show hidden and ignored entries.",
+            40,
+            12,
+            file_tree_hidden,
+        ),
+        Story::new(
+            "file-tree/confirm",
+            "FileTree delete confirm",
+            "FileTree",
+            "Safe multi-delete confirm banner.",
+            48,
+            10,
+            file_tree_confirm,
+        ),
+        Story::new(
+            "file-tree/empty",
+            "FileTree empty",
+            "FileTree",
+            "Empty tree mark.",
+            28,
+            4,
+            file_tree_empty,
+        ),
+        Story::new(
+            "file-tree/narrow",
+            "FileTree narrow",
+            "FileTree",
+            "Narrow file tree (22 cols).",
+            22,
+            10,
+            file_tree_basic,
+        ),
+        Story::new(
+            "file-tree/ascii",
+            "FileTree ASCII",
+            "FileTree",
+            "ASCII kind glyphs.",
+            36,
+            10,
+            file_tree_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -11574,6 +11638,89 @@ fn hex_viewer_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     HexViewer::new(win, system)
         .ascii(true)
         .colorless(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_tree_sample() -> Vec<FileTreeEntry<'static, &'static str>> {
+    vec![
+        FileTreeEntry::dir("src", "src", "src", 0).expanded(),
+        FileTreeEntry::file("src/main.rs", "main.rs", "src/main.rs", 1)
+            .parent("src")
+            .file_type("rs")
+            .git(FileGitStatus::Modified),
+        FileTreeEntry::file("src/lib.rs", "lib.rs", "src/lib.rs", 1)
+            .parent("src")
+            .file_type("rs")
+            .git(FileGitStatus::Added),
+        FileTreeEntry::dir("src/widgets", "widgets", "src/widgets", 1)
+            .parent("src")
+            .lazy_dir(),
+        FileTreeEntry::file("README.md", "README.md", "README.md", 0).file_type("md"),
+        FileTreeEntry::file(".env", ".env", ".env", 0)
+            .hidden(true)
+            .git(FileGitStatus::Untracked),
+        FileTreeEntry::dir("target", "target", "target", 0)
+            .ignored(true)
+            .git(FileGitStatus::Ignored),
+        FileTreeEntry::file("link", "link", "link", 0)
+            .kind(FileTreeKind::SymlinkFile)
+            .symlink_target("src/main.rs"),
+        FileTreeEntry::file("locked", "locked", "locked", 0).error_msg("permission denied"),
+    ]
+}
+
+fn file_tree_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = file_tree_sample();
+    let mut state = FileTreeState::with_selected(Some("src/main.rs"));
+    FileTree::new(&entries, system)
+        .title("repo")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_tree_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = file_tree_sample();
+    let mut state = FileTreeState::new();
+    state.filter = Some("main".into());
+    FileTree::new(&entries, system)
+        .title("filter")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_tree_hidden(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = file_tree_sample();
+    let mut state = FileTreeState::new();
+    state.show_hidden = true;
+    state.show_ignored = true;
+    FileTree::new(&entries, system)
+        .title("all")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_tree_confirm(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = file_tree_sample();
+    let mut state = FileTreeState::new();
+    state.select(Some("src/main.rs"));
+    state.pending_confirm = Some(termrock::widgets::FileTreeDestructiveConfirm {
+        subject: "2 items".into(),
+        verb: "permanently delete",
+        ids: vec!["src/main.rs", "src/lib.rs"],
+    });
+    FileTree::new(&entries, system)
+        .title("delete")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_tree_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = FileTreeState::<&str>::new();
+    FileTree::new(&[], system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_tree_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = file_tree_sample();
+    let mut state = FileTreeState::with_selected(Some("src"));
+    state.ascii = true;
+    FileTree::new(&entries, system)
+        .title("ascii")
         .render(area, frame.buffer_mut(), &mut state);
 }
 

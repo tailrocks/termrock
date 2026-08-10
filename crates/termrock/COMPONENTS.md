@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Chart`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `CodeFrame`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiagnosticView`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `Form`, `FormWizard`, `Gauge`, `Heading`, `HexViewer`, `Histogram`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `QuickOpen`, `ResizablePanelGroup`, `QuestionFlow`, `RangeSlider`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `TerminalOutput`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
+The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Chart`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `CodeFrame`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiagnosticView`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `FileTree`, `Form`, `FormWizard`, `Gauge`, `Heading`, `HexViewer`, `Histogram`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `QuickOpen`, `ResizablePanelGroup`, `QuestionFlow`, `RangeSlider`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `TerminalOutput`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
 
 `ScrollArea` / `ScrollAreaState` is the canonical scrolling primitive: dual-axis
 offsets, wheel/page/intents, scrollbar chrome, follow-tail with paused unseen
@@ -55,6 +55,14 @@ reserved proportional-scrollbar gutter. Stable-ID rows use the general
 navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
+
+`FileTree` is a **filesystem explorer** on `Tree`: host projects
+`FileTreeEntry` rows (kind, git status, hidden/ignored, lazy dirs, symlink
+targets, permission errors). State owns filter, hidden/ignored toggles, rename
+draft, multi-select, and safe multi-delete confirm. Outcomes are typed
+requests (open, preview, load children, create/rename/delete, copy path,
+QuickOpen, breadcrumbs) — no FS/Git I/O. Bridges: `breadcrumbs_from_path`,
+`file_tree_to_quick_open_items`.
 
 `Sparkline`, `Chart`, `Gauge`, `Histogram`, `BarSeries`, and `SegmentedMeter`
 form one **visualization family** with shared `ScaleMode` (auto/fixed/log),

@@ -1,0 +1,58 @@
+---
+title: FileTree
+description: Filesystem Tree with git status, filters, and typed FS operation requests.
+---
+
+# FileTree
+
+Filesystem-specialized explorer on top of [Tree](/docs/handbook/tree). Host
+projects flattened visible rows (`FileTreeEntry`); TermRock paints and emits
+**requests** only — no filesystem or Git I/O.
+
+## When to use / when not
+
+| Use FileTree | Prefer |
+|--------------|--------|
+| Repo / project explorer | — |
+| Generic hierarchy | [Tree](/docs/handbook/tree) |
+| Single-directory picker dialog | [FilePicker](/docs/handbook/file-picker) |
+| Fuzzy jump | [QuickOpen](/docs/handbook/quick-open) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| FS reads, git status, expansion | Host |
+| Cursor, multi-select, filter chrome | `FileTreeState` |
+| Open/rename/delete/create | Host via outcomes |
+
+## Outcomes (requests)
+
+- `OpenRequested` · `PreviewRequested` · `LoadChildrenRequested`
+- `CreateFileRequested` · `CreateDirRequested` · `RenameRequested`
+- `DeleteRequested` / `ConfirmRequired` (safe multi-delete)
+- `CopyPathRequested` · `RevealOsRequested` · `QuickOpenRequested`
+- `BreadcrumbsPath` · filter / hidden / ignored toggles
+
+## Integration
+
+```rust
+// Breadcrumbs from selection path
+breadcrumbs_from_path(entry.path)
+
+// QuickOpen flat list
+file_tree_to_quick_open_items(&entries, true)
+```
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| `/` `.` `i` | Filter · hidden · ignored |
+| `n` `N` `r` `d` | New file · new dir · rename · delete |
+| `y` `p` `C-o` | Copy path · preview · QuickOpen |
+| `g` `G` | Breadcrumbs · OS reveal |
+
+## Related
+
+Tree · QuickOpen · Breadcrumbs · FilePicker · migration `0202`

@@ -1604,6 +1604,21 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** select.  
 24. **Perf:** O(visible events).
 
+## FileTree
+
+1. **Purpose:** FS-specialized Tree with typed file-op requests.  
+2. **Anatomy:** title? · filter? · rename draft? · tree body · confirm banner.  
+3. **Public properties:** `FileTreeEntry[]` (kind, git, path, lazy, errors).  
+4. **State:** embeds `TreeState`; filter; hidden/ignored; draft; confirm.  
+5. **Variants:** file/dir/symlink; git M/A/D/?; lazy/loading/error.  
+6–10. Yazi-like chords; multi-delete confirm.  
+11–14. No FS/Git IO; host pages huge dirs.  
+15–18. ASCII kind glyphs; status letters.  
+19. **Composition:** Tree paint; QuickOpen; Breadcrumbs.  
+20. **Outcomes:** Open/Create/Rename/Delete/Preview/LoadChildren/…  
+21. **Stories:** `file-tree/{basic,filter,hidden,confirm,empty,narrow,ascii}`  
+22–24. Filter ancestor retention; path normalize tests.
+
 ## Charts (Sparkline / Chart / Gauge / Histogram)
 
 1. **Purpose:** Coherent terminal data-viz family.  

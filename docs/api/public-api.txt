@@ -14672,6 +14672,10 @@ pub const termrock::widgets::event_stream_bench::BURST_BATCH: u32
 pub const termrock::widgets::event_stream_bench::EVENTS_PER_SEC: u32
 pub const termrock::widgets::event_stream_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::event_stream_bench::VIEWPORT: u16
+pub mod termrock::widgets::file_tree_bench
+pub const termrock::widgets::file_tree_bench::HUGE_DIR: usize
+pub const termrock::widgets::file_tree_bench::MAX_PAINT_CELLS: u32
+pub const termrock::widgets::file_tree_bench::VIEWPORT: u16
 pub mod termrock::widgets::hex_viewer_bench
 pub const termrock::widgets::hex_viewer_bench::HUGE_LEN: u64
 pub const termrock::widgets::hex_viewer_bench::MAX_PAINT_CELLS: u32
@@ -21236,6 +21240,71 @@ pub unsafe fn termrock::widgets::FileEntryKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::FileEntryKind
 pub fn termrock::widgets::FileEntryKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FileEntryKind
+#[non_exhaustive] pub enum termrock::widgets::FileGitStatus
+pub termrock::widgets::FileGitStatus::Added
+pub termrock::widgets::FileGitStatus::Clean
+pub termrock::widgets::FileGitStatus::Conflict
+pub termrock::widgets::FileGitStatus::Deleted
+pub termrock::widgets::FileGitStatus::Ignored
+pub termrock::widgets::FileGitStatus::Modified
+pub termrock::widgets::FileGitStatus::Renamed
+pub termrock::widgets::FileGitStatus::Unknown
+pub termrock::widgets::FileGitStatus::Untracked
+impl termrock::widgets::FileGitStatus
+pub const fn termrock::widgets::FileGitStatus::id(self) -> &'static str
+pub const fn termrock::widgets::FileGitStatus::letter(self) -> char
+pub const fn termrock::widgets::FileGitStatus::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::widgets::FileGitStatus
+pub fn termrock::widgets::FileGitStatus::clone(&self) -> termrock::widgets::FileGitStatus
+impl core::cmp::Eq for termrock::widgets::FileGitStatus
+impl core::cmp::Ord for termrock::widgets::FileGitStatus
+pub fn termrock::widgets::FileGitStatus::cmp(&self, &termrock::widgets::FileGitStatus) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::FileGitStatus
+pub fn termrock::widgets::FileGitStatus::eq(&self, &termrock::widgets::FileGitStatus) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::FileGitStatus
+pub fn termrock::widgets::FileGitStatus::partial_cmp(&self, &termrock::widgets::FileGitStatus) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::FileGitStatus
+pub fn termrock::widgets::FileGitStatus::default() -> termrock::widgets::FileGitStatus
+impl core::fmt::Debug for termrock::widgets::FileGitStatus
+pub fn termrock::widgets::FileGitStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FileGitStatus
+pub fn termrock::widgets::FileGitStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FileGitStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::FileGitStatus
+impl core::marker::Freeze for termrock::widgets::FileGitStatus
+impl core::marker::Send for termrock::widgets::FileGitStatus
+impl core::marker::Sync for termrock::widgets::FileGitStatus
+impl core::marker::Unpin for termrock::widgets::FileGitStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::FileGitStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileGitStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileGitStatus
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::FileGitStatus where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileGitStatus::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileGitStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileGitStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileGitStatus where U: core::convert::From<T>
+pub fn termrock::widgets::FileGitStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileGitStatus where U: core::convert::Into<T>
+pub type termrock::widgets::FileGitStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::FileGitStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileGitStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileGitStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileGitStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileGitStatus where T: core::clone::Clone
+pub type termrock::widgets::FileGitStatus::Owned = T
+pub fn termrock::widgets::FileGitStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileGitStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileGitStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileGitStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileGitStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::FileGitStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileGitStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::FileGitStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileGitStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileGitStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileGitStatus
+pub fn termrock::widgets::FileGitStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileGitStatus
 #[non_exhaustive] pub enum termrock::widgets::FileListingStatus
 pub termrock::widgets::FileListingStatus::Error
 pub termrock::widgets::FileListingStatus::Idle
@@ -21552,6 +21621,140 @@ pub unsafe fn termrock::widgets::FileSortKey::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::FileSortKey
 pub fn termrock::widgets::FileSortKey::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FileSortKey
+#[non_exhaustive] pub enum termrock::widgets::FileTreeKind
+pub termrock::widgets::FileTreeKind::Directory
+pub termrock::widgets::FileTreeKind::File
+pub termrock::widgets::FileTreeKind::Other
+pub termrock::widgets::FileTreeKind::SymlinkDir
+pub termrock::widgets::FileTreeKind::SymlinkFile
+impl termrock::widgets::FileTreeKind
+pub const fn termrock::widgets::FileTreeKind::from_entry_kind(termrock::widgets::FileEntryKind) -> Self
+pub const fn termrock::widgets::FileTreeKind::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::FileTreeKind::id(self) -> &'static str
+pub const fn termrock::widgets::FileTreeKind::is_dir(self) -> bool
+pub const fn termrock::widgets::FileTreeKind::is_symlink(self) -> bool
+impl core::clone::Clone for termrock::widgets::FileTreeKind
+pub fn termrock::widgets::FileTreeKind::clone(&self) -> termrock::widgets::FileTreeKind
+impl core::cmp::Eq for termrock::widgets::FileTreeKind
+impl core::cmp::PartialEq for termrock::widgets::FileTreeKind
+pub fn termrock::widgets::FileTreeKind::eq(&self, &termrock::widgets::FileTreeKind) -> bool
+impl core::default::Default for termrock::widgets::FileTreeKind
+pub fn termrock::widgets::FileTreeKind::default() -> termrock::widgets::FileTreeKind
+impl core::fmt::Debug for termrock::widgets::FileTreeKind
+pub fn termrock::widgets::FileTreeKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FileTreeKind
+pub fn termrock::widgets::FileTreeKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FileTreeKind
+impl core::marker::StructuralPartialEq for termrock::widgets::FileTreeKind
+impl core::marker::Freeze for termrock::widgets::FileTreeKind
+impl core::marker::Send for termrock::widgets::FileTreeKind
+impl core::marker::Sync for termrock::widgets::FileTreeKind
+impl core::marker::Unpin for termrock::widgets::FileTreeKind
+impl core::marker::UnsafeUnpin for termrock::widgets::FileTreeKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileTreeKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileTreeKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileTreeKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileTreeKind where U: core::convert::From<T>
+pub fn termrock::widgets::FileTreeKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileTreeKind where U: core::convert::Into<T>
+pub type termrock::widgets::FileTreeKind::Error = core::convert::Infallible
+pub fn termrock::widgets::FileTreeKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileTreeKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileTreeKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileTreeKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileTreeKind where T: core::clone::Clone
+pub type termrock::widgets::FileTreeKind::Owned = T
+pub fn termrock::widgets::FileTreeKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileTreeKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileTreeKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileTreeKind where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileTreeKind where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileTreeKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileTreeKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileTreeKind
+pub fn termrock::widgets::FileTreeKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileTreeKind
+#[non_exhaustive] pub enum termrock::widgets::FileTreeOutcome<Id>
+pub termrock::widgets::FileTreeOutcome::BreadcrumbsPath
+pub termrock::widgets::FileTreeOutcome::BreadcrumbsPath::items: alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
+pub termrock::widgets::FileTreeOutcome::Cancelled
+pub termrock::widgets::FileTreeOutcome::CheckToggled(Id)
+pub termrock::widgets::FileTreeOutcome::ConfirmCancelled
+pub termrock::widgets::FileTreeOutcome::ConfirmRequired(termrock::widgets::FileTreeDestructiveConfirm<Id>)
+pub termrock::widgets::FileTreeOutcome::CopyPathRequested
+pub termrock::widgets::FileTreeOutcome::CopyPathRequested::paths: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::FileTreeOutcome::CreateDirRequested
+pub termrock::widgets::FileTreeOutcome::CreateDirRequested::name: alloc::string::String
+pub termrock::widgets::FileTreeOutcome::CreateDirRequested::parent: core::option::Option<Id>
+pub termrock::widgets::FileTreeOutcome::CreateFileRequested
+pub termrock::widgets::FileTreeOutcome::CreateFileRequested::name: alloc::string::String
+pub termrock::widgets::FileTreeOutcome::CreateFileRequested::parent: core::option::Option<Id>
+pub termrock::widgets::FileTreeOutcome::DeleteRequested
+pub termrock::widgets::FileTreeOutcome::DeleteRequested::ids: alloc::vec::Vec<Id>
+pub termrock::widgets::FileTreeOutcome::DraftChanged(alloc::string::String)
+pub termrock::widgets::FileTreeOutcome::FilterChanged(alloc::string::String)
+pub termrock::widgets::FileTreeOutcome::Ignored
+pub termrock::widgets::FileTreeOutcome::LoadChildrenRequested(Id)
+pub termrock::widgets::FileTreeOutcome::OpenRequested(Id)
+pub termrock::widgets::FileTreeOutcome::PreviewRequested(Id)
+pub termrock::widgets::FileTreeOutcome::QuickOpenRequested
+pub termrock::widgets::FileTreeOutcome::RenameRequested
+pub termrock::widgets::FileTreeOutcome::RenameRequested::from: alloc::string::String
+pub termrock::widgets::FileTreeOutcome::RenameRequested::id: Id
+pub termrock::widgets::FileTreeOutcome::RenameRequested::to: alloc::string::String
+pub termrock::widgets::FileTreeOutcome::RevealOsRequested(Id)
+pub termrock::widgets::FileTreeOutcome::RevealPathRequested
+pub termrock::widgets::FileTreeOutcome::RevealPathRequested::path: alloc::string::String
+pub termrock::widgets::FileTreeOutcome::SelectionChanged(Id)
+pub termrock::widgets::FileTreeOutcome::ShowHiddenToggled
+pub termrock::widgets::FileTreeOutcome::ShowHiddenToggled::on: bool
+pub termrock::widgets::FileTreeOutcome::ShowIgnoredToggled
+pub termrock::widgets::FileTreeOutcome::ShowIgnoredToggled::on: bool
+pub termrock::widgets::FileTreeOutcome::Toggle(Id)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FileTreeOutcome<Id>
+pub fn termrock::widgets::FileTreeOutcome<Id>::clone(&self) -> termrock::widgets::FileTreeOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FileTreeOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FileTreeOutcome<Id>
+pub fn termrock::widgets::FileTreeOutcome<Id>::eq(&self, &termrock::widgets::FileTreeOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FileTreeOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FileTreeOutcome<Id>
+pub fn termrock::widgets::FileTreeOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::FileTreeOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::FileTreeOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::FileTreeOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::FileTreeOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::FileTreeOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileTreeOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileTreeOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileTreeOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileTreeOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FileTreeOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileTreeOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FileTreeOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FileTreeOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileTreeOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileTreeOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileTreeOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileTreeOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::FileTreeOutcome<Id>::Owned = T
+pub fn termrock::widgets::FileTreeOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileTreeOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileTreeOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileTreeOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileTreeOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileTreeOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileTreeOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileTreeOutcome<Id>
+pub fn termrock::widgets::FileTreeOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileTreeOutcome<Id>
 #[non_exhaustive] pub enum termrock::widgets::FixApplicability
 pub termrock::widgets::FixApplicability::MachineApplicable
 pub termrock::widgets::FixApplicability::MaybeIncorrect
@@ -44583,6 +44786,270 @@ pub unsafe fn termrock::widgets::FilePreview::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::FilePreview
 pub fn termrock::widgets::FilePreview::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FilePreview
+pub struct termrock::widgets::FileTree<'a, Id>
+impl<'a, Id> termrock::widgets::FileTree<'a, Id>
+pub const fn termrock::widgets::FileTree<'a, Id>::focused(self, bool) -> Self
+pub const fn termrock::widgets::FileTree<'a, Id>::new(&'a [termrock::widgets::FileTreeEntry<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::FileTree<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::FileTreeState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Eq
+pub const fn termrock::widgets::FileTree<'a, Id>::show_filter_chrome(self, bool) -> Self
+pub const fn termrock::widgets::FileTree<'a, Id>::title(self, &'a str) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FileTree<'a, Id>
+pub fn termrock::widgets::FileTree<'a, Id>::clone(&self) -> termrock::widgets::FileTree<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FileTree<'a, Id>
+pub fn termrock::widgets::FileTree<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::FileTree<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::FileTree<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::FileTree<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::FileTree<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::FileTree<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::FileTree<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileTree<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileTree<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileTree<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FileTree<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileTree<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FileTree<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FileTree<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileTree<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileTree<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileTree<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileTree<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::FileTree<'a, Id>::Owned = T
+pub fn termrock::widgets::FileTree<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileTree<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileTree<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileTree<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileTree<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTree<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileTree<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTree<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileTree<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileTree<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileTree<'a, Id>
+pub fn termrock::widgets::FileTree<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileTree<'a, Id>
+pub struct termrock::widgets::FileTreeDestructiveConfirm<Id>
+pub termrock::widgets::FileTreeDestructiveConfirm::ids: alloc::vec::Vec<Id>
+pub termrock::widgets::FileTreeDestructiveConfirm::subject: alloc::string::String
+pub termrock::widgets::FileTreeDestructiveConfirm::verb: &'static str
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FileTreeDestructiveConfirm<Id>
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::clone(&self) -> termrock::widgets::FileTreeDestructiveConfirm<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FileTreeDestructiveConfirm<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FileTreeDestructiveConfirm<Id>
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::eq(&self, &termrock::widgets::FileTreeDestructiveConfirm<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FileTreeDestructiveConfirm<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FileTreeDestructiveConfirm<Id>
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::FileTreeDestructiveConfirm<Id>
+impl<Id> core::marker::Send for termrock::widgets::FileTreeDestructiveConfirm<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::FileTreeDestructiveConfirm<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::FileTreeDestructiveConfirm<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::FileTreeDestructiveConfirm<Id>
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileTreeDestructiveConfirm<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileTreeDestructiveConfirm<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileTreeDestructiveConfirm<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileTreeDestructiveConfirm<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileTreeDestructiveConfirm<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FileTreeDestructiveConfirm<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileTreeDestructiveConfirm<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileTreeDestructiveConfirm<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileTreeDestructiveConfirm<Id> where T: core::clone::Clone
+pub type termrock::widgets::FileTreeDestructiveConfirm<Id>::Owned = T
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileTreeDestructiveConfirm<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileTreeDestructiveConfirm<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileTreeDestructiveConfirm<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileTreeDestructiveConfirm<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileTreeDestructiveConfirm<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileTreeDestructiveConfirm<Id>
+pub fn termrock::widgets::FileTreeDestructiveConfirm<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileTreeDestructiveConfirm<Id>
+pub struct termrock::widgets::FileTreeDraft<Id>
+pub termrock::widgets::FileTreeDraft::from: alloc::string::String
+pub termrock::widgets::FileTreeDraft::name: alloc::string::String
+pub termrock::widgets::FileTreeDraft::target: Id
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FileTreeDraft<Id>
+pub fn termrock::widgets::FileTreeDraft<Id>::clone(&self) -> termrock::widgets::FileTreeDraft<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FileTreeDraft<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FileTreeDraft<Id>
+pub fn termrock::widgets::FileTreeDraft<Id>::eq(&self, &termrock::widgets::FileTreeDraft<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FileTreeDraft<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FileTreeDraft<Id>
+pub fn termrock::widgets::FileTreeDraft<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::FileTreeDraft<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::FileTreeDraft<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::FileTreeDraft<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::FileTreeDraft<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::FileTreeDraft<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileTreeDraft<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileTreeDraft<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileTreeDraft<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeDraft<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileTreeDraft<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FileTreeDraft<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileTreeDraft<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FileTreeDraft<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FileTreeDraft<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileTreeDraft<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileTreeDraft<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileTreeDraft<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileTreeDraft<Id> where T: core::clone::Clone
+pub type termrock::widgets::FileTreeDraft<Id>::Owned = T
+pub fn termrock::widgets::FileTreeDraft<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileTreeDraft<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileTreeDraft<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeDraft<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileTreeDraft<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeDraft<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileTreeDraft<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeDraft<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileTreeDraft<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileTreeDraft<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileTreeDraft<Id>
+pub fn termrock::widgets::FileTreeDraft<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileTreeDraft<Id>
+pub struct termrock::widgets::FileTreeEntry<'a, Id>
+pub termrock::widgets::FileTreeEntry::branch: bool
+pub termrock::widgets::FileTreeEntry::depth: u16
+pub termrock::widgets::FileTreeEntry::enabled: bool
+pub termrock::widgets::FileTreeEntry::error: core::option::Option<&'a str>
+pub termrock::widgets::FileTreeEntry::expanded: bool
+pub termrock::widgets::FileTreeEntry::file_type: core::option::Option<&'a str>
+pub termrock::widgets::FileTreeEntry::git: termrock::widgets::FileGitStatus
+pub termrock::widgets::FileTreeEntry::hidden: bool
+pub termrock::widgets::FileTreeEntry::id: Id
+pub termrock::widgets::FileTreeEntry::ignored: bool
+pub termrock::widgets::FileTreeEntry::kind: termrock::widgets::FileTreeKind
+pub termrock::widgets::FileTreeEntry::name: &'a str
+pub termrock::widgets::FileTreeEntry::parent: core::option::Option<Id>
+pub termrock::widgets::FileTreeEntry::path: &'a str
+pub termrock::widgets::FileTreeEntry::size: core::option::Option<u64>
+pub termrock::widgets::FileTreeEntry::status: termrock::widgets::TreeNodeStatus
+pub termrock::widgets::FileTreeEntry::symlink_target: core::option::Option<&'a str>
+impl<'a, Id> termrock::widgets::FileTreeEntry<'a, Id>
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::dir(Id, &'a str, &'a str, u16) -> Self
+pub const fn termrock::widgets::FileTreeEntry<'a, Id>::error_msg(self, &'a str) -> Self
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::expanded(self) -> Self
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::file(Id, &'a str, &'a str, u16) -> Self
+pub const fn termrock::widgets::FileTreeEntry<'a, Id>::file_type(self, &'a str) -> Self
+pub const fn termrock::widgets::FileTreeEntry<'a, Id>::git(self, termrock::widgets::FileGitStatus) -> Self
+pub const fn termrock::widgets::FileTreeEntry<'a, Id>::hidden(self, bool) -> Self
+pub const fn termrock::widgets::FileTreeEntry<'a, Id>::ignored(self, bool) -> Self
+pub const fn termrock::widgets::FileTreeEntry<'a, Id>::kind(self, termrock::widgets::FileTreeKind) -> Self
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::lazy_dir(self) -> Self
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::parent(self, Id) -> Self
+pub const fn termrock::widgets::FileTreeEntry<'a, Id>::size(self, u64) -> Self
+pub const fn termrock::widgets::FileTreeEntry<'a, Id>::symlink_target(self, &'a str) -> Self
+pub const fn termrock::widgets::FileTreeEntry<'a, Id>::with_status(self, termrock::widgets::TreeNodeStatus) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FileTreeEntry<'a, Id>
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::clone(&self) -> termrock::widgets::FileTreeEntry<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FileTreeEntry<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FileTreeEntry<'a, Id>
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::eq(&self, &termrock::widgets::FileTreeEntry<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FileTreeEntry<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FileTreeEntry<'a, Id>
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::FileTreeEntry<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::FileTreeEntry<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::FileTreeEntry<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::FileTreeEntry<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::FileTreeEntry<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileTreeEntry<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileTreeEntry<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileTreeEntry<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileTreeEntry<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileTreeEntry<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FileTreeEntry<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileTreeEntry<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileTreeEntry<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileTreeEntry<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::FileTreeEntry<'a, Id>::Owned = T
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileTreeEntry<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileTreeEntry<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileTreeEntry<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileTreeEntry<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileTreeEntry<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileTreeEntry<'a, Id>
+pub fn termrock::widgets::FileTreeEntry<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileTreeEntry<'a, Id>
+pub struct termrock::widgets::FileTreeState<Id: core::clone::Clone + core::cmp::PartialEq>
+pub termrock::widgets::FileTreeState::ascii: bool
+pub termrock::widgets::FileTreeState::draft: core::option::Option<termrock::widgets::FileTreeDraft<Id>>
+pub termrock::widgets::FileTreeState::filter: core::option::Option<alloc::string::String>
+pub termrock::widgets::FileTreeState::pending_confirm: core::option::Option<termrock::widgets::FileTreeDestructiveConfirm<Id>>
+pub termrock::widgets::FileTreeState::show_hidden: bool
+pub termrock::widgets::FileTreeState::show_ignored: bool
+pub termrock::widgets::FileTreeState::tree: termrock::widgets::TreeState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::FileTreeState<Id>
+pub const fn termrock::widgets::FileTreeState<Id>::accepts_input(&self) -> bool
+pub fn termrock::widgets::FileTreeState<Id>::enable_multi_select(&mut self)
+pub fn termrock::widgets::FileTreeState<Id>::handle_key(&mut self, &[termrock::widgets::FileTreeEntry<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::FileTreeOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Eq
+pub fn termrock::widgets::FileTreeState<Id>::handle_mouse(&mut self, &[termrock::widgets::FileTreeEntry<'_, Id>], termrock::input::MouseEvent) -> termrock::widgets::FileTreeOutcome<Id>
+pub fn termrock::widgets::FileTreeState<Id>::new() -> Self
+pub fn termrock::widgets::FileTreeState<Id>::reveal(&mut self, Id)
+pub fn termrock::widgets::FileTreeState<Id>::select(&mut self, core::option::Option<Id>)
+pub const fn termrock::widgets::FileTreeState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::FileTreeState<Id>::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::FileTreeState<Id>::with_selected(core::option::Option<Id>) -> Self
+impl<Id: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq> core::clone::Clone for termrock::widgets::FileTreeState<Id>
+pub fn termrock::widgets::FileTreeState<Id>::clone(&self) -> termrock::widgets::FileTreeState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::FileTreeState<Id>
+pub fn termrock::widgets::FileTreeState<Id>::default() -> Self
+impl<Id: core::cmp::Eq + core::clone::Clone + core::cmp::PartialEq> core::cmp::Eq for termrock::widgets::FileTreeState<Id>
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FileTreeState<Id>
+pub fn termrock::widgets::FileTreeState<Id>::eq(&self, &termrock::widgets::FileTreeState<Id>) -> bool
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FileTreeState<Id>
+impl<Id: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::widgets::FileTreeState<Id>
+pub fn termrock::widgets::FileTreeState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::FileTreeState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::FileTreeState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::FileTreeState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::FileTreeState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::FileTreeState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileTreeState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileTreeState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileTreeState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileTreeState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FileTreeState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileTreeState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FileTreeState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FileTreeState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileTreeState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileTreeState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileTreeState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileTreeState<Id> where T: core::clone::Clone
+pub type termrock::widgets::FileTreeState<Id>::Owned = T
+pub fn termrock::widgets::FileTreeState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileTreeState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileTreeState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileTreeState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileTreeState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileTreeState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FileTreeState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileTreeState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileTreeState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileTreeState<Id>
+pub fn termrock::widgets::FileTreeState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileTreeState<Id>
 pub struct termrock::widgets::FilterSpec
 pub termrock::widgets::FilterSpec::clauses: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
 pub termrock::widgets::FilterSpec::query: alloc::string::String
@@ -65057,6 +65524,7 @@ pub fn termrock::widgets::assign_jump_labels<Id: core::clone::Clone>(impl core::
 pub fn termrock::widgets::assign_jump_labels_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, &termrock::widgets::JumpFilter) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
 pub fn termrock::widgets::auto_bytes_per_row(u16, u8) -> u8
 pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
+pub fn termrock::widgets::breadcrumbs_from_path(&str) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
 pub fn termrock::widgets::code_frame_window<'a>(&'a [&'a str], &[termrock::widgets::SourceLabel<'_>], u32) -> (alloc::vec::Vec<termrock::widgets::CodeFrameLine<'a>>, bool, bool)
 pub fn termrock::widgets::col_for_offset(u64, u8) -> u8
@@ -65157,8 +65625,11 @@ pub fn termrock::widgets::example_symbol_preview<'a>() -> (termrock::widgets::Pr
 pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
 pub fn termrock::widgets::expand_tabs(&str, usize) -> alloc::string::String
 pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
+pub fn termrock::widgets::file_entries_to_tree_nodes<'a, Id: core::clone::Clone>(&[&'a termrock::widgets::FileTreeEntry<'a, Id>], bool) -> alloc::vec::Vec<termrock::widgets::TreeNode<'a, Id>>
+pub fn termrock::widgets::file_tree_to_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::FileTreeEntry<'_, Id>], bool) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::filter_command_entries<Id: core::clone::Clone>(&[termrock::widgets::CommandEntry<Id>], &str, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>>
 pub fn termrock::widgets::filter_diff_lines<'a>(&'a [termrock::widgets::DiffLine<'a>], &str, &termrock::widgets::DiffViewState) -> alloc::vec::Vec<&'a termrock::widgets::DiffLine<'a>>
+pub fn termrock::widgets::filter_file_tree_entries<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::FileTreeEntry<'a, Id>], &str, bool, bool) -> alloc::vec::Vec<&'a termrock::widgets::FileTreeEntry<'a, Id>>
 pub fn termrock::widgets::filter_help_entries(&[termrock::widgets::HelpEntry], &str) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termrock::widgets::HistoryEntry<Id>], &str) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<Id>>
 pub fn termrock::widgets::filter_inspect_fields<'a>(&'a [termrock::widgets::InspectorField<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::InspectorField<'a>>
@@ -65221,6 +65692,7 @@ pub fn termrock::widgets::menu_bar_presentation_for_width(u16) -> termrock::widg
 pub fn termrock::widgets::menu_items_to_nodes<Id: core::clone::Clone>(&[termrock::widgets::MenuItem<Id>]) -> alloc::vec::Vec<termrock::widgets::MenuNode<Id>>
 pub fn termrock::widgets::merge_help_entries(impl core::iter::traits::collect::IntoIterator<Item = alloc::vec::Vec<termrock::widgets::HelpEntry>>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::min_width_for_bpr(u8, u8) -> u16
+pub fn termrock::widgets::normalize_path_display(&str) -> alloc::string::String
 pub fn termrock::widgets::normalize_range(u64, u64) -> (u64, u64)
 pub fn termrock::widgets::normalize_separators(&str, termrock::widgets::PathStyle) -> alloc::string::String
 pub fn termrock::widgets::offset_for_row(u64, u8) -> u64
@@ -65266,6 +65738,7 @@ pub fn termrock::widgets::parse_lines(&str, &termrock::ansi_text::AnsiParseOptio
 pub fn termrock::widgets::parse_quick_open_query(&str) -> termrock::widgets::ParsedQuickOpenQuery
 pub fn termrock::widgets::parse_search_query(&str) -> core::option::Option<alloc::vec::Vec<u8>>
 pub fn termrock::widgets::parse_to_line(&str, &termrock::ansi_text::AnsiParseOptions) -> termrock::ansi_text::AnsiLine
+pub fn termrock::widgets::path_segments(&str) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::place_command_palette(ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_with_presentation(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, termrock::widgets::CompletionPresentation) -> ratatui_core::layout::rect::Rect

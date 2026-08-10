@@ -121,6 +121,7 @@ mod log_stream;
 mod diagnostic;
 mod terminal_output;
 mod hex_viewer;
+mod file_tree;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -182,6 +183,12 @@ pub use hex_viewer::{
     parse_search_query, row_count, row_for_offset,
 };
 pub use hex_viewer::bench as hex_viewer_bench;
+pub use file_tree::{
+    FileGitStatus, FileTree, FileTreeDestructiveConfirm, FileTreeDraft, FileTreeEntry,
+    FileTreeKind, FileTreeOutcome, FileTreeState, breadcrumbs_from_path, file_entries_to_tree_nodes,
+    file_tree_to_quick_open_items, filter_file_tree_entries, normalize_path_display, path_segments,
+};
+pub use file_tree::bench as file_tree_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,
