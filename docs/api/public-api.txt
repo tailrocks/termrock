@@ -21592,6 +21592,171 @@ pub unsafe fn termrock::widgets::ScrollOutcome::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ScrollOutcome
 pub fn termrock::widgets::ScrollOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ScrollOutcome
+#[non_exhaustive] pub enum termrock::widgets::SearchInputOutcome
+pub termrock::widgets::SearchInputOutcome::Cancelled
+pub termrock::widgets::SearchInputOutcome::Changed
+pub termrock::widgets::SearchInputOutcome::Cleared
+pub termrock::widgets::SearchInputOutcome::ClipboardCopy
+pub termrock::widgets::SearchInputOutcome::ClipboardCopy::text: alloc::string::String
+pub termrock::widgets::SearchInputOutcome::ClipboardPasteRequest
+pub termrock::widgets::SearchInputOutcome::CompletionRequested
+pub termrock::widgets::SearchInputOutcome::DebouncedQuery
+pub termrock::widgets::SearchInputOutcome::DebouncedQuery::query: alloc::string::String
+pub termrock::widgets::SearchInputOutcome::FilterChipActivated
+pub termrock::widgets::SearchInputOutcome::FilterChipActivated::id: alloc::string::String
+pub termrock::widgets::SearchInputOutcome::HistoryRecalled
+pub termrock::widgets::SearchInputOutcome::HistoryRecalled::query: alloc::string::String
+pub termrock::widgets::SearchInputOutcome::Ignored
+pub termrock::widgets::SearchInputOutcome::Submitted
+pub termrock::widgets::SearchInputOutcome::Submitted::query: alloc::string::String
+impl core::clone::Clone for termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputOutcome::clone(&self) -> termrock::widgets::SearchInputOutcome
+impl core::cmp::Eq for termrock::widgets::SearchInputOutcome
+impl core::cmp::PartialEq for termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputOutcome::eq(&self, &termrock::widgets::SearchInputOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SearchInputOutcome
+impl core::marker::Freeze for termrock::widgets::SearchInputOutcome
+impl core::marker::Send for termrock::widgets::SearchInputOutcome
+impl core::marker::Sync for termrock::widgets::SearchInputOutcome
+impl core::marker::Unpin for termrock::widgets::SearchInputOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::SearchInputOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SearchInputOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SearchInputOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SearchInputOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SearchInputOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SearchInputOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::SearchInputOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SearchInputOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::SearchInputOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::SearchInputOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SearchInputOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SearchInputOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SearchInputOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SearchInputOutcome where T: core::clone::Clone
+pub type termrock::widgets::SearchInputOutcome::Owned = T
+pub fn termrock::widgets::SearchInputOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::SearchInputOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SearchInputOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SearchInputOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SearchInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchInputOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SearchInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchInputOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SearchInputOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SearchInputOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SearchInputOutcome
+#[non_exhaustive] pub enum termrock::widgets::SearchStatus
+pub termrock::widgets::SearchStatus::Error
+pub termrock::widgets::SearchStatus::Idle
+pub termrock::widgets::SearchStatus::NoResults
+pub termrock::widgets::SearchStatus::Results
+pub termrock::widgets::SearchStatus::Results::count: usize
+pub termrock::widgets::SearchStatus::Searching
+impl termrock::widgets::SearchStatus
+pub const fn termrock::widgets::SearchStatus::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SearchStatus
+pub fn termrock::widgets::SearchStatus::clone(&self) -> termrock::widgets::SearchStatus
+impl core::cmp::Eq for termrock::widgets::SearchStatus
+impl core::cmp::PartialEq for termrock::widgets::SearchStatus
+pub fn termrock::widgets::SearchStatus::eq(&self, &termrock::widgets::SearchStatus) -> bool
+impl core::default::Default for termrock::widgets::SearchStatus
+pub fn termrock::widgets::SearchStatus::default() -> termrock::widgets::SearchStatus
+impl core::fmt::Debug for termrock::widgets::SearchStatus
+pub fn termrock::widgets::SearchStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SearchStatus
+pub fn termrock::widgets::SearchStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SearchStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::SearchStatus
+impl core::marker::Freeze for termrock::widgets::SearchStatus
+impl core::marker::Send for termrock::widgets::SearchStatus
+impl core::marker::Sync for termrock::widgets::SearchStatus
+impl core::marker::Unpin for termrock::widgets::SearchStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::SearchStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SearchStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SearchStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SearchStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SearchStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SearchStatus where U: core::convert::From<T>
+pub fn termrock::widgets::SearchStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SearchStatus where U: core::convert::Into<T>
+pub type termrock::widgets::SearchStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::SearchStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SearchStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SearchStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SearchStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SearchStatus where T: core::clone::Clone
+pub type termrock::widgets::SearchStatus::Owned = T
+pub fn termrock::widgets::SearchStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::SearchStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SearchStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SearchStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SearchStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SearchStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SearchStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SearchStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SearchStatus
+pub fn termrock::widgets::SearchStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SearchStatus
+#[non_exhaustive] pub enum termrock::widgets::SearchSyntax
+pub termrock::widgets::SearchSyntax::Command
+pub termrock::widgets::SearchSyntax::Filter
+pub termrock::widgets::SearchSyntax::Goto
+pub termrock::widgets::SearchSyntax::Plain
+impl termrock::widgets::SearchSyntax
+pub fn termrock::widgets::SearchSyntax::detect(&str) -> Self
+pub const fn termrock::widgets::SearchSyntax::id(self) -> &'static str
+pub fn termrock::widgets::SearchSyntax::payload(self, &str) -> &str
+impl core::clone::Clone for termrock::widgets::SearchSyntax
+pub fn termrock::widgets::SearchSyntax::clone(&self) -> termrock::widgets::SearchSyntax
+impl core::cmp::Eq for termrock::widgets::SearchSyntax
+impl core::cmp::PartialEq for termrock::widgets::SearchSyntax
+pub fn termrock::widgets::SearchSyntax::eq(&self, &termrock::widgets::SearchSyntax) -> bool
+impl core::default::Default for termrock::widgets::SearchSyntax
+pub fn termrock::widgets::SearchSyntax::default() -> termrock::widgets::SearchSyntax
+impl core::fmt::Debug for termrock::widgets::SearchSyntax
+pub fn termrock::widgets::SearchSyntax::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SearchSyntax
+pub fn termrock::widgets::SearchSyntax::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SearchSyntax
+impl core::marker::StructuralPartialEq for termrock::widgets::SearchSyntax
+impl core::marker::Freeze for termrock::widgets::SearchSyntax
+impl core::marker::Send for termrock::widgets::SearchSyntax
+impl core::marker::Sync for termrock::widgets::SearchSyntax
+impl core::marker::Unpin for termrock::widgets::SearchSyntax
+impl core::marker::UnsafeUnpin for termrock::widgets::SearchSyntax
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SearchSyntax
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SearchSyntax
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SearchSyntax where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SearchSyntax::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SearchSyntax where U: core::convert::From<T>
+pub fn termrock::widgets::SearchSyntax::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SearchSyntax where U: core::convert::Into<T>
+pub type termrock::widgets::SearchSyntax::Error = core::convert::Infallible
+pub fn termrock::widgets::SearchSyntax::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SearchSyntax where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SearchSyntax::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SearchSyntax::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SearchSyntax where T: core::clone::Clone
+pub type termrock::widgets::SearchSyntax::Owned = T
+pub fn termrock::widgets::SearchSyntax::clone_into(&self, &mut T)
+pub fn termrock::widgets::SearchSyntax::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SearchSyntax where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SearchSyntax::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SearchSyntax where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchSyntax::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SearchSyntax where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchSyntax::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SearchSyntax where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SearchSyntax::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SearchSyntax
+pub fn termrock::widgets::SearchSyntax::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SearchSyntax
 #[non_exhaustive] pub enum termrock::widgets::SectionOutcome
 pub termrock::widgets::SectionOutcome::HeaderAction
 pub termrock::widgets::SectionOutcome::HeaderAction::id: alloc::string::String
@@ -37040,6 +37205,229 @@ pub unsafe fn termrock::widgets::ScrollAreaState::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ScrollAreaState
 pub fn termrock::widgets::ScrollAreaState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ScrollAreaState
+pub struct termrock::widgets::SearchFilterChip<'a>
+pub termrock::widgets::SearchFilterChip::id: &'a str
+pub termrock::widgets::SearchFilterChip::label: &'a str
+impl<'a> termrock::widgets::SearchFilterChip<'a>
+pub const fn termrock::widgets::SearchFilterChip<'a>::new(&'a str, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::SearchFilterChip<'a>
+pub fn termrock::widgets::SearchFilterChip<'a>::clone(&self) -> termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::SearchFilterChip<'a>
+pub fn termrock::widgets::SearchFilterChip<'a>::eq(&self, &termrock::widgets::SearchFilterChip<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::SearchFilterChip<'a>
+pub fn termrock::widgets::SearchFilterChip<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::hash::Hash for termrock::widgets::SearchFilterChip<'a>
+pub fn termrock::widgets::SearchFilterChip<'a>::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl<'a> core::marker::Copy for termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::marker::Send for termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::marker::Sync for termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SearchFilterChip<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SearchFilterChip<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SearchFilterChip<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SearchFilterChip<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SearchFilterChip<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::SearchFilterChip<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SearchFilterChip<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::SearchFilterChip<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::SearchFilterChip<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SearchFilterChip<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SearchFilterChip<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SearchFilterChip<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SearchFilterChip<'a> where T: core::clone::Clone
+pub type termrock::widgets::SearchFilterChip<'a>::Owned = T
+pub fn termrock::widgets::SearchFilterChip<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SearchFilterChip<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SearchFilterChip<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SearchFilterChip<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SearchFilterChip<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchFilterChip<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SearchFilterChip<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchFilterChip<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SearchFilterChip<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SearchFilterChip<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SearchFilterChip<'a>
+pub fn termrock::widgets::SearchFilterChip<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SearchFilterChip<'a>
+pub struct termrock::widgets::SearchInput<'a>
+impl<'a> termrock::widgets::SearchInput<'a>
+pub const fn termrock::widgets::SearchInput<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::SearchInput<'a>::filters(self, &'a [termrock::widgets::SearchFilterChip<'a>]) -> Self
+pub const fn termrock::widgets::SearchInput<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::SearchInput<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::SearchInput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SearchInputState) -> termrock::widgets::SearchInputParts
+pub const fn termrock::widgets::SearchInput<'a>::placeholder(self, &'a str) -> Self
+pub fn termrock::widgets::SearchInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::SearchInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::SearchInput<'a>::show_clear(self, bool) -> Self
+pub const fn termrock::widgets::SearchInput<'a>::show_leading_icon(self, bool) -> Self
+pub const fn termrock::widgets::SearchInput<'a>::status(self, termrock::widgets::SearchStatus) -> Self
+pub const fn termrock::widgets::SearchInput<'a>::status_message(self, &'a str) -> Self
+pub const fn termrock::widgets::SearchInput<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::SearchInput<'_>
+pub type &termrock::widgets::SearchInput<'_>::State = termrock::widgets::SearchInputState
+pub fn &termrock::widgets::SearchInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::SearchInput<'_>
+pub type termrock::widgets::SearchInput<'_>::State = termrock::widgets::SearchInputState
+pub fn termrock::widgets::SearchInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::SearchInput<'a>
+pub fn termrock::widgets::SearchInput<'a>::clone(&self) -> termrock::widgets::SearchInput<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::SearchInput<'a>
+pub fn termrock::widgets::SearchInput<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::SearchInput<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::SearchInput<'a>
+impl<'a> core::marker::Send for termrock::widgets::SearchInput<'a>
+impl<'a> core::marker::Sync for termrock::widgets::SearchInput<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::SearchInput<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::SearchInput<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SearchInput<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SearchInput<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::SearchInput<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::SearchInput<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SearchInput<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::SearchInput<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::SearchInput<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SearchInput<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SearchInput<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SearchInput<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SearchInput<'a> where T: core::clone::Clone
+pub type termrock::widgets::SearchInput<'a>::Owned = T
+pub fn termrock::widgets::SearchInput<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SearchInput<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SearchInput<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SearchInput<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SearchInput<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchInput<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SearchInput<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchInput<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SearchInput<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SearchInput<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SearchInput<'a>
+pub fn termrock::widgets::SearchInput<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SearchInput<'a>
+pub struct termrock::widgets::SearchInputParts
+pub termrock::widgets::SearchInputParts::clear: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SearchInputParts::cursor: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SearchInputParts::field: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SearchInputParts::filter_chips: alloc::vec::Vec<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::SearchInputParts::meta: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SearchInputParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SearchInputParts::status: core::option::Option<ratatui_core::layout::rect::Rect>
+impl core::clone::Clone for termrock::widgets::SearchInputParts
+pub fn termrock::widgets::SearchInputParts::clone(&self) -> termrock::widgets::SearchInputParts
+impl core::cmp::Eq for termrock::widgets::SearchInputParts
+impl core::cmp::PartialEq for termrock::widgets::SearchInputParts
+pub fn termrock::widgets::SearchInputParts::eq(&self, &termrock::widgets::SearchInputParts) -> bool
+impl core::fmt::Debug for termrock::widgets::SearchInputParts
+pub fn termrock::widgets::SearchInputParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SearchInputParts
+impl core::marker::Freeze for termrock::widgets::SearchInputParts
+impl core::marker::Send for termrock::widgets::SearchInputParts
+impl core::marker::Sync for termrock::widgets::SearchInputParts
+impl core::marker::Unpin for termrock::widgets::SearchInputParts
+impl core::marker::UnsafeUnpin for termrock::widgets::SearchInputParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SearchInputParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SearchInputParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SearchInputParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SearchInputParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SearchInputParts where U: core::convert::From<T>
+pub fn termrock::widgets::SearchInputParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SearchInputParts where U: core::convert::Into<T>
+pub type termrock::widgets::SearchInputParts::Error = core::convert::Infallible
+pub fn termrock::widgets::SearchInputParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SearchInputParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SearchInputParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SearchInputParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SearchInputParts where T: core::clone::Clone
+pub type termrock::widgets::SearchInputParts::Owned = T
+pub fn termrock::widgets::SearchInputParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::SearchInputParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SearchInputParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SearchInputParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SearchInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchInputParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SearchInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchInputParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SearchInputParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SearchInputParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SearchInputParts
+pub fn termrock::widgets::SearchInputParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SearchInputParts
+pub struct termrock::widgets::SearchInputState
+impl termrock::widgets::SearchInputState
+pub fn termrock::widgets::SearchInputState::clear(&mut self) -> bool
+pub fn termrock::widgets::SearchInputState::commit_to_history(&mut self)
+pub const fn termrock::widgets::SearchInputState::debounce(&self) -> core::time::Duration
+pub const fn termrock::widgets::SearchInputState::debounce_pending(&self) -> bool
+pub fn termrock::widgets::SearchInputState::flush_debounce(&mut self) -> termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::SearchFilterChip<'_>]) -> termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputState::history(&self) -> impl core::iter::traits::iterator::Iterator<Item = &str>
+pub fn termrock::widgets::SearchInputState::insert_str(&mut self, &str) -> termrock::widgets::SearchInputOutcome
+pub const fn termrock::widgets::SearchInputState::is_enabled(&self) -> bool
+pub const fn termrock::widgets::SearchInputState::is_focused(&self) -> bool
+pub fn termrock::widgets::SearchInputState::new() -> Self
+pub fn termrock::widgets::SearchInputState::note_edit_at(&mut self, std::time::Instant)
+pub const fn termrock::widgets::SearchInputState::parts(&self) -> core::option::Option<&termrock::widgets::SearchInputParts>
+pub fn termrock::widgets::SearchInputState::poll(&mut self, termrock::runtime::FrameTick) -> termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputState::poll_at(&mut self, std::time::Instant) -> termrock::widgets::SearchInputOutcome
+pub fn termrock::widgets::SearchInputState::push_history(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::SearchInputState::query(&self) -> &str
+pub fn termrock::widgets::SearchInputState::query_mut(&mut self) -> &mut termrock::widgets::TextInputState
+pub fn termrock::widgets::SearchInputState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::SearchInputState::set_focused(&mut self, bool)
+pub fn termrock::widgets::SearchInputState::set_query(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::SearchInputState::syntax(&self) -> termrock::widgets::SearchSyntax
+pub fn termrock::widgets::SearchInputState::syntax_payload(&self) -> &str
+pub const fn termrock::widgets::SearchInputState::with_debounce(self, core::time::Duration) -> Self
+pub fn termrock::widgets::SearchInputState::with_history_limit(self, usize) -> Self
+pub fn termrock::widgets::SearchInputState::with_query(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::SearchInputState
+pub fn termrock::widgets::SearchInputState::clone(&self) -> termrock::widgets::SearchInputState
+impl core::cmp::Eq for termrock::widgets::SearchInputState
+impl core::cmp::PartialEq for termrock::widgets::SearchInputState
+pub fn termrock::widgets::SearchInputState::eq(&self, &termrock::widgets::SearchInputState) -> bool
+impl core::default::Default for termrock::widgets::SearchInputState
+pub fn termrock::widgets::SearchInputState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::SearchInputState
+pub fn termrock::widgets::SearchInputState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SearchInputState
+impl core::marker::Freeze for termrock::widgets::SearchInputState
+impl core::marker::Send for termrock::widgets::SearchInputState
+impl core::marker::Sync for termrock::widgets::SearchInputState
+impl core::marker::Unpin for termrock::widgets::SearchInputState
+impl core::marker::UnsafeUnpin for termrock::widgets::SearchInputState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SearchInputState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SearchInputState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SearchInputState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SearchInputState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SearchInputState where U: core::convert::From<T>
+pub fn termrock::widgets::SearchInputState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SearchInputState where U: core::convert::Into<T>
+pub type termrock::widgets::SearchInputState::Error = core::convert::Infallible
+pub fn termrock::widgets::SearchInputState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SearchInputState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SearchInputState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SearchInputState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SearchInputState where T: core::clone::Clone
+pub type termrock::widgets::SearchInputState::Owned = T
+pub fn termrock::widgets::SearchInputState::clone_into(&self, &mut T)
+pub fn termrock::widgets::SearchInputState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SearchInputState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SearchInputState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SearchInputState where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchInputState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SearchInputState where T: ?core::marker::Sized
+pub fn termrock::widgets::SearchInputState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SearchInputState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SearchInputState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SearchInputState
+pub fn termrock::widgets::SearchInputState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SearchInputState
 pub struct termrock::widgets::Section<'a>
 impl<'a> termrock::widgets::Section<'a>
 pub const fn termrock::widgets::Section<'a>::actions(self, &'a [termrock::widgets::SectionAction<'a>]) -> Self
@@ -43003,6 +43391,8 @@ impl<T> either::into_either::IntoEither for termrock::widgets::WorkbenchMode<'a,
 pub const termrock::widgets::BUILTIN_THEME_PRESETS: &[termrock::widgets::ThemePreset]
 pub const termrock::widgets::COMMAND_PALETTE_OVERLAY_ID: &str
 pub const termrock::widgets::COMPLETION_OVERLAY_ID: &str
+pub const termrock::widgets::DEFAULT_DEBOUNCE: core::time::Duration
+pub const termrock::widgets::DEFAULT_HISTORY_LIMIT: usize
 pub const termrock::widgets::DIALOG_OVERLAY_ID: &str
 pub const termrock::widgets::DRAWER_OVERLAY_ID: &str
 pub const termrock::widgets::DROP_DESCRIPTION_WIDTH: u16

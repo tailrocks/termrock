@@ -363,6 +363,21 @@ let mut state = NumberInputState::new()
 state.set_focused(true);
 let _ = NumberInput::new("Opacity", &system).unit("%");`,
   },
+  SearchInput: {
+    description:
+      'A search field with query, status, clear, history, filter chips, and host-polled debounce signals.',
+    primaryStory: 'search-input/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{SearchInput, SearchInputState, SearchStatus};
+
+let system = DesignSystem::default();
+let mut state = SearchInputState::new().with_query("table");
+state.set_focused(true);
+// each frame: state.poll(tick) → DebouncedQuery
+let _ = SearchInput::new(&system)
+    .status(SearchStatus::Results { count: 12 })
+    .placeholder("Search…");`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

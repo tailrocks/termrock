@@ -58,6 +58,7 @@ use termrock::{
         TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
         TextInput, TextInputState, TextWrap, PasswordInput, PasswordInputState, PasswordStrengthHint,
         RevealPolicy, NumberConstraints, NumberInput, NumberInputState, NumberKind,
+        SearchFilterChip, SearchInput, SearchInputState, SearchStatus,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -4898,6 +4899,42 @@ pub(crate) fn stories() -> Vec<Story> {
             16,
             2,
             number_input_narrow_story,
+        ),
+        Story::new(
+            "search-input/basic",
+            "Search input",
+            "SearchInput",
+            "Query field with clear and result count.",
+            48,
+            2,
+            search_input_basic_story,
+        ),
+        Story::new(
+            "search-input/searching",
+            "Search searching",
+            "SearchInput",
+            "In-progress search status.",
+            48,
+            2,
+            search_input_searching_story,
+        ),
+        Story::new(
+            "search-input/filters",
+            "Search filters",
+            "SearchInput",
+            "Active filter chips before query text.",
+            48,
+            2,
+            search_input_filters_story,
+        ),
+        Story::new(
+            "search-input/empty",
+            "Search empty",
+            "SearchInput",
+            "No-results status projection.",
+            40,
+            2,
+            search_input_empty_story,
         ),
         Story::new(
             "text-input/invalid",
@@ -12894,6 +12931,48 @@ fn number_input_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     let mut state = NumberInputState::new().with_value(7.0);
     state.set_focused(true);
     let _ = NumberInput::new("N", system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SearchInputState::new().with_query("table");
+    state.set_focused(true);
+    let _ = SearchInput::new(system)
+        .placeholder("Search…")
+        .status(SearchStatus::Results { count: 12 })
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_input_searching_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SearchInputState::new().with_query("async");
+    state.set_focused(true);
+    let _ = SearchInput::new(system)
+        .status(SearchStatus::Searching)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_input_filters_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SearchInputState::new().with_query("handler");
+    state.set_focused(true);
+    let chips = [
+        SearchFilterChip::new("ext", "rs"),
+        SearchFilterChip::new("path", "src"),
+    ];
+    let _ = SearchInput::new(system)
+        .filters(&chips)
+        .status(SearchStatus::Results { count: 4 })
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_input_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SearchInputState::new().with_query("zzz");
+    state.set_focused(true);
+    let _ = SearchInput::new(system)
+        .status(SearchStatus::NoResults)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }

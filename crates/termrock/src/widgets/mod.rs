@@ -72,6 +72,7 @@ mod text_area;
 mod text_input;
 mod password_input;
 mod number_input;
+mod search_input;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -312,6 +313,10 @@ pub use password_input::{
 pub use number_input::{
     NumberConstraints, NumberInput, NumberInputOutcome, NumberInputParts, NumberInputState,
     NumberKind, NumberParse, NumberValidity,
+};
+pub use search_input::{
+    DEFAULT_DEBOUNCE, DEFAULT_HISTORY_LIMIT, SearchFilterChip, SearchInput, SearchInputOutcome,
+    SearchInputParts, SearchInputState, SearchStatus, SearchSyntax,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,
