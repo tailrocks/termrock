@@ -1,54 +1,60 @@
 ---
 title: AgentWorkbench
-description: Flagship agent shell pattern — task rail, transcript, PromptComposer, PermissionPrompt.
+description: North-star application block — TaskRail, transcript, ActivityShelf, PromptComposer, and trust overlays from public TermRock APIs only.
 ---
 
 # AgentWorkbench
 
-Composition pattern for an agent shell. **Not** a product agent — consumers own wording, tools, and policy.
+Composition pattern for an agent shell. **Not** a product agent — consumers own wording, tools, policy, and effects. Source-owned registry block (migration `0236`).
 
 ## When to use
 
 | Use AgentWorkbench | Prefer |
 |--------------------|--------|
-| Multi-pane agent UI (tasks + transcript + prompt) | Custom layout from Workspace + widgets |
-| Trust gates over the shell | [`PermissionPrompt`](/docs/handbook/permission-prompt) alone |
+| Multi-pane agent UI (tasks + thread + prompt + activity) | Custom layout from Workspace + widgets |
+| Trust gates / plan / diff over the shell | Standalone elevated widgets |
 | Free-form agent input only | [`PromptComposer`](/docs/handbook/prompt-composer) alone |
 
 ## Canonical chrome (sole path)
 
 | Concern | Type |
 |---------|------|
+| Tasks | `TaskRail` / `ActivityModel` (legacy `List` fallback) |
+| Stream | `Transcript` (MessageThread may project into same center) |
+| Activity | `ActivityShelf` / `ActivityItem` |
+| Working | `WorkingStateCard` |
 | Prompt | `PromptComposer` / `PromptComposerState` |
 | Permission | `PermissionPrompt` / `PermissionPromptState` |
-| Stream | `Transcript` (StreamView removed) |
+| Question / Plan / Diff / Session | `QuestionFlow`, `PlanReview`, `DiffReview`, `SessionPicker` |
 | Focus / Esc layers | `InteractionScene` via `AgentWorkbenchState` |
 
-**Deleted duals:** `ApprovalCard`, `PromptBox` (migration `0063`).
+**Deleted duals:** `ApprovalCard`, `PromptBox` on the agent path (migration `0063` / elevated `0236`).
 
 ## Anatomy
 
 ```
-┌ Task rail ─┬ Transcript ──────────────┐
-│            │                          │
-│            │                          │
-├────────────┴──────────────────────────┤
-│ Mode ribbon + PromptComposer          │
-├───────────────────────────────────────┤
-│ Status                                │
-└───────────────────────────────────────┘
-        ┌ PermissionPrompt (overlay) ┐
-        └────────────────────────────┘
+┌ TaskRail ──┬ Transcript ───────────────┐
+│            │                           │
+│            ├ ActivityShelf ────────────┤
+├────────────┴ WorkingState ─────────────┤
+│ Mode ribbon + PromptComposer           │
+├────────────────────────────────────────┤
+│ Status                                 │
+└────────────────────────────────────────┘
+        ┌ Permission / Plan / Diff / … ┐
+        └──────────────────────────────┘
 ```
 
 - Focus chrome: `PanelChrome::Focused` only on the pane that owns scene focus.
-- Permission overlay uses scene layer `permission` (dismissible Esc); host still cancels the queue via `PermissionPromptState` Esc / `UiIntent::Cancel`.
+- Overlays are dismissible scene layers; **one-layer Esc**. Composer draft is never cleared by overlays.
+- Densities: `Normal` (≥72) · `Narrow` (40–71) · `Tiny` (<40).
 
 ## Minimal host loop
 
 ```rust
 use termrock::patterns::{
-    AgentWorkbenchState, WorkbenchSurfaces, default_modes, render_agent_workbench,
+    AgentWorkbenchState, WorkbenchSurfaces, default_modes,
+    example_workbench_tasks, example_workbench_activities, render_agent_workbench,
 };
 use termrock::style::DesignSystem;
 use termrock::widgets::{
@@ -60,41 +66,56 @@ let system = DesignSystem::default();
 let mut workbench = AgentWorkbenchState::new();
 let mut prompt_state = PromptComposerState::new();
 let mut permission_state = PermissionPromptState::new();
+let tasks = example_workbench_tasks();
+let activities = example_workbench_activities();
 
 // each frame:
 render_agent_workbench(buf, area, WorkbenchSurfaces {
     system: &system,
     state: &mut workbench,
-    tasks: &tasks,
-    modes: &modes,
+    task_models: Some(&tasks),
+    tasks: &[],
+    modes: &default_modes("build"),
     transcript: &transcript,
     transcript_state: &mut tstate,
+    activities: Some(&activities),
     prompt: &PromptComposer::new(&system),
     prompt_state: &mut prompt_state,
     status_slots: &slots,
     status_state: &mut sstate,
     permission: Some((&PermissionPrompt::new(&system), &mut permission_state)),
     question: None,
+    plan: None,
+    diff: None,
+    session: None,
+    working: None,
 });
 
-// keys
+// keys — overlay first, then focused pane; draft never cleared
 let _ = workbench.handle_key(
-    key, &tasks, &mut prompt_state, &mut tstate, &blocks,
+    key, &mut prompt_state, &mut tstate, &blocks,
     Some(&mut permission_state),
+    Some(&tasks), None,
+    Some(&activities), None,
 );
 ```
 
-## Intents
+## Laws
 
-Permission navigation: `default_permission_intent` → `PermissionPromptState::handle_intent`.
+| Law | Detail |
+|-----|--------|
+| Draft | Overlays never clear `PromptComposerState` |
+| Esc | One dismissible layer peels; no grant / submit |
+| Focus | Tab cycles TaskRail → Transcript → Activity → Prompt |
+| Public only | Pattern uses public widgets + layout/scene only |
+| Host owns I/O | Outcomes are requests |
 
-Composer product chords remain on `PromptComposerState::handle_key` until a dedicated keymap pack lands.
+## Stories
 
-## Responsive
-
-Workspace collapses task rail first. Prompt band uses a real south split (~25%) so 24-row terminals keep a usable composer. Stories: `agent-workbench/basic`, `agent-workbench/permission`, `agent-workbench/narrow`.
+`agent-workbench/{basic,tool-running,permission,plan,diff,session,multi-agent,narrow,tiny,ascii,no-color}`
 
 ## Related
 
-PermissionPrompt · PromptComposer · Transcript · OverlayStack · InteractionScene  
-Migration `0063` · design `docs/design/agent-workbench-cutover.md`
+PermissionPrompt · PromptComposer · TaskRail · ActivityShelf · PlanReview · DiffReview · SessionPicker · WorkingStateCard · Transcript · InteractionScene  
+
+Migration `0236` · design `docs/design/agent-workbench-cutover.md` · `docs/design/showcase-workbench.md`

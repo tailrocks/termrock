@@ -19,9 +19,11 @@ mod studio_shell;
 
 pub use agent_shell::{AgentShellLayout, AgentShellSlots, layout_agent_shell};
 pub use agent_workbench::{
-    AgentWorkbenchState, WorkbenchKeyOutcome, WorkbenchModals, WorkbenchPane, WorkbenchSurfaces,
-    agent_workbench_layout, default_modes, empty_task_row, permission_modal_rect,
-    register_workbench_scene, render_agent_workbench, sync_workbench_scene,
+    AgentWorkbenchState, WorkbenchDensity, WorkbenchKeyOutcome, WorkbenchModals, WorkbenchPane,
+    WorkbenchSurfaces, agent_workbench_layout, agent_workbench_layout_density, default_modes,
+    dialog_modal_rect, diff_modal_rect, empty_task_row, example_workbench_activities,
+    example_workbench_tasks, permission_modal_rect, register_workbench_scene,
+    render_agent_workbench, sync_workbench_scene,
 };
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,

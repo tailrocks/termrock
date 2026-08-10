@@ -7,7 +7,7 @@ fix TermRock instead. Never paper over with private app-only chrome.
 
 | Id | Symptom | Missing primitive / API | Severity | Home | Delivery | Status |
 |----|---------|-------------------------|----------|------|----------|--------|
-| GAP-WB-1 | Workbench still PromptBox/ApprovalCard | Elevate to PromptComposer + PermissionPrompt + OverlayStack | P0 | `patterns/agent_workbench.rs` | G1 / agent A1b | open |
+| GAP-WB-1 | Workbench still PromptBox/ApprovalCard | Elevate to PromptComposer + PermissionPrompt + OverlayStack | P0 | `patterns/agent_workbench.rs` | G1 / agent A1b | **closed (0236)** |
 | GAP-WB-2 | No files pane / activity slot in layout | Workspace slots in pattern **or** showcase-owned Workspace (interim) | P1 | pattern + layout | G1b | open |
 | GAP-MT-1 | Nested tool under message awkward | MessageThread project-to-lines helpers | P0 | widgets + agent pack | G2 | open |
 | GAP-MD-1 | Stream fences break wrap | StreamingMarkdown incomplete-fence | P0 | `markdown.rs` | G2 | open |

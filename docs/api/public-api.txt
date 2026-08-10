@@ -1,72 +1,3 @@
- Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
-warning: unresolved link to `DataTableState::handle_key`
-   --> crates/termrock/src/interaction/intent.rs:281:7
-    |
-281 | /// [`DataTableState::handle_key`].
-    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
-    |
-    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
-
-warning: unresolved link to `LogStreamState::handle_key`
-   --> crates/termrock/src/interaction/intent.rs:358:35
-    |
-358 | /// - `f` is a product chord on [`LogStreamState::handle_key`] (Toggle follow)
-    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `LogStreamState` in scope
-
-warning: unresolved link to `Self::reconcile_retain`
-   --> crates/termrock/src/interaction/selection_model.rs:462:11
-    |
-462 |     /// [`Self::reconcile_retain`] when off-window selection must survive.
-    |           ^^^^^^^^^^^^^^^^^^^^^^ the struct `SelectionModel` has no field or associated item named `reconcile_retain`
-
-warning: unresolved link to `semantic_summary`
-   --> crates/termrock/src/widgets/attachment_chips.rs:225:38
-    |
-225 | /// recordings — use basenames and [`semantic_summary`].
-    |                                      ^^^^^^^^^^^^^^^^ no item named `semantic_summary` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `paint_expanded_preview`
-    --> crates/termrock/src/widgets/attachment_chips.rs:1003:63
-     |
-1003 |     /// Paint chip chrome (expanded body is host popover or [`paint_expanded_preview`]).
-     |                                                               ^^^^^^^^^^^^^^^^^^^^^^ no item named `paint_expanded_preview` in scope
-     |
-     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `Hint`
-   --> crates/termrock/src/widgets/keyboard_help.rs:539:31
-    |
-539 | /// Convert help entries to [`Hint`] for [`HintBar`] footer paint (borrowed chords).
-    |                               ^^^^ no item named `Hint` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `HintBar`
-   --> crates/termrock/src/widgets/keyboard_help.rs:539:44
-    |
-539 | /// Convert help entries to [`Hint`] for [`HintBar`] footer paint (borrowed chords).
-    |                                            ^^^^^^^ no item named `HintBar` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `Stack`
-   --> crates/termrock/src/widgets/card.rs:257:69
-    |
-257 |     /// Layout with optional description row carved from body via [`Stack`].
-    |                                                                     ^^^^^ no item named `Stack` in scope
-    |
-    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
-
-warning: unresolved link to `Self::from_slots`
-   --> crates/termrock/src/widgets/status_bar.rs:423:17
-    |
-423 |     /// using [`Self::from_slots`].
-    |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
-
-warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.78s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -9457,13 +9388,73 @@ pub unsafe fn termrock::patterns::AppShellZone::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::patterns::AppShellZone
 pub fn termrock::patterns::AppShellZone::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::AppShellZone
+#[non_exhaustive] pub enum termrock::patterns::WorkbenchDensity
+pub termrock::patterns::WorkbenchDensity::Narrow
+pub termrock::patterns::WorkbenchDensity::Normal
+pub termrock::patterns::WorkbenchDensity::Tiny
+impl termrock::patterns::WorkbenchDensity
+pub const fn termrock::patterns::WorkbenchDensity::for_width(u16) -> Self
+pub const fn termrock::patterns::WorkbenchDensity::id(self) -> &'static str
+impl core::clone::Clone for termrock::patterns::WorkbenchDensity
+pub fn termrock::patterns::WorkbenchDensity::clone(&self) -> termrock::patterns::WorkbenchDensity
+impl core::cmp::Eq for termrock::patterns::WorkbenchDensity
+impl core::cmp::PartialEq for termrock::patterns::WorkbenchDensity
+pub fn termrock::patterns::WorkbenchDensity::eq(&self, &termrock::patterns::WorkbenchDensity) -> bool
+impl core::default::Default for termrock::patterns::WorkbenchDensity
+pub fn termrock::patterns::WorkbenchDensity::default() -> termrock::patterns::WorkbenchDensity
+impl core::fmt::Debug for termrock::patterns::WorkbenchDensity
+pub fn termrock::patterns::WorkbenchDensity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::patterns::WorkbenchDensity
+pub fn termrock::patterns::WorkbenchDensity::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::patterns::WorkbenchDensity
+impl core::marker::StructuralPartialEq for termrock::patterns::WorkbenchDensity
+impl core::marker::Freeze for termrock::patterns::WorkbenchDensity
+impl core::marker::Send for termrock::patterns::WorkbenchDensity
+impl core::marker::Sync for termrock::patterns::WorkbenchDensity
+impl core::marker::Unpin for termrock::patterns::WorkbenchDensity
+impl core::marker::UnsafeUnpin for termrock::patterns::WorkbenchDensity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::patterns::WorkbenchDensity
+impl core::panic::unwind_safe::UnwindSafe for termrock::patterns::WorkbenchDensity
+impl<Q, K> equivalent::Equivalent<K> for termrock::patterns::WorkbenchDensity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchDensity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::patterns::WorkbenchDensity where U: core::convert::From<T>
+pub fn termrock::patterns::WorkbenchDensity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::patterns::WorkbenchDensity where U: core::convert::Into<T>
+pub type termrock::patterns::WorkbenchDensity::Error = core::convert::Infallible
+pub fn termrock::patterns::WorkbenchDensity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::patterns::WorkbenchDensity where U: core::convert::TryFrom<T>
+pub type termrock::patterns::WorkbenchDensity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::patterns::WorkbenchDensity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::patterns::WorkbenchDensity where T: core::clone::Clone
+pub type termrock::patterns::WorkbenchDensity::Owned = T
+pub fn termrock::patterns::WorkbenchDensity::clone_into(&self, &mut T)
+pub fn termrock::patterns::WorkbenchDensity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::patterns::WorkbenchDensity where T: 'static + ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchDensity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::patterns::WorkbenchDensity where T: ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchDensity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::patterns::WorkbenchDensity where T: ?core::marker::Sized
+pub fn termrock::patterns::WorkbenchDensity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::patterns::WorkbenchDensity where T: core::clone::Clone
+pub unsafe fn termrock::patterns::WorkbenchDensity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::patterns::WorkbenchDensity
+pub fn termrock::patterns::WorkbenchDensity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::patterns::WorkbenchDensity
 #[non_exhaustive] pub enum termrock::patterns::WorkbenchKeyOutcome
+pub termrock::patterns::WorkbenchKeyOutcome::Activity(termrock::widgets::ActivityShelfOutcome)
+pub termrock::patterns::WorkbenchKeyOutcome::Diff
+pub termrock::patterns::WorkbenchKeyOutcome::FocusChanged(&'static str)
 pub termrock::patterns::WorkbenchKeyOutcome::Ignored
 pub termrock::patterns::WorkbenchKeyOutcome::Permission(termrock::widgets::PermissionOutcome)
+pub termrock::patterns::WorkbenchKeyOutcome::Plan
 pub termrock::patterns::WorkbenchKeyOutcome::Prompt(termrock::widgets::PromptComposerOutcome)
+pub termrock::patterns::WorkbenchKeyOutcome::Question
 pub termrock::patterns::WorkbenchKeyOutcome::Scene(termrock::interaction::InteractionOutcome<&'static str, &'static str, ()>)
-pub termrock::patterns::WorkbenchKeyOutcome::Task(termrock::interaction::Outcome<&'static str>)
+pub termrock::patterns::WorkbenchKeyOutcome::Session
+pub termrock::patterns::WorkbenchKeyOutcome::Task(termrock::widgets::TaskRailOutcome)
+pub termrock::patterns::WorkbenchKeyOutcome::TaskList(termrock::interaction::Outcome<&'static str>)
 pub termrock::patterns::WorkbenchKeyOutcome::Transcript(termrock::widgets::TranscriptOutcome<&'static str>)
+pub termrock::patterns::WorkbenchKeyOutcome::Working
 impl core::clone::Clone for termrock::patterns::WorkbenchKeyOutcome
 pub fn termrock::patterns::WorkbenchKeyOutcome::clone(&self) -> termrock::patterns::WorkbenchKeyOutcome
 impl core::cmp::Eq for termrock::patterns::WorkbenchKeyOutcome
@@ -9505,11 +9496,14 @@ impl<T> core::convert::From<T> for termrock::patterns::WorkbenchKeyOutcome
 pub fn termrock::patterns::WorkbenchKeyOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::WorkbenchKeyOutcome
 #[non_exhaustive] pub enum termrock::patterns::WorkbenchPane
+pub termrock::patterns::WorkbenchPane::Activity
 pub termrock::patterns::WorkbenchPane::Prompt
 pub termrock::patterns::WorkbenchPane::Status
 pub termrock::patterns::WorkbenchPane::TaskRail
 pub termrock::patterns::WorkbenchPane::Transcript
+pub termrock::patterns::WorkbenchPane::Working
 impl termrock::patterns::WorkbenchPane
+pub fn termrock::patterns::WorkbenchPane::focus_order() -> &'static [termrock::patterns::WorkbenchPane]
 pub const fn termrock::patterns::WorkbenchPane::id(self) -> &'static str
 impl core::clone::Clone for termrock::patterns::WorkbenchPane
 pub fn termrock::patterns::WorkbenchPane::clone(&self) -> termrock::patterns::WorkbenchPane
@@ -9648,22 +9642,41 @@ impl<T> core::convert::From<T> for termrock::patterns::AgentShellSlots
 pub fn termrock::patterns::AgentShellSlots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::AgentShellSlots
 pub struct termrock::patterns::AgentWorkbenchState
+pub termrock::patterns::AgentWorkbenchState::activity: termrock::widgets::ActivityShelfState
+pub termrock::patterns::AgentWorkbenchState::ascii: bool
+pub termrock::patterns::AgentWorkbenchState::colorless: bool
+pub termrock::patterns::AgentWorkbenchState::density: core::option::Option<termrock::patterns::WorkbenchDensity>
+pub termrock::patterns::AgentWorkbenchState::diff: termrock::widgets::DiffReviewState
 pub termrock::patterns::AgentWorkbenchState::mode_ribbon: termrock::widgets::ModeRibbonState<&'static str>
+pub termrock::patterns::AgentWorkbenchState::plan: termrock::widgets::PlanReviewState
 pub termrock::patterns::AgentWorkbenchState::question: termrock::widgets::QuestionFlowState
 pub termrock::patterns::AgentWorkbenchState::scene: termrock::interaction::InteractionScene<&'static str, &'static str, ()>
+pub termrock::patterns::AgentWorkbenchState::session: termrock::widgets::SessionPickerState
 pub termrock::patterns::AgentWorkbenchState::task_list: termrock::widgets::ListState<&'static str>
+pub termrock::patterns::AgentWorkbenchState::task_rail: termrock::widgets::TaskRailState
+pub termrock::patterns::AgentWorkbenchState::working: termrock::widgets::WorkingStateCardState
 pub termrock::patterns::AgentWorkbenchState::workspace: termrock::layout::WorkspaceState
 impl termrock::patterns::AgentWorkbenchState
+pub const fn termrock::patterns::AgentWorkbenchState::any_overlay_open(&self) -> bool
+pub const fn termrock::patterns::AgentWorkbenchState::command_open(&self) -> bool
+pub fn termrock::patterns::AgentWorkbenchState::cycle_focus(&mut self, bool) -> termrock::patterns::WorkbenchKeyOutcome
+pub const fn termrock::patterns::AgentWorkbenchState::diff_open(&self) -> bool
 pub fn termrock::patterns::AgentWorkbenchState::focus_pane(&mut self, termrock::patterns::WorkbenchPane)
 pub fn termrock::patterns::AgentWorkbenchState::focused_pane(&self) -> core::option::Option<&'static str>
 pub fn termrock::patterns::AgentWorkbenchState::handle_escape(&mut self) -> termrock::interaction::InteractionOutcome<&'static str, &'static str, ()>
-pub fn termrock::patterns::AgentWorkbenchState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::ListRow<'_, &'static str>], &mut termrock::widgets::PromptComposerState, &mut termrock::widgets::TranscriptState<&'static str>, &[termrock::widgets::TranscriptBlock<'_, &'static str>], core::option::Option<&mut termrock::widgets::PermissionPromptState>) -> termrock::patterns::WorkbenchKeyOutcome
+pub fn termrock::patterns::AgentWorkbenchState::handle_key(&mut self, termrock::input::KeyEvent, &mut termrock::widgets::PromptComposerState, &mut termrock::widgets::TranscriptState<&'static str>, &[termrock::widgets::TranscriptBlock<'_, &'static str>], core::option::Option<&mut termrock::widgets::PermissionPromptState>, core::option::Option<&[termrock::widgets::ActivityModel]>, core::option::Option<&[termrock::widgets::ListRow<'_, &'static str>]>, core::option::Option<&[termrock::widgets::ActivityItem]>, core::option::Option<&[termrock::widgets::DiffHunk]>) -> termrock::patterns::WorkbenchKeyOutcome
 pub fn termrock::patterns::AgentWorkbenchState::new() -> Self
 pub const fn termrock::patterns::AgentWorkbenchState::permission_open(&self) -> bool
+pub const fn termrock::patterns::AgentWorkbenchState::plan_open(&self) -> bool
 pub const fn termrock::patterns::AgentWorkbenchState::question_open(&self) -> bool
+pub const fn termrock::patterns::AgentWorkbenchState::session_open(&self) -> bool
+pub const fn termrock::patterns::AgentWorkbenchState::set_command_open(&mut self, bool)
+pub const fn termrock::patterns::AgentWorkbenchState::set_diff_open(&mut self, bool)
+pub const fn termrock::patterns::AgentWorkbenchState::set_plan_open(&mut self, bool)
 pub const fn termrock::patterns::AgentWorkbenchState::set_question_open(&mut self, bool)
+pub const fn termrock::patterns::AgentWorkbenchState::set_session_open(&mut self, bool)
 impl core::default::Default for termrock::patterns::AgentWorkbenchState
-pub fn termrock::patterns::AgentWorkbenchState::default() -> termrock::patterns::AgentWorkbenchState
+pub fn termrock::patterns::AgentWorkbenchState::default() -> Self
 impl core::fmt::Debug for termrock::patterns::AgentWorkbenchState
 pub fn termrock::patterns::AgentWorkbenchState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for termrock::patterns::AgentWorkbenchState
@@ -10087,8 +10100,12 @@ impl<T> core::convert::From<T> for termrock::patterns::StudioShellSlots
 pub fn termrock::patterns::StudioShellSlots::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::StudioShellSlots
 pub struct termrock::patterns::WorkbenchModals
+pub termrock::patterns::WorkbenchModals::command: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::WorkbenchModals::diff: core::option::Option<ratatui_core::layout::rect::Rect>
 pub termrock::patterns::WorkbenchModals::permission: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::WorkbenchModals::plan: core::option::Option<ratatui_core::layout::rect::Rect>
 pub termrock::patterns::WorkbenchModals::question: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::patterns::WorkbenchModals::session: core::option::Option<ratatui_core::layout::rect::Rect>
 impl core::clone::Clone for termrock::patterns::WorkbenchModals
 pub fn termrock::patterns::WorkbenchModals::clone(&self) -> termrock::patterns::WorkbenchModals
 impl core::default::Default for termrock::patterns::WorkbenchModals
@@ -10127,18 +10144,24 @@ impl<T> core::convert::From<T> for termrock::patterns::WorkbenchModals
 pub fn termrock::patterns::WorkbenchModals::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::WorkbenchModals
 pub struct termrock::patterns::WorkbenchSurfaces<'a, 'b>
+pub termrock::patterns::WorkbenchSurfaces::activities: core::option::Option<&'a [termrock::widgets::ActivityItem]>
+pub termrock::patterns::WorkbenchSurfaces::diff: core::option::Option<&'a termrock::widgets::DiffReview<'a>>
 pub termrock::patterns::WorkbenchSurfaces::modes: &'a [termrock::widgets::WorkbenchMode<'a, &'static str>]
 pub termrock::patterns::WorkbenchSurfaces::permission: core::option::Option<(&'a termrock::widgets::PermissionPrompt<'a>, &'a mut termrock::widgets::PermissionPromptState)>
+pub termrock::patterns::WorkbenchSurfaces::plan: core::option::Option<&'a termrock::widgets::PlanReview<'a>>
 pub termrock::patterns::WorkbenchSurfaces::prompt: &'a termrock::widgets::PromptComposer<'a>
 pub termrock::patterns::WorkbenchSurfaces::prompt_state: &'a mut termrock::widgets::PromptComposerState
 pub termrock::patterns::WorkbenchSurfaces::question: core::option::Option<&'a termrock::widgets::QuestionFlow<'a>>
+pub termrock::patterns::WorkbenchSurfaces::session: core::option::Option<&'a termrock::widgets::SessionPicker<'a>>
 pub termrock::patterns::WorkbenchSurfaces::state: &'a mut termrock::patterns::AgentWorkbenchState
 pub termrock::patterns::WorkbenchSurfaces::status_slots: &'a [termrock::widgets::StatusSlot<'a, &'b str>]
 pub termrock::patterns::WorkbenchSurfaces::status_state: &'a mut termrock::widgets::StatusBarState<&'b str>
 pub termrock::patterns::WorkbenchSurfaces::system: &'a termrock::style::DesignSystem
+pub termrock::patterns::WorkbenchSurfaces::task_models: core::option::Option<&'a [termrock::widgets::ActivityModel]>
 pub termrock::patterns::WorkbenchSurfaces::tasks: &'a [termrock::widgets::ListRow<'a, &'static str>]
 pub termrock::patterns::WorkbenchSurfaces::transcript: &'a termrock::widgets::Transcript<'a, &'b str>
 pub termrock::patterns::WorkbenchSurfaces::transcript_state: &'a mut termrock::widgets::TranscriptState<&'b str>
+pub termrock::patterns::WorkbenchSurfaces::working: core::option::Option<&'a termrock::widgets::WorkingStateCard<'a>>
 impl<'a, 'b> core::marker::Freeze for termrock::patterns::WorkbenchSurfaces<'a, 'b>
 impl<'a, 'b> core::marker::Send for termrock::patterns::WorkbenchSurfaces<'a, 'b>
 impl<'a, 'b> core::marker::Sync for termrock::patterns::WorkbenchSurfaces<'a, 'b>
@@ -10164,9 +10187,14 @@ impl<T> core::convert::From<T> for termrock::patterns::WorkbenchSurfaces<'a, 'b>
 pub fn termrock::patterns::WorkbenchSurfaces<'a, 'b>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::patterns::WorkbenchSurfaces<'a, 'b>
 pub fn termrock::patterns::agent_workbench_layout(ratatui_core::layout::rect::Rect, &termrock::layout::WorkspaceState) -> alloc::vec::Vec<termrock::layout::PaneGeom>
+pub fn termrock::patterns::agent_workbench_layout_density(ratatui_core::layout::rect::Rect, &termrock::layout::WorkspaceState, termrock::patterns::WorkbenchDensity) -> alloc::vec::Vec<termrock::layout::PaneGeom>
 pub fn termrock::patterns::app_shell_viewport(ratatui_core::layout::rect::Rect) -> termrock::layout::ViewportClass
 pub fn termrock::patterns::default_modes(&'static str) -> [termrock::widgets::WorkbenchMode<'static, &'static str>; 2]
+pub fn termrock::patterns::dialog_modal_rect(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
+pub fn termrock::patterns::diff_modal_rect(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::patterns::empty_task_row() -> termrock::widgets::ListRow<'static, &'static str>
+pub fn termrock::patterns::example_workbench_activities() -> alloc::vec::Vec<termrock::widgets::ActivityItem>
+pub fn termrock::patterns::example_workbench_tasks() -> alloc::vec::Vec<termrock::widgets::ActivityModel>
 pub fn termrock::patterns::layout_agent_shell(ratatui_core::layout::rect::Rect, termrock::patterns::AgentShellLayout) -> termrock::patterns::AgentShellSlots
 pub fn termrock::patterns::layout_app_shell(ratatui_core::layout::rect::Rect, termrock::patterns::AppShellConfig) -> termrock::patterns::AppShellSlots
 pub fn termrock::patterns::layout_ops_dashboard(ratatui_core::layout::rect::Rect, termrock::patterns::OpsDashboardLayout) -> termrock::patterns::OpsDashboardSlots

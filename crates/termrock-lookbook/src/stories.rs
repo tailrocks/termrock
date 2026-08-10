@@ -6732,28 +6732,100 @@ pub(crate) fn stories() -> Vec<Story> {
             "agent-workbench/basic",
             "Agent workbench",
             "AgentWorkbench",
-            "Canonical agent shell: task rail, transcript, PromptComposer, status.",
-            80,
-            24,
+            "North-star block: TaskRail, transcript, ActivityShelf, PromptComposer.",
+            100,
+            28,
             agent_workbench_basic,
+        ),
+        Story::new(
+            "agent-workbench/tool-running",
+            "Agent workbench tools",
+            "AgentWorkbench",
+            "Tool-running: TaskRail + ActivityShelf concurrent jobs.",
+            100,
+            28,
+            agent_workbench_tool_running,
         ),
         Story::new(
             "agent-workbench/permission",
             "Agent workbench permission",
             "AgentWorkbench",
-            "PermissionPrompt overlay on workbench with default-deny focus.",
+            "PermissionPrompt overlay — default-deny; draft preserved.",
             80,
             24,
             agent_workbench_permission,
         ),
         Story::new(
+            "agent-workbench/plan",
+            "Agent workbench plan",
+            "AgentWorkbench",
+            "PlanReview overlay on composed workbench.",
+            80,
+            24,
+            agent_workbench_plan,
+        ),
+        Story::new(
+            "agent-workbench/diff",
+            "Agent workbench diff",
+            "AgentWorkbench",
+            "DiffReview overlay on composed workbench.",
+            80,
+            24,
+            agent_workbench_diff,
+        ),
+        Story::new(
+            "agent-workbench/session",
+            "Agent workbench session",
+            "AgentWorkbench",
+            "SessionPicker overlay — cancel keeps composer draft.",
+            80,
+            24,
+            agent_workbench_session,
+        ),
+        Story::new(
+            "agent-workbench/multi-agent",
+            "Agent workbench multi-agent",
+            "AgentWorkbench",
+            "Multi-agent: subagent tasks + activity shelf waiting chips.",
+            100,
+            28,
+            agent_workbench_multi_agent,
+        ),
+        Story::new(
             "agent-workbench/narrow",
             "Agent workbench narrow",
             "AgentWorkbench",
-            "Narrow-terminal geometry for the flagship workbench pattern.",
-            40,
+            "Narrow density — activity strip, no west rail.",
+            50,
+            20,
+            agent_workbench_narrow,
+        ),
+        Story::new(
+            "agent-workbench/tiny",
+            "Agent workbench tiny",
+            "AgentWorkbench",
+            "Tiny density — transcript + composer only.",
+            30,
             16,
-            agent_workbench_basic,
+            agent_workbench_tiny,
+        ),
+        Story::new(
+            "agent-workbench/ascii",
+            "Agent workbench ASCII",
+            "AgentWorkbench",
+            "ASCII glyph preference on elevated surfaces.",
+            100,
+            28,
+            agent_workbench_ascii,
+        ),
+        Story::new(
+            "agent-workbench/no-color",
+            "Agent workbench no-color",
+            "AgentWorkbench",
+            "Colorless preference — mono status cues.",
+            100,
+            28,
+            agent_workbench_no_color,
         ),
         Story::new(
             "permission-prompt/basic",
@@ -24175,101 +24247,222 @@ fn app_shell_offline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     paint_app_shell_slots(frame, &slots, system, "offline");
 }
 
-fn agent_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+/// Shared elevated workbench paint for Studio stories.
+fn paint_agent_workbench_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    story: AgentWorkbenchStoryKind,
+) {
     use termrock::patterns::{
-        AgentWorkbenchState, WorkbenchSurfaces, default_modes, render_agent_workbench,
+        AgentWorkbenchState, WorkbenchDensity, WorkbenchSurfaces, default_modes,
+        example_workbench_activities, example_workbench_tasks, render_agent_workbench,
     };
     use termrock::widgets::{
-        ListRow, PromptComposer, PromptComposerState, StatusBarState, StatusSlot, Transcript,
-        TranscriptBlock, TranscriptKind, TranscriptState,
+        DiffLine, DiffReview, ListRow, PermissionPrompt, PermissionPromptState, PermissionRequest,
+        PermissionRisk, PlanReview, PromptComposer, PromptComposerState, SessionPicker,
+        StatusBarState, StatusSlot, Transcript, TranscriptBlock, TranscriptKind, TranscriptState,
+        WorkingStateCard, example_plan_document, example_sessions, example_working_state,
     };
 
     let mut workbench = AgentWorkbenchState::new();
-    let lines = ["Plan the cutover", "Implement PermissionPrompt path"];
-    let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
+    match story {
+        AgentWorkbenchStoryKind::Narrow => {
+            workbench.density = Some(WorkbenchDensity::Narrow);
+        }
+        AgentWorkbenchStoryKind::Tiny => {
+            workbench.density = Some(WorkbenchDensity::Tiny);
+        }
+        AgentWorkbenchStoryKind::Ascii => {
+            workbench.ascii = true;
+        }
+        AgentWorkbenchStoryKind::NoColor => {
+            workbench.colorless = true;
+        }
+        _ => {}
+    }
+
+    let user = ["Plan the cutover", "Compose public TermRock only"];
+    let tool = ["cargo test --lib agent_workbench", "ok"];
+    let asst = ["Tool finished; ready for review"];
+    let blocks = [
+        TranscriptBlock::new("b1", TranscriptKind::User, &user),
+        TranscriptBlock::new("b2", TranscriptKind::Tool, &tool),
+        TranscriptBlock::new("b3", TranscriptKind::Assistant, &asst),
+    ];
     let transcript = Transcript::new(&blocks, system);
     let mut tstate = TranscriptState::new();
     let prompt = PromptComposer::new(system);
     let mut pstate = PromptComposerState::new();
-    pstate.set_text("ship the dual-chrome kill");
-    let tasks = [
-        ListRow::item("t1", Line::from("Plan review")),
-        ListRow::item("t2", Line::from("Tool: cargo test")),
-    ];
-    workbench.task_list.select(Some("t1"));
-    let modes = default_modes("plan");
+    pstate.set_text("draft survives overlays");
+    let modes = default_modes(match story {
+        AgentWorkbenchStoryKind::Plan => "plan",
+        _ => "build",
+    });
     let slots = [StatusSlot::connection("s", "ready")];
     let mut sstate = StatusBarState::default();
+    let models = example_workbench_tasks();
+    let activities = example_workbench_activities();
+    let legacy: [ListRow<'_, &str>; 0] = [];
+
+    let mut perm_state = PermissionPromptState::new();
+    let perm_w = PermissionPrompt::new(system);
+    if matches!(story, AgentWorkbenchStoryKind::Permission) {
+        let _ = perm_state.enqueue(
+            PermissionRequest::new("r1", "bash", "workspace")
+                .risk(PermissionRisk::High)
+                .command("cargo test --all-features")
+                .expected("tests pass"),
+        );
+    }
+
+    let plan_w = PlanReview::new(system);
+    if matches!(story, AgentWorkbenchStoryKind::Plan) {
+        workbench.plan.open(example_plan_document());
+    }
+
+    let diff_lines = [
+        DiffLine::context("1", " fn main() {"),
+        DiffLine::removed("2", "-    let x = 1;"),
+        DiffLine::added("3", "+    let x = 2;"),
+        DiffLine::context("4", " }"),
+    ];
+    let diff_w = DiffReview::new(&diff_lines, system);
+
+    let sessions = example_sessions();
+    if matches!(story, AgentWorkbenchStoryKind::Session) {
+        workbench.session.set_sessions(sessions.clone());
+        workbench.set_session_open(true);
+    }
+    let session_w = SessionPicker::new(system);
+
+    if matches!(
+        story,
+        AgentWorkbenchStoryKind::ToolRunning | AgentWorkbenchStoryKind::MultiAgent
+    ) {
+        workbench.working.set_work(Some(example_working_state()));
+    }
+    let working_w = WorkingStateCard::new(system);
+
+    let use_elevated = !matches!(
+        story,
+        AgentWorkbenchStoryKind::Tiny | AgentWorkbenchStoryKind::Narrow
+    );
+
     render_agent_workbench(
         frame.buffer_mut(),
         area,
         WorkbenchSurfaces {
             system,
             state: &mut workbench,
-            tasks: &tasks,
+            task_models: if use_elevated {
+                Some(models.as_slice())
+            } else {
+                None
+            },
+            tasks: &legacy,
             modes: &modes,
             transcript: &transcript,
             transcript_state: &mut tstate,
+            activities: if use_elevated || matches!(story, AgentWorkbenchStoryKind::Narrow) {
+                Some(activities.as_slice())
+            } else {
+                None
+            },
             prompt: &prompt,
             prompt_state: &mut pstate,
             status_slots: &slots,
             status_state: &mut sstate,
-            permission: None,
+            permission: if matches!(story, AgentWorkbenchStoryKind::Permission) {
+                Some((&perm_w, &mut perm_state))
+            } else {
+                None
+            },
             question: None,
+            plan: if matches!(story, AgentWorkbenchStoryKind::Plan) {
+                Some(&plan_w)
+            } else {
+                None
+            },
+            diff: if matches!(story, AgentWorkbenchStoryKind::Diff) {
+                Some(&diff_w)
+            } else {
+                None
+            },
+            session: if matches!(story, AgentWorkbenchStoryKind::Session) {
+                Some(&session_w)
+            } else {
+                None
+            },
+            working: if matches!(
+                story,
+                AgentWorkbenchStoryKind::ToolRunning | AgentWorkbenchStoryKind::MultiAgent
+            ) {
+                Some(&working_w)
+            } else {
+                None
+            },
         },
     );
 }
 
-fn agent_workbench_permission(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::patterns::{
-        AgentWorkbenchState, WorkbenchSurfaces, default_modes, render_agent_workbench,
-    };
-    use termrock::widgets::{
-        ListRow, PermissionPrompt, PermissionPromptState, PermissionRequest, PermissionRisk,
-        PromptComposer, PromptComposerState, StatusBarState, Transcript, TranscriptBlock,
-        TranscriptKind, TranscriptState,
-    };
+#[derive(Clone, Copy)]
+enum AgentWorkbenchStoryKind {
+    Basic,
+    ToolRunning,
+    Permission,
+    Plan,
+    Diff,
+    Session,
+    MultiAgent,
+    Narrow,
+    Tiny,
+    Ascii,
+    NoColor,
+}
 
-    let mut workbench = AgentWorkbenchState::new();
-    let lines = ["Need shell access"];
-    let blocks = [TranscriptBlock::new(
-        "b1",
-        TranscriptKind::Assistant,
-        &lines,
-    )];
-    let transcript = Transcript::new(&blocks, system);
-    let mut tstate = TranscriptState::new();
-    let prompt = PromptComposer::new(system);
-    let mut pstate = PromptComposerState::new();
-    let tasks = [ListRow::item("t1", Line::from("Awaiting permission"))];
-    let modes = default_modes("build");
-    let slots = [];
-    let mut sstate = StatusBarState::default();
-    let perm_w = PermissionPrompt::new(system);
-    let mut perm = PermissionPromptState::new();
-    let _ = perm.enqueue(
-        PermissionRequest::new("r1", "bash", "workspace")
-            .risk(PermissionRisk::High)
-            .command("cargo test --all-features"),
-    );
-    render_agent_workbench(
-        frame.buffer_mut(),
-        area,
-        WorkbenchSurfaces {
-            system,
-            state: &mut workbench,
-            tasks: &tasks,
-            modes: &modes,
-            transcript: &transcript,
-            transcript_state: &mut tstate,
-            prompt: &prompt,
-            prompt_state: &mut pstate,
-            status_slots: &slots,
-            status_state: &mut sstate,
-            permission: Some((&perm_w, &mut perm)),
-            question: None,
-        },
-    );
+fn agent_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::Basic);
+}
+
+fn agent_workbench_tool_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::ToolRunning);
+}
+
+fn agent_workbench_permission(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::Permission);
+}
+
+fn agent_workbench_plan(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::Plan);
+}
+
+fn agent_workbench_diff(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::Diff);
+}
+
+fn agent_workbench_session(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::Session);
+}
+
+fn agent_workbench_multi_agent(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::MultiAgent);
+}
+
+fn agent_workbench_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::Narrow);
+}
+
+fn agent_workbench_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::Tiny);
+}
+
+fn agent_workbench_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::Ascii);
+}
+
+fn agent_workbench_no_color(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::NoColor);
 }
 
 fn transcript_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

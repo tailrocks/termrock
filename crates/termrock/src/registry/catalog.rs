@@ -959,7 +959,8 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             schema: CONTRACT_SCHEMA,
             id: "agent-workbench".into(),
             title: "Agent Workbench".into(),
-            description: "Flagship multi-pane agent shell block (composition).".into(),
+            description: "North-star application block composed from public TermRock APIs only."
+                .into(),
             kind: RegistryItemKind::Block,
             license: "Apache-2.0".into(),
             module: Some("termrock::patterns::agent_workbench".into()),
@@ -973,42 +974,73 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                 let mut d = kernel_dep();
                 d.registry = vec![
                     "termrock/AppShell".into(),
-                    "termrock/ScrollArea".into(),
-                    "termrock/OverlayStack".into(),
+                    "termrock/TaskRail".into(),
+                    "termrock/ActivityShelf".into(),
+                    "termrock/PromptComposer".into(),
+                    "termrock/PermissionPrompt".into(),
+                    "termrock/QuestionFlow".into(),
+                    "termrock/PlanReview".into(),
+                    "termrock/DiffReview".into(),
+                    "termrock/SessionPicker".into(),
+                    "termrock/WorkingStateCard".into(),
                     "termrock/Panel".into(),
                 ];
                 d
             },
             capabilities: {
                 let mut c = caps_basic();
-                c.responsive_surface = Some("AppShell".into());
-                c.min_width = Some(40);
+                c.responsive_surface = Some("Workspace".into());
+                c.min_width = Some(30);
                 c.min_height = Some(12);
                 c
             },
             anatomy: vec![
                 AnatomyPartRef {
+                    id: "task_rail".into(),
+                    label: "Task rail".into(),
+                },
+                AnatomyPartRef {
                     id: "transcript".into(),
-                    label: "Transcript".into(),
+                    label: "Transcript / message thread".into(),
+                },
+                AnatomyPartRef {
+                    id: "activity".into(),
+                    label: "Activity shelf".into(),
+                },
+                AnatomyPartRef {
+                    id: "working".into(),
+                    label: "Working state".into(),
                 },
                 AnatomyPartRef {
                     id: "composer".into(),
                     label: "Prompt composer".into(),
                 },
                 AnatomyPartRef {
-                    id: "rail".into(),
-                    label: "Task rail".into(),
+                    id: "status".into(),
+                    label: "Status strip".into(),
                 },
             ],
             semantic_roles: vec![],
             variants: vec![],
             outcomes: vec![],
-            stories: vec!["agent-workbench/basic".into()],
-            tests: vec![],
-            migration: None,
+            stories: vec![
+                "agent-workbench/basic".into(),
+                "agent-workbench/tool-running".into(),
+                "agent-workbench/permission".into(),
+                "agent-workbench/plan".into(),
+                "agent-workbench/diff".into(),
+                "agent-workbench/session".into(),
+                "agent-workbench/multi-agent".into(),
+                "agent-workbench/narrow".into(),
+                "agent-workbench/tiny".into(),
+                "agent-workbench/ascii".into(),
+                "agent-workbench/no-color".into(),
+            ],
+            tests: vec!["patterns::agent_workbench".into()],
+            migration: Some("migrations/0236-v0.13.0-agent-workbench.md".into()),
             provenance: prov("crates/termrock/src/patterns/agent_workbench.rs"),
             source_hash: None,
-            complete: false,
+            complete: true,
         },
     ]
 }
