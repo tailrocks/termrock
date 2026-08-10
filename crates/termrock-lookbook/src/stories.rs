@@ -52,8 +52,8 @@ use termrock::{
         HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
         InspectorField, JumpFilter, JumpOverlay, JumpOverlayState, JumpTarget,
         assign_jump_labels_from_semantics, generate_jump_labels, Kbd, KeyValueList,
-        KeyValueListState, KvEntry,
-        KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
+        KeyValueListState, KvEntry, KeyValueTable, KeyValueTableState, KvtField, KvtMode,
+        KvtValidation, KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
         MatchTruncate, PresenceStatus,
         ListRow, ListState, ListDensity, ListSelectionMode, filter_list_rows,
         VirtualList, VirtualListState, VirtualListItem, VirtualListFollow, VirtualPageStatus,
@@ -6531,6 +6531,69 @@ pub(crate) fn stories() -> Vec<Story> {
             56,
             10,
             tree_table_aggregate,
+        ),
+        Story::new(
+            "key-value-table/http",
+            "KeyValueTable HTTP",
+            "KeyValueTable",
+            "Request headers with secret redaction and types.",
+            72,
+            14,
+            key_value_table_http,
+        ),
+        Story::new(
+            "key-value-table/database",
+            "KeyValueTable database",
+            "KeyValueTable",
+            "Column metadata with validation and source.",
+            68,
+            12,
+            key_value_table_database,
+        ),
+        Story::new(
+            "key-value-table/process",
+            "KeyValueTable process",
+            "KeyValueTable",
+            "Process facts for ops detail panel.",
+            60,
+            12,
+            key_value_table_process,
+        ),
+        Story::new(
+            "key-value-table/permission",
+            "KeyValueTable permission",
+            "KeyValueTable",
+            "Permission claim details with status tones.",
+            64,
+            12,
+            key_value_table_permission,
+        ),
+        Story::new(
+            "key-value-table/agent",
+            "KeyValueTable agent",
+            "KeyValueTable",
+            "Agent/tool detail with editable fields.",
+            64,
+            12,
+            key_value_table_agent,
+        ),
+        Story::new(
+            "key-value-table/compare",
+            "KeyValueTable compare",
+            "KeyValueTable",
+            "Compare/diff mode before vs after.",
+            72,
+            10,
+            key_value_table_compare,
+        ),
+        Story::new(
+            "key-value-table/narrow",
+            "KeyValueTable narrow",
+            "KeyValueTable",
+            "Stacked contraction under width pressure.",
+            28,
+            12,
+            key_value_table_narrow,
         ),
         Story::new(
             "text-input/basic",
@@ -16984,6 +17047,203 @@ fn tree_table_aggregate(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     TreeTable::new(&tokens, &columns, &rows)
         .focused(true)
         .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_table_http(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::LoadState;
+    let fields = [
+        KvtField::group("g", "Request"),
+        KvtField::pair("m", "method", "GET")
+            .value_type("string")
+            .source("line")
+            .copyable()
+            .depth(1),
+        KvtField::pair("h", "host", "api.tailrocks.dev")
+            .value_type("host")
+            .source("header")
+            .copyable()
+            .depth(1),
+        KvtField::pair("a", "authorization", "Bearer sk-live-…")
+            .value_type("secret")
+            .source("header")
+            .secret()
+            .copyable()
+            .depth(1),
+        KvtField::pair("c", "content-type", "application/json")
+            .value_type("mime")
+            .source("header")
+            .editable()
+            .depth(1),
+        KvtField::pair("u", "user-agent", "termrock/0.11")
+            .value_type("string")
+            .source("header")
+            .depth(1),
+    ];
+    let mut state = KeyValueTableState::new().with_cursor("h");
+    state.load = LoadState::Ready { count: 5 };
+    KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_table_database(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::LoadState;
+    let fields = [
+        KvtField::group("t", "users"),
+        KvtField::pair("id", "id", "uuid")
+            .value_type("uuid")
+            .source("pk")
+            .annotation("not null")
+            .depth(1),
+        KvtField::pair("em", "email", "text")
+            .value_type("text")
+            .source("col")
+            .annotation("unique")
+            .status(KvStatus::Success)
+            .depth(1),
+        KvtField::pair("ag", "age", "integer")
+            .value_type("int")
+            .source("col")
+            .validation(KvtValidation::Warning)
+            .validation_message("prefer smallint")
+            .depth(1),
+        KvtField::pair("pw", "password_hash", "bytea")
+            .value_type("secret")
+            .source("col")
+            .secret()
+            .depth(1),
+    ];
+    let mut state = KeyValueTableState::new().with_cursor("em");
+    state.load = LoadState::Ready { count: 4 };
+    KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::LoadState;
+    let fields = [
+        KvtField::pair("pid", "pid", "1902").value_type("int").copyable(),
+        KvtField::pair("cmd", "command", "rustc --crate-type lib")
+            .value_type("string")
+            .copyable(),
+        KvtField::pair("cpu", "cpu", "88.4%").value_type("pct").status(KvStatus::Warning),
+        KvtField::pair("mem", "rss", "1.1G").value_type("bytes"),
+        KvtField::pair("user", "user", "donbeave").value_type("string").source("os"),
+        KvtField::pair("cwd", "cwd", "/Users/donbeave/Projects/termrock")
+            .value_type("path")
+            .copyable(),
+    ];
+    let mut state = KeyValueTableState::new().with_cursor("cmd");
+    state.load = LoadState::Ready { count: 6 };
+    state.density = termrock::widgets::KvDensity::Dense;
+    KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_table_permission(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::LoadState;
+    let fields = [
+        KvtField::group("c", "Claim"),
+        KvtField::pair("act", "action", "shell.exec")
+            .value_type("enum")
+            .source("tool")
+            .depth(1),
+        KvtField::pair("risk", "risk", "high")
+            .value_type("enum")
+            .status(KvStatus::Danger)
+            .depth(1),
+        KvtField::pair("scope", "scope", "session")
+            .value_type("enum")
+            .source("policy")
+            .depth(1),
+        KvtField::pair("reason", "reason", "network egress to untrusted host")
+            .value_type("text")
+            .depth(1),
+        KvtField::pair("dec", "decision", "allow once")
+            .value_type("enum")
+            .status(KvStatus::Success)
+            .editable()
+            .depth(1),
+    ];
+    let mut state = KeyValueTableState::new().with_cursor("risk");
+    state.load = LoadState::Ready { count: 5 };
+    KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_table_agent(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::LoadState;
+    let fields = [
+        KvtField::group("t", "Tool call"),
+        KvtField::pair("name", "name", "run_terminal_command")
+            .value_type("id")
+            .copyable()
+            .depth(1),
+        KvtField::pair("status", "status", "running")
+            .value_type("enum")
+            .status(KvStatus::Info)
+            .depth(1),
+        KvtField::pair("timeout", "timeout_ms", "120000")
+            .value_type("int")
+            .editable()
+            .depth(1),
+        KvtField::pair("cmd", "command", "cargo test -p termrock")
+            .value_type("string")
+            .copyable()
+            .depth(1),
+        KvtField::pair("tok", "api_key", "xai-…")
+            .value_type("secret")
+            .secret()
+            .depth(1),
+    ];
+    let mut state = KeyValueTableState::new().with_cursor("timeout");
+    state.load = LoadState::Ready { count: 5 };
+    state.editing = true;
+    state.edit_draft = "180000".into();
+    KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_table_compare(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::LoadState;
+    let fields = [
+        KvtField::pair("h", "host", "api.prod.example")
+            .compare("api.staging.example")
+            .value_type("host")
+            .copyable(),
+        KvtField::pair("p", "port", "443").compare("443").value_type("int"),
+        KvtField::pair("t", "tls", "1.3")
+            .compare("1.2")
+            .value_type("enum")
+            .status(KvStatus::Warning),
+        KvtField::pair("r", "region", "us-east-1")
+            .compare("eu-west-1")
+            .value_type("string"),
+    ];
+    let mut state = KeyValueTableState::new().with_cursor("h");
+    state.mode = KvtMode::Compare;
+    state.load = LoadState::Ready { count: 4 };
+    KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn key_value_table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::LoadState;
+    let fields = [
+        KvtField::group("g", "Meta"),
+        KvtField::pair("a", "name", "termrock")
+            .value_type("string")
+            .source("cargo")
+            .depth(1),
+        KvtField::pair("b", "version", "0.11.0")
+            .value_type("semver")
+            .depth(1),
+        KvtField::pair(
+            "c",
+            "description",
+            "Terminal component library with dense detail panels",
+        )
+        .value_type("text")
+        .depth(1),
+    ];
+    let mut state = KeyValueTableState::new().with_cursor("a");
+    state.layout = KvLayout::Auto;
+    state.density = termrock::widgets::KvDensity::Dense;
+    state.load = LoadState::Ready { count: 3 };
+    KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
 }
 
 fn data_table_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

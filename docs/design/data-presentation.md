@@ -196,12 +196,13 @@ Hierarchical rows + columns (k8s, process trees, schemas).
 
 ### 4.3 KeyValueTable
 
-Evolved `DetailTable`: label | value rows.
+Dense interactive detail (migration **0191**): key · value · type · source ·
+status · copy · edit · secret · validation · nested groups · compare mode.
 
-- Selection row-only; copy value / copy row.  
-- Search filters keys (consumer or local small sets).  
+- Single focus per row; chords (`c`/`e`/`r`/`d`/`/`).  
+- Columns → stacked under width pressure.  
 - `LoadState` for async object load.  
-- No column pin.
+- `DetailTable` / `KeyValueList` remain for dialog and light summary use.
 
 ### 4.4 ObjectInspector
 

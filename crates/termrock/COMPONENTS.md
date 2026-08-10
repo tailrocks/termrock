@@ -56,6 +56,15 @@ navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
 
+`KeyValueTable` is the dense interactive detail surface for metadata and
+object properties (HTTP headers, DB columns, process facts, permission claims,
+agent/tool panels). Fields carry key · value · optional type/source · status ·
+validation · secret · editable · compare-side. Layout contracts columns→stacked
+under width pressure (`KvLayout` / `KvDensity` shared with KeyValueList). One
+focus target per row; `c` copy, `e` edit, `r` reveal, `d` compare, `/` filter.
+`DetailTable` remains dialog-oriented; `KeyValueList` remains the lighter
+settings/summary list.
+
 `TreeTable` combines hierarchical rows with columns (process trees, schema
 browsers, tasks, dependencies). Host projects a flattened **visible-expanded**
 window; TermRock paints compact indent, disclosure glyphs, sticky headers, and

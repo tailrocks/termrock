@@ -113,6 +113,7 @@ mod toast;
 mod transcript;
 mod tree;
 mod tree_table;
+mod key_value_table;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -197,6 +198,10 @@ pub use kbd::{
 pub use key_value_list::{
     KeyValueList, KeyValueListOutcome, KeyValueListParts, KeyValueListState, KvDensity, KvEntry,
     KvEntryParts, KvLayout, KvStatus,
+};
+pub use key_value_table::{
+    KeyValueTable, KeyValueTableOutcome, KeyValueTableState, KvtField, KvtMode, KvtRegion,
+    KvtRowKind, KvtValidation,
 };
 pub use link::{
     ActionLink, ActionLinkOutcome, DestinationDisplay, Link, LinkDestination, LinkOutcome,
