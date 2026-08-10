@@ -705,6 +705,21 @@ state.set_focused(true);
 let visible = state.refilter(&catalog);
 CommandPalette::new("Commands", &visible, &system).paint(area, buf, &mut state);`,
   },
+  QuickOpen: {
+    description:
+      'High-performance multi-provider fuzzy resource opener with async streaming, previews, query syntax, JumpMode and fullscreen integration.',
+    primaryStory: 'quick-open/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{QuickOpen, QuickOpenState, example_quick_open_files, example_quick_open_providers};
+
+let system = DesignSystem::default();
+let providers = example_quick_open_providers();
+let items = example_quick_open_files();
+let mut state = QuickOpenState::new();
+state.set_focused(true);
+let _ = state.apply_results(0, &items, true, None);
+QuickOpen::new(&providers, &items, &system).paint(area, buf, &mut state);`,
+  },
   EmptyState: {
     description: 'Centered empty surface with a non-color glyph.',
     primaryStory: 'empty-state/basic',

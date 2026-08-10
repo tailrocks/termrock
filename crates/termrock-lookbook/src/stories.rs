@@ -31,6 +31,8 @@ use termrock::{
         CodeHighlight,
         CodeHighlightKind, CodeWrap, Column, ColumnWidth,
         CommandEntry, CommandPalette, CommandPaletteState, example_command_catalog,
+        QuickOpen, QuickOpenState, example_quick_open_files,
+        example_quick_open_providers, example_quick_open_symbols, filter_quick_open_items,
         CompletionCandidate, CompletionMenu,
         CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
@@ -2311,6 +2313,69 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             8,
             command_palette_ascii,
+        ),
+        Story::new(
+            "quick-open/basic",
+            "QuickOpen files",
+            "QuickOpen",
+            "Multi-provider fuzzy opener with preview pane.",
+            72,
+            18,
+            quick_open_basic,
+        ),
+        Story::new(
+            "quick-open/symbols",
+            "QuickOpen symbols",
+            "QuickOpen",
+            "Symbols provider active.",
+            64,
+            14,
+            quick_open_symbols,
+        ),
+        Story::new(
+            "quick-open/fuzzy",
+            "QuickOpen fuzzy",
+            "QuickOpen",
+            "Fuzzy highlight on filter.",
+            64,
+            14,
+            quick_open_fuzzy,
+        ),
+        Story::new(
+            "quick-open/loading",
+            "QuickOpen loading",
+            "QuickOpen",
+            "Streaming search chrome.",
+            48,
+            12,
+            quick_open_loading,
+        ),
+        Story::new(
+            "quick-open/empty",
+            "QuickOpen empty",
+            "QuickOpen",
+            "Empty query polish.",
+            48,
+            12,
+            quick_open_empty,
+        ),
+        Story::new(
+            "quick-open/narrow",
+            "QuickOpen narrow",
+            "QuickOpen",
+            "Narrow / fullscreen-class geometry.",
+            36,
+            14,
+            quick_open_narrow,
+        ),
+        Story::new(
+            "quick-open/ascii",
+            "QuickOpen ASCII",
+            "QuickOpen",
+            "ASCII glyphs and colorless roles.",
+            56,
+            14,
+            quick_open_ascii,
         ),
         Story::new(
             "code-block/basic",
@@ -10624,6 +10689,73 @@ fn command_palette_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         area,
         &mut state,
     );
+}
+
+fn quick_open_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let providers = example_quick_open_providers();
+    let items = example_quick_open_files();
+    let mut state = QuickOpenState::new();
+    state.set_focused(true);
+    let _ = state.apply_results(0, &items, true, Some(items.len() as u64));
+    QuickOpen::new(&providers, &items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn quick_open_symbols(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let providers = example_quick_open_providers();
+    let items = example_quick_open_symbols();
+    let mut state = QuickOpenState::new();
+    state.set_focused(true);
+    let _ = state.set_provider(&providers, 1, &[]);
+    let _ = state.apply_results(state.generation(), &items, true, None);
+    QuickOpen::new(&providers, &items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn quick_open_fuzzy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let providers = example_quick_open_providers();
+    let catalog = example_quick_open_files();
+    let items = filter_quick_open_items(&catalog, "qck");
+    let mut state = QuickOpenState::new();
+    state.set_focused(true);
+    *state.query_mut() = TextInputState::new("qck").with_allow_empty(true);
+    let _ = state.apply_results(0, &items, true, None);
+    QuickOpen::new(&providers, &items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn quick_open_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let providers = example_quick_open_providers();
+    let mut state = QuickOpenState::<&str>::new();
+    state.set_focused(true);
+    let _ = state.set_loading(true);
+    QuickOpen::new(&providers, &[], system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn quick_open_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let providers = example_quick_open_providers();
+    let mut state = QuickOpenState::<&str>::new();
+    state.set_focused(true);
+    QuickOpen::new(&providers, &[], system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn quick_open_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let providers = example_quick_open_providers();
+    let items = example_quick_open_files();
+    let mut state = QuickOpenState::new();
+    state.set_focused(true);
+    state.set_presentation_override(Some(termrock::widgets::QuickOpenPresentation::Fullscreen));
+    let _ = state.apply_results(0, &items, true, None);
+    QuickOpen::new(&providers, &items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn quick_open_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let providers = example_quick_open_providers();
+    let items = example_quick_open_files();
+    let mut state = QuickOpenState::new();
+    state.set_focused(true);
+    let _ = state.apply_results(0, &items, true, None);
+    QuickOpen::new(&providers, &items, system)
+        .ascii(true)
+        .colorless(true)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn code_block(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

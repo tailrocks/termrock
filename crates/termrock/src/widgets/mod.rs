@@ -18,6 +18,7 @@ mod blocks;
 mod charts;
 mod code_block;
 mod command_palette;
+mod quick_open;
 mod completion_menu;
 mod composed_row;
 mod content;
@@ -135,6 +136,16 @@ pub use command_palette::{
     CommandPaletteState, command_palette_presentation_for_bounds, default_command_palette_intent,
     dismiss_command_palette_overlay, entries_from_keymap, example_command_catalog,
     filter_command_entries, fuzzy_match_label, open_command_palette_overlay, place_command_palette,
+};
+pub use quick_open::{
+    QUICK_OPEN_DEFAULT_LIMIT, QUICK_OPEN_FULLSCREEN_MAX_HEIGHT, QUICK_OPEN_FULLSCREEN_MAX_WIDTH,
+    QUICK_OPEN_OVERLAY_ID, QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX, ParsedQuickOpenQuery,
+    QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenPresentation, QuickOpenPreview,
+    QuickOpenProvider, QuickOpenSearchRequest, QuickOpenSize, QuickOpenState,
+    default_quick_open_intent, dismiss_quick_open_overlay, example_quick_open_files,
+    example_quick_open_providers, example_quick_open_symbols, filter_quick_open_items,
+    open_quick_open_fullscreen, open_quick_open_overlay, parse_quick_open_query, place_quick_open,
+    quick_open_jump_targets, quick_open_presentation_for_bounds,
 };
 pub use completion_menu::{
     COMPLETION_OVERLAY_ID, CompletionCandidate, CompletionMenu, CompletionMenuOutcome,
