@@ -1,0 +1,38 @@
+---
+title: TerminalRunCard
+description: Shell/terminal command card with proposed vs executed chrome and live output.
+---
+
+# TerminalRunCard
+
+Agent-card specialization of shell runs over the `TerminalOutput` substrate:
+proposed vs executed command, edited approval, provenance, env redaction,
+stdout/stderr, exit/signal, follow/scroll, and typed control requests.
+
+## When to use / when not
+
+| Use TerminalRunCard | Prefer |
+|---------------------|--------|
+| Shell tools in agent transcript | — |
+| Full command workbench pane | [TerminalOutput](/docs/handbook/terminal-output) |
+| Non-shell tool calls | [ToolCallCard](/docs/handbook/tool-call-card) |
+| Multi-source logs | [LogStream](/docs/handbook/log-stream) |
+
+## Phases
+
+`Proposed` · `EditedApproval` · `Executed` — always keep proposed text when it
+differs from executed.
+
+## Safety
+
+- No process/PTY in TermRock
+- Outcomes request stop/detach/retry/permission/copy/fullscreen only
+- Env/command copy paths redaction-assisted; host pre-redacts
+
+## Keys
+
+Enter expand · `c` stop · `r` retry · `d` detach · `p` permission · `f`/Shift+F fullscreen · `y` copy command · scroll detaches follow
+
+## Related
+
+TerminalOutput · ToolCallCard · PermissionPrompt · migration `0220`

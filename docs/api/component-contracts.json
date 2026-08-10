@@ -1047,6 +1047,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "TerminalRunCard": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "Tooltip": {
     "keyboard": "covered",
     "mouse": "covered",

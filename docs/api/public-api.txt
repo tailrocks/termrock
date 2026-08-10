@@ -14775,6 +14775,10 @@ pub mod termrock::widgets::terminal_output_bench
 pub const termrock::widgets::terminal_output_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::terminal_output_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::terminal_output_bench::VIEWPORT: u16
+pub mod termrock::widgets::terminal_run_card_bench
+pub const termrock::widgets::terminal_run_card_bench::CARD_COUNT: usize
+pub const termrock::widgets::terminal_run_card_bench::LINES: usize
+pub const termrock::widgets::terminal_run_card_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::tool_call_card_bench
 pub const termrock::widgets::tool_call_card_bench::CARD_COUNT: usize
 pub const termrock::widgets::tool_call_card_bench::PAINT_FRAMES: u32
@@ -36399,6 +36403,58 @@ pub unsafe fn termrock::widgets::TagOutcome<Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::TagOutcome<Id>
 pub fn termrock::widgets::TagOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TagOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::TerminalCommandPhase
+pub termrock::widgets::TerminalCommandPhase::EditedApproval
+pub termrock::widgets::TerminalCommandPhase::Executed
+pub termrock::widgets::TerminalCommandPhase::Proposed
+impl termrock::widgets::TerminalCommandPhase
+pub const fn termrock::widgets::TerminalCommandPhase::badge(self) -> &'static str
+pub const fn termrock::widgets::TerminalCommandPhase::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::TerminalCommandPhase
+pub fn termrock::widgets::TerminalCommandPhase::clone(&self) -> termrock::widgets::TerminalCommandPhase
+impl core::cmp::Eq for termrock::widgets::TerminalCommandPhase
+impl core::cmp::PartialEq for termrock::widgets::TerminalCommandPhase
+pub fn termrock::widgets::TerminalCommandPhase::eq(&self, &termrock::widgets::TerminalCommandPhase) -> bool
+impl core::default::Default for termrock::widgets::TerminalCommandPhase
+pub fn termrock::widgets::TerminalCommandPhase::default() -> termrock::widgets::TerminalCommandPhase
+impl core::fmt::Debug for termrock::widgets::TerminalCommandPhase
+pub fn termrock::widgets::TerminalCommandPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TerminalCommandPhase
+pub fn termrock::widgets::TerminalCommandPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TerminalCommandPhase
+impl core::marker::StructuralPartialEq for termrock::widgets::TerminalCommandPhase
+impl core::marker::Freeze for termrock::widgets::TerminalCommandPhase
+impl core::marker::Send for termrock::widgets::TerminalCommandPhase
+impl core::marker::Sync for termrock::widgets::TerminalCommandPhase
+impl core::marker::Unpin for termrock::widgets::TerminalCommandPhase
+impl core::marker::UnsafeUnpin for termrock::widgets::TerminalCommandPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TerminalCommandPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TerminalCommandPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TerminalCommandPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TerminalCommandPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TerminalCommandPhase where U: core::convert::From<T>
+pub fn termrock::widgets::TerminalCommandPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TerminalCommandPhase where U: core::convert::Into<T>
+pub type termrock::widgets::TerminalCommandPhase::Error = core::convert::Infallible
+pub fn termrock::widgets::TerminalCommandPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TerminalCommandPhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TerminalCommandPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TerminalCommandPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TerminalCommandPhase where T: core::clone::Clone
+pub type termrock::widgets::TerminalCommandPhase::Owned = T
+pub fn termrock::widgets::TerminalCommandPhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::TerminalCommandPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TerminalCommandPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TerminalCommandPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TerminalCommandPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalCommandPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TerminalCommandPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalCommandPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TerminalCommandPhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TerminalCommandPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TerminalCommandPhase
+pub fn termrock::widgets::TerminalCommandPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TerminalCommandPhase
 #[non_exhaustive] pub enum termrock::widgets::TerminalOutputOutcome
 pub termrock::widgets::TerminalOutputOutcome::CancelRequested
 pub termrock::widgets::TerminalOutputOutcome::Cancelled
@@ -36565,6 +36621,136 @@ pub unsafe fn termrock::widgets::TerminalPaintMode::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::TerminalPaintMode
 pub fn termrock::widgets::TerminalPaintMode::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TerminalPaintMode
+#[non_exhaustive] pub enum termrock::widgets::TerminalRunCardOutcome
+pub termrock::widgets::TerminalRunCardOutcome::Collapsed
+pub termrock::widgets::TerminalRunCardOutcome::Collapsed::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::CopyCommand
+pub termrock::widgets::TerminalRunCardOutcome::CopyCommand::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::CopyCommand::text: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::CopyOutput
+pub termrock::widgets::TerminalRunCardOutcome::CopyOutput::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::CopyOutput::text: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::DetachRequested
+pub termrock::widgets::TerminalRunCardOutcome::DetachRequested::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::EnvToggled
+pub termrock::widgets::TerminalRunCardOutcome::EnvToggled::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::EnvToggled::on: bool
+pub termrock::widgets::TerminalRunCardOutcome::Expanded
+pub termrock::widgets::TerminalRunCardOutcome::Expanded::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::Follow
+pub termrock::widgets::TerminalRunCardOutcome::Follow::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::FullscreenRequested
+pub termrock::widgets::TerminalRunCardOutcome::FullscreenRequested::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::Ignored
+pub termrock::widgets::TerminalRunCardOutcome::OpenCwdRequested
+pub termrock::widgets::TerminalRunCardOutcome::OpenCwdRequested::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::OpenCwdRequested::path: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::PaintModeChanged
+pub termrock::widgets::TerminalRunCardOutcome::PaintModeChanged::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::PaintModeChanged::mode: termrock::widgets::TerminalPaintMode
+pub termrock::widgets::TerminalRunCardOutcome::PermissionFocus
+pub termrock::widgets::TerminalRunCardOutcome::PermissionFocus::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::RetryRequested
+pub termrock::widgets::TerminalRunCardOutcome::RetryRequested::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::ScrollDetached
+pub termrock::widgets::TerminalRunCardOutcome::ScrollDetached::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::ScrollDetached::offset: u16
+pub termrock::widgets::TerminalRunCardOutcome::Scrolled
+pub termrock::widgets::TerminalRunCardOutcome::Scrolled::id: alloc::string::String
+pub termrock::widgets::TerminalRunCardOutcome::Scrolled::offset: u16
+pub termrock::widgets::TerminalRunCardOutcome::StopRequested
+pub termrock::widgets::TerminalRunCardOutcome::StopRequested::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::TerminalRunCardOutcome
+pub fn termrock::widgets::TerminalRunCardOutcome::clone(&self) -> termrock::widgets::TerminalRunCardOutcome
+impl core::cmp::Eq for termrock::widgets::TerminalRunCardOutcome
+impl core::cmp::PartialEq for termrock::widgets::TerminalRunCardOutcome
+pub fn termrock::widgets::TerminalRunCardOutcome::eq(&self, &termrock::widgets::TerminalRunCardOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::TerminalRunCardOutcome
+pub fn termrock::widgets::TerminalRunCardOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::TerminalRunCardOutcome
+impl core::marker::Freeze for termrock::widgets::TerminalRunCardOutcome
+impl core::marker::Send for termrock::widgets::TerminalRunCardOutcome
+impl core::marker::Sync for termrock::widgets::TerminalRunCardOutcome
+impl core::marker::Unpin for termrock::widgets::TerminalRunCardOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::TerminalRunCardOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TerminalRunCardOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TerminalRunCardOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TerminalRunCardOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCardOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TerminalRunCardOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::TerminalRunCardOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TerminalRunCardOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::TerminalRunCardOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::TerminalRunCardOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TerminalRunCardOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TerminalRunCardOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TerminalRunCardOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TerminalRunCardOutcome where T: core::clone::Clone
+pub type termrock::widgets::TerminalRunCardOutcome::Owned = T
+pub fn termrock::widgets::TerminalRunCardOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::TerminalRunCardOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TerminalRunCardOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCardOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TerminalRunCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCardOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TerminalRunCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCardOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TerminalRunCardOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TerminalRunCardOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TerminalRunCardOutcome
+pub fn termrock::widgets::TerminalRunCardOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TerminalRunCardOutcome
+#[non_exhaustive] pub enum termrock::widgets::TerminalRunPresentation
+pub termrock::widgets::TerminalRunPresentation::Compact
+pub termrock::widgets::TerminalRunPresentation::Expanded
+pub termrock::widgets::TerminalRunPresentation::Fullscreen
+impl termrock::widgets::TerminalRunPresentation
+pub const fn termrock::widgets::TerminalRunPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::TerminalRunPresentation
+pub fn termrock::widgets::TerminalRunPresentation::clone(&self) -> termrock::widgets::TerminalRunPresentation
+impl core::cmp::Eq for termrock::widgets::TerminalRunPresentation
+impl core::cmp::PartialEq for termrock::widgets::TerminalRunPresentation
+pub fn termrock::widgets::TerminalRunPresentation::eq(&self, &termrock::widgets::TerminalRunPresentation) -> bool
+impl core::default::Default for termrock::widgets::TerminalRunPresentation
+pub fn termrock::widgets::TerminalRunPresentation::default() -> termrock::widgets::TerminalRunPresentation
+impl core::fmt::Debug for termrock::widgets::TerminalRunPresentation
+pub fn termrock::widgets::TerminalRunPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TerminalRunPresentation
+pub fn termrock::widgets::TerminalRunPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TerminalRunPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::TerminalRunPresentation
+impl core::marker::Freeze for termrock::widgets::TerminalRunPresentation
+impl core::marker::Send for termrock::widgets::TerminalRunPresentation
+impl core::marker::Sync for termrock::widgets::TerminalRunPresentation
+impl core::marker::Unpin for termrock::widgets::TerminalRunPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::TerminalRunPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TerminalRunPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TerminalRunPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TerminalRunPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TerminalRunPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::TerminalRunPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TerminalRunPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::TerminalRunPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::TerminalRunPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TerminalRunPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TerminalRunPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TerminalRunPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TerminalRunPresentation where T: core::clone::Clone
+pub type termrock::widgets::TerminalRunPresentation::Owned = T
+pub fn termrock::widgets::TerminalRunPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::TerminalRunPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TerminalRunPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TerminalRunPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TerminalRunPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TerminalRunPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TerminalRunPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TerminalRunPresentation
+pub fn termrock::widgets::TerminalRunPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TerminalRunPresentation
 #[non_exhaustive] pub enum termrock::widgets::TerminalRunStatus
 pub termrock::widgets::TerminalRunStatus::Cancelled
 pub termrock::widgets::TerminalRunStatus::Detached
@@ -36574,12 +36760,14 @@ pub termrock::widgets::TerminalRunStatus::Running
 pub termrock::widgets::TerminalRunStatus::Signaled
 pub termrock::widgets::TerminalRunStatus::Succeeded
 pub termrock::widgets::TerminalRunStatus::TimedOut
+pub termrock::widgets::TerminalRunStatus::WaitingPermission
 impl termrock::widgets::TerminalRunStatus
 pub const fn termrock::widgets::TerminalRunStatus::can_cancel(self) -> bool
 pub const fn termrock::widgets::TerminalRunStatus::can_retry(self) -> bool
 pub const fn termrock::widgets::TerminalRunStatus::glyph(self, bool) -> &'static str
 pub const fn termrock::widgets::TerminalRunStatus::id(self) -> &'static str
 pub const fn termrock::widgets::TerminalRunStatus::label(self) -> &'static str
+pub const fn termrock::widgets::TerminalRunStatus::needs_permission(self) -> bool
 pub const fn termrock::widgets::TerminalRunStatus::role(self) -> termrock::style::Role
 impl core::clone::Clone for termrock::widgets::TerminalRunStatus
 pub fn termrock::widgets::TerminalRunStatus::clone(&self) -> termrock::widgets::TerminalRunStatus
@@ -69477,6 +69665,7 @@ pub const fn termrock::widgets::TerminalOutput<'a>::colorless(self, bool) -> Sel
 pub const fn termrock::widgets::TerminalOutput<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::TerminalOutput<'a>::new(&'a termrock::widgets::TerminalCommandMeta<'a>, &'a [termrock::widgets::TerminalLine<'a>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::TerminalOutput<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TerminalOutputState)
+pub const fn termrock::widgets::TerminalOutput<'a>::show_chrome(self, bool) -> Self
 pub const fn termrock::widgets::TerminalOutput<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::TerminalOutput<'_>
 pub type &termrock::widgets::TerminalOutput<'_>::State = termrock::widgets::TerminalOutputState
@@ -69629,6 +69818,229 @@ pub unsafe fn termrock::widgets::TerminalOutputState::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::TerminalOutputState
 pub fn termrock::widgets::TerminalOutputState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TerminalOutputState
+pub struct termrock::widgets::TerminalRun
+pub termrock::widgets::TerminalRun::actor: core::option::Option<alloc::string::String>
+pub termrock::widgets::TerminalRun::approval_edited: bool
+pub termrock::widgets::TerminalRun::cwd: core::option::Option<alloc::string::String>
+pub termrock::widgets::TerminalRun::duration_ms: core::option::Option<u64>
+pub termrock::widgets::TerminalRun::egress: core::option::Option<alloc::string::String>
+pub termrock::widgets::TerminalRun::env: alloc::vec::Vec<termrock::widgets::TerminalRunEnv>
+pub termrock::widgets::TerminalRun::executed_command: core::option::Option<alloc::string::String>
+pub termrock::widgets::TerminalRun::exit_code: core::option::Option<i32>
+pub termrock::widgets::TerminalRun::id: alloc::string::String
+pub termrock::widgets::TerminalRun::pid: core::option::Option<u32>
+pub termrock::widgets::TerminalRun::proposed_command: alloc::string::String
+pub termrock::widgets::TerminalRun::revision: u64
+pub termrock::widgets::TerminalRun::risk: termrock::widgets::ToolRisk
+pub termrock::widgets::TerminalRun::secrets_redacted: bool
+pub termrock::widgets::TerminalRun::signal: core::option::Option<alloc::string::String>
+pub termrock::widgets::TerminalRun::status: termrock::widgets::TerminalRunStatus
+impl termrock::widgets::TerminalRun
+pub fn termrock::widgets::TerminalRun::actor(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::TerminalRun::approval_edited(self, bool) -> Self
+pub fn termrock::widgets::TerminalRun::cwd(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::TerminalRun::display_command(&self) -> &str
+pub const fn termrock::widgets::TerminalRun::duration_ms(self, u64) -> Self
+pub fn termrock::widgets::TerminalRun::egress(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::TerminalRun::env(self, alloc::vec::Vec<termrock::widgets::TerminalRunEnv>) -> Self
+pub fn termrock::widgets::TerminalRun::execute(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::TerminalRun::exit_code(self, i32) -> Self
+pub fn termrock::widgets::TerminalRun::header_line(&self, bool) -> alloc::string::String
+pub fn termrock::widgets::TerminalRun::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::TerminalRun::phase(&self) -> termrock::widgets::TerminalCommandPhase
+pub const fn termrock::widgets::TerminalRun::pid(self, u32) -> Self
+pub const fn termrock::widgets::TerminalRun::revision(self, u64) -> Self
+pub const fn termrock::widgets::TerminalRun::risk(self, termrock::widgets::ToolRisk) -> Self
+pub const fn termrock::widgets::TerminalRun::secrets_redacted(self, bool) -> Self
+pub fn termrock::widgets::TerminalRun::signal(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::TerminalRun::status(self, termrock::widgets::TerminalRunStatus) -> Self
+impl core::clone::Clone for termrock::widgets::TerminalRun
+pub fn termrock::widgets::TerminalRun::clone(&self) -> termrock::widgets::TerminalRun
+impl core::cmp::Eq for termrock::widgets::TerminalRun
+impl core::cmp::PartialEq for termrock::widgets::TerminalRun
+pub fn termrock::widgets::TerminalRun::eq(&self, &termrock::widgets::TerminalRun) -> bool
+impl core::fmt::Debug for termrock::widgets::TerminalRun
+pub fn termrock::widgets::TerminalRun::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::TerminalRun
+impl core::marker::Freeze for termrock::widgets::TerminalRun
+impl core::marker::Send for termrock::widgets::TerminalRun
+impl core::marker::Sync for termrock::widgets::TerminalRun
+impl core::marker::Unpin for termrock::widgets::TerminalRun
+impl core::marker::UnsafeUnpin for termrock::widgets::TerminalRun
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TerminalRun
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TerminalRun
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TerminalRun where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRun::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TerminalRun where U: core::convert::From<T>
+pub fn termrock::widgets::TerminalRun::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TerminalRun where U: core::convert::Into<T>
+pub type termrock::widgets::TerminalRun::Error = core::convert::Infallible
+pub fn termrock::widgets::TerminalRun::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TerminalRun where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TerminalRun::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TerminalRun::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TerminalRun where T: core::clone::Clone
+pub type termrock::widgets::TerminalRun::Owned = T
+pub fn termrock::widgets::TerminalRun::clone_into(&self, &mut T)
+pub fn termrock::widgets::TerminalRun::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TerminalRun where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRun::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TerminalRun where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRun::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TerminalRun where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRun::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TerminalRun where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TerminalRun::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TerminalRun
+pub fn termrock::widgets::TerminalRun::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TerminalRun
+pub struct termrock::widgets::TerminalRunCard<'a>
+impl<'a> termrock::widgets::TerminalRunCard<'a>
+pub const fn termrock::widgets::TerminalRunCard<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::TerminalRunCard<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::TerminalRunCard<'a>::new(&'a termrock::widgets::TerminalRun, &'a [termrock::widgets::TerminalLine<'a>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::TerminalRunCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TerminalRunCardState)
+pub fn termrock::widgets::TerminalRunCard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TerminalRunCardState)
+impl<'a> core::clone::Clone for termrock::widgets::TerminalRunCard<'a>
+pub fn termrock::widgets::TerminalRunCard<'a>::clone(&self) -> termrock::widgets::TerminalRunCard<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::TerminalRunCard<'a>
+pub fn termrock::widgets::TerminalRunCard<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::TerminalRunCard<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::TerminalRunCard<'a>
+impl<'a> core::marker::Send for termrock::widgets::TerminalRunCard<'a>
+impl<'a> core::marker::Sync for termrock::widgets::TerminalRunCard<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TerminalRunCard<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TerminalRunCard<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TerminalRunCard<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TerminalRunCard<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::TerminalRunCard<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TerminalRunCard<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TerminalRunCard<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TerminalRunCard<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TerminalRunCard<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TerminalRunCard<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TerminalRunCard<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TerminalRunCard<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TerminalRunCard<'a> where T: core::clone::Clone
+pub type termrock::widgets::TerminalRunCard<'a>::Owned = T
+pub fn termrock::widgets::TerminalRunCard<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TerminalRunCard<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TerminalRunCard<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCard<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TerminalRunCard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCard<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TerminalRunCard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCard<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TerminalRunCard<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TerminalRunCard<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TerminalRunCard<'a>
+pub fn termrock::widgets::TerminalRunCard<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TerminalRunCard<'a>
+pub struct termrock::widgets::TerminalRunCardState
+pub termrock::widgets::TerminalRunCardState::focused: bool
+pub termrock::widgets::TerminalRunCardState::header_hit: ratatui_core::layout::rect::Rect
+pub termrock::widgets::TerminalRunCardState::output: termrock::widgets::TerminalOutputState
+pub termrock::widgets::TerminalRunCardState::presentation: termrock::widgets::TerminalRunPresentation
+impl termrock::widgets::TerminalRunCardState
+pub fn termrock::widgets::TerminalRunCardState::handle_key(&mut self, termrock::input::KeyEvent, &termrock::widgets::TerminalRun, &[termrock::widgets::TerminalLine<'_>]) -> termrock::widgets::TerminalRunCardOutcome
+pub fn termrock::widgets::TerminalRunCardState::handle_mouse(&mut self, termrock::input::MouseEvent, &termrock::widgets::TerminalRun, &[termrock::widgets::TerminalLine<'_>]) -> termrock::widgets::TerminalRunCardOutcome
+pub const fn termrock::widgets::TerminalRunCardState::is_expanded(&self) -> bool
+pub const fn termrock::widgets::TerminalRunCardState::is_following(&self) -> bool
+pub fn termrock::widgets::TerminalRunCardState::new() -> Self
+pub fn termrock::widgets::TerminalRunCardState::on_append(&mut self, u16, u16)
+pub fn termrock::widgets::TerminalRunCardState::set_accepts_input(&mut self, bool)
+pub const fn termrock::widgets::TerminalRunCardState::set_focused(&mut self, bool)
+pub fn termrock::widgets::TerminalRunCardState::toggle_expand(&mut self, &str) -> termrock::widgets::TerminalRunCardOutcome
+impl core::clone::Clone for termrock::widgets::TerminalRunCardState
+pub fn termrock::widgets::TerminalRunCardState::clone(&self) -> termrock::widgets::TerminalRunCardState
+impl core::cmp::Eq for termrock::widgets::TerminalRunCardState
+impl core::cmp::PartialEq for termrock::widgets::TerminalRunCardState
+pub fn termrock::widgets::TerminalRunCardState::eq(&self, &termrock::widgets::TerminalRunCardState) -> bool
+impl core::default::Default for termrock::widgets::TerminalRunCardState
+pub fn termrock::widgets::TerminalRunCardState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::TerminalRunCardState
+pub fn termrock::widgets::TerminalRunCardState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::TerminalRunCardState
+impl core::marker::Freeze for termrock::widgets::TerminalRunCardState
+impl core::marker::Send for termrock::widgets::TerminalRunCardState
+impl core::marker::Sync for termrock::widgets::TerminalRunCardState
+impl core::marker::Unpin for termrock::widgets::TerminalRunCardState
+impl core::marker::UnsafeUnpin for termrock::widgets::TerminalRunCardState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TerminalRunCardState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TerminalRunCardState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TerminalRunCardState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCardState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TerminalRunCardState where U: core::convert::From<T>
+pub fn termrock::widgets::TerminalRunCardState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TerminalRunCardState where U: core::convert::Into<T>
+pub type termrock::widgets::TerminalRunCardState::Error = core::convert::Infallible
+pub fn termrock::widgets::TerminalRunCardState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TerminalRunCardState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TerminalRunCardState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TerminalRunCardState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TerminalRunCardState where T: core::clone::Clone
+pub type termrock::widgets::TerminalRunCardState::Owned = T
+pub fn termrock::widgets::TerminalRunCardState::clone_into(&self, &mut T)
+pub fn termrock::widgets::TerminalRunCardState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TerminalRunCardState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCardState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TerminalRunCardState where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCardState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TerminalRunCardState where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunCardState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TerminalRunCardState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TerminalRunCardState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TerminalRunCardState
+pub fn termrock::widgets::TerminalRunCardState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TerminalRunCardState
+pub struct termrock::widgets::TerminalRunEnv
+pub termrock::widgets::TerminalRunEnv::key: alloc::string::String
+pub termrock::widgets::TerminalRunEnv::redacted: bool
+pub termrock::widgets::TerminalRunEnv::value: alloc::string::String
+impl termrock::widgets::TerminalRunEnv
+pub fn termrock::widgets::TerminalRunEnv::auto_redact(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::TerminalRunEnv::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::TerminalRunEnv::secret(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::TerminalRunEnv
+pub fn termrock::widgets::TerminalRunEnv::clone(&self) -> termrock::widgets::TerminalRunEnv
+impl core::cmp::Eq for termrock::widgets::TerminalRunEnv
+impl core::cmp::PartialEq for termrock::widgets::TerminalRunEnv
+pub fn termrock::widgets::TerminalRunEnv::eq(&self, &termrock::widgets::TerminalRunEnv) -> bool
+impl core::fmt::Debug for termrock::widgets::TerminalRunEnv
+pub fn termrock::widgets::TerminalRunEnv::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::TerminalRunEnv
+impl core::marker::Freeze for termrock::widgets::TerminalRunEnv
+impl core::marker::Send for termrock::widgets::TerminalRunEnv
+impl core::marker::Sync for termrock::widgets::TerminalRunEnv
+impl core::marker::Unpin for termrock::widgets::TerminalRunEnv
+impl core::marker::UnsafeUnpin for termrock::widgets::TerminalRunEnv
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TerminalRunEnv
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TerminalRunEnv
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TerminalRunEnv where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunEnv::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TerminalRunEnv where U: core::convert::From<T>
+pub fn termrock::widgets::TerminalRunEnv::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TerminalRunEnv where U: core::convert::Into<T>
+pub type termrock::widgets::TerminalRunEnv::Error = core::convert::Infallible
+pub fn termrock::widgets::TerminalRunEnv::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TerminalRunEnv where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TerminalRunEnv::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TerminalRunEnv::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TerminalRunEnv where T: core::clone::Clone
+pub type termrock::widgets::TerminalRunEnv::Owned = T
+pub fn termrock::widgets::TerminalRunEnv::clone_into(&self, &mut T)
+pub fn termrock::widgets::TerminalRunEnv::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TerminalRunEnv where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunEnv::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TerminalRunEnv where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunEnv::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TerminalRunEnv where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalRunEnv::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TerminalRunEnv where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TerminalRunEnv::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TerminalRunEnv
+pub fn termrock::widgets::TerminalRunEnv::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TerminalRunEnv
 pub struct termrock::widgets::Text<'a>
 impl<'a> termrock::widgets::Text<'a>
 pub const fn termrock::widgets::Text<'a>::align(self, termrock::widgets::TextAlign) -> Self
@@ -74563,6 +74975,9 @@ pub const termrock::widgets::STREAM_TAIL_MAX: usize
 pub const termrock::widgets::TABS_OVERFLOW_MAX_WIDTH: u16
 pub const termrock::widgets::TABS_SELECT_MAX_WIDTH: u16
 pub const termrock::widgets::TAB_GAP: u16
+pub const termrock::widgets::TERMINAL_RUN_COMPACT_BODY_LINES: u16
+pub const termrock::widgets::TERMINAL_RUN_ENV_CAP: usize
+pub const termrock::widgets::TERMINAL_RUN_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::TOAST_DEFAULT_H_MARGIN: u16
 pub const termrock::widgets::TOAST_DEFAULT_MAX_VISIBLE: usize
 pub const termrock::widgets::TOAST_DEFAULT_TTL: core::time::Duration
@@ -74733,6 +75148,8 @@ pub fn termrock::widgets::example_settings_tree() -> alloc::vec::Vec<termrock::w
 pub fn termrock::widgets::example_slash_catalog() -> alloc::vec::Vec<termrock::widgets::SlashCommand>
 pub fn termrock::widgets::example_status_catalog() -> [(termrock::widgets::SemanticStatus, &'static str); 11]
 pub fn termrock::widgets::example_symbol_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
+pub fn termrock::widgets::example_terminal_run_lines() -> alloc::vec::Vec<termrock::widgets::TerminalLine<'static>>
+pub fn termrock::widgets::example_terminal_runs() -> alloc::vec::Vec<termrock::widgets::TerminalRun>
 pub fn termrock::widgets::example_tool_calls() -> alloc::vec::Vec<termrock::widgets::ToolCall>
 pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
 pub fn termrock::widgets::expand_tabs(&str, usize) -> alloc::string::String
@@ -74928,6 +75345,7 @@ pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::wi
 pub fn termrock::widgets::project_message_thread(&[termrock::widgets::MessageEntry], termrock::widgets::MessageZoom, core::option::Option<&str>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> (alloc::vec::Vec<termrock::widgets::ProjectedEntryMeta>, alloc::vec::Vec<alloc::vec::Vec<alloc::string::String>>)
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_result_rows(&[termrock::widgets::ResultRow<'_>], &[termrock::widgets::ResultColumn], termrock::widgets::ResultRedaction, bool, bool) -> alloc::vec::Vec<(u64, alloc::vec::Vec<alloc::string::String>)>
+pub fn termrock::widgets::project_terminal_run_lines(&termrock::widgets::TerminalRun, &[termrock::widgets::TerminalLine<'_>], bool, bool) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::project_tool_call_lines(&termrock::widgets::ToolCall, bool, bool) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::prompt_composer_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
@@ -74976,6 +75394,9 @@ pub fn termrock::widgets::substring_ranges_ignore_ascii_case(&str, &str) -> term
 pub fn termrock::widgets::syntax_role_style(&termrock::style::DesignSystem, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::widgets::system_from_preset_id(&str) -> core::option::Option<termrock::style::DesignSystem>
 pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>
+pub fn termrock::widgets::terminal_run_env_entries(&termrock::widgets::TerminalRun) -> alloc::vec::Vec<termrock::widgets::TerminalEnvEntry<'_>>
+pub fn termrock::widgets::terminal_run_to_meta<'a>(&'a termrock::widgets::TerminalRun, &'a [termrock::widgets::TerminalEnvEntry<'a>]) -> termrock::widgets::TerminalCommandMeta<'a>
+pub fn termrock::widgets::terminal_run_to_tool_call(&termrock::widgets::TerminalRun) -> termrock::widgets::ToolCall
 pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<termrock::style::RolePalette>
 pub fn termrock::widgets::token_at_cursor(&termrock::widgets::TextAreaState) -> (alloc::string::String, termrock::widgets::TextCursor)
 pub fn termrock::widgets::tool_actions_for(termrock::widgets::ToolStatus, bool, bool) -> alloc::vec::Vec<termrock::widgets::ToolCallAction>

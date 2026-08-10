@@ -103,6 +103,8 @@ pub enum TerminalRunStatus {
     /// Queued / not started.
     #[default]
     Pending,
+    /// Waiting for permission grant before spawn.
+    WaitingPermission,
     /// Live streaming.
     Running,
     /// Exited zero.
@@ -125,6 +127,7 @@ impl TerminalRunStatus {
     pub const fn id(self) -> &'static str {
         match self {
             Self::Pending => "pending",
+            Self::WaitingPermission => "waiting-permission",
             Self::Running => "running",
             Self::Succeeded => "succeeded",
             Self::Failed => "failed",
@@ -140,6 +143,7 @@ impl TerminalRunStatus {
     pub const fn label(self) -> &'static str {
         match self {
             Self::Pending => "pending",
+            Self::WaitingPermission => "perm",
             Self::Running => "run",
             Self::Succeeded => "ok",
             Self::Failed => "fail",
@@ -156,6 +160,7 @@ impl TerminalRunStatus {
         if ascii {
             match self {
                 Self::Pending => ".",
+                Self::WaitingPermission => "A",
                 Self::Running => ">",
                 Self::Succeeded => "+",
                 Self::Failed => "x",
@@ -167,6 +172,7 @@ impl TerminalRunStatus {
         } else {
             match self {
                 Self::Pending => "·",
+                Self::WaitingPermission => "⏸",
                 Self::Running => "▶",
                 Self::Succeeded => "✓",
                 Self::Failed => "✗",
@@ -183,6 +189,7 @@ impl TerminalRunStatus {
     pub const fn role(self) -> Role {
         match self {
             Self::Pending | Self::Detached => Role::TextMuted,
+            Self::WaitingPermission => Role::Warning,
             Self::Running => Role::Accent,
             Self::Succeeded => Role::Success,
             Self::Failed | Self::Signaled | Self::TimedOut => Role::Danger,
@@ -193,7 +200,10 @@ impl TerminalRunStatus {
     /// Whether cancel control is meaningful.
     #[must_use]
     pub const fn can_cancel(self) -> bool {
-        matches!(self, Self::Pending | Self::Running)
+        matches!(
+            self,
+            Self::Pending | Self::WaitingPermission | Self::Running | Self::Detached
+        )
     }
 
     /// Whether retry is meaningful.
@@ -203,6 +213,12 @@ impl TerminalRunStatus {
             self,
             Self::Failed | Self::Signaled | Self::Cancelled | Self::TimedOut | Self::Succeeded
         )
+    }
+
+    /// Whether permission focus is meaningful.
+    #[must_use]
+    pub const fn needs_permission(self) -> bool {
+        matches!(self, Self::WaitingPermission)
     }
 }
 
@@ -1037,6 +1053,8 @@ pub struct TerminalOutput<'a> {
     ascii: bool,
     colorless: bool,
     title: Option<&'a str>,
+    /// When false, paint stream body (+ follow chip) only — for card composition.
+    show_chrome: bool,
 }
 
 impl<'a> TerminalOutput<'a> {
@@ -1055,6 +1073,7 @@ impl<'a> TerminalOutput<'a> {
             ascii: false,
             colorless: false,
             title: None,
+            show_chrome: true,
         }
     }
 
@@ -1086,6 +1105,13 @@ impl<'a> TerminalOutput<'a> {
         self
     }
 
+    /// Toggle command/status header chrome (default on).
+    #[must_use]
+    pub const fn show_chrome(mut self, on: bool) -> Self {
+        self.show_chrome = on;
+        self
+    }
+
     /// Paint.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TerminalOutputState) {
         state.regions.clear();
@@ -1105,21 +1131,25 @@ impl<'a> TerminalOutput<'a> {
 
         let view = filter_terminal_lines(self.lines, state.hide_stdout, state.hide_stderr);
 
-        // Header height by recipe
-        let header_h = match recipe {
-            TerminalOutputRecipe::Compact => 2u16.min(area.height),
-            TerminalOutputRecipe::Pane | TerminalOutputRecipe::Fullscreen => {
-                let mut h = 2u16;
-                if self.meta.cwd.is_some() && !tiny {
-                    h = h.saturating_add(1);
+        // Header height by recipe (zero when composed inside TerminalRunCard).
+        let header_h = if !self.show_chrome {
+            0u16
+        } else {
+            match recipe {
+                TerminalOutputRecipe::Compact => 2u16.min(area.height),
+                TerminalOutputRecipe::Pane | TerminalOutputRecipe::Fullscreen => {
+                    let mut h = 2u16;
+                    if self.meta.cwd.is_some() && !tiny {
+                        h = h.saturating_add(1);
+                    }
+                    if state.show_env && !self.meta.env.is_empty() {
+                        h = h.saturating_add((self.meta.env.len() as u16).min(6).saturating_add(1));
+                    }
+                    if matches!(recipe, TerminalOutputRecipe::Fullscreen) {
+                        h = h.saturating_add(1);
+                    }
+                    h.min(area.height.saturating_sub(1))
                 }
-                if state.show_env && !self.meta.env.is_empty() {
-                    h = h.saturating_add((self.meta.env.len() as u16).min(6).saturating_add(1));
-                }
-                if matches!(recipe, TerminalOutputRecipe::Fullscreen) {
-                    h = h.saturating_add(1);
-                }
-                h.min(area.height.saturating_sub(1))
             }
         };
         let chip_h = u16::from(area.height >= header_h.saturating_add(2));
@@ -1137,20 +1167,22 @@ impl<'a> TerminalOutput<'a> {
         }
 
         let mut y = area.y;
-        y = paint_header(
-            buffer,
-            Rect::new(area.x, y, area.width, header_h),
-            self.meta,
-            self.title,
-            state,
-            self.system,
-            surface,
-            ascii,
-            colorless,
-            tiny,
-            narrow,
-            recipe,
-        );
+        if header_h > 0 {
+            y = paint_header(
+                buffer,
+                Rect::new(area.x, y, area.width, header_h),
+                self.meta,
+                self.title,
+                state,
+                self.system,
+                surface,
+                ascii,
+                colorless,
+                tiny,
+                narrow,
+                recipe,
+            );
+        }
 
         // Body
         let body = Rect::new(area.x, y, area.width, body_h);
@@ -1791,11 +1823,14 @@ mod tests {
     fn fuzz_status_and_streams() {
         for s in [
             TerminalRunStatus::Pending,
+            TerminalRunStatus::WaitingPermission,
             TerminalRunStatus::Running,
             TerminalRunStatus::Succeeded,
             TerminalRunStatus::Failed,
             TerminalRunStatus::Signaled,
             TerminalRunStatus::Cancelled,
+            TerminalRunStatus::TimedOut,
+            TerminalRunStatus::Detached,
         ] {
             assert!(!s.id().is_empty());
             assert!(!s.glyph(true).is_empty());

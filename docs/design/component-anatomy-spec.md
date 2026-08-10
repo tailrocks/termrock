@@ -2254,6 +2254,33 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** expand, cancel gate, retry, permission, copy redaction, mouse header.  
 24. **Perf:** O(visible detail lines); paint budget under many cards.
 
+## TerminalRunCard
+
+1. **Purpose:** Shell/terminal command card with live output (specialize ToolCallCard).  
+2. **Anatomy:** `frame` · `phase_badge` · `proposed` · `executed` · `cwd` · `env` · `stream_viewport` · `exit/signal` · `actions`  
+3. **Public properties:** `TerminalRun` (id, proposed/executed, approval_edited, cwd, env, actor, status, exit/signal/duration/pid, risk, egress), `TerminalLine[]`, presentation, `design`  
+4. **State:** `TerminalRunCardState` — presentation + `TerminalOutputState` (follow/scroll).  
+5. **Variants:** Compact · Expanded · Fullscreen  
+6. **Sizes/density:** compact few body lines; expand stream viewport.  
+7. **Visual states:** TerminalRunStatus incl. WaitingPermission; phase Proposed/EditedApproval/Executed.  
+8. **Interaction states:** expand · stop · detach · retry · follow · permission · copy · fullscreen.  
+9. **Keyboard:** Enter expand; c stop; r retry; d detach; p permission; f/Shift+F fullscreen; y copy cmd; scroll detaches follow.  
+10. **Mouse:** header toggle; wheel scroll; follow chip.  
+11. **Focus:** optional tab stop in transcript.  
+12. **Disabled:** accepts_input false.  
+13. **Loading:** Running stream append; follow until scroll.  
+14. **Error:** Failed/Signaled/TimedOut chrome; exit code text.  
+15. **Narrow:** command+status; drop env.  
+16. **Tiny:** status glyph + command head.  
+17. **Unicode/ASCII:** TerminalRunStatus glyphs.  
+18. **Colorless:** phase badge + EXIT n text; stream prefixes.  
+19. **Composition:** TerminalOutput substrate; ToolCall bridge; PermissionPrompt.  
+20. **Outcomes:** Stop/Detach/Retry · PermissionFocus · Fullscreen · Follow/ScrollDetached · Copy* · Expanded/Collapsed  
+21. **Stories:** `terminal-run-card/{running,permission,edited,failed,narrow}`  
+22. **Snapshots:** proposed≠executed; permission; ANSI line.  
+23. **Interaction tests:** follow pause on scroll; append while pinned; phase chrome.  
+24. **Perf:** O(visible stream lines); paint budget.
+
 ## TaskRail
 
 1. **Purpose:** Side list of tasks/subagents.  

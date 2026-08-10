@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `Accordion`, `AgentModeSelector`, `ActionBar`, `ActionLink`, `AttachmentChip`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Chart`, `Checkbox`, `Chip`, `CitationList`, `ChoiceDialog`, `CodeBlock`, `CodeFrame`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiagnosticView`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `FileTree`, `FileMention`, `EntityMention`, `FileMention`, `Form`, `FormWizard`, `Gauge`, `Heading`, `HexViewer`, `Histogram`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MessageThread`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `ModelSelector`, `Panel`, `Paragraph`, `PasswordInput`, `PasteChip`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `ProcessTable`, `QueryEditor`, `QuickOpen`, `QuestionFlow`, `RangeSlider`, `ResultGrid`, `ResizablePanelGroup`, `SchemaBrowser`, `SearchResults`, `MetricsDashboard`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `SlashCommandMenu`, `Slider`, `Skeleton`, `SourceCitation`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `StreamingMarkdown`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `TerminalOutput`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `TraceWaterfall`, `DependencyGraph`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `ToolCallCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
+The public widget set is derived from the reviewed API report and currently contains `Accordion`, `AgentModeSelector`, `ActionBar`, `ActionLink`, `AttachmentChip`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Chart`, `Checkbox`, `Chip`, `CitationList`, `ChoiceDialog`, `CodeBlock`, `CodeFrame`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiagnosticView`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `FileTree`, `FileMention`, `EntityMention`, `FileMention`, `Form`, `FormWizard`, `Gauge`, `Heading`, `HexViewer`, `Histogram`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MessageThread`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `ModelSelector`, `Panel`, `Paragraph`, `PasswordInput`, `PasteChip`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `ProcessTable`, `QueryEditor`, `QuickOpen`, `QuestionFlow`, `RangeSlider`, `ResultGrid`, `ResizablePanelGroup`, `SchemaBrowser`, `SearchResults`, `MetricsDashboard`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `SlashCommandMenu`, `Slider`, `Skeleton`, `SourceCitation`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `StreamingMarkdown`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `TerminalOutput`, `TerminalRunCard`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `TraceWaterfall`, `DependencyGraph`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `ToolCallCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
 
 `ScrollArea` / `ScrollAreaState` is the canonical scrolling primitive: dual-axis
 offsets, wheel/page/intents, scrollbar chrome, follow-tail with paused unseen
@@ -177,7 +177,18 @@ risk/egress, inline expand + fullscreen zoom, secret redaction, and typed
 outcomes (cancel/retry/permission/copy/diff/log). Host executes tools; card never
 binds a provider protocol. Thin `ToolCard` remains the paint-only summary.
 
+`TerminalRunCard` specializes shell/terminal runs over the `TerminalOutput`
+substrate: proposed vs executed command, edited approval, provenance, env
+redaction, stdout/stderr, exit/signal, follow/scroll while streaming, stop/
+detach/retry/copy/fullscreen/permission outcomes. Bridges to `ToolCall` for
+MessageThread. Host owns PTY/process.
 
+
+`TerminalRunCard` specializes shell/terminal runs over the `TerminalOutput`
+substrate: proposed vs executed command, edited approval, provenance, env
+redaction, stdout/stderr, exit/signal, follow/scroll while streaming, stop/
+detach/retry/copy/fullscreen/permission outcomes. Bridges to `ToolCall` for
+MessageThread. Host owns PTY/process.
 
 `Sparkline`, `Chart`, `Gauge`, `Histogram`, `BarSeries`, and `SegmentedMeter`
 form one **visualization family** with shared `ScaleMode` (auto/fixed/log),
@@ -200,8 +211,8 @@ system, optional pre-parsed `AnsiLine`). State owns follow/pause via
 `ScrollAreaState`, recipe (compact/pane/fullscreen), paint mode (ANSI/no-color/
 plain/raw), stream filters, and env panel. Outcomes are **requests only**
 (cancel, retry, detach, copy) — TermRock never executes processes. Compose with
-`ToolCard` / `ToolCallCard` for compact vs interactive tool chrome and
-`AnsiStream` for ingest.
+`TerminalRunCard` for agent-card chrome (proposed/executed/permission),
+`ToolCard` / `ToolCallCard` for generic tools, and `AnsiStream` for ingest.
 
 `Diagnostic` / `CodeFrame` present structured diagnostics (rustc/miette-class)
 with severity letters (never color alone), codes, messages, sources, ranges,

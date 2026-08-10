@@ -128,6 +128,7 @@ mod event_stream;
 mod log_stream;
 mod diagnostic;
 mod terminal_output;
+mod terminal_run_card;
 mod hex_viewer;
 mod file_tree;
 mod process_table;
@@ -190,6 +191,14 @@ pub use terminal_output::{
     format_duration_ms, redact_env_value,
 };
 pub use terminal_output::bench as terminal_output_bench;
+pub use terminal_run_card::{
+    TERMINAL_RUN_COMPACT_BODY_LINES, TERMINAL_RUN_ENV_CAP, TERMINAL_RUN_FULLSCREEN_OVERLAY_ID,
+    TerminalCommandPhase, TerminalRun, TerminalRunCard, TerminalRunCardOutcome,
+    TerminalRunCardState, TerminalRunEnv, TerminalRunPresentation, example_terminal_run_lines,
+    example_terminal_runs, project_terminal_run_lines, terminal_run_env_entries,
+    terminal_run_to_meta, terminal_run_to_tool_call,
+};
+pub use terminal_run_card::bench as terminal_run_card_bench;
 pub use hex_viewer::{
     HexAsciiMode, HexEndian, HexInspectorValues, HexRegion, HexViewer, HexViewerOutcome,
     HexViewerState, HexWindow, HEX_DEFAULT_BYTES_PER_ROW, HEX_MAX_BYTES_PER_ROW,

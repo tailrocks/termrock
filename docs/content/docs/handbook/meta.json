@@ -19,6 +19,7 @@
     "citation-list",
     "source-citation",
     "tool-call-card",
+    "terminal-run-card",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

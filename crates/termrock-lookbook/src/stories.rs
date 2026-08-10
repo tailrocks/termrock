@@ -5594,6 +5594,51 @@ pub(crate) fn stories() -> Vec<Story> {
             tool_call_card_narrow_story,
         ),
         Story::new(
+            "terminal-run-card/running",
+            "TerminalRunCard running",
+            "TerminalRunCard",
+            "Live shell run with follow stream.",
+            56,
+            14,
+            terminal_run_card_running_story,
+        ),
+        Story::new(
+            "terminal-run-card/permission",
+            "TerminalRunCard permission",
+            "TerminalRunCard",
+            "Proposed high-risk command awaiting permission.",
+            52,
+            10,
+            terminal_run_card_permission_story,
+        ),
+        Story::new(
+            "terminal-run-card/edited",
+            "TerminalRunCard edited",
+            "TerminalRunCard",
+            "Proposed vs executed after edited approval.",
+            56,
+            12,
+            terminal_run_card_edited_story,
+        ),
+        Story::new(
+            "terminal-run-card/failed",
+            "TerminalRunCard failed",
+            "TerminalRunCard",
+            "Non-zero exit with stderr.",
+            52,
+            12,
+            terminal_run_card_failed_story,
+        ),
+        Story::new(
+            "terminal-run-card/narrow",
+            "TerminalRunCard narrow",
+            "TerminalRunCard",
+            "Narrow ASCII terminal run card.",
+            28,
+            10,
+            terminal_run_card_narrow_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -18936,6 +18981,77 @@ fn tool_call_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     st.focused = true;
     st.presentation = ToolCallPresentation::Compact;
     ToolCallCard::new(call, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn terminal_run_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_terminal_run_lines, example_terminal_runs, TerminalRunCard,
+        TerminalRunCardState, TerminalRunPresentation,
+    };
+    let runs = example_terminal_runs();
+    let lines = example_terminal_run_lines();
+    let run = runs.iter().find(|r| r.id == "r1").unwrap_or(&runs[0]);
+    let mut st = TerminalRunCardState::new();
+    st.focused = true;
+    st.presentation = TerminalRunPresentation::Expanded;
+    st.on_append(lines.len() as u16, 8);
+    TerminalRunCard::new(run, &lines, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn terminal_run_card_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_terminal_runs, TerminalRunCard, TerminalRunCardState, TerminalRunPresentation,
+    };
+    let runs = example_terminal_runs();
+    let run = runs.iter().find(|r| r.id == "r2").unwrap_or(&runs[1]);
+    let mut st = TerminalRunCardState::new();
+    st.focused = true;
+    st.presentation = TerminalRunPresentation::Expanded;
+    TerminalRunCard::new(run, &[], system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn terminal_run_card_edited_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_terminal_run_lines, example_terminal_runs, TerminalRunCard,
+        TerminalRunCardState, TerminalRunPresentation,
+    };
+    let runs = example_terminal_runs();
+    let lines = example_terminal_run_lines();
+    let run = runs.iter().find(|r| r.id == "r3").unwrap_or(&runs[2]);
+    let mut st = TerminalRunCardState::new();
+    st.focused = true;
+    st.presentation = TerminalRunPresentation::Expanded;
+    TerminalRunCard::new(run, &lines, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn terminal_run_card_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_terminal_run_lines, example_terminal_runs, TerminalRunCard,
+        TerminalRunCardState, TerminalRunPresentation,
+    };
+    let runs = example_terminal_runs();
+    let lines = example_terminal_run_lines();
+    let run = runs.iter().find(|r| r.id == "r4").unwrap_or(&runs[3]);
+    let mut st = TerminalRunCardState::new();
+    st.focused = true;
+    st.presentation = TerminalRunPresentation::Expanded;
+    TerminalRunCard::new(run, &lines, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn terminal_run_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_terminal_run_lines, example_terminal_runs, TerminalRunCard,
+        TerminalRunCardState, TerminalRunPresentation,
+    };
+    let runs = example_terminal_runs();
+    let lines = example_terminal_run_lines();
+    let run = &runs[0];
+    let mut st = TerminalRunCardState::new();
+    st.focused = true;
+    st.presentation = TerminalRunPresentation::Compact;
+    TerminalRunCard::new(run, &lines, system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut st);
 }
