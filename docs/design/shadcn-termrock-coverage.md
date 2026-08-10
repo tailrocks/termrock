@@ -13,7 +13,8 @@
 - Web-only geometry/DOM: **Aspect Ratio**, **Direction**, **Native Select** → N/A.
 - Hover-only web chrome must map to keyboard/focus paths in TUI.
 - Ports closed this pass: **Input OTP**, **Carousel**, **Input Group** (migration 0247).
-- Residual partials: Hover Card (PreviewCard/Popover), Item (ComposedRow/List), Marker (status glyphs not map pins), Typography (Heading/content vs full type scale), Bubble (message_thread chrome).
+- Residual partials: Hover Card (PreviewCard/Popover), Item (ComposedRow/List), Typography (Heading/content vs full type scale), Bubble (message_thread chrome).
+- **Marker** is **N/A** (map-pin geo UX), not partial — status glyphs/`SemanticStatus` cover non-map markers.
 
 | # | shadcn | Status | TermRock surface(s) | Notes |
 |---|--------|--------|---------------------|-------|
@@ -47,7 +48,7 @@
 | 28 | Field | covered | `Field`, `Fieldset`, `Form` | Label+control+error |
 | 29 | Hover Card | partial | `PreviewCard`, `Popover`, `Tooltip` | Residual: no separate HoverCard type; use PreviewCard + focus |
 | 30 | Input | covered | `TextInput` | Single-line entry |
-| 31 | Input Group | covered | **`InputGroup`** (0247) | Prefix/suffix addons + field |
+| 31 | Input Group | covered | **`InputGroup`** (0247) | Multi-addon + actions; simple chrome → `TextInput` prefix/suffix |
 | 32 | Input OTP | covered | **`InputOtp`** (0247) | Fixed slot PIN/OTP |
 | 33 | Item | partial | `ComposedRow`, `ListRow` | Residual: no shadcn-named Item type; composed rows cover job |
 | 34 | Kbd | covered | `Kbd` | Keycap chrome |

@@ -1,13 +1,19 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **InputGroup** — prefix / field / suffix chrome around a text control
-//! (shadcn Input Group peer).
+//! **InputGroup** — multi-addon prefix / field / suffix chrome around a text
+//! control (shadcn Input Group peer).
 //!
-//! **Mission.** Compose addon glyphs/labels (scheme, units, buttons) without
-//! forking TextInput paint. Focus lands on the field; addons are non-focus
-//! chrome with keyboard-documented host actions via outcomes when activated
-//! with chords (no hover-only).
+//! **Mission.** Compose **multiple** addon glyphs/labels (scheme, units,
+//! actionable suffix buttons) without forking TextInput field editing. Focus
+//! lands on the field; addons are non-focus chrome. Host maps
+//! [`InputGroupOutcome::AddonActivated`] (Alt+Enter / Ctrl+.) — no hover-only.
+//!
+//! **vs [`TextInput`] prefix/suffix.** Use `TextInput::prefix` / `suffix` for a
+//! **single** decorative chrome string on each side (no action ids, no multi-
+//! fragment layout). Use **InputGroup** when you need multiple addons, mixed
+//! prefix+suffix fragments, or keyboard-activatable suffix actions. Do not
+//! dual-paint: pick one surface per control.
 //!
 //! Research: shadcn Input Group, browser URL bars, CLI flag+value pairs.
 
@@ -324,12 +330,16 @@ mod tests {
         let addons = example_url_input_addons();
         let out = st.handle_key(press('a'), &addons);
         assert!(
-            matches!(out, InputGroupOutcome::Field(_)),
+            matches!(out, InputGroupOutcome::Field(TextInputOutcome::Changed)),
             "{out:?}"
         );
-        assert!(st.value().contains('a') || !st.value().is_empty() || true);
-        // Type more
-        let _ = st.handle_key(press('b'), &addons);
+        assert_eq!(st.value(), "a");
+        let out = st.handle_key(press('b'), &addons);
+        assert!(
+            matches!(out, InputGroupOutcome::Field(TextInputOutcome::Changed)),
+            "{out:?}"
+        );
+        assert_eq!(st.value(), "ab");
         // Addon action chord
         let out = st.handle_key(
             KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT),
@@ -342,6 +352,8 @@ mod tests {
             ),
             "{out:?}"
         );
+        // field value preserved after addon chord
+        assert_eq!(st.value(), "ab");
     }
 
     #[test]

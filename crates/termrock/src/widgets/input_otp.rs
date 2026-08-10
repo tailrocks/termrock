@@ -172,22 +172,31 @@ impl InputOtpState {
         self.cursor
     }
 
-    /// Whether all slots filled.
+    /// Whether all slots filled (no holes).
     #[must_use]
     pub fn is_complete(&self) -> bool {
         self.slots.iter().all(|s| s.is_some())
     }
 
-    /// Joined value (empty slots omitted in join — use only when complete or intentional).
+    /// Contiguous prefix until the first empty slot.
+    ///
+    /// Does **not** collapse holes: `[Some('1'), None, Some('3')]` → `"1"`,
+    /// never `"13"`. Typing/paste fill left-to-right, so normal entry yields a
+    /// dense prefix; navigated deletes can leave holes and stop the prefix.
     #[must_use]
     pub fn value(&self) -> String {
-        self.slots.iter().filter_map(|s| *s).collect()
+        self.slots
+            .iter()
+            .take_while(|s| s.is_some())
+            .filter_map(|s| *s)
+            .collect()
     }
 
-    /// Filled count.
+    /// Contiguous filled count (length of [`Self::value`]), not total non-empty
+    /// slots after a hole.
     #[must_use]
     pub fn filled(&self) -> usize {
-        self.slots.iter().filter(|s| s.is_some()).count()
+        self.slots.iter().take_while(|s| s.is_some()).count()
     }
 
     /// Clear all.
@@ -467,12 +476,36 @@ mod tests {
         let mut st = InputOtpState::new(3);
         let _ = st.handle_key(press('9'));
         let _ = st.handle_key(press('8'));
+        // after '9','8': slots [9,8,None], cursor advanced to empty slot 2
         assert_eq!(st.cursor(), 2);
-        let _ = st.handle_key(KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE));
-        // cursor was on empty slot 2 → go to 1 and clear
-        assert!(st.slots[1].is_none() || st.value() == "9" || st.value() == "98");
-        // Ensure real path edited
+        assert_eq!(st.value(), "98");
+        let out = st.handle_key(KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE));
+        assert!(
+            matches!(out, InputOtpOutcome::Changed { filled: 1, .. }),
+            "{out:?}"
+        );
+        // empty slot 2 → move to 1 and clear
+        assert!(st.slots[1].is_none());
+        assert_eq!(st.cursor(), 1);
+        assert_eq!(st.value(), "9");
+        assert_eq!(st.filled(), 1);
         assert!(!st.is_complete());
+    }
+
+    #[test]
+    fn value_stops_at_first_hole() {
+        let mut st = InputOtpState::new(4);
+        let _ = st.set_value("12");
+        assert_eq!(st.value(), "12");
+        assert_eq!(st.filled(), 2);
+        // Navigate to slot 0, clear it — leaves hole before remaining digits
+        st.cursor = 0;
+        let _ = st.handle_key(KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE));
+        // slots [None, Some('2'), None, None] — must not collapse to "2"
+        assert!(st.slots[0].is_none());
+        assert_eq!(st.slots[1], Some('2'));
+        assert_eq!(st.value(), "");
+        assert_eq!(st.filled(), 0);
     }
 
     #[test]
