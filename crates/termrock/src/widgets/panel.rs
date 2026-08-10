@@ -25,7 +25,8 @@ use crate::interaction::{EventResult, UiIntent, default_button_intent, default_l
 use crate::style::{DesignSystem, GlyphSet, PanelChrome, PanelRecipe, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::surface::{Surface, SurfaceFill, SurfaceRecipe};
-use crate::widgets::view_state::{EmptyState, ErrorView, LoadingView, Skeleton};
+use crate::widgets::skeleton::Skeleton;
+use crate::widgets::view_state::{EmptyState, ErrorView, LoadingView};
 
 // PanelChrome lives in `style` (sole chrome enum). Re-exported from widgets::mod.
 

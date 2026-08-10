@@ -2732,12 +2732,48 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "skeleton/basic",
+            "Skeleton lines",
             "Skeleton",
-            "Skeleton",
-            "Placeholder loading lines.",
+            "Staggered text-line placeholders (structure-known loading).",
             32,
             4,
             skeleton,
+        ),
+        Story::new(
+            "skeleton/card",
+            "Skeleton card",
+            "Skeleton",
+            "Card header + body line placeholders.",
+            28,
+            6,
+            skeleton_card_story,
+        ),
+        Story::new(
+            "skeleton/table",
+            "Skeleton table",
+            "Skeleton",
+            "Multi-column table row placeholders.",
+            36,
+            6,
+            skeleton_table_story,
+        ),
+        Story::new(
+            "skeleton/tiny",
+            "Skeleton tiny",
+            "Skeleton",
+            "Capability/tiny geometry without panic.",
+            8,
+            3,
+            skeleton_tiny_story,
+        ),
+        Story::new(
+            "skeleton/ascii",
+            "Skeleton ASCII",
+            "Skeleton",
+            "ASCII # fill for no-Unicode terminals.",
+            24,
+            4,
+            skeleton_ascii_story,
         ),
         Story::new(
             "jump-overlay/basic",
@@ -11922,6 +11958,28 @@ fn banner(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn skeleton(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(Skeleton::new(4, system), area);
+}
+
+fn skeleton_card_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Skeleton;
+    Skeleton::card(3, system).paint(area, frame.buffer_mut());
+}
+
+fn skeleton_table_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Skeleton;
+    Skeleton::table(3, 5, system).paint(area, frame.buffer_mut());
+}
+
+fn skeleton_tiny_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Skeleton;
+    Skeleton::new(3, system).ascii(true).paint(area, frame.buffer_mut());
+}
+
+fn skeleton_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Skeleton, SkeletonRecipe};
+    Skeleton::recipe(SkeletonRecipe::Rows, 4, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut());
 }
 
 fn jump_overlay(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

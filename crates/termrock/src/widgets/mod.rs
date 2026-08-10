@@ -82,6 +82,7 @@ mod scroll_area;
 mod selection;
 mod split_pane;
 mod resizable_panel_group;
+mod skeleton;
 mod spinner;
 mod status_bar;
 mod surface;
@@ -453,7 +454,12 @@ pub use resizable_panel_group::{
     PanelRect, ResizablePanelGroup, ResizablePanelGroupLayout, ResizablePanelGroupState,
     ResizablePanelOutcome, ResizablePanelSpec,
 };
+pub use skeleton::{
+    SKELETON_FILL_ASCII, SKELETON_FILL_UNICODE, SKELETON_PULSE_PERIOD_MS, Skeleton, SkeletonLayout,
+    SkeletonRecipe, SkeletonShape, SkeletonState,
+};
 pub use spinner::{
+
     SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES, SPINNER_DEFAULT_PERIOD_MS,
     SPINNER_RECONNECT_UNICODE, SPINNER_WAITING_ASCII, SPINNER_WAITING_UNICODE, ActivityIndicator,
     ActivityPhase, Spinner, SpinnerGlyphSet, SpinnerState, SpinnerVariant,
@@ -553,7 +559,7 @@ pub use tree_navigation::{
     TreeNavStatus, TreeNavigation, TreeNavigationOutcome, TreeNavigationState,
     example_docs_tree, example_project_tree, example_schema_tree, example_settings_tree,
 };
-pub use view_state::{Banner, EmptyState, ErrorView, LoadingView, Skeleton};
+pub use view_state::{Banner, EmptyState, ErrorView, LoadingView};
 pub use viewport::Viewport;
 pub use virtual_grid::{
     GridCell, GridCellRegion, GridColumn, GridColumnWidth, GridHeaderRegion, GridRow, VirtualGrid,

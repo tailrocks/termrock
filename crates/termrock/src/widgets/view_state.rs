@@ -277,59 +277,7 @@ impl Widget for Banner<'_> {
     }
 }
 
-/// Skeleton placeholder lines for loading lists.
-#[derive(Debug, Clone, Copy)]
-pub struct Skeleton<'a> {
-    rows: u16,
-    system: &'a DesignSystem,
-}
-
-impl<'a> Skeleton<'a> {
-    /// Creates a skeleton with the requested row count.
-    #[must_use]
-    pub const fn new(rows: u16, system: &'a DesignSystem) -> Self {
-        Self { rows, system }
-    }
-}
-
-impl Widget for &Skeleton<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        let rows = self.rows.min(area.height);
-        let bar_width = area.width.saturating_mul(3) / 4;
-        for row in 0..rows {
-            let y = area.y.saturating_add(row);
-            let indent = if row % 2 == 0 { 0 } else { 2u16 };
-            let width = bar_width
-                .saturating_sub(indent)
-                .min(area.width.saturating_sub(indent));
-            if width == 0 {
-                continue;
-            }
-            let x = area.x.saturating_add(indent);
-            let fill = "░".repeat(usize::from(width));
-            buffer.set_stringn(
-                x,
-                y,
-                &fill,
-                usize::from(width),
-                self.system.style(Role::TextDisabled),
-            );
-        }
-    }
-}
-
-impl Widget for Skeleton<'_> {
-    #[expect(
-        clippy::needless_borrows_for_generic_args,
-        reason = "explicitly delegate the owned contract to the borrowed renderer"
-    )]
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
+// Skeleton lives in `widgets/skeleton.rs`.
 
 fn paint_centered_line(
     area: Rect,

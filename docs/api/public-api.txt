@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.38s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.32s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -27696,6 +27696,123 @@ pub unsafe fn termrock::widgets::SidebarPresentation::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::SidebarPresentation
 pub fn termrock::widgets::SidebarPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SidebarPresentation
+#[non_exhaustive] pub enum termrock::widgets::SkeletonRecipe
+pub termrock::widgets::SkeletonRecipe::Card
+pub termrock::widgets::SkeletonRecipe::Lines
+pub termrock::widgets::SkeletonRecipe::Rows
+pub termrock::widgets::SkeletonRecipe::Table
+impl termrock::widgets::SkeletonRecipe
+pub const fn termrock::widgets::SkeletonRecipe::id(self) -> &'static str
+pub fn termrock::widgets::SkeletonRecipe::layout(self, u16) -> termrock::widgets::SkeletonLayout
+impl core::clone::Clone for termrock::widgets::SkeletonRecipe
+pub fn termrock::widgets::SkeletonRecipe::clone(&self) -> termrock::widgets::SkeletonRecipe
+impl core::cmp::Eq for termrock::widgets::SkeletonRecipe
+impl core::cmp::PartialEq for termrock::widgets::SkeletonRecipe
+pub fn termrock::widgets::SkeletonRecipe::eq(&self, &termrock::widgets::SkeletonRecipe) -> bool
+impl core::default::Default for termrock::widgets::SkeletonRecipe
+pub fn termrock::widgets::SkeletonRecipe::default() -> termrock::widgets::SkeletonRecipe
+impl core::fmt::Debug for termrock::widgets::SkeletonRecipe
+pub fn termrock::widgets::SkeletonRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SkeletonRecipe
+pub fn termrock::widgets::SkeletonRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SkeletonRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::SkeletonRecipe
+impl core::marker::Freeze for termrock::widgets::SkeletonRecipe
+impl core::marker::Send for termrock::widgets::SkeletonRecipe
+impl core::marker::Sync for termrock::widgets::SkeletonRecipe
+impl core::marker::Unpin for termrock::widgets::SkeletonRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::SkeletonRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SkeletonRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SkeletonRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SkeletonRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SkeletonRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SkeletonRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::SkeletonRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SkeletonRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::SkeletonRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::SkeletonRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SkeletonRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SkeletonRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SkeletonRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SkeletonRecipe where T: core::clone::Clone
+pub type termrock::widgets::SkeletonRecipe::Owned = T
+pub fn termrock::widgets::SkeletonRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::SkeletonRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SkeletonRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SkeletonRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SkeletonRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::SkeletonRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SkeletonRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::SkeletonRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SkeletonRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SkeletonRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SkeletonRecipe
+pub fn termrock::widgets::SkeletonRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SkeletonRecipe
+#[non_exhaustive] pub enum termrock::widgets::SkeletonShape
+pub termrock::widgets::SkeletonShape::Card
+pub termrock::widgets::SkeletonShape::Card::body_lines: u16
+pub termrock::widgets::SkeletonShape::Card::header: bool
+pub termrock::widgets::SkeletonShape::Custom
+pub termrock::widgets::SkeletonShape::Custom::height: u16
+pub termrock::widgets::SkeletonShape::Custom::indent: u16
+pub termrock::widgets::SkeletonShape::Custom::width: u16
+pub termrock::widgets::SkeletonShape::Row
+pub termrock::widgets::SkeletonShape::Row::indent: u16
+pub termrock::widgets::SkeletonShape::Row::width_pct: u8
+pub termrock::widgets::SkeletonShape::Table
+pub termrock::widgets::SkeletonShape::Table::cols: u16
+pub termrock::widgets::SkeletonShape::Table::rows: u16
+pub termrock::widgets::SkeletonShape::TextLine
+pub termrock::widgets::SkeletonShape::TextLine::indent: u16
+pub termrock::widgets::SkeletonShape::TextLine::width_pct: u8
+impl termrock::widgets::SkeletonShape
+pub const fn termrock::widgets::SkeletonShape::card(u16) -> Self
+pub fn termrock::widgets::SkeletonShape::height(self) -> u16
+pub const fn termrock::widgets::SkeletonShape::line() -> Self
+pub const fn termrock::widgets::SkeletonShape::line_indent(u16) -> Self
+pub const fn termrock::widgets::SkeletonShape::table(u16, u16) -> Self
+impl core::clone::Clone for termrock::widgets::SkeletonShape
+pub fn termrock::widgets::SkeletonShape::clone(&self) -> termrock::widgets::SkeletonShape
+impl core::cmp::Eq for termrock::widgets::SkeletonShape
+impl core::cmp::PartialEq for termrock::widgets::SkeletonShape
+pub fn termrock::widgets::SkeletonShape::eq(&self, &termrock::widgets::SkeletonShape) -> bool
+impl core::fmt::Debug for termrock::widgets::SkeletonShape
+pub fn termrock::widgets::SkeletonShape::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::SkeletonShape
+impl core::marker::StructuralPartialEq for termrock::widgets::SkeletonShape
+impl core::marker::Freeze for termrock::widgets::SkeletonShape
+impl core::marker::Send for termrock::widgets::SkeletonShape
+impl core::marker::Sync for termrock::widgets::SkeletonShape
+impl core::marker::Unpin for termrock::widgets::SkeletonShape
+impl core::marker::UnsafeUnpin for termrock::widgets::SkeletonShape
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SkeletonShape
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SkeletonShape
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SkeletonShape where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SkeletonShape::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SkeletonShape where U: core::convert::From<T>
+pub fn termrock::widgets::SkeletonShape::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SkeletonShape where U: core::convert::Into<T>
+pub type termrock::widgets::SkeletonShape::Error = core::convert::Infallible
+pub fn termrock::widgets::SkeletonShape::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SkeletonShape where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SkeletonShape::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SkeletonShape::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SkeletonShape where T: core::clone::Clone
+pub type termrock::widgets::SkeletonShape::Owned = T
+pub fn termrock::widgets::SkeletonShape::clone_into(&self, &mut T)
+pub fn termrock::widgets::SkeletonShape::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SkeletonShape where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SkeletonShape::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SkeletonShape where T: ?core::marker::Sized
+pub fn termrock::widgets::SkeletonShape::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SkeletonShape where T: ?core::marker::Sized
+pub fn termrock::widgets::SkeletonShape::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SkeletonShape where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SkeletonShape::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SkeletonShape
+pub fn termrock::widgets::SkeletonShape::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SkeletonShape
 #[non_exhaustive] pub enum termrock::widgets::SliderOrientation
 pub termrock::widgets::SliderOrientation::Horizontal
 pub termrock::widgets::SliderOrientation::Vertical
@@ -50633,7 +50750,17 @@ pub fn termrock::widgets::SidebarState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SidebarState<Id>
 pub struct termrock::widgets::Skeleton<'a>
 impl<'a> termrock::widgets::Skeleton<'a>
-pub const fn termrock::widgets::Skeleton<'a>::new(u16, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Skeleton<'a>::ascii(self, bool) -> Self
+pub fn termrock::widgets::Skeleton<'a>::card(u16, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Skeleton<'a>::layout(termrock::widgets::SkeletonLayout, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Skeleton<'a>::measure_height(&self) -> u16
+pub fn termrock::widgets::Skeleton<'a>::new(u16, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Skeleton<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+pub fn termrock::widgets::Skeleton<'a>::paint_with_state(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::SkeletonState, termrock::runtime::FrameTick, termrock::style::Motion)
+pub fn termrock::widgets::Skeleton<'a>::recipe(termrock::widgets::SkeletonRecipe, u16, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Skeleton<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::SkeletonState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
+pub fn termrock::widgets::Skeleton<'a>::skeleton_layout(&self) -> &termrock::widgets::SkeletonLayout
+pub fn termrock::widgets::Skeleton<'a>::table(u16, u16, &'a termrock::style::DesignSystem) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Skeleton<'_>
 pub fn &termrock::widgets::Skeleton<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::widgets::Skeleton<'_>
@@ -50642,7 +50769,6 @@ impl<'a> core::clone::Clone for termrock::widgets::Skeleton<'a>
 pub fn termrock::widgets::Skeleton<'a>::clone(&self) -> termrock::widgets::Skeleton<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Skeleton<'a>
 pub fn termrock::widgets::Skeleton<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::Skeleton<'a>
 impl<'a> core::marker::Freeze for termrock::widgets::Skeleton<'a>
 impl<'a> core::marker::Send for termrock::widgets::Skeleton<'a>
 impl<'a> core::marker::Sync for termrock::widgets::Skeleton<'a>
@@ -50673,6 +50799,111 @@ pub unsafe fn termrock::widgets::Skeleton<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Skeleton<'a>
 pub fn termrock::widgets::Skeleton<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Skeleton<'a>
+pub struct termrock::widgets::SkeletonLayout
+impl termrock::widgets::SkeletonLayout
+pub fn termrock::widgets::SkeletonLayout::card(u16) -> Self
+pub const fn termrock::widgets::SkeletonLayout::gap(self, u16) -> Self
+pub fn termrock::widgets::SkeletonLayout::lines(u16) -> Self
+pub fn termrock::widgets::SkeletonLayout::measure_height(&self) -> u16
+pub fn termrock::widgets::SkeletonLayout::new() -> Self
+pub const fn termrock::widgets::SkeletonLayout::reserved_height(self, u16) -> Self
+pub fn termrock::widgets::SkeletonLayout::shapes(impl core::iter::traits::collect::IntoIterator<Item = termrock::widgets::SkeletonShape>) -> Self
+pub fn termrock::widgets::SkeletonLayout::shapes_slice(&self) -> &[termrock::widgets::SkeletonShape]
+pub fn termrock::widgets::SkeletonLayout::table(u16, u16) -> Self
+impl core::clone::Clone for termrock::widgets::SkeletonLayout
+pub fn termrock::widgets::SkeletonLayout::clone(&self) -> termrock::widgets::SkeletonLayout
+impl core::cmp::Eq for termrock::widgets::SkeletonLayout
+impl core::cmp::PartialEq for termrock::widgets::SkeletonLayout
+pub fn termrock::widgets::SkeletonLayout::eq(&self, &termrock::widgets::SkeletonLayout) -> bool
+impl core::default::Default for termrock::widgets::SkeletonLayout
+pub fn termrock::widgets::SkeletonLayout::default() -> Self
+impl core::fmt::Debug for termrock::widgets::SkeletonLayout
+pub fn termrock::widgets::SkeletonLayout::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SkeletonLayout
+impl core::marker::Freeze for termrock::widgets::SkeletonLayout
+impl core::marker::Send for termrock::widgets::SkeletonLayout
+impl core::marker::Sync for termrock::widgets::SkeletonLayout
+impl core::marker::Unpin for termrock::widgets::SkeletonLayout
+impl core::marker::UnsafeUnpin for termrock::widgets::SkeletonLayout
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SkeletonLayout
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SkeletonLayout
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SkeletonLayout where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SkeletonLayout::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SkeletonLayout where U: core::convert::From<T>
+pub fn termrock::widgets::SkeletonLayout::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SkeletonLayout where U: core::convert::Into<T>
+pub type termrock::widgets::SkeletonLayout::Error = core::convert::Infallible
+pub fn termrock::widgets::SkeletonLayout::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SkeletonLayout where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SkeletonLayout::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SkeletonLayout::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SkeletonLayout where T: core::clone::Clone
+pub type termrock::widgets::SkeletonLayout::Owned = T
+pub fn termrock::widgets::SkeletonLayout::clone_into(&self, &mut T)
+pub fn termrock::widgets::SkeletonLayout::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SkeletonLayout where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SkeletonLayout::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SkeletonLayout where T: ?core::marker::Sized
+pub fn termrock::widgets::SkeletonLayout::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SkeletonLayout where T: ?core::marker::Sized
+pub fn termrock::widgets::SkeletonLayout::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SkeletonLayout where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SkeletonLayout::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SkeletonLayout
+pub fn termrock::widgets::SkeletonLayout::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SkeletonLayout
+pub struct termrock::widgets::SkeletonState
+impl termrock::widgets::SkeletonState
+pub fn termrock::widgets::SkeletonState::animation_demand(&self, termrock::runtime::FrameTick, termrock::style::Motion) -> termrock::runtime::AnimationDemand
+pub const fn termrock::widgets::SkeletonState::new() -> Self
+pub fn termrock::widgets::SkeletonState::pulse_phase(&self, termrock::runtime::FrameTick, termrock::style::Motion) -> u8
+pub fn termrock::widgets::SkeletonState::set_active(&mut self, bool)
+pub fn termrock::widgets::SkeletonState::set_shimmer(&mut self, bool)
+pub fn termrock::widgets::SkeletonState::set_visible(&mut self, bool)
+pub const fn termrock::widgets::SkeletonState::shimmer(&self) -> bool
+pub fn termrock::widgets::SkeletonState::should_tick(&self, termrock::style::Motion) -> bool
+impl core::clone::Clone for termrock::widgets::SkeletonState
+pub fn termrock::widgets::SkeletonState::clone(&self) -> termrock::widgets::SkeletonState
+impl core::cmp::Eq for termrock::widgets::SkeletonState
+impl core::cmp::PartialEq for termrock::widgets::SkeletonState
+pub fn termrock::widgets::SkeletonState::eq(&self, &termrock::widgets::SkeletonState) -> bool
+impl core::default::Default for termrock::widgets::SkeletonState
+pub fn termrock::widgets::SkeletonState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::SkeletonState
+pub fn termrock::widgets::SkeletonState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SkeletonState
+impl core::marker::Freeze for termrock::widgets::SkeletonState
+impl core::marker::Send for termrock::widgets::SkeletonState
+impl core::marker::Sync for termrock::widgets::SkeletonState
+impl core::marker::Unpin for termrock::widgets::SkeletonState
+impl core::marker::UnsafeUnpin for termrock::widgets::SkeletonState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SkeletonState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SkeletonState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SkeletonState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SkeletonState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SkeletonState where U: core::convert::From<T>
+pub fn termrock::widgets::SkeletonState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SkeletonState where U: core::convert::Into<T>
+pub type termrock::widgets::SkeletonState::Error = core::convert::Infallible
+pub fn termrock::widgets::SkeletonState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SkeletonState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SkeletonState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SkeletonState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SkeletonState where T: core::clone::Clone
+pub type termrock::widgets::SkeletonState::Owned = T
+pub fn termrock::widgets::SkeletonState::clone_into(&self, &mut T)
+pub fn termrock::widgets::SkeletonState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SkeletonState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SkeletonState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SkeletonState where T: ?core::marker::Sized
+pub fn termrock::widgets::SkeletonState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SkeletonState where T: ?core::marker::Sized
+pub fn termrock::widgets::SkeletonState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SkeletonState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SkeletonState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SkeletonState
+pub fn termrock::widgets::SkeletonState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SkeletonState
 pub struct termrock::widgets::Slider<'a>
 impl<'a> termrock::widgets::Slider<'a>
 pub const fn termrock::widgets::Slider<'a>::colorless(self, bool) -> Self
@@ -56665,6 +56896,9 @@ pub const termrock::widgets::SELECT_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::SIDEBAR_DRAWER_MAX_WIDTH: u16
 pub const termrock::widgets::SIDEBAR_DRAWER_OVERLAY_ID: &str
 pub const termrock::widgets::SIDEBAR_RAIL_MAX_WIDTH: u16
+pub const termrock::widgets::SKELETON_FILL_ASCII: &str
+pub const termrock::widgets::SKELETON_FILL_UNICODE: &str
+pub const termrock::widgets::SKELETON_PULSE_PERIOD_MS: u64
 pub const termrock::widgets::SLIDER_MIN_TRACK: u16
 pub const termrock::widgets::SLIDER_NUMERIC_FALLBACK_WIDTH: u16
 pub const termrock::widgets::SPINNER_ASCII_FRAMES: &[&str]

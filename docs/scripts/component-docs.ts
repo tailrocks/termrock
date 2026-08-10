@@ -977,12 +977,14 @@ let segments = [MeterSegment { label: "used", weight: 1.0, role: Role::Success }
 let meter = SegmentedMeter::new(&segments, &theme);`,
   },
   Skeleton: {
-    description: 'Placeholder loading lines for list surfaces.',
+    description:
+      'Low-noise structural placeholders (lines, rows, cards, tables, custom) when final layout is known; static by default, optional Full-motion pulse; ASCII/tiny-safe.',
     primaryStory: 'skeleton/basic',
-    usage: `use termrock::{Theme, widgets::Skeleton};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Skeleton, SkeletonRecipe};
 
-let theme = Theme::default();
-let skeleton = Skeleton::new(4, &theme);`,
+let system = DesignSystem::default();
+let skeleton = Skeleton::new(4, &system);`,
   },
   Sparkline: {
     description: 'One-row sparkline over normalized samples.',

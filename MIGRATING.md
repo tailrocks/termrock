@@ -192,6 +192,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0176 | `v0.13.0` | [Spinner and ActivityIndicator](migrations/0176-v0.13.0-spinner-activity-indicator.md) |
 | 0177 | `v0.13.0` | [ProgressBar](migrations/0177-v0.13.0-progress-bar.md) |
 | 0178 | `v0.13.0` | [ProgressSteps](migrations/0178-v0.13.0-progress-steps.md) |
+| 0179 | `v0.13.0` | [Skeleton](migrations/0179-v0.13.0-skeleton.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
