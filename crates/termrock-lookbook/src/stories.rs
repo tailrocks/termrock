@@ -79,6 +79,8 @@ use termrock::{
         ProcessViewMode, ProcessSignal, ProcessSignalConfirm,
         QueryEditor, QueryEditorState, QueryEditorMode, QueryFocus, QueryLanguage,
         QueryParameter, QueryResultSummary, QueryRunStatus,
+        ResultGrid, ResultGridState, ResultColumn, ResultRow, ResultCell, ResultQueryStatus,
+        ResultColumnStats, ResultRedaction, DataColumnWidth,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2403,6 +2405,78 @@ pub(crate) fn stories() -> Vec<Story> {
             64,
             14,
             query_editor_ascii,
+        ),
+        Story::new(
+            "result-grid/basic",
+            "ResultGrid basic",
+            "ResultGrid",
+            "Typed cells, nulls, binary, secrets.",
+            80,
+            14,
+            result_grid_basic,
+        ),
+        Story::new(
+            "result-grid/streaming",
+            "ResultGrid streaming",
+            "ResultGrid",
+            "Partial/streaming load chrome.",
+            72,
+            12,
+            result_grid_streaming,
+        ),
+        Story::new(
+            "result-grid/stats",
+            "ResultGrid stats",
+            "ResultGrid",
+            "Column statistics strip.",
+            72,
+            12,
+            result_grid_stats,
+        ),
+        Story::new(
+            "result-grid/wide",
+            "ResultGrid wide schema",
+            "ResultGrid",
+            "Many columns under priority pressure.",
+            60,
+            12,
+            result_grid_wide,
+        ),
+        Story::new(
+            "result-grid/empty",
+            "ResultGrid empty",
+            "ResultGrid",
+            "Empty result set.",
+            40,
+            8,
+            result_grid_empty,
+        ),
+        Story::new(
+            "result-grid/error",
+            "ResultGrid error",
+            "ResultGrid",
+            "Failed query status.",
+            48,
+            8,
+            result_grid_error,
+        ),
+        Story::new(
+            "result-grid/narrow",
+            "ResultGrid narrow",
+            "ResultGrid",
+            "Narrow results (36 cols).",
+            36,
+            12,
+            result_grid_basic,
+        ),
+        Story::new(
+            "result-grid/ascii",
+            "ResultGrid ASCII",
+            "ResultGrid",
+            "ASCII null glyphs and safe redaction.",
+            72,
+            12,
+            result_grid_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -12064,6 +12138,198 @@ fn query_editor_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         duration_ms: Some(3),
     });
     QueryEditor::new(system)
+        .title("ascii")
+        .ascii(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn result_grid_schema() -> Vec<ResultColumn> {
+    vec![
+        ResultColumn::new("id", "ID")
+            .type_name("int8")
+            .not_null()
+            .width(DataColumnWidth::Fixed(6))
+            .priority(100)
+            .pin_start(),
+        ResultColumn::new("name", "Name")
+            .type_name("text")
+            .width(DataColumnWidth::Min(12))
+            .priority(90)
+            .editable(),
+        ResultColumn::new("blob", "Blob")
+            .type_name("bytea")
+            .binary()
+            .priority(40),
+        ResultColumn::new("token", "Token")
+            .type_name("text")
+            .secret()
+            .priority(30),
+        ResultColumn::new("meta", "Meta")
+            .type_name("jsonb")
+            .priority(50),
+    ]
+}
+
+fn result_grid_rows() -> Vec<ResultRow<'static>> {
+    static R0: [ResultCell<'static>; 5] = [
+        ResultCell::integer("1"),
+        ResultCell::text("alpha"),
+        ResultCell::binary(128),
+        ResultCell::secret_value("s3cr3t"),
+        ResultCell::json(r#"{"a":1}"#),
+    ];
+    static R1: [ResultCell<'static>; 5] = [
+        ResultCell::integer("2"),
+        ResultCell::text("beta"),
+        ResultCell::null(),
+        ResultCell::secret_value("x"),
+        ResultCell::json("[]"),
+    ];
+    static R2: [ResultCell<'static>; 5] = [
+        ResultCell::integer("3"),
+        ResultCell::text("gamma"),
+        ResultCell::binary(1_048_576),
+        ResultCell::null(),
+        ResultCell::json(r#"{"ok":true}"#),
+    ];
+    vec![
+        ResultRow::new(1, 1, &R0),
+        ResultRow::new(2, 2, &R1),
+        ResultRow::new(3, 3, &R2),
+    ]
+}
+
+fn result_grid_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let cols = result_grid_schema();
+    let rows = result_grid_rows();
+    let mut state = ResultGridState::with_schema(cols.clone());
+    state.set_status(
+        ResultQueryStatus::Ready {
+            total: Some(3),
+            duration_ms: Some(8),
+        },
+        rows.len(),
+    );
+    ResultGrid::new(system, &cols, &rows)
+        .title("q1")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn result_grid_streaming(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let cols = result_grid_schema();
+    let rows = result_grid_rows();
+    let mut state = ResultGridState::with_schema(cols.clone());
+    state.set_status(
+        ResultQueryStatus::Streaming {
+            resident: 1_250,
+            total: None,
+        },
+        rows.len(),
+    );
+    ResultGrid::new(system, &cols, &rows)
+        .title("stream")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn result_grid_stats(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let cols = result_grid_schema();
+    let rows = result_grid_rows();
+    let mut state = ResultGridState::with_schema(cols.clone());
+    state.set_status(
+        ResultQueryStatus::Ready {
+            total: Some(3),
+            duration_ms: Some(4),
+        },
+        rows.len(),
+    );
+    state.show_stats = true;
+    let mut st = ResultColumnStats::new("id");
+    st.non_null = 3;
+    st.min = Some("1".into());
+    st.max = Some("3".into());
+    state.stats = vec![st];
+    ResultGrid::new(system, &cols, &rows)
+        .title("stats")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn result_grid_wide(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut cols = vec![ResultColumn::new("id", "ID")
+        .width(DataColumnWidth::Fixed(5))
+        .priority(255)
+        .pin_start()];
+    for i in 0..12 {
+        cols.push(
+            ResultColumn::new(format!("c{i}"), format!("C{i}"))
+                .priority(80u8.saturating_sub(i as u8 * 5)),
+        );
+    }
+    static CELLS: [ResultCell<'static>; 13] = [
+        ResultCell::integer("1"),
+        ResultCell::text("a"),
+        ResultCell::text("b"),
+        ResultCell::text("c"),
+        ResultCell::text("d"),
+        ResultCell::text("e"),
+        ResultCell::text("f"),
+        ResultCell::text("g"),
+        ResultCell::text("h"),
+        ResultCell::text("i"),
+        ResultCell::text("j"),
+        ResultCell::text("k"),
+        ResultCell::text("l"),
+    ];
+    let rows = vec![ResultRow::new(1, 1, &CELLS)];
+    let mut state = ResultGridState::with_schema(cols.clone());
+    state.set_status(
+        ResultQueryStatus::Ready {
+            total: Some(1),
+            duration_ms: Some(1),
+        },
+        1,
+    );
+    ResultGrid::new(system, &cols, &rows)
+        .title("wide")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn result_grid_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let cols = result_grid_schema();
+    let mut state = ResultGridState::with_schema(cols.clone());
+    state.set_status(ResultQueryStatus::Idle, 0);
+    ResultGrid::new(system, &cols, &[])
+        .title("empty")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn result_grid_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let cols = result_grid_schema();
+    let mut state = ResultGridState::with_schema(cols.clone());
+    state.set_status(
+        ResultQueryStatus::Failed {
+            message: "relation \"users\" does not exist".into(),
+        },
+        0,
+    );
+    ResultGrid::new(system, &cols, &[])
+        .title("err")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn result_grid_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let cols = result_grid_schema();
+    let rows = result_grid_rows();
+    let mut state = ResultGridState::with_schema(cols.clone());
+    state.ascii = true;
+    state.redaction = ResultRedaction::Safe;
+    state.set_status(
+        ResultQueryStatus::Ready {
+            total: Some(3),
+            duration_ms: Some(2),
+        },
+        rows.len(),
+    );
+    ResultGrid::new(system, &cols, &rows)
         .title("ascii")
         .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);

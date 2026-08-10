@@ -1644,10 +1644,25 @@ Every component below uses sections **1–24**:
 6–10. Ctrl chords for run/stop/format/save/history/complete/focus.  
 11–14. No language server / DB driver / formatter execution.  
 15–18. ASCII focus marks; severity letters on diagnostics.  
-19. **Composition:** TextArea · CompletionMenu · Diagnostic/CodeFrame · KeyboardHelp · HistoryPicker · DataTable in results slot.  
+19. **Composition:** TextArea · CompletionMenu · Diagnostic/CodeFrame · KeyboardHelp · HistoryPicker · ResultGrid/DataTable in results slot.  
 20. **Outcomes:** Run/Stop/Format/Save/History/Completion/JumpToDiagnostic/Focus/Mode.  
 21. **Stories:** `query-editor/{basic,running,diagnostics,parameters,compact,empty,narrow,ascii}`  
 22–24. Draft survives focus; large-draft paint; no-exec guard.
+
+## ResultGrid
+
+1. **Purpose:** Typed query result grid on DataTable.  
+2. **Anatomy:** status · stats? · DataTable body (row# + schema columns).  
+3. **Public properties:** `ResultColumn[]`, `ResultRow[]` (typed cells), status, redaction.  
+4. **State:** embeds `DataTableState<u64,String>`; schema; stats; redaction; row_numbers.  
+5. **Variants:** Idle/Streaming/Ready/Failed; Safe vs RevealSecrets.  
+6–10. DataTable nav + export/inspect/page/stats chords.  
+11–14. No query execution; host pages unknown totals.  
+15–18. ASCII NULL; secret mask; blob(N).  
+19. **Composition:** DataTable paint; QueryEditor summary bridge; ObjectInspector fields.  
+20. **Outcomes:** Export · Inspect · CellDetail · Page · Edit · Sort · RevealSecrets.  
+21. **Stories:** `result-grid/{basic,streaming,stats,wide,empty,error,narrow,ascii}`  
+22–24. Wide schema project; 500-row page paint; no-driver guard.
 
 ## Charts (Sparkline / Chart / Gauge / Histogram)
 

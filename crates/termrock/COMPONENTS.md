@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Chart`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `CodeFrame`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiagnosticView`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `FileTree`, `Form`, `FormWizard`, `Gauge`, `Heading`, `HexViewer`, `Histogram`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `ProcessTable`, `QueryEditor`, `QuickOpen`, `ResizablePanelGroup`, `QuestionFlow`, `RangeSlider`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `TerminalOutput`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
+The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Chart`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `CodeFrame`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiagnosticView`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `FileTree`, `Form`, `FormWizard`, `Gauge`, `Heading`, `HexViewer`, `Histogram`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `ProcessTable`, `QueryEditor`, `QuickOpen`, `QuestionFlow`, `RangeSlider`, `ResultGrid`, `ResizablePanelGroup`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `TerminalOutput`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
 
 `ScrollArea` / `ScrollAreaState` is the canonical scrolling primitive: dual-axis
 offsets, wheel/page/intents, scrollbar chrome, follow-tail with paused unseen
@@ -76,8 +76,14 @@ or sends signals. `TreeTable` remains the generic hierarchy+columns substrate;
 It embeds `TextAreaState` for the draft, preserves cursor across result focus,
 and emits run/stop/format/save/history/completion requests only. Integrates
 `CompletionMenu`, `Diagnostic`/`CodeFrame`, `KeyboardHelp`, `HistoryPicker`,
-and a results slot for host `DataTable` (future ResultGrid). Compact / normal /
+and a results slot for host `ResultGrid` / `DataTable`. Compact / normal /
 fullscreen modes. No language servers or DB drivers inside TermRock.
+
+`ResultGrid` is the **typed query-result grid** on `DataTable`: nulls, binary
+summaries, secret redaction, large-text clamp, row numbers, streaming/partial
+status, column stats chrome, export/inspect/page outcomes, and ObjectInspector
+bridges. Host projects only the visible window for wide schemas and unknown
+totals. No SQL drivers or file export IO inside TermRock.
 
 `Sparkline`, `Chart`, `Gauge`, `Histogram`, `BarSeries`, and `SegmentedMeter`
 form one **visualization family** with shared `ScaleMode` (auto/fixed/log),

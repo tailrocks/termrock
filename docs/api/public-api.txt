@@ -14700,6 +14700,11 @@ pub const termrock::widgets::query_editor_bench::DIAGNOSTIC_COUNT: usize
 pub const termrock::widgets::query_editor_bench::DRAFT_CHARS: usize
 pub const termrock::widgets::query_editor_bench::DRAFT_LINES: usize
 pub const termrock::widgets::query_editor_bench::PAINT_FRAMES: u32
+pub mod termrock::widgets::result_grid_bench
+pub const termrock::widgets::result_grid_bench::PAGE_ROWS: usize
+pub const termrock::widgets::result_grid_bench::PAINT_FRAMES: u32
+pub const termrock::widgets::result_grid_bench::STREAM_RESIDENT: u64
+pub const termrock::widgets::result_grid_bench::WIDE_COLUMNS: usize
 pub mod termrock::widgets::terminal_output_bench
 pub const termrock::widgets::terminal_output_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::terminal_output_bench::MAX_PAINT_CELLS: u32
@@ -29601,6 +29606,310 @@ pub unsafe fn termrock::widgets::ResourceBrowserOutcome<Id>::clone_to_uninit(&se
 impl<T> core::convert::From<T> for termrock::widgets::ResourceBrowserOutcome<Id>
 pub fn termrock::widgets::ResourceBrowserOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ResourceBrowserOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::ResultCellKind
+pub termrock::widgets::ResultCellKind::Binary
+pub termrock::widgets::ResultCellKind::Bool
+pub termrock::widgets::ResultCellKind::Float
+pub termrock::widgets::ResultCellKind::Integer
+pub termrock::widgets::ResultCellKind::Json
+pub termrock::widgets::ResultCellKind::Null
+pub termrock::widgets::ResultCellKind::Other
+pub termrock::widgets::ResultCellKind::Secret
+pub termrock::widgets::ResultCellKind::Text
+pub termrock::widgets::ResultCellKind::Timestamp
+pub termrock::widgets::ResultCellKind::Uuid
+impl termrock::widgets::ResultCellKind
+pub const fn termrock::widgets::ResultCellKind::id(self) -> &'static str
+pub const fn termrock::widgets::ResultCellKind::role(self) -> termrock::style::Role
+pub const fn termrock::widgets::ResultCellKind::to_inspect_kind(self) -> termrock::widgets::InspectKind
+impl core::clone::Clone for termrock::widgets::ResultCellKind
+pub fn termrock::widgets::ResultCellKind::clone(&self) -> termrock::widgets::ResultCellKind
+impl core::cmp::Eq for termrock::widgets::ResultCellKind
+impl core::cmp::PartialEq for termrock::widgets::ResultCellKind
+pub fn termrock::widgets::ResultCellKind::eq(&self, &termrock::widgets::ResultCellKind) -> bool
+impl core::default::Default for termrock::widgets::ResultCellKind
+pub fn termrock::widgets::ResultCellKind::default() -> termrock::widgets::ResultCellKind
+impl core::fmt::Debug for termrock::widgets::ResultCellKind
+pub fn termrock::widgets::ResultCellKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ResultCellKind
+pub fn termrock::widgets::ResultCellKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ResultCellKind
+impl core::marker::StructuralPartialEq for termrock::widgets::ResultCellKind
+impl core::marker::Freeze for termrock::widgets::ResultCellKind
+impl core::marker::Send for termrock::widgets::ResultCellKind
+impl core::marker::Sync for termrock::widgets::ResultCellKind
+impl core::marker::Unpin for termrock::widgets::ResultCellKind
+impl core::marker::UnsafeUnpin for termrock::widgets::ResultCellKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultCellKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultCellKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ResultCellKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ResultCellKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultCellKind where U: core::convert::From<T>
+pub fn termrock::widgets::ResultCellKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultCellKind where U: core::convert::Into<T>
+pub type termrock::widgets::ResultCellKind::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultCellKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultCellKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultCellKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultCellKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultCellKind where T: core::clone::Clone
+pub type termrock::widgets::ResultCellKind::Owned = T
+pub fn termrock::widgets::ResultCellKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultCellKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultCellKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultCellKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultCellKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultCellKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultCellKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultCellKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultCellKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultCellKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultCellKind
+pub fn termrock::widgets::ResultCellKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultCellKind
+#[non_exhaustive] pub enum termrock::widgets::ResultExportFormat
+pub termrock::widgets::ResultExportFormat::Csv
+pub termrock::widgets::ResultExportFormat::Json
+pub termrock::widgets::ResultExportFormat::Markdown
+pub termrock::widgets::ResultExportFormat::Tsv
+impl termrock::widgets::ResultExportFormat
+pub const fn termrock::widgets::ResultExportFormat::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ResultExportFormat
+pub fn termrock::widgets::ResultExportFormat::clone(&self) -> termrock::widgets::ResultExportFormat
+impl core::cmp::Eq for termrock::widgets::ResultExportFormat
+impl core::cmp::PartialEq for termrock::widgets::ResultExportFormat
+pub fn termrock::widgets::ResultExportFormat::eq(&self, &termrock::widgets::ResultExportFormat) -> bool
+impl core::fmt::Debug for termrock::widgets::ResultExportFormat
+pub fn termrock::widgets::ResultExportFormat::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ResultExportFormat
+pub fn termrock::widgets::ResultExportFormat::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ResultExportFormat
+impl core::marker::StructuralPartialEq for termrock::widgets::ResultExportFormat
+impl core::marker::Freeze for termrock::widgets::ResultExportFormat
+impl core::marker::Send for termrock::widgets::ResultExportFormat
+impl core::marker::Sync for termrock::widgets::ResultExportFormat
+impl core::marker::Unpin for termrock::widgets::ResultExportFormat
+impl core::marker::UnsafeUnpin for termrock::widgets::ResultExportFormat
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultExportFormat
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultExportFormat
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ResultExportFormat where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ResultExportFormat::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultExportFormat where U: core::convert::From<T>
+pub fn termrock::widgets::ResultExportFormat::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultExportFormat where U: core::convert::Into<T>
+pub type termrock::widgets::ResultExportFormat::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultExportFormat::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultExportFormat where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultExportFormat::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultExportFormat::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultExportFormat where T: core::clone::Clone
+pub type termrock::widgets::ResultExportFormat::Owned = T
+pub fn termrock::widgets::ResultExportFormat::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultExportFormat::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultExportFormat where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultExportFormat::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultExportFormat where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultExportFormat::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultExportFormat where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultExportFormat::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultExportFormat where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultExportFormat::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultExportFormat
+pub fn termrock::widgets::ResultExportFormat::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultExportFormat
+#[non_exhaustive] pub enum termrock::widgets::ResultGridOutcome
+pub termrock::widgets::ResultGridOutcome::Activate
+pub termrock::widgets::ResultGridOutcome::Activate::row: u64
+pub termrock::widgets::ResultGridOutcome::CellDetailRequested
+pub termrock::widgets::ResultGridOutcome::CellDetailRequested::column: alloc::string::String
+pub termrock::widgets::ResultGridOutcome::CellDetailRequested::row: u64
+pub termrock::widgets::ResultGridOutcome::ColumnResized
+pub termrock::widgets::ResultGridOutcome::ColumnResized::column: alloc::string::String
+pub termrock::widgets::ResultGridOutcome::ColumnResized::width: u16
+pub termrock::widgets::ResultGridOutcome::ContextMenu
+pub termrock::widgets::ResultGridOutcome::ContextMenu::column: core::option::Option<alloc::string::String>
+pub termrock::widgets::ResultGridOutcome::ContextMenu::row: u64
+pub termrock::widgets::ResultGridOutcome::Copy(termrock::widgets::CopyPayload)
+pub termrock::widgets::ResultGridOutcome::CursorMoved
+pub termrock::widgets::ResultGridOutcome::EditCancelled
+pub termrock::widgets::ResultGridOutcome::EditCommitted
+pub termrock::widgets::ResultGridOutcome::EditCommitted::column: alloc::string::String
+pub termrock::widgets::ResultGridOutcome::EditCommitted::row: u64
+pub termrock::widgets::ResultGridOutcome::EditCommitted::text: alloc::string::String
+pub termrock::widgets::ResultGridOutcome::EditStarted
+pub termrock::widgets::ResultGridOutcome::EditStarted::column: alloc::string::String
+pub termrock::widgets::ResultGridOutcome::EditStarted::row: u64
+pub termrock::widgets::ResultGridOutcome::ExportRequested
+pub termrock::widgets::ResultGridOutcome::ExportRequested::format: termrock::widgets::ResultExportFormat
+pub termrock::widgets::ResultGridOutcome::ExportRequested::selection_or_window: bool
+pub termrock::widgets::ResultGridOutcome::FilterChanged(termrock::widgets::FilterSpec)
+pub termrock::widgets::ResultGridOutcome::FullscreenRequested
+pub termrock::widgets::ResultGridOutcome::Ignored
+pub termrock::widgets::ResultGridOutcome::InspectRequested
+pub termrock::widgets::ResultGridOutcome::InspectRequested::column: core::option::Option<alloc::string::String>
+pub termrock::widgets::ResultGridOutcome::InspectRequested::row: u64
+pub termrock::widgets::ResultGridOutcome::NavModeChanged(termrock::widgets::DataTableNavMode)
+pub termrock::widgets::ResultGridOutcome::PageNext
+pub termrock::widgets::ResultGridOutcome::PagePrev
+pub termrock::widgets::ResultGridOutcome::RefreshRequested
+pub termrock::widgets::ResultGridOutcome::RetryLoad
+pub termrock::widgets::ResultGridOutcome::RevealSecretsToggled
+pub termrock::widgets::ResultGridOutcome::RevealSecretsToggled::reveal: bool
+pub termrock::widgets::ResultGridOutcome::Scrolled
+pub termrock::widgets::ResultGridOutcome::SelectAllRequested
+pub termrock::widgets::ResultGridOutcome::SelectionChanged
+pub termrock::widgets::ResultGridOutcome::SortRequested
+pub termrock::widgets::ResultGridOutcome::SortRequested::ascending: bool
+pub termrock::widgets::ResultGridOutcome::SortRequested::column: alloc::string::String
+pub termrock::widgets::ResultGridOutcome::StatsFocus
+pub termrock::widgets::ResultGridOutcome::StatsFocus::column: alloc::string::String
+impl core::clone::Clone for termrock::widgets::ResultGridOutcome
+pub fn termrock::widgets::ResultGridOutcome::clone(&self) -> termrock::widgets::ResultGridOutcome
+impl core::cmp::Eq for termrock::widgets::ResultGridOutcome
+impl core::cmp::PartialEq for termrock::widgets::ResultGridOutcome
+pub fn termrock::widgets::ResultGridOutcome::eq(&self, &termrock::widgets::ResultGridOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ResultGridOutcome
+pub fn termrock::widgets::ResultGridOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ResultGridOutcome
+impl core::marker::Freeze for termrock::widgets::ResultGridOutcome
+impl core::marker::Send for termrock::widgets::ResultGridOutcome
+impl core::marker::Sync for termrock::widgets::ResultGridOutcome
+impl core::marker::Unpin for termrock::widgets::ResultGridOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ResultGridOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultGridOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultGridOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ResultGridOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ResultGridOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultGridOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ResultGridOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultGridOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ResultGridOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultGridOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultGridOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultGridOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultGridOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultGridOutcome where T: core::clone::Clone
+pub type termrock::widgets::ResultGridOutcome::Owned = T
+pub fn termrock::widgets::ResultGridOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultGridOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultGridOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultGridOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultGridOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultGridOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultGridOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultGridOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultGridOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultGridOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultGridOutcome
+pub fn termrock::widgets::ResultGridOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultGridOutcome
+#[non_exhaustive] pub enum termrock::widgets::ResultQueryStatus
+pub termrock::widgets::ResultQueryStatus::Cancelled
+pub termrock::widgets::ResultQueryStatus::Failed
+pub termrock::widgets::ResultQueryStatus::Failed::message: alloc::string::String
+pub termrock::widgets::ResultQueryStatus::Idle
+pub termrock::widgets::ResultQueryStatus::Ready
+pub termrock::widgets::ResultQueryStatus::Ready::duration_ms: core::option::Option<u64>
+pub termrock::widgets::ResultQueryStatus::Ready::total: core::option::Option<u64>
+pub termrock::widgets::ResultQueryStatus::Streaming
+pub termrock::widgets::ResultQueryStatus::Streaming::resident: u64
+pub termrock::widgets::ResultQueryStatus::Streaming::total: core::option::Option<u64>
+impl termrock::widgets::ResultQueryStatus
+pub fn termrock::widgets::ResultQueryStatus::id(&self) -> &'static str
+pub fn termrock::widgets::ResultQueryStatus::summary_line(&self, usize, usize) -> alloc::string::String
+pub fn termrock::widgets::ResultQueryStatus::to_load_state(&self, usize) -> termrock::widgets::LoadState
+pub fn termrock::widgets::ResultQueryStatus::to_query_summary(&self, usize) -> termrock::widgets::QueryResultSummary
+impl core::clone::Clone for termrock::widgets::ResultQueryStatus
+pub fn termrock::widgets::ResultQueryStatus::clone(&self) -> termrock::widgets::ResultQueryStatus
+impl core::cmp::Eq for termrock::widgets::ResultQueryStatus
+impl core::cmp::PartialEq for termrock::widgets::ResultQueryStatus
+pub fn termrock::widgets::ResultQueryStatus::eq(&self, &termrock::widgets::ResultQueryStatus) -> bool
+impl core::default::Default for termrock::widgets::ResultQueryStatus
+pub fn termrock::widgets::ResultQueryStatus::default() -> termrock::widgets::ResultQueryStatus
+impl core::fmt::Debug for termrock::widgets::ResultQueryStatus
+pub fn termrock::widgets::ResultQueryStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ResultQueryStatus
+impl core::marker::Freeze for termrock::widgets::ResultQueryStatus
+impl core::marker::Send for termrock::widgets::ResultQueryStatus
+impl core::marker::Sync for termrock::widgets::ResultQueryStatus
+impl core::marker::Unpin for termrock::widgets::ResultQueryStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::ResultQueryStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultQueryStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultQueryStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ResultQueryStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ResultQueryStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultQueryStatus where U: core::convert::From<T>
+pub fn termrock::widgets::ResultQueryStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultQueryStatus where U: core::convert::Into<T>
+pub type termrock::widgets::ResultQueryStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultQueryStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultQueryStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultQueryStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultQueryStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultQueryStatus where T: core::clone::Clone
+pub type termrock::widgets::ResultQueryStatus::Owned = T
+pub fn termrock::widgets::ResultQueryStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultQueryStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultQueryStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultQueryStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultQueryStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultQueryStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultQueryStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultQueryStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultQueryStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultQueryStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultQueryStatus
+pub fn termrock::widgets::ResultQueryStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultQueryStatus
+#[non_exhaustive] pub enum termrock::widgets::ResultRedaction
+pub termrock::widgets::ResultRedaction::BinaryHexPreview
+pub termrock::widgets::ResultRedaction::RevealSecrets
+pub termrock::widgets::ResultRedaction::Safe
+impl core::clone::Clone for termrock::widgets::ResultRedaction
+pub fn termrock::widgets::ResultRedaction::clone(&self) -> termrock::widgets::ResultRedaction
+impl core::cmp::Eq for termrock::widgets::ResultRedaction
+impl core::cmp::PartialEq for termrock::widgets::ResultRedaction
+pub fn termrock::widgets::ResultRedaction::eq(&self, &termrock::widgets::ResultRedaction) -> bool
+impl core::default::Default for termrock::widgets::ResultRedaction
+pub fn termrock::widgets::ResultRedaction::default() -> termrock::widgets::ResultRedaction
+impl core::fmt::Debug for termrock::widgets::ResultRedaction
+pub fn termrock::widgets::ResultRedaction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ResultRedaction
+pub fn termrock::widgets::ResultRedaction::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ResultRedaction
+impl core::marker::StructuralPartialEq for termrock::widgets::ResultRedaction
+impl core::marker::Freeze for termrock::widgets::ResultRedaction
+impl core::marker::Send for termrock::widgets::ResultRedaction
+impl core::marker::Sync for termrock::widgets::ResultRedaction
+impl core::marker::Unpin for termrock::widgets::ResultRedaction
+impl core::marker::UnsafeUnpin for termrock::widgets::ResultRedaction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultRedaction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultRedaction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ResultRedaction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ResultRedaction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultRedaction where U: core::convert::From<T>
+pub fn termrock::widgets::ResultRedaction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultRedaction where U: core::convert::Into<T>
+pub type termrock::widgets::ResultRedaction::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultRedaction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultRedaction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultRedaction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultRedaction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultRedaction where T: core::clone::Clone
+pub type termrock::widgets::ResultRedaction::Owned = T
+pub fn termrock::widgets::ResultRedaction::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultRedaction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultRedaction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultRedaction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultRedaction where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultRedaction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultRedaction where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultRedaction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultRedaction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultRedaction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultRedaction
+pub fn termrock::widgets::ResultRedaction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultRedaction
 #[non_exhaustive] pub enum termrock::widgets::RetrySafety
 pub termrock::widgets::RetrySafety::Safe
 pub termrock::widgets::RetrySafety::Unknown
@@ -57428,6 +57737,326 @@ pub unsafe fn termrock::widgets::ResourceBrowserState<Id>::clone_to_uninit(&self
 impl<T> core::convert::From<T> for termrock::widgets::ResourceBrowserState<Id>
 pub fn termrock::widgets::ResourceBrowserState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ResourceBrowserState<Id>
+pub struct termrock::widgets::ResultCell<'a>
+pub termrock::widgets::ResultCell::binary_len: core::option::Option<u64>
+pub termrock::widgets::ResultCell::kind: termrock::widgets::ResultCellKind
+pub termrock::widgets::ResultCell::secret: bool
+pub termrock::widgets::ResultCell::text: &'a str
+pub termrock::widgets::ResultCell::truncated: bool
+impl<'a> termrock::widgets::ResultCell<'a>
+pub const fn termrock::widgets::ResultCell<'a>::binary(u64) -> Self
+pub const fn termrock::widgets::ResultCell<'a>::bool_text(&'a str) -> Self
+pub const fn termrock::widgets::ResultCell<'a>::integer(&'a str) -> Self
+pub const fn termrock::widgets::ResultCell<'a>::json(&'a str) -> Self
+pub const fn termrock::widgets::ResultCell<'a>::kind(self, termrock::widgets::ResultCellKind) -> Self
+pub const fn termrock::widgets::ResultCell<'a>::null() -> Self
+pub const fn termrock::widgets::ResultCell<'a>::secret(self) -> Self
+pub const fn termrock::widgets::ResultCell<'a>::secret_value(&'a str) -> Self
+pub const fn termrock::widgets::ResultCell<'a>::text(&'a str) -> Self
+pub const fn termrock::widgets::ResultCell<'a>::truncated(self) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::ResultCell<'a>
+pub fn termrock::widgets::ResultCell<'a>::clone(&self) -> termrock::widgets::ResultCell<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::ResultCell<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::ResultCell<'a>
+pub fn termrock::widgets::ResultCell<'a>::eq(&self, &termrock::widgets::ResultCell<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::ResultCell<'a>
+pub fn termrock::widgets::ResultCell<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ResultCell<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::ResultCell<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ResultCell<'a>
+impl<'a> core::marker::Send for termrock::widgets::ResultCell<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ResultCell<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ResultCell<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ResultCell<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultCell<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultCell<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ResultCell<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ResultCell<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultCell<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ResultCell<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultCell<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ResultCell<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultCell<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultCell<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultCell<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultCell<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultCell<'a> where T: core::clone::Clone
+pub type termrock::widgets::ResultCell<'a>::Owned = T
+pub fn termrock::widgets::ResultCell<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultCell<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultCell<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultCell<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultCell<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultCell<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultCell<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultCell<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultCell<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultCell<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultCell<'a>
+pub fn termrock::widgets::ResultCell<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultCell<'a>
+pub struct termrock::widgets::ResultColumn
+pub termrock::widgets::ResultColumn::binary: bool
+pub termrock::widgets::ResultColumn::editable: bool
+pub termrock::widgets::ResultColumn::id: alloc::string::String
+pub termrock::widgets::ResultColumn::nullable: bool
+pub termrock::widgets::ResultColumn::pin_start: bool
+pub termrock::widgets::ResultColumn::priority: u8
+pub termrock::widgets::ResultColumn::secret: bool
+pub termrock::widgets::ResultColumn::title: alloc::string::String
+pub termrock::widgets::ResultColumn::type_name: core::option::Option<alloc::string::String>
+pub termrock::widgets::ResultColumn::width: termrock::widgets::DataColumnWidth
+impl termrock::widgets::ResultColumn
+pub const fn termrock::widgets::ResultColumn::binary(self) -> Self
+pub const fn termrock::widgets::ResultColumn::editable(self) -> Self
+pub fn termrock::widgets::ResultColumn::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ResultColumn::not_null(self) -> Self
+pub const fn termrock::widgets::ResultColumn::pin_start(self) -> Self
+pub const fn termrock::widgets::ResultColumn::priority(self, u8) -> Self
+pub const fn termrock::widgets::ResultColumn::secret(self) -> Self
+pub fn termrock::widgets::ResultColumn::type_name(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ResultColumn::width(self, termrock::widgets::DataColumnWidth) -> Self
+impl core::clone::Clone for termrock::widgets::ResultColumn
+pub fn termrock::widgets::ResultColumn::clone(&self) -> termrock::widgets::ResultColumn
+impl core::cmp::Eq for termrock::widgets::ResultColumn
+impl core::cmp::PartialEq for termrock::widgets::ResultColumn
+pub fn termrock::widgets::ResultColumn::eq(&self, &termrock::widgets::ResultColumn) -> bool
+impl core::fmt::Debug for termrock::widgets::ResultColumn
+pub fn termrock::widgets::ResultColumn::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ResultColumn
+impl core::marker::Freeze for termrock::widgets::ResultColumn
+impl core::marker::Send for termrock::widgets::ResultColumn
+impl core::marker::Sync for termrock::widgets::ResultColumn
+impl core::marker::Unpin for termrock::widgets::ResultColumn
+impl core::marker::UnsafeUnpin for termrock::widgets::ResultColumn
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultColumn
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultColumn
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ResultColumn where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ResultColumn::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultColumn where U: core::convert::From<T>
+pub fn termrock::widgets::ResultColumn::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultColumn where U: core::convert::Into<T>
+pub type termrock::widgets::ResultColumn::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultColumn::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultColumn where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultColumn::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultColumn::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultColumn where T: core::clone::Clone
+pub type termrock::widgets::ResultColumn::Owned = T
+pub fn termrock::widgets::ResultColumn::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultColumn::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultColumn where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultColumn::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultColumn where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultColumn::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultColumn where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultColumn::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultColumn where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultColumn::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultColumn
+pub fn termrock::widgets::ResultColumn::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultColumn
+pub struct termrock::widgets::ResultColumnStats
+pub termrock::widgets::ResultColumnStats::column: alloc::string::String
+pub termrock::widgets::ResultColumnStats::distinct: core::option::Option<u64>
+pub termrock::widgets::ResultColumnStats::max: core::option::Option<alloc::string::String>
+pub termrock::widgets::ResultColumnStats::mean: core::option::Option<alloc::string::String>
+pub termrock::widgets::ResultColumnStats::min: core::option::Option<alloc::string::String>
+pub termrock::widgets::ResultColumnStats::non_null: u64
+pub termrock::widgets::ResultColumnStats::nulls: u64
+pub termrock::widgets::ResultColumnStats::sum: core::option::Option<alloc::string::String>
+impl termrock::widgets::ResultColumnStats
+pub fn termrock::widgets::ResultColumnStats::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ResultColumnStats::summary_line(&self) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::ResultColumnStats
+pub fn termrock::widgets::ResultColumnStats::clone(&self) -> termrock::widgets::ResultColumnStats
+impl core::cmp::PartialEq for termrock::widgets::ResultColumnStats
+pub fn termrock::widgets::ResultColumnStats::eq(&self, &termrock::widgets::ResultColumnStats) -> bool
+impl core::fmt::Debug for termrock::widgets::ResultColumnStats
+pub fn termrock::widgets::ResultColumnStats::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ResultColumnStats
+impl core::marker::Freeze for termrock::widgets::ResultColumnStats
+impl core::marker::Send for termrock::widgets::ResultColumnStats
+impl core::marker::Sync for termrock::widgets::ResultColumnStats
+impl core::marker::Unpin for termrock::widgets::ResultColumnStats
+impl core::marker::UnsafeUnpin for termrock::widgets::ResultColumnStats
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultColumnStats
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultColumnStats
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultColumnStats where U: core::convert::From<T>
+pub fn termrock::widgets::ResultColumnStats::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultColumnStats where U: core::convert::Into<T>
+pub type termrock::widgets::ResultColumnStats::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultColumnStats::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultColumnStats where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultColumnStats::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultColumnStats::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultColumnStats where T: core::clone::Clone
+pub type termrock::widgets::ResultColumnStats::Owned = T
+pub fn termrock::widgets::ResultColumnStats::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultColumnStats::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultColumnStats where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultColumnStats::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultColumnStats where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultColumnStats::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultColumnStats where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultColumnStats::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultColumnStats where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultColumnStats::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultColumnStats
+pub fn termrock::widgets::ResultColumnStats::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultColumnStats
+pub struct termrock::widgets::ResultGrid<'a>
+impl<'a> termrock::widgets::ResultGrid<'a>
+pub const fn termrock::widgets::ResultGrid<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ResultGrid<'a>::focused(self, bool) -> Self
+pub const fn termrock::widgets::ResultGrid<'a>::new(&'a termrock::style::DesignSystem, &'a [termrock::widgets::ResultColumn], &'a [termrock::widgets::ResultRow<'a>]) -> Self
+pub fn termrock::widgets::ResultGrid<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ResultGridState)
+pub const fn termrock::widgets::ResultGrid<'a>::title(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::ResultGrid<'a>
+pub fn termrock::widgets::ResultGrid<'a>::clone(&self) -> termrock::widgets::ResultGrid<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ResultGrid<'a>
+pub fn termrock::widgets::ResultGrid<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for termrock::widgets::ResultGrid<'a>
+impl<'a> core::marker::Send for termrock::widgets::ResultGrid<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ResultGrid<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ResultGrid<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ResultGrid<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultGrid<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultGrid<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultGrid<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ResultGrid<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultGrid<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ResultGrid<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultGrid<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultGrid<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultGrid<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultGrid<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultGrid<'a> where T: core::clone::Clone
+pub type termrock::widgets::ResultGrid<'a>::Owned = T
+pub fn termrock::widgets::ResultGrid<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultGrid<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultGrid<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultGrid<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultGrid<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultGrid<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultGrid<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultGrid<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultGrid<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultGrid<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultGrid<'a>
+pub fn termrock::widgets::ResultGrid<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultGrid<'a>
+pub struct termrock::widgets::ResultGridState
+pub termrock::widgets::ResultGridState::ascii: bool
+pub termrock::widgets::ResultGridState::colorless: bool
+pub termrock::widgets::ResultGridState::last_status_line: alloc::string::String
+pub termrock::widgets::ResultGridState::redaction: termrock::widgets::ResultRedaction
+pub termrock::widgets::ResultGridState::row_numbers: bool
+pub termrock::widgets::ResultGridState::schema: alloc::vec::Vec<termrock::widgets::ResultColumn>
+pub termrock::widgets::ResultGridState::show_stats: bool
+pub termrock::widgets::ResultGridState::stats: alloc::vec::Vec<termrock::widgets::ResultColumnStats>
+pub termrock::widgets::ResultGridState::stats_cursor: usize
+pub termrock::widgets::ResultGridState::status: termrock::widgets::ResultQueryStatus
+pub termrock::widgets::ResultGridState::table: termrock::widgets::DataTableState<u64, alloc::string::String>
+pub termrock::widgets::ResultGridState::title: core::option::Option<alloc::string::String>
+impl termrock::widgets::ResultGridState
+pub const fn termrock::widgets::ResultGridState::accepts_input(&self) -> bool
+pub fn termrock::widgets::ResultGridState::column_model(&self) -> termrock::widgets::ColumnModel<alloc::string::String>
+pub fn termrock::widgets::ResultGridState::handle_key(&mut self, termrock::input::KeyEvent, &termrock::widgets::ColumnModel<alloc::string::String>, &[u64]) -> termrock::widgets::ResultGridOutcome
+pub fn termrock::widgets::ResultGridState::handle_mouse(&mut self, termrock::input::MouseEvent, &mut termrock::widgets::ColumnModel<alloc::string::String>, &[u64]) -> termrock::widgets::ResultGridOutcome
+pub fn termrock::widgets::ResultGridState::new() -> Self
+pub fn termrock::widgets::ResultGridState::query_summary(&self) -> termrock::widgets::QueryResultSummary
+pub fn termrock::widgets::ResultGridState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::ResultGridState::set_logical_rows(&mut self, u64)
+pub fn termrock::widgets::ResultGridState::set_schema(&mut self, alloc::vec::Vec<termrock::widgets::ResultColumn>)
+pub fn termrock::widgets::ResultGridState::set_status(&mut self, termrock::widgets::ResultQueryStatus, usize)
+pub fn termrock::widgets::ResultGridState::toggle_stats(&mut self)
+pub fn termrock::widgets::ResultGridState::with_schema(alloc::vec::Vec<termrock::widgets::ResultColumn>) -> Self
+impl core::clone::Clone for termrock::widgets::ResultGridState
+pub fn termrock::widgets::ResultGridState::clone(&self) -> termrock::widgets::ResultGridState
+impl core::cmp::PartialEq for termrock::widgets::ResultGridState
+pub fn termrock::widgets::ResultGridState::eq(&self, &termrock::widgets::ResultGridState) -> bool
+impl core::default::Default for termrock::widgets::ResultGridState
+pub fn termrock::widgets::ResultGridState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ResultGridState
+pub fn termrock::widgets::ResultGridState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ResultGridState
+impl core::marker::Freeze for termrock::widgets::ResultGridState
+impl core::marker::Send for termrock::widgets::ResultGridState
+impl core::marker::Sync for termrock::widgets::ResultGridState
+impl core::marker::Unpin for termrock::widgets::ResultGridState
+impl core::marker::UnsafeUnpin for termrock::widgets::ResultGridState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultGridState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultGridState
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultGridState where U: core::convert::From<T>
+pub fn termrock::widgets::ResultGridState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultGridState where U: core::convert::Into<T>
+pub type termrock::widgets::ResultGridState::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultGridState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultGridState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultGridState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultGridState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultGridState where T: core::clone::Clone
+pub type termrock::widgets::ResultGridState::Owned = T
+pub fn termrock::widgets::ResultGridState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultGridState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultGridState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultGridState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultGridState where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultGridState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultGridState where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultGridState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultGridState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultGridState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultGridState
+pub fn termrock::widgets::ResultGridState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultGridState
+pub struct termrock::widgets::ResultRow<'a>
+pub termrock::widgets::ResultRow::cells: &'a [termrock::widgets::ResultCell<'a>]
+pub termrock::widgets::ResultRow::id: u64
+pub termrock::widgets::ResultRow::row_number: u64
+impl<'a> termrock::widgets::ResultRow<'a>
+pub const fn termrock::widgets::ResultRow<'a>::new(u64, u64, &'a [termrock::widgets::ResultCell<'a>]) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::ResultRow<'a>
+pub fn termrock::widgets::ResultRow<'a>::clone(&self) -> termrock::widgets::ResultRow<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::ResultRow<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::ResultRow<'a>
+pub fn termrock::widgets::ResultRow<'a>::eq(&self, &termrock::widgets::ResultRow<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::ResultRow<'a>
+pub fn termrock::widgets::ResultRow<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::ResultRow<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ResultRow<'a>
+impl<'a> core::marker::Send for termrock::widgets::ResultRow<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ResultRow<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ResultRow<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ResultRow<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ResultRow<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ResultRow<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ResultRow<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ResultRow<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ResultRow<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ResultRow<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ResultRow<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ResultRow<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ResultRow<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ResultRow<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ResultRow<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ResultRow<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ResultRow<'a> where T: core::clone::Clone
+pub type termrock::widgets::ResultRow<'a>::Owned = T
+pub fn termrock::widgets::ResultRow<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ResultRow<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ResultRow<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ResultRow<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ResultRow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultRow<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ResultRow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ResultRow<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ResultRow<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ResultRow<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ResultRow<'a>
+pub fn termrock::widgets::ResultRow<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ResultRow<'a>
 pub struct termrock::widgets::RoleTokenSyntax<'a>
 impl<'a> termrock::widgets::RoleTokenSyntax<'a>
 pub const fn termrock::widgets::RoleTokenSyntax<'a>::new(&'a termrock::style::DesignSystem, core::option::Option<&'a str>, &'a [&'a str]) -> Self
@@ -66674,6 +67303,11 @@ pub const termrock::widgets::QUICK_OPEN_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::QUICK_OPEN_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::QUICK_OPEN_OVERLAY_ID: &str
 pub const termrock::widgets::QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX: u16
+pub const termrock::widgets::RESULT_CELL_MAX_DISPLAY: usize
+pub const termrock::widgets::RESULT_NULL_ASCII: &str
+pub const termrock::widgets::RESULT_NULL_GLYPH: &str
+pub const termrock::widgets::RESULT_SECRET_MASK: &str
+pub const termrock::widgets::RESULT_TRUNC_MARK: &str
 pub const termrock::widgets::SELECT_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::SELECT_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::SIDEBAR_DRAWER_MAX_WIDTH: u16
@@ -66731,6 +67365,7 @@ pub fn termrock::widgets::auto_bytes_per_row(u16, u8) -> u8
 pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
 pub fn termrock::widgets::breadcrumbs_from_path(&str) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
+pub fn termrock::widgets::clamp_cell_display(&str, usize) -> alloc::string::String
 pub fn termrock::widgets::cmp_process(&termrock::widgets::ProcessRow<'_>, &termrock::widgets::ProcessRow<'_>, termrock::widgets::ProcessSortKey, bool) -> core::cmp::Ordering
 pub fn termrock::widgets::code_frame_window<'a>(&'a [&'a str], &[termrock::widgets::SourceLabel<'_>], u32) -> (alloc::vec::Vec<termrock::widgets::CodeFrameLine<'a>>, bool, bool)
 pub fn termrock::widgets::col_for_offset(u64, u8) -> u8
@@ -66833,6 +67468,7 @@ pub fn termrock::widgets::example_symbol_preview<'a>() -> (termrock::widgets::Pr
 pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
 pub fn termrock::widgets::expand_tabs(&str, usize) -> alloc::string::String
 pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
+pub fn termrock::widgets::export_result_window_tsv(&[termrock::widgets::ResultColumn], &[termrock::widgets::ResultRow<'_>], termrock::widgets::ResultRedaction, bool, bool) -> alloc::string::String
 pub fn termrock::widgets::file_entries_to_tree_nodes<'a, Id: core::clone::Clone>(&[&'a termrock::widgets::FileTreeEntry<'a, Id>], bool) -> alloc::vec::Vec<termrock::widgets::TreeNode<'a, Id>>
 pub fn termrock::widgets::file_tree_to_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::FileTreeEntry<'_, Id>], bool) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::filter_command_entries<Id: core::clone::Clone>(&[termrock::widgets::CommandEntry<Id>], &str, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>>
@@ -66869,6 +67505,7 @@ pub fn termrock::widgets::format_hex_dump(&termrock::widgets::HexWindow<'_>, u64
 pub fn termrock::widgets::format_inspector_line(&termrock::widgets::HexInspectorValues, bool) -> alloc::string::String
 pub fn termrock::widgets::format_mem_bytes(u64) -> alloc::string::String
 pub fn termrock::widgets::format_offset(u64, u8) -> alloc::string::String
+pub fn termrock::widgets::format_result_cell(&termrock::widgets::ResultCell<'_>, termrock::widgets::ResultRedaction, bool) -> alloc::string::String
 pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat, &str) -> alloc::string::String
 pub fn termrock::widgets::fullscreen_viewer_has_nested_top<F>(&termrock::interaction::OverlayStack<F>) -> bool
 pub fn termrock::widgets::fuzzy_match_label(&str, &str) -> core::option::Option<(u32, termrock::widgets::MatchRanges)>
@@ -66980,6 +67617,7 @@ pub fn termrock::widgets::progress_steps_as_timeline_events(&[termrock::widgets:
 pub fn termrock::widgets::project_index_window<'a>(&[u64], &'a str) -> alloc::vec::Vec<(u64, alloc::string::String, alloc::string::String)>
 pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
+pub fn termrock::widgets::project_result_rows(&[termrock::widgets::ResultRow<'_>], &[termrock::widgets::ResultColumn], termrock::widgets::ResultRedaction, bool, bool) -> alloc::vec::Vec<(u64, alloc::vec::Vec<alloc::string::String>)>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
 pub fn termrock::widgets::protocol_limitations(termrock::widgets::Platform) -> alloc::vec::Vec<&'static str>
 pub fn termrock::widgets::query_editor_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
@@ -66993,6 +67631,8 @@ pub fn termrock::widgets::replay_jump_keys<Id: core::clone::Clone>(&mut termrock
 pub fn termrock::widgets::required_filled<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::resolve_domain(termrock::widgets::ScaleMode, impl core::iter::traits::iterator::Iterator<Item = f64>) -> termrock::widgets::ScaleDomain
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
+pub fn termrock::widgets::result_column_model(&[termrock::widgets::ResultColumn], bool) -> termrock::widgets::ColumnModel<alloc::string::String>
+pub fn termrock::widgets::result_row_to_inspector_fields<'a>(&'a [termrock::widgets::ResultColumn], &termrock::widgets::ResultRow<'a>, termrock::widgets::ResultRedaction, bool) -> alloc::vec::Vec<termrock::widgets::InspectorField<'a>>
 pub fn termrock::widgets::role_for_seed(u64) -> termrock::style::Role
 pub fn termrock::widgets::row_count(u64, u8) -> u64
 pub fn termrock::widgets::row_for_offset(u64, u8) -> u64

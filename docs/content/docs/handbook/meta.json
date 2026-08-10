@@ -35,6 +35,7 @@
     "charts",
     "file-tree",
     "process-table",
-    "query-editor"
+    "query-editor",
+    "result-grid"
   ]
 }

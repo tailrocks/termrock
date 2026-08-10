@@ -124,6 +124,7 @@ mod hex_viewer;
 mod file_tree;
 mod process_table;
 mod query_editor;
+mod result_grid;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -205,6 +206,14 @@ pub use query_editor::{
     saved_queries_to_history, token_at_cursor,
 };
 pub use query_editor::bench as query_editor_bench;
+pub use result_grid::{
+    ResultCell, ResultCellKind, ResultColumn, ResultColumnStats, ResultExportFormat, ResultGrid,
+    ResultGridOutcome, ResultGridState, ResultQueryStatus, ResultRedaction, ResultRow,
+    RESULT_CELL_MAX_DISPLAY, RESULT_NULL_ASCII, RESULT_NULL_GLYPH, RESULT_SECRET_MASK,
+    RESULT_TRUNC_MARK, clamp_cell_display, export_result_window_tsv, format_result_cell,
+    project_result_rows, result_column_model, result_row_to_inspector_fields,
+};
+pub use result_grid::bench as result_grid_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,
