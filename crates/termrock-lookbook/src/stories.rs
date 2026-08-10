@@ -40,7 +40,10 @@ use termrock::{
         InspectorPanel,
         DetailTableState, Dialog, DialogRecipe, AlertDialog, AlertDialogState, AlertKind,
         AlertScope, AlertConfirmGates, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
-        DiffState, DiffView, Drawer, EmptyState, ErrorView, Field, Fieldset, Form, FormState,
+        DiffState, DiffView, Drawer, EmptyState, EmptyKind, EmptyAction, EmptyDensity,
+        example_empty_table, example_empty_logs, example_empty_sessions, example_empty_projects,
+        example_empty_search, example_empty_permission,
+        ErrorView, Field, Fieldset, Form, FormState,
         FormWizard, FormWizardState, WizardStep, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
         HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
         InspectorField, JumpFilter, JumpOverlay, JumpOverlayState, JumpTarget,
@@ -2735,10 +2738,46 @@ pub(crate) fn stories() -> Vec<Story> {
             "empty-state/basic",
             "Empty state",
             "EmptyState",
-            "Centered empty surface with non-color glyph.",
-            36,
-            5,
+            "Search no-results with primary clear action.",
+            40,
+            10,
             empty_state,
+        ),
+        Story::new(
+            "empty-state/first-use",
+            "EmptyState first-use",
+            "EmptyState",
+            "Sessions first-run welcome with primary New session.",
+            42,
+            10,
+            empty_state_first_use_story,
+        ),
+        Story::new(
+            "empty-state/table",
+            "EmptyState table",
+            "EmptyState",
+            "Table no-data recipe with add/import actions.",
+            42,
+            10,
+            empty_state_table_story,
+        ),
+        Story::new(
+            "empty-state/permission",
+            "EmptyState permission",
+            "EmptyState",
+            "Permission-limited empty with safe primary request.",
+            42,
+            10,
+            empty_state_permission_story,
+        ),
+        Story::new(
+            "empty-state/inline",
+            "EmptyState inline",
+            "EmptyState",
+            "Concise inline form for small panes.",
+            28,
+            2,
+            empty_state_inline_story,
         ),
         Story::new(
             "loading-view/basic",
@@ -5215,19 +5254,37 @@ pub(crate) fn stories() -> Vec<Story> {
             "empty-state/narrow",
             "Narrow EmptyState",
             "EmptyState",
-            "Narrow-terminal geometry for EmptyState (18 cols).",
+            "Narrow-terminal geometry contracts toward inline form.",
             18,
             5,
-            empty_state,
+            empty_state_narrow_story,
         ),
         Story::new(
             "empty-state/unicode",
             "Unicode EmptyState",
             "EmptyState",
             "Unicode-safe paint path for EmptyState (CJK/emoji-capable layout).",
-            36,
-            5,
+            40,
+            8,
             empty_state_unicode_story,
+        ),
+        Story::new(
+            "empty-state/logs",
+            "EmptyState logs",
+            "EmptyState",
+            "Log stream empty recipe.",
+            42,
+            9,
+            empty_state_logs_story,
+        ),
+        Story::new(
+            "empty-state/projects",
+            "EmptyState projects",
+            "EmptyState",
+            "Projects first-use recipe.",
+            42,
+            10,
+            empty_state_projects_story,
         ),
         Story::new(
             "error-view/narrow",
@@ -12017,10 +12074,44 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn empty_state(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    frame.render_widget(
-        EmptyState::new("No results", system).detail("Try another query"),
-        area,
-    );
+    example_empty_search(system).paint(area, frame.buffer_mut());
+}
+
+fn empty_state_first_use_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_empty_sessions(system).paint(area, frame.buffer_mut());
+}
+
+fn empty_state_table_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_empty_table(system).paint(area, frame.buffer_mut());
+}
+
+fn empty_state_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_empty_permission(system).paint(area, frame.buffer_mut());
+}
+
+fn empty_state_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    EmptyState::new("No selection", system)
+        .kind(EmptyKind::NoData)
+        .explanation("Pick a story")
+        .primary(EmptyAction::new("Browse"))
+        .density(EmptyDensity::Inline)
+        .paint(area, frame.buffer_mut());
+}
+
+fn empty_state_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    EmptyState::new("No results", system)
+        .kind(EmptyKind::NoResults)
+        .explanation("Try another query")
+        .primary(EmptyAction::new("Clear"))
+        .paint(area, frame.buffer_mut());
+}
+
+fn empty_state_logs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_empty_logs(system).paint(area, frame.buffer_mut());
+}
+
+fn empty_state_projects_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_empty_projects(system).paint(area, frame.buffer_mut());
 }
 
 fn loading_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -16098,10 +16189,12 @@ fn backdrop_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn empty_state_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    frame.render_widget(
-        EmptyState::new("結果なし 🌀", system).detail("クエリを変更してください"),
-        area,
-    );
+    EmptyState::new("結果なし 🌀", system)
+        .kind(EmptyKind::NoResults)
+        .explanation("クエリを変更してください")
+        .primary(EmptyAction::with_shortcut("クリア", "esc"))
+        .example("status:失敗")
+        .paint(area, frame.buffer_mut());
 }
 
 fn error_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

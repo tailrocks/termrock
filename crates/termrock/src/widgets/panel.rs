@@ -26,7 +26,8 @@ use crate::style::{DesignSystem, GlyphSet, PanelChrome, PanelRecipe, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::surface::{Surface, SurfaceFill, SurfaceRecipe};
 use crate::widgets::skeleton::Skeleton;
-use crate::widgets::view_state::{EmptyState, ErrorView, LoadingView};
+use crate::widgets::empty_state::EmptyState;
+use crate::widgets::view_state::{ErrorView, LoadingView};
 
 // PanelChrome lives in `style` (sole chrome enum). Re-exported from widgets::mod.
 

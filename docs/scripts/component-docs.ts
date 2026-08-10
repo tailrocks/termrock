@@ -886,12 +886,19 @@ let _ = state.apply_results(0, &items, true, None);
 QuickOpen::new(&providers, &items, &system).paint(area, buf, &mut state);`,
   },
   EmptyState: {
-    description: 'Centered empty surface with a non-color glyph.',
+    description:
+      'Useful empty and first-run surfaces: title, explanation, primary/secondary actions, example, shortcut, illustration, context; kinds first-use/no-data/no-results/filtered-out/permission-limited; Full/Inline density; domain recipes.',
     primaryStory: 'empty-state/basic',
-    usage: `use termrock::{Theme, widgets::EmptyState};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{EmptyState, EmptyKind, EmptyAction, example_empty_search};
 
-let theme = Theme::default();
-let empty = EmptyState::new("No results", &theme).detail("Try another query");`,
+let system = DesignSystem::default();
+EmptyState::new("No results", &system)
+    .kind(EmptyKind::NoResults)
+    .explanation("Try another query")
+    .primary(EmptyAction::with_shortcut("Clear filters", "esc"))
+    .paint(area, buf);
+// or: example_empty_search(&system)`,
   },
   ErrorView: {
     description: 'Centered failure surface with danger marker.',

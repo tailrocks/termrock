@@ -11,93 +11,7 @@ use crate::{
     widgets::Severity,
 };
 
-/// Centered empty-state message with optional non-color glyph.
-#[derive(Debug, Clone, Copy)]
-pub struct EmptyState<'a> {
-    title: &'a str,
-    detail: Option<&'a str>,
-    glyph: &'a str,
-    system: &'a DesignSystem,
-}
-
-impl<'a> EmptyState<'a> {
-    /// Creates an empty state with the default hollow-circle glyph.
-    #[must_use]
-    pub const fn new(title: &'a str, system: &'a DesignSystem) -> Self {
-        Self {
-            title,
-            detail: None,
-            glyph: "○",
-            system,
-        }
-    }
-
-    /// Sets secondary detail text.
-    #[must_use]
-    pub const fn detail(mut self, detail: &'a str) -> Self {
-        self.detail = Some(detail);
-        self
-    }
-
-    /// Overrides the non-color status glyph.
-    #[must_use]
-    pub const fn glyph(mut self, glyph: &'a str) -> Self {
-        self.glyph = glyph;
-        self
-    }
-}
-
-impl Widget for &EmptyState<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        use crate::layout::{Center, CenterAxis, FlexSize, Stack};
-        let rows = if self.detail.is_some() { 2u16 } else { 1 };
-        let block = Center::new(area.width, rows)
-            .axis(CenterAxis::Vertical)
-            .layout(area)
-            .child;
-        let sizes: &[FlexSize] = if self.detail.is_some() {
-            &[FlexSize::Fixed(1), FlexSize::Fixed(1)]
-        } else {
-            &[FlexSize::Fixed(1)]
-        };
-        let stack = Stack::new().layout(block, sizes);
-        if let Some(r) = stack.get(0) {
-            use crate::widgets::text::{Text, TextSpan};
-            let _ = Text::spans(
-                [
-                    TextSpan::new(self.glyph).role(Role::TextMuted),
-                    TextSpan::new(" "),
-                    TextSpan::new(self.title).role(Role::TextMuted),
-                ],
-                self.system,
-            )
-            .center()
-            .truncate()
-            .paint(Rect::new(area.x, r.y, area.width, 1), buffer);
-        }
-        if let (Some(detail), Some(r)) = (self.detail, stack.get(1)) {
-            use crate::widgets::text::Text;
-            let _ = Text::new(detail, self.system)
-                .role(Role::TextDisabled)
-                .center()
-                .truncate()
-                .paint(Rect::new(area.x, r.y, area.width, 1), buffer);
-        }
-    }
-}
-
-impl Widget for EmptyState<'_> {
-    #[expect(
-        clippy::needless_borrows_for_generic_args,
-        reason = "explicitly delegate the owned contract to the borrowed renderer"
-    )]
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
+// EmptyState lives in `widgets/empty_state.rs`.
 
 /// Loading placeholder with optional spinner frame and label.
 #[derive(Debug, Clone, Copy)]
@@ -297,24 +211,6 @@ fn paint_centered_line(
 mod tests {
     use super::*;
     use ratatui_core::buffer::Buffer;
-
-    #[test]
-    fn empty_state_paints_glyph_and_title() {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
-        let mut buffer = Buffer::empty(Rect::new(0, 0, 40, 5));
-        EmptyState::new("No results", &system)
-            .detail("Try another query")
-            .render(Rect::new(0, 0, 40, 5), &mut buffer);
-        let mut painted = String::new();
-        for y in 0..5 {
-            for x in 0..40 {
-                painted.push_str(buffer[(x, y)].symbol());
-            }
-        }
-        assert!(painted.contains('○'), "{painted:?}");
-        assert!(painted.contains("No results"), "{painted:?}");
-    }
 
     #[test]
     fn banner_uses_non_color_success_glyph() {
