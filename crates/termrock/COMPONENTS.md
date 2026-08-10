@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `CodeFrame`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiagnosticView`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `Form`, `FormWizard`, `Heading`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `QuickOpen`, `ResizablePanelGroup`, `QuestionFlow`, `RangeSlider`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
+The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `CodeFrame`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiagnosticView`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `Form`, `FormWizard`, `Heading`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `QuickOpen`, `ResizablePanelGroup`, `QuestionFlow`, `RangeSlider`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `TerminalOutput`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
 
 `ScrollArea` / `ScrollAreaState` is the canonical scrolling primitive: dual-axis
 offsets, wheel/page/intents, scrollbar chrome, follow-tail with paused unseen
@@ -55,6 +55,15 @@ reserved proportional-scrollbar gutter. Stable-ID rows use the general
 navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
+
+`TerminalOutput` is the **safe command-run presentation** pane (agent tools, CI,
+build logs). Host projects `TerminalCommandMeta` (command, cwd, env summary,
+status, exit/signal, duration, pid) and `TerminalLine` rows (stdout/stderr/
+system, optional pre-parsed `AnsiLine`). State owns follow/pause via
+`ScrollAreaState`, recipe (compact/pane/fullscreen), paint mode (ANSI/no-color/
+plain/raw), stream filters, and env panel. Outcomes are **requests only**
+(cancel, retry, detach, copy) — TermRock never executes processes. Compose with
+`ToolCard` for compact summaries and `AnsiStream` for ingest.
 
 `Diagnostic` / `CodeFrame` present structured diagnostics (rustc/miette-class)
 with severity letters (never color alone), codes, messages, sources, ranges,

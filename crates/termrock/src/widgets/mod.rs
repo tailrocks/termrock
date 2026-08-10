@@ -119,6 +119,7 @@ mod timeline;
 mod event_stream;
 mod log_stream;
 mod diagnostic;
+mod terminal_output;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -164,6 +165,13 @@ pub use diagnostic::{
     format_diagnostic_plain, format_diagnostics_plain,
 };
 pub use diagnostic::bench as diagnostic_bench;
+pub use terminal_output::{
+    TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput, TerminalOutputOutcome,
+    TerminalOutputRecipe, TerminalOutputRegion, TerminalOutputState, TerminalPaintMode,
+    TerminalRunStatus, TerminalStream, escape_raw_terminal, filter_terminal_lines,
+    format_duration_ms, redact_env_value,
+};
+pub use terminal_output::bench as terminal_output_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

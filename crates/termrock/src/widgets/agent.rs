@@ -238,6 +238,9 @@ impl ToolStatus {
 }
 
 /// Mutable streaming tool call card.
+///
+/// For full command chrome (cwd, exit, follow, cancel **requests**), prefer
+/// [`super::TerminalOutput`]. ToolCard stays the compact agent-tool summary.
 #[derive(Debug, Clone, Copy)]
 pub struct ToolCard<'a> {
     name: &'a str,

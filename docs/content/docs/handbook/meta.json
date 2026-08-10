@@ -29,6 +29,7 @@
     "log-stream",
     "diff-view",
     "diff-review",
-    "diagnostic"
+    "diagnostic",
+    "terminal-output"
   ]
 }

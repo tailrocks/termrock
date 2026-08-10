@@ -1604,6 +1604,24 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** select.  
 24. **Perf:** O(visible events).
 
+## TerminalOutput
+
+1. **Purpose:** Safe command-run presentation (never executes).  
+2. **Anatomy:** status header · command · cwd? · env? · body lines · follow chip.  
+3. **Public properties:** `TerminalCommandMeta`, `TerminalLine[]`, title, focused/ascii.  
+4. **State:** follow via `ScrollAreaState`, recipe, paint mode, filters, env, cursor, regions.  
+5. **Variants:** status Pending…Detached; streams stdout/stderr/system.  
+6–8. Compact/pane/fullscreen; ANSI/no-color/plain/raw.  
+9. **Keyboard:** f follow · c cancel/copy · r retry · d detach · e env · m/p modes.  
+10. **Mouse:** wheel · chip re-follow · click line.  
+11–14. Scene focus; host owns process; outcomes are requests.  
+15–16. Narrow drops cwd; tiny status+cmd.  
+17–18. ASCII glyphs; stream prefixes.  
+19. **Composition:** AnsiText/AnsiLine; ToolCard summary.  
+20. **Outcomes:** Cancel/Retry/DetachProcess/Copy*/Follow/Detach …  
+21. **Stories:** `terminal-output/{running,failed,compact,env,pinned,empty,narrow,ascii}`  
+22–24. Follow/unread tests; no process API; sustained paint.
+
 ## Diagnostic and CodeFrame
 
 1. **Purpose:** Structured diagnostics + source code frames (rustc/miette-class).  

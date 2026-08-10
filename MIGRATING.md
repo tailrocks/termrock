@@ -212,6 +212,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0196 | `v0.13.0` | [DiffView unified/split renderer](migrations/0196-v0.13.0-diff-view.md) |
 | 0197 | `v0.13.0` | [DiffReview interactive patch review](migrations/0197-v0.13.0-diff-review.md) |
 | 0198 | `v0.13.0` | [Diagnostic and CodeFrame](migrations/0198-v0.13.0-diagnostic-code-frame.md) |
+| 0199 | `v0.13.0` | [TerminalOutput safe command presentation](migrations/0199-v0.13.0-terminal-output.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

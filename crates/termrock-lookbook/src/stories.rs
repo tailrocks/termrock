@@ -70,6 +70,8 @@ use termrock::{
         LogStream, LogStreamState, EventStream, EventStreamState, StreamEvent, EventSeverity,
         Diagnostic, DiagnosticSeverity, DiagnosticView, DiagnosticState, DiagnosticRecipe,
         DiagnosticNote, SourceLabel, SourceRange, SuggestedFix, CodeFrame, CodeFrameLine,
+        TerminalOutput, TerminalOutputState, TerminalCommandMeta, TerminalLine, TerminalRunStatus,
+        TerminalEnvEntry, TerminalOutputRecipe, TerminalPaintMode,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2061,6 +2063,78 @@ pub(crate) fn stories() -> Vec<Story> {
             64,
             12,
             diagnostic_ascii,
+        ),
+        Story::new(
+            "terminal-output/running",
+            "TerminalOutput running",
+            "TerminalOutput",
+            "Live follow-tail command pane with stdout/stderr.",
+            72,
+            14,
+            terminal_output_running,
+        ),
+        Story::new(
+            "terminal-output/failed",
+            "TerminalOutput failed",
+            "TerminalOutput",
+            "Failed exit status, duration, stderr emphasis.",
+            72,
+            12,
+            terminal_output_failed,
+        ),
+        Story::new(
+            "terminal-output/compact",
+            "TerminalOutput compact",
+            "TerminalOutput",
+            "Compact card recipe for agent tools.",
+            48,
+            6,
+            terminal_output_compact,
+        ),
+        Story::new(
+            "terminal-output/env",
+            "TerminalOutput env",
+            "TerminalOutput",
+            "Environment summary with redacted secrets.",
+            72,
+            14,
+            terminal_output_env,
+        ),
+        Story::new(
+            "terminal-output/pinned",
+            "TerminalOutput pinned",
+            "TerminalOutput",
+            "Detached scroll while streaming (unread chip).",
+            72,
+            12,
+            terminal_output_pinned,
+        ),
+        Story::new(
+            "terminal-output/empty",
+            "TerminalOutput empty",
+            "TerminalOutput",
+            "Pending empty output mark.",
+            40,
+            5,
+            terminal_output_empty,
+        ),
+        Story::new(
+            "terminal-output/narrow",
+            "TerminalOutput narrow",
+            "TerminalOutput",
+            "Narrow pane geometry (22 cols).",
+            22,
+            10,
+            terminal_output_running,
+        ),
+        Story::new(
+            "terminal-output/ascii",
+            "TerminalOutput ASCII",
+            "TerminalOutput",
+            "ASCII status/stream glyphs and plain paint.",
+            64,
+            10,
+            terminal_output_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -11201,6 +11275,124 @@ fn diagnostic_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     DiagnosticView::new(&items, system)
         .recipe(DiagnosticRecipe::Full)
         .source_lines(&lines)
+        .ascii(true)
+        .colorless(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn terminal_output_sample_lines() -> [TerminalLine<'static>; 6] {
+    [
+        TerminalLine::system("s0", "spawned pid 4242"),
+        TerminalLine::stdout("o1", "running 3 tests"),
+        TerminalLine::stdout("o2", "test widgets::list ... ok"),
+        TerminalLine::stderr("e1", "warning: unused import"),
+        TerminalLine::stdout("o3", "test widgets::tree ... ok"),
+        TerminalLine::stdout("o4", "done 東京 🧪"),
+    ]
+}
+
+fn terminal_output_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let meta = TerminalCommandMeta::new("cargo test -p termrock --lib")
+        .cwd("/Users/dev/termrock")
+        .status(TerminalRunStatus::Running)
+        .duration_ms(3400)
+        .pid(4242);
+    let lines = terminal_output_sample_lines();
+    let mut state = TerminalOutputState::new();
+    state.on_append(lines.len() as u16, area.height.saturating_sub(4));
+    TerminalOutput::new(&meta, &lines, system)
+        .title("build")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn terminal_output_failed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let meta = TerminalCommandMeta::new("cargo test -p boom")
+        .cwd("/proj")
+        .status(TerminalRunStatus::Failed)
+        .exit_code(101)
+        .duration_ms(890);
+    let lines = [
+        TerminalLine::stdout("o1", "running 1 test"),
+        TerminalLine::stderr("e1", "thread 't' panicked at 'assert'"),
+        TerminalLine::system("s1", "exit 101"),
+    ];
+    let mut state = TerminalOutputState::new();
+    TerminalOutput::new(&meta, &lines, system)
+        .title("failed")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn terminal_output_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let meta = TerminalCommandMeta::new("git status -sb")
+        .status(TerminalRunStatus::Succeeded)
+        .exit_code(0)
+        .duration_ms(42);
+    let lines = [
+        TerminalLine::stdout("o1", "## main"),
+        TerminalLine::stdout("o2", " M src/lib.rs"),
+    ];
+    let mut state = TerminalOutputState::new();
+    state.recipe = TerminalOutputRecipe::Compact;
+    TerminalOutput::new(&meta, &lines, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn terminal_output_env(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let env = [
+        TerminalEnvEntry::secret("API_TOKEN"),
+        TerminalEnvEntry::new("PATH", "/usr/bin:/bin"),
+        TerminalEnvEntry::new("RUST_LOG", "info"),
+    ];
+    let meta = TerminalCommandMeta::new("curl https://api.example")
+        .cwd("/tmp")
+        .env(&env)
+        .status(TerminalRunStatus::Succeeded)
+        .exit_code(0)
+        .duration_ms(220);
+    let lines = [TerminalLine::stdout("o1", "{\"ok\":true}")];
+    let mut state = TerminalOutputState::new();
+    state.show_env = true;
+    TerminalOutput::new(&meta, &lines, system)
+        .title("http")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn terminal_output_pinned(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let meta = TerminalCommandMeta::new("tail -f app.log")
+        .status(TerminalRunStatus::Running)
+        .duration_ms(12_000)
+        .pid(99);
+    let lines = terminal_output_sample_lines();
+    let mut state = TerminalOutputState::new();
+    state.on_append(40, 6);
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Home,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &lines,
+        &meta,
+    );
+    state.on_append(80, 6); // unread while pinned
+    TerminalOutput::new(&meta, &lines, system)
+        .title("stream")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn terminal_output_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let meta = TerminalCommandMeta::new("sleep 10").status(TerminalRunStatus::Pending);
+    let mut state = TerminalOutputState::new();
+    TerminalOutput::new(&meta, &[], system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn terminal_output_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let meta = TerminalCommandMeta::new("make")
+        .status(TerminalRunStatus::Succeeded)
+        .exit_code(0)
+        .duration_ms(100);
+    let lines = terminal_output_sample_lines();
+    let mut state = TerminalOutputState::new();
+    state.paint_mode = TerminalPaintMode::Plain;
+    TerminalOutput::new(&meta, &lines, system)
         .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);
