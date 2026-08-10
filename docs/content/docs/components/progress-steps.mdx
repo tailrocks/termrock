@@ -1,0 +1,68 @@
+---
+title: ProgressSteps
+description: 'Pipeline and phase progress for builds, imports, migrations, and agent plans — with retry, narrow summary, and Timeline/TaskRail composition.'
+---
+
+## Previews
+
+### `progress-steps/pipeline`
+
+ProgressSteps pipeline
+
+![ProgressSteps — pipeline](/component-previews/progress-steps-pipeline.svg)
+
+### `progress-steps/agent`
+
+ProgressSteps agent plan
+
+![ProgressSteps — agent](/component-previews/progress-steps-agent.svg)
+
+### `progress-steps/summary`
+
+ProgressSteps narrow summary
+
+![ProgressSteps — summary](/component-previews/progress-steps-summary.svg)
+
+### `progress-steps/interactive`
+
+ProgressSteps interactive
+
+![ProgressSteps — interactive](/component-previews/progress-steps-interactive.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    ProgressSteps, ProgressStepsState, example_build_pipeline,
+};
+
+let steps = example_build_pipeline();
+let mut state = ProgressStepsState::new(); // passive live progress
+ProgressSteps::new(&steps, &system)
+    .title("Build")
+    .paint(area, buf, &mut state);
+
+// Interactive recovery:
+// let mut state = ProgressStepsState::interactive();
+// enter/r → RetryRequested on failed+retryable steps
+```
+
+## vs Stepper
+
+Stepper is form **navigation** chrome. ProgressSteps is **execution** progress
+for pipelines (CI / agent plans).
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (interactive mode) |
+| Mouse | covered (interactive select) |
+| Focus | covered (passive unfocused by default) |
+| Non-color cues | covered (marks) |
+| Unicode | covered |
+| Narrow terminal | covered (summary contraction) |
+
+## Stories
+
+- `progress-steps/pipeline`, `agent`, `summary`, `interactive`

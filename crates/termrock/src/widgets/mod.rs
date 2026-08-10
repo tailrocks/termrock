@@ -75,6 +75,7 @@ mod picker;
 mod history_picker;
 mod primitives;
 mod progress;
+mod progress_steps;
 mod prompt_composer;
 mod review;
 mod scroll_area;
@@ -411,7 +412,14 @@ pub use toolbar::{
     Toolbar, ToolbarItem, ToolbarItemKind, ToolbarOrientation, ToolbarOutcome, ToolbarPlan,
     ToolbarState, ToolbarVariant,
 };
+pub use progress_steps::{
+    PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINT, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,
+    ProgressStep, ProgressStepStatus, ProgressSteps, ProgressStepsMode, ProgressStepsOutcome,
+    ProgressStepsPresentation, ProgressStepsState, example_agent_plan_steps, example_build_pipeline,
+    paint_progress_steps_as_timeline, progress_steps_as_list_rows, progress_steps_as_timeline_events,
+};
 pub use progress::{
+
     DEFAULT_PROGRESS_FRAMES, MIN_WIDTH_WITH_PERCENTAGE, PROGRESS_ASCII_FRAMES,
     PROGRESS_DEFAULT_THROTTLE_MS, Progress, ProgressBar, ProgressBarState, ProgressKind,
     ProgressRecipe, ProgressStatus, ProgressUnit,

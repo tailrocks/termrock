@@ -98,6 +98,8 @@ use termrock::{
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, NotificationCenter, NotificationCenterState, NotificationRecipe,
         example_notifications, Spinner, SpinnerState, ActivityIndicator, ActivityPhase,
+        ProgressSteps, ProgressStepsState, ProgressStepsMode, ProgressStepsPresentation,
+        ProgressStep, ProgressStepStatus, example_build_pipeline, example_agent_plan_steps,
         TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
         Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
@@ -1520,6 +1522,42 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             1,
             progress_failed_story,
+        ),
+        Story::new(
+            "progress-steps/pipeline",
+            "ProgressSteps pipeline",
+            "ProgressSteps",
+            "CI-style pipeline with running compile phase.",
+            48,
+            12,
+            progress_steps_pipeline_story,
+        ),
+        Story::new(
+            "progress-steps/agent",
+            "ProgressSteps agent plan",
+            "ProgressSteps",
+            "Agent plan with warning, failed+retry, cancelled.",
+            48,
+            12,
+            progress_steps_agent_story,
+        ),
+        Story::new(
+            "progress-steps/summary",
+            "ProgressSteps narrow summary",
+            "ProgressSteps",
+            "Contracted n/total · verb summary for narrow terminals.",
+            20,
+            1,
+            progress_steps_summary_story,
+        ),
+        Story::new(
+            "progress-steps/interactive",
+            "ProgressSteps interactive",
+            "ProgressSteps",
+            "Interactive mode with cursor and retry affordance.",
+            48,
+            12,
+            progress_steps_interactive_story,
         ),
         Story::new(
             "progress/narrow",
@@ -7543,6 +7581,38 @@ fn progress_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         .label("Build")
         .status(ProgressStatus::Failed)
         .paint(area, frame.buffer_mut());
+}
+
+fn progress_steps_pipeline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let steps = example_build_pipeline();
+    let mut state = ProgressStepsState::new();
+    ProgressSteps::new(&steps, system)
+        .title("Build pipeline")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn progress_steps_agent_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let steps = example_agent_plan_steps();
+    let mut state = ProgressStepsState::new();
+    ProgressSteps::new(&steps, system)
+        .title("Agent plan")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn progress_steps_summary_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let steps = example_build_pipeline();
+    let mut state = ProgressStepsState::new();
+    state.set_presentation(Some(ProgressStepsPresentation::Summary));
+    ProgressSteps::new(&steps, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn progress_steps_interactive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let steps = example_agent_plan_steps();
+    let mut state = ProgressStepsState::interactive();
+    state.set_cursor(Some("build".into()));
+    ProgressSteps::new(&steps, system)
+        .title("Recover")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn progress_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

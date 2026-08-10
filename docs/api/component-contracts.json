@@ -263,6 +263,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "ProgressSteps": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "SegmentedMeter": {
     "keyboard": "not-applicable",
     "mouse": "not-applicable",

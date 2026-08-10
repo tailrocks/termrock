@@ -333,6 +333,22 @@ state.recompute_eta();
 state.set_recipe(ProgressRecipe::Detailed);
 ProgressBar::paint_state(&system, area, buf, &mut state, tick, Motion::Off);`,
   },
+  ProgressSteps: {
+    description:
+      'Pipeline/phase progress for builds and agent plans: queued→running→complete with waiting/skipped/warning/failed/retrying/cancelled; passive or interactive; narrow summary; Timeline/TaskRail projections.',
+    primaryStory: 'progress-steps/pipeline',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{
+    ProgressSteps, ProgressStepsState, example_build_pipeline,
+};
+
+let system = DesignSystem::default();
+let steps = example_build_pipeline();
+let mut state = ProgressStepsState::new(); // or ::interactive()
+ProgressSteps::new(&steps, &system)
+    .title("Build")
+    .paint(area, buf, &mut state);`,
+  },
   SplitPane: {
     description: 'A resizable two-pane layout with bounded ratios and collapse support.',
     primaryStory: 'split-pane/horizontal',
