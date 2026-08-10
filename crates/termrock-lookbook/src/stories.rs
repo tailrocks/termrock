@@ -26,7 +26,8 @@ use termrock::{
         ToggleGroupState, ToggleState, ToggleValue,
         AnsiTextMode, AnsiTextState, AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS,
         Backdrop, Badge, Banner,
-        BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone, CellAlignment, Checkbox,
+        Alert, AlertState, AlertTone, BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone,
+        CellAlignment, Checkbox,
         CheckboxState, CheckboxValue, ChoiceDialog, ChoiceDialogState, CodeBlock, CodeBlockState,
         CodeHighlight,
         CodeHighlightKind, CodeWrap, Column, ColumnWidth,
@@ -3550,12 +3551,57 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "callout/basic",
+            "Callout warning",
             "Callout",
-            "Callout",
-            "Semantic callout with non-color glyph.",
-            40,
+            "Inline callout with tone gutter rail and non-color glyph.",
+            44,
             4,
             callout_story,
+        ),
+        Story::new(
+            "callout/tones",
+            "Callout tones",
+            "Callout",
+            "Info/success/warning/danger/destructive/neutral compact stack.",
+            48,
+            12,
+            callout_tones_story,
+        ),
+        Story::new(
+            "callout/section",
+            "Callout section",
+            "Callout",
+            "Prominent section recipe with border, source, body.",
+            48,
+            7,
+            callout_section_story,
+        ),
+        Story::new(
+            "alert/danger",
+            "Alert danger",
+            "Alert",
+            "Strong danger alert with description, details, source.",
+            52,
+            8,
+            alert_danger_story,
+        ),
+        Story::new(
+            "alert/banner",
+            "Alert banner",
+            "Alert",
+            "Section banner alert with actions and dismiss chrome.",
+            52,
+            8,
+            alert_banner_story,
+        ),
+        Story::new(
+            "alert/compact",
+            "Alert compact",
+            "Alert",
+            "Compact inline success alert.",
+            40,
+            3,
+            alert_compact_story,
         ),
         Story::new(
             "drawer/basic",
@@ -13429,6 +13475,86 @@ fn callout_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
         frame.buffer_mut(),
     );
+}
+
+fn callout_tones_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let chunks = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(2),
+        Constraint::Length(2),
+        Constraint::Length(2),
+        Constraint::Length(2),
+        Constraint::Min(1),
+    ])
+    .split(area);
+    let tones = [
+        (CalloutTone::Info, "Info"),
+        (CalloutTone::Success, "Success"),
+        (CalloutTone::Warning, "Warning"),
+        (CalloutTone::Danger, "Danger"),
+        (CalloutTone::Destructive, "Destructive"),
+        (CalloutTone::Neutral, "Neutral"),
+    ];
+    for (i, (tone, title)) in tones.into_iter().enumerate() {
+        if i >= chunks.len() {
+            break;
+        }
+        let _ = Callout::new(title, system)
+            .tone(tone)
+            .body("status readable without color")
+            .paint(chunks[i], frame.buffer_mut());
+    }
+}
+
+fn callout_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let _ = Callout::new("Diagnostics", system)
+        .tone(CalloutTone::Info)
+        .section()
+        .body("Compose with forms and empty states.")
+        .details("expanded detail line")
+        .show_details(true)
+        .source("termrock · callout")
+        .paint(area, frame.buffer_mut());
+}
+
+fn alert_danger_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = AlertState::<()>::new();
+    state.set_focused(true);
+    Alert::new("Deploy failed", system)
+        .tone(AlertTone::Danger)
+        .body("Rollout aborted at step 3.")
+        .details("timeout waiting for health check")
+        .source("pipeline #42")
+        .banner()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn alert_banner_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions = [Action {
+        id: "retry",
+        label: "Retry",
+        enabled: true,
+        style: None,
+    }];
+    let mut state = AlertState::new();
+    state.set_focused(true);
+    state.set_action_cursor(Some("retry"));
+    Alert::new("Write conflict", system)
+        .tone(AlertTone::Warning)
+        .body("Remote changed while editing.")
+        .source("git status")
+        .actions(&actions)
+        .banner()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn alert_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = AlertState::<()>::new();
+    Alert::new("Saved", system)
+        .tone(AlertTone::Success)
+        .body("checkpoint written")
+        .compact()
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

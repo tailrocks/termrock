@@ -1100,12 +1100,37 @@ let tokens = DesignTokens::default();
 let badge = Badge::new("NEW", &tokens);`,
   },
   Callout: {
-    description: 'Inline semantic callout with non-color tone glyphs.',
+    description:
+      'Inline feedback with tone gutter rail, title/description/details/source, compact or section recipes; readable in ASCII/no-color.',
     primaryStory: 'callout/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::{Callout, CalloutTone}};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Callout, CalloutTone};
 
-let tokens = DesignTokens::default();
-let callout = Callout::new("Heads up", &tokens).tone(CalloutTone::Warning);`,
+let system = DesignSystem::default();
+let callout = Callout::new("Heads up", &system)
+    .body("Non-color risk glyph present.")
+    .tone(CalloutTone::Warning)
+    .source("validator");
+// Section: .section() · ASCII: .ascii(true)`,
+  },
+  Alert: {
+    description:
+      'Stronger dismissible/acknowledgeable inline alert with actions, details, source, compact or banner recipes — not AlertDialog.',
+    primaryStory: 'alert/danger',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Alert, AlertState, AlertTone, Action};
+
+let system = DesignSystem::default();
+let mut state = AlertState::new();
+state.set_focused(true);
+let actions = [Action { id: "retry", label: "Retry", enabled: true, style: None }];
+Alert::new("Deploy failed", &system)
+    .tone(AlertTone::Danger)
+    .body("Rollout aborted")
+    .source("pipeline #42")
+    .actions(&actions)
+    .banner()
+    .paint(area, buf, &mut state);`,
   },
   Drawer: {
     description:

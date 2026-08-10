@@ -44,6 +44,7 @@ mod design_inspector;
 mod detail_table;
 mod dialog;
 mod alert_dialog;
+mod callout;
 mod diff;
 mod edit_core;
 mod form;
@@ -166,9 +167,13 @@ pub use completion_menu::{
     place_completion_menu, place_completion_with_presentation,
 };
 pub use composed_row::{ComposedRow, ComposedRowParts};
+pub use callout::{
+    Alert, AlertOutcome, AlertRecipe, AlertSlots, AlertState, AlertTone, Callout, CalloutOutcome,
+    CalloutRecipe, CalloutSlots, CalloutTone,
+};
 pub use content::{
-    Alert, AlertOutcome, AlertState, AlertTone, Callout, CalloutTone, Heading, HeadingLevel,
-    HeadingParts, HeadingRecipe, Paragraph, ParagraphKind, ParagraphParts, ParagraphRecipe,
+    Heading, HeadingLevel, HeadingParts, HeadingRecipe, Paragraph, ParagraphKind, ParagraphParts,
+    ParagraphRecipe,
 };
 pub use badge::{
     Badge, BadgeCount, BadgeFill, BadgeOutcome, BadgeParts, BadgeState, BadgeVariant,
