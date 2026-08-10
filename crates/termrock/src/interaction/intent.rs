@@ -212,13 +212,22 @@ pub fn default_tree_intent(key: KeyEvent) -> Option<UiIntent> {
 }
 
 /// Default intent map for tabular collections.
+///
+/// List vertical nav + activate/cancel; Left/Right drive cell focus or horizontal
+/// scroll on [`crate::widgets::Table`]. Space does not toggle multi-select.
 #[must_use]
 pub fn default_table_intent(key: KeyEvent) -> Option<UiIntent> {
-    default_list_intent(key).and_then(|intent| match intent {
-        // Tables do not toggle multi-select with Space by default.
-        UiIntent::Toggle => None,
-        other => Some(other),
-    })
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    match key.code {
+        KeyCode::Left | KeyCode::Char('h' | 'H') => Some(UiIntent::Move(NavigationMove::Left)),
+        KeyCode::Right | KeyCode::Char('l' | 'L') => Some(UiIntent::Move(NavigationMove::Right)),
+        _ => default_list_intent(key).and_then(|intent| match intent {
+            UiIntent::Toggle => None,
+            other => Some(other),
+        }),
+    }
 }
 
 /// Default intent map for [`crate::widgets::Transcript`] navigation.

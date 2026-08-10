@@ -18,30 +18,16 @@ fn warmed_large_table_paints_only_the_viewport_without_allocating() {
     const HEIGHT: u16 = 40;
     const SAMPLES: usize = 100;
     let columns = [
-        Column {
-            id: 0,
-            title: Line::from("ID"),
-            width: ColumnWidth::Fixed(8),
-            alignment: CellAlignment::Right,
-            sortable: true,
-            sort: None,
-        },
-        Column {
-            id: 1,
-            title: Line::from("Name"),
-            width: ColumnWidth::Fill(NonZeroU16::new(2).unwrap()),
-            alignment: CellAlignment::Left,
-            sortable: true,
-            sort: None,
-        },
-        Column {
-            id: 2,
-            title: Line::from("State"),
-            width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()),
-            alignment: CellAlignment::Center,
-            sortable: false,
-            sort: None,
-        },
+        Column::new(0, "ID", ColumnWidth::Fixed(8))
+            .alignment(CellAlignment::Right)
+            .sortable(None),
+        Column::new(1, "Name", ColumnWidth::Fill(NonZeroU16::new(2).unwrap())).sortable(None),
+        Column::new(
+            2,
+            "State",
+            ColumnWidth::Fill(NonZeroU16::new(1).unwrap()),
+        )
+        .alignment(CellAlignment::Center),
     ];
     let cells = (0..ROW_COUNT)
         .map(|_| {
@@ -55,28 +41,20 @@ fn warmed_large_table_paints_only_the_viewport_without_allocating() {
     let rows = cells
         .iter()
         .enumerate()
-        .map(|(id, cells)| TableRow {
-            id,
-            cells,
-            leading: None,
-            badge: None,
-            enabled: true,
-            emphasis: false,
-            style: None,
-        })
+        .map(|(id, cells)| TableRow::new(id, cells))
         .collect::<Vec<_>>();
     let table = Table::new(&columns, &rows, &tokens);
     let area = Rect::new(0, 0, 100, HEIGHT);
     let mut buffer = Buffer::empty(area);
     let mut state = TableState::new(Some(ROW_COUNT - 1));
     state.reconcile(&rows);
-    table.render(area, &mut buffer, &mut state);
+    (&table).render(area, &mut buffer, &mut state);
     assert_eq!(state.row_regions.len(), usize::from(HEIGHT - 1));
 
     let allocations = Region::new(GLOBAL);
     let started = Instant::now();
     for _ in 0..SAMPLES {
-        table.render(area, black_box(&mut buffer), black_box(&mut state));
+        (&table).render(area, black_box(&mut buffer), black_box(&mut state));
     }
     let elapsed = started.elapsed();
     let change = allocations.change();

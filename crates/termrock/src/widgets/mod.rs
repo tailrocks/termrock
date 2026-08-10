@@ -484,8 +484,9 @@ pub use status_bar::{
     TransientStatus,
 };
 pub use table::{
-    CellAlignment, Column, ColumnWidth, SortDirection, Table, TableHeaderRegion, TableOutcome,
-    TableRow, TableRowRegion, TableState, resolve_widths,
+    CellAlignment, CellOverflow, Column, ColumnWidth, SortDirection, Table, TableBodyState,
+    TableHeaderRegion, TableOutcome, TableRecipe, TableRow, TableRowRegion, TableState,
+    resolve_widths,
 };
 pub use tabs::{
     TAB_GAP, TABS_OVERFLOW_MAX_WIDTH, TABS_SELECT_MAX_WIDTH, Tab, TabCell, TabStatus, Tabs,

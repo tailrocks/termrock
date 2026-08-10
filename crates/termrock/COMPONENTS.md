@@ -56,14 +56,19 @@ navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
 
-`Table` consumes caller-owned borrowed columns, styled cells, and stable-ID
-rows. Fixed/minimum/fill policies resolve deterministic visible widths;
-rightmost columns collapse first at impossible widths without phantom gaps.
-`TableState` owns selection, hover, vertical offset, resolved geometry, and
-painted header/row regions. Keyboard and pointer methods emit typed row
-selection/activation or column sort requests. Callers own sorting execution,
-row ordering, data loading, wording, and effects. Rendering scans only the
-visible body window and reuses state-owned layout scratch buffers.
+`Table` is the polished static / moderate-size columnar presentation surface
+(display model; interactive 1M kit is `DataTable`). Caller-owned borrowed
+columns, styled cells, and stable-ID rows. Fixed/minimum/fill policies plus
+column **priority** resolve visible widths — lowest priority drops first under
+pressure (ties rightmost). Recipes: Quiet, Bordered, Striped, Compact. Sticky
+header, horizontal scroll (`h_offset`), optional cell focus, clip/ellipsis
+overflow, and Ready/Loading/Error body states with host messages. Selection
+uses design-system `SelectionChrome` (gutter/tint/fill) rather than a hard-coded
+chevron. `TableState` owns selection, hover, vertical/horizontal offsets, cell
+focus, resolved geometry, and painted header/row regions. Keyboard and pointer
+methods emit typed row selection/activation or column sort requests. Callers own
+sorting execution, row ordering, data loading, wording, and effects. Rendering
+scans only the visible body window and reuses state-owned layout scratch buffers.
 
 `VirtualGrid` is a two-axis virtualized grid over caller-projected resident
 cells. Callers supply column specs, a window of borrowed cells with absolute

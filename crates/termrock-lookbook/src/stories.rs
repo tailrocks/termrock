@@ -2008,10 +2008,64 @@ pub(crate) fn stories() -> Vec<Story> {
             "table/empty",
             "Empty table",
             "Table",
-            "Header-only rendering with no domain empty-state wording.",
+            "Header plus empty body message.",
             42,
-            3,
+            4,
             table_empty,
+        ),
+        Story::new(
+            "table/bordered",
+            "Bordered table",
+            "Table",
+            "Quiet vertical separators and header rule.",
+            68,
+            8,
+            table_bordered,
+        ),
+        Story::new(
+            "table/striped",
+            "Striped table",
+            "Table",
+            "Alternate-row muted text without heavy fill.",
+            68,
+            8,
+            table_striped,
+        ),
+        Story::new(
+            "table/compact",
+            "Compact table",
+            "Table",
+            "Tight column gap recipe.",
+            68,
+            8,
+            table_compact,
+        ),
+        Story::new(
+            "table/loading",
+            "Loading table",
+            "Table",
+            "Sticky header with loading body message.",
+            52,
+            5,
+            table_loading,
+        ),
+        Story::new(
+            "table/error",
+            "Error table",
+            "Table",
+            "Sticky header with error body message.",
+            52,
+            5,
+            table_error,
+        ),
+        Story::new(
+            "table/priority",
+            "Priority columns",
+            "Table",
+            "Low-priority columns drop first under width pressure.",
+            28,
+            6,
+            table_priority,
         ),
         Story::new(
             "text-area/basic",
@@ -10322,6 +10376,12 @@ enum TableVariant {
     Unicode,
     Disabled,
     Empty,
+    Bordered,
+    Striped,
+    Compact,
+    Loading,
+    Error,
+    Priority,
 }
 
 fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -10518,51 +10578,63 @@ fn table_disabled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn table_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     render_table(frame, area, system, TableVariant::Empty);
 }
+fn table_bordered(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Bordered);
+}
+fn table_striped(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Striped);
+}
+fn table_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Compact);
+}
+fn table_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Loading);
+}
+fn table_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Error);
+}
+fn table_priority(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_table(frame, area, system, TableVariant::Priority);
+}
 
 fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, variant: TableVariant) {
+    use termrock::widgets::{TableBodyState, TableRecipe};
     let tokens = system.clone().density(termrock::style::Density::default());
     let sorted = matches!(variant, TableVariant::Sorted);
     let columns = [
-        Column {
-            id: "pid",
-            title: Line::from("PID"),
-            width: ColumnWidth::Fixed(7),
-            alignment: CellAlignment::Right,
-            sortable: true,
-            sort: None,
-        },
-        Column {
-            id: "process",
-            title: Line::from("Process"),
-            width: ColumnWidth::Fill(NonZeroU16::new(2).unwrap()),
-            alignment: CellAlignment::Left,
-            sortable: true,
-            sort: None,
-        },
-        Column {
-            id: "region",
-            title: Line::from("Region"),
-            width: ColumnWidth::Min(10),
-            alignment: CellAlignment::Center,
-            sortable: false,
-            sort: None,
-        },
-        Column {
-            id: "cpu",
-            title: Line::from("CPU"),
-            width: ColumnWidth::Fixed(8),
-            alignment: CellAlignment::Right,
-            sortable: true,
-            sort: sorted.then_some(SortDirection::Descending),
-        },
-        Column {
-            id: "state",
-            title: Line::from("State"),
-            width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()),
-            alignment: CellAlignment::Center,
-            sortable: false,
-            sort: None,
-        },
+        Column::new("pid", "PID", ColumnWidth::Fixed(7))
+            .alignment(CellAlignment::Right)
+            .sortable(None)
+            .priority(100),
+        Column::new(
+            "process",
+            "Process",
+            ColumnWidth::Fill(NonZeroU16::new(2).unwrap()),
+        )
+        .sortable(None)
+        .priority(90),
+        Column::new("region", "Region", ColumnWidth::Min(10))
+            .alignment(CellAlignment::Center)
+            .priority(if matches!(variant, TableVariant::Priority) {
+                10
+            } else {
+                40
+            }),
+        Column::new("cpu", "CPU", ColumnWidth::Fixed(8))
+            .alignment(CellAlignment::Right)
+            .sortable(sorted.then_some(SortDirection::Descending))
+            .priority(80),
+        Column::new(
+            "state",
+            "State",
+            ColumnWidth::Fill(NonZeroU16::new(1).unwrap()),
+        )
+        .alignment(CellAlignment::Center)
+        .priority(if matches!(variant, TableVariant::Priority) {
+            5
+        } else {
+            30
+        }),
     ];
     let cells = [
         [
@@ -10618,21 +10690,17 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, varian
     let rows = cells
         .iter()
         .enumerate()
-        .map(|(index, cells)| TableRow {
-            id: index,
-            cells,
-            leading: None,
-            badge: None,
-            enabled: !(matches!(variant, TableVariant::Disabled) && index == 2),
-            emphasis: index == 0 && matches!(variant, TableVariant::Unicode),
-            style: None,
+        .map(|(index, cells)| {
+            TableRow::new(index, cells)
+                .enabled(!(matches!(variant, TableVariant::Disabled) && index == 2))
+                .emphasis(index == 0 && matches!(variant, TableVariant::Unicode))
         })
         .collect::<Vec<_>>();
-    let visible = if matches!(variant, TableVariant::Empty) {
-        &rows[..0]
-    } else {
-        &rows
-    };
+    let empty_body = matches!(
+        variant,
+        TableVariant::Empty | TableVariant::Loading | TableVariant::Error
+    );
+    let visible = if empty_body { &rows[..0] } else { &rows };
     let mut state = TableState::new((!visible.is_empty()).then_some(
         if matches!(variant, TableVariant::Disabled) {
             1
@@ -10640,7 +10708,28 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, varian
             3
         },
     ));
-    frame.render_stateful_widget(&Table::new(&columns, visible, &tokens), area, &mut state);
+    let recipe = match variant {
+        TableVariant::Bordered => TableRecipe::Bordered,
+        TableVariant::Striped => TableRecipe::Striped,
+        TableVariant::Compact => TableRecipe::Compact,
+        _ => TableRecipe::Quiet,
+    };
+    let body_state = match variant {
+        TableVariant::Loading => TableBodyState::Loading,
+        TableVariant::Error => TableBodyState::Error,
+        _ => TableBodyState::Ready,
+    };
+    let mut table = Table::new(&columns, visible, &tokens)
+        .recipe(recipe)
+        .body_state(body_state)
+        .empty_message(Line::from("No processes"));
+    if matches!(variant, TableVariant::Loading) {
+        table = table.loading_message(Line::from("Loading processes…"));
+    }
+    if matches!(variant, TableVariant::Error) {
+        table = table.error_message(Line::from("Failed to load processes"));
+    }
+    frame.render_stateful_widget(&table, area, &mut state);
 }
 
 fn text_area_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
