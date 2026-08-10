@@ -122,6 +122,7 @@ mod diagnostic;
 mod terminal_output;
 mod hex_viewer;
 mod file_tree;
+mod process_table;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -189,6 +190,13 @@ pub use file_tree::{
     file_tree_to_quick_open_items, filter_file_tree_entries, normalize_path_display, path_segments,
 };
 pub use file_tree::bench as file_tree_bench;
+pub use process_table::{
+    ProcessKey, ProcessRow, ProcessSignal, ProcessSignalConfirm, ProcessSortKey, ProcessStatus,
+    ProcessTable, ProcessTableOutcome, ProcessTableState, ProcessViewMode, cmp_process,
+    filter_processes, filter_tree_preserve, format_cpu_pct, format_elapsed_ms, format_mem_bytes,
+    process_column_model, sort_processes_flat,
+};
+pub use process_table::bench as process_table_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

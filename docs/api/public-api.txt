@@ -14689,6 +14689,11 @@ pub const termrock::widgets::log_stream_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::log_stream_bench::VIEWPORT: u16
 pub mod termrock::widgets::pagination_guidance
 pub const termrock::widgets::pagination_guidance::WHEN_VIRTUALIZE: &str
+pub mod termrock::widgets::process_table_bench
+pub const termrock::widgets::process_table_bench::PROCESS_COUNT: usize
+pub const termrock::widgets::process_table_bench::REFRESH_MS: u32
+pub const termrock::widgets::process_table_bench::STREAM_FRAMES: u32
+pub const termrock::widgets::process_table_bench::VIEWPORT: u16
 pub mod termrock::widgets::terminal_output_bench
 pub const termrock::widgets::terminal_output_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::terminal_output_bench::MAX_PAINT_CELLS: u32
@@ -28004,6 +28009,299 @@ pub unsafe fn termrock::widgets::PreviewTrigger::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PreviewTrigger
 pub fn termrock::widgets::PreviewTrigger::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PreviewTrigger
+#[non_exhaustive] pub enum termrock::widgets::ProcessSignal
+pub termrock::widgets::ProcessSignal::Cont
+pub termrock::widgets::ProcessSignal::Custom(i32)
+pub termrock::widgets::ProcessSignal::Hup
+pub termrock::widgets::ProcessSignal::Int
+pub termrock::widgets::ProcessSignal::Kill
+pub termrock::widgets::ProcessSignal::Quit
+pub termrock::widgets::ProcessSignal::Stop
+pub termrock::widgets::ProcessSignal::Term
+pub termrock::widgets::ProcessSignal::Usr1
+pub termrock::widgets::ProcessSignal::Usr2
+impl termrock::widgets::ProcessSignal
+pub fn termrock::widgets::ProcessSignal::id(self) -> alloc::string::String
+pub const fn termrock::widgets::ProcessSignal::is_destructive(self) -> bool
+pub const fn termrock::widgets::ProcessSignal::safe_verb(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ProcessSignal
+pub fn termrock::widgets::ProcessSignal::clone(&self) -> termrock::widgets::ProcessSignal
+impl core::cmp::Eq for termrock::widgets::ProcessSignal
+impl core::cmp::PartialEq for termrock::widgets::ProcessSignal
+pub fn termrock::widgets::ProcessSignal::eq(&self, &termrock::widgets::ProcessSignal) -> bool
+impl core::fmt::Debug for termrock::widgets::ProcessSignal
+pub fn termrock::widgets::ProcessSignal::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ProcessSignal
+pub fn termrock::widgets::ProcessSignal::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ProcessSignal
+impl core::marker::StructuralPartialEq for termrock::widgets::ProcessSignal
+impl core::marker::Freeze for termrock::widgets::ProcessSignal
+impl core::marker::Send for termrock::widgets::ProcessSignal
+impl core::marker::Sync for termrock::widgets::ProcessSignal
+impl core::marker::Unpin for termrock::widgets::ProcessSignal
+impl core::marker::UnsafeUnpin for termrock::widgets::ProcessSignal
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessSignal
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessSignal
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProcessSignal where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProcessSignal::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessSignal where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessSignal::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessSignal where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessSignal::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessSignal::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessSignal where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessSignal::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessSignal::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessSignal where T: core::clone::Clone
+pub type termrock::widgets::ProcessSignal::Owned = T
+pub fn termrock::widgets::ProcessSignal::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessSignal::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessSignal where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessSignal::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessSignal where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessSignal::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessSignal where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessSignal::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessSignal where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessSignal::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessSignal
+pub fn termrock::widgets::ProcessSignal::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessSignal
+#[non_exhaustive] pub enum termrock::widgets::ProcessSortKey
+pub termrock::widgets::ProcessSortKey::Command
+pub termrock::widgets::ProcessSortKey::Cpu
+pub termrock::widgets::ProcessSortKey::Elapsed
+pub termrock::widgets::ProcessSortKey::Memory
+pub termrock::widgets::ProcessSortKey::Pid
+pub termrock::widgets::ProcessSortKey::Status
+pub termrock::widgets::ProcessSortKey::User
+impl termrock::widgets::ProcessSortKey
+pub fn termrock::widgets::ProcessSortKey::from_id(&str) -> core::option::Option<Self>
+pub const fn termrock::widgets::ProcessSortKey::header(self) -> &'static str
+pub const fn termrock::widgets::ProcessSortKey::id(self) -> &'static str
+pub const fn termrock::widgets::ProcessSortKey::next(self) -> Self
+impl core::clone::Clone for termrock::widgets::ProcessSortKey
+pub fn termrock::widgets::ProcessSortKey::clone(&self) -> termrock::widgets::ProcessSortKey
+impl core::cmp::Eq for termrock::widgets::ProcessSortKey
+impl core::cmp::PartialEq for termrock::widgets::ProcessSortKey
+pub fn termrock::widgets::ProcessSortKey::eq(&self, &termrock::widgets::ProcessSortKey) -> bool
+impl core::default::Default for termrock::widgets::ProcessSortKey
+pub fn termrock::widgets::ProcessSortKey::default() -> termrock::widgets::ProcessSortKey
+impl core::fmt::Debug for termrock::widgets::ProcessSortKey
+pub fn termrock::widgets::ProcessSortKey::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ProcessSortKey
+pub fn termrock::widgets::ProcessSortKey::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ProcessSortKey
+impl core::marker::StructuralPartialEq for termrock::widgets::ProcessSortKey
+impl core::marker::Freeze for termrock::widgets::ProcessSortKey
+impl core::marker::Send for termrock::widgets::ProcessSortKey
+impl core::marker::Sync for termrock::widgets::ProcessSortKey
+impl core::marker::Unpin for termrock::widgets::ProcessSortKey
+impl core::marker::UnsafeUnpin for termrock::widgets::ProcessSortKey
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessSortKey
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessSortKey
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProcessSortKey where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProcessSortKey::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessSortKey where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessSortKey::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessSortKey where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessSortKey::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessSortKey::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessSortKey where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessSortKey::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessSortKey::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessSortKey where T: core::clone::Clone
+pub type termrock::widgets::ProcessSortKey::Owned = T
+pub fn termrock::widgets::ProcessSortKey::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessSortKey::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessSortKey where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessSortKey::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessSortKey where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessSortKey::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessSortKey where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessSortKey::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessSortKey where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessSortKey::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessSortKey
+pub fn termrock::widgets::ProcessSortKey::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessSortKey
+#[non_exhaustive] pub enum termrock::widgets::ProcessStatus
+pub termrock::widgets::ProcessStatus::Dead
+pub termrock::widgets::ProcessStatus::Idle
+pub termrock::widgets::ProcessStatus::Running
+pub termrock::widgets::ProcessStatus::Sleeping
+pub termrock::widgets::ProcessStatus::Stopped
+pub termrock::widgets::ProcessStatus::Unknown
+pub termrock::widgets::ProcessStatus::Zombie
+impl termrock::widgets::ProcessStatus
+pub const fn termrock::widgets::ProcessStatus::id(self) -> &'static str
+pub const fn termrock::widgets::ProcessStatus::label(self) -> &'static str
+pub const fn termrock::widgets::ProcessStatus::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::widgets::ProcessStatus
+pub fn termrock::widgets::ProcessStatus::clone(&self) -> termrock::widgets::ProcessStatus
+impl core::cmp::Eq for termrock::widgets::ProcessStatus
+impl core::cmp::Ord for termrock::widgets::ProcessStatus
+pub fn termrock::widgets::ProcessStatus::cmp(&self, &termrock::widgets::ProcessStatus) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::ProcessStatus
+pub fn termrock::widgets::ProcessStatus::eq(&self, &termrock::widgets::ProcessStatus) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::ProcessStatus
+pub fn termrock::widgets::ProcessStatus::partial_cmp(&self, &termrock::widgets::ProcessStatus) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::ProcessStatus
+pub fn termrock::widgets::ProcessStatus::default() -> termrock::widgets::ProcessStatus
+impl core::fmt::Debug for termrock::widgets::ProcessStatus
+pub fn termrock::widgets::ProcessStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ProcessStatus
+pub fn termrock::widgets::ProcessStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ProcessStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::ProcessStatus
+impl core::marker::Freeze for termrock::widgets::ProcessStatus
+impl core::marker::Send for termrock::widgets::ProcessStatus
+impl core::marker::Sync for termrock::widgets::ProcessStatus
+impl core::marker::Unpin for termrock::widgets::ProcessStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::ProcessStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessStatus
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::ProcessStatus where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProcessStatus::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProcessStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProcessStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessStatus where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessStatus where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessStatus where T: core::clone::Clone
+pub type termrock::widgets::ProcessStatus::Owned = T
+pub fn termrock::widgets::ProcessStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessStatus
+pub fn termrock::widgets::ProcessStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessStatus
+#[non_exhaustive] pub enum termrock::widgets::ProcessTableOutcome
+pub termrock::widgets::ProcessTableOutcome::Cancelled
+pub termrock::widgets::ProcessTableOutcome::CheckToggled(termrock::widgets::ProcessKey)
+pub termrock::widgets::ProcessTableOutcome::ConfirmCancelled
+pub termrock::widgets::ProcessTableOutcome::ConfirmRequired(termrock::widgets::ProcessSignalConfirm)
+pub termrock::widgets::ProcessTableOutcome::CopyCommand
+pub termrock::widgets::ProcessTableOutcome::CopyCommand::text: alloc::string::String
+pub termrock::widgets::ProcessTableOutcome::DetailsRequested(termrock::widgets::ProcessKey)
+pub termrock::widgets::ProcessTableOutcome::ExpandToggled(termrock::widgets::ProcessKey)
+pub termrock::widgets::ProcessTableOutcome::FilterChanged(alloc::string::String)
+pub termrock::widgets::ProcessTableOutcome::Ignored
+pub termrock::widgets::ProcessTableOutcome::RefreshRequested
+pub termrock::widgets::ProcessTableOutcome::Scrolled
+pub termrock::widgets::ProcessTableOutcome::SelectionChanged(termrock::widgets::ProcessKey)
+pub termrock::widgets::ProcessTableOutcome::SignalRequested
+pub termrock::widgets::ProcessTableOutcome::SignalRequested::keys: alloc::vec::Vec<termrock::widgets::ProcessKey>
+pub termrock::widgets::ProcessTableOutcome::SignalRequested::signal: termrock::widgets::ProcessSignal
+pub termrock::widgets::ProcessTableOutcome::SortChanged
+pub termrock::widgets::ProcessTableOutcome::SortChanged::ascending: bool
+pub termrock::widgets::ProcessTableOutcome::SortChanged::key: termrock::widgets::ProcessSortKey
+pub termrock::widgets::ProcessTableOutcome::StatusFilterChanged(core::option::Option<termrock::widgets::ProcessStatus>)
+pub termrock::widgets::ProcessTableOutcome::UserFilterChanged(core::option::Option<alloc::string::String>)
+pub termrock::widgets::ProcessTableOutcome::ViewModeChanged(termrock::widgets::ProcessViewMode)
+impl core::clone::Clone for termrock::widgets::ProcessTableOutcome
+pub fn termrock::widgets::ProcessTableOutcome::clone(&self) -> termrock::widgets::ProcessTableOutcome
+impl core::cmp::Eq for termrock::widgets::ProcessTableOutcome
+impl core::cmp::PartialEq for termrock::widgets::ProcessTableOutcome
+pub fn termrock::widgets::ProcessTableOutcome::eq(&self, &termrock::widgets::ProcessTableOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ProcessTableOutcome
+pub fn termrock::widgets::ProcessTableOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ProcessTableOutcome
+impl core::marker::Freeze for termrock::widgets::ProcessTableOutcome
+impl core::marker::Send for termrock::widgets::ProcessTableOutcome
+impl core::marker::Sync for termrock::widgets::ProcessTableOutcome
+impl core::marker::Unpin for termrock::widgets::ProcessTableOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ProcessTableOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessTableOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessTableOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProcessTableOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProcessTableOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessTableOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessTableOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessTableOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessTableOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessTableOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessTableOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessTableOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessTableOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessTableOutcome where T: core::clone::Clone
+pub type termrock::widgets::ProcessTableOutcome::Owned = T
+pub fn termrock::widgets::ProcessTableOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessTableOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessTableOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessTableOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessTableOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessTableOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessTableOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessTableOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessTableOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessTableOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessTableOutcome
+pub fn termrock::widgets::ProcessTableOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessTableOutcome
+#[non_exhaustive] pub enum termrock::widgets::ProcessViewMode
+pub termrock::widgets::ProcessViewMode::Flat
+pub termrock::widgets::ProcessViewMode::Tree
+impl termrock::widgets::ProcessViewMode
+pub const fn termrock::widgets::ProcessViewMode::id(self) -> &'static str
+pub const fn termrock::widgets::ProcessViewMode::toggle(self) -> Self
+impl core::clone::Clone for termrock::widgets::ProcessViewMode
+pub fn termrock::widgets::ProcessViewMode::clone(&self) -> termrock::widgets::ProcessViewMode
+impl core::cmp::Eq for termrock::widgets::ProcessViewMode
+impl core::cmp::PartialEq for termrock::widgets::ProcessViewMode
+pub fn termrock::widgets::ProcessViewMode::eq(&self, &termrock::widgets::ProcessViewMode) -> bool
+impl core::default::Default for termrock::widgets::ProcessViewMode
+pub fn termrock::widgets::ProcessViewMode::default() -> termrock::widgets::ProcessViewMode
+impl core::fmt::Debug for termrock::widgets::ProcessViewMode
+pub fn termrock::widgets::ProcessViewMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ProcessViewMode
+pub fn termrock::widgets::ProcessViewMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ProcessViewMode
+impl core::marker::StructuralPartialEq for termrock::widgets::ProcessViewMode
+impl core::marker::Freeze for termrock::widgets::ProcessViewMode
+impl core::marker::Send for termrock::widgets::ProcessViewMode
+impl core::marker::Sync for termrock::widgets::ProcessViewMode
+impl core::marker::Unpin for termrock::widgets::ProcessViewMode
+impl core::marker::UnsafeUnpin for termrock::widgets::ProcessViewMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessViewMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessViewMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProcessViewMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProcessViewMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessViewMode where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessViewMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessViewMode where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessViewMode::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessViewMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessViewMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessViewMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessViewMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessViewMode where T: core::clone::Clone
+pub type termrock::widgets::ProcessViewMode::Owned = T
+pub fn termrock::widgets::ProcessViewMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessViewMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessViewMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessViewMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessViewMode where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessViewMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessViewMode where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessViewMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessViewMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessViewMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessViewMode
+pub fn termrock::widgets::ProcessViewMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessViewMode
 #[non_exhaustive] pub enum termrock::widgets::ProgressKind
 pub termrock::widgets::ProgressKind::Determinate
 pub termrock::widgets::ProgressKind::Determinate::fraction: f64
@@ -54205,6 +54503,279 @@ pub unsafe fn termrock::widgets::PriorGrant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PriorGrant
 pub fn termrock::widgets::PriorGrant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PriorGrant
+pub struct termrock::widgets::ProcessKey
+pub termrock::widgets::ProcessKey::pid: u32
+pub termrock::widgets::ProcessKey::start_ms: u64
+impl termrock::widgets::ProcessKey
+pub const fn termrock::widgets::ProcessKey::new(u32, u64) -> Self
+impl core::clone::Clone for termrock::widgets::ProcessKey
+pub fn termrock::widgets::ProcessKey::clone(&self) -> termrock::widgets::ProcessKey
+impl core::cmp::Eq for termrock::widgets::ProcessKey
+impl core::cmp::Ord for termrock::widgets::ProcessKey
+pub fn termrock::widgets::ProcessKey::cmp(&self, &termrock::widgets::ProcessKey) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::ProcessKey
+pub fn termrock::widgets::ProcessKey::eq(&self, &termrock::widgets::ProcessKey) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::ProcessKey
+pub fn termrock::widgets::ProcessKey::partial_cmp(&self, &termrock::widgets::ProcessKey) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::ProcessKey
+pub fn termrock::widgets::ProcessKey::default() -> termrock::widgets::ProcessKey
+impl core::fmt::Debug for termrock::widgets::ProcessKey
+pub fn termrock::widgets::ProcessKey::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ProcessKey
+pub fn termrock::widgets::ProcessKey::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ProcessKey
+impl core::marker::StructuralPartialEq for termrock::widgets::ProcessKey
+impl core::marker::Freeze for termrock::widgets::ProcessKey
+impl core::marker::Send for termrock::widgets::ProcessKey
+impl core::marker::Sync for termrock::widgets::ProcessKey
+impl core::marker::Unpin for termrock::widgets::ProcessKey
+impl core::marker::UnsafeUnpin for termrock::widgets::ProcessKey
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessKey
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessKey
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::ProcessKey where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProcessKey::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProcessKey where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProcessKey::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessKey where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessKey::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessKey where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessKey::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessKey::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessKey where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessKey::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessKey::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessKey where T: core::clone::Clone
+pub type termrock::widgets::ProcessKey::Owned = T
+pub fn termrock::widgets::ProcessKey::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessKey::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessKey where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessKey::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessKey where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessKey::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessKey where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessKey::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessKey where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessKey::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessKey
+pub fn termrock::widgets::ProcessKey::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessKey
+pub struct termrock::widgets::ProcessRow<'a>
+pub termrock::widgets::ProcessRow::branch: bool
+pub termrock::widgets::ProcessRow::command: &'a str
+pub termrock::widgets::ProcessRow::cpu_pct: f64
+pub termrock::widgets::ProcessRow::depth: u16
+pub termrock::widgets::ProcessRow::elapsed_ms: u64
+pub termrock::widgets::ProcessRow::enabled: bool
+pub termrock::widgets::ProcessRow::expanded: bool
+pub termrock::widgets::ProcessRow::key: termrock::widgets::ProcessKey
+pub termrock::widgets::ProcessRow::mem_bytes: u64
+pub termrock::widgets::ProcessRow::parent: core::option::Option<termrock::widgets::ProcessKey>
+pub termrock::widgets::ProcessRow::status: termrock::widgets::ProcessStatus
+pub termrock::widgets::ProcessRow::user: &'a str
+impl<'a> termrock::widgets::ProcessRow<'a>
+pub const fn termrock::widgets::ProcessRow<'a>::branch(self) -> Self
+pub const fn termrock::widgets::ProcessRow<'a>::cpu(self, f64) -> Self
+pub const fn termrock::widgets::ProcessRow<'a>::depth(self, u16) -> Self
+pub const fn termrock::widgets::ProcessRow<'a>::disabled(self) -> Self
+pub const fn termrock::widgets::ProcessRow<'a>::elapsed_ms(self, u64) -> Self
+pub const fn termrock::widgets::ProcessRow<'a>::expanded(self) -> Self
+pub const fn termrock::widgets::ProcessRow<'a>::mem(self, u64) -> Self
+pub fn termrock::widgets::ProcessRow<'a>::new(termrock::widgets::ProcessKey, &'a str) -> Self
+pub const fn termrock::widgets::ProcessRow<'a>::parent(self, termrock::widgets::ProcessKey) -> Self
+pub const fn termrock::widgets::ProcessRow<'a>::status(self, termrock::widgets::ProcessStatus) -> Self
+pub const fn termrock::widgets::ProcessRow<'a>::user(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::ProcessRow<'a>
+pub fn termrock::widgets::ProcessRow<'a>::clone(&self) -> termrock::widgets::ProcessRow<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::ProcessRow<'a>
+pub fn termrock::widgets::ProcessRow<'a>::eq(&self, &termrock::widgets::ProcessRow<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::ProcessRow<'a>
+pub fn termrock::widgets::ProcessRow<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::ProcessRow<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ProcessRow<'a>
+impl<'a> core::marker::Send for termrock::widgets::ProcessRow<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ProcessRow<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ProcessRow<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ProcessRow<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessRow<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessRow<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessRow<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessRow<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessRow<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessRow<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessRow<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessRow<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessRow<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessRow<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessRow<'a> where T: core::clone::Clone
+pub type termrock::widgets::ProcessRow<'a>::Owned = T
+pub fn termrock::widgets::ProcessRow<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessRow<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessRow<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessRow<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessRow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessRow<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessRow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessRow<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessRow<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessRow<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessRow<'a>
+pub fn termrock::widgets::ProcessRow<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessRow<'a>
+pub struct termrock::widgets::ProcessSignalConfirm
+pub termrock::widgets::ProcessSignalConfirm::signal: termrock::widgets::ProcessSignal
+pub termrock::widgets::ProcessSignalConfirm::subject: alloc::string::String
+pub termrock::widgets::ProcessSignalConfirm::targets: alloc::vec::Vec<termrock::widgets::ProcessKey>
+impl core::clone::Clone for termrock::widgets::ProcessSignalConfirm
+pub fn termrock::widgets::ProcessSignalConfirm::clone(&self) -> termrock::widgets::ProcessSignalConfirm
+impl core::cmp::Eq for termrock::widgets::ProcessSignalConfirm
+impl core::cmp::PartialEq for termrock::widgets::ProcessSignalConfirm
+pub fn termrock::widgets::ProcessSignalConfirm::eq(&self, &termrock::widgets::ProcessSignalConfirm) -> bool
+impl core::fmt::Debug for termrock::widgets::ProcessSignalConfirm
+pub fn termrock::widgets::ProcessSignalConfirm::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ProcessSignalConfirm
+impl core::marker::Freeze for termrock::widgets::ProcessSignalConfirm
+impl core::marker::Send for termrock::widgets::ProcessSignalConfirm
+impl core::marker::Sync for termrock::widgets::ProcessSignalConfirm
+impl core::marker::Unpin for termrock::widgets::ProcessSignalConfirm
+impl core::marker::UnsafeUnpin for termrock::widgets::ProcessSignalConfirm
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessSignalConfirm
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessSignalConfirm
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProcessSignalConfirm where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProcessSignalConfirm::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessSignalConfirm where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessSignalConfirm::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessSignalConfirm where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessSignalConfirm::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessSignalConfirm::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessSignalConfirm where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessSignalConfirm::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessSignalConfirm::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessSignalConfirm where T: core::clone::Clone
+pub type termrock::widgets::ProcessSignalConfirm::Owned = T
+pub fn termrock::widgets::ProcessSignalConfirm::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessSignalConfirm::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessSignalConfirm where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessSignalConfirm::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessSignalConfirm where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessSignalConfirm::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessSignalConfirm where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessSignalConfirm::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessSignalConfirm where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessSignalConfirm::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessSignalConfirm
+pub fn termrock::widgets::ProcessSignalConfirm::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessSignalConfirm
+pub struct termrock::widgets::ProcessTable<'a>
+impl<'a> termrock::widgets::ProcessTable<'a>
+pub const fn termrock::widgets::ProcessTable<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ProcessTable<'a>::focused(self, bool) -> Self
+pub const fn termrock::widgets::ProcessTable<'a>::new(&'a [termrock::widgets::ProcessRow<'a>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::ProcessTable<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ProcessTableState)
+pub const fn termrock::widgets::ProcessTable<'a>::title(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::ProcessTable<'a>
+pub fn termrock::widgets::ProcessTable<'a>::clone(&self) -> termrock::widgets::ProcessTable<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ProcessTable<'a>
+pub fn termrock::widgets::ProcessTable<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ProcessTable<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ProcessTable<'a>
+impl<'a> core::marker::Send for termrock::widgets::ProcessTable<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ProcessTable<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ProcessTable<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ProcessTable<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessTable<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessTable<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessTable<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessTable<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessTable<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessTable<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessTable<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessTable<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessTable<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessTable<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessTable<'a> where T: core::clone::Clone
+pub type termrock::widgets::ProcessTable<'a>::Owned = T
+pub fn termrock::widgets::ProcessTable<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessTable<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessTable<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessTable<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessTable<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessTable<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessTable<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessTable<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessTable<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessTable<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessTable<'a>
+pub fn termrock::widgets::ProcessTable<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessTable<'a>
+pub struct termrock::widgets::ProcessTableState
+pub termrock::widgets::ProcessTableState::ascii: bool
+pub termrock::widgets::ProcessTableState::filter: core::option::Option<alloc::string::String>
+pub termrock::widgets::ProcessTableState::generation: u64
+pub termrock::widgets::ProcessTableState::load: termrock::widgets::LoadState
+pub termrock::widgets::ProcessTableState::pending_confirm: core::option::Option<termrock::widgets::ProcessSignalConfirm>
+pub termrock::widgets::ProcessTableState::refresh_ms: u32
+pub termrock::widgets::ProcessTableState::sort_asc: bool
+pub termrock::widgets::ProcessTableState::sort_key: termrock::widgets::ProcessSortKey
+pub termrock::widgets::ProcessTableState::status_filter: core::option::Option<termrock::widgets::ProcessStatus>
+pub termrock::widgets::ProcessTableState::user_filter: core::option::Option<alloc::string::String>
+pub termrock::widgets::ProcessTableState::view_mode: termrock::widgets::ProcessViewMode
+pub termrock::widgets::ProcessTableState::window: termrock::widgets::VirtualWindow
+impl termrock::widgets::ProcessTableState
+pub const fn termrock::widgets::ProcessTableState::accepts_input(&self) -> bool
+pub fn termrock::widgets::ProcessTableState::checked(&self) -> &[termrock::widgets::ProcessKey]
+pub fn termrock::widgets::ProcessTableState::enable_multi_select(&mut self)
+pub fn termrock::widgets::ProcessTableState::handle_key(&mut self, &[termrock::widgets::ProcessRow<'_>], termrock::input::KeyEvent) -> termrock::widgets::ProcessTableOutcome
+pub fn termrock::widgets::ProcessTableState::handle_key_nav(&mut self, &[termrock::widgets::ProcessRow<'_>], termrock::input::KeyEvent) -> termrock::widgets::ProcessTableOutcome
+pub fn termrock::widgets::ProcessTableState::handle_mouse(&mut self, &[termrock::widgets::ProcessRow<'_>], termrock::input::MouseEvent) -> termrock::widgets::ProcessTableOutcome
+pub const fn termrock::widgets::ProcessTableState::multi_enabled(&self) -> bool
+pub fn termrock::widgets::ProcessTableState::new() -> Self
+pub fn termrock::widgets::ProcessTableState::reconcile(&mut self, &[termrock::widgets::ProcessRow<'_>])
+pub fn termrock::widgets::ProcessTableState::select(&mut self, core::option::Option<termrock::widgets::ProcessKey>)
+pub const fn termrock::widgets::ProcessTableState::selected(&self) -> core::option::Option<termrock::widgets::ProcessKey>
+pub fn termrock::widgets::ProcessTableState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::ProcessTableState::sort_spec(&self) -> termrock::widgets::SortSpec<&'static str>
+pub fn termrock::widgets::ProcessTableState::sync_window(&mut self, usize)
+pub fn termrock::widgets::ProcessTableState::visible_processes<'a>(&self, &'a [termrock::widgets::ProcessRow<'a>]) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
+pub fn termrock::widgets::ProcessTableState::with_selected(core::option::Option<termrock::widgets::ProcessKey>) -> Self
+impl core::clone::Clone for termrock::widgets::ProcessTableState
+pub fn termrock::widgets::ProcessTableState::clone(&self) -> termrock::widgets::ProcessTableState
+impl core::cmp::PartialEq for termrock::widgets::ProcessTableState
+pub fn termrock::widgets::ProcessTableState::eq(&self, &termrock::widgets::ProcessTableState) -> bool
+impl core::default::Default for termrock::widgets::ProcessTableState
+pub fn termrock::widgets::ProcessTableState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ProcessTableState
+pub fn termrock::widgets::ProcessTableState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ProcessTableState
+impl core::marker::Freeze for termrock::widgets::ProcessTableState
+impl core::marker::Send for termrock::widgets::ProcessTableState
+impl core::marker::Sync for termrock::widgets::ProcessTableState
+impl core::marker::Unpin for termrock::widgets::ProcessTableState
+impl core::marker::UnsafeUnpin for termrock::widgets::ProcessTableState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProcessTableState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProcessTableState
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProcessTableState where U: core::convert::From<T>
+pub fn termrock::widgets::ProcessTableState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProcessTableState where U: core::convert::Into<T>
+pub type termrock::widgets::ProcessTableState::Error = core::convert::Infallible
+pub fn termrock::widgets::ProcessTableState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProcessTableState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProcessTableState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProcessTableState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProcessTableState where T: core::clone::Clone
+pub type termrock::widgets::ProcessTableState::Owned = T
+pub fn termrock::widgets::ProcessTableState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProcessTableState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProcessTableState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProcessTableState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProcessTableState where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessTableState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProcessTableState where T: ?core::marker::Sized
+pub fn termrock::widgets::ProcessTableState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProcessTableState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProcessTableState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProcessTableState
+pub fn termrock::widgets::ProcessTableState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProcessTableState
 pub struct termrock::widgets::ProgressBar<'a>
 impl<'a> termrock::widgets::ProgressBar<'a>
 pub const fn termrock::widgets::ProgressBar<'a>::ascii(self, bool) -> Self
@@ -65526,6 +66097,7 @@ pub fn termrock::widgets::auto_bytes_per_row(u16, u8) -> u8
 pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
 pub fn termrock::widgets::breadcrumbs_from_path(&str) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
+pub fn termrock::widgets::cmp_process(&termrock::widgets::ProcessRow<'_>, &termrock::widgets::ProcessRow<'_>, termrock::widgets::ProcessSortKey, bool) -> core::cmp::Ordering
 pub fn termrock::widgets::code_frame_window<'a>(&'a [&'a str], &[termrock::widgets::SourceLabel<'_>], u32) -> (alloc::vec::Vec<termrock::widgets::CodeFrameLine<'a>>, bool, bool)
 pub fn termrock::widgets::col_for_offset(u64, u8) -> u8
 pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> alloc::vec::Vec<(&'a str, &'a str)>
@@ -65635,10 +66207,12 @@ pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termr
 pub fn termrock::widgets::filter_inspect_fields<'a>(&'a [termrock::widgets::InspectorField<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::InspectorField<'a>>
 pub fn termrock::widgets::filter_list_rows<'a, Id: core::clone::Clone>(&'a [termrock::widgets::ListRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::ListRow<'a, Id>>
 pub fn termrock::widgets::filter_log_lines<'a>(&'a [termrock::widgets::LogLine<'a>], &str, termrock::widgets::LogLevel) -> alloc::vec::Vec<&'a termrock::widgets::LogLine<'a>>
+pub fn termrock::widgets::filter_processes<'a>(&'a [termrock::widgets::ProcessRow<'a>], &str, core::option::Option<&str>, core::option::Option<termrock::widgets::ProcessStatus>) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::filter_stream_events<'a, Id>(&'a [termrock::widgets::StreamEvent<'a, Id>], &str, termrock::widgets::EventSeverity, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> alloc::vec::Vec<&'a termrock::widgets::StreamEvent<'a, Id>>
 pub fn termrock::widgets::filter_terminal_lines<'a>(&'a [termrock::widgets::TerminalLine<'a>], bool, bool) -> alloc::vec::Vec<&'a termrock::widgets::TerminalLine<'a>>
 pub fn termrock::widgets::filter_timeline_events<'a, Id>(&'a [termrock::widgets::TimelineEvent<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TimelineEvent<'a, Id>>
+pub fn termrock::widgets::filter_tree_preserve<'a>(&'a [termrock::widgets::ProcessRow<'a>], &[&'a termrock::widgets::ProcessRow<'a>]) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
 pub fn termrock::widgets::filter_tree_table_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeTableRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeTableRow<'a, Id>>
 pub fn termrock::widgets::filter_tree_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeNode<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeNode<'a, Id>>
 pub fn termrock::widgets::find_in_window(&termrock::widgets::HexWindow<'_>, &[u8], u64) -> core::option::Option<u64>
@@ -65650,11 +66224,14 @@ pub fn termrock::widgets::format_alternatives(&[termrock::keymap::KeyChord], ter
 pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termrock::keymap::KeyBinding<A>, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_byte_hex(u8) -> alloc::string::String
 pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::widgets::ChordFormat) -> alloc::string::String
+pub fn termrock::widgets::format_cpu_pct(f64) -> alloc::string::String
 pub fn termrock::widgets::format_diagnostic_plain(&termrock::widgets::Diagnostic<'_>) -> alloc::string::String
 pub fn termrock::widgets::format_diagnostics_plain(&[termrock::widgets::Diagnostic<'_>]) -> alloc::string::String
 pub fn termrock::widgets::format_duration_ms(u64) -> alloc::string::String
+pub fn termrock::widgets::format_elapsed_ms(u64) -> alloc::string::String
 pub fn termrock::widgets::format_hex_dump(&termrock::widgets::HexWindow<'_>, u64, u64, u8, u8) -> alloc::string::String
 pub fn termrock::widgets::format_inspector_line(&termrock::widgets::HexInspectorValues, bool) -> alloc::string::String
+pub fn termrock::widgets::format_mem_bytes(u64) -> alloc::string::String
 pub fn termrock::widgets::format_offset(u64, u8) -> alloc::string::String
 pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat, &str) -> alloc::string::String
 pub fn termrock::widgets::fullscreen_viewer_has_nested_top<F>(&termrock::interaction::OverlayStack<F>) -> bool
@@ -65761,6 +66338,7 @@ pub fn termrock::widgets::place_tooltip(ratatui_core::layout::rect::Rect, ratatu
 pub fn termrock::widgets::popover_presentation_for(ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> termrock::widgets::PopoverPresentation
 pub fn termrock::widgets::prepare_code_display(&str, usize, termrock::widgets::ControlRender) -> alloc::string::String
 pub fn termrock::widgets::preview_card_overlay_size(&termrock::widgets::PreviewCardContent<'_>, u16) -> termrock::interaction::OverlaySize
+pub fn termrock::widgets::process_column_model() -> termrock::widgets::ColumnModel<&'static str>
 pub fn termrock::widgets::progress_steps_as_list_rows(&[termrock::widgets::ProgressStep]) -> alloc::vec::Vec<termrock::widgets::ListRow<'static, alloc::string::String>>
 pub fn termrock::widgets::progress_steps_as_timeline_events(&[termrock::widgets::ProgressStep]) -> alloc::vec::Vec<termrock::widgets::TimelineEvent<'_>>
 pub fn termrock::widgets::project_index_window<'a>(&[u64], &'a str) -> alloc::vec::Vec<(u64, alloc::string::String, alloc::string::String)>
@@ -65783,6 +66361,7 @@ pub fn termrock::widgets::row_count(u64, u8) -> u64
 pub fn termrock::widgets::row_for_offset(u64, u8) -> u64
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
 pub fn termrock::widgets::sidebar_presentation_for_width(u16) -> termrock::widgets::SidebarPresentation
+pub fn termrock::widgets::sort_processes_flat<'a>(alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>, termrock::widgets::ProcessSortKey, bool) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
 pub fn termrock::widgets::step_items_from_titles(&[&str]) -> alloc::vec::Vec<termrock::widgets::StepItem>
 pub fn termrock::widgets::stepper_presentation_for_bounds(ratatui_core::layout::rect::Rect, termrock::widgets::StepperOrientation) -> termrock::widgets::StepperPresentation
 pub fn termrock::widgets::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>

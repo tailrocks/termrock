@@ -216,6 +216,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0200 | `v0.13.0` | [HexViewer virtualized binary inspector](migrations/0200-v0.13.0-hex-viewer.md) |
 | 0201 | `v0.13.0` | [Charts visualization family](migrations/0201-v0.13.0-charts-viz-family.md) |
 | 0202 | `v0.13.0` | [FileTree filesystem explorer](migrations/0202-v0.13.0-file-tree.md) |
+| 0203 | `v0.13.0` | [ProcessTable process / task monitor](migrations/0203-v0.13.0-process-table.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

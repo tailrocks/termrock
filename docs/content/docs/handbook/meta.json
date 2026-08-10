@@ -33,6 +33,7 @@
     "terminal-output",
     "hex-viewer",
     "charts",
-    "file-tree"
+    "file-tree",
+    "process-table"
   ]
 }

@@ -1619,6 +1619,21 @@ Every component below uses sections **1–24**:
 21. **Stories:** `file-tree/{basic,filter,hidden,confirm,empty,narrow,ascii}`  
 22–24. Filter ancestor retention; path normalize tests.
 
+## ProcessTable
+
+1. **Purpose:** Process/task monitor with tree and flat modes.  
+2. **Anatomy:** title? · filter? · column header · body rows · signal confirm.  
+3. **Public properties:** `ProcessRow[]` (key, parent, depth, cmd, cpu, mem, status, user, elapsed).  
+4. **State:** selection + multi-check; view mode; sort; filters; confirm; refresh_ms; `VirtualWindow`.  
+5. **Variants:** Flat / Tree; status R/S/D/T/Z/X.  
+6–10. htop/btop chords; TERM/KILL confirm; multi-signal.  
+11–14. No process enum/kill; host refresh + signal.  
+15–18. ASCII selection/tree; status letter roles.  
+19. **Composition:** column model kit; TreeTable remains generic substrate.  
+20. **Outcomes:** SignalRequested · ConfirmRequired · Refresh · Details · Sort/View/Filter · CopyCommand.  
+21. **Stories:** `process-table/{basic,tree,filter,confirm,empty,narrow,ascii}`  
+22–24. PID-reuse reconcile; 5k-row sort/paint bench constants.
+
 ## Charts (Sparkline / Chart / Gauge / Histogram)
 
 1. **Purpose:** Coherent terminal data-viz family.  

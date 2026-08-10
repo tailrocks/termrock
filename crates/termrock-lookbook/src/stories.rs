@@ -75,6 +75,8 @@ use termrock::{
         TerminalEnvEntry, TerminalOutputRecipe, TerminalPaintMode,
         HexViewer, HexViewerState, HexWindow, HexEndian, HexAsciiMode,
         FileTree, FileTreeState, FileTreeEntry, FileTreeKind, FileGitStatus,
+        ProcessTable, ProcessTableState, ProcessRow, ProcessKey, ProcessStatus,
+        ProcessViewMode, ProcessSignal, ProcessSignalConfirm,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2264,6 +2266,69 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             10,
             file_tree_ascii,
+        ),
+        Story::new(
+            "process-table/basic",
+            "ProcessTable basic",
+            "ProcessTable",
+            "Flat CPU-sorted process monitor.",
+            72,
+            14,
+            process_table_basic,
+        ),
+        Story::new(
+            "process-table/tree",
+            "ProcessTable tree",
+            "ProcessTable",
+            "Parent/child hierarchy mode.",
+            72,
+            14,
+            process_table_tree,
+        ),
+        Story::new(
+            "process-table/filter",
+            "ProcessTable filter",
+            "ProcessTable",
+            "Search filter on command/user.",
+            64,
+            12,
+            process_table_filter,
+        ),
+        Story::new(
+            "process-table/confirm",
+            "ProcessTable signal confirm",
+            "ProcessTable",
+            "Safe TERM/KILL confirmation banner.",
+            64,
+            12,
+            process_table_confirm,
+        ),
+        Story::new(
+            "process-table/empty",
+            "ProcessTable empty",
+            "ProcessTable",
+            "Empty process list mark.",
+            40,
+            6,
+            process_table_empty,
+        ),
+        Story::new(
+            "process-table/narrow",
+            "ProcessTable narrow",
+            "ProcessTable",
+            "Narrow process table (36 cols).",
+            36,
+            12,
+            process_table_basic,
+        ),
+        Story::new(
+            "process-table/ascii",
+            "ProcessTable ASCII",
+            "ProcessTable",
+            "ASCII selection and tree glyphs.",
+            64,
+            12,
+            process_table_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -11721,6 +11786,120 @@ fn file_tree_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     state.ascii = true;
     FileTree::new(&entries, system)
         .title("ascii")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn process_table_sample() -> Vec<ProcessRow<'static>> {
+    vec![
+        ProcessRow::new(ProcessKey::new(1, 100), "systemd")
+            .cpu(0.1)
+            .mem(4_000_000)
+            .user("root")
+            .elapsed_ms(86_400_000)
+            .branch()
+            .expanded(),
+        ProcessRow::new(ProcessKey::new(482, 200), "sshd")
+            .parent(ProcessKey::new(1, 100))
+            .depth(1)
+            .cpu(0.0)
+            .mem(8_000_000)
+            .user("root")
+            .elapsed_ms(3_600_000)
+            .branch()
+            .expanded(),
+        ProcessRow::new(ProcessKey::new(1204, 300), "bash")
+            .parent(ProcessKey::new(482, 200))
+            .depth(2)
+            .cpu(1.2)
+            .mem(12_000_000)
+            .user("alice")
+            .elapsed_ms(600_000)
+            .status(ProcessStatus::Sleeping),
+        ProcessRow::new(ProcessKey::new(1888, 400), "cargo test")
+            .parent(ProcessKey::new(1204, 300))
+            .depth(3)
+            .cpu(42.0)
+            .mem(640_000_000)
+            .user("alice")
+            .elapsed_ms(30_000)
+            .branch()
+            .expanded(),
+        ProcessRow::new(ProcessKey::new(1902, 500), "rustc")
+            .parent(ProcessKey::new(1888, 400))
+            .depth(4)
+            .cpu(88.4)
+            .mem(1_100_000_000)
+            .user("alice")
+            .elapsed_ms(12_000),
+        ProcessRow::new(ProcessKey::new(2201, 600), "btop")
+            .cpu(3.5)
+            .mem(48_000_000)
+            .user("alice")
+            .elapsed_ms(120_000)
+            .status(ProcessStatus::Running),
+        ProcessRow::new(ProcessKey::new(3001, 700), "zombie-demo")
+            .cpu(0.0)
+            .mem(0)
+            .user("alice")
+            .elapsed_ms(1_000)
+            .status(ProcessStatus::Zombie),
+    ]
+}
+
+fn process_table_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let rows = process_table_sample();
+    let mut state = ProcessTableState::with_selected(Some(ProcessKey::new(1902, 500)));
+    ProcessTable::new(&rows, system)
+        .title("procs")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn process_table_tree(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let rows = process_table_sample();
+    let mut state = ProcessTableState::with_selected(Some(ProcessKey::new(1888, 400)));
+    state.view_mode = ProcessViewMode::Tree;
+    ProcessTable::new(&rows, system)
+        .title("tree")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn process_table_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let rows = process_table_sample();
+    let mut state = ProcessTableState::new();
+    state.filter = Some("cargo".into());
+    ProcessTable::new(&rows, system)
+        .title("filter")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn process_table_confirm(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let rows = process_table_sample();
+    let mut state = ProcessTableState::with_selected(Some(ProcessKey::new(1902, 500)));
+    state.pending_confirm = Some(ProcessSignalConfirm {
+        signal: ProcessSignal::Term,
+        subject: "rustc (1902)".into(),
+        targets: vec![ProcessKey::new(1902, 500)],
+    });
+    ProcessTable::new(&rows, system)
+        .title("signal")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn process_table_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = ProcessTableState::new();
+    ProcessTable::new(&[], system)
+        .title("empty")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn process_table_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let rows = process_table_sample();
+    let mut state = ProcessTableState::with_selected(Some(ProcessKey::new(1888, 400)));
+    state.view_mode = ProcessViewMode::Tree;
+    state.ascii = true;
+    ProcessTable::new(&rows, system)
+        .title("ascii")
+        .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
 
