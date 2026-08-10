@@ -27,6 +27,7 @@
     "context-meter",
     "question-flow",
     "plan-review",
+    "checkpoint-timeline",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

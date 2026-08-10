@@ -42,10 +42,13 @@ let mut state = TimelineState::new();
 // Timeline::with_events(&events, &system).recipe(TimelineRecipe::Rail)
 ```
 
-## CheckpointTimeline
+## Checkpoint mode (Timeline)
 
-Interactive restore substrate: Enter → `RestoreRequested`, `c` → `CompareRequested`.
-No persistence — host owns snapshots.
+`TimelineState::set_checkpoint_mode(true)`: Enter → `RestoreRequested`, `c` →
+`CompareRequested` on checkpoint rows.
+
+For full session restore/rewind UX (boundaries, preview, draft preserved), use
+[CheckpointTimeline](/docs/handbook/checkpoint-timeline) (migration `0229`).
 
 ## Related
 

@@ -7,7 +7,7 @@
 //! expansion, correlation, filters, and live streaming while preserving reading
 //! position. Recipes: compact **rail**, **detailed** list, **grouped-day**.
 //! No-color mode uses symbols and labels. Composes with checkpoint restore
-//! ([`CheckpointTimeline`]), event streams ([`super::LogStream`]), and task
+//! ([`super::CheckpointTimeline`]), event streams ([`super::LogStream`]), and task
 //! history ([`super::progress_steps`]).
 //!
 //! Research: Git history, CI timelines, observability tools, agent session views.
@@ -1197,64 +1197,8 @@ impl<Id: Clone + PartialEq + Ord> StatefulWidget for Timeline<'_, Id> {
     }
 }
 
-// ── CheckpointTimeline ──────────────────────────────────────────────────────
-
-/// Interactive checkpoint rail on Timeline substrate (select / restore / compare).
-///
-/// Non-goals: persistence, automatic snapshots, multiplayer.
-#[derive(Debug, Clone)]
-pub struct CheckpointTimeline<'a, Id> {
-    inner: Timeline<'a, Id>,
-}
-
-impl<'a, Id: Clone + PartialEq + Ord> CheckpointTimeline<'a, Id> {
-    /// Checkpoints as timeline events (`TimelineEvent::checkpoint`).
-    #[must_use]
-    pub fn new(events: &'a [TimelineEvent<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self {
-            inner: Timeline::with_events(events, system).recipe(TimelineRecipe::Detailed),
-        }
-    }
-
-    /// Compact rail recipe.
-    #[must_use]
-    pub fn rail(mut self) -> Self {
-        self.inner.recipe = TimelineRecipe::Rail;
-        self
-    }
-
-    /// Scene focus.
-    #[must_use]
-    pub const fn focused(mut self, focused: bool) -> Self {
-        self.inner.focused = focused;
-        self
-    }
-
-    /// ASCII.
-    #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.inner.ascii = ascii;
-        self
-    }
-
-    /// Paint with checkpoint mode enabled on state.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TimelineState<Id>,
-    ) {
-        state.checkpoint_mode = true;
-        self.inner.render_stateful(area, buffer, state);
-    }
-}
-
-impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for &CheckpointTimeline<'a, Id> {
-    type State = TimelineState<Id>;
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        CheckpointTimeline::render(self, area, buffer, state);
-    }
-}
+// CheckpointTimeline elevated in `checkpoint_timeline` module (migration 0229).
+// Timeline still supports checkpoint_mode for generic RestoreRequested/CompareRequested.
 
 #[cfg(test)]
 mod tests {
@@ -1429,17 +1373,17 @@ mod tests {
     }
 
     #[test]
-    fn checkpoint_timeline_sets_mode() {
-        let system = DesignSystem::default();
+    fn checkpoint_mode_restore_path() {
         let events = [
             TimelineEvent::checkpoint("a", "t0", "snap-a"),
             TimelineEvent::checkpoint("b", "t1", "snap-b").active(),
         ];
         let mut state = TimelineState::<&str>::new();
-        let cp = CheckpointTimeline::new(&events, &system).focused(true);
-        let area = Rect::new(0, 0, 40, 6);
-        let mut buf = Buffer::empty(area);
-        cp.render(area, &mut buf, &mut state);
-        assert!(state.checkpoint_mode);
+        state.set_checkpoint_mode(true);
+        state.following = false;
+        state.cursor = 0;
+        let view = filter_timeline_events(&events, "");
+        let out = state.handle_intent(UiIntent::Activate, &view);
+        assert!(matches!(out, TimelineOutcome::RestoreRequested("a")));
     }
 }

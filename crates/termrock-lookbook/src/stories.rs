@@ -136,7 +136,8 @@ use termrock::{
         example_command_preview, example_file_preview, example_session_preview,
         example_symbol_preview,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline, TimelineEvent, TimelineState,
-        TimelineRecipe, TimelineStatus, CheckpointTimeline, Toast, NotificationCenter,
+        TimelineRecipe, TimelineStatus, CheckpointTimeline, CheckpointTimelineState, Toast,
+        NotificationCenter,
         NotificationCenterState, NotificationRecipe,
         example_notifications, Spinner, SpinnerState, ActivityIndicator, ActivityPhase,
         ProgressSteps, ProgressStepsState, ProgressStepsMode, ProgressStepsPresentation,
@@ -4585,12 +4586,48 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "timeline/checkpoint",
-            "CheckpointTimeline",
+            "Timeline checkpoint rows",
             "Timeline",
-            "Checkpoint select/restore substrate.",
+            "Timeline events with Checkpoint row kind (substrate).",
             52,
             8,
-            timeline_checkpoint,
+            timeline_checkpoint_rows,
+        ),
+        Story::new(
+            "checkpoint-timeline/basic",
+            "CheckpointTimeline",
+            "CheckpointTimeline",
+            "Rewindable session history — browse mode, draft preserved.",
+            64,
+            16,
+            checkpoint_timeline_story,
+        ),
+        Story::new(
+            "checkpoint-timeline/preview",
+            "CheckpointTimeline preview",
+            "CheckpointTimeline",
+            "Preview checkpoint without mutation.",
+            64,
+            16,
+            checkpoint_timeline_preview_story,
+        ),
+        Story::new(
+            "checkpoint-timeline/confirm",
+            "CheckpointTimeline confirm",
+            "CheckpointTimeline",
+            "Confirm restore with Cancel default focus.",
+            64,
+            14,
+            checkpoint_timeline_confirm_story,
+        ),
+        Story::new(
+            "checkpoint-timeline/boundaries",
+            "CheckpointTimeline boundaries",
+            "CheckpointTimeline",
+            "Dirty / external / irreversible boundary warnings.",
+            64,
+            16,
+            checkpoint_timeline_boundaries_story,
         ),
         Story::new(
             "prompt-composer/basic",
@@ -8113,6 +8150,24 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             3,
             thinking_block_unicode_story,
+        ),
+        Story::new(
+            "checkpoint-timeline/narrow",
+            "Narrow CheckpointTimeline",
+            "CheckpointTimeline",
+            "Narrow-terminal geometry for CheckpointTimeline (22 cols).",
+            22,
+            14,
+            checkpoint_timeline_story,
+        ),
+        Story::new(
+            "checkpoint-timeline/unicode",
+            "Unicode CheckpointTimeline",
+            "CheckpointTimeline",
+            "Unicode-safe paint path for CheckpointTimeline.",
+            48,
+            12,
+            checkpoint_timeline_unicode_story,
         ),
         Story::new(
             "timeline/narrow",
@@ -17306,7 +17361,7 @@ fn timeline_streaming(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     );
 }
 
-fn timeline_checkpoint(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+fn timeline_checkpoint_rows(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let events = [
         TimelineEvent::checkpoint("c0", "10:00", "session open"),
         TimelineEvent::checkpoint("c1", "10:05", "after plan").active(),
@@ -17314,12 +17369,81 @@ fn timeline_checkpoint(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     ];
     let mut state = TimelineState::new();
     state.following = false;
+    state.set_checkpoint_mode(true);
     state.cursor = 1;
     frame.render_stateful_widget(
-        &CheckpointTimeline::new(&events, system).focused(true),
+        Timeline::with_events(&events, system).focused(true),
         area,
         &mut state,
     );
+}
+
+fn checkpoint_timeline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_checkpoints, CheckpointTimeline, CheckpointTimelineState};
+    let mut state = CheckpointTimelineState::new();
+    state.set_checkpoints(example_checkpoints());
+    state.focused = true;
+    frame.render_stateful_widget(&CheckpointTimeline::new(system), area, &mut state);
+}
+
+fn checkpoint_timeline_preview_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_checkpoints, CheckpointTimeline, CheckpointTimelineMode, CheckpointTimelineState,
+    };
+    let mut state = CheckpointTimelineState::new();
+    state.set_checkpoints(example_checkpoints());
+    state.cursor = 2;
+    state.selected = Some("c2".into());
+    state.mode = CheckpointTimelineMode::Preview;
+    state.focus_id = Some("c2".into());
+    state.focused = true;
+    frame.render_stateful_widget(&CheckpointTimeline::new(system), area, &mut state);
+}
+
+fn checkpoint_timeline_confirm_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_checkpoints, CheckpointConfirmAction, CheckpointTimeline, CheckpointTimelineMode,
+        CheckpointTimelineState,
+    };
+    let mut state = CheckpointTimelineState::new();
+    state.set_checkpoints(example_checkpoints());
+    state.cursor = 1;
+    state.selected = Some("c1".into());
+    state.mode = CheckpointTimelineMode::Confirm;
+    state.confirm_action = Some(CheckpointConfirmAction::Restore);
+    state.confirm_proceed_focused = false;
+    state.last_warning = Some("restore files/state to checkpoint (host executes)".into());
+    state.focused = true;
+    frame.render_stateful_widget(&CheckpointTimeline::new(system), area, &mut state);
+}
+
+fn checkpoint_timeline_boundaries_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_checkpoints, CheckpointTimeline, CheckpointTimelineState,
+    };
+    let mut state = CheckpointTimelineState::new();
+    state.set_checkpoints(example_checkpoints());
+    // Focus dirty workspace checkpoint
+    if let Some(i) = state.checkpoints.iter().position(|c| c.id == "c3") {
+        state.cursor = i;
+        state.selected = Some("c3".into());
+    }
+    state.focused = true;
+    frame.render_stateful_widget(&CheckpointTimeline::new(system), area, &mut state);
+}
+
+fn checkpoint_timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Checkpoint, CheckpointTimeline, CheckpointTimelineState};
+    let mut state = CheckpointTimelineState::new();
+    state.set_checkpoints(vec![
+        Checkpoint::new("u0", "12:00", "検査 🔍")
+            .summary("ファイル状態")
+            .files(["src/日本語.rs"]),
+        Checkpoint::new("u1", "12:05", "分岐 ⑂").branch("探索", Some("u0")),
+        Checkpoint::new("u2", "12:10", "現在").head(),
+    ]);
+    state.focused = true;
+    frame.render_stateful_widget(&CheckpointTimeline::new(system), area, &mut state);
 }
 
 fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

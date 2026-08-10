@@ -18,7 +18,7 @@ fix TermRock instead. Never paper over with private app-only chrome.
 | GAP-SUB-1 | Custom subagent paint | SubagentCard | P1 | agent pack / blocks | G5a | open |
 | GAP-ACT-1 | Active tools row hand-rolled | ActivityShelf | P1 | agent pack | G5b | open |
 | GAP-CM-1 | Context only TokenMeter | ContextMeter | P1 | agent elevate | G5c | open |
-| GAP-CP-1 | Checkpoints not interactive (`Timeline` paint-only) | CheckpointTimeline | P1 | Timeline elevate | G5d | open |
+| GAP-CP-1 | Checkpoints not interactive (`Timeline` paint-only) | CheckpointTimeline | P1 | `checkpoint_timeline.rs` (0229) | G5d | closed |
 | GAP-REC-1 | No Studio rec format wired | recording schema + check CLI | P2 | studio + showcase | S8 | open |
 
 ### Severity

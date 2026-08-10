@@ -242,6 +242,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0226 | `v0.13.0` | [PermissionPrompt Global trust surface](migrations/0226-v0.13.0-permission-prompt.md) |
 | 0227 | `v0.13.0` | [QuestionFlow multi-question HITL](migrations/0227-v0.13.0-question-flow.md) |
 | 0228 | `v0.13.0` | [PlanReview interactive plan document](migrations/0228-v0.13.0-plan-review.md) |
+| 0229 | `v0.13.0` | [CheckpointTimeline session history](migrations/0229-v0.13.0-checkpoint-timeline.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

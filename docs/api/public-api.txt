@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.72s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.74s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -14725,6 +14725,8 @@ pub const termrock::widgets::charts_bench::SAMPLES_PER_SEC: u32
 pub const termrock::widgets::charts_bench::STREAM_WINDOW: usize
 pub const termrock::widgets::charts_bench::TINY_HEIGHT: u16
 pub const termrock::widgets::charts_bench::TINY_WIDTH: u16
+pub mod termrock::widgets::checkpoint_timeline_bench
+pub const termrock::widgets::checkpoint_timeline_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::citation_bench
 pub const termrock::widgets::citation_bench::CITATION_COUNT: usize
 pub const termrock::widgets::citation_bench::PAINT_FRAMES: u32
@@ -17979,6 +17981,334 @@ pub unsafe fn termrock::widgets::CheckboxValue::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::CheckboxValue
 pub fn termrock::widgets::CheckboxValue::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CheckboxValue
+#[non_exhaustive] pub enum termrock::widgets::CheckpointBoundary
+pub termrock::widgets::CheckpointBoundary::DirtyWorkspace
+pub termrock::widgets::CheckpointBoundary::ExternalEffects
+pub termrock::widgets::CheckpointBoundary::Irreversible
+pub termrock::widgets::CheckpointBoundary::Soft
+impl termrock::widgets::CheckpointBoundary
+pub const fn termrock::widgets::CheckpointBoundary::blocks_restore(self) -> bool
+pub const fn termrock::widgets::CheckpointBoundary::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::CheckpointBoundary::id(self) -> &'static str
+pub const fn termrock::widgets::CheckpointBoundary::needs_warning(self) -> bool
+pub const fn termrock::widgets::CheckpointBoundary::role(self) -> termrock::style::Role
+pub const fn termrock::widgets::CheckpointBoundary::warning_label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::CheckpointBoundary
+pub fn termrock::widgets::CheckpointBoundary::clone(&self) -> termrock::widgets::CheckpointBoundary
+impl core::cmp::Eq for termrock::widgets::CheckpointBoundary
+impl core::cmp::PartialEq for termrock::widgets::CheckpointBoundary
+pub fn termrock::widgets::CheckpointBoundary::eq(&self, &termrock::widgets::CheckpointBoundary) -> bool
+impl core::default::Default for termrock::widgets::CheckpointBoundary
+pub fn termrock::widgets::CheckpointBoundary::default() -> termrock::widgets::CheckpointBoundary
+impl core::fmt::Debug for termrock::widgets::CheckpointBoundary
+pub fn termrock::widgets::CheckpointBoundary::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CheckpointBoundary
+pub fn termrock::widgets::CheckpointBoundary::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CheckpointBoundary
+impl core::marker::StructuralPartialEq for termrock::widgets::CheckpointBoundary
+impl core::marker::Freeze for termrock::widgets::CheckpointBoundary
+impl core::marker::Send for termrock::widgets::CheckpointBoundary
+impl core::marker::Sync for termrock::widgets::CheckpointBoundary
+impl core::marker::Unpin for termrock::widgets::CheckpointBoundary
+impl core::marker::UnsafeUnpin for termrock::widgets::CheckpointBoundary
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointBoundary
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointBoundary
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CheckpointBoundary where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointBoundary::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointBoundary where U: core::convert::From<T>
+pub fn termrock::widgets::CheckpointBoundary::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointBoundary where U: core::convert::Into<T>
+pub type termrock::widgets::CheckpointBoundary::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckpointBoundary::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointBoundary where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckpointBoundary::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckpointBoundary::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointBoundary where T: core::clone::Clone
+pub type termrock::widgets::CheckpointBoundary::Owned = T
+pub fn termrock::widgets::CheckpointBoundary::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckpointBoundary::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckpointBoundary where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointBoundary::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointBoundary where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointBoundary::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointBoundary where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointBoundary::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointBoundary where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckpointBoundary::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckpointBoundary
+pub fn termrock::widgets::CheckpointBoundary::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointBoundary
+#[non_exhaustive] pub enum termrock::widgets::CheckpointConfirmAction
+pub termrock::widgets::CheckpointConfirmAction::Restore
+pub termrock::widgets::CheckpointConfirmAction::Rewind
+impl termrock::widgets::CheckpointConfirmAction
+pub const fn termrock::widgets::CheckpointConfirmAction::consequence(self) -> &'static str
+pub const fn termrock::widgets::CheckpointConfirmAction::label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::CheckpointConfirmAction
+pub fn termrock::widgets::CheckpointConfirmAction::clone(&self) -> termrock::widgets::CheckpointConfirmAction
+impl core::cmp::Eq for termrock::widgets::CheckpointConfirmAction
+impl core::cmp::PartialEq for termrock::widgets::CheckpointConfirmAction
+pub fn termrock::widgets::CheckpointConfirmAction::eq(&self, &termrock::widgets::CheckpointConfirmAction) -> bool
+impl core::fmt::Debug for termrock::widgets::CheckpointConfirmAction
+pub fn termrock::widgets::CheckpointConfirmAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CheckpointConfirmAction
+pub fn termrock::widgets::CheckpointConfirmAction::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CheckpointConfirmAction
+impl core::marker::StructuralPartialEq for termrock::widgets::CheckpointConfirmAction
+impl core::marker::Freeze for termrock::widgets::CheckpointConfirmAction
+impl core::marker::Send for termrock::widgets::CheckpointConfirmAction
+impl core::marker::Sync for termrock::widgets::CheckpointConfirmAction
+impl core::marker::Unpin for termrock::widgets::CheckpointConfirmAction
+impl core::marker::UnsafeUnpin for termrock::widgets::CheckpointConfirmAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointConfirmAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointConfirmAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CheckpointConfirmAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointConfirmAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointConfirmAction where U: core::convert::From<T>
+pub fn termrock::widgets::CheckpointConfirmAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointConfirmAction where U: core::convert::Into<T>
+pub type termrock::widgets::CheckpointConfirmAction::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckpointConfirmAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointConfirmAction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckpointConfirmAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckpointConfirmAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointConfirmAction where T: core::clone::Clone
+pub type termrock::widgets::CheckpointConfirmAction::Owned = T
+pub fn termrock::widgets::CheckpointConfirmAction::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckpointConfirmAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckpointConfirmAction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointConfirmAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointConfirmAction where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointConfirmAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointConfirmAction where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointConfirmAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointConfirmAction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckpointConfirmAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckpointConfirmAction
+pub fn termrock::widgets::CheckpointConfirmAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointConfirmAction
+#[non_exhaustive] pub enum termrock::widgets::CheckpointKind
+pub termrock::widgets::CheckpointKind::Action
+pub termrock::widgets::CheckpointKind::Branch
+pub termrock::widgets::CheckpointKind::FileState
+pub termrock::widgets::CheckpointKind::Manual
+pub termrock::widgets::CheckpointKind::System
+pub termrock::widgets::CheckpointKind::Turn
+impl termrock::widgets::CheckpointKind
+pub const fn termrock::widgets::CheckpointKind::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::CheckpointKind::id(self) -> &'static str
+pub const fn termrock::widgets::CheckpointKind::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::CheckpointKind
+pub fn termrock::widgets::CheckpointKind::clone(&self) -> termrock::widgets::CheckpointKind
+impl core::cmp::Eq for termrock::widgets::CheckpointKind
+impl core::cmp::PartialEq for termrock::widgets::CheckpointKind
+pub fn termrock::widgets::CheckpointKind::eq(&self, &termrock::widgets::CheckpointKind) -> bool
+impl core::default::Default for termrock::widgets::CheckpointKind
+pub fn termrock::widgets::CheckpointKind::default() -> termrock::widgets::CheckpointKind
+impl core::fmt::Debug for termrock::widgets::CheckpointKind
+pub fn termrock::widgets::CheckpointKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CheckpointKind
+pub fn termrock::widgets::CheckpointKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CheckpointKind
+impl core::marker::StructuralPartialEq for termrock::widgets::CheckpointKind
+impl core::marker::Freeze for termrock::widgets::CheckpointKind
+impl core::marker::Send for termrock::widgets::CheckpointKind
+impl core::marker::Sync for termrock::widgets::CheckpointKind
+impl core::marker::Unpin for termrock::widgets::CheckpointKind
+impl core::marker::UnsafeUnpin for termrock::widgets::CheckpointKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CheckpointKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointKind where U: core::convert::From<T>
+pub fn termrock::widgets::CheckpointKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointKind where U: core::convert::Into<T>
+pub type termrock::widgets::CheckpointKind::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckpointKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckpointKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckpointKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointKind where T: core::clone::Clone
+pub type termrock::widgets::CheckpointKind::Owned = T
+pub fn termrock::widgets::CheckpointKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckpointKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckpointKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointKind where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointKind where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckpointKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckpointKind
+pub fn termrock::widgets::CheckpointKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointKind
+#[non_exhaustive] pub enum termrock::widgets::CheckpointTimelineMode
+pub termrock::widgets::CheckpointTimelineMode::Browse
+pub termrock::widgets::CheckpointTimelineMode::Confirm
+pub termrock::widgets::CheckpointTimelineMode::Preview
+impl termrock::widgets::CheckpointTimelineMode
+pub const fn termrock::widgets::CheckpointTimelineMode::id(self) -> &'static str
+pub const fn termrock::widgets::CheckpointTimelineMode::is_mutating_request(self) -> bool
+impl core::clone::Clone for termrock::widgets::CheckpointTimelineMode
+pub fn termrock::widgets::CheckpointTimelineMode::clone(&self) -> termrock::widgets::CheckpointTimelineMode
+impl core::cmp::Eq for termrock::widgets::CheckpointTimelineMode
+impl core::cmp::PartialEq for termrock::widgets::CheckpointTimelineMode
+pub fn termrock::widgets::CheckpointTimelineMode::eq(&self, &termrock::widgets::CheckpointTimelineMode) -> bool
+impl core::default::Default for termrock::widgets::CheckpointTimelineMode
+pub fn termrock::widgets::CheckpointTimelineMode::default() -> termrock::widgets::CheckpointTimelineMode
+impl core::fmt::Debug for termrock::widgets::CheckpointTimelineMode
+pub fn termrock::widgets::CheckpointTimelineMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CheckpointTimelineMode
+pub fn termrock::widgets::CheckpointTimelineMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CheckpointTimelineMode
+impl core::marker::StructuralPartialEq for termrock::widgets::CheckpointTimelineMode
+impl core::marker::Freeze for termrock::widgets::CheckpointTimelineMode
+impl core::marker::Send for termrock::widgets::CheckpointTimelineMode
+impl core::marker::Sync for termrock::widgets::CheckpointTimelineMode
+impl core::marker::Unpin for termrock::widgets::CheckpointTimelineMode
+impl core::marker::UnsafeUnpin for termrock::widgets::CheckpointTimelineMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointTimelineMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointTimelineMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CheckpointTimelineMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointTimelineMode where U: core::convert::From<T>
+pub fn termrock::widgets::CheckpointTimelineMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointTimelineMode where U: core::convert::Into<T>
+pub type termrock::widgets::CheckpointTimelineMode::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckpointTimelineMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointTimelineMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckpointTimelineMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckpointTimelineMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointTimelineMode where T: core::clone::Clone
+pub type termrock::widgets::CheckpointTimelineMode::Owned = T
+pub fn termrock::widgets::CheckpointTimelineMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckpointTimelineMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckpointTimelineMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointTimelineMode where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointTimelineMode where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointTimelineMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckpointTimelineMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckpointTimelineMode
+pub fn termrock::widgets::CheckpointTimelineMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointTimelineMode
+#[non_exhaustive] pub enum termrock::widgets::CheckpointTimelineOutcome
+pub termrock::widgets::CheckpointTimelineOutcome::BranchFocused
+pub termrock::widgets::CheckpointTimelineOutcome::BranchFocused::branch_id: alloc::string::String
+pub termrock::widgets::CheckpointTimelineOutcome::Cancelled
+pub termrock::widgets::CheckpointTimelineOutcome::CompareRequested
+pub termrock::widgets::CheckpointTimelineOutcome::CompareRequested::from: core::option::Option<alloc::string::String>
+pub termrock::widgets::CheckpointTimelineOutcome::CompareRequested::to: alloc::string::String
+pub termrock::widgets::CheckpointTimelineOutcome::ConfirmCancelled
+pub termrock::widgets::CheckpointTimelineOutcome::ConfirmOpened
+pub termrock::widgets::CheckpointTimelineOutcome::ConfirmOpened::action: termrock::widgets::CheckpointConfirmAction
+pub termrock::widgets::CheckpointTimelineOutcome::ConfirmOpened::id: alloc::string::String
+pub termrock::widgets::CheckpointTimelineOutcome::FollowToggled
+pub termrock::widgets::CheckpointTimelineOutcome::FollowToggled::following: bool
+pub termrock::widgets::CheckpointTimelineOutcome::Ignored
+pub termrock::widgets::CheckpointTimelineOutcome::PreviewClosed
+pub termrock::widgets::CheckpointTimelineOutcome::PreviewOpened
+pub termrock::widgets::CheckpointTimelineOutcome::PreviewOpened::id: alloc::string::String
+pub termrock::widgets::CheckpointTimelineOutcome::RestoreRequested
+pub termrock::widgets::CheckpointTimelineOutcome::RestoreRequested::id: alloc::string::String
+pub termrock::widgets::CheckpointTimelineOutcome::RewindRequested
+pub termrock::widgets::CheckpointTimelineOutcome::RewindRequested::id: alloc::string::String
+pub termrock::widgets::CheckpointTimelineOutcome::Selected
+pub termrock::widgets::CheckpointTimelineOutcome::Selected::id: alloc::string::String
+pub termrock::widgets::CheckpointTimelineOutcome::WarningAcknowledged
+impl core::clone::Clone for termrock::widgets::CheckpointTimelineOutcome
+pub fn termrock::widgets::CheckpointTimelineOutcome::clone(&self) -> termrock::widgets::CheckpointTimelineOutcome
+impl core::cmp::Eq for termrock::widgets::CheckpointTimelineOutcome
+impl core::cmp::PartialEq for termrock::widgets::CheckpointTimelineOutcome
+pub fn termrock::widgets::CheckpointTimelineOutcome::eq(&self, &termrock::widgets::CheckpointTimelineOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::CheckpointTimelineOutcome
+pub fn termrock::widgets::CheckpointTimelineOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CheckpointTimelineOutcome
+impl core::marker::Freeze for termrock::widgets::CheckpointTimelineOutcome
+impl core::marker::Send for termrock::widgets::CheckpointTimelineOutcome
+impl core::marker::Sync for termrock::widgets::CheckpointTimelineOutcome
+impl core::marker::Unpin for termrock::widgets::CheckpointTimelineOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::CheckpointTimelineOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointTimelineOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointTimelineOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CheckpointTimelineOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointTimelineOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::CheckpointTimelineOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointTimelineOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::CheckpointTimelineOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckpointTimelineOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointTimelineOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckpointTimelineOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckpointTimelineOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointTimelineOutcome where T: core::clone::Clone
+pub type termrock::widgets::CheckpointTimelineOutcome::Owned = T
+pub fn termrock::widgets::CheckpointTimelineOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckpointTimelineOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckpointTimelineOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointTimelineOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointTimelineOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointTimelineOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckpointTimelineOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckpointTimelineOutcome
+pub fn termrock::widgets::CheckpointTimelineOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointTimelineOutcome
+#[non_exhaustive] pub enum termrock::widgets::CheckpointTimelineRecipe
+pub termrock::widgets::CheckpointTimelineRecipe::Detailed
+pub termrock::widgets::CheckpointTimelineRecipe::Rail
+impl termrock::widgets::CheckpointTimelineRecipe
+pub const fn termrock::widgets::CheckpointTimelineRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::CheckpointTimelineRecipe
+pub fn termrock::widgets::CheckpointTimelineRecipe::clone(&self) -> termrock::widgets::CheckpointTimelineRecipe
+impl core::cmp::Eq for termrock::widgets::CheckpointTimelineRecipe
+impl core::cmp::PartialEq for termrock::widgets::CheckpointTimelineRecipe
+pub fn termrock::widgets::CheckpointTimelineRecipe::eq(&self, &termrock::widgets::CheckpointTimelineRecipe) -> bool
+impl core::default::Default for termrock::widgets::CheckpointTimelineRecipe
+pub fn termrock::widgets::CheckpointTimelineRecipe::default() -> termrock::widgets::CheckpointTimelineRecipe
+impl core::fmt::Debug for termrock::widgets::CheckpointTimelineRecipe
+pub fn termrock::widgets::CheckpointTimelineRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CheckpointTimelineRecipe
+pub fn termrock::widgets::CheckpointTimelineRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CheckpointTimelineRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::CheckpointTimelineRecipe
+impl core::marker::Freeze for termrock::widgets::CheckpointTimelineRecipe
+impl core::marker::Send for termrock::widgets::CheckpointTimelineRecipe
+impl core::marker::Sync for termrock::widgets::CheckpointTimelineRecipe
+impl core::marker::Unpin for termrock::widgets::CheckpointTimelineRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::CheckpointTimelineRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointTimelineRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointTimelineRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CheckpointTimelineRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointTimelineRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::CheckpointTimelineRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointTimelineRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::CheckpointTimelineRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckpointTimelineRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointTimelineRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckpointTimelineRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckpointTimelineRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointTimelineRecipe where T: core::clone::Clone
+pub type termrock::widgets::CheckpointTimelineRecipe::Owned = T
+pub fn termrock::widgets::CheckpointTimelineRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckpointTimelineRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckpointTimelineRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointTimelineRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointTimelineRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointTimelineRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckpointTimelineRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckpointTimelineRecipe
+pub fn termrock::widgets::CheckpointTimelineRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointTimelineRecipe
 #[non_exhaustive] pub enum termrock::widgets::ChipKind
 pub termrock::widgets::ChipKind::File
 pub termrock::widgets::ChipKind::Media
@@ -46530,50 +46860,203 @@ pub unsafe fn termrock::widgets::CheckboxState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::CheckboxState
 pub fn termrock::widgets::CheckboxState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CheckboxState
-pub struct termrock::widgets::CheckpointTimeline<'a, Id>
-impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::CheckpointTimeline<'a, Id>
-pub const fn termrock::widgets::CheckpointTimeline<'a, Id>::ascii(self, bool) -> Self
-pub const fn termrock::widgets::CheckpointTimeline<'a, Id>::focused(self, bool) -> Self
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::new(&'a [termrock::widgets::TimelineEvent<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::rail(self) -> Self
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TimelineState<Id>)
-impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::CheckpointTimeline<'a, Id>
-pub type &termrock::widgets::CheckpointTimeline<'a, Id>::State = termrock::widgets::TimelineState<Id>
-pub fn &termrock::widgets::CheckpointTimeline<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CheckpointTimeline<'a, Id>
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::clone(&self) -> termrock::widgets::CheckpointTimeline<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::CheckpointTimeline<'a, Id>
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id> core::marker::Freeze for termrock::widgets::CheckpointTimeline<'a, Id>
-impl<'a, Id> core::marker::Send for termrock::widgets::CheckpointTimeline<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Sync for termrock::widgets::CheckpointTimeline<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::CheckpointTimeline<'a, Id>
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::CheckpointTimeline<'a, Id>
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointTimeline<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointTimeline<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointTimeline<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointTimeline<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::CheckpointTimeline<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointTimeline<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::CheckpointTimeline<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointTimeline<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::CheckpointTimeline<'a, Id>::Owned = T
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::CheckpointTimeline<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointTimeline<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointTimeline<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointTimeline<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::CheckpointTimeline<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::CheckpointTimeline<'a, Id>
-pub fn termrock::widgets::CheckpointTimeline<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointTimeline<'a, Id>
+pub struct termrock::widgets::Checkpoint
+pub termrock::widgets::Checkpoint::actor: core::option::Option<alloc::string::String>
+pub termrock::widgets::Checkpoint::boundary: termrock::widgets::CheckpointBoundary
+pub termrock::widgets::Checkpoint::branch_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::Checkpoint::changed_files: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::Checkpoint::id: alloc::string::String
+pub termrock::widgets::Checkpoint::is_head: bool
+pub termrock::widgets::Checkpoint::kind: termrock::widgets::CheckpointKind
+pub termrock::widgets::Checkpoint::label: alloc::string::String
+pub termrock::widgets::Checkpoint::parent_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::Checkpoint::relative: core::option::Option<alloc::string::String>
+pub termrock::widgets::Checkpoint::restorable: bool
+pub termrock::widgets::Checkpoint::summary: core::option::Option<alloc::string::String>
+pub termrock::widgets::Checkpoint::tool_calls: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::Checkpoint::warning: core::option::Option<alloc::string::String>
+pub termrock::widgets::Checkpoint::when: alloc::string::String
+impl termrock::widgets::Checkpoint
+pub fn termrock::widgets::Checkpoint::actor(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::Checkpoint::boundary(self, termrock::widgets::CheckpointBoundary) -> Self
+pub fn termrock::widgets::Checkpoint::branch(self, impl core::convert::Into<alloc::string::String>, core::option::Option<impl core::convert::Into<alloc::string::String>>) -> Self
+pub fn termrock::widgets::Checkpoint::can_request_restore(&self) -> bool
+pub fn termrock::widgets::Checkpoint::can_request_rewind(&self) -> bool
+pub fn termrock::widgets::Checkpoint::effective_warning(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::Checkpoint::files(self, impl core::iter::traits::collect::IntoIterator<Item = impl core::convert::Into<alloc::string::String>>) -> Self
+pub const fn termrock::widgets::Checkpoint::head(self) -> Self
+pub const fn termrock::widgets::Checkpoint::kind(self, termrock::widgets::CheckpointKind) -> Self
+pub fn termrock::widgets::Checkpoint::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::Checkpoint::not_restorable(self) -> Self
+pub fn termrock::widgets::Checkpoint::relative(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::Checkpoint::summary(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::Checkpoint::tools(self, impl core::iter::traits::collect::IntoIterator<Item = impl core::convert::Into<alloc::string::String>>) -> Self
+pub fn termrock::widgets::Checkpoint::warning(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::Checkpoint
+pub fn termrock::widgets::Checkpoint::clone(&self) -> termrock::widgets::Checkpoint
+impl core::cmp::Eq for termrock::widgets::Checkpoint
+impl core::cmp::PartialEq for termrock::widgets::Checkpoint
+pub fn termrock::widgets::Checkpoint::eq(&self, &termrock::widgets::Checkpoint) -> bool
+impl core::fmt::Debug for termrock::widgets::Checkpoint
+pub fn termrock::widgets::Checkpoint::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::Checkpoint
+impl core::marker::Freeze for termrock::widgets::Checkpoint
+impl core::marker::Send for termrock::widgets::Checkpoint
+impl core::marker::Sync for termrock::widgets::Checkpoint
+impl core::marker::Unpin for termrock::widgets::Checkpoint
+impl core::marker::UnsafeUnpin for termrock::widgets::Checkpoint
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Checkpoint
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::Checkpoint
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::Checkpoint where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::Checkpoint::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::Checkpoint where U: core::convert::From<T>
+pub fn termrock::widgets::Checkpoint::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Checkpoint where U: core::convert::Into<T>
+pub type termrock::widgets::Checkpoint::Error = core::convert::Infallible
+pub fn termrock::widgets::Checkpoint::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Checkpoint where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Checkpoint::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Checkpoint::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Checkpoint where T: core::clone::Clone
+pub type termrock::widgets::Checkpoint::Owned = T
+pub fn termrock::widgets::Checkpoint::clone_into(&self, &mut T)
+pub fn termrock::widgets::Checkpoint::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Checkpoint where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Checkpoint::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Checkpoint where T: ?core::marker::Sized
+pub fn termrock::widgets::Checkpoint::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Checkpoint where T: ?core::marker::Sized
+pub fn termrock::widgets::Checkpoint::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Checkpoint where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Checkpoint::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Checkpoint
+pub fn termrock::widgets::Checkpoint::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Checkpoint
+pub struct termrock::widgets::CheckpointTimeline<'a>
+impl<'a> termrock::widgets::CheckpointTimeline<'a>
+pub const fn termrock::widgets::CheckpointTimeline<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::CheckpointTimeline<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::CheckpointTimeline<'a>::list_only(self, bool) -> Self
+pub fn termrock::widgets::CheckpointTimeline<'a>::map_timeline_outcome(termrock::widgets::TimelineOutcome<alloc::string::String>) -> termrock::widgets::CheckpointTimelineOutcome
+pub const fn termrock::widgets::CheckpointTimeline<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::CheckpointTimeline<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CheckpointTimelineState)
+pub fn termrock::widgets::CheckpointTimeline<'a>::paint_via_timeline(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CheckpointTimelineState, &[termrock::widgets::TimelineEvent<'_, alloc::string::String>])
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::CheckpointTimeline<'_>
+pub type &termrock::widgets::CheckpointTimeline<'_>::State = termrock::widgets::CheckpointTimelineState
+pub fn &termrock::widgets::CheckpointTimeline<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::CheckpointTimeline<'_>
+pub type termrock::widgets::CheckpointTimeline<'_>::State = termrock::widgets::CheckpointTimelineState
+pub fn termrock::widgets::CheckpointTimeline<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::CheckpointTimeline<'a>
+pub fn termrock::widgets::CheckpointTimeline<'a>::clone(&self) -> termrock::widgets::CheckpointTimeline<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::CheckpointTimeline<'a>
+pub fn termrock::widgets::CheckpointTimeline<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::CheckpointTimeline<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::CheckpointTimeline<'a>
+impl<'a> core::marker::Send for termrock::widgets::CheckpointTimeline<'a>
+impl<'a> core::marker::Sync for termrock::widgets::CheckpointTimeline<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::CheckpointTimeline<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::CheckpointTimeline<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointTimeline<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointTimeline<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointTimeline<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::CheckpointTimeline<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointTimeline<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::CheckpointTimeline<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckpointTimeline<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointTimeline<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckpointTimeline<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckpointTimeline<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointTimeline<'a> where T: core::clone::Clone
+pub type termrock::widgets::CheckpointTimeline<'a>::Owned = T
+pub fn termrock::widgets::CheckpointTimeline<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckpointTimeline<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckpointTimeline<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimeline<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointTimeline<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimeline<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointTimeline<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimeline<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointTimeline<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckpointTimeline<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckpointTimeline<'a>
+pub fn termrock::widgets::CheckpointTimeline<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointTimeline<'a>
+pub struct termrock::widgets::CheckpointTimelineState
+pub termrock::widgets::CheckpointTimelineState::branch_filter: core::option::Option<alloc::string::String>
+pub termrock::widgets::CheckpointTimelineState::checkpoints: alloc::vec::Vec<termrock::widgets::Checkpoint>
+pub termrock::widgets::CheckpointTimelineState::compare_anchor: core::option::Option<alloc::string::String>
+pub termrock::widgets::CheckpointTimelineState::confirm_action: core::option::Option<termrock::widgets::CheckpointConfirmAction>
+pub termrock::widgets::CheckpointTimelineState::confirm_hits: alloc::vec::Vec<(bool, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::CheckpointTimelineState::confirm_proceed_focused: bool
+pub termrock::widgets::CheckpointTimelineState::cursor: usize
+pub termrock::widgets::CheckpointTimelineState::detail_scroll: usize
+pub termrock::widgets::CheckpointTimelineState::focus_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::CheckpointTimelineState::focused: bool
+pub termrock::widgets::CheckpointTimelineState::following: bool
+pub termrock::widgets::CheckpointTimelineState::last_warning: core::option::Option<alloc::string::String>
+pub termrock::widgets::CheckpointTimelineState::mode: termrock::widgets::CheckpointTimelineMode
+pub termrock::widgets::CheckpointTimelineState::recipe: termrock::widgets::CheckpointTimelineRecipe
+pub termrock::widgets::CheckpointTimelineState::row_hits: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::CheckpointTimelineState::selected: core::option::Option<alloc::string::String>
+pub termrock::widgets::CheckpointTimelineState::timeline: termrock::widgets::TimelineState<alloc::string::String>
+impl termrock::widgets::CheckpointTimelineState
+pub fn termrock::widgets::CheckpointTimelineState::append(&mut self, termrock::widgets::Checkpoint)
+pub fn termrock::widgets::CheckpointTimelineState::current(&self) -> core::option::Option<&termrock::widgets::Checkpoint>
+pub fn termrock::widgets::CheckpointTimelineState::follow_head(&mut self)
+pub fn termrock::widgets::CheckpointTimelineState::get(&self, &str) -> core::option::Option<&termrock::widgets::Checkpoint>
+pub fn termrock::widgets::CheckpointTimelineState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::CheckpointTimelineOutcome
+pub fn termrock::widgets::CheckpointTimelineState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::CheckpointTimelineOutcome
+pub fn termrock::widgets::CheckpointTimelineState::head(&self) -> core::option::Option<&termrock::widgets::Checkpoint>
+pub const fn termrock::widgets::CheckpointTimelineState::is_viewing(&self) -> bool
+pub fn termrock::widgets::CheckpointTimelineState::new() -> Self
+pub fn termrock::widgets::CheckpointTimelineState::project_timeline_events(&self) -> alloc::vec::Vec<termrock::widgets::TimelineEvent<'_, alloc::string::String>>
+pub fn termrock::widgets::CheckpointTimelineState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::CheckpointTimelineState::set_checkpoints(&mut self, alloc::vec::Vec<termrock::widgets::Checkpoint>)
+pub const fn termrock::widgets::CheckpointTimelineState::set_focused(&mut self, bool)
+pub fn termrock::widgets::CheckpointTimelineState::unfollow(&mut self)
+impl core::clone::Clone for termrock::widgets::CheckpointTimelineState
+pub fn termrock::widgets::CheckpointTimelineState::clone(&self) -> termrock::widgets::CheckpointTimelineState
+impl core::cmp::Eq for termrock::widgets::CheckpointTimelineState
+impl core::cmp::PartialEq for termrock::widgets::CheckpointTimelineState
+pub fn termrock::widgets::CheckpointTimelineState::eq(&self, &termrock::widgets::CheckpointTimelineState) -> bool
+impl core::default::Default for termrock::widgets::CheckpointTimelineState
+pub fn termrock::widgets::CheckpointTimelineState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::CheckpointTimelineState
+pub fn termrock::widgets::CheckpointTimelineState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CheckpointTimelineState
+impl core::marker::Freeze for termrock::widgets::CheckpointTimelineState
+impl core::marker::Send for termrock::widgets::CheckpointTimelineState
+impl core::marker::Sync for termrock::widgets::CheckpointTimelineState
+impl core::marker::Unpin for termrock::widgets::CheckpointTimelineState
+impl core::marker::UnsafeUnpin for termrock::widgets::CheckpointTimelineState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointTimelineState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointTimelineState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CheckpointTimelineState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointTimelineState where U: core::convert::From<T>
+pub fn termrock::widgets::CheckpointTimelineState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointTimelineState where U: core::convert::Into<T>
+pub type termrock::widgets::CheckpointTimelineState::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckpointTimelineState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointTimelineState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckpointTimelineState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckpointTimelineState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointTimelineState where T: core::clone::Clone
+pub type termrock::widgets::CheckpointTimelineState::Owned = T
+pub fn termrock::widgets::CheckpointTimelineState::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckpointTimelineState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckpointTimelineState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointTimelineState where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointTimelineState where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimelineState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointTimelineState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckpointTimelineState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckpointTimelineState
+pub fn termrock::widgets::CheckpointTimelineState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointTimelineState
 pub struct termrock::widgets::Chip<'a, Id>
 pub termrock::widgets::Chip::id: Id
 impl<'a, Id: core::clone::Clone> termrock::widgets::Chip<'a, Id>
@@ -78624,6 +79107,8 @@ pub const termrock::widgets::BREADCRUMBS_ELLIPSIS: &str
 pub const termrock::widgets::BREADCRUMBS_ELLIPSIS_ASCII: &str
 pub const termrock::widgets::BUILTIN_THEME_PRESETS: &[termrock::widgets::ThemePreset]
 pub const termrock::widgets::BUSY_BOUNDARY_MAX_NEST: u8
+pub const termrock::widgets::CHECKPOINT_DETAIL_WINDOW: usize
+pub const termrock::widgets::CHECKPOINT_TIMELINE_OVERLAY_ID: &str
 pub const termrock::widgets::CITATION_PREVIEW_OVERLAY_ID: &str
 pub const termrock::widgets::CODE_FRAME_TAB_STOP: usize
 pub const termrock::widgets::COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT: u16
@@ -78861,6 +79346,8 @@ pub fn termrock::widgets::breadcrumbs_from_path(&str) -> alloc::vec::Vec<termroc
 pub fn termrock::widgets::build_task_rail_rows(&[termrock::widgets::ActivityModel], &alloc::collections::btree::set::BTreeSet<termrock::widgets::ActivityScope>, bool) -> alloc::vec::Vec<termrock::widgets::TaskRailRow>
 pub fn termrock::widgets::build_transcript_blocks<'a>(&'a [termrock::widgets::ProjectedEntryMeta], &'a [alloc::vec::Vec<alloc::string::String>], &'a mut alloc::vec::Vec<alloc::vec::Vec<&'a str>>) -> alloc::vec::Vec<termrock::widgets::TranscriptBlock<'a, alloc::string::String>>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
+pub fn termrock::widgets::checkpoint_index(&[termrock::widgets::Checkpoint]) -> alloc::collections::btree::map::BTreeMap<&str, &termrock::widgets::Checkpoint>
+pub fn termrock::widgets::checkpoint_to_timeline_event(&termrock::widgets::Checkpoint) -> termrock::widgets::TimelineEvent<'_, alloc::string::String>
 pub fn termrock::widgets::choose_dependency_view(termrock::widgets::DependencyGraphView, usize, u16, bool) -> (termrock::widgets::DependencyGraphView, core::option::Option<termrock::widgets::GraphUnreadableReason>)
 pub fn termrock::widgets::citation_from_stream(&termrock::widgets::StreamCitation, usize) -> termrock::widgets::CitationSource
 pub fn termrock::widgets::citation_link<'a>(&'a str, &'a str, &'a termrock::style::DesignSystem, bool) -> termrock::widgets::Link<'a>
@@ -78944,6 +79431,7 @@ pub fn termrock::widgets::example_busy_cancellable(&termrock::style::DesignSyste
 pub fn termrock::widgets::example_busy_non_blocking(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
 pub fn termrock::widgets::example_busy_optimistic(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
 pub fn termrock::widgets::example_busy_stale(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
+pub fn termrock::widgets::example_checkpoints() -> alloc::vec::Vec<termrock::widgets::Checkpoint>
 pub fn termrock::widgets::example_citations() -> alloc::vec::Vec<termrock::widgets::CitationSource>
 pub fn termrock::widgets::example_command_catalog() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
 pub fn termrock::widgets::example_command_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])

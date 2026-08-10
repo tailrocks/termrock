@@ -124,6 +124,7 @@ mod tree_table;
 mod key_value_table;
 mod object_inspector;
 mod timeline;
+mod checkpoint_timeline;
 mod event_stream;
 mod log_stream;
 mod diagnostic;
@@ -170,9 +171,16 @@ pub use toggle::{
 };
 pub use agent::{ThinkingBlock, TokenMeter, ToolCard, ToolStatus};
 pub use timeline::{
-    CheckpointTimeline, Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineRegion,
-    TimelineRowKind, TimelineState, TimelineStatus, filter_timeline_events,
+    Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineRegion, TimelineRowKind,
+    TimelineState, TimelineStatus, filter_timeline_events,
 };
+pub use checkpoint_timeline::{
+    CHECKPOINT_DETAIL_WINDOW, CHECKPOINT_TIMELINE_OVERLAY_ID, Checkpoint, CheckpointBoundary,
+    CheckpointConfirmAction, CheckpointKind, CheckpointTimeline, CheckpointTimelineMode,
+    CheckpointTimelineOutcome, CheckpointTimelineRecipe, CheckpointTimelineState,
+    checkpoint_index, checkpoint_to_timeline_event, example_checkpoints,
+};
+pub use checkpoint_timeline::bench as checkpoint_timeline_bench;
 pub use event_stream::{
     EventSeverity, EventStream, EventStreamOutcome, EventStreamRegion, EventStreamState,
     StreamEvent, StreamRowKind, filter_stream_events,

@@ -1604,6 +1604,33 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** select.  
 24. **Perf:** O(visible events).
 
+## CheckpointTimeline
+
+1. **Purpose:** Rewindable session history for agent turns, file states, actions.  
+2. **Anatomy:** `banner` · `checkpoint_list` · `detail` · `confirm_bar`  
+3. **Public properties:** `Checkpoint[]` (kind, boundary, files, tools, branch, head), recipe, `design`  
+4. **State:** mode Browse|Preview|Confirm; cursor; confirm Cancel-default; following.  
+5. **Variants:** Rail/Detailed recipe; Timeline projection.  
+6. **Sizes/density:** list+detail ≥48 cols; list-only narrow.  
+7. **Visual states:** HEAD · boundary glyphs · kind letters.  
+8. **Interaction states:** browse · preview · confirm restore/rewind.  
+9. **Keyboard:** j/k · Enter preview · r restore · w rewind · c compare · Esc · confirm ←/→ Enter · y unbound.  
+10. **Mouse:** row select/preview; confirm hits.  
+11. **Focus:** list; confirm Cancel default.  
+12. **Disabled:** accepts_input false.  
+13. **Loading:** host append checkpoints; follow HEAD.  
+14. **Error:** irreversible blocks; host warning strings.  
+15. **Narrow:** list-only path.  
+16. **Tiny:** selected label + mode.  
+17. **Unicode/ASCII:** kind/boundary glyphs.  
+18. **Colorless:** letters + warning text.  
+19. **Composition:** Timeline substrate; DiffReview via CompareRequested; never touches draft.  
+20. **Outcomes:** Selected · Preview* · RestoreRequested · RewindRequested · CompareRequested · Confirm* · Cancelled · FollowToggled  
+21. **Stories:** `checkpoint-timeline/{basic,preview,confirm,boundaries,narrow,unicode}`  
+22. **Snapshots:** dirty/external/irreversible.  
+23. **Interaction tests:** Cancel default; draft never mutated; irreversible blocks.  
+24. **Perf:** O(visible rows).
+
 ## FileTree
 
 1. **Purpose:** FS-specialized Tree with typed file-op requests.  

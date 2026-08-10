@@ -278,8 +278,9 @@ Stable anchors preserve selection across reproject. Distinct from `LogStream`
 turns) with status markers, actor/relative/duration metadata, grouping,
 expansion, correlation, filters, and live-stream follow that pauses when the
 user scrolls up. Recipes: `Rail`, `Detailed`, `GroupedDay`. No-color mode uses
-status letters and ASCII markers. `CheckpointTimeline` layers restore/compare
-outcomes on the same substrate. Composes with LogStream and ProgressSteps.
+status letters and ASCII markers. `CheckpointTimeline` is elevated session
+history (browse/preview/confirm, boundaries, restore/rewind requests; draft
+preserved) projecting onto Timeline when needed. Composes with LogStream and ProgressSteps.
 
 `ObjectInspector` is the expandable typed inspector for JSON/YAML/TOML,
 structured logs, and application trees. Host projects a flattened **visible

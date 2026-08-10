@@ -1126,6 +1126,24 @@ let stream = StreamView::new(&items, &theme);`,
 let theme = Theme::default();
 let block = ThinkingBlock::new("Planning", &theme).expanded(true).body("Details");`,
   },
+  CheckpointTimeline: {
+    description:
+      'Rewindable session history — browse/preview (draft preserved), restore/rewind with safe confirm and boundary warnings.',
+    primaryStory: 'checkpoint-timeline/basic',
+    usage: `use termrock::widgets::{
+    example_checkpoints, CheckpointTimeline, CheckpointTimelineState,
+    CheckpointTimelineOutcome,
+};
+
+let mut state = CheckpointTimelineState::new();
+state.set_checkpoints(example_checkpoints());
+CheckpointTimeline::new(&system).paint(area, buf, &mut state);
+match state.handle_key(key) {
+    CheckpointTimelineOutcome::RestoreRequested { id } => { let _ = id; }
+    CheckpointTimelineOutcome::Cancelled => {}
+    _ => {}
+}`,
+  },
   Timeline: {
     description: 'Vertical activity timeline with active markers.',
     primaryStory: 'timeline/basic',
