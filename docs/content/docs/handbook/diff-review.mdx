@@ -1,61 +1,45 @@
 ---
 title: DiffReview
-description: Projected unified/split preference diff with hunk cursor and scene-owned surface focus.
+description: Interactive hunk review veneer over DiffView.
 ---
 
 # DiffReview
 
-Review a **projected** patch. TermRock owns hunk cursor, scroll, and chrome;
-you own git, stage, multi-file, and line text.
+Thin review layer over [DiffView](/docs/handbook/diff-view). Same `DiffLine` /
+`DiffHunk` projection; state wraps `DiffViewState`; paint delegates to DiffView.
+Use when Enter should surface **activate/stage** product effects.
 
 ## When to use / when not
 
 | Use DiffReview | Prefer |
 |----------------|--------|
-| Interactive hunk nav over projected lines | — |
-| Static syntax-neutral paint only | DiffView |
-| Chat/tool output stream | Transcript / LogStream |
+| Interactive hunk nav + activate | — |
+| Pure read-only viewing | [DiffView](/docs/handbook/diff-view) |
 
 ## Outcomes
 
-- `Ignored`
-- `HunkCursorMoved { index }`
-- `HunkActivated { index }` — consumer stages/opens/copies
-- `Scrolled { offset }`
-- `ToggleMode` — split preference flip (narrow still paints unified)
+Maps from `DiffViewOutcome`:
 
-## Focus law
-
-| Concern | Owner |
-|---------|--------|
-| Surface focus | Host / OverlayStack / InteractionScene |
-| Hunk cursor | `DiffReviewState::hunk_cursor` |
-| Line buffer | Consumer projection |
+- `HunkCursorMoved` · `HunkActivated` · `Scrolled` · `ToggleMode`
+- `CursorMoved` · `SearchChanged` · `FoldToggled` · `Cancelled` · `Ignored`
 
 ## Keys
 
-| Key | Behavior |
-|-----|----------|
-| `n` / `p` | Next / previous hunk |
-| j/k arrows page | Line scroll |
-| Home / End | First / last hunk |
-| Enter | Activate hunk |
-| `s` / Space | Toggle split preference |
+Same as DiffView (`n`/`p`, `s`, `/`, `z`, Enter). Prefer
+`handle_key_lines(key, lines, hunks)` when a projection is available.
 
-## Non-color
+## Example
 
-- Active hunk gutter: `›` / `>` (unfocused `·` / `.`)
-- Empty: `∅` / `[ ]`
-- Colorless: strong add/remove; context text
+```rust
+use termrock::widgets::{DiffLine, DiffHunk, DiffReview, DiffReviewState};
 
-## Responsive
-
-| Width | Layout |
-|-------|--------|
-| ≥ 28 | Full line + gutter; split preferred when set |
-| &lt; 28 | Force unified paint |
-| &lt; 16 | Hunk header strip + clipped lines |
+let lines = [DiffLine::added("1", "ready")];
+let hunks = [DiffHunk::new(0, 1, "@@").id("h0")];
+let mut state = DiffReviewState::new();
+// DiffReview::new(&lines, &system).hunks(&hunks).render(area, buf, &mut state);
+let _ = (lines, hunks, state);
+```
 
 ## Related
 
-DiffView · ObjectInspector · migration `0072` · design `diff-review-cursor.md`
+DiffView · migration `0196`

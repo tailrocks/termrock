@@ -1604,32 +1604,44 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** select.  
 24. **Perf:** O(visible events).
 
+## DiffView
+
+1. **Purpose:** High-quality read-only unified/side-by-side diff (delta/GitUI-class).  
+2. **Anatomy:** `root` · `title?` · `line[]` · `status_chip` · empty mark  
+3. **Public properties:** `DiffLine` projection, hunks, files, `system`, focused/ascii/colorless/title  
+4. **State:** mode Auto|Unified|Split, scroll, cursor, hunk cursor, search, folds, line-nos/word/ws flags, anchors, regions.  
+5. **Variants:** kinds Context|Added|Removed|FileHeader|HunkHeader|Meta; word spans; syntax spans.  
+6. **Sizes/density:** line numbers; split when width ≥ 56.  
+7. **Visual states:** cursor · active hunk · search/fold chip · trailing-ws marker.  
+8. **Interaction states:** scroll · hunk nav · mode · search · fold · h-scroll.  
+9. **Keyboard:** n/p hunks; j/k page; s mode; / search; z fold; l/w/. toggles; Enter activate.  
+10. **Mouse:** wheel; click line; Ctrl+click activate.  
+11. **Focus:** scene owns surface; DiffView owns scroll/cursor/hunk.  
+12. **Disabled:** `accepts_input = false`.  
+13. **Loading:** host projects window (virtualize large patches).  
+14. **Error:** N/A.  
+15. **Narrow:** force unified.  
+16. **Tiny:** drop numbers; body + prefix.  
+17. **Unicode/ASCII:** gutter `›`/`>`; divider `│`/`|`; empty `∅`/`[ ]`.  
+18. **Colorless:** strong add/remove; bold word inserts/deletes.  
+19. **Composition:** DiffReview veneer; CodeBlock for single snippets.  
+20. **Outcomes:** full `DiffViewOutcome` set.  
+21. **Stories:** `diff/{basic,split,word,search,narrow,unicode}`  
+22. **Snapshots:** unified, split, word, search, narrow.  
+23. **Interaction tests:** mode, hunk, fold, search, mouse, anchors, sustained paint.  
+24. **Perf:** O(visible); `diff_bench`; host window.
+
 ## DiffReview
 
-1. **Purpose:** Reviewable unified/split preference diff with hunk navigation.  
-2. **Anatomy:** `root` · `hunk_header?` · `line[]` · hunk gutter · empty mark  
-3. **Public properties:** lines, hunks, `system`, `focused`, `ascii`, `colorless`  
-4. **State:** hunk cursor + scroll + split flag + `accepts_input`.  
-5. **Variants:** unified paint always on narrow; split preference retained.  
-6. **Sizes/density:** 2-col gutter + line.  
-7. **Visual states:** active hunk gutter; add/del/context roles.  
-8. **Interaction states:** hunk step · line scroll · activate · toggle mode.  
-9. **Keyboard:** n/p hunk; j/k/page line; Enter activate; s toggle (`default_diff_review_intent`).  
-10. **Mouse:** wheel line scroll; click line → hunk cursor / activate.  
-11. **Focus:** scene owns surface; DiffReview owns hunk cursor.  
-12. **Disabled:** `accepts_input = false`.  
-13. **Loading:** host streams projected lines.  
-14. **Error:** N/A (consumer).  
-15. **Narrow:** force unified paint.  
-16. **Tiny:** current hunk header strip + clipped lines.  
-17. **Unicode/ASCII:** gutter `›`/`>`; empty `∅`/`[ ]`.  
-18. **Colorless:** strong add/remove; strong active context.  
-19. **Composition:** PlanReview, PR agent tools, overlay.  
-20. **Outcomes:** `HunkCursorMoved` · `HunkActivated` · `Scrolled` · `ToggleMode` · `Ignored`  
+1. **Purpose:** Interactive hunk review veneer over DiffView (activate/stage).  
+2. **Anatomy:** delegates to DiffView.  
+3. **Public properties:** `DiffLine` + `DiffHunk` (same as DiffView).  
+4. **State:** wraps `DiffViewState`.  
+5–18. Same paint/responsive contracts as DiffView.  
+19. **Composition:** PlanReview, PR agent tools.  
+20. **Outcomes:** maps `DiffViewOutcome` → `DiffReviewOutcome`.  
 21. **Stories:** `diff-review/{hunks,empty,narrow,ascii}`  
-22. **Snapshots:** gutter, empty, tiny header.  
-23. **Interaction tests:** n/p bounds, mouse, accepts_input, cursor-follow.  
-24. **Perf:** O(visible lines).
+22–24. Same as DiffView interaction/perf with activate emphasis.
 
 ## Sparkline
 

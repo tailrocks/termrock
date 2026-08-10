@@ -56,6 +56,15 @@ navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
 
+`DiffView` is the high-quality **read-only** unified/side-by-side diff renderer
+(delta/GitUI-class). Host projects `DiffLine` rows (kind, text, optional line
+numbers, word spans, syntax spans, trailing-ws, file/hunk ids) plus optional
+`DiffHunk` / `DiffFile` bands. State owns Auto/Unified/Split mode (narrow forces
+unified), scroll virtualization, search, fold, cursor/hunk navigation, and
+anchors. No-color prefixes (`+`/`-`/` `) always paint. `DiffReview` is a thin
+activate/stage veneer over the same model. Distinct from `CodeBlock` (single
+snippet) and `LogStream` (severity lines).
+
 `LogStream` is the continuous **professional log viewer** (stern/k9s-class). Host
 projects a window of `LogLine` (id, level, text, optional timestamp/source/
 styled ANSI, batch count). State owns follow/pause/unread via `ScrollAreaState`,

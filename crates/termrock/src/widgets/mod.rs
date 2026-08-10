@@ -290,7 +290,12 @@ pub use alert_dialog::{
     AlertDialog, AlertDialogOutcome, AlertDialogState, AlertKind, AlertReversibility, AlertScope,
     dismiss_alert_dialog_overlay, open_alert_dialog_widget_overlay,
 };
-pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
+pub use diff::{
+    DiffEffectiveMode, DiffFile, DiffHunk, DiffKind, DiffLine, DiffMode, DiffRegion,
+    DiffState, DiffSyntaxSpan, DiffView, DiffViewOutcome, DiffViewState, DiffWordKind,
+    DiffWordSpan, escape_diff_text, filter_diff_lines,
+};
+pub use diff::bench as diff_bench;
 pub use form::{
     any_dirty, any_touched, collect_errors, first_invalid_id, required_filled, Field, FieldStatus,
     Fieldset, Form, FormField, FormFieldRegion, FormLayout, FormOutcome, FormSection, FormState,
@@ -478,7 +483,7 @@ pub use object_inspector::{
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,
     escape_inspect_value, filter_inspect_fields,
 };
-pub use review::{DiffHunk, DiffReview, DiffReviewOutcome, DiffReviewState};
+pub use review::{DiffReview, DiffReviewOutcome, DiffReviewState};
 pub use scroll_area::{
     ScrollArea, ScrollAreaState, ScrollBarVisibility, ScrollChain, ScrollOutcome, VisibleRange,
 };

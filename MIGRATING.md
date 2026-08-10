@@ -209,6 +209,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0193 | `v0.13.0` | [Timeline chronological events](migrations/0193-v0.13.0-timeline.md) |
 | 0194 | `v0.13.0` | [EventStream structured viewer](migrations/0194-v0.13.0-event-stream.md) |
 | 0195 | `v0.13.0` | [LogStream professional viewer](migrations/0195-v0.13.0-log-stream.md) |
+| 0196 | `v0.13.0` | [DiffView unified/split renderer](migrations/0196-v0.13.0-diff-view.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

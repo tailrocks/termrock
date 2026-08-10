@@ -40,8 +40,9 @@ use termrock::{
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
         InspectorPanel,
         DetailTableState, Dialog, DialogRecipe, AlertDialog, AlertDialogState, AlertKind,
-        AlertScope, AlertConfirmGates, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
-        DiffState, DiffView, Drawer, EmptyState, EmptyKind, EmptyAction, EmptyDensity,
+        AlertScope, AlertConfirmGates, DiffHunk, DiffKind, DiffLine, DiffMode, DiffReview,
+        DiffReviewState, DiffViewState, DiffView, DiffWordKind, DiffWordSpan, Drawer, EmptyState,
+        EmptyKind, EmptyAction, EmptyDensity,
         example_empty_table, example_empty_logs, example_empty_sessions, example_empty_projects,
         example_empty_search, example_empty_permission,
         ErrorView, ErrorState, ErrorKind, ErrorRecipe, Recovery, RecoveryAction, RetrySafety,
@@ -2714,12 +2715,39 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "diff/basic",
-            "Diff view",
+            "Diff view unified",
             "DiffView",
-            "Borrowed projected diff lines.",
-            54,
-            6,
-            diff,
+            "Unified professional diff with line numbers and hunk chip.",
+            72,
+            12,
+            diff_basic,
+        ),
+        Story::new(
+            "diff/split",
+            "Diff view split",
+            "DiffView",
+            "Side-by-side mode when width allows.",
+            80,
+            12,
+            diff_split,
+        ),
+        Story::new(
+            "diff/word",
+            "Diff view word-level",
+            "DiffView",
+            "Word-level change spans within a line.",
+            64,
+            8,
+            diff_word,
+        ),
+        Story::new(
+            "diff/search",
+            "Diff view search",
+            "DiffView",
+            "Search filter chrome on status chip.",
+            64,
+            10,
+            diff_search,
         ),
         Story::new(
             "toast/success",
@@ -5710,18 +5738,18 @@ pub(crate) fn stories() -> Vec<Story> {
             "diff/narrow",
             "Narrow DiffView",
             "DiffView",
-            "Narrow-terminal geometry for DiffView (22 cols).",
+            "Narrow forces unified mode (22 cols).",
             22,
-            6,
-            diff,
+            8,
+            diff_basic,
         ),
         Story::new(
             "diff/unicode",
             "Unicode DiffView",
             "DiffView",
             "Unicode-safe paint path for DiffView (CJK/emoji-capable layout).",
-            54,
-            6,
+            64,
+            10,
             diff_unicode_story,
         ),
         Story::new(
@@ -10814,30 +10842,37 @@ fn event_stream_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn diff_review_sample() -> ([(&'static str, Role); 10], [DiffHunk; 2]) {
-    let lines = [
-        ("@@ -1,4 +1,5 @@", Role::TextMuted),
-        (" fn main() {", Role::Text),
-        ("-    println!(\"hi\");", Role::DiffRemoved),
-        ("+    println!(\"hello 東京\");", Role::DiffAdded),
-        ("+    // ready 🧪", Role::DiffAdded),
-        (" }", Role::Text),
-        ("@@ -20,3 +21,3 @@", Role::TextMuted),
-        ("-old", Role::DiffRemoved),
-        ("+new", Role::DiffAdded),
-        (" context", Role::Text),
+fn diff_review_sample() -> (Vec<DiffLine<'static>>, [DiffHunk; 2]) {
+    let lines = vec![
+        DiffLine::hunk_header("h0", "@@ -1,4 +1,5 @@").hunk_id("h0"),
+        DiffLine::context("c1", "fn main() {")
+            .old_no(1)
+            .new_no(1)
+            .hunk_id("h0"),
+        DiffLine::removed("r1", "    println!(\"hi\");")
+            .old_no(2)
+            .hunk_id("h0"),
+        DiffLine::added("a1", "    println!(\"hello 東京\");")
+            .new_no(2)
+            .hunk_id("h0"),
+        DiffLine::added("a2", "    // ready 🧪")
+            .new_no(3)
+            .hunk_id("h0"),
+        DiffLine::context("c2", "}")
+            .old_no(3)
+            .new_no(4)
+            .hunk_id("h0"),
+        DiffLine::hunk_header("h1", "@@ -20,3 +21,3 @@").hunk_id("h1"),
+        DiffLine::removed("r2", "old").old_no(20).hunk_id("h1"),
+        DiffLine::added("a3", "new").new_no(21).hunk_id("h1"),
+        DiffLine::context("c3", "context")
+            .old_no(21)
+            .new_no(22)
+            .hunk_id("h1"),
     ];
     let hunks = [
-        DiffHunk {
-            start: 0,
-            len: 6,
-            header: "@@ -1,4 +1,5 @@".into(),
-        },
-        DiffHunk {
-            start: 6,
-            len: 4,
-            header: "@@ -20,3 +21,3 @@".into(),
-        },
+        DiffHunk::new(0, 6, "@@ -1,4 +1,5 @@").id("h0"),
+        DiffHunk::new(6, 4, "@@ -20,3 +21,3 @@").id("h1"),
     ];
     (lines, hunks)
 }
@@ -10848,6 +10883,7 @@ fn diff_review_hunks(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     state.set_hunk_cursor(0);
     DiffReview::new(&lines, system)
         .hunks(&hunks)
+        .title("review a.rs")
         .render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -12997,37 +13033,117 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     );
 }
 
-fn diff(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let system = if system.palette() == &RolePalette::tailrocks_phosphor() {
-        DesignSystem::from_palette(
-            system
-                .palette()
-                .clone()
-                .with_role(Role::DiffAdded, Style::new().bold())
-                .with_role(Role::DiffRemoved, Style::new().dim()),
-        )
-    } else {
-        system.clone()
-    };
-    let lines = [
-        DiffLine {
-            text: " context",
-            kind: DiffKind::Context,
-        },
-        DiffLine {
-            text: "-before",
-            kind: DiffKind::Removed,
-        },
-        DiffLine {
-            text: "+after",
-            kind: DiffKind::Added,
-        },
+fn diff_sample_lines() -> (Vec<DiffLine<'static>>, [DiffHunk; 2]) {
+    let lines = vec![
+        DiffLine::file_header("f", "diff --git a/main.rs b/main.rs").file_id("main.rs"),
+        DiffLine::hunk_header("h0", "@@ -1,4 +1,5 @@")
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::context("c1", "fn main() {")
+            .old_no(1)
+            .new_no(1)
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::removed("r1", "    println!(\"hi\");")
+            .old_no(2)
+            .file_id("main.rs")
+            .hunk_id("h0")
+            .trailing_ws(true),
+        DiffLine::added("a1", "    println!(\"hello 東京\");")
+            .new_no(2)
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::added("a2", "    // ready 🧪")
+            .new_no(3)
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::context("c2", "}")
+            .old_no(3)
+            .new_no(4)
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::hunk_header("h1", "@@ -20,2 +21,2 @@")
+            .file_id("main.rs")
+            .hunk_id("h1"),
+        DiffLine::removed("r2", "old_path")
+            .old_no(20)
+            .file_id("main.rs")
+            .hunk_id("h1"),
+        DiffLine::added("a3", "new_path")
+            .new_no(21)
+            .file_id("main.rs")
+            .hunk_id("h1"),
     ];
-    frame.render_stateful_widget(
-        &DiffView::new(&lines, &system),
-        area,
-        &mut DiffState::default(),
-    );
+    let hunks = [
+        DiffHunk::new(1, 6, "@@ -1,4 +1,5 @@")
+            .id("h0")
+            .file_id("main.rs"),
+        DiffHunk::new(7, 3, "@@ -20,2 +21,2 @@")
+            .id("h1")
+            .file_id("main.rs"),
+    ];
+    (lines, hunks)
+}
+
+fn diff_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (lines, hunks) = diff_sample_lines();
+    let mut state = DiffViewState::new();
+    state.mode = DiffMode::Unified;
+    DiffView::new(&lines, system)
+        .hunks(&hunks)
+        .title("main.rs")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diff_split(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (lines, hunks) = diff_sample_lines();
+    let mut state = DiffViewState::new();
+    state.mode = DiffMode::Split;
+    DiffView::new(&lines, system)
+        .hunks(&hunks)
+        .title("main.rs · split")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diff_word(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let words_rm = [
+        DiffWordSpan::new(DiffWordKind::Equal, "let x = "),
+        DiffWordSpan::new(DiffWordKind::Delete, "1"),
+        DiffWordSpan::new(DiffWordKind::Equal, ";"),
+    ];
+    let words_add = [
+        DiffWordSpan::new(DiffWordKind::Equal, "let x = "),
+        DiffWordSpan::new(DiffWordKind::Insert, "42"),
+        DiffWordSpan::new(DiffWordKind::Equal, ";"),
+    ];
+    let lines = [
+        DiffLine::hunk_header("h", "@@ -1,1 +1,1 @@").hunk_id("h"),
+        DiffLine::removed("r", "let x = 1;")
+            .old_no(1)
+            .hunk_id("h")
+            .words(&words_rm),
+        DiffLine::added("a", "let x = 42;")
+            .new_no(1)
+            .hunk_id("h")
+            .words(&words_add),
+    ];
+    let hunks = [DiffHunk::new(0, 3, "@@ -1,1 +1,1 @@").id("h")];
+    let mut state = DiffViewState::new();
+    state.word_diff = true;
+    DiffView::new(&lines, system)
+        .hunks(&hunks)
+        .title("word-level")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diff_search(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (lines, hunks) = diff_sample_lines();
+    let mut state = DiffViewState::new();
+    state.search = Some("hello".into());
+    DiffView::new(&lines, system)
+        .hunks(&hunks)
+        .title("search")
+        .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn toast(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -18000,7 +18116,7 @@ fn theme_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn diff_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    diff(frame, area, system);
+    diff_basic(frame, area, system);
     if area.width > 2 {
         frame.buffer_mut().set_stringn(
             area.x,

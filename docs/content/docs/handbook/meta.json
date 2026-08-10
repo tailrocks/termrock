@@ -27,6 +27,7 @@
     "menu",
     "object-inspector",
     "log-stream",
+    "diff-view",
     "diff-review"
   ]
 }

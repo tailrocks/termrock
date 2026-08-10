@@ -1,0 +1,71 @@
+---
+title: DiffView
+description: Professional read-only unified and side-by-side diff renderer.
+---
+
+# DiffView
+
+O(visible) paint over a **consumer-owned** line projection. TermRock owns mode
+resolution, scroll, search, fold, cursor/hunk chrome, line numbers, word-level
+spans, and no-color prefixes — not git, staging, or multi-file loading.
+
+## When to use / when not
+
+| Use DiffView | Prefer |
+|--------------|--------|
+| Read-only patch viewing (delta/GitUI-class) | — |
+| Interactive hunk activate/stage | [DiffReview](/docs/handbook/diff-review) veneer |
+| Structured events | [EventStream](/docs/handbook/event-stream) |
+| Plain logs | [LogStream](/docs/handbook/log-stream) |
+
+## Outcomes
+
+- `Scrolled` · `CursorMoved` · `HunkCursorMoved` · `HunkActivated`
+- `ModeChanged` · `SearchChanged` · `FoldToggled` · `FileNavigated` · `Cancelled` · `Ignored`
+
+## Modes
+
+| Preference | Effective |
+|------------|-----------|
+| `Auto` (default) | Split when width ≥ 56; else unified |
+| `Split` | Prefer split; collapses under narrow |
+| `Unified` | Always single column |
+
+## Non-color
+
+- Prefixes: `+` / `-` / ` ` (always painted)
+- Active gutter: `›` / `>`; inactive hunk `·` / `.`
+- Whitespace marker: `·` / `~`
+- Empty: `∅` / `[ ]`
+- Colorless: strong add/remove + bold word spans
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| n/p | Hunk step |
+| j/k page Home/End | Scroll / first-last hunk |
+| s | Cycle mode |
+| / | Search |
+| z | Fold hunk |
+| l · w · . | Line nos · word-diff · whitespace |
+| Enter | Activate hunk |
+
+## Example
+
+```rust
+use termrock::widgets::{DiffLine, DiffHunk, DiffView, DiffViewState};
+
+let lines = [
+    DiffLine::removed("1", "old").old_no(1),
+    DiffLine::added("2", "new 東京").new_no(1),
+];
+let hunks = [DiffHunk::new(0, 2, "@@ -1 +1 @@").id("h0")];
+let mut state = DiffViewState::new();
+// DiffView::new(&lines, &system).hunks(&hunks).title("a.rs").render(area, buf, &mut state);
+let _ = (lines, hunks, state);
+```
+
+## Related
+
+DiffReview · migration `0196` · design anatomy DiffView

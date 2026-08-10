@@ -14,7 +14,7 @@ use crate::style::{Density, DesignSystem, Role, RolePalette};
 fn persistable_states_implement_serde_contracts() {
     fn assert_serde<T: serde::Serialize + serde::de::DeserializeOwned>() {}
 
-    assert_serde::<DiffState>();
+    // DiffViewState is session-local (scroll/search/folds); not serde-stable.
     assert_serde::<SplitRatio>();
     assert_serde::<TextInputState>();
 }
