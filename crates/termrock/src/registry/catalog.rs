@@ -1848,6 +1848,91 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "error-recovery".into(),
+            title: "Error Recovery / Crash Report".into(),
+            description: "Graceful recovery for serious failures: ErrorState summary, preserved work, recovery action list, redacted crash report (secret redaction on copy/report path), full and inline-fallback modes; host owns restart, session restore, logs, issue trackers, panic hooks.".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::error_recovery".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/error_recovery.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec!["termrock/Panel".into()];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("Workbench".into());
+                c.min_width = Some(32);
+                c.min_height = Some(8);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "summary".into(),
+                    label: "Error summary".into(),
+                },
+                AnatomyPartRef {
+                    id: "actions".into(),
+                    label: "Recovery options".into(),
+                },
+                AnatomyPartRef {
+                    id: "diagnostics".into(),
+                    label: "Redacted report".into(),
+                },
+                AnatomyPartRef {
+                    id: "preserved".into(),
+                    label: "Preserved work".into(),
+                },
+                AnatomyPartRef {
+                    id: "status".into(),
+                    label: "Status bar".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "full".into(),
+                    description: "Full multi-pane recovery".into(),
+                },
+                VariantRef {
+                    id: "inline-fallback".into(),
+                    description: "Inline when full-screen compromised".into(),
+                },
+            ],
+            outcomes: vec![
+                OutcomeRef {
+                    id: "RestartRequested".into(),
+                },
+                OutcomeRef {
+                    id: "CopyDiagnostics".into(),
+                },
+                OutcomeRef {
+                    id: "SafeQuit".into(),
+                },
+                OutcomeRef {
+                    id: "ReportIssue".into(),
+                },
+            ],
+            stories: vec![
+                "error-recovery/basic".into(),
+                "error-recovery/redacted".into(),
+                "error-recovery/inline".into(),
+                "error-recovery/unicode".into(),
+            ],
+            tests: vec!["patterns::error_recovery".into()],
+            migration: Some("migrations/0246-v0.13.0-error-recovery-crash-report.md".into()),
+            provenance: prov("crates/termrock/src/patterns/error_recovery.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 

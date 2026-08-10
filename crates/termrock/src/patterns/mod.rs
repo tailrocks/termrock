@@ -18,6 +18,7 @@ mod file_manager;
 mod git_workbench;
 mod observability_dashboard;
 mod ops_dashboard;
+mod error_recovery;
 mod help_center;
 mod project_launcher;
 mod resource_browser;
@@ -92,6 +93,16 @@ pub use help_center::{
     HelpTopic, HelpTopicGroup, HELP_CENTER_SEARCH_HEIGHT,
 };
 pub use help_center::bench as help_center_bench;
+pub use error_recovery::{
+    build_redacted_crash_report, burst_crash_snapshot, error_recovery_layout,
+    error_recovery_layout_density, example_crash_snapshot_with_secrets,
+    example_recovery_snapshot, example_terminal_restore_failed_snapshot, recovery_action_rows,
+    redact_crash_report_text, render_error_recovery, seed_inline_fallback, seed_partial_init,
+    seed_terminal_restore_failed, CrashReportSnapshot, ErrorRecoveryDensity, ErrorRecoveryMode,
+    ErrorRecoveryOutcome, ErrorRecoveryPane, ErrorRecoveryState, ErrorRecoverySurfaces,
+    FailureClass, RecoveryActionId,
+};
+pub use error_recovery::bench as error_recovery_bench;
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,
     AppShellSlots, AppShellZone,

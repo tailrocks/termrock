@@ -7107,6 +7107,42 @@ pub(crate) fn stories() -> Vec<Story> {
             help_center_unicode,
         ),
         Story::new(
+            "error-recovery/basic",
+            "Error recovery full",
+            "ErrorRecovery",
+            "Full recovery surface with actions.",
+            100,
+            32,
+            error_recovery_basic,
+        ),
+        Story::new(
+            "error-recovery/redacted",
+            "Error recovery redacted crash",
+            "ErrorRecovery",
+            "Crash report with secrets redacted.",
+            100,
+            32,
+            error_recovery_redacted,
+        ),
+        Story::new(
+            "error-recovery/inline",
+            "Error recovery inline fallback",
+            "ErrorRecovery",
+            "Inline fallback when full-screen compromised.",
+            64,
+            12,
+            error_recovery_inline,
+        ),
+        Story::new(
+            "error-recovery/unicode",
+            "Error recovery unicode",
+            "ErrorRecovery",
+            "Unicode summary paint path.",
+            80,
+            24,
+            error_recovery_unicode,
+        ),
+        Story::new(
             "permission-prompt/basic",
             "Permission prompt",
             "PermissionPrompt",
@@ -25645,6 +25681,84 @@ fn help_center_doctor(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 
 fn help_center_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_help_center_story(frame, area, system, HelpCenterStoryKind::Unicode);
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ErrorRecoveryStoryKind {
+    Basic,
+    Redacted,
+    Inline,
+    Unicode,
+}
+
+fn paint_error_recovery_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    kind: ErrorRecoveryStoryKind,
+) {
+    use termrock::patterns::{
+        example_crash_snapshot_with_secrets, example_recovery_snapshot, render_error_recovery,
+        seed_inline_fallback, seed_terminal_restore_failed, CrashReportSnapshot,
+        ErrorRecoveryMode, ErrorRecoveryState, ErrorRecoverySurfaces, FailureClass,
+    };
+
+    let mut state = ErrorRecoveryState::new();
+    let mut snap = match kind {
+        ErrorRecoveryStoryKind::Redacted => example_crash_snapshot_with_secrets(),
+        ErrorRecoveryStoryKind::Basic => example_recovery_snapshot(),
+        ErrorRecoveryStoryKind::Inline => example_crash_snapshot_with_secrets(),
+        ErrorRecoveryStoryKind::Unicode => CrashReportSnapshot {
+            summary: "予期しないエラー · unexpected".into(),
+            technical: "panic at 日本語 path".into(),
+            source: "termrock".into(),
+            preserved_note: "ドラフト保持".into(),
+            work_preserved: true,
+            env_lines: vec!["TERM=xterm-256color".into()],
+            log_lines: vec!["INFO 日本語 log".into()],
+            capabilities_text: String::new(),
+            class: FailureClass::Crash,
+        },
+    };
+    match kind {
+        ErrorRecoveryStoryKind::Inline => {
+            seed_inline_fallback(&mut state);
+        }
+        ErrorRecoveryStoryKind::Redacted => {
+            seed_terminal_restore_failed(&mut state);
+        }
+        ErrorRecoveryStoryKind::Basic | ErrorRecoveryStoryKind::Unicode => {
+            state.mode = ErrorRecoveryMode::Full;
+        }
+    }
+    let _ = &mut snap;
+
+    render_error_recovery(
+        frame.buffer_mut(),
+        area,
+        ErrorRecoverySurfaces {
+            system,
+            state: &mut state,
+            snapshot: &snap,
+            doctor: None,
+        },
+    );
+}
+
+fn error_recovery_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_error_recovery_story(frame, area, system, ErrorRecoveryStoryKind::Basic);
+}
+
+fn error_recovery_redacted(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_error_recovery_story(frame, area, system, ErrorRecoveryStoryKind::Redacted);
+}
+
+fn error_recovery_inline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_error_recovery_story(frame, area, system, ErrorRecoveryStoryKind::Inline);
+}
+
+fn error_recovery_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_error_recovery_story(frame, area, system, ErrorRecoveryStoryKind::Unicode);
 }
 
 #[derive(Clone, Copy)]
