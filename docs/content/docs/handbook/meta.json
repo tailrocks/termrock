@@ -20,6 +20,7 @@
     "source-citation",
     "tool-call-card",
     "terminal-run-card",
+    "activity-shelf",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

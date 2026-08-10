@@ -5639,6 +5639,51 @@ pub(crate) fn stories() -> Vec<Story> {
             terminal_run_card_narrow_story,
         ),
         Story::new(
+            "activity-shelf/statuses",
+            "ActivityShelf statuses",
+            "ActivityShelf",
+            "Chips prioritize action-required and blocked.",
+            72,
+            2,
+            activity_shelf_statuses_story,
+        ),
+        Story::new(
+            "activity-shelf/many-overflow",
+            "ActivityShelf overflow",
+            "ActivityShelf",
+            "Many activities with +N overflow.",
+            48,
+            2,
+            activity_shelf_overflow_story,
+        ),
+        Story::new(
+            "activity-shelf/summary",
+            "ActivityShelf summary",
+            "ActivityShelf",
+            "Narrow one-line summary contraction.",
+            32,
+            1,
+            activity_shelf_summary_story,
+        ),
+        Story::new(
+            "activity-shelf/badge",
+            "ActivityShelf badge",
+            "ActivityShelf",
+            "Tiny badge count.",
+            12,
+            1,
+            activity_shelf_badge_story,
+        ),
+        Story::new(
+            "activity-shelf/statusbar",
+            "ActivityShelf StatusBar",
+            "ActivityShelf",
+            "Projected activity summary as StatusBar slot.",
+            64,
+            1,
+            activity_shelf_statusbar_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -19054,6 +19099,73 @@ fn terminal_run_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &De
     TerminalRunCard::new(run, &lines, system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn activity_shelf_statuses_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_activities, ActivityShelf, ActivityShelfPresentation, ActivityShelfState,
+    };
+    let items = example_activities();
+    let mut st = ActivityShelfState::new();
+    st.focused = true;
+    st.force_presentation = Some(ActivityShelfPresentation::Chips);
+    st.selected = 0;
+    ActivityShelf::new(&items, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn activity_shelf_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_activities, ActivityItem, ActivityShelf, ActivityShelfPresentation,
+        ActivityShelfState, SemanticStatus,
+    };
+    let mut items = example_activities();
+    for i in 0..8 {
+        items.push(
+            ActivityItem::new(format!("extra{i}"), format!("job-{i}"))
+                .status(SemanticStatus::Running),
+        );
+    }
+    let mut st = ActivityShelfState::new();
+    st.focused = true;
+    st.force_presentation = Some(ActivityShelfPresentation::Chips);
+    ActivityShelf::new(&items, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn activity_shelf_summary_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_activities, ActivityShelf, ActivityShelfPresentation, ActivityShelfState,
+    };
+    let items = example_activities();
+    let mut st = ActivityShelfState::new();
+    st.force_presentation = Some(ActivityShelfPresentation::Summary);
+    ActivityShelf::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn activity_shelf_badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_activities, ActivityShelf, ActivityShelfPresentation, ActivityShelfState,
+    };
+    let items = example_activities();
+    let mut st = ActivityShelfState::new();
+    st.force_presentation = Some(ActivityShelfPresentation::Badge);
+    ActivityShelf::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn activity_shelf_statusbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        activity_status_slot, example_activities, project_activities_for_status_bar, StatusBar,
+        StatusBarState,
+    };
+    let items = example_activities();
+    let proj = project_activities_for_status_bar(&items, true);
+    let slot = activity_status_slot("activities", &proj, false);
+    let right = [slot];
+    let mut st = StatusBarState::<&str>::new();
+    frame.render_stateful_widget(StatusBar::new(&[], &right, system), area, &mut st);
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -14639,6 +14639,9 @@ pub fn termrock::text::take_display_cols(&str, usize) -> alloc::string::String
 pub fn termrock::text::truncate_display_cols(&str, usize, termrock::text::TruncateMode, &str) -> alloc::string::String
 pub fn termrock::text::wrap_display_cols(&str, usize) -> alloc::vec::Vec<alloc::string::String>
 pub mod termrock::widgets
+pub mod termrock::widgets::activity_shelf_bench
+pub const termrock::widgets::activity_shelf_bench::ITEM_COUNT: usize
+pub const termrock::widgets::activity_shelf_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::attachment_chips_bench
 pub const termrock::widgets::attachment_chips_bench::ATTACHMENT_COUNT: usize
 pub const termrock::widgets::attachment_chips_bench::PAINT_FRAMES: u32
@@ -15040,6 +15043,62 @@ pub unsafe fn termrock::widgets::ActivationOutcome::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ActivationOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActivationOutcome
+#[non_exhaustive] pub enum termrock::widgets::ActivityKind
+pub termrock::widgets::ActivityKind::Build
+pub termrock::widgets::ActivityKind::Generic
+pub termrock::widgets::ActivityKind::Network
+pub termrock::widgets::ActivityKind::Search
+pub termrock::widgets::ActivityKind::Shell
+pub termrock::widgets::ActivityKind::Subagent
+pub termrock::widgets::ActivityKind::Tool
+impl termrock::widgets::ActivityKind
+pub const fn termrock::widgets::ActivityKind::id(self) -> &'static str
+pub const fn termrock::widgets::ActivityKind::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::ActivityKind
+pub fn termrock::widgets::ActivityKind::clone(&self) -> termrock::widgets::ActivityKind
+impl core::cmp::Eq for termrock::widgets::ActivityKind
+impl core::cmp::PartialEq for termrock::widgets::ActivityKind
+pub fn termrock::widgets::ActivityKind::eq(&self, &termrock::widgets::ActivityKind) -> bool
+impl core::default::Default for termrock::widgets::ActivityKind
+pub fn termrock::widgets::ActivityKind::default() -> termrock::widgets::ActivityKind
+impl core::fmt::Debug for termrock::widgets::ActivityKind
+pub fn termrock::widgets::ActivityKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ActivityKind
+pub fn termrock::widgets::ActivityKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ActivityKind
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityKind
+impl core::marker::Freeze for termrock::widgets::ActivityKind
+impl core::marker::Send for termrock::widgets::ActivityKind
+impl core::marker::Sync for termrock::widgets::ActivityKind
+impl core::marker::Unpin for termrock::widgets::ActivityKind
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityKind where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityKind where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityKind::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityKind where T: core::clone::Clone
+pub type termrock::widgets::ActivityKind::Owned = T
+pub fn termrock::widgets::ActivityKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityKind
+pub fn termrock::widgets::ActivityKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityKind
 #[non_exhaustive] pub enum termrock::widgets::ActivityPhase
 pub termrock::widgets::ActivityPhase::Indeterminate
 pub termrock::widgets::ActivityPhase::Queued
@@ -15095,6 +15154,161 @@ pub unsafe fn termrock::widgets::ActivityPhase::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ActivityPhase
 pub fn termrock::widgets::ActivityPhase::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActivityPhase
+#[non_exhaustive] pub enum termrock::widgets::ActivityShelfOrientation
+pub termrock::widgets::ActivityShelfOrientation::Horizontal
+pub termrock::widgets::ActivityShelfOrientation::Vertical
+impl termrock::widgets::ActivityShelfOrientation
+pub const fn termrock::widgets::ActivityShelfOrientation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ActivityShelfOrientation
+pub fn termrock::widgets::ActivityShelfOrientation::clone(&self) -> termrock::widgets::ActivityShelfOrientation
+impl core::cmp::Eq for termrock::widgets::ActivityShelfOrientation
+impl core::cmp::PartialEq for termrock::widgets::ActivityShelfOrientation
+pub fn termrock::widgets::ActivityShelfOrientation::eq(&self, &termrock::widgets::ActivityShelfOrientation) -> bool
+impl core::default::Default for termrock::widgets::ActivityShelfOrientation
+pub fn termrock::widgets::ActivityShelfOrientation::default() -> termrock::widgets::ActivityShelfOrientation
+impl core::fmt::Debug for termrock::widgets::ActivityShelfOrientation
+pub fn termrock::widgets::ActivityShelfOrientation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ActivityShelfOrientation
+pub fn termrock::widgets::ActivityShelfOrientation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ActivityShelfOrientation
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityShelfOrientation
+impl core::marker::Freeze for termrock::widgets::ActivityShelfOrientation
+impl core::marker::Send for termrock::widgets::ActivityShelfOrientation
+impl core::marker::Sync for termrock::widgets::ActivityShelfOrientation
+impl core::marker::Unpin for termrock::widgets::ActivityShelfOrientation
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityShelfOrientation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityShelfOrientation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityShelfOrientation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityShelfOrientation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfOrientation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityShelfOrientation where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityShelfOrientation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityShelfOrientation where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityShelfOrientation::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityShelfOrientation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityShelfOrientation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityShelfOrientation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityShelfOrientation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityShelfOrientation where T: core::clone::Clone
+pub type termrock::widgets::ActivityShelfOrientation::Owned = T
+pub fn termrock::widgets::ActivityShelfOrientation::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityShelfOrientation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityShelfOrientation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfOrientation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityShelfOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfOrientation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityShelfOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfOrientation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityShelfOrientation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityShelfOrientation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityShelfOrientation
+pub fn termrock::widgets::ActivityShelfOrientation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityShelfOrientation
+#[non_exhaustive] pub enum termrock::widgets::ActivityShelfOutcome
+pub termrock::widgets::ActivityShelfOutcome::Activated
+pub termrock::widgets::ActivityShelfOutcome::Activated::id: alloc::string::String
+pub termrock::widgets::ActivityShelfOutcome::Dismissed
+pub termrock::widgets::ActivityShelfOutcome::Dismissed::id: alloc::string::String
+pub termrock::widgets::ActivityShelfOutcome::Ignored
+pub termrock::widgets::ActivityShelfOutcome::OverflowClosed
+pub termrock::widgets::ActivityShelfOutcome::OverflowOpen
+pub termrock::widgets::ActivityShelfOutcome::PresentationChanged
+pub termrock::widgets::ActivityShelfOutcome::PresentationChanged::presentation: termrock::widgets::ActivityShelfPresentation
+pub termrock::widgets::ActivityShelfOutcome::Selected
+pub termrock::widgets::ActivityShelfOutcome::Selected::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::ActivityShelfOutcome
+pub fn termrock::widgets::ActivityShelfOutcome::clone(&self) -> termrock::widgets::ActivityShelfOutcome
+impl core::cmp::Eq for termrock::widgets::ActivityShelfOutcome
+impl core::cmp::PartialEq for termrock::widgets::ActivityShelfOutcome
+pub fn termrock::widgets::ActivityShelfOutcome::eq(&self, &termrock::widgets::ActivityShelfOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ActivityShelfOutcome
+pub fn termrock::widgets::ActivityShelfOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityShelfOutcome
+impl core::marker::Freeze for termrock::widgets::ActivityShelfOutcome
+impl core::marker::Send for termrock::widgets::ActivityShelfOutcome
+impl core::marker::Sync for termrock::widgets::ActivityShelfOutcome
+impl core::marker::Unpin for termrock::widgets::ActivityShelfOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityShelfOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityShelfOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityShelfOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityShelfOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityShelfOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityShelfOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityShelfOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityShelfOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityShelfOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityShelfOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityShelfOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityShelfOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityShelfOutcome where T: core::clone::Clone
+pub type termrock::widgets::ActivityShelfOutcome::Owned = T
+pub fn termrock::widgets::ActivityShelfOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityShelfOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityShelfOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityShelfOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityShelfOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityShelfOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityShelfOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityShelfOutcome
+pub fn termrock::widgets::ActivityShelfOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityShelfOutcome
+#[non_exhaustive] pub enum termrock::widgets::ActivityShelfPresentation
+pub termrock::widgets::ActivityShelfPresentation::Badge
+pub termrock::widgets::ActivityShelfPresentation::Chips
+pub termrock::widgets::ActivityShelfPresentation::IconsOnly
+pub termrock::widgets::ActivityShelfPresentation::Summary
+impl termrock::widgets::ActivityShelfPresentation
+pub const fn termrock::widgets::ActivityShelfPresentation::for_width(u16) -> Self
+pub const fn termrock::widgets::ActivityShelfPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ActivityShelfPresentation
+pub fn termrock::widgets::ActivityShelfPresentation::clone(&self) -> termrock::widgets::ActivityShelfPresentation
+impl core::cmp::Eq for termrock::widgets::ActivityShelfPresentation
+impl core::cmp::PartialEq for termrock::widgets::ActivityShelfPresentation
+pub fn termrock::widgets::ActivityShelfPresentation::eq(&self, &termrock::widgets::ActivityShelfPresentation) -> bool
+impl core::default::Default for termrock::widgets::ActivityShelfPresentation
+pub fn termrock::widgets::ActivityShelfPresentation::default() -> termrock::widgets::ActivityShelfPresentation
+impl core::fmt::Debug for termrock::widgets::ActivityShelfPresentation
+pub fn termrock::widgets::ActivityShelfPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ActivityShelfPresentation
+pub fn termrock::widgets::ActivityShelfPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ActivityShelfPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityShelfPresentation
+impl core::marker::Freeze for termrock::widgets::ActivityShelfPresentation
+impl core::marker::Send for termrock::widgets::ActivityShelfPresentation
+impl core::marker::Sync for termrock::widgets::ActivityShelfPresentation
+impl core::marker::Unpin for termrock::widgets::ActivityShelfPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityShelfPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityShelfPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityShelfPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityShelfPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityShelfPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityShelfPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityShelfPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityShelfPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityShelfPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityShelfPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityShelfPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityShelfPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityShelfPresentation where T: core::clone::Clone
+pub type termrock::widgets::ActivityShelfPresentation::Owned = T
+pub fn termrock::widgets::ActivityShelfPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityShelfPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityShelfPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityShelfPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityShelfPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityShelfPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityShelfPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityShelfPresentation
+pub fn termrock::widgets::ActivityShelfPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityShelfPresentation
 #[non_exhaustive] pub enum termrock::widgets::AgentModeKind
 pub termrock::widgets::AgentModeKind::Ask
 pub termrock::widgets::AgentModeKind::Auto
@@ -41013,6 +41227,56 @@ pub unsafe fn termrock::widgets::ActivationState::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ActivationState
 pub fn termrock::widgets::ActivationState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActivationState
+pub struct termrock::widgets::ActivityCounts
+pub termrock::widgets::ActivityCounts::action_required: usize
+pub termrock::widgets::ActivityCounts::blocked: usize
+pub termrock::widgets::ActivityCounts::failed: usize
+pub termrock::widgets::ActivityCounts::queued: usize
+pub termrock::widgets::ActivityCounts::running: usize
+pub termrock::widgets::ActivityCounts::total: usize
+impl core::clone::Clone for termrock::widgets::ActivityCounts
+pub fn termrock::widgets::ActivityCounts::clone(&self) -> termrock::widgets::ActivityCounts
+impl core::cmp::Eq for termrock::widgets::ActivityCounts
+impl core::cmp::PartialEq for termrock::widgets::ActivityCounts
+pub fn termrock::widgets::ActivityCounts::eq(&self, &termrock::widgets::ActivityCounts) -> bool
+impl core::default::Default for termrock::widgets::ActivityCounts
+pub fn termrock::widgets::ActivityCounts::default() -> termrock::widgets::ActivityCounts
+impl core::fmt::Debug for termrock::widgets::ActivityCounts
+pub fn termrock::widgets::ActivityCounts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::ActivityCounts
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityCounts
+impl core::marker::Freeze for termrock::widgets::ActivityCounts
+impl core::marker::Send for termrock::widgets::ActivityCounts
+impl core::marker::Sync for termrock::widgets::ActivityCounts
+impl core::marker::Unpin for termrock::widgets::ActivityCounts
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityCounts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityCounts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityCounts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityCounts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityCounts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityCounts where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityCounts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityCounts where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityCounts::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityCounts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityCounts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityCounts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityCounts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityCounts where T: core::clone::Clone
+pub type termrock::widgets::ActivityCounts::Owned = T
+pub fn termrock::widgets::ActivityCounts::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityCounts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityCounts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityCounts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityCounts where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityCounts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityCounts where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityCounts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityCounts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityCounts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityCounts
+pub fn termrock::widgets::ActivityCounts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityCounts
 pub struct termrock::widgets::ActivityIndicator<'a>
 impl<'a> termrock::widgets::ActivityIndicator<'a>
 pub const fn termrock::widgets::ActivityIndicator<'a>::ascii(self, bool) -> Self
@@ -41057,6 +41321,262 @@ pub unsafe fn termrock::widgets::ActivityIndicator<'a>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::ActivityIndicator<'a>
 pub fn termrock::widgets::ActivityIndicator<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActivityIndicator<'a>
+pub struct termrock::widgets::ActivityItem
+pub termrock::widgets::ActivityItem::action_required: bool
+pub termrock::widgets::ActivityItem::actor: core::option::Option<alloc::string::String>
+pub termrock::widgets::ActivityItem::blocked: bool
+pub termrock::widgets::ActivityItem::dismissible: bool
+pub termrock::widgets::ActivityItem::elapsed: core::option::Option<alloc::string::String>
+pub termrock::widgets::ActivityItem::id: alloc::string::String
+pub termrock::widgets::ActivityItem::kind: termrock::widgets::ActivityKind
+pub termrock::widgets::ActivityItem::progress: core::option::Option<u8>
+pub termrock::widgets::ActivityItem::status: termrock::widgets::SemanticStatus
+pub termrock::widgets::ActivityItem::title: alloc::string::String
+pub termrock::widgets::ActivityItem::waiting_reason: core::option::Option<alloc::string::String>
+impl termrock::widgets::ActivityItem
+pub const fn termrock::widgets::ActivityItem::action_required(self, bool) -> Self
+pub fn termrock::widgets::ActivityItem::actor(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ActivityItem::blocked(self, bool) -> Self
+pub fn termrock::widgets::ActivityItem::chip_label(&self, bool, bool, usize) -> alloc::string::String
+pub const fn termrock::widgets::ActivityItem::dismissible(self, bool) -> Self
+pub fn termrock::widgets::ActivityItem::elapsed(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ActivityItem::kind(self, termrock::widgets::ActivityKind) -> Self
+pub fn termrock::widgets::ActivityItem::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ActivityItem::priority_rank(&self) -> u32
+pub fn termrock::widgets::ActivityItem::progress(self, u8) -> Self
+pub const fn termrock::widgets::ActivityItem::status(self, termrock::widgets::SemanticStatus) -> Self
+pub fn termrock::widgets::ActivityItem::summary_fragment(&self) -> alloc::string::String
+pub fn termrock::widgets::ActivityItem::waiting_reason(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::ActivityItem
+pub fn termrock::widgets::ActivityItem::clone(&self) -> termrock::widgets::ActivityItem
+impl core::cmp::Eq for termrock::widgets::ActivityItem
+impl core::cmp::PartialEq for termrock::widgets::ActivityItem
+pub fn termrock::widgets::ActivityItem::eq(&self, &termrock::widgets::ActivityItem) -> bool
+impl core::fmt::Debug for termrock::widgets::ActivityItem
+pub fn termrock::widgets::ActivityItem::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityItem
+impl core::marker::Freeze for termrock::widgets::ActivityItem
+impl core::marker::Send for termrock::widgets::ActivityItem
+impl core::marker::Sync for termrock::widgets::ActivityItem
+impl core::marker::Unpin for termrock::widgets::ActivityItem
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityItem
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityItem
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityItem
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityItem where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityItem::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityItem where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityItem::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityItem where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityItem::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityItem::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityItem where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityItem::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityItem::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityItem where T: core::clone::Clone
+pub type termrock::widgets::ActivityItem::Owned = T
+pub fn termrock::widgets::ActivityItem::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityItem::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityItem where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityItem::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityItem where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityItem::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityItem where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityItem::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityItem where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityItem::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityItem
+pub fn termrock::widgets::ActivityItem::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityItem
+pub struct termrock::widgets::ActivityShelf<'a>
+impl<'a> termrock::widgets::ActivityShelf<'a>
+pub const fn termrock::widgets::ActivityShelf<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ActivityShelf<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::ActivityShelf<'a>::new(&'a [termrock::widgets::ActivityItem], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::ActivityShelf<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ActivityShelfState)
+pub fn termrock::widgets::ActivityShelf<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ActivityShelfState)
+impl<'a> core::clone::Clone for termrock::widgets::ActivityShelf<'a>
+pub fn termrock::widgets::ActivityShelf<'a>::clone(&self) -> termrock::widgets::ActivityShelf<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ActivityShelf<'a>
+pub fn termrock::widgets::ActivityShelf<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ActivityShelf<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ActivityShelf<'a>
+impl<'a> core::marker::Send for termrock::widgets::ActivityShelf<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ActivityShelf<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ActivityShelf<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ActivityShelf<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityShelf<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityShelf<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityShelf<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityShelf<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityShelf<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityShelf<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityShelf<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityShelf<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityShelf<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityShelf<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityShelf<'a> where T: core::clone::Clone
+pub type termrock::widgets::ActivityShelf<'a>::Owned = T
+pub fn termrock::widgets::ActivityShelf<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityShelf<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityShelf<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelf<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityShelf<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelf<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityShelf<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelf<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityShelf<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityShelf<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityShelf<'a>
+pub fn termrock::widgets::ActivityShelf<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityShelf<'a>
+pub struct termrock::widgets::ActivityShelfPlan
+pub termrock::widgets::ActivityShelfPlan::overflow: usize
+pub termrock::widgets::ActivityShelfPlan::presentation: termrock::widgets::ActivityShelfPresentation
+pub termrock::widgets::ActivityShelfPlan::used_cols: u16
+pub termrock::widgets::ActivityShelfPlan::visible: alloc::vec::Vec<usize>
+impl core::clone::Clone for termrock::widgets::ActivityShelfPlan
+pub fn termrock::widgets::ActivityShelfPlan::clone(&self) -> termrock::widgets::ActivityShelfPlan
+impl core::cmp::Eq for termrock::widgets::ActivityShelfPlan
+impl core::cmp::PartialEq for termrock::widgets::ActivityShelfPlan
+pub fn termrock::widgets::ActivityShelfPlan::eq(&self, &termrock::widgets::ActivityShelfPlan) -> bool
+impl core::fmt::Debug for termrock::widgets::ActivityShelfPlan
+pub fn termrock::widgets::ActivityShelfPlan::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityShelfPlan
+impl core::marker::Freeze for termrock::widgets::ActivityShelfPlan
+impl core::marker::Send for termrock::widgets::ActivityShelfPlan
+impl core::marker::Sync for termrock::widgets::ActivityShelfPlan
+impl core::marker::Unpin for termrock::widgets::ActivityShelfPlan
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityShelfPlan
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityShelfPlan
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityShelfPlan
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityShelfPlan where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfPlan::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityShelfPlan where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityShelfPlan::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityShelfPlan where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityShelfPlan::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityShelfPlan::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityShelfPlan where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityShelfPlan::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityShelfPlan::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityShelfPlan where T: core::clone::Clone
+pub type termrock::widgets::ActivityShelfPlan::Owned = T
+pub fn termrock::widgets::ActivityShelfPlan::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityShelfPlan::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityShelfPlan where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfPlan::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityShelfPlan where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfPlan::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityShelfPlan where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfPlan::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityShelfPlan where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityShelfPlan::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityShelfPlan
+pub fn termrock::widgets::ActivityShelfPlan::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityShelfPlan
+pub struct termrock::widgets::ActivityShelfState
+pub termrock::widgets::ActivityShelfState::focused: bool
+pub termrock::widgets::ActivityShelfState::force_presentation: core::option::Option<termrock::widgets::ActivityShelfPresentation>
+pub termrock::widgets::ActivityShelfState::hits: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::ActivityShelfState::last_plan: core::option::Option<termrock::widgets::ActivityShelfPlan>
+pub termrock::widgets::ActivityShelfState::orientation: termrock::widgets::ActivityShelfOrientation
+pub termrock::widgets::ActivityShelfState::overflow_hit: ratatui_core::layout::rect::Rect
+pub termrock::widgets::ActivityShelfState::overflow_open: bool
+pub termrock::widgets::ActivityShelfState::selected: usize
+impl termrock::widgets::ActivityShelfState
+pub fn termrock::widgets::ActivityShelfState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::ActivityItem]) -> termrock::widgets::ActivityShelfOutcome
+pub fn termrock::widgets::ActivityShelfState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::ActivityItem]) -> termrock::widgets::ActivityShelfOutcome
+pub fn termrock::widgets::ActivityShelfState::new() -> Self
+pub fn termrock::widgets::ActivityShelfState::set_accepts_input(&mut self, bool)
+pub const fn termrock::widgets::ActivityShelfState::set_focused(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::ActivityShelfState
+pub fn termrock::widgets::ActivityShelfState::clone(&self) -> termrock::widgets::ActivityShelfState
+impl core::cmp::Eq for termrock::widgets::ActivityShelfState
+impl core::cmp::PartialEq for termrock::widgets::ActivityShelfState
+pub fn termrock::widgets::ActivityShelfState::eq(&self, &termrock::widgets::ActivityShelfState) -> bool
+impl core::default::Default for termrock::widgets::ActivityShelfState
+pub fn termrock::widgets::ActivityShelfState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ActivityShelfState
+pub fn termrock::widgets::ActivityShelfState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityShelfState
+impl core::marker::Freeze for termrock::widgets::ActivityShelfState
+impl core::marker::Send for termrock::widgets::ActivityShelfState
+impl core::marker::Sync for termrock::widgets::ActivityShelfState
+impl core::marker::Unpin for termrock::widgets::ActivityShelfState
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityShelfState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityShelfState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityShelfState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityShelfState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityShelfState where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityShelfState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityShelfState where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityShelfState::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityShelfState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityShelfState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityShelfState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityShelfState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityShelfState where T: core::clone::Clone
+pub type termrock::widgets::ActivityShelfState::Owned = T
+pub fn termrock::widgets::ActivityShelfState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityShelfState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityShelfState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityShelfState where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityShelfState where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityShelfState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityShelfState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityShelfState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityShelfState
+pub fn termrock::widgets::ActivityShelfState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityShelfState
+pub struct termrock::widgets::ActivityStatusProjection
+pub termrock::widgets::ActivityStatusProjection::badge: alloc::string::String
+pub termrock::widgets::ActivityStatusProjection::kind: termrock::widgets::StatusKind
+pub termrock::widgets::ActivityStatusProjection::priority: u8
+pub termrock::widgets::ActivityStatusProjection::region: termrock::widgets::StatusRegion
+pub termrock::widgets::ActivityStatusProjection::summary: alloc::string::String
+impl core::clone::Clone for termrock::widgets::ActivityStatusProjection
+pub fn termrock::widgets::ActivityStatusProjection::clone(&self) -> termrock::widgets::ActivityStatusProjection
+impl core::cmp::Eq for termrock::widgets::ActivityStatusProjection
+impl core::cmp::PartialEq for termrock::widgets::ActivityStatusProjection
+pub fn termrock::widgets::ActivityStatusProjection::eq(&self, &termrock::widgets::ActivityStatusProjection) -> bool
+impl core::fmt::Debug for termrock::widgets::ActivityStatusProjection
+pub fn termrock::widgets::ActivityStatusProjection::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityStatusProjection
+impl core::marker::Freeze for termrock::widgets::ActivityStatusProjection
+impl core::marker::Send for termrock::widgets::ActivityStatusProjection
+impl core::marker::Sync for termrock::widgets::ActivityStatusProjection
+impl core::marker::Unpin for termrock::widgets::ActivityStatusProjection
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityStatusProjection
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityStatusProjection
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityStatusProjection
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityStatusProjection where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityStatusProjection::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityStatusProjection where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityStatusProjection::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityStatusProjection where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityStatusProjection::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityStatusProjection::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityStatusProjection where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityStatusProjection::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityStatusProjection::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityStatusProjection where T: core::clone::Clone
+pub type termrock::widgets::ActivityStatusProjection::Owned = T
+pub fn termrock::widgets::ActivityStatusProjection::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityStatusProjection::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityStatusProjection where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityStatusProjection::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityStatusProjection where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityStatusProjection::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityStatusProjection where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityStatusProjection::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityStatusProjection where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityStatusProjection::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityStatusProjection
+pub fn termrock::widgets::ActivityStatusProjection::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityStatusProjection
 pub struct termrock::widgets::AgentModeOption
 pub termrock::widgets::AgentModeOption::consequence: core::option::Option<alloc::string::String>
 pub termrock::widgets::AgentModeOption::enabled: bool
@@ -74808,6 +75328,10 @@ pub unsafe fn termrock::widgets::WorkbenchMode<'a, Id>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::WorkbenchMode<'a, Id>
 pub fn termrock::widgets::WorkbenchMode<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::WorkbenchMode<'a, Id>
+pub const termrock::widgets::ACTIVITY_SHELF_CHIP_CAP: usize
+pub const termrock::widgets::ACTIVITY_SHELF_CHIP_MIN_COLS: u16
+pub const termrock::widgets::ACTIVITY_SHELF_NARROW_WIDTH: u16
+pub const termrock::widgets::ACTIVITY_SHELF_TINY_WIDTH: u16
 pub const termrock::widgets::ALERT_DIALOG_DEFAULT_HEIGHT: u16
 pub const termrock::widgets::ALERT_DIALOG_DEFAULT_WIDTH: u16
 pub const termrock::widgets::ALERT_DIALOG_OVERLAY_ID: &str
@@ -75007,6 +75531,12 @@ impl termrock::widgets::SyntaxHighlighter for termrock::widgets::RoleTokenSyntax
 pub fn termrock::widgets::RoleTokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
 impl termrock::widgets::SyntaxHighlighter for termrock::widgets::TokenSyntax<'_>
 pub fn termrock::widgets::TokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
+pub fn termrock::widgets::activities_to_notifications(&[termrock::widgets::ActivityItem], u64) -> alloc::vec::Vec<termrock::widgets::NotificationItem>
+pub fn termrock::widgets::activity_badge_label(&[termrock::widgets::ActivityItem], bool) -> alloc::string::String
+pub fn termrock::widgets::activity_counts(&[termrock::widgets::ActivityItem]) -> termrock::widgets::ActivityCounts
+pub fn termrock::widgets::activity_status_slot<'a, Id>(Id, &'a termrock::widgets::ActivityStatusProjection, bool) -> termrock::widgets::StatusSlot<'a, Id>
+pub fn termrock::widgets::activity_status_summary(&[termrock::widgets::ActivityItem], bool) -> alloc::string::String
+pub fn termrock::widgets::activity_to_notification(&termrock::widgets::ActivityItem, u64) -> termrock::widgets::NotificationItem
 pub fn termrock::widgets::any_dirty<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::any_touched<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::apply_expanded_set<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord>(&mut [termrock::widgets::SchemaBrowserEntry<'_, Id>], &alloc::collections::btree::set::BTreeSet<Id>)
@@ -75096,6 +75626,7 @@ pub fn termrock::widgets::escape_diff_text(&str) -> alloc::string::String
 pub fn termrock::widgets::escape_inspect_value(&str) -> alloc::string::String
 pub fn termrock::widgets::escape_log_text(&str) -> alloc::string::String
 pub fn termrock::widgets::escape_raw_terminal(&str) -> alloc::string::String
+pub fn termrock::widgets::example_activities() -> alloc::vec::Vec<termrock::widgets::ActivityItem>
 pub fn termrock::widgets::example_agent_plan_steps() -> alloc::vec::Vec<termrock::widgets::ProgressStep>
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
@@ -75333,12 +75864,14 @@ pub fn termrock::widgets::place_preview_card(ratatui_core::layout::rect::Rect, r
 pub fn termrock::widgets::place_quick_open(ratatui_core::layout::rect::Rect, termrock::widgets::QuickOpenSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_slash_command_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_tooltip(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::plan_activity_shelf(&[&termrock::widgets::ActivityItem], u16, termrock::widgets::ActivityShelfPresentation, bool) -> termrock::widgets::ActivityShelfPlan
 pub fn termrock::widgets::popover_presentation_for(ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> termrock::widgets::PopoverPresentation
 pub fn termrock::widgets::prepare_code_display(&str, usize, termrock::widgets::ControlRender) -> alloc::string::String
 pub fn termrock::widgets::preview_card_overlay_size(&termrock::widgets::PreviewCardContent<'_>, u16) -> termrock::interaction::OverlaySize
 pub fn termrock::widgets::process_column_model() -> termrock::widgets::ColumnModel<&'static str>
 pub fn termrock::widgets::progress_steps_as_list_rows(&[termrock::widgets::ProgressStep]) -> alloc::vec::Vec<termrock::widgets::ListRow<'static, alloc::string::String>>
 pub fn termrock::widgets::progress_steps_as_timeline_events(&[termrock::widgets::ProgressStep]) -> alloc::vec::Vec<termrock::widgets::TimelineEvent<'_>>
+pub fn termrock::widgets::project_activities_for_status_bar(&[termrock::widgets::ActivityItem], bool) -> termrock::widgets::ActivityStatusProjection
 pub fn termrock::widgets::project_dep_tree_rows(&[termrock::widgets::DepNode<'_>], &[termrock::widgets::DepEdge<'_>], &mut alloc::vec::Vec<[alloc::string::String; 4]>) -> alloc::vec::Vec<(alloc::string::String, u16, bool, bool, core::option::Option<alloc::string::String>, usize)>
 pub fn termrock::widgets::project_index_window<'a>(&[u64], &'a str) -> alloc::vec::Vec<(u64, alloc::string::String, alloc::string::String)>
 pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
@@ -75377,6 +75910,7 @@ pub fn termrock::widgets::sidebar_presentation_for_width(u16) -> termrock::widge
 pub fn termrock::widgets::slash_commands_from_command_entries<Id: alloc::string::ToString>(&[termrock::widgets::CommandEntry<Id>]) -> alloc::vec::Vec<termrock::widgets::SlashCommand>
 pub fn termrock::widgets::slash_commands_to_candidates(&[termrock::widgets::SlashCommand]) -> alloc::vec::Vec<termrock::widgets::CompletionCandidate<'_, alloc::string::String>>
 pub fn termrock::widgets::slash_presentation_for(ratatui_core::layout::rect::Rect) -> termrock::widgets::CompletionPresentation
+pub fn termrock::widgets::sort_activity_items(&[termrock::widgets::ActivityItem]) -> alloc::vec::Vec<&termrock::widgets::ActivityItem>
 pub fn termrock::widgets::sort_processes_flat<'a>(alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>, termrock::widgets::ProcessSortKey, bool) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
 pub fn termrock::widgets::span_bar_cols(u64, u64, u64, u64, u16) -> core::option::Option<(u16, u16)>
 pub fn termrock::widgets::span_to_inspector_fields<'a>(&'a termrock::widgets::TraceSpan<'a>) -> alloc::vec::Vec<termrock::widgets::InspectorField<'a>>

@@ -2281,6 +2281,33 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** follow pause on scroll; append while pinned; phase chrome.  
 24. **Perf:** O(visible stream lines); paint budget.
 
+## ActivityShelf
+
+1. **Purpose:** Compact concurrent active/blocked ops strip (not TaskRail).  
+2. **Anatomy:** `chip[]` · `overflow` · summary/badge contraction  
+3. **Public properties:** `ActivityItem[]` (status, kind, actor, elapsed, progress, waiting_reason, blocked, action_required), orientation, presentation  
+4. **State:** selected, overflow_open, force_presentation, hits  
+5. **Variants:** Chips · IconsOnly · Summary · Badge  
+6. **Sizes/density:** auto by width (`ACTIVITY_SHELF_*_WIDTH`)  
+7. **Visual states:** SemanticStatus glyphs; action/blocked emphasize  
+8. **Interaction states:** select · activate · dismiss · overflow  
+9. **Keyboard:** ←/→ h/l · Enter · x dismiss · o overflow  
+10. **Mouse:** chip click activate; overflow hit  
+11. **Focus:** optional strip focus  
+12. **Disabled:** accepts_input false  
+13. **Loading:** Running chips; host updates progress/elapsed  
+14. **Error:** Failed status role; action_required danger  
+15. **Narrow:** Summary then Badge  
+16. **Tiny:** Badge count  
+17. **Unicode/ASCII:** SemanticStatus glyph sets  
+18. **Colorless:** reverse select; letter prefixes  
+19. **Composition:** StatusBar projection; NotificationCenter ingest; TaskRail remains full list  
+20. **Outcomes:** Selected · Activated · Dismissed · OverflowOpen/Closed  
+21. **Stories:** `activity-shelf/{statuses,many-overflow,summary,badge,statusbar}`  
+22. **Snapshots:** prioritized chips; narrow badge  
+23. **Interaction tests:** sort priority; overflow math; activate  
+24. **Perf:** O(visible chips); paint budget many items  
+
 ## TaskRail
 
 1. **Purpose:** Side list of tasks/subagents.  

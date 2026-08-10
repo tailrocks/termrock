@@ -1055,6 +1055,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "ActivityShelf": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "Tooltip": {
     "keyboard": "covered",
     "mouse": "covered",

@@ -129,6 +129,7 @@ mod log_stream;
 mod diagnostic;
 mod terminal_output;
 mod terminal_run_card;
+mod activity_shelf;
 mod hex_viewer;
 mod file_tree;
 mod process_table;
@@ -199,6 +200,15 @@ pub use terminal_run_card::{
     terminal_run_to_meta, terminal_run_to_tool_call,
 };
 pub use terminal_run_card::bench as terminal_run_card_bench;
+pub use activity_shelf::{
+    ACTIVITY_SHELF_CHIP_CAP, ACTIVITY_SHELF_CHIP_MIN_COLS, ACTIVITY_SHELF_NARROW_WIDTH,
+    ACTIVITY_SHELF_TINY_WIDTH, ActivityCounts, ActivityItem, ActivityKind, ActivityShelf,
+    ActivityShelfOrientation, ActivityShelfOutcome, ActivityShelfPlan, ActivityShelfPresentation,
+    ActivityShelfState, ActivityStatusProjection, activities_to_notifications, activity_badge_label,
+    activity_counts, activity_status_slot, activity_status_summary, activity_to_notification,
+    example_activities, plan_activity_shelf, project_activities_for_status_bar, sort_activity_items,
+};
+pub use activity_shelf::bench as activity_shelf_bench;
 pub use hex_viewer::{
     HexAsciiMode, HexEndian, HexInspectorValues, HexRegion, HexViewer, HexViewerOutcome,
     HexViewerState, HexWindow, HEX_DEFAULT_BYTES_PER_ROW, HEX_MAX_BYTES_PER_ROW,
