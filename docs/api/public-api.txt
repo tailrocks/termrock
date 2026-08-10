@@ -16345,53 +16345,118 @@ pub unsafe fn termrock::widgets::ColumnWidth::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ColumnWidth
 pub fn termrock::widgets::ColumnWidth::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ColumnWidth
-#[non_exhaustive] pub enum termrock::widgets::ComboboxOutcome
-pub termrock::widgets::ComboboxOutcome::Closed
+#[non_exhaustive] pub enum termrock::widgets::ComboMode
+pub termrock::widgets::ComboMode::Autocomplete
+pub termrock::widgets::ComboMode::Combobox
+impl termrock::widgets::ComboMode
+pub const fn termrock::widgets::ComboMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ComboMode
+pub fn termrock::widgets::ComboMode::clone(&self) -> termrock::widgets::ComboMode
+impl core::cmp::Eq for termrock::widgets::ComboMode
+impl core::cmp::PartialEq for termrock::widgets::ComboMode
+pub fn termrock::widgets::ComboMode::eq(&self, &termrock::widgets::ComboMode) -> bool
+impl core::default::Default for termrock::widgets::ComboMode
+pub fn termrock::widgets::ComboMode::default() -> termrock::widgets::ComboMode
+impl core::fmt::Debug for termrock::widgets::ComboMode
+pub fn termrock::widgets::ComboMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ComboMode
+pub fn termrock::widgets::ComboMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ComboMode
+impl core::marker::StructuralPartialEq for termrock::widgets::ComboMode
+impl core::marker::Freeze for termrock::widgets::ComboMode
+impl core::marker::Send for termrock::widgets::ComboMode
+impl core::marker::Sync for termrock::widgets::ComboMode
+impl core::marker::Unpin for termrock::widgets::ComboMode
+impl core::marker::UnsafeUnpin for termrock::widgets::ComboMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ComboMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ComboMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ComboMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ComboMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ComboMode where U: core::convert::From<T>
+pub fn termrock::widgets::ComboMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ComboMode where U: core::convert::Into<T>
+pub type termrock::widgets::ComboMode::Error = core::convert::Infallible
+pub fn termrock::widgets::ComboMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ComboMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ComboMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ComboMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ComboMode where T: core::clone::Clone
+pub type termrock::widgets::ComboMode::Owned = T
+pub fn termrock::widgets::ComboMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::ComboMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ComboMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ComboMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ComboMode where T: ?core::marker::Sized
+pub fn termrock::widgets::ComboMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ComboMode where T: ?core::marker::Sized
+pub fn termrock::widgets::ComboMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ComboMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ComboMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ComboMode
+pub fn termrock::widgets::ComboMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ComboMode
+#[non_exhaustive] pub enum termrock::widgets::ComboboxOutcome<Id>
+pub termrock::widgets::ComboboxOutcome::Blurred
+pub termrock::widgets::ComboboxOutcome::ClipboardCopy
+pub termrock::widgets::ComboboxOutcome::ClipboardCopy::text: alloc::string::String
+pub termrock::widgets::ComboboxOutcome::ClipboardPasteRequest
+pub termrock::widgets::ComboboxOutcome::Committed
+pub termrock::widgets::ComboboxOutcome::Committed::id: Id
+pub termrock::widgets::ComboboxOutcome::Committed::label: alloc::string::String
+pub termrock::widgets::ComboboxOutcome::Created
+pub termrock::widgets::ComboboxOutcome::Created::text: alloc::string::String
+pub termrock::widgets::ComboboxOutcome::Dismissed
+pub termrock::widgets::ComboboxOutcome::DraftChanged
+pub termrock::widgets::ComboboxOutcome::DraftChanged::generation: u64
+pub termrock::widgets::ComboboxOutcome::DraftChanged::text: alloc::string::String
+pub termrock::widgets::ComboboxOutcome::HighlightChanged
+pub termrock::widgets::ComboboxOutcome::HighlightChanged::id: core::option::Option<Id>
 pub termrock::widgets::ComboboxOutcome::Ignored
-pub termrock::widgets::ComboboxOutcome::QueryChanged
-pub termrock::widgets::ComboboxOutcome::Selected
-pub termrock::widgets::ComboboxOutcome::Selected::index: usize
-pub termrock::widgets::ComboboxOutcome::SubmitQuery
-impl core::clone::Clone for termrock::widgets::ComboboxOutcome
-pub fn termrock::widgets::ComboboxOutcome::clone(&self) -> termrock::widgets::ComboboxOutcome
-impl core::cmp::Eq for termrock::widgets::ComboboxOutcome
-impl core::cmp::PartialEq for termrock::widgets::ComboboxOutcome
-pub fn termrock::widgets::ComboboxOutcome::eq(&self, &termrock::widgets::ComboboxOutcome) -> bool
-impl core::fmt::Debug for termrock::widgets::ComboboxOutcome
-pub fn termrock::widgets::ComboboxOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::widgets::ComboboxOutcome
-impl core::marker::Freeze for termrock::widgets::ComboboxOutcome
-impl core::marker::Send for termrock::widgets::ComboboxOutcome
-impl core::marker::Sync for termrock::widgets::ComboboxOutcome
-impl core::marker::Unpin for termrock::widgets::ComboboxOutcome
-impl core::marker::UnsafeUnpin for termrock::widgets::ComboboxOutcome
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ComboboxOutcome
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ComboboxOutcome
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ComboboxOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::ComboboxOutcome::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::ComboboxOutcome where U: core::convert::From<T>
-pub fn termrock::widgets::ComboboxOutcome::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ComboboxOutcome where U: core::convert::Into<T>
-pub type termrock::widgets::ComboboxOutcome::Error = core::convert::Infallible
-pub fn termrock::widgets::ComboboxOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::ComboboxOutcome where U: core::convert::TryFrom<T>
-pub type termrock::widgets::ComboboxOutcome::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::ComboboxOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::ComboboxOutcome where T: core::clone::Clone
-pub type termrock::widgets::ComboboxOutcome::Owned = T
-pub fn termrock::widgets::ComboboxOutcome::clone_into(&self, &mut T)
-pub fn termrock::widgets::ComboboxOutcome::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::ComboboxOutcome where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::ComboboxOutcome::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::ComboboxOutcome where T: ?core::marker::Sized
-pub fn termrock::widgets::ComboboxOutcome::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ComboboxOutcome where T: ?core::marker::Sized
-pub fn termrock::widgets::ComboboxOutcome::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::ComboboxOutcome where T: core::clone::Clone
-pub unsafe fn termrock::widgets::ComboboxOutcome::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::ComboboxOutcome
-pub fn termrock::widgets::ComboboxOutcome::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::ComboboxOutcome
+pub termrock::widgets::ComboboxOutcome::MenuClosed
+pub termrock::widgets::ComboboxOutcome::MenuOpened
+pub termrock::widgets::ComboboxOutcome::MenuOpened::generation: u64
+pub termrock::widgets::ComboboxOutcome::ValidationFailed
+pub termrock::widgets::ComboboxOutcome::ValidationFailed::reason: &'static str
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxOutcome<Id>::clone(&self) -> termrock::widgets::ComboboxOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ComboboxOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxOutcome<Id>::eq(&self, &termrock::widgets::ComboboxOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ComboboxOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ComboboxOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ComboboxOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ComboboxOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ComboboxOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ComboboxOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ComboboxOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ComboboxOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ComboboxOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ComboboxOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ComboboxOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ComboboxOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ComboboxOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ComboboxOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ComboboxOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ComboboxOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ComboboxOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ComboboxOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ComboboxOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::ComboboxOutcome<Id>::Owned = T
+pub fn termrock::widgets::ComboboxOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ComboboxOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ComboboxOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ComboboxOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ComboboxOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ComboboxOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ComboboxOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ComboboxOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ComboboxOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ComboboxOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ComboboxOutcome<Id>
 #[non_exhaustive] pub enum termrock::widgets::CommandPaletteOutcome<Id>
 pub termrock::widgets::CommandPaletteOutcome::Activated(Id)
 pub termrock::widgets::CommandPaletteOutcome::Cancelled
@@ -23468,6 +23533,59 @@ pub unsafe fn termrock::widgets::StatusRegion::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::StatusRegion
 pub fn termrock::widgets::StatusRegion::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StatusRegion
+#[non_exhaustive] pub enum termrock::widgets::SuggestionStatus
+pub termrock::widgets::SuggestionStatus::Empty
+pub termrock::widgets::SuggestionStatus::Error
+pub termrock::widgets::SuggestionStatus::Idle
+pub termrock::widgets::SuggestionStatus::Loading
+pub termrock::widgets::SuggestionStatus::Ready
+impl termrock::widgets::SuggestionStatus
+pub const fn termrock::widgets::SuggestionStatus::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SuggestionStatus
+pub fn termrock::widgets::SuggestionStatus::clone(&self) -> termrock::widgets::SuggestionStatus
+impl core::cmp::Eq for termrock::widgets::SuggestionStatus
+impl core::cmp::PartialEq for termrock::widgets::SuggestionStatus
+pub fn termrock::widgets::SuggestionStatus::eq(&self, &termrock::widgets::SuggestionStatus) -> bool
+impl core::default::Default for termrock::widgets::SuggestionStatus
+pub fn termrock::widgets::SuggestionStatus::default() -> termrock::widgets::SuggestionStatus
+impl core::fmt::Debug for termrock::widgets::SuggestionStatus
+pub fn termrock::widgets::SuggestionStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SuggestionStatus
+pub fn termrock::widgets::SuggestionStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SuggestionStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::SuggestionStatus
+impl core::marker::Freeze for termrock::widgets::SuggestionStatus
+impl core::marker::Send for termrock::widgets::SuggestionStatus
+impl core::marker::Sync for termrock::widgets::SuggestionStatus
+impl core::marker::Unpin for termrock::widgets::SuggestionStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::SuggestionStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SuggestionStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SuggestionStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SuggestionStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SuggestionStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SuggestionStatus where U: core::convert::From<T>
+pub fn termrock::widgets::SuggestionStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SuggestionStatus where U: core::convert::Into<T>
+pub type termrock::widgets::SuggestionStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::SuggestionStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SuggestionStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SuggestionStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SuggestionStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SuggestionStatus where T: core::clone::Clone
+pub type termrock::widgets::SuggestionStatus::Owned = T
+pub fn termrock::widgets::SuggestionStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::SuggestionStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SuggestionStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SuggestionStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SuggestionStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::SuggestionStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SuggestionStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::SuggestionStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SuggestionStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SuggestionStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SuggestionStatus
+pub fn termrock::widgets::SuggestionStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SuggestionStatus
 #[non_exhaustive] pub enum termrock::widgets::SurfaceElevation
 pub termrock::widgets::SurfaceElevation::Base
 pub termrock::widgets::SurfaceElevation::Canvas
@@ -28869,8 +28987,14 @@ pub fn termrock::widgets::ColumnModel<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ColumnModel<Id>
 pub struct termrock::widgets::Combobox<'a>
 impl<'a> termrock::widgets::Combobox<'a>
-pub const fn termrock::widgets::Combobox<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::Combobox<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::ComboboxState)
+pub const fn termrock::widgets::Combobox<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Combobox<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::Combobox<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Combobox<'a>::paint<Id: core::clone::Clone + core::cmp::PartialEq>(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ComboboxState<Id>) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::Combobox<'a>::paint_with_menu<Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display>(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ComboboxState<Id>, &[termrock::widgets::CompletionCandidate<'_, Id>])
+pub const fn termrock::widgets::Combobox<'a>::placeholder(self, &'a str) -> Self
+pub fn termrock::widgets::Combobox<'a>::register_semantic<Id, Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::ComboboxState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq, Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::Combobox<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::Combobox<'a>
 pub fn termrock::widgets::Combobox<'a>::clone(&self) -> termrock::widgets::Combobox<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Combobox<'a>
@@ -28906,56 +29030,93 @@ pub unsafe fn termrock::widgets::Combobox<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Combobox<'a>
 pub fn termrock::widgets::Combobox<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Combobox<'a>
-pub struct termrock::widgets::ComboboxState
-impl termrock::widgets::ComboboxState
-pub fn termrock::widgets::ComboboxState::free_text(self, bool) -> Self
-pub fn termrock::widgets::ComboboxState::handle_key(&mut self, termrock::input::KeyEvent, usize) -> termrock::widgets::ComboboxOutcome
-pub fn termrock::widgets::ComboboxState::new() -> Self
-pub fn termrock::widgets::ComboboxState::query(&self) -> &str
-pub const fn termrock::widgets::ComboboxState::set_focused(&mut self, bool)
-pub fn termrock::widgets::ComboboxState::set_query(&mut self, impl core::convert::Into<alloc::string::String>)
-impl core::clone::Clone for termrock::widgets::ComboboxState
-pub fn termrock::widgets::ComboboxState::clone(&self) -> termrock::widgets::ComboboxState
-impl core::cmp::Eq for termrock::widgets::ComboboxState
-impl core::cmp::PartialEq for termrock::widgets::ComboboxState
-pub fn termrock::widgets::ComboboxState::eq(&self, &termrock::widgets::ComboboxState) -> bool
-impl core::default::Default for termrock::widgets::ComboboxState
-pub fn termrock::widgets::ComboboxState::default() -> Self
-impl core::fmt::Debug for termrock::widgets::ComboboxState
-pub fn termrock::widgets::ComboboxState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::widgets::ComboboxState
-impl core::marker::Freeze for termrock::widgets::ComboboxState
-impl core::marker::Send for termrock::widgets::ComboboxState
-impl core::marker::Sync for termrock::widgets::ComboboxState
-impl core::marker::Unpin for termrock::widgets::ComboboxState
-impl core::marker::UnsafeUnpin for termrock::widgets::ComboboxState
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ComboboxState
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ComboboxState
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ComboboxState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::ComboboxState::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::ComboboxState where U: core::convert::From<T>
-pub fn termrock::widgets::ComboboxState::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ComboboxState where U: core::convert::Into<T>
-pub type termrock::widgets::ComboboxState::Error = core::convert::Infallible
-pub fn termrock::widgets::ComboboxState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::ComboboxState where U: core::convert::TryFrom<T>
-pub type termrock::widgets::ComboboxState::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::ComboboxState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::ComboboxState where T: core::clone::Clone
-pub type termrock::widgets::ComboboxState::Owned = T
-pub fn termrock::widgets::ComboboxState::clone_into(&self, &mut T)
-pub fn termrock::widgets::ComboboxState::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::ComboboxState where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::ComboboxState::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::ComboboxState where T: ?core::marker::Sized
-pub fn termrock::widgets::ComboboxState::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ComboboxState where T: ?core::marker::Sized
-pub fn termrock::widgets::ComboboxState::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::ComboboxState where T: core::clone::Clone
-pub unsafe fn termrock::widgets::ComboboxState::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::ComboboxState
-pub fn termrock::widgets::ComboboxState::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::ComboboxState
+pub struct termrock::widgets::ComboboxState<Id: core::clone::Clone + core::cmp::PartialEq>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ComboboxState<Id>
+pub const fn termrock::widgets::ComboboxState<Id>::active_suggestion(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::ComboboxState<Id>::applied_generation(&self) -> u64
+pub fn termrock::widgets::ComboboxState<Id>::apply_suggestions(&mut self, u64, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> bool
+pub fn termrock::widgets::ComboboxState<Id>::autocomplete() -> Self
+pub fn termrock::widgets::ComboboxState<Id>::blur(&mut self) -> termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxState<Id>::commit_active(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxState<Id>::commit_created(&mut self) -> termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxState<Id>::dismiss_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::ComboboxState<Id>::draft(&self) -> &str
+pub fn termrock::widgets::ComboboxState<Id>::draft_matches_candidate(&self, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> core::option::Option<Id>
+pub const fn termrock::widgets::ComboboxState<Id>::field_area(&self) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::ComboboxState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::CompletionCandidate<'_, Id>], ratatui_core::layout::rect::Rect) -> termrock::widgets::ComboboxOutcome<Id>
+pub fn termrock::widgets::ComboboxState<Id>::insert_str(&mut self, &str) -> termrock::widgets::ComboboxOutcome<Id>
+pub const fn termrock::widgets::ComboboxState<Id>::is_creatable(&self) -> bool
+pub const fn termrock::widgets::ComboboxState<Id>::is_enabled(&self) -> bool
+pub const fn termrock::widgets::ComboboxState<Id>::is_focused(&self) -> bool
+pub const fn termrock::widgets::ComboboxState<Id>::is_menu_open(&self) -> bool
+pub fn termrock::widgets::ComboboxState<Id>::mark_error(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::ComboboxState<Id>::mark_loading(&mut self)
+pub const fn termrock::widgets::ComboboxState<Id>::menu(&self) -> &termrock::widgets::CompletionMenuState<Id>
+pub fn termrock::widgets::ComboboxState<Id>::menu_mut(&mut self) -> &mut termrock::widgets::CompletionMenuState<Id>
+pub const fn termrock::widgets::ComboboxState<Id>::mode(&self) -> termrock::widgets::ComboMode
+pub fn termrock::widgets::ComboboxState<Id>::new() -> Self
+pub fn termrock::widgets::ComboboxState<Id>::open_overlay<FocusId: core::clone::Clone>(&self, &mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::ComboboxState<Id>::place_menu(&self, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::ComboboxState<Id>::recent(&self) -> impl core::iter::traits::iterator::Iterator<Item = (&Id, &str)>
+pub fn termrock::widgets::ComboboxState<Id>::set_draft(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::ComboboxState<Id>::set_enabled(&mut self, bool)
+pub fn termrock::widgets::ComboboxState<Id>::set_error_message(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::ComboboxState<Id>::set_focused(&mut self, bool)
+pub fn termrock::widgets::ComboboxState<Id>::set_read_only(&mut self, bool)
+pub fn termrock::widgets::ComboboxState<Id>::set_value(&mut self, core::option::Option<Id>, core::option::Option<alloc::string::String>)
+pub const fn termrock::widgets::ComboboxState<Id>::suggestion_generation(&self) -> u64
+pub const fn termrock::widgets::ComboboxState<Id>::suggestion_status(&self) -> termrock::widgets::SuggestionStatus
+pub const fn termrock::widgets::ComboboxState<Id>::value(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::ComboboxState<Id>::value_label(&self) -> core::option::Option<&str>
+pub const fn termrock::widgets::ComboboxState<Id>::with_creatable(self, bool) -> Self
+pub fn termrock::widgets::ComboboxState<Id>::with_draft(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ComboboxState<Id>::with_exact_required(self, bool) -> Self
+pub const fn termrock::widgets::ComboboxState<Id>::with_mode(self, termrock::widgets::ComboMode) -> Self
+pub fn termrock::widgets::ComboboxState<Id>::with_recent_limit(self, usize) -> Self
+impl<Id: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq> core::clone::Clone for termrock::widgets::ComboboxState<Id>
+pub fn termrock::widgets::ComboboxState<Id>::clone(&self) -> termrock::widgets::ComboboxState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::ComboboxState<Id>
+pub fn termrock::widgets::ComboboxState<Id>::default() -> Self
+impl<Id: core::cmp::Eq + core::clone::Clone + core::cmp::PartialEq> core::cmp::Eq for termrock::widgets::ComboboxState<Id>
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::ComboboxState<Id>
+pub fn termrock::widgets::ComboboxState<Id>::eq(&self, &termrock::widgets::ComboboxState<Id>) -> bool
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::ComboboxState<Id>
+impl<Id: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::widgets::ComboboxState<Id>
+pub fn termrock::widgets::ComboboxState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::ComboboxState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ComboboxState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ComboboxState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ComboboxState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ComboboxState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ComboboxState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ComboboxState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ComboboxState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ComboboxState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ComboboxState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::ComboboxState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ComboboxState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::ComboboxState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::ComboboxState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ComboboxState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ComboboxState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ComboboxState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ComboboxState<Id> where T: core::clone::Clone
+pub type termrock::widgets::ComboboxState<Id>::Owned = T
+pub fn termrock::widgets::ComboboxState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ComboboxState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ComboboxState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ComboboxState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ComboboxState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ComboboxState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ComboboxState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::ComboboxState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ComboboxState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ComboboxState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ComboboxState<Id>
+pub fn termrock::widgets::ComboboxState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ComboboxState<Id>
 pub struct termrock::widgets::CommandPalette<'a, Id>
 impl<'a, Id> termrock::widgets::CommandPalette<'a, Id>
 pub const fn termrock::widgets::CommandPalette<'a, Id>::ascii(self, bool) -> Self
@@ -44648,6 +44809,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::WorkbenchMode<'a,
 pub const termrock::widgets::BUILTIN_THEME_PRESETS: &[termrock::widgets::ThemePreset]
 pub const termrock::widgets::COMMAND_PALETTE_OVERLAY_ID: &str
 pub const termrock::widgets::COMPLETION_OVERLAY_ID: &str
+pub const termrock::widgets::DEFAULT_COMBO_RECENT_LIMIT: usize
 pub const termrock::widgets::DEFAULT_DEBOUNCE: core::time::Duration
 pub const termrock::widgets::DEFAULT_HISTORY_LIMIT: usize
 pub const termrock::widgets::DEFAULT_PATH_HISTORY_LIMIT: usize
@@ -44757,6 +44919,8 @@ pub fn termrock::widgets::toolbar_icon_action<'a, Id>(Id, &'a str, &'a str) -> t
 pub fn termrock::widgets::workbench_panels() -> [termrock::widgets::ResizablePanelSpec; 3]
 pub fn termrock::widgets::wrapped_hint_lines(&[termrock::widgets::HintSpan<'_>], u16, &termrock::style::DesignSystem) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub type termrock::widgets::AlertTone = termrock::widgets::CalloutTone
+pub type termrock::widgets::Autocomplete<'a> = termrock::widgets::Combobox<'a>
+pub type termrock::widgets::AutocompleteState<Id> = termrock::widgets::ComboboxState<Id>
 pub type termrock::widgets::CellCoord = termrock::interaction::CellCoord
 pub type termrock::widgets::CommandPaletteState<Id> = termrock::widgets::PickerState<Id>
 pub type termrock::widgets::ContextMenu<'a, Id> = termrock::widgets::Menu<'a, Id>

@@ -63,6 +63,7 @@ use termrock::{
         FieldToken, TokenField, TokenFieldState, TokenStatus,
         Select, SelectOption, SelectRecipe, SelectState,
         MultiSelect, MultiSelectState,
+        Combobox, ComboboxState, SuggestionStatus,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -5083,6 +5084,42 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             14,
             multi_select_search_story,
+        ),
+        Story::new(
+            "combobox/basic",
+            "Combobox",
+            "Combobox",
+            "Closed combobox field with value.",
+            36,
+            2,
+            combobox_basic_story,
+        ),
+        Story::new(
+            "combobox/open",
+            "Combobox open",
+            "Combobox",
+            "Open suggestions via CompletionMenu.",
+            40,
+            10,
+            combobox_open_story,
+        ),
+        Story::new(
+            "combobox/loading",
+            "Combobox loading",
+            "Combobox",
+            "Async suggestion loading status.",
+            36,
+            2,
+            combobox_loading_story,
+        ),
+        Story::new(
+            "autocomplete/basic",
+            "Autocomplete",
+            "Autocomplete",
+            "Creatable free-text autocomplete.",
+            40,
+            10,
+            autocomplete_basic_story,
         ),
         Story::new(
             "text-input/invalid",
@@ -13377,6 +13414,66 @@ fn multi_select_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     MultiSelect::new(&opts, system)
         .ascii(true)
         .paint_stacked(area, frame.buffer_mut(), &mut state);
+}
+
+fn combobox_candidates() -> Vec<CompletionCandidate<'static, &'static str>> {
+    vec![
+        CompletionCandidate::new("rs", "Rust").kind("lang"),
+        CompletionCandidate::new("go", "Go").kind("lang"),
+        CompletionCandidate::new("ts", "TypeScript").kind("lang"),
+    ]
+}
+
+fn combobox_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state: ComboboxState<&'static str> = ComboboxState::new()
+        .with_creatable(false)
+        .with_exact_required(true);
+    state.set_focused(true);
+    state.set_value(Some("rs"), Some("Rust".into()));
+    state.set_draft("Rust");
+    let _ = Combobox::new(system)
+        .label("Language")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn combobox_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let cands = combobox_candidates();
+    let mut state: ComboboxState<&'static str> = ComboboxState::new();
+    state.set_focused(true);
+    let _ = state.insert_str("R");
+    let g = state.suggestion_generation();
+    let _ = state.apply_suggestions(g, &cands);
+    Combobox::new(system)
+        .label("Language")
+        .ascii(true)
+        .paint_with_menu(area, frame.buffer_mut(), &mut state, &cands);
+}
+
+fn combobox_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state: ComboboxState<&'static str> = ComboboxState::new();
+    state.set_focused(true);
+    let _ = state.insert_str("asyn");
+    state.mark_loading();
+    assert_eq!(state.suggestion_status(), SuggestionStatus::Loading);
+    let _ = Combobox::new(system)
+        .label("Search")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn autocomplete_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let cands = combobox_candidates();
+    let mut state: ComboboxState<&'static str> = ComboboxState::autocomplete();
+    state.set_focused(true);
+    let _ = state.insert_str("G");
+    let g = state.suggestion_generation();
+    let _ = state.apply_suggestions(g, &cands);
+    Combobox::new(system)
+        .label("Complete")
+        .placeholder("Type freely…")
+        .ascii(true)
+        .paint_with_menu(area, frame.buffer_mut(), &mut state, &cands);
 }
 
 fn text_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

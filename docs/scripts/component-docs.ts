@@ -438,6 +438,27 @@ let mut state = MultiSelectState::new().with_selected(["rs"]);
 state.set_focused(true);
 let _ = MultiSelect::new(&options, &system).label("Filters");`,
   },
+  Combobox: {
+    description:
+      'An editable input with CompletionMenu suggestions, async generation gating, and separate draft/active/value.',
+    primaryStory: 'combobox/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Combobox, ComboboxState, CompletionCandidate};
+
+let system = DesignSystem::default();
+let mut state: ComboboxState<&str> = ComboboxState::new();
+state.set_focused(true);
+// DraftChanged { generation } → host fetch → apply_suggestions(generation, …)
+let _ = Combobox::new(&system).label("Language");`,
+  },
+  Autocomplete: {
+    description:
+      'Creatable free-text field with optional suggestions (Combobox autocomplete mode).',
+    primaryStory: 'autocomplete/basic',
+    usage: `use termrock::widgets::ComboboxState;
+let mut state: ComboboxState<&str> = ComboboxState::autocomplete();
+state.set_focused(true);`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

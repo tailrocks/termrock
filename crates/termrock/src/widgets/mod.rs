@@ -77,6 +77,7 @@ mod path_input;
 mod token_field;
 mod select;
 mod multi_select;
+mod combobox;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -183,8 +184,7 @@ pub use surface::{
     Surface, SurfaceElevation, SurfaceFill, SurfacePaintPlan, SurfaceParts, SurfaceRecipe,
 };
 pub use controls::{
-    Checkbox, CheckboxOutcome, CheckboxParts, CheckboxState, CheckboxValue, Combobox,
-    ComboboxOutcome, ComboboxState, RadioGroup,
+    Checkbox, CheckboxOutcome, CheckboxParts, CheckboxState, CheckboxValue, RadioGroup,
     RadioGroupOrientation, RadioGroupParts, RadioOption, RadioOptionParts, RadioOutcome,
     RadioSelectionPolicy, RadioState, Switch, SwitchOutcome, SwitchParts, SwitchRecipe, SwitchState,
 };
@@ -335,6 +335,10 @@ pub use select::{
     SelectPresentation, SelectRecipe, SelectRowKind, SelectState,
 };
 pub use multi_select::{MultiSelect, MultiSelectOutcome, MultiSelectState};
+pub use combobox::{
+    Autocomplete, AutocompleteState, ComboMode, Combobox, ComboboxOutcome, ComboboxState,
+    DEFAULT_COMBO_RECENT_LIMIT, SuggestionStatus,
+};
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,
     system_from_preset_id, theme_from_preset_id,
