@@ -1,0 +1,69 @@
+---
+title: Spinner
+description: 'Semantic activity spinner with verb label, phases, capability glyphs, reduced-motion static frames, and idle redraw when inactive/hidden.'
+---
+
+## Previews
+
+### `spinner/labeled`
+
+Spinner labeled
+
+![Spinner — labeled](/component-previews/spinner-labeled.svg)
+
+### `spinner/phases`
+
+Spinner phases
+
+![Spinner — phases](/component-previews/spinner-phases.svg)
+
+### `spinner/compact`
+
+Spinner compact embedded
+
+![Spinner — compact](/component-previews/spinner-compact.svg)
+
+### `spinner/ascii`
+
+Spinner ASCII
+
+![Spinner — ascii](/component-previews/spinner-ascii.svg)
+
+## Usage
+
+```rust
+use termrock::style::{DesignSystem, Motion};
+use termrock::widgets::{Spinner, SpinnerState, ActivityPhase};
+
+let system = DesignSystem::default();
+let mut state = SpinnerState::new();
+state.set_active(working);
+state.set_visible(on_screen);
+if state.should_tick() {
+    let _demand = state.animation_demand(tick, Motion::Full);
+}
+Spinner::labeled("Fetching packages", &system)
+    .phase(ActivityPhase::Indeterminate)
+    .paint(area, buf, &state, tick, Motion::Full);
+```
+
+## Rules
+
+1. Prefer a verb label; compact glyph-only only when embedded in a labeled control.
+2. Call `set_active(false)` / `set_visible(false)` to stop frame ticks.
+3. `Motion::Off` / `Reduced` use static non-color glyphs.
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | caller-owned |
+| Mouse | caller-owned |
+| Focus | covered (never focusable) |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `spinner/labeled`, `phases`, `compact`, `ascii`

@@ -81,6 +81,7 @@ mod scroll_area;
 mod selection;
 mod split_pane;
 mod resizable_panel_group;
+mod spinner;
 mod status_bar;
 mod surface;
 mod table;
@@ -396,7 +397,7 @@ pub use history_picker::{
 };
 pub use primitives::{
     ActivationOutcome, ActivationState, Button, ButtonParts, ButtonSize, ButtonState, ButtonVariant,
-    ICON_BUTTON_MIN_HIT, IconButton, IconButtonParts, IconButtonSize, IconButtonState, Spinner,
+    ICON_BUTTON_MIN_HIT, IconButton, IconButtonParts, IconButtonSize, IconButtonState,
     button_hit, toolbar_icon_action,
 };
 pub use tag_chip::{
@@ -440,7 +441,13 @@ pub use resizable_panel_group::{
     PanelRect, ResizablePanelGroup, ResizablePanelGroupLayout, ResizablePanelGroupState,
     ResizablePanelOutcome, ResizablePanelSpec,
 };
+pub use spinner::{
+    SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES, SPINNER_DEFAULT_PERIOD_MS,
+    SPINNER_RECONNECT_UNICODE, SPINNER_WAITING_ASCII, SPINNER_WAITING_UNICODE, ActivityIndicator,
+    ActivityPhase, Spinner, SpinnerGlyphSet, SpinnerState, SpinnerVariant,
+};
 pub use status_bar::{
+
     StatusBar, StatusBarRecipe, StatusBarState, StatusKind, StatusRegion, StatusSlot,
     TransientStatus,
 };

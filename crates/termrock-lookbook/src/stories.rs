@@ -97,7 +97,8 @@ use termrock::{
         example_symbol_preview,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, NotificationCenter, NotificationCenterState, NotificationRecipe,
-        example_notifications, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
+        example_notifications, Spinner, SpinnerState, ActivityIndicator, ActivityPhase,
+        TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
         Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
     },
@@ -2175,6 +2176,51 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             10,
             motion_presence_story,
+        ),
+        Story::new(
+            "spinner/labeled",
+            "Spinner labeled",
+            "Spinner",
+            "Indeterminate spinner with required verb label.",
+            28,
+            2,
+            spinner_labeled_story,
+        ),
+        Story::new(
+            "spinner/phases",
+            "Spinner phases",
+            "Spinner",
+            "Indeterminate, waiting, queued, reconnecting phases.",
+            40,
+            8,
+            spinner_phases_story,
+        ),
+        Story::new(
+            "spinner/compact",
+            "Spinner compact embedded",
+            "Spinner",
+            "Compact inline glyph when embedded in labeled control.",
+            12,
+            1,
+            spinner_compact_story,
+        ),
+        Story::new(
+            "spinner/ascii",
+            "Spinner ASCII",
+            "Spinner",
+            "ASCII |/-\\ frames with Motion::Off static glyph.",
+            24,
+            2,
+            spinner_ascii_story,
+        ),
+        Story::new(
+            "activity-indicator/basic",
+            "ActivityIndicator",
+            "ActivityIndicator",
+            "Phase activity with verb and detail line.",
+            40,
+            3,
+            activity_indicator_story,
         ),
         Story::new(
             "registry/contracts",
@@ -10873,6 +10919,90 @@ fn registry_contracts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         );
         y = y.saturating_add(1);
     }
+}
+
+fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use std::time::{Duration, Instant};
+    use termrock::runtime::FrameTick;
+    use termrock::style::Motion;
+    let state = SpinnerState::new();
+    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(400), Duration::ZERO);
+    Spinner::labeled("Fetching packages", system).paint(
+        area,
+        frame.buffer_mut(),
+        &state,
+        tick,
+        Motion::Full,
+    );
+}
+
+fn spinner_phases_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use std::time::{Duration, Instant};
+    use termrock::runtime::FrameTick;
+    use termrock::style::Motion;
+    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(320), Duration::ZERO);
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(1),
+    ])
+    .split(area);
+    for (i, (phase, label)) in [
+        (ActivityPhase::Indeterminate, "Working"),
+        (ActivityPhase::Waiting, "Waiting"),
+        (ActivityPhase::Queued, "Queued"),
+        (ActivityPhase::Reconnecting, "Reconnecting"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mut state = SpinnerState::new();
+        state.set_phase(phase);
+        Spinner::labeled(label, system)
+            .phase(phase)
+            .paint(chunks[i], frame.buffer_mut(), &state, tick, Motion::Full);
+    }
+}
+
+fn spinner_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use std::time::{Duration, Instant};
+    use termrock::runtime::FrameTick;
+    use termrock::style::Motion;
+    use termrock::widgets::SpinnerVariant;
+    let mut state = SpinnerState::new();
+    state.set_embedded_in_labeled_control(true);
+    state.set_variant(SpinnerVariant::CompactInline);
+    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(240), Duration::ZERO);
+    Spinner::new(system)
+        .embedded(true)
+        .variant(SpinnerVariant::CompactInline)
+        .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
+}
+
+fn spinner_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use std::time::{Duration, Instant};
+    use termrock::runtime::FrameTick;
+    use termrock::style::Motion;
+    let mut state = SpinnerState::new();
+    state.set_ascii(true);
+    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(160), Duration::ZERO);
+    Spinner::labeled("Loading", system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
+}
+
+fn activity_indicator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use std::time::{Duration, Instant};
+    use termrock::runtime::FrameTick;
+    use termrock::style::Motion;
+    let mut state = SpinnerState::new();
+    state.set_phase(ActivityPhase::Reconnecting);
+    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(200), Duration::ZERO);
+    ActivityIndicator::new("Reconnecting to agent", system)
+        .detail("attempt 2/5 · backoff 1.2s")
+        .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
 }
 
 fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

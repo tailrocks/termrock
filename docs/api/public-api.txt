@@ -58,7 +58,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 8 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.42s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.32s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -14965,6 +14965,61 @@ pub unsafe fn termrock::widgets::ActivationOutcome::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ActivationOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActivationOutcome
+#[non_exhaustive] pub enum termrock::widgets::ActivityPhase
+pub termrock::widgets::ActivityPhase::Indeterminate
+pub termrock::widgets::ActivityPhase::Queued
+pub termrock::widgets::ActivityPhase::Reconnecting
+pub termrock::widgets::ActivityPhase::Waiting
+impl termrock::widgets::ActivityPhase
+pub const fn termrock::widgets::ActivityPhase::animates(self) -> bool
+pub const fn termrock::widgets::ActivityPhase::default_verb(self) -> &'static str
+pub const fn termrock::widgets::ActivityPhase::id(self) -> &'static str
+pub const fn termrock::widgets::ActivityPhase::period_scale(self) -> u64
+impl core::clone::Clone for termrock::widgets::ActivityPhase
+pub fn termrock::widgets::ActivityPhase::clone(&self) -> termrock::widgets::ActivityPhase
+impl core::cmp::Eq for termrock::widgets::ActivityPhase
+impl core::cmp::PartialEq for termrock::widgets::ActivityPhase
+pub fn termrock::widgets::ActivityPhase::eq(&self, &termrock::widgets::ActivityPhase) -> bool
+impl core::default::Default for termrock::widgets::ActivityPhase
+pub fn termrock::widgets::ActivityPhase::default() -> termrock::widgets::ActivityPhase
+impl core::fmt::Debug for termrock::widgets::ActivityPhase
+pub fn termrock::widgets::ActivityPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ActivityPhase
+pub fn termrock::widgets::ActivityPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ActivityPhase
+impl core::marker::StructuralPartialEq for termrock::widgets::ActivityPhase
+impl core::marker::Freeze for termrock::widgets::ActivityPhase
+impl core::marker::Send for termrock::widgets::ActivityPhase
+impl core::marker::Sync for termrock::widgets::ActivityPhase
+impl core::marker::Unpin for termrock::widgets::ActivityPhase
+impl core::marker::UnsafeUnpin for termrock::widgets::ActivityPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ActivityPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ActivityPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityPhase where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityPhase where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityPhase::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityPhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityPhase where T: core::clone::Clone
+pub type termrock::widgets::ActivityPhase::Owned = T
+pub fn termrock::widgets::ActivityPhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityPhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityPhase
+pub fn termrock::widgets::ActivityPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityPhase
 #[non_exhaustive] pub enum termrock::widgets::AlertDialogOutcome<Id>
 pub termrock::widgets::AlertDialogOutcome::Cancelled
 pub termrock::widgets::AlertDialogOutcome::Cancelled::id: Id
@@ -27397,6 +27452,107 @@ pub unsafe fn termrock::widgets::SortDirection::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SortDirection
 pub fn termrock::widgets::SortDirection::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SortDirection
+#[non_exhaustive] pub enum termrock::widgets::SpinnerGlyphSet
+pub termrock::widgets::SpinnerGlyphSet::Ascii
+pub termrock::widgets::SpinnerGlyphSet::Auto
+pub termrock::widgets::SpinnerGlyphSet::Braille
+impl termrock::widgets::SpinnerGlyphSet
+pub const fn termrock::widgets::SpinnerGlyphSet::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SpinnerGlyphSet
+pub fn termrock::widgets::SpinnerGlyphSet::clone(&self) -> termrock::widgets::SpinnerGlyphSet
+impl core::cmp::Eq for termrock::widgets::SpinnerGlyphSet
+impl core::cmp::PartialEq for termrock::widgets::SpinnerGlyphSet
+pub fn termrock::widgets::SpinnerGlyphSet::eq(&self, &termrock::widgets::SpinnerGlyphSet) -> bool
+impl core::default::Default for termrock::widgets::SpinnerGlyphSet
+pub fn termrock::widgets::SpinnerGlyphSet::default() -> termrock::widgets::SpinnerGlyphSet
+impl core::fmt::Debug for termrock::widgets::SpinnerGlyphSet
+pub fn termrock::widgets::SpinnerGlyphSet::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SpinnerGlyphSet
+pub fn termrock::widgets::SpinnerGlyphSet::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SpinnerGlyphSet
+impl core::marker::StructuralPartialEq for termrock::widgets::SpinnerGlyphSet
+impl core::marker::Freeze for termrock::widgets::SpinnerGlyphSet
+impl core::marker::Send for termrock::widgets::SpinnerGlyphSet
+impl core::marker::Sync for termrock::widgets::SpinnerGlyphSet
+impl core::marker::Unpin for termrock::widgets::SpinnerGlyphSet
+impl core::marker::UnsafeUnpin for termrock::widgets::SpinnerGlyphSet
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SpinnerGlyphSet
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SpinnerGlyphSet
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SpinnerGlyphSet where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SpinnerGlyphSet::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SpinnerGlyphSet where U: core::convert::From<T>
+pub fn termrock::widgets::SpinnerGlyphSet::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SpinnerGlyphSet where U: core::convert::Into<T>
+pub type termrock::widgets::SpinnerGlyphSet::Error = core::convert::Infallible
+pub fn termrock::widgets::SpinnerGlyphSet::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SpinnerGlyphSet where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SpinnerGlyphSet::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SpinnerGlyphSet::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SpinnerGlyphSet where T: core::clone::Clone
+pub type termrock::widgets::SpinnerGlyphSet::Owned = T
+pub fn termrock::widgets::SpinnerGlyphSet::clone_into(&self, &mut T)
+pub fn termrock::widgets::SpinnerGlyphSet::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SpinnerGlyphSet where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SpinnerGlyphSet::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SpinnerGlyphSet where T: ?core::marker::Sized
+pub fn termrock::widgets::SpinnerGlyphSet::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SpinnerGlyphSet where T: ?core::marker::Sized
+pub fn termrock::widgets::SpinnerGlyphSet::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SpinnerGlyphSet where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SpinnerGlyphSet::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SpinnerGlyphSet
+pub fn termrock::widgets::SpinnerGlyphSet::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SpinnerGlyphSet
+#[non_exhaustive] pub enum termrock::widgets::SpinnerVariant
+pub termrock::widgets::SpinnerVariant::CompactInline
+pub termrock::widgets::SpinnerVariant::Labeled
+impl termrock::widgets::SpinnerVariant
+pub const fn termrock::widgets::SpinnerVariant::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SpinnerVariant
+pub fn termrock::widgets::SpinnerVariant::clone(&self) -> termrock::widgets::SpinnerVariant
+impl core::cmp::Eq for termrock::widgets::SpinnerVariant
+impl core::cmp::PartialEq for termrock::widgets::SpinnerVariant
+pub fn termrock::widgets::SpinnerVariant::eq(&self, &termrock::widgets::SpinnerVariant) -> bool
+impl core::default::Default for termrock::widgets::SpinnerVariant
+pub fn termrock::widgets::SpinnerVariant::default() -> termrock::widgets::SpinnerVariant
+impl core::fmt::Debug for termrock::widgets::SpinnerVariant
+pub fn termrock::widgets::SpinnerVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SpinnerVariant
+pub fn termrock::widgets::SpinnerVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SpinnerVariant
+impl core::marker::StructuralPartialEq for termrock::widgets::SpinnerVariant
+impl core::marker::Freeze for termrock::widgets::SpinnerVariant
+impl core::marker::Send for termrock::widgets::SpinnerVariant
+impl core::marker::Sync for termrock::widgets::SpinnerVariant
+impl core::marker::Unpin for termrock::widgets::SpinnerVariant
+impl core::marker::UnsafeUnpin for termrock::widgets::SpinnerVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SpinnerVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SpinnerVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SpinnerVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SpinnerVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SpinnerVariant where U: core::convert::From<T>
+pub fn termrock::widgets::SpinnerVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SpinnerVariant where U: core::convert::Into<T>
+pub type termrock::widgets::SpinnerVariant::Error = core::convert::Infallible
+pub fn termrock::widgets::SpinnerVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SpinnerVariant where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SpinnerVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SpinnerVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SpinnerVariant where T: core::clone::Clone
+pub type termrock::widgets::SpinnerVariant::Owned = T
+pub fn termrock::widgets::SpinnerVariant::clone_into(&self, &mut T)
+pub fn termrock::widgets::SpinnerVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SpinnerVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SpinnerVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SpinnerVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::SpinnerVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SpinnerVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::SpinnerVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SpinnerVariant where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SpinnerVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SpinnerVariant
+pub fn termrock::widgets::SpinnerVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SpinnerVariant
 pub enum termrock::widgets::SplitDirection
 pub termrock::widgets::SplitDirection::Horizontal
 pub termrock::widgets::SplitDirection::Vertical
@@ -31917,6 +32073,50 @@ pub unsafe fn termrock::widgets::ActivationState::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ActivationState
 pub fn termrock::widgets::ActivationState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActivationState
+pub struct termrock::widgets::ActivityIndicator<'a>
+impl<'a> termrock::widgets::ActivityIndicator<'a>
+pub const fn termrock::widgets::ActivityIndicator<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ActivityIndicator<'a>::detail(self, &'a str) -> Self
+pub fn termrock::widgets::ActivityIndicator<'a>::measure_height(&self) -> u16
+pub const fn termrock::widgets::ActivityIndicator<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::ActivityIndicator<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::SpinnerState, termrock::runtime::FrameTick, termrock::style::Motion)
+pub fn termrock::widgets::ActivityIndicator<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::SpinnerState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
+pub const fn termrock::widgets::ActivityIndicator<'a>::role(self, termrock::style::Role) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::ActivityIndicator<'a>
+pub fn termrock::widgets::ActivityIndicator<'a>::clone(&self) -> termrock::widgets::ActivityIndicator<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ActivityIndicator<'a>
+pub fn termrock::widgets::ActivityIndicator<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ActivityIndicator<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ActivityIndicator<'a>
+impl<'a> core::marker::Send for termrock::widgets::ActivityIndicator<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ActivityIndicator<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ActivityIndicator<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ActivityIndicator<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ActivityIndicator<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ActivityIndicator<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ActivityIndicator<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ActivityIndicator<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ActivityIndicator<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ActivityIndicator<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ActivityIndicator<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ActivityIndicator<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ActivityIndicator<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ActivityIndicator<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ActivityIndicator<'a> where T: core::clone::Clone
+pub type termrock::widgets::ActivityIndicator<'a>::Owned = T
+pub fn termrock::widgets::ActivityIndicator<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ActivityIndicator<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ActivityIndicator<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ActivityIndicator<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ActivityIndicator<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityIndicator<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ActivityIndicator<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ActivityIndicator<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ActivityIndicator<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ActivityIndicator<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ActivityIndicator<'a>
+pub fn termrock::widgets::ActivityIndicator<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ActivityIndicator<'a>
 pub struct termrock::widgets::Alert<'a, Id>
 impl<'a, Id> termrock::widgets::Alert<'a, Id>
 pub const fn termrock::widgets::Alert<'a, Id>::actions(self, &'a [termrock::widgets::Action<'a, Id>]) -> Self
@@ -50271,9 +50471,21 @@ impl<T> either::into_either::IntoEither for termrock::widgets::Sparkline<'a>
 pub struct termrock::widgets::Spinner<'a>
 impl<'a> termrock::widgets::Spinner<'a>
 pub const fn termrock::widgets::Spinner<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Spinner<'a>::embedded(self, bool) -> Self
 pub fn termrock::widgets::Spinner<'a>::frame_glyph(&self, termrock::runtime::FrameTick, termrock::style::Motion) -> &'static str
+pub const fn termrock::widgets::Spinner<'a>::label(self, &'a str) -> Self
+pub fn termrock::widgets::Spinner<'a>::label_ok(&self, &termrock::widgets::SpinnerState) -> bool
+pub const fn termrock::widgets::Spinner<'a>::labeled(&'a str, &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Spinner<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Spinner<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::SpinnerState, termrock::runtime::FrameTick, termrock::style::Motion)
+pub const fn termrock::widgets::Spinner<'a>::phase(self, termrock::widgets::ActivityPhase) -> Self
+pub fn termrock::widgets::Spinner<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::SpinnerState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
 pub fn termrock::widgets::Spinner<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, termrock::runtime::FrameTick, termrock::style::Motion)
+pub fn termrock::widgets::Spinner<'a>::resolved_label(&self, &termrock::widgets::SpinnerState) -> &'a str
+pub const fn termrock::widgets::Spinner<'a>::role(self, termrock::style::Role) -> Self
+pub const fn termrock::widgets::Spinner<'a>::variant(self, termrock::widgets::SpinnerVariant) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Spinner<'_>
+pub fn &termrock::widgets::Spinner<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Spinner<'a>
 pub fn termrock::widgets::Spinner<'a>::clone(&self) -> termrock::widgets::Spinner<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Spinner<'a>
@@ -50309,6 +50521,67 @@ pub unsafe fn termrock::widgets::Spinner<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Spinner<'a>
 pub fn termrock::widgets::Spinner<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Spinner<'a>
+pub struct termrock::widgets::SpinnerState
+impl termrock::widgets::SpinnerState
+pub fn termrock::widgets::SpinnerState::animation_demand(&self, termrock::runtime::FrameTick, termrock::style::Motion) -> termrock::runtime::AnimationDemand
+pub const fn termrock::widgets::SpinnerState::embedded_in_labeled_control(&self) -> bool
+pub fn termrock::widgets::SpinnerState::frame_glyph(&self, termrock::runtime::FrameTick, termrock::style::Motion) -> &'static str
+pub fn termrock::widgets::SpinnerState::frames(&self, termrock::style::Motion) -> &'static [&'static str]
+pub const fn termrock::widgets::SpinnerState::is_active(&self) -> bool
+pub const fn termrock::widgets::SpinnerState::is_visible(&self) -> bool
+pub const fn termrock::widgets::SpinnerState::new() -> Self
+pub const fn termrock::widgets::SpinnerState::phase(&self) -> termrock::widgets::ActivityPhase
+pub fn termrock::widgets::SpinnerState::set_active(&mut self, bool)
+pub fn termrock::widgets::SpinnerState::set_ascii(&mut self, bool)
+pub fn termrock::widgets::SpinnerState::set_embedded_in_labeled_control(&mut self, bool)
+pub fn termrock::widgets::SpinnerState::set_glyph_set(&mut self, termrock::widgets::SpinnerGlyphSet)
+pub fn termrock::widgets::SpinnerState::set_period_ms(&mut self, u64)
+pub fn termrock::widgets::SpinnerState::set_phase(&mut self, termrock::widgets::ActivityPhase)
+pub fn termrock::widgets::SpinnerState::set_variant(&mut self, termrock::widgets::SpinnerVariant)
+pub fn termrock::widgets::SpinnerState::set_visible(&mut self, bool)
+pub const fn termrock::widgets::SpinnerState::should_tick(&self) -> bool
+impl core::clone::Clone for termrock::widgets::SpinnerState
+pub fn termrock::widgets::SpinnerState::clone(&self) -> termrock::widgets::SpinnerState
+impl core::cmp::Eq for termrock::widgets::SpinnerState
+impl core::cmp::PartialEq for termrock::widgets::SpinnerState
+pub fn termrock::widgets::SpinnerState::eq(&self, &termrock::widgets::SpinnerState) -> bool
+impl core::default::Default for termrock::widgets::SpinnerState
+pub fn termrock::widgets::SpinnerState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::SpinnerState
+pub fn termrock::widgets::SpinnerState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SpinnerState
+impl core::marker::Freeze for termrock::widgets::SpinnerState
+impl core::marker::Send for termrock::widgets::SpinnerState
+impl core::marker::Sync for termrock::widgets::SpinnerState
+impl core::marker::Unpin for termrock::widgets::SpinnerState
+impl core::marker::UnsafeUnpin for termrock::widgets::SpinnerState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SpinnerState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SpinnerState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SpinnerState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SpinnerState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SpinnerState where U: core::convert::From<T>
+pub fn termrock::widgets::SpinnerState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SpinnerState where U: core::convert::Into<T>
+pub type termrock::widgets::SpinnerState::Error = core::convert::Infallible
+pub fn termrock::widgets::SpinnerState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SpinnerState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SpinnerState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SpinnerState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SpinnerState where T: core::clone::Clone
+pub type termrock::widgets::SpinnerState::Owned = T
+pub fn termrock::widgets::SpinnerState::clone_into(&self, &mut T)
+pub fn termrock::widgets::SpinnerState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SpinnerState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SpinnerState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SpinnerState where T: ?core::marker::Sized
+pub fn termrock::widgets::SpinnerState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SpinnerState where T: ?core::marker::Sized
+pub fn termrock::widgets::SpinnerState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SpinnerState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SpinnerState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SpinnerState
+pub fn termrock::widgets::SpinnerState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SpinnerState
 pub struct termrock::widgets::SplitPane<'a>
 impl<'a> termrock::widgets::SplitPane<'a>
 pub fn termrock::widgets::SplitPane<'a>::layout(&self, ratatui_core::layout::rect::Rect, &mut termrock::widgets::SplitPaneState) -> termrock::widgets::SplitPaneLayout
@@ -55748,6 +56021,12 @@ pub const termrock::widgets::SIDEBAR_DRAWER_OVERLAY_ID: &str
 pub const termrock::widgets::SIDEBAR_RAIL_MAX_WIDTH: u16
 pub const termrock::widgets::SLIDER_MIN_TRACK: u16
 pub const termrock::widgets::SLIDER_NUMERIC_FALLBACK_WIDTH: u16
+pub const termrock::widgets::SPINNER_ASCII_FRAMES: &[&str]
+pub const termrock::widgets::SPINNER_BRAILLE_FRAMES: &[&str]
+pub const termrock::widgets::SPINNER_DEFAULT_PERIOD_MS: u64
+pub const termrock::widgets::SPINNER_RECONNECT_UNICODE: &[&str]
+pub const termrock::widgets::SPINNER_WAITING_ASCII: &[&str]
+pub const termrock::widgets::SPINNER_WAITING_UNICODE: &[&str]
 pub const termrock::widgets::STEPPER_COMPACT_MAX_HEIGHT: u16
 pub const termrock::widgets::STEPPER_COMPACT_MAX_WIDTH: u16
 pub const termrock::widgets::STEPPER_NARROW_MAX_WIDTH: u16

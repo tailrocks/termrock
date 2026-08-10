@@ -1433,60 +1433,7 @@ pub fn toolbar_icon_action<'a, Id>(
 
 // Separator lives in `widgets/separator.rs` (variants, labels, ASCII glyphs).
 
-/// FrameTick-driven spinner frames.
-#[derive(Debug, Clone, Copy)]
-pub struct Spinner<'a> {
-    tokens: &'a DesignSystem,
-    ascii: bool,
-}
-
-impl<'a> Spinner<'a> {
-    /// Unicode braille spinner by default.
-    #[must_use]
-    pub const fn new(tokens: &'a DesignSystem) -> Self {
-        Self {
-            tokens,
-            ascii: false,
-        }
-    }
-
-    /// ASCII fallback frames.
-    #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
-    /// Frame glyph for tick + motion policy.
-    #[must_use]
-    pub fn frame_glyph(&self, tick: FrameTick, motion: Motion) -> &'static str {
-        let frames: &[&str] = if self.ascii {
-            &["|", "/", "-", "\\"]
-        } else {
-            &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-        };
-        if !motion.animate_spinners() {
-            return if self.ascii { "o" } else { "●" };
-        }
-        let step = tick.spinner_step(frames.len(), 80, motion);
-        frames[step]
-    }
-
-    /// Paint spinner at `area`.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, tick: FrameTick, motion: Motion) {
-        if area.is_empty() {
-            return;
-        }
-        let g = self.frame_glyph(tick, motion);
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            g,
-            usize::from(area.width),
-            self.tokens.style(Role::TextMuted),
-        );
-    }
-}
+// Spinner: `widgets/spinner.rs`.
 
 /// Hit helper for button registration.
 #[must_use]
@@ -1828,21 +1775,6 @@ mod tests {
             tag.handle_key(&mut state, press(KeyCode::Delete)),
             TagOutcome::Remove("t")
         ));
-    }
-
-    #[test]
-    fn spinner_motion_off_static() {
-        let tokens = DesignSystem::default();
-        let spinner = Spinner::new(&tokens);
-        let now = Instant::now();
-        let tick = FrameTick::manual(now, Duration::from_millis(560), Duration::from_millis(16));
-        assert_eq!(spinner.frame_glyph(tick, Motion::Off), "●");
-        let a = spinner.frame_glyph(tick, Motion::Full);
-        let b = spinner.frame_glyph(
-            FrameTick::manual(now, Duration::from_millis(640), Duration::from_millis(16)),
-            Motion::Full,
-        );
-        assert_ne!(a, b);
     }
 
     #[test]

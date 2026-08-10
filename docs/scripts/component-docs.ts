@@ -901,6 +901,34 @@ state.open();`,
 let theme = Theme::default();
 let loading = LoadingView::new("Loading…", "⠋", &theme);`,
   },
+  Spinner: {
+    description:
+      'Semantic activity spinner with verb label, phases (indeterminate/waiting/queued/reconnecting), capability glyphs, reduced-motion static frames, and idle redraw when inactive/hidden.',
+    primaryStory: 'spinner/labeled',
+    usage: `use termrock::style::{DesignSystem, Motion};
+use termrock::runtime::FrameTick;
+use termrock::widgets::{Spinner, SpinnerState, ActivityPhase};
+
+let system = DesignSystem::default();
+let mut state = SpinnerState::new();
+state.set_phase(ActivityPhase::Indeterminate);
+// host: only tick while state.should_tick()
+Spinner::labeled("Fetching packages", &system)
+    .paint(area, buf, &state, tick, Motion::Full);`,
+  },
+  ActivityIndicator: {
+    description:
+      'Activity line with phase spinner, required verb, and optional detail (reconnect attempts, targets).',
+    primaryStory: 'activity-indicator/basic',
+    usage: `use termrock::widgets::{ActivityIndicator, SpinnerState, ActivityPhase};
+use termrock::style::Motion;
+
+let mut state = SpinnerState::new();
+state.set_phase(ActivityPhase::Reconnecting);
+ActivityIndicator::new("Reconnecting to agent", &system)
+    .detail("attempt 2/5")
+    .paint(area, buf, &state, tick, Motion::Full);`,
+  },
   MarkdownView: {
     description: 'Projected markdown-like blocks with semantic roles.',
     primaryStory: 'markdown-view/basic',

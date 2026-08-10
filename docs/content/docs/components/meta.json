@@ -66,6 +66,8 @@
     "link",
     "list",
     "loading-view",
+    "activity-indicator",
+    "spinner",
     "log-pane",
     "markdown-view",
     "menu",
