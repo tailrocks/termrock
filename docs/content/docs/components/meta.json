@@ -5,6 +5,7 @@
   "pages": [
     "accordion",
     "action-bar",
+    "alert-dialog",
     "action-link",
     "ansi-text",
     "approval-card",

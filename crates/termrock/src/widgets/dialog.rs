@@ -16,6 +16,8 @@
 //!
 //! **vs Popover.** Popover is non-modal (default) and anchored. Dialog is
 //! centered modal with trap + dim.
+//! **vs [`super::AlertDialog`].** Use AlertDialog for high-risk confirmations
+//! (delete/overwrite/terminate/egress) with typed gates and safe default focus.
 //!
 //! Research: Radix Dialog, Textual modals, Grok Build flows, desktop conventions.
 

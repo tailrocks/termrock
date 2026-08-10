@@ -5,6 +5,28 @@ export interface ComponentDoc {
 }
 
 export const componentDocs = {
+  AlertDialog: {
+    description:
+      'High-risk confirmation distinct from Dialog: exact scope, consequences, reversibility, target, safer alternatives; typed confirmation, justified countdown, safe initial focus, non-dismissable critical state.',
+    primaryStory: 'alert-dialog/delete',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{
+    AlertDialog, AlertDialogState, AlertKind, AlertScope, AlertConfirmGates,
+    open_alert_dialog_widget_overlay,
+};
+
+let system = DesignSystem::default();
+let mut state = AlertDialogState::new(
+    AlertKind::Delete,
+    AlertScope::example_delete(),
+    "delete",
+    "keep",
+);
+state.set_gates(AlertConfirmGates::typed("prod-db.customers"));
+// open: state.open_on_stack(&mut stack, bounds, Some("trigger"));
+// Enter on safe focus cancels; move to confirm only after gates pass.
+AlertDialog::new(&system).paint(area, buf, &mut state);`,
+  },
   ActionBar: {
     description: 'A horizontal group of stable, caller-owned actions with painted hit regions.',
     primaryStory: 'action-bar/basic',

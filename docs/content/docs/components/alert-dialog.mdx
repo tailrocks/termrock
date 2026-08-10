@@ -1,0 +1,72 @@
+---
+title: AlertDialog
+description: 'High-risk confirmation: scope, consequences, reversibility, target, safer alternatives; typed confirmation, countdown when justified, safe focus, locked critical state.'
+---
+
+## Previews
+
+### `alert-dialog/delete`
+
+AlertDialog delete
+
+![AlertDialog — delete](/component-previews/alert-dialog-delete.svg)
+
+### `alert-dialog/overwrite`
+
+AlertDialog overwrite
+
+![AlertDialog — overwrite](/component-previews/alert-dialog-overwrite.svg)
+
+### `alert-dialog/terminate`
+
+AlertDialog terminate
+
+![AlertDialog — terminate](/component-previews/alert-dialog-terminate.svg)
+
+### `alert-dialog/egress`
+
+AlertDialog data egress
+
+![AlertDialog — egress](/component-previews/alert-dialog-egress.svg)
+
+### `alert-dialog/locked`
+
+AlertDialog locked critical
+
+![AlertDialog — locked](/component-previews/alert-dialog-locked.svg)
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    AlertDialog, AlertDialogState, AlertKind, AlertScope, AlertConfirmGates,
+};
+
+let system = DesignSystem::default();
+let mut state = AlertDialogState::new(
+    AlertKind::Delete,
+    AlertScope::example_delete(),
+    "delete",
+    "keep",
+);
+state.set_gates(AlertConfirmGates::typed("prod-db.customers"));
+// state.open_on_stack(&mut stack, bounds, Some("trigger"));
+// Enter on Keep cancels; Right to Delete only after typed phrase matches.
+AlertDialog::new(&system).paint(area, buf, &mut state);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (safe Enter, Esc trap/lock, typed gate, arrows) |
+| Mouse | covered (action hits) |
+| Focus | covered (initial cancel; trap; opener restore) |
+| Non-color cues | covered (danger chrome, typed ok mark, countdown) |
+| Unicode | covered |
+| Narrow terminal | covered (stacked actions) |
+
+## Stories
+
+- `alert-dialog/delete`, `overwrite`, `terminate`, `egress`, `locked`

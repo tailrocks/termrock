@@ -43,6 +43,7 @@ mod data_view;
 mod design_inspector;
 mod detail_table;
 mod dialog;
+mod alert_dialog;
 mod diff;
 mod edit_core;
 mod form;
@@ -237,6 +238,11 @@ pub use dialog::{
     DialogState, DialogVariant, MessageDialog, default_dialog_intent, dialog_recipe_for_bounds,
     dismiss_dialog_overlay, open_alert_dialog_overlay, open_dialog_child_overlay,
     open_dialog_configured, open_dialog_overlay, place_dialog, place_dialog_recipe,
+};
+pub use alert_dialog::{
+    ALERT_DIALOG_DEFAULT_HEIGHT, ALERT_DIALOG_DEFAULT_WIDTH, ALERT_DIALOG_OVERLAY_ID, AlertConfirmGates,
+    AlertDialog, AlertDialogOutcome, AlertDialogState, AlertKind, AlertReversibility, AlertScope,
+    dismiss_alert_dialog_overlay, open_alert_dialog_widget_overlay,
 };
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{

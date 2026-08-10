@@ -14902,6 +14902,117 @@ pub unsafe fn termrock::widgets::ActivationOutcome::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ActivationOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActivationOutcome
+#[non_exhaustive] pub enum termrock::widgets::AlertDialogOutcome<Id>
+pub termrock::widgets::AlertDialogOutcome::Cancelled
+pub termrock::widgets::AlertDialogOutcome::Cancelled::id: Id
+pub termrock::widgets::AlertDialogOutcome::ConfirmBlocked
+pub termrock::widgets::AlertDialogOutcome::Confirmed
+pub termrock::widgets::AlertDialogOutcome::Confirmed::id: Id
+pub termrock::widgets::AlertDialogOutcome::CountdownElapsed
+pub termrock::widgets::AlertDialogOutcome::CountdownTick
+pub termrock::widgets::AlertDialogOutcome::CountdownTick::remaining_ms: u64
+pub termrock::widgets::AlertDialogOutcome::EscTrapped
+pub termrock::widgets::AlertDialogOutcome::FocusMoved
+pub termrock::widgets::AlertDialogOutcome::Ignored
+pub termrock::widgets::AlertDialogOutcome::TypedChanged
+pub termrock::widgets::AlertDialogOutcome::TypedMismatch
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::AlertDialogOutcome<Id>
+pub fn termrock::widgets::AlertDialogOutcome<Id>::clone(&self) -> termrock::widgets::AlertDialogOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::AlertDialogOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::AlertDialogOutcome<Id>
+pub fn termrock::widgets::AlertDialogOutcome<Id>::eq(&self, &termrock::widgets::AlertDialogOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::AlertDialogOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::AlertDialogOutcome<Id>
+pub fn termrock::widgets::AlertDialogOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::AlertDialogOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::AlertDialogOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::AlertDialogOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::AlertDialogOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::AlertDialogOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AlertDialogOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AlertDialogOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AlertDialogOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AlertDialogOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AlertDialogOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::AlertDialogOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AlertDialogOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::AlertDialogOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::AlertDialogOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AlertDialogOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AlertDialogOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AlertDialogOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AlertDialogOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::AlertDialogOutcome<Id>::Owned = T
+pub fn termrock::widgets::AlertDialogOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AlertDialogOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AlertDialogOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AlertDialogOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AlertDialogOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertDialogOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AlertDialogOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertDialogOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AlertDialogOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AlertDialogOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AlertDialogOutcome<Id>
+pub fn termrock::widgets::AlertDialogOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AlertDialogOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::AlertKind
+pub termrock::widgets::AlertKind::Custom
+pub termrock::widgets::AlertKind::DataEgress
+pub termrock::widgets::AlertKind::Delete
+pub termrock::widgets::AlertKind::Overwrite
+pub termrock::widgets::AlertKind::Terminate
+impl termrock::widgets::AlertKind
+pub const fn termrock::widgets::AlertKind::countdown_justified(self) -> bool
+pub const fn termrock::widgets::AlertKind::default_cancel_label(self) -> &'static str
+pub const fn termrock::widgets::AlertKind::default_confirm_label(self) -> &'static str
+pub const fn termrock::widgets::AlertKind::default_title(self) -> &'static str
+pub const fn termrock::widgets::AlertKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::AlertKind
+pub fn termrock::widgets::AlertKind::clone(&self) -> termrock::widgets::AlertKind
+impl core::cmp::Eq for termrock::widgets::AlertKind
+impl core::cmp::PartialEq for termrock::widgets::AlertKind
+pub fn termrock::widgets::AlertKind::eq(&self, &termrock::widgets::AlertKind) -> bool
+impl core::default::Default for termrock::widgets::AlertKind
+pub fn termrock::widgets::AlertKind::default() -> termrock::widgets::AlertKind
+impl core::fmt::Debug for termrock::widgets::AlertKind
+pub fn termrock::widgets::AlertKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AlertKind
+pub fn termrock::widgets::AlertKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AlertKind
+impl core::marker::StructuralPartialEq for termrock::widgets::AlertKind
+impl core::marker::Freeze for termrock::widgets::AlertKind
+impl core::marker::Send for termrock::widgets::AlertKind
+impl core::marker::Sync for termrock::widgets::AlertKind
+impl core::marker::Unpin for termrock::widgets::AlertKind
+impl core::marker::UnsafeUnpin for termrock::widgets::AlertKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AlertKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AlertKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AlertKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AlertKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AlertKind where U: core::convert::From<T>
+pub fn termrock::widgets::AlertKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AlertKind where U: core::convert::Into<T>
+pub type termrock::widgets::AlertKind::Error = core::convert::Infallible
+pub fn termrock::widgets::AlertKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AlertKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AlertKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AlertKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AlertKind where T: core::clone::Clone
+pub type termrock::widgets::AlertKind::Owned = T
+pub fn termrock::widgets::AlertKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::AlertKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AlertKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AlertKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AlertKind where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AlertKind where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AlertKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AlertKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AlertKind
+pub fn termrock::widgets::AlertKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AlertKind
 #[non_exhaustive] pub enum termrock::widgets::AlertOutcome
 pub termrock::widgets::AlertOutcome::Acknowledged
 pub termrock::widgets::AlertOutcome::Dismissed
@@ -14951,6 +15062,58 @@ pub unsafe fn termrock::widgets::AlertOutcome::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::AlertOutcome
 pub fn termrock::widgets::AlertOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::AlertOutcome
+#[non_exhaustive] pub enum termrock::widgets::AlertReversibility
+pub termrock::widgets::AlertReversibility::Irreversible
+pub termrock::widgets::AlertReversibility::Recoverable
+pub termrock::widgets::AlertReversibility::Reversible
+impl termrock::widgets::AlertReversibility
+pub const fn termrock::widgets::AlertReversibility::id(self) -> &'static str
+pub const fn termrock::widgets::AlertReversibility::label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::AlertReversibility
+pub fn termrock::widgets::AlertReversibility::clone(&self) -> termrock::widgets::AlertReversibility
+impl core::cmp::Eq for termrock::widgets::AlertReversibility
+impl core::cmp::PartialEq for termrock::widgets::AlertReversibility
+pub fn termrock::widgets::AlertReversibility::eq(&self, &termrock::widgets::AlertReversibility) -> bool
+impl core::default::Default for termrock::widgets::AlertReversibility
+pub fn termrock::widgets::AlertReversibility::default() -> termrock::widgets::AlertReversibility
+impl core::fmt::Debug for termrock::widgets::AlertReversibility
+pub fn termrock::widgets::AlertReversibility::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AlertReversibility
+pub fn termrock::widgets::AlertReversibility::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AlertReversibility
+impl core::marker::StructuralPartialEq for termrock::widgets::AlertReversibility
+impl core::marker::Freeze for termrock::widgets::AlertReversibility
+impl core::marker::Send for termrock::widgets::AlertReversibility
+impl core::marker::Sync for termrock::widgets::AlertReversibility
+impl core::marker::Unpin for termrock::widgets::AlertReversibility
+impl core::marker::UnsafeUnpin for termrock::widgets::AlertReversibility
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AlertReversibility
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AlertReversibility
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AlertReversibility where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AlertReversibility::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AlertReversibility where U: core::convert::From<T>
+pub fn termrock::widgets::AlertReversibility::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AlertReversibility where U: core::convert::Into<T>
+pub type termrock::widgets::AlertReversibility::Error = core::convert::Infallible
+pub fn termrock::widgets::AlertReversibility::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AlertReversibility where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AlertReversibility::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AlertReversibility::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AlertReversibility where T: core::clone::Clone
+pub type termrock::widgets::AlertReversibility::Owned = T
+pub fn termrock::widgets::AlertReversibility::clone_into(&self, &mut T)
+pub fn termrock::widgets::AlertReversibility::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AlertReversibility where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AlertReversibility::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AlertReversibility where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertReversibility::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AlertReversibility where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertReversibility::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AlertReversibility where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AlertReversibility::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AlertReversibility
+pub fn termrock::widgets::AlertReversibility::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AlertReversibility
 #[non_exhaustive] pub enum termrock::widgets::Anchor
 pub termrock::widgets::Anchor::BottomLeft
 pub termrock::widgets::Anchor::BottomRight
@@ -30610,6 +30773,231 @@ pub unsafe fn termrock::widgets::Alert<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Alert<'a>
 pub fn termrock::widgets::Alert<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Alert<'a>
+pub struct termrock::widgets::AlertConfirmGates
+pub termrock::widgets::AlertConfirmGates::countdown_ms: core::option::Option<u64>
+pub termrock::widgets::AlertConfirmGates::typed_phrase: core::option::Option<alloc::string::String>
+impl termrock::widgets::AlertConfirmGates
+pub const fn termrock::widgets::AlertConfirmGates::countdown(u64) -> Self
+pub const fn termrock::widgets::AlertConfirmGates::none() -> Self
+pub fn termrock::widgets::AlertConfirmGates::typed(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AlertConfirmGates::typed_and_countdown(impl core::convert::Into<alloc::string::String>, u64) -> Self
+impl core::clone::Clone for termrock::widgets::AlertConfirmGates
+pub fn termrock::widgets::AlertConfirmGates::clone(&self) -> termrock::widgets::AlertConfirmGates
+impl core::cmp::Eq for termrock::widgets::AlertConfirmGates
+impl core::cmp::PartialEq for termrock::widgets::AlertConfirmGates
+pub fn termrock::widgets::AlertConfirmGates::eq(&self, &termrock::widgets::AlertConfirmGates) -> bool
+impl core::default::Default for termrock::widgets::AlertConfirmGates
+pub fn termrock::widgets::AlertConfirmGates::default() -> termrock::widgets::AlertConfirmGates
+impl core::fmt::Debug for termrock::widgets::AlertConfirmGates
+pub fn termrock::widgets::AlertConfirmGates::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::AlertConfirmGates
+impl core::marker::Freeze for termrock::widgets::AlertConfirmGates
+impl core::marker::Send for termrock::widgets::AlertConfirmGates
+impl core::marker::Sync for termrock::widgets::AlertConfirmGates
+impl core::marker::Unpin for termrock::widgets::AlertConfirmGates
+impl core::marker::UnsafeUnpin for termrock::widgets::AlertConfirmGates
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AlertConfirmGates
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AlertConfirmGates
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AlertConfirmGates where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AlertConfirmGates::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AlertConfirmGates where U: core::convert::From<T>
+pub fn termrock::widgets::AlertConfirmGates::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AlertConfirmGates where U: core::convert::Into<T>
+pub type termrock::widgets::AlertConfirmGates::Error = core::convert::Infallible
+pub fn termrock::widgets::AlertConfirmGates::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AlertConfirmGates where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AlertConfirmGates::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AlertConfirmGates::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AlertConfirmGates where T: core::clone::Clone
+pub type termrock::widgets::AlertConfirmGates::Owned = T
+pub fn termrock::widgets::AlertConfirmGates::clone_into(&self, &mut T)
+pub fn termrock::widgets::AlertConfirmGates::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AlertConfirmGates where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AlertConfirmGates::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AlertConfirmGates where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertConfirmGates::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AlertConfirmGates where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertConfirmGates::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AlertConfirmGates where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AlertConfirmGates::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AlertConfirmGates
+pub fn termrock::widgets::AlertConfirmGates::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AlertConfirmGates
+pub struct termrock::widgets::AlertDialog<'a, Id>
+impl<'a, Id> termrock::widgets::AlertDialog<'a, Id>
+pub const fn termrock::widgets::AlertDialog<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::AlertDialog<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::AlertDialog<'a, Id>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::AlertDialog<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::AlertDialogState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::AlertDialog<'a, Id>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::AlertDialogState<Id>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone, Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::AlertDialog<'a, Id>
+pub fn termrock::widgets::AlertDialog<'a, Id>::clone(&self) -> termrock::widgets::AlertDialog<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::AlertDialog<'a, Id>
+pub fn termrock::widgets::AlertDialog<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::AlertDialog<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::AlertDialog<'_, Id>
+pub type &termrock::widgets::AlertDialog<'_, Id>::State = termrock::widgets::AlertDialogState<Id>
+pub fn &termrock::widgets::AlertDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::AlertDialog<'_, Id>
+pub type termrock::widgets::AlertDialog<'_, Id>::State = termrock::widgets::AlertDialogState<Id>
+pub fn termrock::widgets::AlertDialog<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::AlertDialog<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::AlertDialog<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::AlertDialog<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::AlertDialog<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::AlertDialog<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AlertDialog<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AlertDialog<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::AlertDialog<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::AlertDialog<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AlertDialog<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::AlertDialog<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::AlertDialog<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AlertDialog<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AlertDialog<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AlertDialog<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AlertDialog<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::AlertDialog<'a, Id>::Owned = T
+pub fn termrock::widgets::AlertDialog<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AlertDialog<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AlertDialog<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AlertDialog<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AlertDialog<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertDialog<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AlertDialog<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertDialog<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AlertDialog<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AlertDialog<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AlertDialog<'a, Id>
+pub fn termrock::widgets::AlertDialog<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AlertDialog<'a, Id>
+pub struct termrock::widgets::AlertDialogState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::AlertDialogState<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::action_cursor(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::AlertDialogState<Id>::actions(&self) -> [termrock::widgets::Action<'_, Id>; 2]
+pub fn termrock::widgets::AlertDialogState<Id>::close_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>) -> termrock::interaction::OverlayOutcome<F>
+pub fn termrock::widgets::AlertDialogState<Id>::focus_safe(&mut self)
+pub fn termrock::widgets::AlertDialogState<Id>::handle_click(&mut self, ratatui_core::layout::position::Position) -> termrock::widgets::AlertDialogOutcome<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::AlertDialogOutcome<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::AlertDialogOutcome<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::new(termrock::widgets::AlertKind, termrock::widgets::AlertScope, Id, Id) -> Self
+pub fn termrock::widgets::AlertDialogState<Id>::open_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>, ratatui_core::layout::rect::Rect, core::option::Option<F>) -> termrock::interaction::OverlayOutcome<F>
+pub fn termrock::widgets::AlertDialogState<Id>::tick(&mut self, u64) -> termrock::widgets::AlertDialogOutcome<Id>
+impl<Id> termrock::widgets::AlertDialogState<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::confirm_enabled(&self) -> bool
+pub const fn termrock::widgets::AlertDialogState<Id>::countdown_remaining_ms(&self) -> core::option::Option<u64>
+pub fn termrock::widgets::AlertDialogState<Id>::countdown_satisfied(&self) -> bool
+pub fn termrock::widgets::AlertDialogState<Id>::dialog(&self) -> &termrock::widgets::DialogState<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::gates(&self) -> &termrock::widgets::AlertConfirmGates
+pub const fn termrock::widgets::AlertDialogState<Id>::is_locked(&self) -> bool
+pub const fn termrock::widgets::AlertDialogState<Id>::is_open(&self) -> bool
+pub const fn termrock::widgets::AlertDialogState<Id>::kind(&self) -> termrock::widgets::AlertKind
+pub fn termrock::widgets::AlertDialogState<Id>::scope(&self) -> &termrock::widgets::AlertScope
+pub fn termrock::widgets::AlertDialogState<Id>::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::AlertDialogState<Id>::set_action_labels(&mut self, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::AlertDialogState<Id>::set_gates(&mut self, termrock::widgets::AlertConfirmGates)
+pub fn termrock::widgets::AlertDialogState<Id>::set_loading(&mut self, bool)
+pub fn termrock::widgets::AlertDialogState<Id>::set_locked(&mut self, bool)
+pub fn termrock::widgets::AlertDialogState<Id>::set_scope(&mut self, termrock::widgets::AlertScope)
+pub fn termrock::widgets::AlertDialogState<Id>::set_title(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::AlertDialogState<Id>::title(&self) -> &str
+pub fn termrock::widgets::AlertDialogState<Id>::typed_buffer(&self) -> &str
+pub fn termrock::widgets::AlertDialogState<Id>::typed_satisfied(&self) -> bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::AlertDialogState<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::clone(&self) -> termrock::widgets::AlertDialogState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::AlertDialogState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::AlertDialogState<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::eq(&self, &termrock::widgets::AlertDialogState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::AlertDialogState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::AlertDialogState<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::AlertDialogState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::AlertDialogState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::AlertDialogState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::AlertDialogState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::AlertDialogState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AlertDialogState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AlertDialogState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AlertDialogState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AlertDialogState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AlertDialogState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::AlertDialogState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AlertDialogState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::AlertDialogState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::AlertDialogState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AlertDialogState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AlertDialogState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AlertDialogState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AlertDialogState<Id> where T: core::clone::Clone
+pub type termrock::widgets::AlertDialogState<Id>::Owned = T
+pub fn termrock::widgets::AlertDialogState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AlertDialogState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AlertDialogState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AlertDialogState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AlertDialogState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertDialogState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AlertDialogState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertDialogState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AlertDialogState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AlertDialogState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AlertDialogState<Id>
+pub fn termrock::widgets::AlertDialogState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AlertDialogState<Id>
+pub struct termrock::widgets::AlertScope
+pub termrock::widgets::AlertScope::consequences: alloc::string::String
+pub termrock::widgets::AlertScope::reversibility: termrock::widgets::AlertReversibility
+pub termrock::widgets::AlertScope::safer_alternative: core::option::Option<alloc::string::String>
+pub termrock::widgets::AlertScope::scope_detail: core::option::Option<alloc::string::String>
+pub termrock::widgets::AlertScope::target: alloc::string::String
+impl termrock::widgets::AlertScope
+pub fn termrock::widgets::AlertScope::example_data_egress() -> Self
+pub fn termrock::widgets::AlertScope::example_delete() -> Self
+pub fn termrock::widgets::AlertScope::example_overwrite() -> Self
+pub fn termrock::widgets::AlertScope::example_terminate() -> Self
+pub fn termrock::widgets::AlertScope::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::AlertScope::reversibility(self, termrock::widgets::AlertReversibility) -> Self
+pub fn termrock::widgets::AlertScope::safer_alternative(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AlertScope::scope_detail(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::AlertScope
+pub fn termrock::widgets::AlertScope::clone(&self) -> termrock::widgets::AlertScope
+impl core::cmp::Eq for termrock::widgets::AlertScope
+impl core::cmp::PartialEq for termrock::widgets::AlertScope
+pub fn termrock::widgets::AlertScope::eq(&self, &termrock::widgets::AlertScope) -> bool
+impl core::fmt::Debug for termrock::widgets::AlertScope
+pub fn termrock::widgets::AlertScope::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::AlertScope
+impl core::marker::Freeze for termrock::widgets::AlertScope
+impl core::marker::Send for termrock::widgets::AlertScope
+impl core::marker::Sync for termrock::widgets::AlertScope
+impl core::marker::Unpin for termrock::widgets::AlertScope
+impl core::marker::UnsafeUnpin for termrock::widgets::AlertScope
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AlertScope
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AlertScope
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AlertScope where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AlertScope::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AlertScope where U: core::convert::From<T>
+pub fn termrock::widgets::AlertScope::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AlertScope where U: core::convert::Into<T>
+pub type termrock::widgets::AlertScope::Error = core::convert::Infallible
+pub fn termrock::widgets::AlertScope::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AlertScope where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AlertScope::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AlertScope::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AlertScope where T: core::clone::Clone
+pub type termrock::widgets::AlertScope::Owned = T
+pub fn termrock::widgets::AlertScope::clone_into(&self, &mut T)
+pub fn termrock::widgets::AlertScope::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AlertScope where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AlertScope::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AlertScope where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertScope::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AlertScope where T: ?core::marker::Sized
+pub fn termrock::widgets::AlertScope::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AlertScope where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AlertScope::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AlertScope
+pub fn termrock::widgets::AlertScope::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AlertScope
 pub struct termrock::widgets::AlertState
 pub termrock::widgets::AlertState::focused: bool
 pub termrock::widgets::AlertState::region: core::option::Option<ratatui_core::layout::rect::Rect>
@@ -52736,6 +53124,9 @@ pub unsafe fn termrock::widgets::WorkbenchMode<'a, Id>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::WorkbenchMode<'a, Id>
 pub fn termrock::widgets::WorkbenchMode<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::WorkbenchMode<'a, Id>
+pub const termrock::widgets::ALERT_DIALOG_DEFAULT_HEIGHT: u16
+pub const termrock::widgets::ALERT_DIALOG_DEFAULT_WIDTH: u16
+pub const termrock::widgets::ALERT_DIALOG_OVERLAY_ID: &str
 pub const termrock::widgets::BREADCRUMBS_COLLAPSE_MAX_WIDTH: u16
 pub const termrock::widgets::BREADCRUMBS_ELLIPSIS: &str
 pub const termrock::widgets::BREADCRUMBS_ELLIPSIS_ASCII: &str
@@ -52860,6 +53251,7 @@ pub fn termrock::widgets::default_quick_open_intent(termrock::input::KeyEvent) -
 pub fn termrock::widgets::default_reserved_chords() -> alloc::vec::Vec<(termrock::keymap::KeyChord, alloc::string::String)>
 pub fn termrock::widgets::default_stepper_intent(termrock::input::KeyEvent, termrock::widgets::StepperOrientation) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::dialog_recipe_for_bounds(ratatui_core::layout::rect::Rect, termrock::widgets::DialogRecipe) -> termrock::widgets::DialogRecipe
+pub fn termrock::widgets::dismiss_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_context_menu_overlays<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -52936,6 +53328,7 @@ pub fn termrock::widgets::menu_items_to_nodes<Id: core::clone::Clone>(&[termrock
 pub fn termrock::widgets::merge_help_entries(impl core::iter::traits::collect::IntoIterator<Item = alloc::vec::Vec<termrock::widgets::HelpEntry>>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::normalize_separators(&str, termrock::widgets::PathStyle) -> alloc::string::String
 pub fn termrock::widgets::open_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_alert_dialog_widget_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>, bool) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_completion_configured<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>, core::option::Option<termrock::widgets::CompletionPresentation>, core::option::Option<alloc::string::String>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>

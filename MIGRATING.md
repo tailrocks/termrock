@@ -182,6 +182,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0166 | `v0.13.0` | [DropdownMenu and ContextMenu](migrations/0166-v0.13.0-dropdown-context-menu.md) |
 | 0167 | `v0.13.0` | [CompletionMenu](migrations/0167-v0.13.0-completion-menu.md) |
 | 0168 | `v0.13.0` | [Dialog](migrations/0168-v0.13.0-dialog.md) |
+| 0169 | `v0.13.0` | [AlertDialog](migrations/0169-v0.13.0-alert-dialog.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

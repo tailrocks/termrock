@@ -37,8 +37,8 @@ use termrock::{
         CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
         InspectorPanel,
-        DetailTableState, Dialog, DialogRecipe, DiffHunk, DiffKind, DiffLine, DiffReview,
-        DiffReviewState,
+        DetailTableState, Dialog, DialogRecipe, AlertDialog, AlertDialogState, AlertKind,
+        AlertScope, AlertConfirmGates, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
         DiffState, DiffView, Drawer, EmptyState, ErrorView, Field, Fieldset, Form, FormState,
         FormWizard, FormWizardState, WizardStep, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
         HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
@@ -2267,6 +2267,51 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             6,
             dialog_compact_story,
+        ),
+        Story::new(
+            "alert-dialog/delete",
+            "AlertDialog delete",
+            "AlertDialog",
+            "Permanent delete: scope, consequences, safer alternative; safe focus.",
+            56,
+            16,
+            alert_dialog_delete_story,
+        ),
+        Story::new(
+            "alert-dialog/overwrite",
+            "AlertDialog overwrite",
+            "AlertDialog",
+            "Overwrite confirmation with recoverable reversibility.",
+            52,
+            14,
+            alert_dialog_overwrite_story,
+        ),
+        Story::new(
+            "alert-dialog/terminate",
+            "AlertDialog terminate",
+            "AlertDialog",
+            "Process terminate with countdown gate.",
+            52,
+            14,
+            alert_dialog_terminate_story,
+        ),
+        Story::new(
+            "alert-dialog/egress",
+            "AlertDialog data egress",
+            "AlertDialog",
+            "Data egress risk with typed confirmation phrase.",
+            56,
+            16,
+            alert_dialog_egress_story,
+        ),
+        Story::new(
+            "alert-dialog/locked",
+            "AlertDialog locked critical",
+            "AlertDialog",
+            "Non-dismissable critical: Esc trapped; must choose action.",
+            52,
+            14,
+            alert_dialog_locked_story,
         ),
         Story::new(
             "choice-dialog/basic",
@@ -10992,6 +11037,69 @@ fn dialog_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
             .footer_hint("esc"),
         area,
     );
+}
+
+fn alert_dialog_delete_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = AlertDialogState::new(
+        AlertKind::Delete,
+        AlertScope::example_delete(),
+        "delete",
+        "keep",
+    );
+    AlertDialog::new(system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn alert_dialog_overwrite_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = AlertDialogState::new(
+        AlertKind::Overwrite,
+        AlertScope::example_overwrite(),
+        "overwrite",
+        "keep",
+    );
+    AlertDialog::new(system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn alert_dialog_terminate_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = AlertDialogState::new(
+        AlertKind::Terminate,
+        AlertScope::example_terminate(),
+        "terminate",
+        "keep",
+    );
+    state.set_gates(AlertConfirmGates::countdown(5_000));
+    // Mid-countdown for preview
+    let _ = state.tick(2_000);
+    AlertDialog::new(system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn alert_dialog_egress_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = AlertDialogState::new(
+        AlertKind::DataEgress,
+        AlertScope::example_data_egress(),
+        "allow",
+        "deny",
+    );
+    state.set_gates(AlertConfirmGates::typed("EXPORT"));
+    // Partial type for preview
+    for c in "EXP".chars() {
+        let _ = state.handle_key(termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char(c),
+            termrock::input::KeyModifiers::NONE,
+        ));
+    }
+    AlertDialog::new(system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn alert_dialog_locked_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = AlertDialogState::new(
+        AlertKind::Delete,
+        AlertScope::example_delete().safer_alternative("Contact an admin to unlock."),
+        "delete",
+        "keep",
+    );
+    state.set_locked(true);
+    state.set_title("Critical: acknowledge deletion");
+    AlertDialog::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn choice_dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
