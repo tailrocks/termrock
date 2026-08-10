@@ -14639,6 +14639,11 @@ pub fn termrock::text::take_display_cols(&str, usize) -> alloc::string::String
 pub fn termrock::text::truncate_display_cols(&str, usize, termrock::text::TruncateMode, &str) -> alloc::string::String
 pub fn termrock::text::wrap_display_cols(&str, usize) -> alloc::vec::Vec<alloc::string::String>
 pub mod termrock::widgets
+pub mod termrock::widgets::charts_bench
+pub const termrock::widgets::charts_bench::SAMPLES_PER_SEC: u32
+pub const termrock::widgets::charts_bench::STREAM_WINDOW: usize
+pub const termrock::widgets::charts_bench::TINY_HEIGHT: u16
+pub const termrock::widgets::charts_bench::TINY_WIDTH: u16
 pub mod termrock::widgets::data_view_bench
 pub const termrock::widgets::data_view_bench::COLS_WIDE: usize
 pub const termrock::widgets::data_view_bench::MAX_PAINT_CELLS: u32
@@ -28991,6 +28996,55 @@ pub unsafe fn termrock::widgets::RowRole::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::RowRole
 pub fn termrock::widgets::RowRole::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RowRole
+#[non_exhaustive] pub enum termrock::widgets::ScaleMode
+pub termrock::widgets::ScaleMode::Auto
+pub termrock::widgets::ScaleMode::Fixed
+pub termrock::widgets::ScaleMode::Fixed::max: f64
+pub termrock::widgets::ScaleMode::Fixed::min: f64
+pub termrock::widgets::ScaleMode::Log
+pub termrock::widgets::ScaleMode::Log::fixed: core::option::Option<(f64, f64)>
+impl termrock::widgets::ScaleMode
+pub fn termrock::widgets::ScaleMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ScaleMode
+pub fn termrock::widgets::ScaleMode::clone(&self) -> termrock::widgets::ScaleMode
+impl core::cmp::PartialEq for termrock::widgets::ScaleMode
+pub fn termrock::widgets::ScaleMode::eq(&self, &termrock::widgets::ScaleMode) -> bool
+impl core::default::Default for termrock::widgets::ScaleMode
+pub fn termrock::widgets::ScaleMode::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ScaleMode
+pub fn termrock::widgets::ScaleMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::ScaleMode
+impl core::marker::StructuralPartialEq for termrock::widgets::ScaleMode
+impl core::marker::Freeze for termrock::widgets::ScaleMode
+impl core::marker::Send for termrock::widgets::ScaleMode
+impl core::marker::Sync for termrock::widgets::ScaleMode
+impl core::marker::Unpin for termrock::widgets::ScaleMode
+impl core::marker::UnsafeUnpin for termrock::widgets::ScaleMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ScaleMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ScaleMode
+impl<T, U> core::convert::Into<U> for termrock::widgets::ScaleMode where U: core::convert::From<T>
+pub fn termrock::widgets::ScaleMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ScaleMode where U: core::convert::Into<T>
+pub type termrock::widgets::ScaleMode::Error = core::convert::Infallible
+pub fn termrock::widgets::ScaleMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ScaleMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ScaleMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ScaleMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ScaleMode where T: core::clone::Clone
+pub type termrock::widgets::ScaleMode::Owned = T
+pub fn termrock::widgets::ScaleMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::ScaleMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ScaleMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ScaleMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ScaleMode where T: ?core::marker::Sized
+pub fn termrock::widgets::ScaleMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ScaleMode where T: ?core::marker::Sized
+pub fn termrock::widgets::ScaleMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ScaleMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ScaleMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ScaleMode
+pub fn termrock::widgets::ScaleMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ScaleMode
 #[non_exhaustive] pub enum termrock::widgets::ScrollBarVisibility
 pub termrock::widgets::ScrollBarVisibility::Always
 pub termrock::widgets::ScrollBarVisibility::Auto
@@ -35516,6 +35570,62 @@ pub unsafe fn termrock::widgets::VirtualPageStatus::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::VirtualPageStatus
 pub fn termrock::widgets::VirtualPageStatus::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::VirtualPageStatus
+#[non_exhaustive] pub enum termrock::widgets::VizGlyphSet
+pub termrock::widgets::VizGlyphSet::Ascii
+pub termrock::widgets::VizGlyphSet::Auto
+pub termrock::widgets::VizGlyphSet::Block
+pub termrock::widgets::VizGlyphSet::Braille
+impl termrock::widgets::VizGlyphSet
+pub fn termrock::widgets::VizGlyphSet::ladder(self) -> &'static [char]
+pub fn termrock::widgets::VizGlyphSet::missing_mark(self) -> char
+pub fn termrock::widgets::VizGlyphSet::resolve(self, termrock::style::GlyphSet) -> termrock::widgets::VizGlyphSet
+pub fn termrock::widgets::VizGlyphSet::series_marker(self, usize) -> char
+pub fn termrock::widgets::VizGlyphSet::threshold_mark(self) -> char
+impl core::clone::Clone for termrock::widgets::VizGlyphSet
+pub fn termrock::widgets::VizGlyphSet::clone(&self) -> termrock::widgets::VizGlyphSet
+impl core::cmp::Eq for termrock::widgets::VizGlyphSet
+impl core::cmp::PartialEq for termrock::widgets::VizGlyphSet
+pub fn termrock::widgets::VizGlyphSet::eq(&self, &termrock::widgets::VizGlyphSet) -> bool
+impl core::default::Default for termrock::widgets::VizGlyphSet
+pub fn termrock::widgets::VizGlyphSet::default() -> termrock::widgets::VizGlyphSet
+impl core::fmt::Debug for termrock::widgets::VizGlyphSet
+pub fn termrock::widgets::VizGlyphSet::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::VizGlyphSet
+pub fn termrock::widgets::VizGlyphSet::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::VizGlyphSet
+impl core::marker::StructuralPartialEq for termrock::widgets::VizGlyphSet
+impl core::marker::Freeze for termrock::widgets::VizGlyphSet
+impl core::marker::Send for termrock::widgets::VizGlyphSet
+impl core::marker::Sync for termrock::widgets::VizGlyphSet
+impl core::marker::Unpin for termrock::widgets::VizGlyphSet
+impl core::marker::UnsafeUnpin for termrock::widgets::VizGlyphSet
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::VizGlyphSet
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::VizGlyphSet
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::VizGlyphSet where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::VizGlyphSet::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::VizGlyphSet where U: core::convert::From<T>
+pub fn termrock::widgets::VizGlyphSet::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::VizGlyphSet where U: core::convert::Into<T>
+pub type termrock::widgets::VizGlyphSet::Error = core::convert::Infallible
+pub fn termrock::widgets::VizGlyphSet::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::VizGlyphSet where U: core::convert::TryFrom<T>
+pub type termrock::widgets::VizGlyphSet::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::VizGlyphSet::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::VizGlyphSet where T: core::clone::Clone
+pub type termrock::widgets::VizGlyphSet::Owned = T
+pub fn termrock::widgets::VizGlyphSet::clone_into(&self, &mut T)
+pub fn termrock::widgets::VizGlyphSet::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::VizGlyphSet where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::VizGlyphSet::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::VizGlyphSet where T: ?core::marker::Sized
+pub fn termrock::widgets::VizGlyphSet::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::VizGlyphSet where T: ?core::marker::Sized
+pub fn termrock::widgets::VizGlyphSet::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::VizGlyphSet where T: core::clone::Clone
+pub unsafe fn termrock::widgets::VizGlyphSet::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::VizGlyphSet
+pub fn termrock::widgets::VizGlyphSet::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::VizGlyphSet
 #[non_exhaustive] pub enum termrock::widgets::WeekStart
 pub termrock::widgets::WeekStart::Monday
 pub termrock::widgets::WeekStart::Sunday
@@ -37395,6 +37505,9 @@ impl<T> either::into_either::IntoEither for termrock::widgets::Banner<'a>
 pub struct termrock::widgets::BarDatum<'a>
 pub termrock::widgets::BarDatum::fraction: f64
 pub termrock::widgets::BarDatum::label: &'a str
+impl<'a> termrock::widgets::BarDatum<'a>
+pub const fn termrock::widgets::BarDatum<'a>::new(&'a str, f64) -> Self
+pub const fn termrock::widgets::BarDatum<'a>::value(&'a str, f64) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::BarDatum<'a>
 pub fn termrock::widgets::BarDatum<'a>::clone(&self) -> termrock::widgets::BarDatum<'a>
 impl<'a> core::cmp::PartialEq for termrock::widgets::BarDatum<'a>
@@ -37435,7 +37548,10 @@ pub fn termrock::widgets::BarDatum<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::BarDatum<'a>
 pub struct termrock::widgets::BarSeries<'a>
 impl<'a> termrock::widgets::BarSeries<'a>
+pub const fn termrock::widgets::BarSeries<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
 pub const fn termrock::widgets::BarSeries<'a>::new(&'a [termrock::widgets::BarDatum<'a>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::BarSeries<'a>::scale(self, termrock::widgets::ScaleMode) -> Self
+pub const fn termrock::widgets::BarSeries<'a>::selected(self, usize) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::BarSeries<'_>
 pub fn &termrock::widgets::BarSeries<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::widgets::BarSeries<'_>
@@ -38495,6 +38611,100 @@ pub unsafe fn termrock::widgets::CardParts::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::CardParts
 pub fn termrock::widgets::CardParts::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CardParts
+pub struct termrock::widgets::Chart<'a>
+impl<'a> termrock::widgets::Chart<'a>
+pub const fn termrock::widgets::Chart<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
+pub const fn termrock::widgets::Chart<'a>::new(&'a [termrock::widgets::ChartSeries<'a>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Chart<'a>::scale(self, termrock::widgets::ScaleMode) -> Self
+pub const fn termrock::widgets::Chart<'a>::selected_index(self, usize) -> Self
+pub const fn termrock::widgets::Chart<'a>::selected_series(self, usize) -> Self
+pub const fn termrock::widgets::Chart<'a>::show_axes(self, bool) -> Self
+pub const fn termrock::widgets::Chart<'a>::show_legend(self, bool) -> Self
+pub const fn termrock::widgets::Chart<'a>::thresholds(self, &'a [f64]) -> Self
+pub const fn termrock::widgets::Chart<'a>::title(self, &'a str) -> Self
+pub const fn termrock::widgets::Chart<'a>::window(self, usize) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Chart<'_>
+pub fn &termrock::widgets::Chart<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Chart<'_>
+pub fn termrock::widgets::Chart<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::Chart<'a>
+pub fn termrock::widgets::Chart<'a>::clone(&self) -> termrock::widgets::Chart<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Chart<'a>
+pub fn termrock::widgets::Chart<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::Chart<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::Chart<'a>
+impl<'a> core::marker::Send for termrock::widgets::Chart<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Chart<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Chart<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Chart<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Chart<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Chart<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Chart<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Chart<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Chart<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Chart<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Chart<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Chart<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Chart<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Chart<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Chart<'a> where T: core::clone::Clone
+pub type termrock::widgets::Chart<'a>::Owned = T
+pub fn termrock::widgets::Chart<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Chart<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Chart<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Chart<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Chart<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Chart<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Chart<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Chart<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Chart<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Chart<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Chart<'a>
+pub fn termrock::widgets::Chart<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Chart<'a>
+pub struct termrock::widgets::ChartSeries<'a>
+pub termrock::widgets::ChartSeries::label: &'a str
+pub termrock::widgets::ChartSeries::samples: &'a [f64]
+impl<'a> termrock::widgets::ChartSeries<'a>
+pub const fn termrock::widgets::ChartSeries<'a>::new(&'a str, &'a [f64]) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::ChartSeries<'a>
+pub fn termrock::widgets::ChartSeries<'a>::clone(&self) -> termrock::widgets::ChartSeries<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::ChartSeries<'a>
+pub fn termrock::widgets::ChartSeries<'a>::eq(&self, &termrock::widgets::ChartSeries<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::ChartSeries<'a>
+pub fn termrock::widgets::ChartSeries<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ChartSeries<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::ChartSeries<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ChartSeries<'a>
+impl<'a> core::marker::Send for termrock::widgets::ChartSeries<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ChartSeries<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ChartSeries<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ChartSeries<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ChartSeries<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ChartSeries<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ChartSeries<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ChartSeries<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ChartSeries<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ChartSeries<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ChartSeries<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ChartSeries<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ChartSeries<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ChartSeries<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ChartSeries<'a> where T: core::clone::Clone
+pub type termrock::widgets::ChartSeries<'a>::Owned = T
+pub fn termrock::widgets::ChartSeries<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ChartSeries<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ChartSeries<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ChartSeries<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ChartSeries<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ChartSeries<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ChartSeries<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ChartSeries<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ChartSeries<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ChartSeries<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ChartSeries<'a>
+pub fn termrock::widgets::ChartSeries<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ChartSeries<'a>
 pub struct termrock::widgets::Checkbox<'a, Id>
 pub termrock::widgets::Checkbox::id: Id
 impl<'a, Id> termrock::widgets::Checkbox<'a, Id>
@@ -44888,6 +45098,55 @@ pub unsafe fn termrock::widgets::FullscreenViewerState<Id>::clone_to_uninit(&sel
 impl<T> core::convert::From<T> for termrock::widgets::FullscreenViewerState<Id>
 pub fn termrock::widgets::FullscreenViewerState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FullscreenViewerState<Id>
+pub struct termrock::widgets::Gauge<'a>
+impl<'a> termrock::widgets::Gauge<'a>
+pub const fn termrock::widgets::Gauge<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
+pub const fn termrock::widgets::Gauge<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::Gauge<'a>::new(f64, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Gauge<'a>::percent(f64, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Gauge<'a>::role(self, termrock::style::Role) -> Self
+pub const fn termrock::widgets::Gauge<'a>::scale(self, termrock::widgets::ScaleMode) -> Self
+pub const fn termrock::widgets::Gauge<'a>::thresholds(self, &'a [f64]) -> Self
+pub const fn termrock::widgets::Gauge<'a>::unit(self, &'a str) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Gauge<'_>
+pub fn &termrock::widgets::Gauge<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Gauge<'_>
+pub fn termrock::widgets::Gauge<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::Gauge<'a>
+pub fn termrock::widgets::Gauge<'a>::clone(&self) -> termrock::widgets::Gauge<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Gauge<'a>
+pub fn termrock::widgets::Gauge<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::Gauge<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::Gauge<'a>
+impl<'a> core::marker::Send for termrock::widgets::Gauge<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Gauge<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Gauge<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Gauge<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Gauge<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Gauge<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Gauge<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Gauge<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Gauge<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Gauge<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Gauge<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Gauge<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Gauge<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Gauge<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Gauge<'a> where T: core::clone::Clone
+pub type termrock::widgets::Gauge<'a>::Owned = T
+pub fn termrock::widgets::Gauge<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Gauge<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Gauge<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Gauge<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Gauge<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Gauge<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Gauge<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Gauge<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Gauge<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Gauge<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Gauge<'a>
+pub fn termrock::widgets::Gauge<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Gauge<'a>
 pub struct termrock::widgets::GridCell<'a>
 pub termrock::widgets::GridCell::pending: bool
 pub termrock::widgets::GridCell::style: core::option::Option<ratatui_core::style::Style>
@@ -45780,6 +46039,96 @@ pub unsafe fn termrock::widgets::HintBar<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HintBar<'a>
 pub fn termrock::widgets::HintBar<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HintBar<'a>
+pub struct termrock::widgets::HistBucket<'a>
+pub termrock::widgets::HistBucket::count: f64
+pub termrock::widgets::HistBucket::label: &'a str
+impl<'a> termrock::widgets::HistBucket<'a>
+pub const fn termrock::widgets::HistBucket<'a>::new(&'a str, f64) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::HistBucket<'a>
+pub fn termrock::widgets::HistBucket<'a>::clone(&self) -> termrock::widgets::HistBucket<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::HistBucket<'a>
+pub fn termrock::widgets::HistBucket<'a>::eq(&self, &termrock::widgets::HistBucket<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::HistBucket<'a>
+pub fn termrock::widgets::HistBucket<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::HistBucket<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::HistBucket<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::HistBucket<'a>
+impl<'a> core::marker::Send for termrock::widgets::HistBucket<'a>
+impl<'a> core::marker::Sync for termrock::widgets::HistBucket<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::HistBucket<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::HistBucket<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HistBucket<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::HistBucket<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::HistBucket<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::HistBucket<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HistBucket<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::HistBucket<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::HistBucket<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HistBucket<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HistBucket<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HistBucket<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HistBucket<'a> where T: core::clone::Clone
+pub type termrock::widgets::HistBucket<'a>::Owned = T
+pub fn termrock::widgets::HistBucket<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::HistBucket<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HistBucket<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HistBucket<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HistBucket<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HistBucket<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HistBucket<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HistBucket<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HistBucket<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HistBucket<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HistBucket<'a>
+pub fn termrock::widgets::HistBucket<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HistBucket<'a>
+pub struct termrock::widgets::Histogram<'a>
+impl<'a> termrock::widgets::Histogram<'a>
+pub const fn termrock::widgets::Histogram<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
+pub const fn termrock::widgets::Histogram<'a>::new(&'a [termrock::widgets::HistBucket<'a>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Histogram<'a>::scale(self, termrock::widgets::ScaleMode) -> Self
+pub const fn termrock::widgets::Histogram<'a>::selected(self, usize) -> Self
+pub const fn termrock::widgets::Histogram<'a>::title(self, &'a str) -> Self
+pub const fn termrock::widgets::Histogram<'a>::vertical(self, bool) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Histogram<'_>
+pub fn &termrock::widgets::Histogram<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Histogram<'_>
+pub fn termrock::widgets::Histogram<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::Histogram<'a>
+pub fn termrock::widgets::Histogram<'a>::clone(&self) -> termrock::widgets::Histogram<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Histogram<'a>
+pub fn termrock::widgets::Histogram<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::Histogram<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::Histogram<'a>
+impl<'a> core::marker::Send for termrock::widgets::Histogram<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Histogram<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Histogram<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Histogram<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Histogram<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Histogram<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Histogram<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Histogram<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Histogram<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Histogram<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Histogram<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Histogram<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Histogram<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Histogram<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Histogram<'a> where T: core::clone::Clone
+pub type termrock::widgets::Histogram<'a>::Owned = T
+pub fn termrock::widgets::Histogram<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Histogram<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Histogram<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Histogram<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Histogram<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Histogram<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Histogram<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Histogram<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Histogram<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Histogram<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Histogram<'a>
+pub fn termrock::widgets::Histogram<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Histogram<'a>
 pub struct termrock::widgets::HistoryEntry<Id>
 pub termrock::widgets::HistoryEntry::display: alloc::string::String
 pub termrock::widgets::HistoryEntry::group: core::option::Option<alloc::string::String>
@@ -49548,6 +49897,8 @@ pub struct termrock::widgets::MeterSegment<'a>
 pub termrock::widgets::MeterSegment::label: &'a str
 pub termrock::widgets::MeterSegment::role: termrock::style::Role
 pub termrock::widgets::MeterSegment::weight: f64
+impl<'a> termrock::widgets::MeterSegment<'a>
+pub const fn termrock::widgets::MeterSegment<'a>::new(&'a str, f64, termrock::style::Role) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::MeterSegment<'a>
 pub fn termrock::widgets::MeterSegment<'a>::clone(&self) -> termrock::widgets::MeterSegment<'a>
 impl<'a> core::cmp::PartialEq for termrock::widgets::MeterSegment<'a>
@@ -55494,6 +55845,51 @@ pub unsafe fn termrock::widgets::RoleTokenSyntax<'a>::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::RoleTokenSyntax<'a>
 pub fn termrock::widgets::RoleTokenSyntax<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RoleTokenSyntax<'a>
+pub struct termrock::widgets::ScaleDomain
+pub termrock::widgets::ScaleDomain::log: bool
+pub termrock::widgets::ScaleDomain::max: f64
+pub termrock::widgets::ScaleDomain::min: f64
+impl termrock::widgets::ScaleDomain
+pub fn termrock::widgets::ScaleDomain::normalize(self, f64) -> core::option::Option<f64>
+pub fn termrock::widgets::ScaleDomain::unit() -> Self
+impl core::clone::Clone for termrock::widgets::ScaleDomain
+pub fn termrock::widgets::ScaleDomain::clone(&self) -> termrock::widgets::ScaleDomain
+impl core::cmp::PartialEq for termrock::widgets::ScaleDomain
+pub fn termrock::widgets::ScaleDomain::eq(&self, &termrock::widgets::ScaleDomain) -> bool
+impl core::fmt::Debug for termrock::widgets::ScaleDomain
+pub fn termrock::widgets::ScaleDomain::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::ScaleDomain
+impl core::marker::StructuralPartialEq for termrock::widgets::ScaleDomain
+impl core::marker::Freeze for termrock::widgets::ScaleDomain
+impl core::marker::Send for termrock::widgets::ScaleDomain
+impl core::marker::Sync for termrock::widgets::ScaleDomain
+impl core::marker::Unpin for termrock::widgets::ScaleDomain
+impl core::marker::UnsafeUnpin for termrock::widgets::ScaleDomain
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ScaleDomain
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ScaleDomain
+impl<T, U> core::convert::Into<U> for termrock::widgets::ScaleDomain where U: core::convert::From<T>
+pub fn termrock::widgets::ScaleDomain::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ScaleDomain where U: core::convert::Into<T>
+pub type termrock::widgets::ScaleDomain::Error = core::convert::Infallible
+pub fn termrock::widgets::ScaleDomain::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ScaleDomain where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ScaleDomain::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ScaleDomain::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ScaleDomain where T: core::clone::Clone
+pub type termrock::widgets::ScaleDomain::Owned = T
+pub fn termrock::widgets::ScaleDomain::clone_into(&self, &mut T)
+pub fn termrock::widgets::ScaleDomain::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ScaleDomain where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ScaleDomain::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ScaleDomain where T: ?core::marker::Sized
+pub fn termrock::widgets::ScaleDomain::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ScaleDomain where T: ?core::marker::Sized
+pub fn termrock::widgets::ScaleDomain::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ScaleDomain where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ScaleDomain::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ScaleDomain
+pub fn termrock::widgets::ScaleDomain::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ScaleDomain
 pub struct termrock::widgets::ScrollAnchor
 pub termrock::widgets::ScrollAnchor::col: u16
 pub termrock::widgets::ScrollAnchor::line: usize
@@ -56325,7 +56721,10 @@ pub fn termrock::widgets::SegmentedItemParts<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedItemParts<Id>
 pub struct termrock::widgets::SegmentedMeter<'a>
 impl<'a> termrock::widgets::SegmentedMeter<'a>
+pub const fn termrock::widgets::SegmentedMeter<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
 pub const fn termrock::widgets::SegmentedMeter<'a>::new(&'a [termrock::widgets::MeterSegment<'a>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::SegmentedMeter<'a>::selected(self, usize) -> Self
+pub const fn termrock::widgets::SegmentedMeter<'a>::show_labels(self, bool) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::SegmentedMeter<'_>
 pub fn &termrock::widgets::SegmentedMeter<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::widgets::SegmentedMeter<'_>
@@ -57788,7 +58187,14 @@ pub fn termrock::widgets::SourceRange::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SourceRange
 pub struct termrock::widgets::Sparkline<'a>
 impl<'a> termrock::widgets::Sparkline<'a>
+pub const fn termrock::widgets::Sparkline<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
 pub const fn termrock::widgets::Sparkline<'a>::new(&'a [f64], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Sparkline<'a>::pre_normalized(self, bool) -> Self
+pub const fn termrock::widgets::Sparkline<'a>::role(self, termrock::style::Role) -> Self
+pub const fn termrock::widgets::Sparkline<'a>::scale(self, termrock::widgets::ScaleMode) -> Self
+pub const fn termrock::widgets::Sparkline<'a>::selected(self, usize) -> Self
+pub const fn termrock::widgets::Sparkline<'a>::threshold(self, f64) -> Self
+pub const fn termrock::widgets::Sparkline<'a>::window(self, usize) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Sparkline<'_>
 pub fn &termrock::widgets::Sparkline<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::widgets::Sparkline<'_>
@@ -64783,6 +65189,7 @@ pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termroc
 pub fn termrock::widgets::fullscreen_viewer_has_nested_top<F>(&termrock::interaction::OverlayStack<F>) -> bool
 pub fn termrock::widgets::fuzzy_match_label(&str, &str) -> core::option::Option<(u32, termrock::widgets::MatchRanges)>
 pub fn termrock::widgets::generate_jump_labels(usize) -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::widgets::glyph_for_fraction(f64, &[char], bool, char) -> char
 pub fn termrock::widgets::help_entries_from_conflicts<A, F>(&termrock::keymap::Keymap<A>, &termrock::style::DesignSystem, F) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A) -> alloc::string::String
 pub fn termrock::widgets::help_entries_from_keymap<A, F>(&termrock::keymap::Keymap<A>, &termrock::style::DesignSystem, F) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A, &termrock::keymap::KeyBinding<A>) -> (alloc::string::String, alloc::string::String, alloc::string::String, core::option::Option<alloc::string::String>, core::option::Option<alloc::string::String>, u8)
 pub fn termrock::widgets::help_entries_from_overlays<FocusId>(&termrock::interaction::OverlayStack<FocusId>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
@@ -64896,6 +65303,7 @@ pub fn termrock::widgets::remove_label(&str) -> alloc::string::String
 pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem)
 pub fn termrock::widgets::replay_jump_keys<Id: core::clone::Clone>(&mut termrock::widgets::JumpOverlayState, &[termrock::widgets::JumpTarget<Id>], &str) -> termrock::widgets::JumpOutcome<Id>
 pub fn termrock::widgets::required_filled<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
+pub fn termrock::widgets::resolve_domain(termrock::widgets::ScaleMode, impl core::iter::traits::iterator::Iterator<Item = f64>) -> termrock::widgets::ScaleDomain
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::role_for_seed(u64) -> termrock::style::Role
 pub fn termrock::widgets::row_count(u64, u8) -> u64
@@ -64916,6 +65324,7 @@ pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) 
 pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<termrock::style::RolePalette>
 pub fn termrock::widgets::toolbar_icon_action<'a, Id>(Id, &'a str, &'a str) -> termrock::widgets::ToolbarItem<'a, Id>
 pub fn termrock::widgets::tooltip_overlay_size(u16, u16, u16) -> termrock::interaction::OverlaySize
+pub fn termrock::widgets::window_samples(&[f64], usize) -> &[f64]
 pub fn termrock::widgets::workbench_panels() -> [termrock::widgets::ResizablePanelSpec; 3]
 pub fn termrock::widgets::wrapped_hint_lines(&[termrock::widgets::HintSpan<'_>], u16, &termrock::style::DesignSystem) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub type termrock::widgets::AlertRecipe = termrock::widgets::CalloutRecipe

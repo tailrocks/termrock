@@ -1604,6 +1604,23 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** select.  
 24. **Perf:** O(visible events).
 
+## Charts (Sparkline / Chart / Gauge / Histogram)
+
+1. **Purpose:** Coherent terminal data-viz family.  
+2. **Anatomy:** optional title/legend · plot · axes · threshold marks · selection.  
+3. **Public properties:** samples/series/buckets, `ScaleMode`, `VizGlyphSet`, thresholds, selection.  
+4. **State:** stateless paint (host owns series buffers).  
+5. **Variants:** Auto/Fixed/Log; Block/Braille/ASCII; vertical/horizontal hist.  
+6–8. Tiny: 1-row sparkline/gauge; multi-row chart/hist.  
+9–10. Non-interactive paint (host may wrap selection).  
+11–14. No process I/O.  
+15–16. Readable at 8×1.  
+17–18. No-color markers + density.  
+19. **Composition:** dashboards, StatusBar, TokenMeter cousin.  
+20. **Outcomes:** none (pure paint).  
+21. **Stories:** sparkline/chart/gauge/histogram/bar-series/segmented-meter.  
+22–24. Streaming window + scale property tests.
+
 ## HexViewer
 
 1. **Purpose:** Virtualized binary inspector (host-paged).  

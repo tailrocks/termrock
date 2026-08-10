@@ -1,0 +1,71 @@
+---
+title: Charts visualization family
+description: Sparkline, Chart, Gauge, Histogram with shared scales and glyph fallbacks.
+---
+
+# Charts visualization family
+
+Shared **scale** (`ScaleMode`: Auto / Fixed / Log) and **glyphs**
+(`VizGlyphSet`: Auto / Block / Braille / ASCII) across:
+
+| Widget | Role |
+|--------|------|
+| [Sparkline](#sparkline) | One-row density / stream window |
+| [Chart](#chart) | Multi-series plot + legend/axes |
+| [Gauge](#gauge) | Single value + thresholds |
+| [Histogram](#histogram) | Buckets |
+| BarSeries | Labeled horizontal bars |
+| SegmentedMeter | Stacked share row |
+
+## Scale semantics
+
+- **Auto** — finite samples only (NaN = missing)
+- **Fixed** — `[min, max]`
+- **Log** — positive finite values; optional fixed domain
+- **window(n)** — last N samples for streaming
+
+## Capability / no-color
+
+| Glyph set | When |
+|-----------|------|
+| Block / Braille | Unicode / Enhanced |
+| ASCII ` .:-=+*#%@` | `GlyphSet::Ascii` or forced |
+| Series markers | `*+xo#` / `●◆▲■○` ordered by series index |
+
+No-color mode prefers markers + density over hue.
+
+## Sparkline
+
+```rust
+Sparkline::new(&samples, &system)
+    .pre_normalized(true) // legacy 0..=1
+    .threshold(0.8)
+    .selected(i)
+    .window(60);
+```
+
+## Chart
+
+```rust
+Chart::new(&[ChartSeries::new("cpu", &cpu)], &system)
+    .title("host")
+    .thresholds(&[90.0])
+    .scale(ScaleMode::Fixed { min: 0.0, max: 100.0 });
+```
+
+## Gauge
+
+```rust
+Gauge::percent(72.0, &system).label("cpu").unit("%").thresholds(&[70.0, 90.0]);
+```
+
+## Histogram
+
+```rust
+Histogram::new(&[HistBucket::new("0", 1.0), HistBucket::new("1", 4.0)], &system)
+    .selected(1);
+```
+
+## Related
+
+TokenMeter (usage) · migration `0201`

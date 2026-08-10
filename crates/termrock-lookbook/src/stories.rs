@@ -26,7 +26,8 @@ use termrock::{
         ToggleGroupState, ToggleState, ToggleValue,
         AnsiTextMode, AnsiTextState, AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS,
         Backdrop, Badge, Banner,
-        Alert, AlertState, AlertTone, BarDatum, BarSeries, Button, ButtonState, Callout, CalloutTone,
+        Alert, AlertState, AlertTone, BarDatum, BarSeries, Chart, ChartSeries, Gauge, HistBucket,
+        Histogram, ScaleMode, VizGlyphSet, Button, ButtonState, Callout, CalloutTone,
         CellAlignment, Checkbox,
         CheckboxState, CheckboxValue, ChoiceDialog, ChoiceDialogState, CodeBlock, CodeBlockState,
         CodeHighlight,
@@ -3795,10 +3796,46 @@ pub(crate) fn stories() -> Vec<Story> {
             "sparkline/basic",
             "Sparkline",
             "Sparkline",
-            "One-row density chart.",
-            32,
+            "One-row density chart with threshold and selection.",
+            40,
             1,
             sparkline,
+        ),
+        Story::new(
+            "chart/basic",
+            "Chart multi-series",
+            "Chart",
+            "Legend, axes, thresholds, selected point.",
+            48,
+            10,
+            chart_basic,
+        ),
+        Story::new(
+            "chart/nocolor",
+            "Chart no-color",
+            "Chart",
+            "ASCII markers without color dependence.",
+            40,
+            8,
+            chart_nocolor,
+        ),
+        Story::new(
+            "gauge/basic",
+            "Gauge",
+            "Gauge",
+            "Single-value gauge with thresholds.",
+            36,
+            1,
+            gauge_basic,
+        ),
+        Story::new(
+            "histogram/basic",
+            "Histogram",
+            "Histogram",
+            "Vertical buckets with selection.",
+            36,
+            8,
+            histogram_basic,
         ),
         Story::new(
             "bar-series/basic",
@@ -14725,8 +14762,78 @@ fn markdown_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn sparkline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let samples = [0.1, 0.3, 0.2, 0.7, 0.9, 0.5, 0.8, 0.4];
-    frame.render_widget(Sparkline::new(&samples, system), area);
+    let samples = [0.1, 0.3, 0.2, 0.7, 0.9, f64::NAN, 0.8, 0.4, 0.6, 0.95];
+    frame.render_widget(
+        Sparkline::new(&samples, system)
+            .pre_normalized(true)
+            .threshold(0.75)
+            .selected(4),
+        area,
+    );
+}
+
+fn chart_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let cpu = [12.0, 18.0, 40.0, 55.0, 48.0, 62.0, 70.0, 58.0, 45.0, 30.0];
+    let mem = [40.0, 42.0, 44.0, 50.0, 52.0, 55.0, 60.0, 58.0, 57.0, 56.0];
+    let series = [
+        ChartSeries::new("cpu", &cpu),
+        ChartSeries::new("mem", &mem),
+    ];
+    let thr = [65.0];
+    frame.render_widget(
+        Chart::new(&series, system)
+            .title("host")
+            .thresholds(&thr)
+            .selected_series(0)
+            .selected_index(6)
+            .scale(ScaleMode::Fixed { min: 0.0, max: 100.0 }),
+        area,
+    );
+}
+
+fn chart_nocolor(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let system = DesignSystem::from_palette(system.palette().clone())
+        .glyphs(termrock::style::GlyphSet::Ascii)
+        .no_color();
+    let a = [1.0, 3.0, 2.0, 5.0, 4.0, 6.0, 3.0];
+    let b = [5.0, 4.0, 4.0, 3.0, 2.0, 2.0, 1.0];
+    let series = [
+        ChartSeries::new("in", &a),
+        ChartSeries::new("out", &b),
+    ];
+    frame.render_widget(
+        Chart::new(&series, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .title("io"),
+        area,
+    );
+}
+
+fn gauge_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let thr = [70.0, 90.0];
+    frame.render_widget(
+        Gauge::percent(82.0, system)
+            .label("cpu")
+            .unit("%")
+            .thresholds(&thr),
+        area,
+    );
+}
+
+fn histogram_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let buckets = [
+        HistBucket::new("0", 1.0),
+        HistBucket::new("1", 3.0),
+        HistBucket::new("2", 7.0),
+        HistBucket::new("3", 4.0),
+        HistBucket::new("4", 2.0),
+    ];
+    frame.render_widget(
+        Histogram::new(&buckets, system)
+            .title("latency")
+            .selected(2),
+        area,
+    );
 }
 
 fn bar_series(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -14744,7 +14851,7 @@ fn bar_series(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             fraction: 0.88,
         },
     ];
-    frame.render_widget(BarSeries::new(&bars, system), area);
+    frame.render_widget(BarSeries::new(&bars, system).selected(2), area);
 }
 
 fn segmented_meter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -14765,7 +14872,10 @@ fn segmented_meter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             role: Role::TextDisabled,
         },
     ];
-    frame.render_widget(SegmentedMeter::new(&segments, system), area);
+    frame.render_widget(
+        SegmentedMeter::new(&segments, system).selected(0),
+        area,
+    );
 }
 
 fn token_meter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

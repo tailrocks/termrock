@@ -192,7 +192,12 @@ pub use blocks::{
     BlockChrome, OpsDashboardOutcome, OpsDashboardState, OpsRegion, ResourceBrowserOutcome,
     ResourceBrowserState, SettingsShellOutcome, SettingsShellState,
 };
-pub use charts::{BarDatum, BarSeries, MeterSegment, SegmentedMeter, Sparkline};
+pub use charts::{
+    BarDatum, BarSeries, Chart, ChartSeries, Gauge, HistBucket, Histogram, MeterSegment,
+    ScaleDomain, ScaleMode, SegmentedMeter, Sparkline, VizGlyphSet, glyph_for_fraction,
+    resolve_domain, window_samples,
+};
+pub use charts::bench as charts_bench;
 pub use code_block::{
     AnsiSyntax, CodeBlock, CodeBlockOutcome, CodeBlockParts, CodeBlockState, CodeGutterMark,
     CodeHighlight, CodeHighlightKind, CodeSourceMeta, CodeWrap, ControlRender, PlainSyntax,
