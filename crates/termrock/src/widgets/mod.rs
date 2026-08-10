@@ -59,6 +59,7 @@ mod markdown;
 mod menu_nav;
 mod drawer;
 mod dropdown_menu;
+mod fullscreen_viewer;
 mod popover;
 mod tooltip;
 mod menu_bar;
@@ -296,6 +297,14 @@ pub use drawer::{
     Drawer, DrawerEdge, DrawerModality, DrawerOutcome, DrawerPresentation, DrawerSlots, DrawerState,
     Sheet, SheetState, dismiss_drawer_overlay, drawer_presentation_for, open_drawer_configured,
     open_drawer_nested_overlay, open_drawer_overlay, place_drawer, place_drawer_on_edge,
+};
+pub use fullscreen_viewer::{
+    FULLSCREEN_VIEWER_HINT, FULLSCREEN_VIEWER_NESTED_PREFIX, FULLSCREEN_VIEWER_OVERLAY_ID,
+    FullscreenViewer, FullscreenViewerOutcome, FullscreenViewerSlots, FullscreenViewerState,
+    ScrollAnchor, SemanticZoomBadge, SemanticZoomState, SourceContext, ViewerChromeFocus,
+    ViewerContentKind, ZoomLevel, dismiss_fullscreen_viewer_overlay,
+    fullscreen_viewer_has_nested_top, open_fullscreen_viewer_child_overlay,
+    open_fullscreen_viewer_overlay,
 };
 pub use dropdown_menu::{
     CONTEXT_MENU_OVERLAY_ID, CONTEXT_MENU_SUBMENU_PREFIX, DROPDOWN_MENU_OVERLAY_ID,

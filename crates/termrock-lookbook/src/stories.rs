@@ -89,6 +89,8 @@ use termrock::{
         KeyboardHelp, KeyboardHelpState, example_help_entries,
         filter_help_entries,
         Tooltip, TooltipContent, TooltipState, TooltipVariant,
+        FullscreenViewer, FullscreenViewerState, SemanticZoomBadge, SemanticZoomState,
+        SourceContext, ScrollAnchor, ViewerContentKind,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -3587,6 +3589,60 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             12,
             drawer_non_modal_story,
+        ),
+        Story::new(
+            "fullscreen-viewer/basic",
+            "FullscreenViewer code",
+            "FullscreenViewer",
+            "Fullscreen chrome over CodeBlock host body; breadcrumbs + actions.",
+            56,
+            18,
+            fullscreen_viewer_code_story,
+        ),
+        Story::new(
+            "fullscreen-viewer/diff",
+            "FullscreenViewer diff",
+            "FullscreenViewer",
+            "Diff content kind with search strip open.",
+            56,
+            16,
+            fullscreen_viewer_diff_story,
+        ),
+        Story::new(
+            "fullscreen-viewer/log",
+            "FullscreenViewer log",
+            "FullscreenViewer",
+            "Log stream body slot; help strip open.",
+            52,
+            14,
+            fullscreen_viewer_log_story,
+        ),
+        Story::new(
+            "fullscreen-viewer/zoom-badge",
+            "SemanticZoom badge",
+            "FullscreenViewer",
+            "Compact/detail/full zoom level badges (host paints row→detail).",
+            40,
+            5,
+            semantic_zoom_badge_story,
+        ),
+        Story::new(
+            "fullscreen-viewer/narrow",
+            "FullscreenViewer narrow",
+            "FullscreenViewer",
+            "Narrow terminal chrome contraction (title + body + footer).",
+            28,
+            12,
+            fullscreen_viewer_narrow_story,
+        ),
+        Story::new(
+            "fullscreen-viewer/unicode",
+            "FullscreenViewer unicode",
+            "FullscreenViewer",
+            "Unicode path breadcrumbs and title safe under CJK width.",
+            48,
+            14,
+            fullscreen_viewer_unicode_story,
         ),
         Story::new(
             "text/basic",
@@ -13361,6 +13417,137 @@ fn drawer_non_modal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     Drawer::new("Task rail", system)
         .footer(Some("non-modal"))
         .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn fv_source(id: &'static str, path: &[&str]) -> SourceContext<&'static str> {
+    SourceContext::new(id)
+        .selection(Some(id))
+        .scroll(ScrollAnchor::at(12, 0).with_id("anchor"))
+        .focus_token("list")
+        .path(path.iter().copied())
+}
+
+fn paint_viewer_body(frame: &mut Frame<'_>, body: Rect, system: &DesignSystem, line: &str) {
+    if body.is_empty() {
+        return;
+    }
+    frame.buffer_mut().set_stringn(
+        body.x,
+        body.y,
+        line,
+        usize::from(body.width),
+        system.style(Role::Text),
+    );
+    if body.height > 1 {
+        frame.buffer_mut().set_stringn(
+            body.x,
+            body.y + 1,
+            "… host content (no app-state copy)",
+            usize::from(body.width),
+            system.style(Role::TextMuted),
+        );
+    }
+}
+
+fn fullscreen_viewer_code_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions = [
+        Action {
+            id: "copy",
+            label: "Copy",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "raw",
+            label: "Raw",
+            enabled: true,
+            style: None,
+        },
+    ];
+    let mut state = FullscreenViewerState::new();
+    state.zoom_mut().set_content_kind(ViewerContentKind::Code);
+    let _ = state.enter_fullscreen(
+        fv_source("main.rs", &["repo", "src", "main.rs"]),
+        "main.rs",
+    );
+    FullscreenViewer::new(system, &actions).paint(area, frame.buffer_mut(), &mut state);
+    paint_viewer_body(frame, state.body_area(), system, "fn main() { /* … */ }");
+}
+
+fn fullscreen_viewer_diff_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions = [Action {
+        id: "stage",
+        label: "Stage",
+        enabled: true,
+        style: None,
+    }];
+    let mut state = FullscreenViewerState::new();
+    state.zoom_mut().set_content_kind(ViewerContentKind::Diff);
+    let _ = state.enter_fullscreen(fv_source("hunk-1", &["diff", "a.rs"]), "a.rs");
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char('/'),
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &actions,
+    );
+    FullscreenViewer::new(system, &actions).paint(area, frame.buffer_mut(), &mut state);
+    paint_viewer_body(frame, state.body_area(), system, "+added line  ·  -removed");
+}
+
+fn fullscreen_viewer_log_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions: [Action<'_, &str>; 0] = [];
+    let mut state = FullscreenViewerState::new();
+    state.zoom_mut().set_content_kind(ViewerContentKind::Log);
+    let _ = state.enter_fullscreen(fv_source("job-9", &["runs", "job-9"]), "job-9.log");
+    let _ = state.handle_intent(termrock::interaction::UiIntent::Help, &actions);
+    FullscreenViewer::new(system, &actions).paint(area, frame.buffer_mut(), &mut state);
+    paint_viewer_body(frame, state.body_area(), system, "INFO ready · WARN retry");
+}
+
+fn semantic_zoom_badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(1),
+    ])
+    .split(area);
+    let mut z = SemanticZoomState::<&str>::new();
+    SemanticZoomBadge::new(system).paint(chunks[0], frame.buffer_mut(), &z);
+    let _ = z.promote(fv_source("row", &["list"]));
+    SemanticZoomBadge::new(system).paint(chunks[1], frame.buffer_mut(), &z);
+    let _ = z.enter_fullscreen(fv_source("row", &["list"]));
+    SemanticZoomBadge::new(system).paint(chunks[2], frame.buffer_mut(), &z);
+    let _ = z.level(); // Fullscreen
+}
+
+fn fullscreen_viewer_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions: [Action<'_, &str>; 0] = [];
+    let mut state = FullscreenViewerState::new();
+    state.zoom_mut().set_content_kind(ViewerContentKind::Object);
+    let _ = state.enter_fullscreen(fv_source("obj", &["objs"]), "object");
+    FullscreenViewer::new(system, &actions)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+    paint_viewer_body(frame, state.body_area(), system, "{ id: 1 }");
+}
+
+fn fullscreen_viewer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions = [Action {
+        id: "open",
+        label: "開く",
+        enabled: true,
+        style: None,
+    }];
+    let mut state = FullscreenViewerState::new();
+    state.zoom_mut().set_content_kind(ViewerContentKind::Media);
+    let _ = state.enter_fullscreen(
+        fv_source("画像", &["資料", "プレビュー", "画像.png"]),
+        "画像.png",
+    );
+    FullscreenViewer::new(system, &actions).paint(area, frame.buffer_mut(), &mut state);
+    paint_viewer_body(frame, state.body_area(), system, "メディア · 🖼");
 }
 
 fn text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

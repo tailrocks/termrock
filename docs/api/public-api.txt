@@ -1,3 +1,64 @@
+ Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
+warning: unresolved link to `DataTableState::handle_key`
+   --> crates/termrock/src/interaction/intent.rs:272:7
+    |
+272 | /// [`DataTableState::handle_key`].
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
+    |
+    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
+
+warning: unresolved link to `LogStreamState::handle_key`
+   --> crates/termrock/src/interaction/intent.rs:350:35
+    |
+350 | /// - `f` is a product chord on [`LogStreamState::handle_key`] (also Toggle)
+    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `LogStreamState` in scope
+
+warning: unresolved link to `Self::reconcile_retain`
+   --> crates/termrock/src/interaction/selection_model.rs:462:11
+    |
+462 |     /// [`Self::reconcile_retain`] when off-window selection must survive.
+    |           ^^^^^^^^^^^^^^^^^^^^^^ the struct `SelectionModel` has no field or associated item named `reconcile_retain`
+
+warning: unresolved link to `Hint`
+   --> crates/termrock/src/widgets/keyboard_help.rs:539:31
+    |
+539 | /// Convert help entries to [`Hint`] for [`HintBar`] footer paint (borrowed chords).
+    |                               ^^^^ no item named `Hint` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `HintBar`
+   --> crates/termrock/src/widgets/keyboard_help.rs:539:44
+    |
+539 | /// Convert help entries to [`Hint`] for [`HintBar`] footer paint (borrowed chords).
+    |                                            ^^^^^^^ no item named `HintBar` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `Stack`
+   --> crates/termrock/src/widgets/card.rs:257:69
+    |
+257 |     /// Layout with optional description row carved from body via [`Stack`].
+    |                                                                     ^^^^^ no item named `Stack` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `Theme`
+   --> crates/termrock/src/widgets/prompt_composer.rs:553:39
+    |
+553 |     /// pass a monochrome-quantized [`Theme`]).
+    |                                       ^^^^^ no item named `Theme` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `Self::from_slots`
+   --> crates/termrock/src/widgets/status_bar.rs:423:17
+    |
+423 |     /// using [`Self::from_slots`].
+    |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
+
+warning: `termrock` (lib doc) generated 8 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.18s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -19885,6 +19946,67 @@ pub unsafe fn termrock::widgets::FormWizardPresentation::clone_to_uninit(&self, 
 impl<T> core::convert::From<T> for termrock::widgets::FormWizardPresentation
 pub fn termrock::widgets::FormWizardPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormWizardPresentation
+#[non_exhaustive] pub enum termrock::widgets::FullscreenViewerOutcome<Id>
+pub termrock::widgets::FullscreenViewerOutcome::ActionActivated
+pub termrock::widgets::FullscreenViewerOutcome::ActionActivated::id: Id
+pub termrock::widgets::FullscreenViewerOutcome::ChromeFocusMoved
+pub termrock::widgets::FullscreenViewerOutcome::ChromeFocusMoved::focus: termrock::widgets::ViewerChromeFocus
+pub termrock::widgets::FullscreenViewerOutcome::Closed
+pub termrock::widgets::FullscreenViewerOutcome::Closed::restore: termrock::widgets::SourceContext<Id>
+pub termrock::widgets::FullscreenViewerOutcome::Demoted
+pub termrock::widgets::FullscreenViewerOutcome::Demoted::level: termrock::widgets::ZoomLevel
+pub termrock::widgets::FullscreenViewerOutcome::Demoted::restore: termrock::widgets::SourceContext<Id>
+pub termrock::widgets::FullscreenViewerOutcome::HelpToggled
+pub termrock::widgets::FullscreenViewerOutcome::HelpToggled::open: bool
+pub termrock::widgets::FullscreenViewerOutcome::Ignored
+pub termrock::widgets::FullscreenViewerOutcome::NestedEscape
+pub termrock::widgets::FullscreenViewerOutcome::Opened
+pub termrock::widgets::FullscreenViewerOutcome::Opened::level: termrock::widgets::ZoomLevel
+pub termrock::widgets::FullscreenViewerOutcome::Promoted
+pub termrock::widgets::FullscreenViewerOutcome::Promoted::level: termrock::widgets::ZoomLevel
+pub termrock::widgets::FullscreenViewerOutcome::SearchChanged
+pub termrock::widgets::FullscreenViewerOutcome::SearchChanged::open: bool
+pub termrock::widgets::FullscreenViewerOutcome::SearchChanged::query: alloc::string::String
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::clone(&self) -> termrock::widgets::FullscreenViewerOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FullscreenViewerOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::eq(&self, &termrock::widgets::FullscreenViewerOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FullscreenViewerOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::FullscreenViewerOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::FullscreenViewerOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::FullscreenViewerOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::FullscreenViewerOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::FullscreenViewerOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FullscreenViewerOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FullscreenViewerOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FullscreenViewerOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FullscreenViewerOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FullscreenViewerOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FullscreenViewerOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FullscreenViewerOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FullscreenViewerOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FullscreenViewerOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::FullscreenViewerOutcome<Id>::Owned = T
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FullscreenViewerOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FullscreenViewerOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FullscreenViewerOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FullscreenViewerOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FullscreenViewerOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FullscreenViewerOutcome<Id>
 pub enum termrock::widgets::GridColumnWidth
 pub termrock::widgets::GridColumnWidth::Fixed(u16)
 pub termrock::widgets::GridColumnWidth::Min(u16)
@@ -30163,6 +30285,116 @@ pub unsafe fn termrock::widgets::Validation<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Validation<'a>
 pub fn termrock::widgets::Validation<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Validation<'a>
+#[non_exhaustive] pub enum termrock::widgets::ViewerChromeFocus
+pub termrock::widgets::ViewerChromeFocus::Actions
+pub termrock::widgets::ViewerChromeFocus::Body
+pub termrock::widgets::ViewerChromeFocus::Breadcrumbs
+pub termrock::widgets::ViewerChromeFocus::Help
+pub termrock::widgets::ViewerChromeFocus::Search
+pub termrock::widgets::ViewerChromeFocus::Title
+impl termrock::widgets::ViewerChromeFocus
+pub const fn termrock::widgets::ViewerChromeFocus::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ViewerChromeFocus
+pub fn termrock::widgets::ViewerChromeFocus::clone(&self) -> termrock::widgets::ViewerChromeFocus
+impl core::cmp::Eq for termrock::widgets::ViewerChromeFocus
+impl core::cmp::PartialEq for termrock::widgets::ViewerChromeFocus
+pub fn termrock::widgets::ViewerChromeFocus::eq(&self, &termrock::widgets::ViewerChromeFocus) -> bool
+impl core::default::Default for termrock::widgets::ViewerChromeFocus
+pub fn termrock::widgets::ViewerChromeFocus::default() -> termrock::widgets::ViewerChromeFocus
+impl core::fmt::Debug for termrock::widgets::ViewerChromeFocus
+pub fn termrock::widgets::ViewerChromeFocus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ViewerChromeFocus
+pub fn termrock::widgets::ViewerChromeFocus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ViewerChromeFocus
+impl core::marker::StructuralPartialEq for termrock::widgets::ViewerChromeFocus
+impl core::marker::Freeze for termrock::widgets::ViewerChromeFocus
+impl core::marker::Send for termrock::widgets::ViewerChromeFocus
+impl core::marker::Sync for termrock::widgets::ViewerChromeFocus
+impl core::marker::Unpin for termrock::widgets::ViewerChromeFocus
+impl core::marker::UnsafeUnpin for termrock::widgets::ViewerChromeFocus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ViewerChromeFocus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ViewerChromeFocus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ViewerChromeFocus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ViewerChromeFocus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ViewerChromeFocus where U: core::convert::From<T>
+pub fn termrock::widgets::ViewerChromeFocus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ViewerChromeFocus where U: core::convert::Into<T>
+pub type termrock::widgets::ViewerChromeFocus::Error = core::convert::Infallible
+pub fn termrock::widgets::ViewerChromeFocus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ViewerChromeFocus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ViewerChromeFocus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ViewerChromeFocus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ViewerChromeFocus where T: core::clone::Clone
+pub type termrock::widgets::ViewerChromeFocus::Owned = T
+pub fn termrock::widgets::ViewerChromeFocus::clone_into(&self, &mut T)
+pub fn termrock::widgets::ViewerChromeFocus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ViewerChromeFocus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ViewerChromeFocus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ViewerChromeFocus where T: ?core::marker::Sized
+pub fn termrock::widgets::ViewerChromeFocus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ViewerChromeFocus where T: ?core::marker::Sized
+pub fn termrock::widgets::ViewerChromeFocus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ViewerChromeFocus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ViewerChromeFocus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ViewerChromeFocus
+pub fn termrock::widgets::ViewerChromeFocus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ViewerChromeFocus
+#[non_exhaustive] pub enum termrock::widgets::ViewerContentKind
+pub termrock::widgets::ViewerContentKind::Code
+pub termrock::widgets::ViewerContentKind::Custom
+pub termrock::widgets::ViewerContentKind::Diff
+pub termrock::widgets::ViewerContentKind::Log
+pub termrock::widgets::ViewerContentKind::Media
+pub termrock::widgets::ViewerContentKind::Object
+pub termrock::widgets::ViewerContentKind::Task
+impl termrock::widgets::ViewerContentKind
+pub const fn termrock::widgets::ViewerContentKind::badge(self) -> &'static str
+pub const fn termrock::widgets::ViewerContentKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ViewerContentKind
+pub fn termrock::widgets::ViewerContentKind::clone(&self) -> termrock::widgets::ViewerContentKind
+impl core::cmp::Eq for termrock::widgets::ViewerContentKind
+impl core::cmp::PartialEq for termrock::widgets::ViewerContentKind
+pub fn termrock::widgets::ViewerContentKind::eq(&self, &termrock::widgets::ViewerContentKind) -> bool
+impl core::default::Default for termrock::widgets::ViewerContentKind
+pub fn termrock::widgets::ViewerContentKind::default() -> termrock::widgets::ViewerContentKind
+impl core::fmt::Debug for termrock::widgets::ViewerContentKind
+pub fn termrock::widgets::ViewerContentKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ViewerContentKind
+pub fn termrock::widgets::ViewerContentKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ViewerContentKind
+impl core::marker::StructuralPartialEq for termrock::widgets::ViewerContentKind
+impl core::marker::Freeze for termrock::widgets::ViewerContentKind
+impl core::marker::Send for termrock::widgets::ViewerContentKind
+impl core::marker::Sync for termrock::widgets::ViewerContentKind
+impl core::marker::Unpin for termrock::widgets::ViewerContentKind
+impl core::marker::UnsafeUnpin for termrock::widgets::ViewerContentKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ViewerContentKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ViewerContentKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ViewerContentKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ViewerContentKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ViewerContentKind where U: core::convert::From<T>
+pub fn termrock::widgets::ViewerContentKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ViewerContentKind where U: core::convert::Into<T>
+pub type termrock::widgets::ViewerContentKind::Error = core::convert::Infallible
+pub fn termrock::widgets::ViewerContentKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ViewerContentKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ViewerContentKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ViewerContentKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ViewerContentKind where T: core::clone::Clone
+pub type termrock::widgets::ViewerContentKind::Owned = T
+pub fn termrock::widgets::ViewerContentKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::ViewerContentKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ViewerContentKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ViewerContentKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ViewerContentKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ViewerContentKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ViewerContentKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ViewerContentKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ViewerContentKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ViewerContentKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ViewerContentKind
+pub fn termrock::widgets::ViewerContentKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ViewerContentKind
 #[non_exhaustive] pub enum termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub termrock::widgets::VirtualGridOutcome::Activated
 pub termrock::widgets::VirtualGridOutcome::Activated::col: usize
@@ -30377,6 +30609,66 @@ pub unsafe fn termrock::widgets::WizardPhase::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::WizardPhase
 pub fn termrock::widgets::WizardPhase::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::WizardPhase
+#[non_exhaustive] pub enum termrock::widgets::ZoomLevel
+pub termrock::widgets::ZoomLevel::Compact
+pub termrock::widgets::ZoomLevel::Detail
+pub termrock::widgets::ZoomLevel::Fullscreen
+impl termrock::widgets::ZoomLevel
+pub const fn termrock::widgets::ZoomLevel::demote(self) -> Self
+pub const fn termrock::widgets::ZoomLevel::id(self) -> &'static str
+pub const fn termrock::widgets::ZoomLevel::is_fullscreen(self) -> bool
+pub const fn termrock::widgets::ZoomLevel::promote(self) -> Self
+impl core::clone::Clone for termrock::widgets::ZoomLevel
+pub fn termrock::widgets::ZoomLevel::clone(&self) -> termrock::widgets::ZoomLevel
+impl core::cmp::Eq for termrock::widgets::ZoomLevel
+impl core::cmp::Ord for termrock::widgets::ZoomLevel
+pub fn termrock::widgets::ZoomLevel::cmp(&self, &termrock::widgets::ZoomLevel) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::ZoomLevel
+pub fn termrock::widgets::ZoomLevel::eq(&self, &termrock::widgets::ZoomLevel) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::ZoomLevel
+pub fn termrock::widgets::ZoomLevel::partial_cmp(&self, &termrock::widgets::ZoomLevel) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::ZoomLevel
+pub fn termrock::widgets::ZoomLevel::default() -> termrock::widgets::ZoomLevel
+impl core::fmt::Debug for termrock::widgets::ZoomLevel
+pub fn termrock::widgets::ZoomLevel::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ZoomLevel
+pub fn termrock::widgets::ZoomLevel::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ZoomLevel
+impl core::marker::StructuralPartialEq for termrock::widgets::ZoomLevel
+impl core::marker::Freeze for termrock::widgets::ZoomLevel
+impl core::marker::Send for termrock::widgets::ZoomLevel
+impl core::marker::Sync for termrock::widgets::ZoomLevel
+impl core::marker::Unpin for termrock::widgets::ZoomLevel
+impl core::marker::UnsafeUnpin for termrock::widgets::ZoomLevel
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ZoomLevel
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ZoomLevel
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::ZoomLevel where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ZoomLevel::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ZoomLevel where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ZoomLevel::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ZoomLevel where U: core::convert::From<T>
+pub fn termrock::widgets::ZoomLevel::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ZoomLevel where U: core::convert::Into<T>
+pub type termrock::widgets::ZoomLevel::Error = core::convert::Infallible
+pub fn termrock::widgets::ZoomLevel::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ZoomLevel where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ZoomLevel::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ZoomLevel::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ZoomLevel where T: core::clone::Clone
+pub type termrock::widgets::ZoomLevel::Owned = T
+pub fn termrock::widgets::ZoomLevel::clone_into(&self, &mut T)
+pub fn termrock::widgets::ZoomLevel::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ZoomLevel where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ZoomLevel::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ZoomLevel where T: ?core::marker::Sized
+pub fn termrock::widgets::ZoomLevel::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ZoomLevel where T: ?core::marker::Sized
+pub fn termrock::widgets::ZoomLevel::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ZoomLevel where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ZoomLevel::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ZoomLevel
+pub fn termrock::widgets::ZoomLevel::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ZoomLevel
 pub struct termrock::widgets::Accordion<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Accordion<'a, Id>
 pub fn termrock::widgets::Accordion<'a, Id>::handle_intent(&self, &mut termrock::widgets::AccordionState<Id>, termrock::context::ContextUiIntent) -> termrock::widgets::AccordionOutcome<Id>
@@ -37695,6 +37987,178 @@ pub unsafe fn termrock::widgets::FormWizardState::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::FormWizardState
 pub fn termrock::widgets::FormWizardState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormWizardState
+pub struct termrock::widgets::FullscreenViewer<'a, Id>
+impl<'a, Id> termrock::widgets::FullscreenViewer<'a, Id>
+pub const fn termrock::widgets::FullscreenViewer<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::FullscreenViewer<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::FullscreenViewer<'a, Id>::new(&'a termrock::style::DesignSystem, &'a [termrock::widgets::Action<'a, Id>]) -> Self
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::FullscreenViewerState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::FullscreenViewerState<Id>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone, Id: core::fmt::Display
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FullscreenViewer<'a, Id>
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::clone(&self) -> termrock::widgets::FullscreenViewer<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FullscreenViewer<'a, Id>
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::FullscreenViewer<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::FullscreenViewer<'_, Id>
+pub type &termrock::widgets::FullscreenViewer<'_, Id>::State = termrock::widgets::FullscreenViewerState<Id>
+pub fn &termrock::widgets::FullscreenViewer<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::FullscreenViewer<'_, Id>
+pub type termrock::widgets::FullscreenViewer<'_, Id>::State = termrock::widgets::FullscreenViewerState<Id>
+pub fn termrock::widgets::FullscreenViewer<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::FullscreenViewer<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::FullscreenViewer<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::FullscreenViewer<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::FullscreenViewer<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::FullscreenViewer<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FullscreenViewer<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FullscreenViewer<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::FullscreenViewer<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FullscreenViewer<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FullscreenViewer<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FullscreenViewer<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FullscreenViewer<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FullscreenViewer<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::FullscreenViewer<'a, Id>::Owned = T
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FullscreenViewer<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FullscreenViewer<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FullscreenViewer<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FullscreenViewer<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FullscreenViewer<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FullscreenViewer<'a, Id>
+pub fn termrock::widgets::FullscreenViewer<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FullscreenViewer<'a, Id>
+pub struct termrock::widgets::FullscreenViewerSlots
+pub termrock::widgets::FullscreenViewerSlots::actions: ratatui_core::layout::rect::Rect
+pub termrock::widgets::FullscreenViewerSlots::body: ratatui_core::layout::rect::Rect
+pub termrock::widgets::FullscreenViewerSlots::breadcrumbs: ratatui_core::layout::rect::Rect
+pub termrock::widgets::FullscreenViewerSlots::footer: ratatui_core::layout::rect::Rect
+pub termrock::widgets::FullscreenViewerSlots::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::FullscreenViewerSlots::search: ratatui_core::layout::rect::Rect
+pub termrock::widgets::FullscreenViewerSlots::title: ratatui_core::layout::rect::Rect
+impl termrock::widgets::FullscreenViewerSlots
+pub const fn termrock::widgets::FullscreenViewerSlots::empty() -> Self
+impl core::clone::Clone for termrock::widgets::FullscreenViewerSlots
+pub fn termrock::widgets::FullscreenViewerSlots::clone(&self) -> termrock::widgets::FullscreenViewerSlots
+impl core::cmp::Eq for termrock::widgets::FullscreenViewerSlots
+impl core::cmp::PartialEq for termrock::widgets::FullscreenViewerSlots
+pub fn termrock::widgets::FullscreenViewerSlots::eq(&self, &termrock::widgets::FullscreenViewerSlots) -> bool
+impl core::default::Default for termrock::widgets::FullscreenViewerSlots
+pub fn termrock::widgets::FullscreenViewerSlots::default() -> termrock::widgets::FullscreenViewerSlots
+impl core::fmt::Debug for termrock::widgets::FullscreenViewerSlots
+pub fn termrock::widgets::FullscreenViewerSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::FullscreenViewerSlots
+impl core::marker::StructuralPartialEq for termrock::widgets::FullscreenViewerSlots
+impl core::marker::Freeze for termrock::widgets::FullscreenViewerSlots
+impl core::marker::Send for termrock::widgets::FullscreenViewerSlots
+impl core::marker::Sync for termrock::widgets::FullscreenViewerSlots
+impl core::marker::Unpin for termrock::widgets::FullscreenViewerSlots
+impl core::marker::UnsafeUnpin for termrock::widgets::FullscreenViewerSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FullscreenViewerSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FullscreenViewerSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FullscreenViewerSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FullscreenViewerSlots where U: core::convert::From<T>
+pub fn termrock::widgets::FullscreenViewerSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FullscreenViewerSlots where U: core::convert::Into<T>
+pub type termrock::widgets::FullscreenViewerSlots::Error = core::convert::Infallible
+pub fn termrock::widgets::FullscreenViewerSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FullscreenViewerSlots where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FullscreenViewerSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FullscreenViewerSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FullscreenViewerSlots where T: core::clone::Clone
+pub type termrock::widgets::FullscreenViewerSlots::Owned = T
+pub fn termrock::widgets::FullscreenViewerSlots::clone_into(&self, &mut T)
+pub fn termrock::widgets::FullscreenViewerSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FullscreenViewerSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FullscreenViewerSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FullscreenViewerSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FullscreenViewerSlots where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FullscreenViewerSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FullscreenViewerSlots
+pub fn termrock::widgets::FullscreenViewerSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FullscreenViewerSlots
+pub struct termrock::widgets::FullscreenViewerState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::FullscreenViewerState<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::close_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>) -> (termrock::widgets::FullscreenViewerOutcome<Id>, termrock::interaction::OverlayOutcome<F>)
+pub fn termrock::widgets::FullscreenViewerState<Id>::demote(&mut self) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::enter_fullscreen(&mut self, termrock::widgets::SourceContext<Id>, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::handle_escape<F>(&mut self, core::option::Option<&termrock::interaction::OverlayStack<F>>) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::Action<'_, Id>]) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::Action<'_, Id>]) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::open_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>, ratatui_core::layout::rect::Rect, core::option::Option<F>) -> termrock::interaction::OverlayOutcome<F>
+pub fn termrock::widgets::FullscreenViewerState<Id>::promote(&mut self, termrock::widgets::SourceContext<Id>, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::sync_with_stack<F>(&mut self, &termrock::interaction::OverlayStack<F>)
+impl<Id> termrock::widgets::FullscreenViewerState<Id>
+pub const fn termrock::widgets::FullscreenViewerState<Id>::body_area(&self) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::FullscreenViewerState<Id>::chrome_focus(&self) -> termrock::widgets::ViewerChromeFocus
+pub const fn termrock::widgets::FullscreenViewerState<Id>::help_open(&self) -> bool
+pub const fn termrock::widgets::FullscreenViewerState<Id>::is_open(&self) -> bool
+pub const fn termrock::widgets::FullscreenViewerState<Id>::level(&self) -> termrock::widgets::ZoomLevel
+pub fn termrock::widgets::FullscreenViewerState<Id>::new() -> Self
+pub const fn termrock::widgets::FullscreenViewerState<Id>::search_open(&self) -> bool
+pub fn termrock::widgets::FullscreenViewerState<Id>::search_query(&self) -> &str
+pub fn termrock::widgets::FullscreenViewerState<Id>::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::FullscreenViewerState<Id>::set_ascii(&mut self, bool)
+pub fn termrock::widgets::FullscreenViewerState<Id>::set_enabled(&mut self, bool)
+pub fn termrock::widgets::FullscreenViewerState<Id>::set_nested_child_hint(&mut self, bool)
+pub fn termrock::widgets::FullscreenViewerState<Id>::set_title(&mut self, impl core::convert::Into<alloc::string::String>)
+pub const fn termrock::widgets::FullscreenViewerState<Id>::slots(&self) -> termrock::widgets::FullscreenViewerSlots
+pub fn termrock::widgets::FullscreenViewerState<Id>::source(&self) -> core::option::Option<&termrock::widgets::SourceContext<Id>>
+pub fn termrock::widgets::FullscreenViewerState<Id>::zoom(&self) -> &termrock::widgets::SemanticZoomState<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::zoom_mut(&mut self) -> &mut termrock::widgets::SemanticZoomState<Id>
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FullscreenViewerState<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::clone(&self) -> termrock::widgets::FullscreenViewerState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::FullscreenViewerState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::FullscreenViewerState<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::eq(&self, &termrock::widgets::FullscreenViewerState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::FullscreenViewerState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::FullscreenViewerState<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::FullscreenViewerState<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::FullscreenViewerState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::FullscreenViewerState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::FullscreenViewerState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::FullscreenViewerState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::FullscreenViewerState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FullscreenViewerState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FullscreenViewerState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FullscreenViewerState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FullscreenViewerState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::FullscreenViewerState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FullscreenViewerState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::FullscreenViewerState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::FullscreenViewerState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FullscreenViewerState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FullscreenViewerState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FullscreenViewerState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FullscreenViewerState<Id> where T: core::clone::Clone
+pub type termrock::widgets::FullscreenViewerState<Id>::Owned = T
+pub fn termrock::widgets::FullscreenViewerState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FullscreenViewerState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FullscreenViewerState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FullscreenViewerState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FullscreenViewerState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::FullscreenViewerState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FullscreenViewerState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FullscreenViewerState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FullscreenViewerState<Id>
+pub fn termrock::widgets::FullscreenViewerState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FullscreenViewerState<Id>
 pub struct termrock::widgets::GridCell<'a>
 pub termrock::widgets::GridCell::pending: bool
 pub termrock::widgets::GridCell::style: core::option::Option<ratatui_core::style::Style>
@@ -46306,6 +46770,55 @@ pub unsafe fn termrock::widgets::RoleTokenSyntax<'a>::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::RoleTokenSyntax<'a>
 pub fn termrock::widgets::RoleTokenSyntax<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RoleTokenSyntax<'a>
+pub struct termrock::widgets::ScrollAnchor
+pub termrock::widgets::ScrollAnchor::col: u16
+pub termrock::widgets::ScrollAnchor::line: usize
+pub termrock::widgets::ScrollAnchor::stable_id: core::option::Option<alloc::string::String>
+impl termrock::widgets::ScrollAnchor
+pub const fn termrock::widgets::ScrollAnchor::at(usize, u16) -> Self
+pub fn termrock::widgets::ScrollAnchor::with_id(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::ScrollAnchor
+pub fn termrock::widgets::ScrollAnchor::clone(&self) -> termrock::widgets::ScrollAnchor
+impl core::cmp::Eq for termrock::widgets::ScrollAnchor
+impl core::cmp::PartialEq for termrock::widgets::ScrollAnchor
+pub fn termrock::widgets::ScrollAnchor::eq(&self, &termrock::widgets::ScrollAnchor) -> bool
+impl core::default::Default for termrock::widgets::ScrollAnchor
+pub fn termrock::widgets::ScrollAnchor::default() -> termrock::widgets::ScrollAnchor
+impl core::fmt::Debug for termrock::widgets::ScrollAnchor
+pub fn termrock::widgets::ScrollAnchor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ScrollAnchor
+impl core::marker::Freeze for termrock::widgets::ScrollAnchor
+impl core::marker::Send for termrock::widgets::ScrollAnchor
+impl core::marker::Sync for termrock::widgets::ScrollAnchor
+impl core::marker::Unpin for termrock::widgets::ScrollAnchor
+impl core::marker::UnsafeUnpin for termrock::widgets::ScrollAnchor
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ScrollAnchor
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ScrollAnchor
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ScrollAnchor where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ScrollAnchor::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ScrollAnchor where U: core::convert::From<T>
+pub fn termrock::widgets::ScrollAnchor::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ScrollAnchor where U: core::convert::Into<T>
+pub type termrock::widgets::ScrollAnchor::Error = core::convert::Infallible
+pub fn termrock::widgets::ScrollAnchor::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ScrollAnchor where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ScrollAnchor::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ScrollAnchor::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ScrollAnchor where T: core::clone::Clone
+pub type termrock::widgets::ScrollAnchor::Owned = T
+pub fn termrock::widgets::ScrollAnchor::clone_into(&self, &mut T)
+pub fn termrock::widgets::ScrollAnchor::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ScrollAnchor where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ScrollAnchor::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ScrollAnchor where T: ?core::marker::Sized
+pub fn termrock::widgets::ScrollAnchor::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ScrollAnchor where T: ?core::marker::Sized
+pub fn termrock::widgets::ScrollAnchor::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ScrollAnchor where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ScrollAnchor::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ScrollAnchor
+pub fn termrock::widgets::ScrollAnchor::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ScrollAnchor
 pub struct termrock::widgets::ScrollArea<'a>
 impl<'a> termrock::widgets::ScrollArea<'a>
 pub const fn termrock::widgets::ScrollArea<'a>::bar(self, termrock::widgets::ScrollBarVisibility) -> Self
@@ -47434,6 +47947,102 @@ pub unsafe fn termrock::widgets::SelectionModel<RowId>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::SelectionModel<RowId>
 pub fn termrock::widgets::SelectionModel<RowId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SelectionModel<RowId>
+pub struct termrock::widgets::SemanticZoomBadge<'a>
+impl<'a> termrock::widgets::SemanticZoomBadge<'a>
+pub const fn termrock::widgets::SemanticZoomBadge<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::SemanticZoomBadge<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::SemanticZoomBadge<'a>::paint<Id>(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::SemanticZoomState<Id>)
+impl<'a> core::clone::Clone for termrock::widgets::SemanticZoomBadge<'a>
+pub fn termrock::widgets::SemanticZoomBadge<'a>::clone(&self) -> termrock::widgets::SemanticZoomBadge<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::SemanticZoomBadge<'a>
+pub fn termrock::widgets::SemanticZoomBadge<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::SemanticZoomBadge<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::SemanticZoomBadge<'a>
+impl<'a> core::marker::Send for termrock::widgets::SemanticZoomBadge<'a>
+impl<'a> core::marker::Sync for termrock::widgets::SemanticZoomBadge<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::SemanticZoomBadge<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::SemanticZoomBadge<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SemanticZoomBadge<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SemanticZoomBadge<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::SemanticZoomBadge<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::SemanticZoomBadge<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SemanticZoomBadge<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::SemanticZoomBadge<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::SemanticZoomBadge<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SemanticZoomBadge<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SemanticZoomBadge<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SemanticZoomBadge<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SemanticZoomBadge<'a> where T: core::clone::Clone
+pub type termrock::widgets::SemanticZoomBadge<'a>::Owned = T
+pub fn termrock::widgets::SemanticZoomBadge<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SemanticZoomBadge<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SemanticZoomBadge<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SemanticZoomBadge<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SemanticZoomBadge<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SemanticZoomBadge<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SemanticZoomBadge<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SemanticZoomBadge<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SemanticZoomBadge<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SemanticZoomBadge<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SemanticZoomBadge<'a>
+pub fn termrock::widgets::SemanticZoomBadge<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SemanticZoomBadge<'a>
+pub struct termrock::widgets::SemanticZoomState<Id>
+impl<Id: core::clone::Clone> termrock::widgets::SemanticZoomState<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::close(&mut self) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::demote(&mut self) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::enter_fullscreen(&mut self, termrock::widgets::SourceContext<Id>) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::promote(&mut self, termrock::widgets::SourceContext<Id>) -> termrock::widgets::FullscreenViewerOutcome<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::set_level(&mut self, termrock::widgets::ZoomLevel) -> termrock::widgets::FullscreenViewerOutcome<Id>
+impl<Id> termrock::widgets::SemanticZoomState<Id>
+pub const fn termrock::widgets::SemanticZoomState<Id>::content_kind(&self) -> termrock::widgets::ViewerContentKind
+pub const fn termrock::widgets::SemanticZoomState<Id>::level(&self) -> termrock::widgets::ZoomLevel
+pub const fn termrock::widgets::SemanticZoomState<Id>::new() -> Self
+pub fn termrock::widgets::SemanticZoomState<Id>::set_content_kind(&mut self, termrock::widgets::ViewerContentKind)
+pub fn termrock::widgets::SemanticZoomState<Id>::source(&self) -> core::option::Option<&termrock::widgets::SourceContext<Id>>
+pub fn termrock::widgets::SemanticZoomState<Id>::update_source(&mut self, termrock::widgets::SourceContext<Id>)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SemanticZoomState<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::clone(&self) -> termrock::widgets::SemanticZoomState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SemanticZoomState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SemanticZoomState<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::eq(&self, &termrock::widgets::SemanticZoomState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SemanticZoomState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SemanticZoomState<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::SemanticZoomState<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::SemanticZoomState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::SemanticZoomState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SemanticZoomState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SemanticZoomState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SemanticZoomState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SemanticZoomState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SemanticZoomState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SemanticZoomState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SemanticZoomState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SemanticZoomState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SemanticZoomState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SemanticZoomState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SemanticZoomState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SemanticZoomState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SemanticZoomState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SemanticZoomState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SemanticZoomState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SemanticZoomState<Id> where T: core::clone::Clone
+pub type termrock::widgets::SemanticZoomState<Id>::Owned = T
+pub fn termrock::widgets::SemanticZoomState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SemanticZoomState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SemanticZoomState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SemanticZoomState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SemanticZoomState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SemanticZoomState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SemanticZoomState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SemanticZoomState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SemanticZoomState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SemanticZoomState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SemanticZoomState<Id>
+pub fn termrock::widgets::SemanticZoomState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SemanticZoomState<Id>
 pub struct termrock::widgets::Separator<'a>
 impl<'a> termrock::widgets::Separator<'a>
 pub const fn termrock::widgets::Separator<'a>::focus_zone(self) -> Self
@@ -48183,6 +48792,58 @@ pub unsafe fn termrock::widgets::SourceAnchor::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SourceAnchor
 pub fn termrock::widgets::SourceAnchor::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SourceAnchor
+pub struct termrock::widgets::SourceContext<Id>
+pub termrock::widgets::SourceContext::focus_token: core::option::Option<alloc::string::String>
+pub termrock::widgets::SourceContext::path_labels: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::SourceContext::scroll: termrock::widgets::ScrollAnchor
+pub termrock::widgets::SourceContext::selection: core::option::Option<Id>
+pub termrock::widgets::SourceContext::source_id: Id
+impl<Id> termrock::widgets::SourceContext<Id>
+pub fn termrock::widgets::SourceContext<Id>::focus_token(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SourceContext<Id>::new(Id) -> Self
+pub fn termrock::widgets::SourceContext<Id>::path(self, impl core::iter::traits::collect::IntoIterator<Item = impl core::convert::Into<alloc::string::String>>) -> Self
+pub fn termrock::widgets::SourceContext<Id>::scroll(self, termrock::widgets::ScrollAnchor) -> Self
+pub fn termrock::widgets::SourceContext<Id>::selection(self, core::option::Option<Id>) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SourceContext<Id>
+pub fn termrock::widgets::SourceContext<Id>::clone(&self) -> termrock::widgets::SourceContext<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SourceContext<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SourceContext<Id>
+pub fn termrock::widgets::SourceContext<Id>::eq(&self, &termrock::widgets::SourceContext<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SourceContext<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SourceContext<Id>
+pub fn termrock::widgets::SourceContext<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::SourceContext<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::SourceContext<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SourceContext<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SourceContext<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SourceContext<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SourceContext<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SourceContext<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SourceContext<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SourceContext<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SourceContext<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SourceContext<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SourceContext<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SourceContext<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SourceContext<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SourceContext<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SourceContext<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SourceContext<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SourceContext<Id> where T: core::clone::Clone
+pub type termrock::widgets::SourceContext<Id>::Owned = T
+pub fn termrock::widgets::SourceContext<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SourceContext<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SourceContext<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SourceContext<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SourceContext<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SourceContext<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SourceContext<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SourceContext<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SourceContext<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SourceContext<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SourceContext<Id>
+pub fn termrock::widgets::SourceContext<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SourceContext<Id>
 pub struct termrock::widgets::Sparkline<'a>
 impl<'a> termrock::widgets::Sparkline<'a>
 pub const fn termrock::widgets::Sparkline<'a>::new(&'a [f64], &'a termrock::style::DesignSystem) -> Self
@@ -53422,6 +54083,9 @@ pub const termrock::widgets::FILE_PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::FILE_PICKER_PREVIEW_MIN_HEIGHT: u16
 pub const termrock::widgets::FORM_WIZARD_COMPACT_MAX_HEIGHT: u16
 pub const termrock::widgets::FORM_WIZARD_NARROW_MAX_WIDTH: u16
+pub const termrock::widgets::FULLSCREEN_VIEWER_HINT: &str
+pub const termrock::widgets::FULLSCREEN_VIEWER_NESTED_PREFIX: &str
+pub const termrock::widgets::FULLSCREEN_VIEWER_OVERLAY_ID: &str
 pub const termrock::widgets::HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::HISTORY_PICKER_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::HISTORY_PICKER_OVERLAY_ID: &str
@@ -53518,6 +54182,7 @@ pub fn termrock::widgets::dismiss_context_menu_overlays<FocusId: core::clone::Cl
 pub fn termrock::widgets::dismiss_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_dropdown_menu_overlays<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::dismiss_fullscreen_viewer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_history_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_keyboard_help_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -53559,6 +54224,7 @@ pub fn termrock::widgets::format_alternatives(&[termrock::keymap::KeyChord], ter
 pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termrock::keymap::KeyBinding<A>, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat, &str) -> alloc::string::String
+pub fn termrock::widgets::fullscreen_viewer_has_nested_top<F>(&termrock::interaction::OverlayStack<F>) -> bool
 pub fn termrock::widgets::fuzzy_match_label(&str, &str) -> core::option::Option<(u32, termrock::widgets::MatchRanges)>
 pub fn termrock::widgets::generate_jump_labels(usize) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::help_entries_from_conflicts<A, F>(&termrock::keymap::Keymap<A>, &termrock::style::DesignSystem, F) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A) -> alloc::string::String
@@ -53601,6 +54267,8 @@ pub fn termrock::widgets::open_drawer_configured<FocusId: core::clone::Clone>(&m
 pub fn termrock::widgets::open_drawer_nested_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, termrock::widgets::DrawerEdge, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, impl core::convert::Into<termrock::interaction::OverlayId>, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_dropdown_menu_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_fullscreen_viewer_child_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, &str, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_fullscreen_viewer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_history_picker_fullscreen<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_history_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::HistoryPickerSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_history_picker_popover_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::HistoryPickerSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>

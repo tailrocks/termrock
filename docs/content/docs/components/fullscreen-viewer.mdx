@@ -1,0 +1,97 @@
+---
+title: FullscreenViewer
+description: 'Promotion chrome compact→detail→fullscreen with frozen SourceContext. Host paints CodeBlock/Diff/logs/objects/tasks/media into the body slot; nested Esc peels the stack first.'
+---
+
+## Previews
+
+### `fullscreen-viewer/basic`
+
+FullscreenViewer code
+
+![FullscreenViewer — basic](/component-previews/fullscreen-viewer-basic.svg)
+
+### `fullscreen-viewer/diff`
+
+FullscreenViewer diff
+
+![FullscreenViewer — diff](/component-previews/fullscreen-viewer-diff.svg)
+
+### `fullscreen-viewer/log`
+
+FullscreenViewer log
+
+![FullscreenViewer — log](/component-previews/fullscreen-viewer-log.svg)
+
+### `fullscreen-viewer/zoom-badge`
+
+SemanticZoom badge
+
+![FullscreenViewer — zoom badge](/component-previews/fullscreen-viewer-zoom-badge.svg)
+
+### `fullscreen-viewer/narrow`
+
+FullscreenViewer narrow
+
+![FullscreenViewer — narrow](/component-previews/fullscreen-viewer-narrow.svg)
+
+### `fullscreen-viewer/unicode`
+
+FullscreenViewer unicode
+
+![FullscreenViewer — unicode](/component-previews/fullscreen-viewer-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    Action, FullscreenViewer, FullscreenViewerState, SourceContext, ScrollAnchor,
+    ViewerContentKind, open_fullscreen_viewer_overlay,
+};
+
+let system = DesignSystem::default();
+let actions = [Action { id: "copy", label: "Copy", enabled: true, style: None }];
+let mut state = FullscreenViewerState::new();
+state.zoom_mut().set_content_kind(ViewerContentKind::Code);
+let ctx = SourceContext::new("main.rs")
+    .scroll(ScrollAnchor::at(42, 0))
+    .path(["repo", "src", "main.rs"]);
+let _ = state.enter_fullscreen(ctx, "main.rs");
+let _ = state.open_on_stack(&mut stack, bounds, Some("list"));
+FullscreenViewer::new(&system, &actions).paint(entry.rect, buf, &mut state);
+// Host: CodeBlock::…paint(state.body_area(), buf, &mut code_state);
+```
+
+## SemanticZoom
+
+```rust
+use termrock::widgets::{SemanticZoomState, SourceContext, ZoomLevel};
+
+let mut zoom = SemanticZoomState::new();
+let _ = zoom.promote(SourceContext::new("row")); // Compact → Detail
+let _ = zoom.enter_fullscreen(SourceContext::new("row")); // → Fullscreen
+let _ = zoom.demote(); // Fullscreen → Detail (+ restore context)
+```
+
+## Escape law
+
+1. Nested child overlay → peel one stack layer (`NestedEscape`)
+2. Help open → close help
+3. Search open → close search / clear query
+4. Demote zoom (Fullscreen → Detail → Compact) and restore `SourceContext`
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (Esc demote law, `/` search, `?` help, Tab chrome, actions) |
+| Mouse | caller-owned (host body + action hit regions) |
+| Focus | covered (chrome bands; OverlayStack opener restore) |
+| Non-color cues | covered (title badge, breadcrumbs, ASCII chrome) |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `fullscreen-viewer/basic`, `diff`, `log`, `zoom-badge`, `narrow`, `unicode`

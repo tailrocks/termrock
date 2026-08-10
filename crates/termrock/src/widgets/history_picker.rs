@@ -89,7 +89,7 @@ pub enum HistoryPickerPresentation {
     /// Anchored compact popover (default).
     #[default]
     Popover,
-    /// Full bounds (FullscreenViewer-class).
+    /// Full bounds ([`crate::widgets::FullscreenViewer`]-class promotion).
     Fullscreen,
 }
 

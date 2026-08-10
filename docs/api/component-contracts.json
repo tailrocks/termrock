@@ -583,6 +583,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "FullscreenViewer": {
+    "keyboard": "covered",
+    "mouse": "caller-owned",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "Heading": {
     "keyboard": "not-applicable",
     "mouse": "not-applicable",

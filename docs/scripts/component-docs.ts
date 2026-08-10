@@ -1136,6 +1136,28 @@ let mut state = DrawerState::sheet();
 state.open();
 Sheet::new("Actions", &system).paint(area, buf, &mut state);`,
   },
+  FullscreenViewer: {
+    description:
+      'Promotion chrome compact→detail→fullscreen with frozen SourceContext (selection, scroll anchor, focus, breadcrumbs). Host paints CodeBlock/Diff/logs/objects/tasks/media into body slot; nested Esc peels stack first.',
+    primaryStory: 'fullscreen-viewer/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{
+    Action, FullscreenViewer, FullscreenViewerState, SourceContext, ScrollAnchor,
+    ViewerContentKind, open_fullscreen_viewer_overlay,
+};
+
+let system = DesignSystem::default();
+let actions = [Action { id: "copy", label: "Copy", enabled: true, style: None }];
+let mut state = FullscreenViewerState::new();
+state.zoom_mut().set_content_kind(ViewerContentKind::Code);
+let ctx = SourceContext::new("main.rs")
+    .scroll(ScrollAnchor::at(42, 0))
+    .path(["repo", "src", "main.rs"]);
+let _ = state.enter_fullscreen(ctx, "main.rs");
+let _ = state.open_on_stack(&mut stack, bounds, Some("list"));
+FullscreenViewer::new(&system, &actions).paint(entry.rect, buf, &mut state);
+// Host: CodeBlock::…paint(state.body_area(), buf, &mut code_state);`,
+  },
   Heading: {
     description: 'Semantic heading line with terminal typography levels.',
     primaryStory: 'heading/basic',
