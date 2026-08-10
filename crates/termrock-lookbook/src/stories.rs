@@ -54,7 +54,8 @@ use termrock::{
         KeyValueListState, KvEntry,
         KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
         MatchTruncate, PresenceStatus,
-        ListRow, ListState, LoadingView, LoadingOverlay, BusyBoundary, BusyBoundaryState, BusyMode,
+        ListRow, ListState, ListDensity, ListSelectionMode, filter_list_rows,
+        LoadingView, LoadingOverlay, BusyBoundary, BusyBoundaryState, BusyMode,
         example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
         example_busy_optimistic, example_busy_stale,
         ReconnectingState, OfflineBanner, OfflineSurface, ConnectivityPresentation,
@@ -2724,6 +2725,33 @@ pub(crate) fn stories() -> Vec<Story> {
             10,
             4,
             list_tiny,
+        ),
+        Story::new(
+            "list/comfortable",
+            "List comfortable density",
+            "List",
+            "Secondary metadata on its own row under primary.",
+            42,
+            6,
+            list_comfortable_story,
+        ),
+        Story::new(
+            "list/groups",
+            "List group headers",
+            "List",
+            "Group headers, status, trailing actions, typeahead-ready labels.",
+            48,
+            8,
+            list_groups_story,
+        ),
+        Story::new(
+            "list/search",
+            "List search strip",
+            "List",
+            "Active search query strip with filtered projection.",
+            40,
+            6,
+            list_search_story,
         ),
         Story::new(
             "text-input/unicode",
@@ -9631,6 +9659,56 @@ fn list_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
 }
 
+fn list_comfortable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let rows = [
+        ListRow::item("a", Line::from("Agent run"))
+            .secondary(Line::from("prod · 2m ago"))
+            .status(Line::from("ok"))
+            .shortcut("a"),
+        ListRow::item("b", Line::from("Sync workspace"))
+            .secondary(Line::from("queued behind network"))
+            .status(Line::from("wait")),
+    ];
+    let mut state = ListState::new(Some("a"));
+    frame.render_stateful_widget(
+        &List::new(&rows, system).comfortable(),
+        area,
+        &mut state,
+    );
+}
+
+fn list_groups_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let rows = [
+        ListRow::group_header("g1", Line::from("Running")),
+        ListRow::item("r1", Line::from("build"))
+            .leading(Line::from("◉"))
+            .status(Line::from("run"))
+            .actions(Line::from("stop"))
+            .shortcut("b"),
+        ListRow::item("r2", Line::from("test")).status(Line::from("run")),
+        ListRow::group_header("g2", Line::from("Queued")),
+        ListRow::item("q1", Line::from("lint")).badge(Line::from("1")),
+    ];
+    let mut state = ListState::new(Some("r1"));
+    state.set_selection_mode(ListSelectionMode::Range);
+    frame.render_stateful_widget(&List::new(&rows, system), area, &mut state);
+}
+
+fn list_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let all = [
+        ListRow::item("alpha", Line::from("Alpha")),
+        ListRow::item("beta", Line::from("Beta")),
+        ListRow::item("gamma", Line::from("Gamma")),
+    ];
+    let mut state = ListState::new(Some("beta"));
+    state.set_search_query(Some("be".into()));
+    let filtered: Vec<_> = filter_list_rows(&all, state.search_query().unwrap_or(""))
+        .into_iter()
+        .cloned()
+        .collect();
+    frame.render_stateful_widget(&List::new(&filtered, system), area, &mut state);
+}
+
 fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(termrock::style::Density::default());
     let rows = [
@@ -9639,9 +9717,12 @@ fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             label: Line::from("東京 設定"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: Some(Line::from("日本語")),
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -9651,9 +9732,12 @@ fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             label: Line::from("🧪 Laboratory"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: Some(Line::from("✅")),
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -9663,9 +9747,12 @@ fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             label: Line::from("Cafe\u{301} profile"),
             leading: None,
             secondary: None,
+            status: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: Some(Line::from("e\u{301}")),
+            custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -9682,9 +9769,12 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
             label: Line::from("Workspace"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: Some(Line::from("3 entries")),
+                custom: None,
             role: RowRole::Separator,
             enabled: true,
             loading: false,
@@ -9694,9 +9784,12 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
             label: Line::from("Alpha"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: Some(Line::from("12 ms")),
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -9706,9 +9799,12 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
             label: Line::from("Beta"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: Some(Line::from("28 ms")),
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -9718,9 +9814,12 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
             label: Line::from("Gamma"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: None,
+                custom: None,
             role: RowRole::Item,
             enabled: false,
             loading: false,
@@ -9749,9 +9848,12 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             label: Line::from("東京デプロイ 🧪"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: Some(Line::from("操作")),
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -9761,9 +9863,12 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             label: Line::from("Cafe\u{301} logs"),
             leading: None,
             secondary: None,
+            status: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: Some(Line::from("表示")),
+            custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -10750,9 +10855,12 @@ fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             label: Line::from("Alpha"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: None,
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -10762,9 +10870,12 @@ fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             label: Line::from("Beta"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: None,
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -10774,9 +10885,12 @@ fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             label: Line::from("Gamma"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: None,
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -10823,9 +10937,12 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             label: Line::from("Alpha"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: None,
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -10835,9 +10952,12 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             label: Line::from("Beta"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: None,
+                custom: None,
             role: RowRole::Item,
             enabled: false,
             loading: false,
@@ -10847,9 +10967,12 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             label: Line::from("Gamma"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: None,
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -10859,9 +10982,12 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             label: Line::from("Delta"),
             leading: None,
             secondary: None,
+                status: None,
             badge: None,
             shortcut: None,
+                actions: None,
             trailing: None,
+                custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -16086,9 +16212,12 @@ fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         label: Line::from("Task one"),
         leading: None,
         secondary: None,
+                status: None,
         badge: None,
         shortcut: None,
+                actions: None,
         trailing: None,
+                custom: None,
         role: RowRole::Item,
         enabled: true,
         loading: false,
@@ -16823,9 +16952,12 @@ fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
         label: Line::from("タスク一 📌"),
         leading: None,
         secondary: None,
+                status: None,
         badge: None,
         shortcut: None,
+                actions: None,
         trailing: None,
+                custom: None,
         role: RowRole::Item,
         enabled: true,
         loading: false,

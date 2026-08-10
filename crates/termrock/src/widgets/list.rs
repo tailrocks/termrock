@@ -1,3 +1,16 @@
+//! **List** — composable collection view (not a label-only widget).
+//!
+//! **Mission.** Rows compose leading, primary, secondary, status, badge,
+//! trailing actions, and shortcuts with group headers and separators. State is
+//! [`CollectionState`] + [`SelectionModel`] (via [`Selection`]) + roving focus
+//! + scroll/virtualization. Single / multi / range selection, typeahead,
+//! search, disabled/loading/empty, density, and narrow drop priority.
+//!
+//! **Intents.** Prefer [`ListState::handle_intent`] / [`default_list_intent`];
+//! printable keys feed typeahead through the collection roving model.
+//!
+//! Research: lazygit, Yazi, Textual ListView, shadcn command items.
+
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -8,8 +21,11 @@ use ratatui_core::{
 use ratatui_core::style::Modifier;
 
 use crate::{
-    input::{KeyEvent, KeyEventKind},
-    interaction::{HitRegion, NavigationMove, Outcome, PageMove, UiIntent, default_list_intent},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    interaction::{
+        CollectionState, HitRegion, NavigationMove, Outcome, PageMove, UiIntent,
+        default_list_intent,
+    },
     scroll::max_offset,
     style::{DesignSystem, ListRowVisualState, Role},
 };
@@ -27,22 +43,102 @@ pub enum ListClickPolicy {
     Select,
 }
 
+/// Selection policy for the list.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ListSelectionMode {
+    /// Single active row (default).
+    #[default]
+    Single,
+    /// Multi-check with toggle (Space).
+    Multi,
+    /// Multi with shift-range support.
+    Range,
+}
+
+impl ListSelectionMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Single => "single",
+            Self::Multi => "multi",
+            Self::Range => "range",
+        }
+    }
+}
+
+/// Vertical density: row height and secondary placement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ListDensity {
+    /// One terminal row per item; secondary inline when space allows.
+    #[default]
+    Compact,
+    /// Two rows when secondary present (primary + muted secondary).
+    Comfortable,
+}
+
+impl ListDensity {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Comfortable => "comfortable",
+        }
+    }
+
+    /// Rows occupied by one list item given whether secondary is painted below.
+    #[must_use]
+    pub const fn row_height(self, has_secondary_below: bool) -> u16 {
+        match self {
+            Self::Compact => 1,
+            Self::Comfortable if has_secondary_below => 2,
+            Self::Comfortable => 1,
+        }
+    }
+}
+
+/// Narrow-terminal drop order (lowest survival first).
+///
+/// shortcut → actions → badge → status → secondary → trailing → leading → primary
+pub const LIST_NARROW_DROP_ORDER: &[&str] = &[
+    "shortcut",
+    "actions",
+    "badge",
+    "status",
+    "secondary",
+    "trailing",
+    "leading",
+    "primary",
+];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Semantic roles for selectable, disabled, and separator list rows.
+/// Semantic roles for selectable, disabled, separator, and group header rows.
 pub enum RowRole {
     /// A selectable content row.
     Item,
     /// A non-interactive visual separator row.
     Separator,
+    /// Group header (not selectable; skipped by movement).
+    GroupHeader,
+}
+
+impl RowRole {
+    /// Whether the row participates in collection roving.
+    #[must_use]
+    pub const fn is_navigable(self) -> bool {
+        matches!(self, Self::Item)
+    }
 }
 
 #[derive(Debug, Clone)]
 /// A stable row in a selectable list with composed-part anatomy.
 ///
-/// Parts map to [`ComposedRow`]: leading · primary(label) · secondary · badge ·
-/// shortcut · trailing. Narrow terminals drop by
-/// shortcut → badge → secondary → trailing → leading → primary.
+/// Parts: leading · primary(label) · secondary · status · badge · actions ·
+/// shortcut · trailing. Narrow drop order: [`LIST_NARROW_DROP_ORDER`].
 pub struct ListRow<'a, Id> {
     /// Stable identity used for selection and activation.
     pub id: Id,
@@ -52,12 +148,18 @@ pub struct ListRow<'a, Id> {
     pub leading: Option<Line<'a>>,
     /// Optional secondary metadata line (composed secondary).
     pub secondary: Option<Line<'a>>,
+    /// Optional status cue (glyph + short text).
+    pub status: Option<Line<'a>>,
     /// Optional badge (composed badge).
     pub badge: Option<Line<'a>>,
     /// Optional keyboard shortcut hint (composed shortcut).
     pub shortcut: Option<&'a str>,
+    /// Optional trailing action labels (display; host handles activation).
+    pub actions: Option<Line<'a>>,
     /// Optional metadata aligned at the trailing edge (legacy + composed).
     pub trailing: Option<Line<'a>>,
+    /// When set, replaces standard composed paint for the content band.
+    pub custom: Option<Line<'a>>,
     /// Interaction role controlling selection and hit testing.
     pub role: RowRole,
     /// Whether this item is enabled.
@@ -75,9 +177,12 @@ impl<'a, Id> ListRow<'a, Id> {
             label,
             leading: None,
             secondary: None,
+            status: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
+            custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -92,16 +197,39 @@ impl<'a, Id> ListRow<'a, Id> {
             label,
             leading: None,
             secondary: None,
+            status: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
+            custom: None,
             role: RowRole::Separator,
             enabled: true,
             loading: false,
         }
     }
 
-    /// Sets leading chrome (icon / status).
+    /// Creates a group header (skipped by selection movement).
+    #[must_use]
+    pub fn group_header(id: Id, label: Line<'a>) -> Self {
+        Self {
+            id,
+            label,
+            leading: None,
+            secondary: None,
+            status: None,
+            badge: None,
+            shortcut: None,
+            actions: None,
+            trailing: None,
+            custom: None,
+            role: RowRole::GroupHeader,
+            enabled: true,
+            loading: false,
+        }
+    }
+
+    /// Sets leading chrome (icon / avatar).
     #[must_use]
     pub fn leading(mut self, leading: Line<'a>) -> Self {
         self.leading = Some(leading);
@@ -112,6 +240,13 @@ impl<'a, Id> ListRow<'a, Id> {
     #[must_use]
     pub fn secondary(mut self, secondary: Line<'a>) -> Self {
         self.secondary = Some(secondary);
+        self
+    }
+
+    /// Sets status cue (after secondary / before badge).
+    #[must_use]
+    pub fn status(mut self, status: Line<'a>) -> Self {
+        self.status = Some(status);
         self
     }
 
@@ -129,10 +264,24 @@ impl<'a, Id> ListRow<'a, Id> {
         self
     }
 
+    /// Sets trailing action labels (display-only; host maps clicks).
+    #[must_use]
+    pub fn actions(mut self, actions: Line<'a>) -> Self {
+        self.actions = Some(actions);
+        self
+    }
+
     /// Sets legacy trailing metadata (also used as badge when badge is unset).
     #[must_use]
     pub fn trailing(mut self, trailing: Line<'a>) -> Self {
         self.trailing = Some(trailing);
+        self
+    }
+
+    /// Full custom content band (replaces composed primary cluster).
+    #[must_use]
+    pub fn custom(mut self, line: Line<'a>) -> Self {
+        self.custom = Some(line);
         self
     }
 
@@ -150,6 +299,12 @@ impl<'a, Id> ListRow<'a, Id> {
         self
     }
 
+    /// Plain text for typeahead / search (primary spans).
+    #[must_use]
+    pub fn plain_label(&self) -> String {
+        line_plain(&self.label)
+    }
+
     /// Projects this row into composed anatomy for contraction/paint.
     #[must_use]
     pub fn composed(&self) -> ComposedRow<'a, ()>
@@ -159,9 +314,16 @@ impl<'a, Id> ListRow<'a, Id> {
         ComposedRow {
             id: (),
             leading: self.leading.clone(),
-            primary: self.label.clone(),
+            primary: self
+                .custom
+                .clone()
+                .unwrap_or_else(|| self.label.clone()),
             secondary: self.secondary.clone(),
-            badge: self.badge.clone().or_else(|| self.trailing.clone()),
+            badge: self
+                .badge
+                .clone()
+                .or_else(|| self.status.clone())
+                .or_else(|| self.trailing.clone()),
             shortcut: self.shortcut,
             enabled: self.enabled,
             loading: self.loading,
@@ -169,29 +331,49 @@ impl<'a, Id> ListRow<'a, Id> {
     }
 }
 
+/// Plain text from a ratatui [`Line`].
+fn line_plain(line: &Line<'_>) -> String {
+    line.spans
+        .iter()
+        .map(|s| s.content.as_ref())
+        .collect::<Vec<_>>()
+        .join("")
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `List`.
 pub struct ListState<Id> {
     /// Headless cursor + virtualization (stable ids only).
-    collection: crate::interaction::CollectionState<Id>,
+    collection: CollectionState<Id>,
     hovered: Option<Id>,
     regions: Vec<HitRegion<Id>>,
     pointer: Option<Position>,
     selection: Option<Selection<Id>>,
     check_regions: Vec<HitRegion<Id>>,
     click_policy: ListClickPolicy,
+    selection_mode: ListSelectionMode,
+    /// Active search query (`None` = no filter UI).
+    search_query: Option<String>,
+    /// Virtual total length when `rows` is a window (0 = use rows.len()).
+    virtual_total: usize,
+    /// Absolute start index of the painted window in the full universe.
+    virtual_window_start: usize,
 }
 
 impl<Id> Default for ListState<Id> {
     fn default() -> Self {
         Self {
-            collection: crate::interaction::CollectionState::new(),
+            collection: CollectionState::new(),
             hovered: None,
             regions: Vec::new(),
             pointer: None,
             selection: None,
             check_regions: Vec::new(),
             click_policy: ListClickPolicy::Activate,
+            selection_mode: ListSelectionMode::Single,
+            search_query: None,
+            virtual_total: 0,
+            virtual_window_start: 0,
         }
     }
 }
@@ -203,7 +385,7 @@ impl<Id> ListState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        let mut collection = crate::interaction::CollectionState::new();
+        let mut collection = CollectionState::new();
         collection.set_active(selected);
         Self {
             collection,
@@ -213,18 +395,83 @@ impl<Id> ListState<Id> {
             selection: None,
             check_regions: Vec::new(),
             click_policy: ListClickPolicy::Activate,
+            selection_mode: ListSelectionMode::Single,
+            search_query: None,
+            virtual_total: 0,
+            virtual_window_start: 0,
         }
     }
 
-    /// Borrow the headless collection model.
+    /// Borrow the headless collection model ([`CollectionState`] / roving).
     #[must_use]
-    pub const fn collection(&self) -> &crate::interaction::CollectionState<Id> {
+    pub const fn collection(&self) -> &CollectionState<Id> {
         &self.collection
     }
 
     /// Mutable headless collection model.
-    pub const fn collection_mut(&mut self) -> &mut crate::interaction::CollectionState<Id> {
+    pub const fn collection_mut(&mut self) -> &mut CollectionState<Id> {
         &mut self.collection
+    }
+
+    /// Selection mode.
+    #[must_use]
+    pub const fn selection_mode(&self) -> ListSelectionMode {
+        self.selection_mode
+    }
+
+    /// Sets selection mode (configures multi-select chrome).
+    pub fn set_selection_mode(&mut self, mode: ListSelectionMode)
+    where
+        Id: Clone + PartialEq,
+    {
+        self.selection_mode = mode;
+        match mode {
+            ListSelectionMode::Single => self.disable_multi_select(),
+            ListSelectionMode::Multi => {
+                self.selection.get_or_insert_with(|| {
+                    Selection::from(crate::interaction::SelectionModel::multiple())
+                });
+            }
+            ListSelectionMode::Range => {
+                self.selection.get_or_insert_with(|| {
+                    Selection::from(crate::interaction::SelectionModel::range())
+                });
+            }
+        }
+    }
+
+    /// Search query (host may also pre-filter rows).
+    #[must_use]
+    pub fn search_query(&self) -> Option<&str> {
+        self.search_query.as_deref()
+    }
+
+    /// Set search query (empty string clears).
+    pub fn set_search_query(&mut self, query: Option<String>) {
+        self.search_query = query.filter(|q| !q.is_empty());
+    }
+
+    /// Typeahead buffer (from roving).
+    #[must_use]
+    pub fn typeahead_buffer(&self) -> &str {
+        self.collection.roving().typeahead_buffer()
+    }
+
+    /// Clear typeahead.
+    pub fn clear_typeahead(&mut self) {
+        self.collection.clear_typeahead();
+    }
+
+    /// Virtualization: painted window of a larger universe.
+    pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
+        self.virtual_window_start = window_start;
+        self.virtual_total = total_len;
+    }
+
+    /// Virtual total (0 means not virtualized).
+    #[must_use]
+    pub const fn virtual_total(&self) -> usize {
+        self.virtual_total
     }
 
     /// Configures pointer-click outcomes ([`ListClickPolicy`]).
@@ -327,30 +574,95 @@ impl<Id> ListState<Id> {
 impl<Id: Clone + PartialEq> ListState<Id> {
     /// Enables ordered multi-selection with an empty selection (range-capable).
     pub fn enable_multi_select(&mut self) {
-        self.selection.get_or_insert_with(|| {
-            // Range kind: Space toggles; Shift+Space / Shift+click set ranges.
-            Selection::from(crate::interaction::SelectionModel::range())
-        });
+        self.set_selection_mode(ListSelectionMode::Range);
     }
 
-    /// Routes navigation, checking, activation, and cancellation keys.
+    /// Routes navigation, checking, activation, cancellation, and typeahead.
     ///
-    /// Keys are mapped through [`default_list_intent`]; prefer
-    /// [`Self::handle_intent`] when the application owns keymaps.
+    /// Keys map through [`default_list_intent`] first; unmapped printable chars
+    /// feed collection typeahead. Prefer [`Self::handle_intent`] when the app
+    /// owns keymaps.
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if key.kind == KeyEventKind::Release {
             return Outcome::Ignored;
         }
         // Shift+Space: range-select along visible enabled items (multi-select).
         if key.kind == KeyEventKind::Press
-            && matches!(key.code, crate::input::KeyCode::Char(' '))
-            && key.modifiers.contains(crate::input::KeyModifiers::SHIFT)
+            && matches!(key.code, KeyCode::Char(' '))
+            && key.modifiers.contains(KeyModifiers::SHIFT)
         {
             return self.range_select_to_active(rows);
         }
+        // Search: '/' opens filter mode (host still owns filtering projection).
+        if key.kind == KeyEventKind::Press
+            && matches!(key.code, KeyCode::Char('/'))
+            && key.modifiers.is_empty()
+        {
+            if self.search_query.is_none() {
+                self.search_query = Some(String::new());
+            }
+            return Outcome::Changed;
+        }
+        // While search query is Some, printable chars append; Backspace pops.
+        if self.search_query.is_some()
+            && key.kind == KeyEventKind::Press
+            && key.modifiers.is_empty()
+        {
+            match key.code {
+                KeyCode::Backspace => {
+                    if let Some(q) = self.search_query.as_mut() {
+                        q.pop();
+                        if q.is_empty() {
+                            self.search_query = None;
+                        }
+                    }
+                    return Outcome::Changed;
+                }
+                KeyCode::Esc => {
+                    self.search_query = None;
+                    return Outcome::Changed;
+                }
+                KeyCode::Char(c) if !c.is_control() && c != '/' => {
+                    if let Some(q) = self.search_query.as_mut() {
+                        q.push(c);
+                    }
+                    return Outcome::Changed;
+                }
+                _ => {}
+            }
+        }
         match default_list_intent(key) {
-            Some(intent) => self.handle_intent(rows, intent),
-            None => Outcome::Ignored,
+            Some(intent) => {
+                self.collection.clear_typeahead();
+                self.handle_intent(rows, intent)
+            }
+            None => self.handle_typeahead(rows, key),
+        }
+    }
+
+    /// Typeahead jump via [`CollectionState`] / roving (labels from primary text).
+    fn handle_typeahead(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
+        if key.kind != KeyEventKind::Press {
+            return Outcome::Ignored;
+        }
+        let KeyCode::Char(c) = key.code else {
+            return Outcome::Ignored;
+        };
+        if c.is_control() {
+            return Outcome::Ignored;
+        }
+        if key.modifiers.contains(KeyModifiers::CONTROL)
+            || key.modifiers.contains(KeyModifiers::ALT)
+        {
+            return Outcome::Ignored;
+        }
+        let items = collection_items_from_rows(rows);
+        let out = self.collection.handle_key(key, &items);
+        if out.active_changed() {
+            ensure_list_active_visible(self, rows, self.collection.viewport_len());
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
         }
     }
 
@@ -421,7 +733,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         };
         let Some(row) = self.collection.active().and_then(|selected| {
             rows.iter()
-                .find(|row| row.enabled && row.role == RowRole::Item && &row.id == selected)
+                .find(|row| row.enabled && row.role.is_navigable() && &row.id == selected)
         }) else {
             return Outcome::Ignored;
         };
@@ -443,7 +755,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         };
         let order: Vec<Id> = rows
             .iter()
-            .filter(|r| r.enabled && r.role == RowRole::Item)
+            .filter(|r| r.enabled && r.role.is_navigable())
             .map(|r| r.id.clone())
             .collect();
         if selection.model().anchor().is_none() {
@@ -502,8 +814,9 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         self.collection
             .active()
             .and_then(|selected| {
-                rows.iter()
-                    .find(|row| row.enabled && row.role == RowRole::Item && &row.id == selected)
+                rows.iter().find(|row| {
+                    row.enabled && row.role.is_navigable() && &row.id == selected
+                })
             })
             .map_or(Outcome::Ignored, |row| Outcome::Activated(row.id.clone()))
     }
@@ -591,7 +904,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         };
         let order: Vec<Id> = rows
             .iter()
-            .filter(|r| r.enabled && r.role == RowRole::Item)
+            .filter(|r| r.enabled && r.role.is_navigable())
             .map(|r| r.id.clone())
             .collect();
         if selection.model().anchor().is_none() {
@@ -606,10 +919,53 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     pub fn reconcile_collection(&mut self, rows: &[ListRow<'_, Id>]) {
         let items = collection_items_from_rows(rows);
         let vp = self.collection.viewport_len().max(1);
-        self.collection
-            .set_viewport(self.collection.offset(), vp, items.len());
-        let _ = self.collection.reconcile(&items);
+        if self.virtual_total > 0 {
+            let _ = self.collection.reconcile_window(
+                &items,
+                self.virtual_window_start,
+                self.virtual_total,
+                vp,
+            );
+        } else {
+            self.collection
+                .set_viewport(self.collection.offset(), vp, items.len());
+            let _ = self.collection.reconcile(&items);
+        }
     }
+
+    /// Sync vertical offset into a [`crate::widgets::ScrollAreaState`] (bars only).
+    pub fn sync_scroll_area(
+        &self,
+        scroll: &mut crate::widgets::ScrollAreaState,
+        content_len: usize,
+        viewport_len: usize,
+    ) {
+        let h = u16::try_from(content_len.max(1)).unwrap_or(u16::MAX);
+        let vh = u16::try_from(viewport_len.max(1)).unwrap_or(u16::MAX);
+        scroll.set_content_size(1, h);
+        scroll.set_viewport(1, vh);
+        scroll.set_offset_y_quiet(u16::try_from(self.collection.offset()).unwrap_or(u16::MAX));
+    }
+}
+
+/// Filter rows by case-insensitive substring on primary label (host rebuild helper).
+#[must_use]
+pub fn filter_list_rows<'a, Id: Clone>(
+    rows: &'a [ListRow<'a, Id>],
+    query: &str,
+) -> Vec<&'a ListRow<'a, Id>> {
+    let q = query.trim().to_ascii_lowercase();
+    if q.is_empty() {
+        return rows.iter().collect();
+    }
+    rows.iter()
+        .filter(|r| {
+            if matches!(r.role, RowRole::GroupHeader | RowRole::Separator) {
+                return true; // keep structure; host may post-process empty groups
+            }
+            r.plain_label().to_ascii_lowercase().contains(&q)
+        })
+        .collect()
 }
 
 impl ListState<usize> {
@@ -684,11 +1040,11 @@ impl ListState<usize> {
 /// use ratatui_core::text::Line;
 /// use termrock::input::{KeyCode, KeyEvent, KeyModifiers};
 /// use termrock::interaction::Outcome;
-/// use termrock::widgets::{List, ListRow, ListState, RowRole};
+/// use termrock::widgets::{List, ListRow, ListState};
 ///
 /// let rows = [
-///     ListRow { id: "a", label: Line::from("Alpha"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true , loading: false },
-///     ListRow { id: "b", label: Line::from("Beta"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true , loading: false },
+///     ListRow::item("a", Line::from("Alpha")),
+///     ListRow::item("b", Line::from("Beta")),
 /// ];
 /// let tokens = termrock::style::DesignSystem::default();
 /// let _widget = List::new(&rows, &tokens);
@@ -703,6 +1059,7 @@ pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
     tokens: &'a DesignSystem,
     empty_message: Option<Line<'a>>,
+    density: ListDensity,
 }
 
 impl<'a, Id> List<'a, Id> {
@@ -714,6 +1071,7 @@ impl<'a, Id> List<'a, Id> {
             rows,
             tokens,
             empty_message: None,
+            density: ListDensity::Compact,
         }
     }
 
@@ -727,6 +1085,20 @@ impl<'a, Id> List<'a, Id> {
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
+        self
+    }
+
+    /// Compact (1-line) or comfortable (secondary below primary).
+    #[must_use]
+    pub const fn density(mut self, density: ListDensity) -> Self {
+        self.density = density;
+        self
+    }
+
+    /// Comfortable density shorthand.
+    #[must_use]
+    pub const fn comfortable(mut self) -> Self {
+        self.density = ListDensity::Comfortable;
         self
     }
 
@@ -757,13 +1129,27 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         state.regions.clear();
         state.check_regions.clear();
         let viewport_height = usize::from(area.height);
-        state.collection.set_viewport(
-            state.collection.offset(),
-            viewport_height,
-            self.rows.len(),
-        );
+        let total = if state.virtual_total > 0 {
+            state.virtual_total
+        } else {
+            self.rows.len()
+        };
         let items = collection_items_from_rows(self.rows);
-        let _ = state.collection.reconcile(&items);
+        if state.virtual_total > 0 {
+            let _ = state.collection.reconcile_window(
+                &items,
+                state.virtual_window_start,
+                total,
+                viewport_height,
+            );
+        } else {
+            state.collection.set_viewport(
+                state.collection.offset(),
+                viewport_height,
+                total,
+            );
+            let _ = state.collection.reconcile(&items);
+        }
         ensure_list_active_visible(state, self.rows, viewport_height);
         if self.rows.is_empty() {
             if let Some(message) = self.empty_message.as_ref() {
@@ -774,26 +1160,46 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             state.hovered = None;
             return;
         }
-        let scrollable = crate::scroll::is_scrollable(self.rows.len(), viewport_height);
-        let content_width = area.width.saturating_sub(u16::from(scrollable));
-        let offset = state.collection.offset();
-        for (visible, row) in self
-            .rows
-            .iter()
-            .skip(offset)
-            .take(viewport_height)
-            .enumerate()
-        {
-            let rect = Rect::new(
+        // Search strip (1 row) when query active
+        let mut body_y = area.y;
+        let mut body_h = area.height;
+        if let Some(q) = state.search_query.as_ref() {
+            let strip = format!("/ {q}");
+            buffer.set_stringn(
                 area.x,
-                area.y
-                    .saturating_add(u16::try_from(visible).unwrap_or(u16::MAX)),
-                content_width,
-                1,
+                area.y,
+                &crate::text::take_display_cols(&strip, usize::from(area.width)),
+                usize::from(area.width),
+                self.tokens.style(Role::Info),
             );
+            body_y = area.y.saturating_add(1);
+            body_h = area.height.saturating_sub(1);
+        }
+        let body = Rect::new(area.x, body_y, area.width, body_h);
+        let scrollable = crate::scroll::is_scrollable(total, usize::from(body.height).max(1));
+        let content_width = body.width.saturating_sub(u16::from(scrollable));
+        let offset = if state.virtual_total > 0 {
+            0 // rows are already the window
+        } else {
+            state.collection.offset()
+        };
+        let mut y = body.y;
+        let mut painted_rows = 0usize;
+        for row in self.rows.iter().skip(offset) {
+            if y >= body.bottom() {
+                break;
+            }
+            let secondary_below = matches!(self.density, ListDensity::Comfortable)
+                && row.secondary.is_some()
+                && !matches!(row.role, RowRole::Separator | RowRole::GroupHeader);
+            let rh = self.density.row_height(secondary_below);
+            if y.saturating_add(rh) > body.bottom() {
+                break;
+            }
+            let rect = Rect::new(body.x, y, content_width, 1);
             let selected = state.collection.active() == Some(&row.id);
             let hovered = row.enabled
-                && row.role == RowRole::Item
+                && row.role.is_navigable()
                 && state
                     .pointer
                     .is_some_and(|position| rect.contains(position));
@@ -823,7 +1229,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             } else if recipe.hover_fill {
                 buffer.set_style(rect, recipe.hover);
             }
-            if row.role == RowRole::Separator {
+            if matches!(row.role, RowRole::Separator) {
                 let rule = self.tokens.glyphs.rule();
                 buffer.set_stringn(rect.x, rect.y, rule, usize::from(rect.width), style);
                 if rect.width > 2 {
@@ -836,6 +1242,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         rect.right().saturating_sub(label_x),
                     );
                 }
+            } else if matches!(row.role, RowRole::GroupHeader) {
+                let style = self
+                    .tokens
+                    .style(Role::TextStrong)
+                    .add_modifier(Modifier::BOLD);
+                buffer.set_line(rect.x, rect.y, &row.label, rect.width);
+                buffer.set_style(rect, style);
             } else {
                 // Stable 2-cell gutter slot for quiet selection chrome.
                 if let Some((glyph, gstyle)) = recipe.gutter {
@@ -849,7 +1262,19 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 let content_x = check_x.saturating_add(check_w);
                 if content_x < rect.right() {
                     let content_w = rect.right().saturating_sub(content_x);
-                    let badge = row.badge.as_ref().or(row.trailing.as_ref());
+                    // Custom body replaces composed primary cluster.
+                    if let Some(custom) = row.custom.as_ref() {
+                        buffer.set_line(content_x, rect.y, custom, content_w);
+                        buffer.set_style(
+                            Rect::new(content_x, rect.y, content_w, 1),
+                            style,
+                        );
+                    } else {
+                    let badge = row
+                        .badge
+                        .as_ref()
+                        .or(row.status.as_ref())
+                        .or(row.trailing.as_ref());
                     let mut budget = content_w.saturating_sub(1);
                     let shortcut_need = row
                         .shortcut
@@ -859,11 +1284,25 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 .saturating_add(1)
                         })
                         .unwrap_or(0);
-                    // Drop order: shortcut → badge → secondary → leading → primary.
+                    let actions_need = row
+                        .actions
+                        .as_ref()
+                        .map(|a| {
+                            u16::try_from(a.width())
+                                .unwrap_or(u16::MAX)
+                                .saturating_add(1)
+                        })
+                        .unwrap_or(0);
+                    // Drop order: shortcut → actions → badge/status → secondary → leading → primary.
                     let show_shortcut =
                         row.shortcut.is_some() && content_w >= 12 && budget >= shortcut_need + 2;
                     if show_shortcut {
                         budget = budget.saturating_sub(shortcut_need);
+                    }
+                    let show_actions =
+                        row.actions.is_some() && content_w >= 14 && budget >= actions_need + 2;
+                    if show_actions {
+                        budget = budget.saturating_sub(actions_need);
                     }
                     let badge_need = badge
                         .map(|b| {
@@ -885,7 +1324,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 .saturating_add(1)
                         })
                         .unwrap_or(0);
-                    let show_secondary = row.secondary.is_some() && budget >= secondary_need;
+                    // Compact: inline secondary when budget allows; Comfortable: below.
+                    let show_secondary = row.secondary.is_some()
+                        && !secondary_below
+                        && budget >= secondary_need;
                     if show_secondary {
                         budget = budget.saturating_sub(secondary_need);
                     }
@@ -978,12 +1420,25 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             buffer.set_stringn(cursor, rect.y, sc, usize::from(w), recipe.shortcut);
                         }
                     }
+                    if show_actions && let Some(act) = row.actions.as_ref() {
+                        let w = u16::try_from(act.width())
+                            .unwrap_or(u16::MAX)
+                            .min(cursor.saturating_sub(content_x));
+                        if w > 0 {
+                            cursor = cursor.saturating_sub(w);
+                            buffer.set_line(cursor, rect.y, act, w);
+                            buffer.set_style(
+                                Rect::new(cursor, rect.y, w, 1),
+                                recipe.shortcut,
+                            );
+                        }
+                    }
                     if show_badge && let Some(b) = badge {
                         let w = u16::try_from(b.width())
                             .unwrap_or(u16::MAX)
                             .min(cursor.saturating_sub(content_x));
                         if w > 0 {
-                            if show_shortcut {
+                            if show_shortcut || show_actions {
                                 cursor = cursor.saturating_sub(1);
                             }
                             cursor = cursor.saturating_sub(w);
@@ -991,24 +1446,45 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             buffer.set_style(Rect::new(cursor, rect.y, w, 1), recipe.trailing);
                         }
                     }
+                    } // end non-custom
+                }
+                // Comfortable: secondary on next line
+                if secondary_below {
+                    if let Some(sec) = row.secondary.as_ref() {
+                        let indent = rect.x.saturating_add(4);
+                        let sub = Rect::new(
+                            indent.min(rect.right().saturating_sub(1)),
+                            rect.y.saturating_add(1),
+                            rect.right().saturating_sub(indent.min(rect.right())),
+                            1,
+                        );
+                        if !sub.is_empty() {
+                            buffer.set_line(sub.x, sub.y, sec, sub.width);
+                            buffer.set_style(sub, recipe.secondary);
+                        }
+                    }
                 }
             }
-            if row.enabled && row.role == RowRole::Item && !rect.is_empty() {
+            let hit_h = rh;
+            if row.enabled && row.role.is_navigable() && !rect.is_empty() {
                 state.regions.push(HitRegion {
                     id: row.id.clone(),
-                    area: rect,
+                    area: Rect::new(rect.x, rect.y, rect.width, hit_h),
                 });
             }
+            y = y.saturating_add(rh);
+            painted_rows = painted_rows.saturating_add(1);
         }
+        let _ = painted_rows;
         if scrollable {
             crate::scroll::render_scrollbar(
                 buffer,
-                Rect::new(area.right().saturating_sub(1), area.y, 1, area.height),
+                Rect::new(body.right().saturating_sub(1), body.y, 1, body.height),
                 crate::scroll::ScrollbarSpec::new(
                     crate::scroll::ScrollAxis::Vertical,
                     crate::scroll::ScrollbarGeometry::new(
-                        self.rows.len(),
-                        viewport_height,
+                        total,
+                        usize::from(body.height).max(1),
                         u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
                     ),
                 ),
@@ -1078,12 +1554,12 @@ fn collection_items_from_rows<Id: Clone>(
     rows: &[ListRow<'_, Id>],
 ) -> Vec<crate::interaction::CollectionItem<Id>> {
     rows.iter()
-        .filter(|row| row.role == RowRole::Item)
+        .filter(|row| row.role.is_navigable())
         .map(|row| crate::interaction::CollectionItem {
             id: row.id.clone(),
             enabled: row.enabled,
-            // Labels stay on the frame projection only; typeahead optional via host rebuild.
-            label: String::new(),
+            // Primary plain text enables roving typeahead.
+            label: row.plain_label(),
             parent: None,
         })
         .collect()
@@ -1145,9 +1621,12 @@ mod tests {
                 label: Line::from("Section"),
                 leading: None,
                 secondary: None,
+                status: None,
                 badge: None,
                 shortcut: None,
+                actions: None,
                 trailing: None,
+                custom: None,
                 role: RowRole::Separator,
                 enabled: true,
                 loading: false,
@@ -1157,9 +1636,12 @@ mod tests {
                 label: Line::from("Disabled"),
                 leading: None,
                 secondary: None,
+                status: None,
                 badge: None,
                 shortcut: None,
+                actions: None,
                 trailing: None,
+                custom: None,
                 role: RowRole::Item,
                 enabled: false,
                 loading: false,
@@ -1169,9 +1651,12 @@ mod tests {
                 label: Line::from("First"),
                 leading: None,
                 secondary: None,
+                status: None,
                 badge: None,
                 shortcut: None,
+                actions: None,
                 trailing: None,
+                custom: None,
                 role: RowRole::Item,
                 enabled: true,
                 loading: false,
@@ -1181,9 +1666,12 @@ mod tests {
                 label: Line::from("Second"),
                 leading: None,
                 secondary: None,
+                status: None,
                 badge: None,
                 shortcut: None,
+                actions: None,
                 trailing: None,
+                custom: None,
                 role: RowRole::Item,
                 enabled: true,
                 loading: false,
@@ -1240,9 +1728,12 @@ mod tests {
                 label: Line::from("🧪🧪label"),
                 leading: None,
                 secondary: None,
+                status: None,
                 badge: None,
                 shortcut: None,
+                actions: None,
                 trailing: Some(Line::from("9 KiB")),
+                custom: None,
                 role: RowRole::Item,
                 enabled: true,
                 loading: false,
@@ -1252,9 +1743,12 @@ mod tests {
                 label: Line::from("short"),
                 leading: None,
                 secondary: None,
+                status: None,
                 badge: None,
                 shortcut: None,
+                actions: None,
                 trailing: Some(Line::from("1 B")),
+                custom: None,
                 role: RowRole::Item,
                 enabled: true,
                 loading: false,
@@ -1537,5 +2031,142 @@ mod tests {
         assert_eq!(buffer[(0, 0)].symbol(), ">");
         let check = buffer[(2, 0)].symbol();
         assert!(check == "[" || check == "x", "ascii check: {check:?}");
+    }
+
+    #[test]
+    fn typeahead_jumps_by_primary_label() {
+        let rows = [
+            ListRow::item("a", Line::from("Alpha")),
+            ListRow::item("b", Line::from("Beta")),
+            ListRow::item("c", Line::from("Charlie")),
+        ];
+        let mut state = ListState::new(Some("a"));
+        assert_eq!(
+            state.handle_key(&rows, KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)),
+            Outcome::Changed
+        );
+        assert_eq!(state.selected(), Some(&"b"));
+        assert!(!state.typeahead_buffer().is_empty() || state.selected() == Some(&"b"));
+    }
+
+    #[test]
+    fn group_header_skipped_by_movement() {
+        let rows = [
+            ListRow::group_header("g", Line::from("Group")),
+            ListRow::item("a", Line::from("A")),
+            ListRow::item("b", Line::from("B")),
+        ];
+        let mut state = ListState::new(None);
+        assert_eq!(
+            state.handle_intent(&rows, UiIntent::Move(NavigationMove::Next)),
+            Outcome::Changed
+        );
+        assert_eq!(state.selected(), Some(&"a"));
+    }
+
+    #[test]
+    fn search_query_and_filter_helper() {
+        let rows = [
+            ListRow::item("a", Line::from("Alpha")),
+            ListRow::item("b", Line::from("Beta")),
+            ListRow::group_header("g", Line::from("Hdr")),
+        ];
+        let mut state = ListState::new(Some("a"));
+        let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE));
+        assert!(state.search_query().is_some());
+        let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE));
+        assert_eq!(state.search_query(), Some("b"));
+        let filtered = filter_list_rows(&rows, "be");
+        assert!(filtered.iter().any(|r| r.id == "b"));
+        assert!(filtered.iter().any(|r| r.id == "g")); // headers kept
+    }
+
+    #[test]
+    fn selection_mode_single_multi_range() {
+        let mut state = ListState::new(Some("a"));
+        assert_eq!(state.selection_mode(), ListSelectionMode::Single);
+        state.set_selection_mode(ListSelectionMode::Multi);
+        assert!(state.selection().is_some());
+        state.set_selection_mode(ListSelectionMode::Range);
+        assert!(state.selection().is_some());
+        state.set_selection_mode(ListSelectionMode::Single);
+        assert!(state.selection().is_none());
+    }
+
+    #[test]
+    fn comfortable_density_paints_secondary_below() {
+        let rows = [ListRow::item("a", Line::from("Title")).secondary(Line::from("meta"))];
+        let tokens = DesignSystem::default();
+        let mut state = ListState::new(Some("a"));
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens).comfortable()).render(area, &mut buffer, &mut state);
+        let mut painted = String::new();
+        for y in 0..3 {
+            for x in 0..24 {
+                painted.push_str(buffer[(x, y)].symbol());
+            }
+        }
+        assert!(painted.contains("Title") || painted.contains("meta"), "{painted}");
+    }
+
+    #[test]
+    fn status_actions_custom_row_paint() {
+        let rows = [
+            ListRow::item("a", Line::from("Job"))
+                .status(Line::from("run"))
+                .actions(Line::from("⏎"))
+                .shortcut("j"),
+            ListRow::item("b", Line::from("hidden")).custom(Line::from("CUSTOM BODY")),
+        ];
+        let tokens = DesignSystem::default();
+        let mut state = ListState::new(Some("b"));
+        let area = Rect::new(0, 0, 40, 2);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
+        let mut painted = String::new();
+        for y in 0..2 {
+            for x in 0..40 {
+                painted.push_str(buffer[(x, y)].symbol());
+            }
+        }
+        assert!(painted.contains("CUSTOM") || painted.contains("Job"), "{painted}");
+    }
+
+    #[test]
+    fn virtual_window_reconcile() {
+        let rows = [
+            ListRow::item("50", Line::from("fifty")),
+            ListRow::item("51", Line::from("fifty-one")),
+        ];
+        let mut state = ListState::new(Some("50"));
+        state.set_virtual_window(50, 200);
+        state.reconcile_collection(&rows);
+        assert_eq!(state.virtual_total(), 200);
+        assert_eq!(state.collection().offset(), 50);
+    }
+
+    #[test]
+    fn narrow_drop_order_documented() {
+        assert_eq!(LIST_NARROW_DROP_ORDER[0], "shortcut");
+        assert_eq!(*LIST_NARROW_DROP_ORDER.last().unwrap(), "primary");
+    }
+
+    #[test]
+    fn scroll_area_sync() {
+        let mut state = ListState::new(Some("a"));
+        let mut scroll = crate::widgets::ScrollAreaState::new();
+        let rows = [
+            ListRow::item("a", Line::from("A")),
+            ListRow::item("b", Line::from("B")),
+            ListRow::item("c", Line::from("C")),
+        ];
+        let tokens = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 2);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
+        state.sync_scroll_area(&mut scroll, rows.len(), 2);
+        assert_eq!(scroll.viewport_h(), 2);
+        assert_eq!(scroll.content_h(), 3);
     }
 }

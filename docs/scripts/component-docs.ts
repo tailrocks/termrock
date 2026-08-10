@@ -210,17 +210,21 @@ let area = Rect::new(0, 0, 40, 2);
 bar.render(area, &mut Buffer::empty(area));`,
   },
   List: {
-    description: 'A selectable, scrollable list over borrowed rows and stable identities.',
+    description:
+      'Composable collection view: leading/primary/secondary/status/badge/actions/shortcut; group headers; CollectionState+SelectionModel+typeahead; single/multi/range; search; density; virtual window; ScrollArea sync.',
     primaryStory: 'list/selection',
     usage: `use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, widgets::{List, ListRow, ListState, RowRole}};
+use termrock::style::DesignSystem;
+use termrock::widgets::{List, ListRow, ListState, ListSelectionMode};
 
-let theme = Theme::default();
-let rows = [ListRow { id: "alpha", label: Line::from("Alpha"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true, loading: false }];
-let tokens = DesignTokens::default();
-let list = List::new(&rows, &tokens);
-let mut state = ListState::new(Some("alpha"));
-let outcome = state.select_next(&rows);`,
+let system = DesignSystem::default();
+let rows = [
+    ListRow::group_header("g", Line::from("Running")),
+    ListRow::item("a", Line::from("Build")).secondary(Line::from("src")).status(Line::from("ok")),
+];
+let mut state = ListState::new(Some("a"));
+state.set_selection_mode(ListSelectionMode::Range);
+List::new(&rows, &system).comfortable().empty_message(Line::from("No items"));`,
   },
   LogPane: {
     description: 'A bounded, scrollable log buffer with freeze-on-scroll and tail following.',

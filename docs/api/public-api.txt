@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.30s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.32s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -22624,6 +22624,108 @@ pub unsafe fn termrock::widgets::ListClickPolicy::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ListClickPolicy
 pub fn termrock::widgets::ListClickPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ListClickPolicy
+#[non_exhaustive] pub enum termrock::widgets::ListDensity
+pub termrock::widgets::ListDensity::Comfortable
+pub termrock::widgets::ListDensity::Compact
+impl termrock::widgets::ListDensity
+pub const fn termrock::widgets::ListDensity::id(self) -> &'static str
+pub const fn termrock::widgets::ListDensity::row_height(self, bool) -> u16
+impl core::clone::Clone for termrock::widgets::ListDensity
+pub fn termrock::widgets::ListDensity::clone(&self) -> termrock::widgets::ListDensity
+impl core::cmp::Eq for termrock::widgets::ListDensity
+impl core::cmp::PartialEq for termrock::widgets::ListDensity
+pub fn termrock::widgets::ListDensity::eq(&self, &termrock::widgets::ListDensity) -> bool
+impl core::default::Default for termrock::widgets::ListDensity
+pub fn termrock::widgets::ListDensity::default() -> termrock::widgets::ListDensity
+impl core::fmt::Debug for termrock::widgets::ListDensity
+pub fn termrock::widgets::ListDensity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ListDensity
+pub fn termrock::widgets::ListDensity::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ListDensity
+impl core::marker::StructuralPartialEq for termrock::widgets::ListDensity
+impl core::marker::Freeze for termrock::widgets::ListDensity
+impl core::marker::Send for termrock::widgets::ListDensity
+impl core::marker::Sync for termrock::widgets::ListDensity
+impl core::marker::Unpin for termrock::widgets::ListDensity
+impl core::marker::UnsafeUnpin for termrock::widgets::ListDensity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ListDensity
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ListDensity
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ListDensity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ListDensity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ListDensity where U: core::convert::From<T>
+pub fn termrock::widgets::ListDensity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ListDensity where U: core::convert::Into<T>
+pub type termrock::widgets::ListDensity::Error = core::convert::Infallible
+pub fn termrock::widgets::ListDensity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ListDensity where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ListDensity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ListDensity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ListDensity where T: core::clone::Clone
+pub type termrock::widgets::ListDensity::Owned = T
+pub fn termrock::widgets::ListDensity::clone_into(&self, &mut T)
+pub fn termrock::widgets::ListDensity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ListDensity where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ListDensity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ListDensity where T: ?core::marker::Sized
+pub fn termrock::widgets::ListDensity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ListDensity where T: ?core::marker::Sized
+pub fn termrock::widgets::ListDensity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ListDensity where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ListDensity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ListDensity
+pub fn termrock::widgets::ListDensity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ListDensity
+#[non_exhaustive] pub enum termrock::widgets::ListSelectionMode
+pub termrock::widgets::ListSelectionMode::Multi
+pub termrock::widgets::ListSelectionMode::Range
+pub termrock::widgets::ListSelectionMode::Single
+impl termrock::widgets::ListSelectionMode
+pub const fn termrock::widgets::ListSelectionMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ListSelectionMode
+pub fn termrock::widgets::ListSelectionMode::clone(&self) -> termrock::widgets::ListSelectionMode
+impl core::cmp::Eq for termrock::widgets::ListSelectionMode
+impl core::cmp::PartialEq for termrock::widgets::ListSelectionMode
+pub fn termrock::widgets::ListSelectionMode::eq(&self, &termrock::widgets::ListSelectionMode) -> bool
+impl core::default::Default for termrock::widgets::ListSelectionMode
+pub fn termrock::widgets::ListSelectionMode::default() -> termrock::widgets::ListSelectionMode
+impl core::fmt::Debug for termrock::widgets::ListSelectionMode
+pub fn termrock::widgets::ListSelectionMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ListSelectionMode
+pub fn termrock::widgets::ListSelectionMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ListSelectionMode
+impl core::marker::StructuralPartialEq for termrock::widgets::ListSelectionMode
+impl core::marker::Freeze for termrock::widgets::ListSelectionMode
+impl core::marker::Send for termrock::widgets::ListSelectionMode
+impl core::marker::Sync for termrock::widgets::ListSelectionMode
+impl core::marker::Unpin for termrock::widgets::ListSelectionMode
+impl core::marker::UnsafeUnpin for termrock::widgets::ListSelectionMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ListSelectionMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ListSelectionMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ListSelectionMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ListSelectionMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ListSelectionMode where U: core::convert::From<T>
+pub fn termrock::widgets::ListSelectionMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ListSelectionMode where U: core::convert::Into<T>
+pub type termrock::widgets::ListSelectionMode::Error = core::convert::Infallible
+pub fn termrock::widgets::ListSelectionMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ListSelectionMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ListSelectionMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ListSelectionMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ListSelectionMode where T: core::clone::Clone
+pub type termrock::widgets::ListSelectionMode::Owned = T
+pub fn termrock::widgets::ListSelectionMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::ListSelectionMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ListSelectionMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ListSelectionMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ListSelectionMode where T: ?core::marker::Sized
+pub fn termrock::widgets::ListSelectionMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ListSelectionMode where T: ?core::marker::Sized
+pub fn termrock::widgets::ListSelectionMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ListSelectionMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ListSelectionMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ListSelectionMode
+pub fn termrock::widgets::ListSelectionMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ListSelectionMode
 #[non_exhaustive] pub enum termrock::widgets::LoadState
 pub termrock::widgets::LoadState::Empty
 pub termrock::widgets::LoadState::Empty::message: core::option::Option<alloc::string::String>
@@ -27199,8 +27301,11 @@ impl<T> core::convert::From<T> for termrock::widgets::RevealPolicy
 pub fn termrock::widgets::RevealPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RevealPolicy
 #[non_exhaustive] pub enum termrock::widgets::RowRole
+pub termrock::widgets::RowRole::GroupHeader
 pub termrock::widgets::RowRole::Item
 pub termrock::widgets::RowRole::Separator
+impl termrock::widgets::RowRole
+pub const fn termrock::widgets::RowRole::is_navigable(self) -> bool
 impl core::clone::Clone for termrock::widgets::RowRole
 pub fn termrock::widgets::RowRole::clone(&self) -> termrock::widgets::RowRole
 impl core::cmp::Eq for termrock::widgets::RowRole
@@ -43511,6 +43616,8 @@ pub fn termrock::widgets::LinkState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LinkState
 pub struct termrock::widgets::List<'a, Id>
 impl<'a, Id> termrock::widgets::List<'a, Id>
+pub const fn termrock::widgets::List<'a, Id>::comfortable(self) -> Self
+pub const fn termrock::widgets::List<'a, Id>::density(self, termrock::widgets::ListDensity) -> Self
 pub fn termrock::widgets::List<'a, Id>::empty_message(self, ratatui_core::text::line::Line<'a>) -> Self
 pub const fn termrock::widgets::List<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::List<'a, Id>::from_system(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::DesignSystem) -> Self
@@ -43558,7 +43665,9 @@ impl<T> core::convert::From<T> for termrock::widgets::List<'a, Id>
 pub fn termrock::widgets::List<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::List<'a, Id>
 pub struct termrock::widgets::ListRow<'a, Id>
+pub termrock::widgets::ListRow::actions: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::ListRow::badge: core::option::Option<ratatui_core::text::line::Line<'a>>
+pub termrock::widgets::ListRow::custom: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::ListRow::enabled: bool
 pub termrock::widgets::ListRow::id: Id
 pub termrock::widgets::ListRow::label: ratatui_core::text::line::Line<'a>
@@ -43567,17 +43676,23 @@ pub termrock::widgets::ListRow::loading: bool
 pub termrock::widgets::ListRow::role: termrock::widgets::RowRole
 pub termrock::widgets::ListRow::secondary: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::ListRow::shortcut: core::option::Option<&'a str>
+pub termrock::widgets::ListRow::status: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::ListRow::trailing: core::option::Option<ratatui_core::text::line::Line<'a>>
 impl<'a, Id> termrock::widgets::ListRow<'a, Id>
+pub fn termrock::widgets::ListRow<'a, Id>::actions(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::ListRow<'a, Id>::badge(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::ListRow<'a, Id>::composed(&self) -> termrock::widgets::ComposedRow<'a, ()> where Id: core::clone::Clone
+pub fn termrock::widgets::ListRow<'a, Id>::custom(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::ListRow<'a, Id>::disabled(self) -> Self
+pub fn termrock::widgets::ListRow<'a, Id>::group_header(Id, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::ListRow<'a, Id>::item(Id, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::ListRow<'a, Id>::leading(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::ListRow<'a, Id>::loading(self) -> Self
+pub fn termrock::widgets::ListRow<'a, Id>::plain_label(&self) -> alloc::string::String
 pub fn termrock::widgets::ListRow<'a, Id>::secondary(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::ListRow<'a, Id>::separator(Id, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::ListRow<'a, Id>::shortcut(self, &'a str) -> Self
+pub fn termrock::widgets::ListRow<'a, Id>::status(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::ListRow<'a, Id>::trailing(self, ratatui_core::text::line::Line<'a>) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListRow<'a, Id>
 pub fn termrock::widgets::ListRow<'a, Id>::clone(&self) -> termrock::widgets::ListRow<'a, Id>
@@ -43634,7 +43749,9 @@ pub fn termrock::widgets::ListState<Id>::reconcile_collection(&mut self, &[termr
 pub fn termrock::widgets::ListState<Id>::select_next(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::select_previous(&mut self, &[termrock::widgets::ListRow<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ListState<Id>::select_range_to(&mut self, &[termrock::widgets::ListRow<'_, Id>], &Id) -> termrock::interaction::Outcome<Id>
+pub fn termrock::widgets::ListState<Id>::sync_scroll_area(&self, &mut termrock::widgets::ScrollAreaState, usize, usize)
 impl<Id> termrock::widgets::ListState<Id>
+pub fn termrock::widgets::ListState<Id>::clear_typeahead(&mut self)
 pub const fn termrock::widgets::ListState<Id>::click_policy(&self) -> termrock::widgets::ListClickPolicy
 pub const fn termrock::widgets::ListState<Id>::collection(&self) -> &termrock::interaction::CollectionState<Id>
 pub const fn termrock::widgets::ListState<Id>::collection_mut(&mut self) -> &mut termrock::interaction::CollectionState<Id>
@@ -43645,11 +43762,18 @@ pub const fn termrock::widgets::ListState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::ListState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
 pub fn termrock::widgets::ListState<Id>::scroll_by(&mut self, isize, usize) -> bool where Id: core::clone::Clone + core::cmp::PartialEq
 pub fn termrock::widgets::ListState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::ListState<Id>::search_query(&self) -> core::option::Option<&str>
 pub fn termrock::widgets::ListState<Id>::select(&mut self, core::option::Option<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::ListState<Id>::selected(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::ListState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
+pub const fn termrock::widgets::ListState<Id>::selection_mode(&self) -> termrock::widgets::ListSelectionMode
 pub fn termrock::widgets::ListState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
 pub const fn termrock::widgets::ListState<Id>::set_click_policy(&mut self, termrock::widgets::ListClickPolicy)
+pub fn termrock::widgets::ListState<Id>::set_search_query(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::ListState<Id>::set_selection_mode(&mut self, termrock::widgets::ListSelectionMode) where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::ListState<Id>::set_virtual_window(&mut self, usize, usize)
+pub fn termrock::widgets::ListState<Id>::typeahead_buffer(&self) -> &str
+pub const fn termrock::widgets::ListState<Id>::virtual_total(&self) -> usize
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::clone(&self) -> termrock::widgets::ListState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ListState<Id>
@@ -58678,6 +58802,7 @@ pub const termrock::widgets::KEYBOARD_HELP_OVERLAY_ID: &str
 pub const termrock::widgets::KEYBOARD_HELP_TINY_MAX_HEIGHT: u16
 pub const termrock::widgets::KEYBOARD_HELP_TINY_MAX_WIDTH: u16
 pub const termrock::widgets::LARGE_PASTE_THRESHOLD: usize
+pub const termrock::widgets::LIST_NARROW_DROP_ORDER: &[&str]
 pub const termrock::widgets::LOADING_OVERLAY_MIN_SHOW_MS: u64
 pub const termrock::widgets::LOADING_OVERLAY_SHORT_OP_HINT_MS: u64
 pub const termrock::widgets::MENU_BAR_NARROW_MAX_WIDTH: u16
@@ -58860,6 +58985,7 @@ pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> allo
 pub fn termrock::widgets::filter_command_entries<Id: core::clone::Clone>(&[termrock::widgets::CommandEntry<Id>], &str, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>>
 pub fn termrock::widgets::filter_help_entries(&[termrock::widgets::HelpEntry], &str) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termrock::widgets::HistoryEntry<Id>], &str) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<Id>>
+pub fn termrock::widgets::filter_list_rows<'a, Id: core::clone::Clone>(&'a [termrock::widgets::ListRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::ListRow<'a, Id>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>
 pub const fn termrock::widgets::fixed_visible_range(u64, u16, u64) -> (u64, u64)

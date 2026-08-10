@@ -299,7 +299,10 @@ pub use jump_overlay::{
     collect_jump_candidates, dismiss_jump_overlay, generate_jump_labels, jump_status_line,
     open_jump_overlay, replay_jump_keys,
 };
-pub use list::{List, ListClickPolicy, ListRow, ListState, RowRole};
+pub use list::{
+    LIST_NARROW_DROP_ORDER, List, ListClickPolicy, ListDensity, ListRow, ListSelectionMode,
+    ListState, RowRole, filter_list_rows,
+};
 pub use log_pane::{LogPane, LogPaneState};
 pub use markdown::{
     MarkdownBlock, MarkdownBlockKind, MarkdownInline, MarkdownInlineKind, MarkdownLinkRegion,
