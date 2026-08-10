@@ -66,6 +66,8 @@ use termrock::{
         Combobox, ComboboxState, SuggestionStatus,
         FileEntry, FileEntryKind, FilePicker, FilePickerMode, FilePickerState, FilePreview,
         FileSortKey,
+        CivilDate, CivilDateRange, CivilTime, DateTimePicker, DateTimePickerKind,
+        DateTimePickerState, TimeDisplayFormat,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -5086,6 +5088,42 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             14,
             multi_select_search_story,
+        ),
+        Story::new(
+            "date-time-picker/date",
+            "DateTimePicker date",
+            "DateTimePicker",
+            "Open calendar with today, selected, and focus marks.",
+            48,
+            16,
+            date_time_picker_date_story,
+        ),
+        Story::new(
+            "date-time-picker/time",
+            "DateTimePicker time",
+            "DateTimePicker",
+            "Stepped time list with timezone label.",
+            36,
+            14,
+            date_time_picker_time_story,
+        ),
+        Story::new(
+            "date-time-picker/range",
+            "DateTimePicker range",
+            "DateTimePicker",
+            "Inclusive date range selection.",
+            48,
+            16,
+            date_time_picker_range_story,
+        ),
+        Story::new(
+            "date-time-picker/narrow",
+            "DateTimePicker narrow",
+            "DateTimePicker",
+            "Tiny-terminal day-list fallback.",
+            28,
+            12,
+            date_time_picker_narrow_story,
         ),
         Story::new(
             "file-picker/unix",
@@ -13466,6 +13504,63 @@ fn file_picker_unix_entries() -> Vec<FileEntry> {
         FileEntry::file("f4", "secret.env", "/home/u/proj/secret.env")
             .error("permission denied"),
     ]
+}
+
+fn date_time_picker_date_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let today = CivilDate::new(2026, 8, 10).unwrap();
+    let mut state = DateTimePickerState::new(DateTimePickerKind::Date)
+        .with_date(CivilDate::new(2026, 8, 15).unwrap())
+        .with_min_date(CivilDate::new(2026, 8, 1).unwrap())
+        .with_max_date(CivilDate::new(2026, 8, 31).unwrap())
+        .with_timezone_label("UTC");
+    state.set_focused(true);
+    state.set_today(today);
+    let _ = state.open(area);
+    DateTimePicker::new(system)
+        .label("Due date")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn date_time_picker_time_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = DateTimePickerState::new(DateTimePickerKind::Time)
+        .with_time(CivilTime::new(9, 30, 0).unwrap())
+        .with_time_step_minutes(30)
+        .with_time_format(TimeDisplayFormat::Hm24)
+        .with_timezone_label("America/New_York");
+    state.set_focused(true);
+    let _ = state.open(area);
+    DateTimePicker::new(system)
+        .label("Start time")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn date_time_picker_range_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let start = CivilDate::new(2026, 8, 5).unwrap();
+    let end = CivilDate::new(2026, 8, 12).unwrap();
+    let mut state = DateTimePickerState::new(DateTimePickerKind::DateRange)
+        .with_range(CivilDateRange::new(start, end))
+        .with_timezone_label("UTC");
+    state.set_focused(true);
+    state.set_today(CivilDate::new(2026, 8, 10).unwrap());
+    let _ = state.open(area);
+    DateTimePicker::new(system)
+        .label("Window")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn date_time_picker_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = DateTimePickerState::new(DateTimePickerKind::Date)
+        .with_date(CivilDate::new(2026, 8, 10).unwrap());
+    state.set_focused(true);
+    state.set_today(CivilDate::new(2026, 8, 10).unwrap());
+    let _ = state.open(area);
+    DateTimePicker::new(system)
+        .label("Day")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn file_picker_seed(

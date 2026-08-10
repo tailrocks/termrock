@@ -79,6 +79,7 @@ mod select;
 mod multi_select;
 mod combobox;
 mod file_picker;
+mod date_time_picker;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -345,6 +346,13 @@ pub use file_picker::{
     FileBreadcrumb, FileEntry, FileEntryKind, FileListingStatus, FilePicker, FilePickerMode,
     FilePickerOutcome, FilePickerPane, FilePickerPresentation, FilePickerState, FilePreview,
     FileSortKey,
+};
+pub use date_time_picker::{
+    CivilDate, CivilDateRange, CivilDateTime, CivilTime, DATE_TIME_PICKER_FULLSCREEN_MAX_HEIGHT,
+    DATE_TIME_PICKER_LIST_MAX_WIDTH, DATE_TIME_PICKER_OVERLAY_ID, DateDisplayFormat,
+    DateTimePicker, DateTimePickerKind, DateTimePickerOutcome, DateTimePickerPresentation,
+    DateTimePickerState, DateTimePickerView, DateTimeValidity, TimeDisplayFormat, WeekStart,
+    guidance as date_time_picker_guidance,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,

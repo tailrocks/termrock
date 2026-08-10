@@ -476,6 +476,22 @@ state.set_focused(true);
 // ListRequested { path, generation } → host list → apply_listing(generation, …)
 let _ = FilePicker::new(&system).title("Open file");`,
   },
+  DateTimePicker: {
+    description:
+      'Civil date, time, and range picker with text entry, calendar/time-list browse, min/max, and non-color day states. Prefer TextInput for rare ISO paste.',
+    primaryStory: 'date-time-picker/date',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{
+    CivilDate, DateTimePicker, DateTimePickerKind, DateTimePickerState,
+};
+
+let system = DesignSystem::default();
+let mut state = DateTimePickerState::new(DateTimePickerKind::Date)
+    .with_timezone_label("UTC");
+state.set_today(CivilDate::new(2026, 8, 10).unwrap());
+state.set_focused(true);
+let _ = DateTimePicker::new(&system).label("Due");`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

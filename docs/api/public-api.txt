@@ -14584,6 +14584,8 @@ pub const termrock::widgets::data_view_bench::ROWS_10: u64
 pub const termrock::widgets::data_view_bench::ROWS_10K: u64
 pub const termrock::widgets::data_view_bench::ROWS_1M: u64
 pub const termrock::widgets::data_view_bench::VIEWPORT_ROWS: u16
+pub mod termrock::widgets::date_time_picker_guidance
+pub const termrock::widgets::date_time_picker_guidance::WHEN_TEXT_INPUT: &str
 #[non_exhaustive] pub enum termrock::widgets::AccordionMode
 pub termrock::widgets::AccordionMode::Multiple
 pub termrock::widgets::AccordionMode::Single
@@ -17027,6 +17029,332 @@ pub unsafe fn termrock::widgets::DataViewOutcome<RowId, ColId>::clone_to_uninit(
 impl<T> core::convert::From<T> for termrock::widgets::DataViewOutcome<RowId, ColId>
 pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DataViewOutcome<RowId, ColId>
+#[non_exhaustive] pub enum termrock::widgets::DateDisplayFormat
+pub termrock::widgets::DateDisplayFormat::DmySlash
+pub termrock::widgets::DateDisplayFormat::Iso
+pub termrock::widgets::DateDisplayFormat::MdySlash
+pub termrock::widgets::DateDisplayFormat::YmdSlash
+impl termrock::widgets::DateDisplayFormat
+pub fn termrock::widgets::DateDisplayFormat::format(self, termrock::widgets::CivilDate) -> alloc::string::String
+pub const fn termrock::widgets::DateDisplayFormat::id(self) -> &'static str
+pub fn termrock::widgets::DateDisplayFormat::parse(self, &str) -> core::option::Option<termrock::widgets::CivilDate>
+impl core::clone::Clone for termrock::widgets::DateDisplayFormat
+pub fn termrock::widgets::DateDisplayFormat::clone(&self) -> termrock::widgets::DateDisplayFormat
+impl core::cmp::Eq for termrock::widgets::DateDisplayFormat
+impl core::cmp::PartialEq for termrock::widgets::DateDisplayFormat
+pub fn termrock::widgets::DateDisplayFormat::eq(&self, &termrock::widgets::DateDisplayFormat) -> bool
+impl core::default::Default for termrock::widgets::DateDisplayFormat
+pub fn termrock::widgets::DateDisplayFormat::default() -> termrock::widgets::DateDisplayFormat
+impl core::fmt::Debug for termrock::widgets::DateDisplayFormat
+pub fn termrock::widgets::DateDisplayFormat::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DateDisplayFormat
+pub fn termrock::widgets::DateDisplayFormat::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DateDisplayFormat
+impl core::marker::StructuralPartialEq for termrock::widgets::DateDisplayFormat
+impl core::marker::Freeze for termrock::widgets::DateDisplayFormat
+impl core::marker::Send for termrock::widgets::DateDisplayFormat
+impl core::marker::Sync for termrock::widgets::DateDisplayFormat
+impl core::marker::Unpin for termrock::widgets::DateDisplayFormat
+impl core::marker::UnsafeUnpin for termrock::widgets::DateDisplayFormat
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DateDisplayFormat
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DateDisplayFormat
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DateDisplayFormat where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DateDisplayFormat::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DateDisplayFormat where U: core::convert::From<T>
+pub fn termrock::widgets::DateDisplayFormat::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DateDisplayFormat where U: core::convert::Into<T>
+pub type termrock::widgets::DateDisplayFormat::Error = core::convert::Infallible
+pub fn termrock::widgets::DateDisplayFormat::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DateDisplayFormat where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DateDisplayFormat::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DateDisplayFormat::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DateDisplayFormat where T: core::clone::Clone
+pub type termrock::widgets::DateDisplayFormat::Owned = T
+pub fn termrock::widgets::DateDisplayFormat::clone_into(&self, &mut T)
+pub fn termrock::widgets::DateDisplayFormat::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DateDisplayFormat where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DateDisplayFormat::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DateDisplayFormat where T: ?core::marker::Sized
+pub fn termrock::widgets::DateDisplayFormat::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DateDisplayFormat where T: ?core::marker::Sized
+pub fn termrock::widgets::DateDisplayFormat::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DateDisplayFormat where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DateDisplayFormat::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DateDisplayFormat
+pub fn termrock::widgets::DateDisplayFormat::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DateDisplayFormat
+#[non_exhaustive] pub enum termrock::widgets::DateTimePickerKind
+pub termrock::widgets::DateTimePickerKind::Date
+pub termrock::widgets::DateTimePickerKind::DateRange
+pub termrock::widgets::DateTimePickerKind::DateTime
+pub termrock::widgets::DateTimePickerKind::Time
+impl termrock::widgets::DateTimePickerKind
+pub const fn termrock::widgets::DateTimePickerKind::has_date(self) -> bool
+pub const fn termrock::widgets::DateTimePickerKind::has_time(self) -> bool
+pub const fn termrock::widgets::DateTimePickerKind::id(self) -> &'static str
+pub const fn termrock::widgets::DateTimePickerKind::is_range(self) -> bool
+impl core::clone::Clone for termrock::widgets::DateTimePickerKind
+pub fn termrock::widgets::DateTimePickerKind::clone(&self) -> termrock::widgets::DateTimePickerKind
+impl core::cmp::Eq for termrock::widgets::DateTimePickerKind
+impl core::cmp::PartialEq for termrock::widgets::DateTimePickerKind
+pub fn termrock::widgets::DateTimePickerKind::eq(&self, &termrock::widgets::DateTimePickerKind) -> bool
+impl core::default::Default for termrock::widgets::DateTimePickerKind
+pub fn termrock::widgets::DateTimePickerKind::default() -> termrock::widgets::DateTimePickerKind
+impl core::fmt::Debug for termrock::widgets::DateTimePickerKind
+pub fn termrock::widgets::DateTimePickerKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DateTimePickerKind
+pub fn termrock::widgets::DateTimePickerKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DateTimePickerKind
+impl core::marker::StructuralPartialEq for termrock::widgets::DateTimePickerKind
+impl core::marker::Freeze for termrock::widgets::DateTimePickerKind
+impl core::marker::Send for termrock::widgets::DateTimePickerKind
+impl core::marker::Sync for termrock::widgets::DateTimePickerKind
+impl core::marker::Unpin for termrock::widgets::DateTimePickerKind
+impl core::marker::UnsafeUnpin for termrock::widgets::DateTimePickerKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DateTimePickerKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DateTimePickerKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DateTimePickerKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DateTimePickerKind where U: core::convert::From<T>
+pub fn termrock::widgets::DateTimePickerKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DateTimePickerKind where U: core::convert::Into<T>
+pub type termrock::widgets::DateTimePickerKind::Error = core::convert::Infallible
+pub fn termrock::widgets::DateTimePickerKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DateTimePickerKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DateTimePickerKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DateTimePickerKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DateTimePickerKind where T: core::clone::Clone
+pub type termrock::widgets::DateTimePickerKind::Owned = T
+pub fn termrock::widgets::DateTimePickerKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::DateTimePickerKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DateTimePickerKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DateTimePickerKind where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DateTimePickerKind where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DateTimePickerKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DateTimePickerKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DateTimePickerKind
+pub fn termrock::widgets::DateTimePickerKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DateTimePickerKind
+#[non_exhaustive] pub enum termrock::widgets::DateTimePickerOutcome
+pub termrock::widgets::DateTimePickerOutcome::Cancelled
+pub termrock::widgets::DateTimePickerOutcome::Changed
+pub termrock::widgets::DateTimePickerOutcome::Cleared
+pub termrock::widgets::DateTimePickerOutcome::Closed
+pub termrock::widgets::DateTimePickerOutcome::DateChanged
+pub termrock::widgets::DateTimePickerOutcome::DateChanged::date: termrock::widgets::CivilDate
+pub termrock::widgets::DateTimePickerOutcome::DateTimeChanged
+pub termrock::widgets::DateTimePickerOutcome::DateTimeChanged::value: termrock::widgets::CivilDateTime
+pub termrock::widgets::DateTimePickerOutcome::Ignored
+pub termrock::widgets::DateTimePickerOutcome::Opened
+pub termrock::widgets::DateTimePickerOutcome::Opened::presentation: termrock::widgets::DateTimePickerPresentation
+pub termrock::widgets::DateTimePickerOutcome::Opened::view: termrock::widgets::DateTimePickerView
+pub termrock::widgets::DateTimePickerOutcome::PresentationChanged
+pub termrock::widgets::DateTimePickerOutcome::PresentationChanged::presentation: termrock::widgets::DateTimePickerPresentation
+pub termrock::widgets::DateTimePickerOutcome::RangeChanged
+pub termrock::widgets::DateTimePickerOutcome::RangeChanged::range: termrock::widgets::CivilDateRange
+pub termrock::widgets::DateTimePickerOutcome::TimeChanged
+pub termrock::widgets::DateTimePickerOutcome::TimeChanged::time: termrock::widgets::CivilTime
+pub termrock::widgets::DateTimePickerOutcome::ValidationFailed
+pub termrock::widgets::DateTimePickerOutcome::ValidationFailed::reason: termrock::widgets::DateTimeValidity
+impl core::clone::Clone for termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerOutcome::clone(&self) -> termrock::widgets::DateTimePickerOutcome
+impl core::cmp::Eq for termrock::widgets::DateTimePickerOutcome
+impl core::cmp::PartialEq for termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerOutcome::eq(&self, &termrock::widgets::DateTimePickerOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::DateTimePickerOutcome
+impl core::marker::Freeze for termrock::widgets::DateTimePickerOutcome
+impl core::marker::Send for termrock::widgets::DateTimePickerOutcome
+impl core::marker::Sync for termrock::widgets::DateTimePickerOutcome
+impl core::marker::Unpin for termrock::widgets::DateTimePickerOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::DateTimePickerOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DateTimePickerOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DateTimePickerOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DateTimePickerOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DateTimePickerOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::DateTimePickerOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DateTimePickerOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::DateTimePickerOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::DateTimePickerOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DateTimePickerOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DateTimePickerOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DateTimePickerOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DateTimePickerOutcome where T: core::clone::Clone
+pub type termrock::widgets::DateTimePickerOutcome::Owned = T
+pub fn termrock::widgets::DateTimePickerOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::DateTimePickerOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DateTimePickerOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DateTimePickerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DateTimePickerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DateTimePickerOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DateTimePickerOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DateTimePickerOutcome
+#[non_exhaustive] pub enum termrock::widgets::DateTimePickerPresentation
+pub termrock::widgets::DateTimePickerPresentation::Embedded
+pub termrock::widgets::DateTimePickerPresentation::Fullscreen
+pub termrock::widgets::DateTimePickerPresentation::Modal
+impl termrock::widgets::DateTimePickerPresentation
+pub const fn termrock::widgets::DateTimePickerPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DateTimePickerPresentation
+pub fn termrock::widgets::DateTimePickerPresentation::clone(&self) -> termrock::widgets::DateTimePickerPresentation
+impl core::cmp::Eq for termrock::widgets::DateTimePickerPresentation
+impl core::cmp::PartialEq for termrock::widgets::DateTimePickerPresentation
+pub fn termrock::widgets::DateTimePickerPresentation::eq(&self, &termrock::widgets::DateTimePickerPresentation) -> bool
+impl core::default::Default for termrock::widgets::DateTimePickerPresentation
+pub fn termrock::widgets::DateTimePickerPresentation::default() -> termrock::widgets::DateTimePickerPresentation
+impl core::fmt::Debug for termrock::widgets::DateTimePickerPresentation
+pub fn termrock::widgets::DateTimePickerPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DateTimePickerPresentation
+pub fn termrock::widgets::DateTimePickerPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DateTimePickerPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::DateTimePickerPresentation
+impl core::marker::Freeze for termrock::widgets::DateTimePickerPresentation
+impl core::marker::Send for termrock::widgets::DateTimePickerPresentation
+impl core::marker::Sync for termrock::widgets::DateTimePickerPresentation
+impl core::marker::Unpin for termrock::widgets::DateTimePickerPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::DateTimePickerPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DateTimePickerPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DateTimePickerPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DateTimePickerPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DateTimePickerPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::DateTimePickerPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DateTimePickerPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::DateTimePickerPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::DateTimePickerPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DateTimePickerPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DateTimePickerPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DateTimePickerPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DateTimePickerPresentation where T: core::clone::Clone
+pub type termrock::widgets::DateTimePickerPresentation::Owned = T
+pub fn termrock::widgets::DateTimePickerPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::DateTimePickerPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DateTimePickerPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DateTimePickerPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DateTimePickerPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DateTimePickerPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DateTimePickerPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DateTimePickerPresentation
+pub fn termrock::widgets::DateTimePickerPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DateTimePickerPresentation
+#[non_exhaustive] pub enum termrock::widgets::DateTimePickerView
+pub termrock::widgets::DateTimePickerView::Calendar
+pub termrock::widgets::DateTimePickerView::DayList
+pub termrock::widgets::DateTimePickerView::Field
+pub termrock::widgets::DateTimePickerView::TimeList
+impl termrock::widgets::DateTimePickerView
+pub const fn termrock::widgets::DateTimePickerView::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DateTimePickerView
+pub fn termrock::widgets::DateTimePickerView::clone(&self) -> termrock::widgets::DateTimePickerView
+impl core::cmp::Eq for termrock::widgets::DateTimePickerView
+impl core::cmp::PartialEq for termrock::widgets::DateTimePickerView
+pub fn termrock::widgets::DateTimePickerView::eq(&self, &termrock::widgets::DateTimePickerView) -> bool
+impl core::default::Default for termrock::widgets::DateTimePickerView
+pub fn termrock::widgets::DateTimePickerView::default() -> termrock::widgets::DateTimePickerView
+impl core::fmt::Debug for termrock::widgets::DateTimePickerView
+pub fn termrock::widgets::DateTimePickerView::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DateTimePickerView
+pub fn termrock::widgets::DateTimePickerView::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DateTimePickerView
+impl core::marker::StructuralPartialEq for termrock::widgets::DateTimePickerView
+impl core::marker::Freeze for termrock::widgets::DateTimePickerView
+impl core::marker::Send for termrock::widgets::DateTimePickerView
+impl core::marker::Sync for termrock::widgets::DateTimePickerView
+impl core::marker::Unpin for termrock::widgets::DateTimePickerView
+impl core::marker::UnsafeUnpin for termrock::widgets::DateTimePickerView
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DateTimePickerView
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DateTimePickerView
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DateTimePickerView where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerView::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DateTimePickerView where U: core::convert::From<T>
+pub fn termrock::widgets::DateTimePickerView::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DateTimePickerView where U: core::convert::Into<T>
+pub type termrock::widgets::DateTimePickerView::Error = core::convert::Infallible
+pub fn termrock::widgets::DateTimePickerView::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DateTimePickerView where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DateTimePickerView::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DateTimePickerView::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DateTimePickerView where T: core::clone::Clone
+pub type termrock::widgets::DateTimePickerView::Owned = T
+pub fn termrock::widgets::DateTimePickerView::clone_into(&self, &mut T)
+pub fn termrock::widgets::DateTimePickerView::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DateTimePickerView where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerView::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DateTimePickerView where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerView::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DateTimePickerView where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerView::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DateTimePickerView where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DateTimePickerView::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DateTimePickerView
+pub fn termrock::widgets::DateTimePickerView::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DateTimePickerView
+#[non_exhaustive] pub enum termrock::widgets::DateTimeValidity
+pub termrock::widgets::DateTimeValidity::Empty
+pub termrock::widgets::DateTimeValidity::Intermediate
+pub termrock::widgets::DateTimeValidity::Invalid
+pub termrock::widgets::DateTimeValidity::OutOfRange
+pub termrock::widgets::DateTimeValidity::Valid
+impl termrock::widgets::DateTimeValidity
+pub const fn termrock::widgets::DateTimeValidity::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DateTimeValidity
+pub fn termrock::widgets::DateTimeValidity::clone(&self) -> termrock::widgets::DateTimeValidity
+impl core::cmp::Eq for termrock::widgets::DateTimeValidity
+impl core::cmp::PartialEq for termrock::widgets::DateTimeValidity
+pub fn termrock::widgets::DateTimeValidity::eq(&self, &termrock::widgets::DateTimeValidity) -> bool
+impl core::default::Default for termrock::widgets::DateTimeValidity
+pub fn termrock::widgets::DateTimeValidity::default() -> termrock::widgets::DateTimeValidity
+impl core::fmt::Debug for termrock::widgets::DateTimeValidity
+pub fn termrock::widgets::DateTimeValidity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DateTimeValidity
+pub fn termrock::widgets::DateTimeValidity::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DateTimeValidity
+impl core::marker::StructuralPartialEq for termrock::widgets::DateTimeValidity
+impl core::marker::Freeze for termrock::widgets::DateTimeValidity
+impl core::marker::Send for termrock::widgets::DateTimeValidity
+impl core::marker::Sync for termrock::widgets::DateTimeValidity
+impl core::marker::Unpin for termrock::widgets::DateTimeValidity
+impl core::marker::UnsafeUnpin for termrock::widgets::DateTimeValidity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DateTimeValidity
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DateTimeValidity
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DateTimeValidity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DateTimeValidity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DateTimeValidity where U: core::convert::From<T>
+pub fn termrock::widgets::DateTimeValidity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DateTimeValidity where U: core::convert::Into<T>
+pub type termrock::widgets::DateTimeValidity::Error = core::convert::Infallible
+pub fn termrock::widgets::DateTimeValidity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DateTimeValidity where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DateTimeValidity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DateTimeValidity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DateTimeValidity where T: core::clone::Clone
+pub type termrock::widgets::DateTimeValidity::Owned = T
+pub fn termrock::widgets::DateTimeValidity::clone_into(&self, &mut T)
+pub fn termrock::widgets::DateTimeValidity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DateTimeValidity where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DateTimeValidity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DateTimeValidity where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimeValidity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DateTimeValidity where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimeValidity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DateTimeValidity where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DateTimeValidity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DateTimeValidity
+pub fn termrock::widgets::DateTimeValidity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DateTimeValidity
 #[non_exhaustive] pub enum termrock::widgets::DescriptionKind
 pub termrock::widgets::DescriptionKind::Error
 pub termrock::widgets::DescriptionKind::Help
@@ -24756,6 +25084,59 @@ pub unsafe fn termrock::widgets::ThemePickerOutcome::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::ThemePickerOutcome
 pub fn termrock::widgets::ThemePickerOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ThemePickerOutcome
+#[non_exhaustive] pub enum termrock::widgets::TimeDisplayFormat
+pub termrock::widgets::TimeDisplayFormat::Hm12
+pub termrock::widgets::TimeDisplayFormat::Hm24
+pub termrock::widgets::TimeDisplayFormat::Hms24
+impl termrock::widgets::TimeDisplayFormat
+pub fn termrock::widgets::TimeDisplayFormat::format(self, termrock::widgets::CivilTime) -> alloc::string::String
+pub const fn termrock::widgets::TimeDisplayFormat::id(self) -> &'static str
+pub fn termrock::widgets::TimeDisplayFormat::parse(self, &str) -> core::option::Option<termrock::widgets::CivilTime>
+impl core::clone::Clone for termrock::widgets::TimeDisplayFormat
+pub fn termrock::widgets::TimeDisplayFormat::clone(&self) -> termrock::widgets::TimeDisplayFormat
+impl core::cmp::Eq for termrock::widgets::TimeDisplayFormat
+impl core::cmp::PartialEq for termrock::widgets::TimeDisplayFormat
+pub fn termrock::widgets::TimeDisplayFormat::eq(&self, &termrock::widgets::TimeDisplayFormat) -> bool
+impl core::default::Default for termrock::widgets::TimeDisplayFormat
+pub fn termrock::widgets::TimeDisplayFormat::default() -> termrock::widgets::TimeDisplayFormat
+impl core::fmt::Debug for termrock::widgets::TimeDisplayFormat
+pub fn termrock::widgets::TimeDisplayFormat::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TimeDisplayFormat
+pub fn termrock::widgets::TimeDisplayFormat::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TimeDisplayFormat
+impl core::marker::StructuralPartialEq for termrock::widgets::TimeDisplayFormat
+impl core::marker::Freeze for termrock::widgets::TimeDisplayFormat
+impl core::marker::Send for termrock::widgets::TimeDisplayFormat
+impl core::marker::Sync for termrock::widgets::TimeDisplayFormat
+impl core::marker::Unpin for termrock::widgets::TimeDisplayFormat
+impl core::marker::UnsafeUnpin for termrock::widgets::TimeDisplayFormat
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TimeDisplayFormat
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TimeDisplayFormat
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TimeDisplayFormat where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TimeDisplayFormat::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TimeDisplayFormat where U: core::convert::From<T>
+pub fn termrock::widgets::TimeDisplayFormat::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TimeDisplayFormat where U: core::convert::Into<T>
+pub type termrock::widgets::TimeDisplayFormat::Error = core::convert::Infallible
+pub fn termrock::widgets::TimeDisplayFormat::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TimeDisplayFormat where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TimeDisplayFormat::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TimeDisplayFormat::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TimeDisplayFormat where T: core::clone::Clone
+pub type termrock::widgets::TimeDisplayFormat::Owned = T
+pub fn termrock::widgets::TimeDisplayFormat::clone_into(&self, &mut T)
+pub fn termrock::widgets::TimeDisplayFormat::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TimeDisplayFormat where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TimeDisplayFormat::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TimeDisplayFormat where T: ?core::marker::Sized
+pub fn termrock::widgets::TimeDisplayFormat::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TimeDisplayFormat where T: ?core::marker::Sized
+pub fn termrock::widgets::TimeDisplayFormat::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TimeDisplayFormat where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TimeDisplayFormat::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TimeDisplayFormat
+pub fn termrock::widgets::TimeDisplayFormat::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TimeDisplayFormat
 #[non_exhaustive] pub enum termrock::widgets::ToastLifetime
 pub termrock::widgets::ToastLifetime::ExpiresAfter(core::time::Duration)
 pub termrock::widgets::ToastLifetime::Persistent
@@ -26076,6 +26457,58 @@ pub unsafe fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::clone_to_unin
 impl<T> core::convert::From<T> for termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub fn termrock::widgets::VirtualGridOutcome<RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::VirtualGridOutcome<RowId, ColId>
+#[non_exhaustive] pub enum termrock::widgets::WeekStart
+pub termrock::widgets::WeekStart::Monday
+pub termrock::widgets::WeekStart::Sunday
+impl termrock::widgets::WeekStart
+pub const fn termrock::widgets::WeekStart::column(self, u8) -> u8
+pub const fn termrock::widgets::WeekStart::headers(self) -> [&'static str; 7]
+pub const fn termrock::widgets::WeekStart::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::WeekStart
+pub fn termrock::widgets::WeekStart::clone(&self) -> termrock::widgets::WeekStart
+impl core::cmp::Eq for termrock::widgets::WeekStart
+impl core::cmp::PartialEq for termrock::widgets::WeekStart
+pub fn termrock::widgets::WeekStart::eq(&self, &termrock::widgets::WeekStart) -> bool
+impl core::default::Default for termrock::widgets::WeekStart
+pub fn termrock::widgets::WeekStart::default() -> termrock::widgets::WeekStart
+impl core::fmt::Debug for termrock::widgets::WeekStart
+pub fn termrock::widgets::WeekStart::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::WeekStart
+pub fn termrock::widgets::WeekStart::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::WeekStart
+impl core::marker::StructuralPartialEq for termrock::widgets::WeekStart
+impl core::marker::Freeze for termrock::widgets::WeekStart
+impl core::marker::Send for termrock::widgets::WeekStart
+impl core::marker::Sync for termrock::widgets::WeekStart
+impl core::marker::Unpin for termrock::widgets::WeekStart
+impl core::marker::UnsafeUnpin for termrock::widgets::WeekStart
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::WeekStart
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::WeekStart
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::WeekStart where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::WeekStart::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::WeekStart where U: core::convert::From<T>
+pub fn termrock::widgets::WeekStart::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::WeekStart where U: core::convert::Into<T>
+pub type termrock::widgets::WeekStart::Error = core::convert::Infallible
+pub fn termrock::widgets::WeekStart::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::WeekStart where U: core::convert::TryFrom<T>
+pub type termrock::widgets::WeekStart::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::WeekStart::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::WeekStart where T: core::clone::Clone
+pub type termrock::widgets::WeekStart::Owned = T
+pub fn termrock::widgets::WeekStart::clone_into(&self, &mut T)
+pub fn termrock::widgets::WeekStart::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::WeekStart where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::WeekStart::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::WeekStart where T: ?core::marker::Sized
+pub fn termrock::widgets::WeekStart::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::WeekStart where T: ?core::marker::Sized
+pub fn termrock::widgets::WeekStart::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::WeekStart where T: core::clone::Clone
+pub unsafe fn termrock::widgets::WeekStart::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::WeekStart
+pub fn termrock::widgets::WeekStart::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::WeekStart
 pub struct termrock::widgets::Accordion<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Accordion<'a, Id>
 pub fn termrock::widgets::Accordion<'a, Id>::handle_intent(&self, &mut termrock::widgets::AccordionState<Id>, termrock::context::ContextUiIntent) -> termrock::widgets::AccordionOutcome<Id>
@@ -28756,6 +29189,231 @@ pub unsafe fn termrock::widgets::ChordFormat::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ChordFormat
 pub fn termrock::widgets::ChordFormat::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChordFormat
+pub struct termrock::widgets::CivilDate
+pub termrock::widgets::CivilDate::day: u8
+pub termrock::widgets::CivilDate::month: u8
+pub termrock::widgets::CivilDate::year: i32
+impl termrock::widgets::CivilDate
+pub fn termrock::widgets::CivilDate::add_days(self, i32) -> Self
+pub fn termrock::widgets::CivilDate::add_months(self, i32) -> Self
+pub fn termrock::widgets::CivilDate::new(i32, u8, u8) -> core::option::Option<Self>
+pub fn termrock::widgets::CivilDate::parse_iso(&str) -> core::option::Option<Self>
+pub fn termrock::widgets::CivilDate::to_iso(self) -> alloc::string::String
+pub fn termrock::widgets::CivilDate::weekday_iso(self) -> u8
+impl core::clone::Clone for termrock::widgets::CivilDate
+pub fn termrock::widgets::CivilDate::clone(&self) -> termrock::widgets::CivilDate
+impl core::cmp::Eq for termrock::widgets::CivilDate
+impl core::cmp::Ord for termrock::widgets::CivilDate
+pub fn termrock::widgets::CivilDate::cmp(&self, &termrock::widgets::CivilDate) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::CivilDate
+pub fn termrock::widgets::CivilDate::eq(&self, &termrock::widgets::CivilDate) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::CivilDate
+pub fn termrock::widgets::CivilDate::partial_cmp(&self, &termrock::widgets::CivilDate) -> core::option::Option<core::cmp::Ordering>
+impl core::fmt::Debug for termrock::widgets::CivilDate
+pub fn termrock::widgets::CivilDate::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CivilDate
+pub fn termrock::widgets::CivilDate::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CivilDate
+impl core::marker::StructuralPartialEq for termrock::widgets::CivilDate
+impl core::marker::Freeze for termrock::widgets::CivilDate
+impl core::marker::Send for termrock::widgets::CivilDate
+impl core::marker::Sync for termrock::widgets::CivilDate
+impl core::marker::Unpin for termrock::widgets::CivilDate
+impl core::marker::UnsafeUnpin for termrock::widgets::CivilDate
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CivilDate
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CivilDate
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::CivilDate where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CivilDate::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CivilDate where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CivilDate::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CivilDate where U: core::convert::From<T>
+pub fn termrock::widgets::CivilDate::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CivilDate where U: core::convert::Into<T>
+pub type termrock::widgets::CivilDate::Error = core::convert::Infallible
+pub fn termrock::widgets::CivilDate::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CivilDate where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CivilDate::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CivilDate::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CivilDate where T: core::clone::Clone
+pub type termrock::widgets::CivilDate::Owned = T
+pub fn termrock::widgets::CivilDate::clone_into(&self, &mut T)
+pub fn termrock::widgets::CivilDate::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CivilDate where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CivilDate::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CivilDate where T: ?core::marker::Sized
+pub fn termrock::widgets::CivilDate::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CivilDate where T: ?core::marker::Sized
+pub fn termrock::widgets::CivilDate::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CivilDate where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CivilDate::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CivilDate
+pub fn termrock::widgets::CivilDate::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CivilDate
+pub struct termrock::widgets::CivilDateRange
+pub termrock::widgets::CivilDateRange::end: termrock::widgets::CivilDate
+pub termrock::widgets::CivilDateRange::start: termrock::widgets::CivilDate
+impl termrock::widgets::CivilDateRange
+pub fn termrock::widgets::CivilDateRange::contains(self, termrock::widgets::CivilDate) -> bool
+pub fn termrock::widgets::CivilDateRange::new(termrock::widgets::CivilDate, termrock::widgets::CivilDate) -> Self
+impl core::clone::Clone for termrock::widgets::CivilDateRange
+pub fn termrock::widgets::CivilDateRange::clone(&self) -> termrock::widgets::CivilDateRange
+impl core::cmp::Eq for termrock::widgets::CivilDateRange
+impl core::cmp::PartialEq for termrock::widgets::CivilDateRange
+pub fn termrock::widgets::CivilDateRange::eq(&self, &termrock::widgets::CivilDateRange) -> bool
+impl core::fmt::Debug for termrock::widgets::CivilDateRange
+pub fn termrock::widgets::CivilDateRange::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CivilDateRange
+pub fn termrock::widgets::CivilDateRange::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CivilDateRange
+impl core::marker::StructuralPartialEq for termrock::widgets::CivilDateRange
+impl core::marker::Freeze for termrock::widgets::CivilDateRange
+impl core::marker::Send for termrock::widgets::CivilDateRange
+impl core::marker::Sync for termrock::widgets::CivilDateRange
+impl core::marker::Unpin for termrock::widgets::CivilDateRange
+impl core::marker::UnsafeUnpin for termrock::widgets::CivilDateRange
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CivilDateRange
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CivilDateRange
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CivilDateRange where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CivilDateRange::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CivilDateRange where U: core::convert::From<T>
+pub fn termrock::widgets::CivilDateRange::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CivilDateRange where U: core::convert::Into<T>
+pub type termrock::widgets::CivilDateRange::Error = core::convert::Infallible
+pub fn termrock::widgets::CivilDateRange::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CivilDateRange where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CivilDateRange::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CivilDateRange::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CivilDateRange where T: core::clone::Clone
+pub type termrock::widgets::CivilDateRange::Owned = T
+pub fn termrock::widgets::CivilDateRange::clone_into(&self, &mut T)
+pub fn termrock::widgets::CivilDateRange::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CivilDateRange where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CivilDateRange::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CivilDateRange where T: ?core::marker::Sized
+pub fn termrock::widgets::CivilDateRange::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CivilDateRange where T: ?core::marker::Sized
+pub fn termrock::widgets::CivilDateRange::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CivilDateRange where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CivilDateRange::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CivilDateRange
+pub fn termrock::widgets::CivilDateRange::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CivilDateRange
+pub struct termrock::widgets::CivilDateTime
+pub termrock::widgets::CivilDateTime::date: termrock::widgets::CivilDate
+pub termrock::widgets::CivilDateTime::time: termrock::widgets::CivilTime
+impl termrock::widgets::CivilDateTime
+pub const fn termrock::widgets::CivilDateTime::new(termrock::widgets::CivilDate, termrock::widgets::CivilTime) -> Self
+pub fn termrock::widgets::CivilDateTime::parse_iso(&str) -> core::option::Option<Self>
+pub fn termrock::widgets::CivilDateTime::to_iso(self, bool) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::CivilDateTime
+pub fn termrock::widgets::CivilDateTime::clone(&self) -> termrock::widgets::CivilDateTime
+impl core::cmp::Eq for termrock::widgets::CivilDateTime
+impl core::cmp::Ord for termrock::widgets::CivilDateTime
+pub fn termrock::widgets::CivilDateTime::cmp(&self, &termrock::widgets::CivilDateTime) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::CivilDateTime
+pub fn termrock::widgets::CivilDateTime::eq(&self, &termrock::widgets::CivilDateTime) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::CivilDateTime
+pub fn termrock::widgets::CivilDateTime::partial_cmp(&self, &termrock::widgets::CivilDateTime) -> core::option::Option<core::cmp::Ordering>
+impl core::fmt::Debug for termrock::widgets::CivilDateTime
+pub fn termrock::widgets::CivilDateTime::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CivilDateTime
+pub fn termrock::widgets::CivilDateTime::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CivilDateTime
+impl core::marker::StructuralPartialEq for termrock::widgets::CivilDateTime
+impl core::marker::Freeze for termrock::widgets::CivilDateTime
+impl core::marker::Send for termrock::widgets::CivilDateTime
+impl core::marker::Sync for termrock::widgets::CivilDateTime
+impl core::marker::Unpin for termrock::widgets::CivilDateTime
+impl core::marker::UnsafeUnpin for termrock::widgets::CivilDateTime
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CivilDateTime
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CivilDateTime
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::CivilDateTime where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CivilDateTime::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CivilDateTime where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CivilDateTime::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CivilDateTime where U: core::convert::From<T>
+pub fn termrock::widgets::CivilDateTime::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CivilDateTime where U: core::convert::Into<T>
+pub type termrock::widgets::CivilDateTime::Error = core::convert::Infallible
+pub fn termrock::widgets::CivilDateTime::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CivilDateTime where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CivilDateTime::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CivilDateTime::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CivilDateTime where T: core::clone::Clone
+pub type termrock::widgets::CivilDateTime::Owned = T
+pub fn termrock::widgets::CivilDateTime::clone_into(&self, &mut T)
+pub fn termrock::widgets::CivilDateTime::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CivilDateTime where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CivilDateTime::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CivilDateTime where T: ?core::marker::Sized
+pub fn termrock::widgets::CivilDateTime::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CivilDateTime where T: ?core::marker::Sized
+pub fn termrock::widgets::CivilDateTime::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CivilDateTime where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CivilDateTime::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CivilDateTime
+pub fn termrock::widgets::CivilDateTime::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CivilDateTime
+pub struct termrock::widgets::CivilTime
+pub termrock::widgets::CivilTime::hour: u8
+pub termrock::widgets::CivilTime::minute: u8
+pub termrock::widgets::CivilTime::second: u8
+impl termrock::widgets::CivilTime
+pub fn termrock::widgets::CivilTime::from_minutes(u32) -> core::option::Option<Self>
+pub const fn termrock::widgets::CivilTime::midnight() -> Self
+pub fn termrock::widgets::CivilTime::minutes_since_midnight(self) -> u32
+pub fn termrock::widgets::CivilTime::new(u8, u8, u8) -> core::option::Option<Self>
+pub fn termrock::widgets::CivilTime::parse_iso(&str) -> core::option::Option<Self>
+pub fn termrock::widgets::CivilTime::to_iso(self, bool) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::CivilTime
+pub fn termrock::widgets::CivilTime::clone(&self) -> termrock::widgets::CivilTime
+impl core::cmp::Eq for termrock::widgets::CivilTime
+impl core::cmp::Ord for termrock::widgets::CivilTime
+pub fn termrock::widgets::CivilTime::cmp(&self, &termrock::widgets::CivilTime) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::CivilTime
+pub fn termrock::widgets::CivilTime::eq(&self, &termrock::widgets::CivilTime) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::CivilTime
+pub fn termrock::widgets::CivilTime::partial_cmp(&self, &termrock::widgets::CivilTime) -> core::option::Option<core::cmp::Ordering>
+impl core::fmt::Debug for termrock::widgets::CivilTime
+pub fn termrock::widgets::CivilTime::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CivilTime
+pub fn termrock::widgets::CivilTime::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CivilTime
+impl core::marker::StructuralPartialEq for termrock::widgets::CivilTime
+impl core::marker::Freeze for termrock::widgets::CivilTime
+impl core::marker::Send for termrock::widgets::CivilTime
+impl core::marker::Sync for termrock::widgets::CivilTime
+impl core::marker::Unpin for termrock::widgets::CivilTime
+impl core::marker::UnsafeUnpin for termrock::widgets::CivilTime
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CivilTime
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CivilTime
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::CivilTime where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CivilTime::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CivilTime where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CivilTime::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CivilTime where U: core::convert::From<T>
+pub fn termrock::widgets::CivilTime::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CivilTime where U: core::convert::Into<T>
+pub type termrock::widgets::CivilTime::Error = core::convert::Infallible
+pub fn termrock::widgets::CivilTime::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CivilTime where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CivilTime::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CivilTime::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CivilTime where T: core::clone::Clone
+pub type termrock::widgets::CivilTime::Owned = T
+pub fn termrock::widgets::CivilTime::clone_into(&self, &mut T)
+pub fn termrock::widgets::CivilTime::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CivilTime where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CivilTime::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CivilTime where T: ?core::marker::Sized
+pub fn termrock::widgets::CivilTime::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CivilTime where T: ?core::marker::Sized
+pub fn termrock::widgets::CivilTime::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CivilTime where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CivilTime::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CivilTime
+pub fn termrock::widgets::CivilTime::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CivilTime
 pub struct termrock::widgets::CodeBlock<'a, H: termrock::widgets::SyntaxHighlighter>
 impl<'a, H: termrock::widgets::SyntaxHighlighter> termrock::widgets::CodeBlock<'a, H>
 pub const fn termrock::widgets::CodeBlock<'a, H>::controls(self, termrock::widgets::ControlRender) -> Self
@@ -30328,6 +30986,148 @@ pub unsafe fn termrock::widgets::DataTableToolbar<'a>::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::DataTableToolbar<'a>
 pub fn termrock::widgets::DataTableToolbar<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DataTableToolbar<'a>
+pub struct termrock::widgets::DateTimePicker<'a>
+impl<'a> termrock::widgets::DateTimePicker<'a>
+pub const fn termrock::widgets::DateTimePicker<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::DateTimePicker<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::DateTimePicker<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::DateTimePicker<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DateTimePickerState)
+pub fn termrock::widgets::DateTimePicker<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::DateTimePickerState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::DateTimePicker<'a>::show_timezone(self, bool) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DateTimePicker<'_>
+pub type &termrock::widgets::DateTimePicker<'_>::State = termrock::widgets::DateTimePickerState
+pub fn &termrock::widgets::DateTimePicker<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::DateTimePicker<'_>
+pub type termrock::widgets::DateTimePicker<'_>::State = termrock::widgets::DateTimePickerState
+pub fn termrock::widgets::DateTimePicker<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::DateTimePicker<'a>
+pub fn termrock::widgets::DateTimePicker<'a>::clone(&self) -> termrock::widgets::DateTimePicker<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::DateTimePicker<'a>
+pub fn termrock::widgets::DateTimePicker<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::DateTimePicker<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::DateTimePicker<'a>
+impl<'a> core::marker::Send for termrock::widgets::DateTimePicker<'a>
+impl<'a> core::marker::Sync for termrock::widgets::DateTimePicker<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::DateTimePicker<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::DateTimePicker<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DateTimePicker<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DateTimePicker<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::DateTimePicker<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::DateTimePicker<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DateTimePicker<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::DateTimePicker<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::DateTimePicker<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DateTimePicker<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DateTimePicker<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DateTimePicker<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DateTimePicker<'a> where T: core::clone::Clone
+pub type termrock::widgets::DateTimePicker<'a>::Owned = T
+pub fn termrock::widgets::DateTimePicker<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DateTimePicker<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DateTimePicker<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePicker<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DateTimePicker<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePicker<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DateTimePicker<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePicker<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DateTimePicker<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DateTimePicker<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DateTimePicker<'a>
+pub fn termrock::widgets::DateTimePicker<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DateTimePicker<'a>
+pub struct termrock::widgets::DateTimePickerState
+impl termrock::widgets::DateTimePickerState
+pub fn termrock::widgets::DateTimePickerState::close(&mut self) -> termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerState::commit_draft(&mut self) -> termrock::widgets::DateTimePickerOutcome
+pub const fn termrock::widgets::DateTimePickerState::date(&self) -> core::option::Option<termrock::widgets::CivilDate>
+pub fn termrock::widgets::DateTimePickerState::datetime(&self) -> core::option::Option<termrock::widgets::CivilDateTime>
+pub fn termrock::widgets::DateTimePickerState::dismiss_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::DateTimePickerState::draft(&self) -> &str
+pub const fn termrock::widgets::DateTimePickerState::focus_date(&self) -> core::option::Option<termrock::widgets::CivilDate>
+pub fn termrock::widgets::DateTimePickerState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerState::is_available(&self, termrock::widgets::CivilDate) -> bool
+pub const fn termrock::widgets::DateTimePickerState::is_open(&self) -> bool
+pub const fn termrock::widgets::DateTimePickerState::kind(&self) -> termrock::widgets::DateTimePickerKind
+pub fn termrock::widgets::DateTimePickerState::new(termrock::widgets::DateTimePickerKind) -> Self
+pub fn termrock::widgets::DateTimePickerState::open(&mut self, ratatui_core::layout::rect::Rect) -> termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerState::open_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::DateTimePickerState::preferred_date_view(ratatui_core::layout::rect::Rect) -> termrock::widgets::DateTimePickerView
+pub const fn termrock::widgets::DateTimePickerState::presentation(&self) -> termrock::widgets::DateTimePickerPresentation
+pub fn termrock::widgets::DateTimePickerState::presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::DateTimePickerPresentation
+pub fn termrock::widgets::DateTimePickerState::range(&self) -> core::option::Option<termrock::widgets::CivilDateRange>
+pub fn termrock::widgets::DateTimePickerState::select_date(&mut self, termrock::widgets::CivilDate) -> termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerState::select_time(&mut self, termrock::widgets::CivilTime) -> termrock::widgets::DateTimePickerOutcome
+pub fn termrock::widgets::DateTimePickerState::set_date(&mut self, core::option::Option<termrock::widgets::CivilDate>)
+pub fn termrock::widgets::DateTimePickerState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::DateTimePickerState::set_focused(&mut self, bool)
+pub fn termrock::widgets::DateTimePickerState::set_max_date(&mut self, core::option::Option<termrock::widgets::CivilDate>)
+pub fn termrock::widgets::DateTimePickerState::set_min_date(&mut self, core::option::Option<termrock::widgets::CivilDate>)
+pub fn termrock::widgets::DateTimePickerState::set_range(&mut self, core::option::Option<termrock::widgets::CivilDateRange>)
+pub fn termrock::widgets::DateTimePickerState::set_time(&mut self, core::option::Option<termrock::widgets::CivilTime>)
+pub fn termrock::widgets::DateTimePickerState::set_timezone_label(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::DateTimePickerState::set_today(&mut self, termrock::widgets::CivilDate)
+pub const fn termrock::widgets::DateTimePickerState::time(&self) -> core::option::Option<termrock::widgets::CivilTime>
+pub fn termrock::widgets::DateTimePickerState::timezone_label(&self) -> core::option::Option<&str>
+pub const fn termrock::widgets::DateTimePickerState::today(&self) -> core::option::Option<termrock::widgets::CivilDate>
+pub const fn termrock::widgets::DateTimePickerState::validity(&self) -> termrock::widgets::DateTimeValidity
+pub const fn termrock::widgets::DateTimePickerState::view(&self) -> termrock::widgets::DateTimePickerView
+pub const fn termrock::widgets::DateTimePickerState::with_allow_empty(self, bool) -> Self
+pub fn termrock::widgets::DateTimePickerState::with_date(self, termrock::widgets::CivilDate) -> Self
+pub const fn termrock::widgets::DateTimePickerState::with_date_format(self, termrock::widgets::DateDisplayFormat) -> Self
+pub const fn termrock::widgets::DateTimePickerState::with_kind(self, termrock::widgets::DateTimePickerKind) -> Self
+pub const fn termrock::widgets::DateTimePickerState::with_max_date(self, termrock::widgets::CivilDate) -> Self
+pub const fn termrock::widgets::DateTimePickerState::with_min_date(self, termrock::widgets::CivilDate) -> Self
+pub const fn termrock::widgets::DateTimePickerState::with_presentation(self, termrock::widgets::DateTimePickerPresentation) -> Self
+pub fn termrock::widgets::DateTimePickerState::with_range(self, termrock::widgets::CivilDateRange) -> Self
+pub fn termrock::widgets::DateTimePickerState::with_time(self, termrock::widgets::CivilTime) -> Self
+pub const fn termrock::widgets::DateTimePickerState::with_time_format(self, termrock::widgets::TimeDisplayFormat) -> Self
+pub fn termrock::widgets::DateTimePickerState::with_time_step_minutes(self, u32) -> Self
+pub fn termrock::widgets::DateTimePickerState::with_timezone_label(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::DateTimePickerState::with_week_start(self, termrock::widgets::WeekStart) -> Self
+impl core::clone::Clone for termrock::widgets::DateTimePickerState
+pub fn termrock::widgets::DateTimePickerState::clone(&self) -> termrock::widgets::DateTimePickerState
+impl core::cmp::Eq for termrock::widgets::DateTimePickerState
+impl core::cmp::PartialEq for termrock::widgets::DateTimePickerState
+pub fn termrock::widgets::DateTimePickerState::eq(&self, &termrock::widgets::DateTimePickerState) -> bool
+impl core::default::Default for termrock::widgets::DateTimePickerState
+pub fn termrock::widgets::DateTimePickerState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::DateTimePickerState
+pub fn termrock::widgets::DateTimePickerState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::DateTimePickerState
+impl core::marker::Freeze for termrock::widgets::DateTimePickerState
+impl core::marker::Send for termrock::widgets::DateTimePickerState
+impl core::marker::Sync for termrock::widgets::DateTimePickerState
+impl core::marker::Unpin for termrock::widgets::DateTimePickerState
+impl core::marker::UnsafeUnpin for termrock::widgets::DateTimePickerState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DateTimePickerState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DateTimePickerState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DateTimePickerState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DateTimePickerState where U: core::convert::From<T>
+pub fn termrock::widgets::DateTimePickerState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DateTimePickerState where U: core::convert::Into<T>
+pub type termrock::widgets::DateTimePickerState::Error = core::convert::Infallible
+pub fn termrock::widgets::DateTimePickerState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DateTimePickerState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DateTimePickerState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DateTimePickerState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DateTimePickerState where T: core::clone::Clone
+pub type termrock::widgets::DateTimePickerState::Owned = T
+pub fn termrock::widgets::DateTimePickerState::clone_into(&self, &mut T)
+pub fn termrock::widgets::DateTimePickerState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DateTimePickerState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DateTimePickerState where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DateTimePickerState where T: ?core::marker::Sized
+pub fn termrock::widgets::DateTimePickerState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DateTimePickerState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DateTimePickerState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DateTimePickerState
+pub fn termrock::widgets::DateTimePickerState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DateTimePickerState
 pub struct termrock::widgets::Description<'a, Id>
 impl<'a, Id> termrock::widgets::Description<'a, Id>
 pub const fn termrock::widgets::Description<'a, Id>::error(&'a str, &'a termrock::style::DesignSystem) -> Self
@@ -31740,7 +32540,7 @@ pub fn termrock::widgets::FilePickerState::set_focused(&mut self, bool)
 pub fn termrock::widgets::FilePickerState::set_name_filter(&mut self, impl core::convert::Into<alloc::string::String>)
 pub const fn termrock::widgets::FilePickerState::set_presentation(&mut self, termrock::widgets::FilePickerPresentation)
 pub fn termrock::widgets::FilePickerState::set_show_hidden(&mut self, bool)
-pub const fn termrock::widgets::FilePickerState::set_sort(&mut self, termrock::widgets::FileSortKey)
+pub fn termrock::widgets::FilePickerState::set_sort(&mut self, termrock::widgets::FileSortKey)
 pub const fn termrock::widgets::FilePickerState::show_hidden(&self) -> bool
 pub fn termrock::widgets::FilePickerState::with_mode(self, termrock::widgets::FilePickerMode) -> Self
 pub const fn termrock::widgets::FilePickerState::with_multi(self, bool) -> Self
@@ -45465,6 +46265,9 @@ impl<T> either::into_either::IntoEither for termrock::widgets::WorkbenchMode<'a,
 pub const termrock::widgets::BUILTIN_THEME_PRESETS: &[termrock::widgets::ThemePreset]
 pub const termrock::widgets::COMMAND_PALETTE_OVERLAY_ID: &str
 pub const termrock::widgets::COMPLETION_OVERLAY_ID: &str
+pub const termrock::widgets::DATE_TIME_PICKER_FULLSCREEN_MAX_HEIGHT: u16
+pub const termrock::widgets::DATE_TIME_PICKER_LIST_MAX_WIDTH: u16
+pub const termrock::widgets::DATE_TIME_PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::DEFAULT_COMBO_RECENT_LIMIT: usize
 pub const termrock::widgets::DEFAULT_DEBOUNCE: core::time::Duration
 pub const termrock::widgets::DEFAULT_HISTORY_LIMIT: usize

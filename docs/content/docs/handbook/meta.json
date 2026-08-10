@@ -16,6 +16,7 @@
     "host-frame",
     "form",
     "file-picker",
+    "date-time-picker",
     "menu",
     "object-inspector",
     "log-stream",
