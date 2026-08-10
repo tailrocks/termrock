@@ -359,6 +359,22 @@ state.set_focused(true);
 state.reconcile_route(&nodes);
 let _ = TreeNavigation::new(&nodes, &system);`,
   },
+  Breadcrumbs: {
+    description:
+      'Location context and ancestor navigation with collapse, overflow menu, editable path mode, and a single Tab stop.',
+    primaryStory: 'breadcrumbs/path',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{BreadcrumbItem, Breadcrumbs, BreadcrumbsState};
+
+let system = DesignSystem::default();
+let items = [
+    BreadcrumbItem::new("h", "home"),
+    BreadcrumbItem::new("s", "src").current(true),
+];
+let mut state = BreadcrumbsState::new();
+state.set_focused(true);
+let _ = Breadcrumbs::new(&items, &system).ascii(true);`,
+  },
   TextArea: {
     description:
       'A multi-line grapheme-safe editor with selection, undo/redo, soft wrap, line numbers, and host clipboard/external-editor hooks.',

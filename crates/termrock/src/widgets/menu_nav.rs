@@ -449,113 +449,7 @@ pub type ContextMenu<'a, Id> = Menu<'a, Id>;
 
 // Sidebar / NavigationList live in `sidebar.rs` (0153 redesign).
 
-// ── Breadcrumbs ─────────────────────────────────────────────────────────────
-
-/// Crumb item.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BreadcrumbItem<Id> {
-    /// Id.
-    pub id: Id,
-    /// Label.
-    pub label: String,
-}
-
-impl<Id> BreadcrumbItem<Id> {
-    /// Crumb.
-    #[must_use]
-    pub fn new(id: Id, label: impl Into<String>) -> Self {
-        Self {
-            id,
-            label: label.into(),
-        }
-    }
-}
-
-/// Breadcrumb outcome.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum BreadcrumbsOutcome<Id> {
-    /// No change.
-    Ignored,
-    /// Navigate to crumb.
-    Navigate(Id),
-    /// Overflow menu requested.
-    OpenOverflow,
-}
-
-/// Breadcrumbs state.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct BreadcrumbsState {
-    focus_index: usize,
-}
-
-impl BreadcrumbsState {
-    /// Keys.
-    pub fn handle_key<Id: Clone>(
-        &mut self,
-        key: KeyEvent,
-        items: &[BreadcrumbItem<Id>],
-    ) -> BreadcrumbsOutcome<Id> {
-        if items.is_empty() || key.kind != KeyEventKind::Press {
-            return BreadcrumbsOutcome::Ignored;
-        }
-        match key.code {
-            KeyCode::Left => {
-                self.focus_index = self.focus_index.saturating_sub(1);
-                BreadcrumbsOutcome::Ignored
-            }
-            KeyCode::Right => {
-                self.focus_index = (self.focus_index + 1).min(items.len().saturating_sub(1));
-                BreadcrumbsOutcome::Ignored
-            }
-            KeyCode::Enter => {
-                let id = items[self.focus_index.min(items.len() - 1)].id.clone();
-                BreadcrumbsOutcome::Navigate(id)
-            }
-            _ => BreadcrumbsOutcome::Ignored,
-        }
-    }
-}
-
-/// Breadcrumbs with middle collapse on narrow width.
-#[derive(Debug, Clone, Copy)]
-pub struct Breadcrumbs<'a, Id> {
-    items: &'a [BreadcrumbItem<Id>],
-    tokens: &'a DesignSystem,
-}
-
-impl<'a, Id> Breadcrumbs<'a, Id> {
-    /// Items root→leaf.
-    #[must_use]
-    pub const fn new(items: &'a [BreadcrumbItem<Id>], tokens: &'a DesignSystem) -> Self {
-        Self { items, tokens }
-    }
-
-    /// Paint; when width < 40 and len > 3, middle becomes `…`.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, _state: &BreadcrumbsState) {
-        if area.is_empty() || self.items.is_empty() {
-            return;
-        }
-        let narrow = area.width < 40 && self.items.len() > 3;
-        let parts: Vec<&str> = if narrow {
-            let first = self.items[0].label.as_str();
-            let last = self.items[self.items.len() - 1].label.as_str();
-            vec![first, "…", last]
-        } else {
-            self.items.iter().map(|i| i.label.as_str()).collect()
-        };
-        let line = parts.join(" / ");
-        let text = take_display_cols(&line, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &text,
-            usize::from(area.width),
-            self.tokens.style(Role::TextMuted),
-        );
-        let _ = display_cols(&line);
-    }
-}
+// Breadcrumbs live in breadcrumbs.rs (0155 redesign).
 
 // ── Drawer / Popover / Tooltip ──────────────────────────────────────────────
 
@@ -1060,20 +954,6 @@ mod tests {
         assert!(matches!(tip, OverlayOutcome::Opened { .. }));
         assert_eq!(stack.top().unwrap().kind, OverlayKind::Tooltip);
         assert!(!stack.top_owns_input());
-    }
-
-    #[test]
-    fn breadcrumbs_navigate() {
-        let items = [
-            BreadcrumbItem::new("r", "root"),
-            BreadcrumbItem::new("a", "a"),
-        ];
-        let mut state = BreadcrumbsState::default();
-        let _ = state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &items);
-        assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
-            BreadcrumbsOutcome::Navigate("a")
-        ));
     }
 
     #[test]

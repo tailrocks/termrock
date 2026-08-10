@@ -73,6 +73,7 @@ use termrock::{
         example_agent_workbench_nav, example_database_nav, example_settings_nav,
         TreeNavigation, TreeNavigationState, example_docs_tree, example_project_tree,
         example_schema_tree, example_settings_tree,
+        BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs, BreadcrumbsState,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -899,6 +900,51 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             12,
             navigation_list_basic_story,
+        ),
+        Story::new(
+            "breadcrumbs/path",
+            "Breadcrumbs path",
+            "Breadcrumbs",
+            "Full path trail with current segment underlined.",
+            48,
+            1,
+            breadcrumbs_path_story,
+        ),
+        Story::new(
+            "breadcrumbs/collapsed",
+            "Breadcrumbs collapsed",
+            "Breadcrumbs",
+            "Narrow collapse keeps root and current; middle ellipsis.",
+            28,
+            1,
+            breadcrumbs_collapsed_story,
+        ),
+        Story::new(
+            "breadcrumbs/editable",
+            "Breadcrumbs editable",
+            "Breadcrumbs",
+            "Editable path mode draft.",
+            48,
+            1,
+            breadcrumbs_editable_story,
+        ),
+        Story::new(
+            "breadcrumbs/status",
+            "Breadcrumbs status",
+            "Breadcrumbs",
+            "ASCII status marks on segments.",
+            40,
+            1,
+            breadcrumbs_status_story,
+        ),
+        Story::new(
+            "breadcrumbs/schema",
+            "Breadcrumbs schema",
+            "Breadcrumbs",
+            "Schema object path trail (master-detail).",
+            48,
+            1,
+            breadcrumbs_schema_story,
         ),
         Story::new(
             "tree-navigation/project",
@@ -7489,6 +7535,82 @@ fn navigation_list_basic_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     );
     NavigationList::new(&items, system)
         .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn breadcrumbs_path_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        BreadcrumbItem::new("home", "home"),
+        BreadcrumbItem::new("proj", "projects"),
+        BreadcrumbItem::new("tr", "termrock"),
+        BreadcrumbItem::new("src", "src").current(true),
+    ];
+    let mut state = BreadcrumbsState::new();
+    state.set_focused(true);
+    state.set_focus_index(2);
+    let _ = Breadcrumbs::new(&items, system)
+        .ascii(true)
+        .separator(BreadcrumbSeparator::Slash)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn breadcrumbs_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        BreadcrumbItem::new("r", "root"),
+        BreadcrumbItem::new("a", "alpha"),
+        BreadcrumbItem::new("b", "beta"),
+        BreadcrumbItem::new("c", "gamma"),
+        BreadcrumbItem::new("d", "current").current(true),
+    ];
+    let mut state = BreadcrumbsState::new();
+    state.set_focused(true);
+    state.set_focus_ellipsis(true);
+    let _ = Breadcrumbs::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn breadcrumbs_editable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        BreadcrumbItem::new("h", "home"),
+        BreadcrumbItem::new("p", "proj").current(true),
+    ];
+    let mut state = BreadcrumbsState::new().with_editable(true);
+    state.set_focused(true);
+    let _ = state.start_edit(&items);
+    let _ = Breadcrumbs::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn breadcrumbs_status_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        BreadcrumbItem::new("db", "analytics"),
+        BreadcrumbItem::new("sch", "public").status(BreadcrumbStatus::Warning),
+        BreadcrumbItem::new("t", "users")
+            .status(BreadcrumbStatus::Error)
+            .current(true),
+    ];
+    let mut state = BreadcrumbsState::new();
+    state.set_focused(true);
+    let _ = Breadcrumbs::new(&items, system)
+        .ascii(true)
+        .separator(BreadcrumbSeparator::Chevron)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn breadcrumbs_schema_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        BreadcrumbItem::new("c", "cluster"),
+        BreadcrumbItem::new("d", "db"),
+        BreadcrumbItem::new("s", "schema"),
+        BreadcrumbItem::new("t", "table").current(true),
+    ];
+    let mut state = BreadcrumbsState::new();
+    state.set_focused(true);
+    let _ = Breadcrumbs::new(&items, system)
+        .ascii(false)
+        .separator(BreadcrumbSeparator::Chevron)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 

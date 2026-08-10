@@ -54,6 +54,7 @@ mod log_pane;
 mod markdown;
 mod menu_nav;
 mod sidebar;
+mod breadcrumbs;
 mod card;
 mod panel;
 mod permission;
@@ -236,11 +237,15 @@ pub use markdown::{
     project_markdown, project_plain_lines,
 };
 pub use menu_nav::{
-    BreadcrumbItem, Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, ContextMenu,
-    DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuItem, MenuOutcome, MenuState,
-    POPOVER_OVERLAY_ID, Popover, TOOLTIP_OVERLAY_ID, Tooltip, TooltipState, dismiss_drawer_overlay,
-    open_drawer_overlay, open_popover_overlay, open_tooltip_overlay, place_drawer, place_popover,
-    place_tooltip,
+    ContextMenu, DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuItem, MenuOutcome,
+    MenuState, POPOVER_OVERLAY_ID, Popover, TOOLTIP_OVERLAY_ID, Tooltip, TooltipState,
+    dismiss_drawer_overlay, open_drawer_overlay, open_popover_overlay, open_tooltip_overlay,
+    place_drawer, place_popover, place_tooltip,
+};
+pub use breadcrumbs::{
+    BREADCRUMBS_COLLAPSE_MAX_WIDTH, BREADCRUMBS_ELLIPSIS, BREADCRUMBS_ELLIPSIS_ASCII, BreadcrumbHit,
+    BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode,
+    BreadcrumbsOutcome, BreadcrumbsPresentation, BreadcrumbsState, crumbs_from_labels,
 };
 pub use sidebar::{
     SIDEBAR_DRAWER_MAX_WIDTH, SIDEBAR_DRAWER_OVERLAY_ID, SIDEBAR_RAIL_MAX_WIDTH, NavItem,

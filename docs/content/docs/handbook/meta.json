@@ -22,6 +22,7 @@
     "tabs",
     "sidebar",
     "tree-navigation",
+    "breadcrumbs",
     "menu",
     "object-inspector",
     "log-stream",
