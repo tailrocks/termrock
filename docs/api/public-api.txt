@@ -14653,6 +14653,11 @@ pub const termrock::widgets::diff_bench::LARGE_DIFF_LINES: usize
 pub const termrock::widgets::diff_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::diff_bench::SPLIT_MIN_WIDTH: u16
 pub const termrock::widgets::diff_bench::VIEWPORT: u16
+pub mod termrock::widgets::diff_review_bench
+pub const termrock::widgets::diff_review_bench::COMMENTS: usize
+pub const termrock::widgets::diff_review_bench::FILE_TREE: usize
+pub const termrock::widgets::diff_review_bench::UNDO: usize
+pub const termrock::widgets::diff_review_bench::VIEWPORT: u16
 pub mod termrock::widgets::event_stream_bench
 pub const termrock::widgets::event_stream_bench::BURST_BATCH: u32
 pub const termrock::widgets::event_stream_bench::EVENTS_PER_SEC: u32
@@ -19292,6 +19297,115 @@ pub unsafe fn termrock::widgets::DialogVariant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DialogVariant
 pub fn termrock::widgets::DialogVariant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DialogVariant
+#[non_exhaustive] pub enum termrock::widgets::DiffCommentAnchor
+pub termrock::widgets::DiffCommentAnchor::File
+pub termrock::widgets::DiffCommentAnchor::File::file_id: alloc::string::String
+pub termrock::widgets::DiffCommentAnchor::Hunk
+pub termrock::widgets::DiffCommentAnchor::Hunk::hunk_id: alloc::string::String
+pub termrock::widgets::DiffCommentAnchor::Line
+pub termrock::widgets::DiffCommentAnchor::Line::line_id: alloc::string::String
+impl termrock::widgets::DiffCommentAnchor
+pub fn termrock::widgets::DiffCommentAnchor::key(&self) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::DiffCommentAnchor
+pub fn termrock::widgets::DiffCommentAnchor::clone(&self) -> termrock::widgets::DiffCommentAnchor
+impl core::cmp::Eq for termrock::widgets::DiffCommentAnchor
+impl core::cmp::PartialEq for termrock::widgets::DiffCommentAnchor
+pub fn termrock::widgets::DiffCommentAnchor::eq(&self, &termrock::widgets::DiffCommentAnchor) -> bool
+impl core::fmt::Debug for termrock::widgets::DiffCommentAnchor
+pub fn termrock::widgets::DiffCommentAnchor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DiffCommentAnchor
+pub fn termrock::widgets::DiffCommentAnchor::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::widgets::DiffCommentAnchor
+impl core::marker::Freeze for termrock::widgets::DiffCommentAnchor
+impl core::marker::Send for termrock::widgets::DiffCommentAnchor
+impl core::marker::Sync for termrock::widgets::DiffCommentAnchor
+impl core::marker::Unpin for termrock::widgets::DiffCommentAnchor
+impl core::marker::UnsafeUnpin for termrock::widgets::DiffCommentAnchor
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffCommentAnchor
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffCommentAnchor
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffCommentAnchor where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffCommentAnchor::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffCommentAnchor where U: core::convert::From<T>
+pub fn termrock::widgets::DiffCommentAnchor::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffCommentAnchor where U: core::convert::Into<T>
+pub type termrock::widgets::DiffCommentAnchor::Error = core::convert::Infallible
+pub fn termrock::widgets::DiffCommentAnchor::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffCommentAnchor where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffCommentAnchor::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffCommentAnchor::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffCommentAnchor where T: core::clone::Clone
+pub type termrock::widgets::DiffCommentAnchor::Owned = T
+pub fn termrock::widgets::DiffCommentAnchor::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffCommentAnchor::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffCommentAnchor where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffCommentAnchor::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffCommentAnchor where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffCommentAnchor::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffCommentAnchor where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffCommentAnchor::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffCommentAnchor where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffCommentAnchor::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffCommentAnchor
+pub fn termrock::widgets::DiffCommentAnchor::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffCommentAnchor
+#[non_exhaustive] pub enum termrock::widgets::DiffDecision
+pub termrock::widgets::DiffDecision::Applied
+pub termrock::widgets::DiffDecision::Approved
+pub termrock::widgets::DiffDecision::Pending
+pub termrock::widgets::DiffDecision::Rejected
+pub termrock::widgets::DiffDecision::Skipped
+pub termrock::widgets::DiffDecision::Staged
+pub termrock::widgets::DiffDecision::Unstaged
+impl termrock::widgets::DiffDecision
+pub const fn termrock::widgets::DiffDecision::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::DiffDecision::id(self) -> &'static str
+pub const fn termrock::widgets::DiffDecision::is_destructive(self) -> bool
+pub const fn termrock::widgets::DiffDecision::safe_verb(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DiffDecision
+pub fn termrock::widgets::DiffDecision::clone(&self) -> termrock::widgets::DiffDecision
+impl core::cmp::Eq for termrock::widgets::DiffDecision
+impl core::cmp::PartialEq for termrock::widgets::DiffDecision
+pub fn termrock::widgets::DiffDecision::eq(&self, &termrock::widgets::DiffDecision) -> bool
+impl core::default::Default for termrock::widgets::DiffDecision
+pub fn termrock::widgets::DiffDecision::default() -> termrock::widgets::DiffDecision
+impl core::fmt::Debug for termrock::widgets::DiffDecision
+pub fn termrock::widgets::DiffDecision::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DiffDecision
+pub fn termrock::widgets::DiffDecision::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DiffDecision
+impl core::marker::StructuralPartialEq for termrock::widgets::DiffDecision
+impl core::marker::Freeze for termrock::widgets::DiffDecision
+impl core::marker::Send for termrock::widgets::DiffDecision
+impl core::marker::Sync for termrock::widgets::DiffDecision
+impl core::marker::Unpin for termrock::widgets::DiffDecision
+impl core::marker::UnsafeUnpin for termrock::widgets::DiffDecision
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffDecision
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffDecision
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffDecision where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffDecision::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffDecision where U: core::convert::From<T>
+pub fn termrock::widgets::DiffDecision::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffDecision where U: core::convert::Into<T>
+pub type termrock::widgets::DiffDecision::Error = core::convert::Infallible
+pub fn termrock::widgets::DiffDecision::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffDecision where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffDecision::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffDecision::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffDecision where T: core::clone::Clone
+pub type termrock::widgets::DiffDecision::Owned = T
+pub fn termrock::widgets::DiffDecision::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffDecision::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffDecision where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffDecision::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffDecision where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffDecision::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffDecision where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffDecision::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffDecision where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffDecision::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffDecision
+pub fn termrock::widgets::DiffDecision::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffDecision
 #[non_exhaustive] pub enum termrock::widgets::DiffEffectiveMode
 pub termrock::widgets::DiffEffectiveMode::Split
 pub termrock::widgets::DiffEffectiveMode::Unified
@@ -19447,11 +19561,33 @@ impl<T> core::convert::From<T> for termrock::widgets::DiffMode
 pub fn termrock::widgets::DiffMode::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffMode
 #[non_exhaustive] pub enum termrock::widgets::DiffReviewOutcome
+pub termrock::widgets::DiffReviewOutcome::ApplyRequested
+pub termrock::widgets::DiffReviewOutcome::ApplyRequested::units: alloc::vec::Vec<termrock::widgets::DiffReviewUnit>
+pub termrock::widgets::DiffReviewOutcome::ApproveRequested
+pub termrock::widgets::DiffReviewOutcome::ApproveRequested::units: alloc::vec::Vec<termrock::widgets::DiffReviewUnit>
 pub termrock::widgets::DiffReviewOutcome::Cancelled
+pub termrock::widgets::DiffReviewOutcome::CommentAdded(termrock::widgets::DiffComment)
+pub termrock::widgets::DiffReviewOutcome::CommentDraftChanged(alloc::string::String)
+pub termrock::widgets::DiffReviewOutcome::CommentRemoved
+pub termrock::widgets::DiffReviewOutcome::CommentRemoved::id: alloc::string::String
+pub termrock::widgets::DiffReviewOutcome::CommentResolved
+pub termrock::widgets::DiffReviewOutcome::CommentResolved::id: alloc::string::String
+pub termrock::widgets::DiffReviewOutcome::CommentResolved::resolved: bool
+pub termrock::widgets::DiffReviewOutcome::ConfirmCancelled
+pub termrock::widgets::DiffReviewOutcome::ConfirmRequired(termrock::widgets::DiffDestructiveConfirm)
 pub termrock::widgets::DiffReviewOutcome::CursorMoved
 pub termrock::widgets::DiffReviewOutcome::CursorMoved::index: usize
-pub termrock::widgets::DiffReviewOutcome::FileNavigated
-pub termrock::widgets::DiffReviewOutcome::FileNavigated::id: alloc::string::String
+pub termrock::widgets::DiffReviewOutcome::DecisionCleared
+pub termrock::widgets::DiffReviewOutcome::DecisionCleared::units: alloc::vec::Vec<termrock::widgets::DiffReviewUnit>
+pub termrock::widgets::DiffReviewOutcome::DecisionSet
+pub termrock::widgets::DiffReviewOutcome::DecisionSet::decision: termrock::widgets::DiffDecision
+pub termrock::widgets::DiffReviewOutcome::DecisionSet::units: alloc::vec::Vec<termrock::widgets::DiffReviewUnit>
+pub termrock::widgets::DiffReviewOutcome::ExternalEditorRequested
+pub termrock::widgets::DiffReviewOutcome::ExternalEditorRequested::line: core::option::Option<u32>
+pub termrock::widgets::DiffReviewOutcome::ExternalEditorRequested::path: alloc::string::String
+pub termrock::widgets::DiffReviewOutcome::FileCursorMoved
+pub termrock::widgets::DiffReviewOutcome::FileCursorMoved::id: alloc::string::String
+pub termrock::widgets::DiffReviewOutcome::FocusRegion(termrock::widgets::DiffReviewRegion)
 pub termrock::widgets::DiffReviewOutcome::FoldToggled
 pub termrock::widgets::DiffReviewOutcome::FoldToggled::folded: bool
 pub termrock::widgets::DiffReviewOutcome::FoldToggled::id: alloc::string::String
@@ -19460,17 +19596,26 @@ pub termrock::widgets::DiffReviewOutcome::HunkActivated::index: usize
 pub termrock::widgets::DiffReviewOutcome::HunkCursorMoved
 pub termrock::widgets::DiffReviewOutcome::HunkCursorMoved::index: usize
 pub termrock::widgets::DiffReviewOutcome::Ignored
+pub termrock::widgets::DiffReviewOutcome::Redone
+pub termrock::widgets::DiffReviewOutcome::RejectRequested
+pub termrock::widgets::DiffReviewOutcome::RejectRequested::units: alloc::vec::Vec<termrock::widgets::DiffReviewUnit>
 pub termrock::widgets::DiffReviewOutcome::Scrolled
 pub termrock::widgets::DiffReviewOutcome::Scrolled::offset: u16
 pub termrock::widgets::DiffReviewOutcome::SearchChanged(alloc::string::String)
+pub termrock::widgets::DiffReviewOutcome::SelectionChanged
+pub termrock::widgets::DiffReviewOutcome::SelectionChanged::keys: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::DiffReviewOutcome::StageRequested
+pub termrock::widgets::DiffReviewOutcome::StageRequested::units: alloc::vec::Vec<termrock::widgets::DiffReviewUnit>
+pub termrock::widgets::DiffReviewOutcome::SummaryActivated(termrock::widgets::DiffReviewSummary)
 pub termrock::widgets::DiffReviewOutcome::ToggleMode
+pub termrock::widgets::DiffReviewOutcome::Undone
+pub termrock::widgets::DiffReviewOutcome::UnstageRequested
+pub termrock::widgets::DiffReviewOutcome::UnstageRequested::units: alloc::vec::Vec<termrock::widgets::DiffReviewUnit>
 impl core::clone::Clone for termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewOutcome::clone(&self) -> termrock::widgets::DiffReviewOutcome
 impl core::cmp::Eq for termrock::widgets::DiffReviewOutcome
 impl core::cmp::PartialEq for termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewOutcome::eq(&self, &termrock::widgets::DiffReviewOutcome) -> bool
-impl core::convert::From<termrock::widgets::DiffViewOutcome> for termrock::widgets::DiffReviewOutcome
-pub fn termrock::widgets::DiffReviewOutcome::from(termrock::widgets::DiffViewOutcome) -> Self
 impl core::fmt::Debug for termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::DiffReviewOutcome
@@ -19506,6 +19651,113 @@ pub unsafe fn termrock::widgets::DiffReviewOutcome::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffReviewOutcome
+#[non_exhaustive] pub enum termrock::widgets::DiffReviewRegion
+pub termrock::widgets::DiffReviewRegion::Comments
+pub termrock::widgets::DiffReviewRegion::Diff
+pub termrock::widgets::DiffReviewRegion::FileTree
+pub termrock::widgets::DiffReviewRegion::Summary
+impl termrock::widgets::DiffReviewRegion
+pub const fn termrock::widgets::DiffReviewRegion::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DiffReviewRegion
+pub fn termrock::widgets::DiffReviewRegion::clone(&self) -> termrock::widgets::DiffReviewRegion
+impl core::cmp::Eq for termrock::widgets::DiffReviewRegion
+impl core::cmp::PartialEq for termrock::widgets::DiffReviewRegion
+pub fn termrock::widgets::DiffReviewRegion::eq(&self, &termrock::widgets::DiffReviewRegion) -> bool
+impl core::default::Default for termrock::widgets::DiffReviewRegion
+pub fn termrock::widgets::DiffReviewRegion::default() -> termrock::widgets::DiffReviewRegion
+impl core::fmt::Debug for termrock::widgets::DiffReviewRegion
+pub fn termrock::widgets::DiffReviewRegion::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DiffReviewRegion
+pub fn termrock::widgets::DiffReviewRegion::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DiffReviewRegion
+impl core::marker::StructuralPartialEq for termrock::widgets::DiffReviewRegion
+impl core::marker::Freeze for termrock::widgets::DiffReviewRegion
+impl core::marker::Send for termrock::widgets::DiffReviewRegion
+impl core::marker::Sync for termrock::widgets::DiffReviewRegion
+impl core::marker::Unpin for termrock::widgets::DiffReviewRegion
+impl core::marker::UnsafeUnpin for termrock::widgets::DiffReviewRegion
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffReviewRegion
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffReviewRegion
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffReviewRegion where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewRegion::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffReviewRegion where U: core::convert::From<T>
+pub fn termrock::widgets::DiffReviewRegion::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffReviewRegion where U: core::convert::Into<T>
+pub type termrock::widgets::DiffReviewRegion::Error = core::convert::Infallible
+pub fn termrock::widgets::DiffReviewRegion::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffReviewRegion where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffReviewRegion::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffReviewRegion::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffReviewRegion where T: core::clone::Clone
+pub type termrock::widgets::DiffReviewRegion::Owned = T
+pub fn termrock::widgets::DiffReviewRegion::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffReviewRegion::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffReviewRegion where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewRegion::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffReviewRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewRegion::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffReviewRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewRegion::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffReviewRegion where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffReviewRegion::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffReviewRegion
+pub fn termrock::widgets::DiffReviewRegion::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffReviewRegion
+#[non_exhaustive] pub enum termrock::widgets::DiffReviewUnitKind
+pub termrock::widgets::DiffReviewUnitKind::File
+pub termrock::widgets::DiffReviewUnitKind::Hunk
+pub termrock::widgets::DiffReviewUnitKind::LineRange
+impl termrock::widgets::DiffReviewUnitKind
+pub const fn termrock::widgets::DiffReviewUnitKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DiffReviewUnitKind
+pub fn termrock::widgets::DiffReviewUnitKind::clone(&self) -> termrock::widgets::DiffReviewUnitKind
+impl core::cmp::Eq for termrock::widgets::DiffReviewUnitKind
+impl core::cmp::Ord for termrock::widgets::DiffReviewUnitKind
+pub fn termrock::widgets::DiffReviewUnitKind::cmp(&self, &termrock::widgets::DiffReviewUnitKind) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::DiffReviewUnitKind
+pub fn termrock::widgets::DiffReviewUnitKind::eq(&self, &termrock::widgets::DiffReviewUnitKind) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::DiffReviewUnitKind
+pub fn termrock::widgets::DiffReviewUnitKind::partial_cmp(&self, &termrock::widgets::DiffReviewUnitKind) -> core::option::Option<core::cmp::Ordering>
+impl core::fmt::Debug for termrock::widgets::DiffReviewUnitKind
+pub fn termrock::widgets::DiffReviewUnitKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DiffReviewUnitKind
+pub fn termrock::widgets::DiffReviewUnitKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DiffReviewUnitKind
+impl core::marker::StructuralPartialEq for termrock::widgets::DiffReviewUnitKind
+impl core::marker::Freeze for termrock::widgets::DiffReviewUnitKind
+impl core::marker::Send for termrock::widgets::DiffReviewUnitKind
+impl core::marker::Sync for termrock::widgets::DiffReviewUnitKind
+impl core::marker::Unpin for termrock::widgets::DiffReviewUnitKind
+impl core::marker::UnsafeUnpin for termrock::widgets::DiffReviewUnitKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffReviewUnitKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffReviewUnitKind
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::DiffReviewUnitKind where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnitKind::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffReviewUnitKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnitKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffReviewUnitKind where U: core::convert::From<T>
+pub fn termrock::widgets::DiffReviewUnitKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffReviewUnitKind where U: core::convert::Into<T>
+pub type termrock::widgets::DiffReviewUnitKind::Error = core::convert::Infallible
+pub fn termrock::widgets::DiffReviewUnitKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffReviewUnitKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffReviewUnitKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffReviewUnitKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffReviewUnitKind where T: core::clone::Clone
+pub type termrock::widgets::DiffReviewUnitKind::Owned = T
+pub fn termrock::widgets::DiffReviewUnitKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffReviewUnitKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffReviewUnitKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnitKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffReviewUnitKind where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnitKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffReviewUnitKind where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnitKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffReviewUnitKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffReviewUnitKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffReviewUnitKind
+pub fn termrock::widgets::DiffReviewUnitKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffReviewUnitKind
 #[non_exhaustive] pub enum termrock::widgets::DiffViewOutcome
 pub termrock::widgets::DiffViewOutcome::Cancelled
 pub termrock::widgets::DiffViewOutcome::CursorMoved
@@ -19529,8 +19781,6 @@ pub fn termrock::widgets::DiffViewOutcome::clone(&self) -> termrock::widgets::Di
 impl core::cmp::Eq for termrock::widgets::DiffViewOutcome
 impl core::cmp::PartialEq for termrock::widgets::DiffViewOutcome
 pub fn termrock::widgets::DiffViewOutcome::eq(&self, &termrock::widgets::DiffViewOutcome) -> bool
-impl core::convert::From<termrock::widgets::DiffViewOutcome> for termrock::widgets::DiffReviewOutcome
-pub fn termrock::widgets::DiffReviewOutcome::from(termrock::widgets::DiffViewOutcome) -> Self
 impl core::fmt::Debug for termrock::widgets::DiffViewOutcome
 pub fn termrock::widgets::DiffViewOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::DiffViewOutcome
@@ -40849,6 +41099,99 @@ pub unsafe fn termrock::widgets::DialogState<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::DialogState<Id>
 pub fn termrock::widgets::DialogState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DialogState<Id>
+pub struct termrock::widgets::DiffComment
+pub termrock::widgets::DiffComment::anchor: termrock::widgets::DiffCommentAnchor
+pub termrock::widgets::DiffComment::author: core::option::Option<alloc::string::String>
+pub termrock::widgets::DiffComment::body: alloc::string::String
+pub termrock::widgets::DiffComment::id: alloc::string::String
+pub termrock::widgets::DiffComment::resolved: bool
+impl termrock::widgets::DiffComment
+pub fn termrock::widgets::DiffComment::author(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::DiffComment::new(impl core::convert::Into<alloc::string::String>, termrock::widgets::DiffCommentAnchor, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::DiffComment
+pub fn termrock::widgets::DiffComment::clone(&self) -> termrock::widgets::DiffComment
+impl core::cmp::Eq for termrock::widgets::DiffComment
+impl core::cmp::PartialEq for termrock::widgets::DiffComment
+pub fn termrock::widgets::DiffComment::eq(&self, &termrock::widgets::DiffComment) -> bool
+impl core::fmt::Debug for termrock::widgets::DiffComment
+pub fn termrock::widgets::DiffComment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::DiffComment
+impl core::marker::Freeze for termrock::widgets::DiffComment
+impl core::marker::Send for termrock::widgets::DiffComment
+impl core::marker::Sync for termrock::widgets::DiffComment
+impl core::marker::Unpin for termrock::widgets::DiffComment
+impl core::marker::UnsafeUnpin for termrock::widgets::DiffComment
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffComment
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffComment
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffComment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffComment::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffComment where U: core::convert::From<T>
+pub fn termrock::widgets::DiffComment::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffComment where U: core::convert::Into<T>
+pub type termrock::widgets::DiffComment::Error = core::convert::Infallible
+pub fn termrock::widgets::DiffComment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffComment where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffComment::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffComment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffComment where T: core::clone::Clone
+pub type termrock::widgets::DiffComment::Owned = T
+pub fn termrock::widgets::DiffComment::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffComment::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffComment where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffComment::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffComment where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffComment::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffComment where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffComment::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffComment where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffComment::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffComment
+pub fn termrock::widgets::DiffComment::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffComment
+pub struct termrock::widgets::DiffDestructiveConfirm
+pub termrock::widgets::DiffDestructiveConfirm::decision: termrock::widgets::DiffDecision
+pub termrock::widgets::DiffDestructiveConfirm::subject: alloc::string::String
+pub termrock::widgets::DiffDestructiveConfirm::units: alloc::vec::Vec<termrock::widgets::DiffReviewUnit>
+impl core::clone::Clone for termrock::widgets::DiffDestructiveConfirm
+pub fn termrock::widgets::DiffDestructiveConfirm::clone(&self) -> termrock::widgets::DiffDestructiveConfirm
+impl core::cmp::Eq for termrock::widgets::DiffDestructiveConfirm
+impl core::cmp::PartialEq for termrock::widgets::DiffDestructiveConfirm
+pub fn termrock::widgets::DiffDestructiveConfirm::eq(&self, &termrock::widgets::DiffDestructiveConfirm) -> bool
+impl core::fmt::Debug for termrock::widgets::DiffDestructiveConfirm
+pub fn termrock::widgets::DiffDestructiveConfirm::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::DiffDestructiveConfirm
+impl core::marker::Freeze for termrock::widgets::DiffDestructiveConfirm
+impl core::marker::Send for termrock::widgets::DiffDestructiveConfirm
+impl core::marker::Sync for termrock::widgets::DiffDestructiveConfirm
+impl core::marker::Unpin for termrock::widgets::DiffDestructiveConfirm
+impl core::marker::UnsafeUnpin for termrock::widgets::DiffDestructiveConfirm
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffDestructiveConfirm
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffDestructiveConfirm
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffDestructiveConfirm where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffDestructiveConfirm::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffDestructiveConfirm where U: core::convert::From<T>
+pub fn termrock::widgets::DiffDestructiveConfirm::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffDestructiveConfirm where U: core::convert::Into<T>
+pub type termrock::widgets::DiffDestructiveConfirm::Error = core::convert::Infallible
+pub fn termrock::widgets::DiffDestructiveConfirm::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffDestructiveConfirm where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffDestructiveConfirm::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffDestructiveConfirm::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffDestructiveConfirm where T: core::clone::Clone
+pub type termrock::widgets::DiffDestructiveConfirm::Owned = T
+pub fn termrock::widgets::DiffDestructiveConfirm::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffDestructiveConfirm::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffDestructiveConfirm where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffDestructiveConfirm::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffDestructiveConfirm where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffDestructiveConfirm::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffDestructiveConfirm where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffDestructiveConfirm::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffDestructiveConfirm where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffDestructiveConfirm::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffDestructiveConfirm
+pub fn termrock::widgets::DiffDestructiveConfirm::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffDestructiveConfirm
 pub struct termrock::widgets::DiffFile<'a>
 pub termrock::widgets::DiffFile::id: &'a str
 pub termrock::widgets::DiffFile::language: core::option::Option<&'a str>
@@ -41069,11 +41412,21 @@ pub struct termrock::widgets::DiffReview<'a>
 impl<'a> termrock::widgets::DiffReview<'a>
 pub const fn termrock::widgets::DiffReview<'a>::ascii(self, bool) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::DiffReview<'a>::diff_files(self, &'a [termrock::widgets::DiffFile<'a>]) -> Self
+pub const fn termrock::widgets::DiffReview<'a>::files(self, &'a [termrock::widgets::DiffReviewFileRow<'a>]) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::hunks(self, &'a [termrock::widgets::DiffHunk]) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::new(&'a [termrock::widgets::DiffLine<'a>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::DiffReview<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DiffReviewState)
+pub const fn termrock::widgets::DiffReview<'a>::show_summary(self, bool) -> Self
+pub const fn termrock::widgets::DiffReview<'a>::show_tree(self, bool) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::title(self, &'a str) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DiffReview<'_>
+pub type &termrock::widgets::DiffReview<'_>::State = termrock::widgets::DiffReviewState
+pub fn &termrock::widgets::DiffReview<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::DiffReview<'_>
+pub type termrock::widgets::DiffReview<'_>::State = termrock::widgets::DiffReviewState
+pub fn termrock::widgets::DiffReview<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a> core::clone::Clone for termrock::widgets::DiffReview<'a>
 pub fn termrock::widgets::DiffReview<'a>::clone(&self) -> termrock::widgets::DiffReview<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::DiffReview<'a>
@@ -41108,30 +41461,97 @@ pub unsafe fn termrock::widgets::DiffReview<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DiffReview<'a>
 pub fn termrock::widgets::DiffReview<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffReview<'a>
+pub struct termrock::widgets::DiffReviewFileRow<'a>
+pub termrock::widgets::DiffReviewFileRow::added: u32
+pub termrock::widgets::DiffReviewFileRow::id: &'a str
+pub termrock::widgets::DiffReviewFileRow::old_path: core::option::Option<&'a str>
+pub termrock::widgets::DiffReviewFileRow::path: &'a str
+pub termrock::widgets::DiffReviewFileRow::removed: u32
+impl<'a> termrock::widgets::DiffReviewFileRow<'a>
+pub const fn termrock::widgets::DiffReviewFileRow<'a>::new(&'a str, &'a str) -> Self
+pub const fn termrock::widgets::DiffReviewFileRow<'a>::old_path(self, &'a str) -> Self
+pub const fn termrock::widgets::DiffReviewFileRow<'a>::stats(self, u32, u32) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::DiffReviewFileRow<'a>
+pub fn termrock::widgets::DiffReviewFileRow<'a>::clone(&self) -> termrock::widgets::DiffReviewFileRow<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::DiffReviewFileRow<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::DiffReviewFileRow<'a>
+pub fn termrock::widgets::DiffReviewFileRow<'a>::eq(&self, &termrock::widgets::DiffReviewFileRow<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::DiffReviewFileRow<'a>
+pub fn termrock::widgets::DiffReviewFileRow<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::DiffReviewFileRow<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::DiffReviewFileRow<'a>
+impl<'a> core::marker::Send for termrock::widgets::DiffReviewFileRow<'a>
+impl<'a> core::marker::Sync for termrock::widgets::DiffReviewFileRow<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::DiffReviewFileRow<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::DiffReviewFileRow<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffReviewFileRow<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffReviewFileRow<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffReviewFileRow<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewFileRow<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffReviewFileRow<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::DiffReviewFileRow<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffReviewFileRow<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::DiffReviewFileRow<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::DiffReviewFileRow<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffReviewFileRow<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffReviewFileRow<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffReviewFileRow<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffReviewFileRow<'a> where T: core::clone::Clone
+pub type termrock::widgets::DiffReviewFileRow<'a>::Owned = T
+pub fn termrock::widgets::DiffReviewFileRow<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffReviewFileRow<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffReviewFileRow<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewFileRow<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffReviewFileRow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewFileRow<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffReviewFileRow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewFileRow<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffReviewFileRow<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffReviewFileRow<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffReviewFileRow<'a>
+pub fn termrock::widgets::DiffReviewFileRow<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffReviewFileRow<'a>
 pub struct termrock::widgets::DiffReviewState
+pub termrock::widgets::DiffReviewState::ascii: bool
+pub termrock::widgets::DiffReviewState::colorless: bool
+pub termrock::widgets::DiffReviewState::comment_draft: core::option::Option<alloc::string::String>
+pub termrock::widgets::DiffReviewState::file_cursor: usize
+pub termrock::widgets::DiffReviewState::file_regions: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::DiffReviewState::pending_confirm: core::option::Option<termrock::widgets::DiffDestructiveConfirm>
+pub termrock::widgets::DiffReviewState::region: termrock::widgets::DiffReviewRegion
 pub termrock::widgets::DiffReviewState::view: termrock::widgets::DiffViewState
 impl termrock::widgets::DiffReviewState
 pub const fn termrock::widgets::DiffReviewState::accepts_input(&self) -> bool
-pub fn termrock::widgets::DiffReviewState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
+pub fn termrock::widgets::DiffReviewState::comments(&self) -> &[termrock::widgets::DiffComment]
+pub fn termrock::widgets::DiffReviewState::decisions(&self) -> &alloc::collections::btree::map::BTreeMap<alloc::string::String, termrock::widgets::DiffDecision>
+pub fn termrock::widgets::DiffReviewState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
-pub fn termrock::widgets::DiffReviewState::handle_key_lines(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
+pub fn termrock::widgets::DiffReviewState::handle_key_lines(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk], &[termrock::widgets::DiffReviewFileRow<'_>]) -> termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::DiffHunk], usize) -> termrock::widgets::DiffReviewOutcome
-pub fn termrock::widgets::DiffReviewState::handle_mouse_lines(&mut self, termrock::input::MouseEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
+pub fn termrock::widgets::DiffReviewState::handle_mouse_lines(&mut self, termrock::input::MouseEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk], &[termrock::widgets::DiffReviewFileRow<'_>]) -> termrock::widgets::DiffReviewOutcome
 pub const fn termrock::widgets::DiffReviewState::hunk_cursor(&self) -> usize
 pub const fn termrock::widgets::DiffReviewState::hunk_index(&self) -> usize
+pub fn termrock::widgets::DiffReviewState::hydrate_decision(&mut self, termrock::widgets::DiffReviewUnit, termrock::widgets::DiffDecision)
 pub const fn termrock::widgets::DiffReviewState::is_split(&self) -> bool
 pub fn termrock::widgets::DiffReviewState::new() -> Self
 pub fn termrock::widgets::DiffReviewState::offset_y(&self) -> u16
 pub const fn termrock::widgets::DiffReviewState::prefers_split(&self) -> bool
+pub fn termrock::widgets::DiffReviewState::redo(&mut self) -> bool
+pub fn termrock::widgets::DiffReviewState::selected_files(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
+pub fn termrock::widgets::DiffReviewState::selected_hunks(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
+pub fn termrock::widgets::DiffReviewState::selected_lines(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
 pub fn termrock::widgets::DiffReviewState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::DiffReviewState::set_comments(&mut self, alloc::vec::Vec<termrock::widgets::DiffComment>)
 pub fn termrock::widgets::DiffReviewState::set_hunk_cursor(&mut self, usize)
+pub fn termrock::widgets::DiffReviewState::summary(&self, usize, usize) -> termrock::widgets::DiffReviewSummary
+pub fn termrock::widgets::DiffReviewState::undo(&mut self) -> bool
 impl core::clone::Clone for termrock::widgets::DiffReviewState
 pub fn termrock::widgets::DiffReviewState::clone(&self) -> termrock::widgets::DiffReviewState
 impl core::cmp::Eq for termrock::widgets::DiffReviewState
 impl core::cmp::PartialEq for termrock::widgets::DiffReviewState
 pub fn termrock::widgets::DiffReviewState::eq(&self, &termrock::widgets::DiffReviewState) -> bool
 impl core::default::Default for termrock::widgets::DiffReviewState
-pub fn termrock::widgets::DiffReviewState::default() -> termrock::widgets::DiffReviewState
+pub fn termrock::widgets::DiffReviewState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::DiffReviewState
 pub fn termrock::widgets::DiffReviewState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::DiffReviewState
@@ -41167,6 +41587,117 @@ pub unsafe fn termrock::widgets::DiffReviewState::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::DiffReviewState
 pub fn termrock::widgets::DiffReviewState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffReviewState
+pub struct termrock::widgets::DiffReviewSummary
+pub termrock::widgets::DiffReviewSummary::applied: usize
+pub termrock::widgets::DiffReviewSummary::approved: usize
+pub termrock::widgets::DiffReviewSummary::comments: usize
+pub termrock::widgets::DiffReviewSummary::files: usize
+pub termrock::widgets::DiffReviewSummary::hunks: usize
+pub termrock::widgets::DiffReviewSummary::pending_decisions: usize
+pub termrock::widgets::DiffReviewSummary::rejected: usize
+pub termrock::widgets::DiffReviewSummary::selected: usize
+pub termrock::widgets::DiffReviewSummary::staged: usize
+pub termrock::widgets::DiffReviewSummary::unresolved_comments: usize
+impl core::clone::Clone for termrock::widgets::DiffReviewSummary
+pub fn termrock::widgets::DiffReviewSummary::clone(&self) -> termrock::widgets::DiffReviewSummary
+impl core::cmp::Eq for termrock::widgets::DiffReviewSummary
+impl core::cmp::PartialEq for termrock::widgets::DiffReviewSummary
+pub fn termrock::widgets::DiffReviewSummary::eq(&self, &termrock::widgets::DiffReviewSummary) -> bool
+impl core::default::Default for termrock::widgets::DiffReviewSummary
+pub fn termrock::widgets::DiffReviewSummary::default() -> termrock::widgets::DiffReviewSummary
+impl core::fmt::Debug for termrock::widgets::DiffReviewSummary
+pub fn termrock::widgets::DiffReviewSummary::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::DiffReviewSummary
+impl core::marker::StructuralPartialEq for termrock::widgets::DiffReviewSummary
+impl core::marker::Freeze for termrock::widgets::DiffReviewSummary
+impl core::marker::Send for termrock::widgets::DiffReviewSummary
+impl core::marker::Sync for termrock::widgets::DiffReviewSummary
+impl core::marker::Unpin for termrock::widgets::DiffReviewSummary
+impl core::marker::UnsafeUnpin for termrock::widgets::DiffReviewSummary
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffReviewSummary
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffReviewSummary
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffReviewSummary where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewSummary::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffReviewSummary where U: core::convert::From<T>
+pub fn termrock::widgets::DiffReviewSummary::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffReviewSummary where U: core::convert::Into<T>
+pub type termrock::widgets::DiffReviewSummary::Error = core::convert::Infallible
+pub fn termrock::widgets::DiffReviewSummary::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffReviewSummary where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffReviewSummary::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffReviewSummary::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffReviewSummary where T: core::clone::Clone
+pub type termrock::widgets::DiffReviewSummary::Owned = T
+pub fn termrock::widgets::DiffReviewSummary::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffReviewSummary::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffReviewSummary where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewSummary::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffReviewSummary where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewSummary::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffReviewSummary where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewSummary::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffReviewSummary where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffReviewSummary::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffReviewSummary
+pub fn termrock::widgets::DiffReviewSummary::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffReviewSummary
+pub struct termrock::widgets::DiffReviewUnit
+pub termrock::widgets::DiffReviewUnit::end_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::DiffReviewUnit::id: alloc::string::String
+pub termrock::widgets::DiffReviewUnit::kind: termrock::widgets::DiffReviewUnitKind
+impl termrock::widgets::DiffReviewUnit
+pub fn termrock::widgets::DiffReviewUnit::file(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::DiffReviewUnit::hunk(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::DiffReviewUnit::key(&self) -> alloc::string::String
+pub fn termrock::widgets::DiffReviewUnit::line_range(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::DiffReviewUnit
+pub fn termrock::widgets::DiffReviewUnit::clone(&self) -> termrock::widgets::DiffReviewUnit
+impl core::cmp::Eq for termrock::widgets::DiffReviewUnit
+impl core::cmp::Ord for termrock::widgets::DiffReviewUnit
+pub fn termrock::widgets::DiffReviewUnit::cmp(&self, &termrock::widgets::DiffReviewUnit) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::DiffReviewUnit
+pub fn termrock::widgets::DiffReviewUnit::eq(&self, &termrock::widgets::DiffReviewUnit) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::DiffReviewUnit
+pub fn termrock::widgets::DiffReviewUnit::partial_cmp(&self, &termrock::widgets::DiffReviewUnit) -> core::option::Option<core::cmp::Ordering>
+impl core::fmt::Debug for termrock::widgets::DiffReviewUnit
+pub fn termrock::widgets::DiffReviewUnit::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DiffReviewUnit
+pub fn termrock::widgets::DiffReviewUnit::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::widgets::DiffReviewUnit
+impl core::marker::Freeze for termrock::widgets::DiffReviewUnit
+impl core::marker::Send for termrock::widgets::DiffReviewUnit
+impl core::marker::Sync for termrock::widgets::DiffReviewUnit
+impl core::marker::Unpin for termrock::widgets::DiffReviewUnit
+impl core::marker::UnsafeUnpin for termrock::widgets::DiffReviewUnit
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffReviewUnit
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffReviewUnit
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::DiffReviewUnit where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnit::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffReviewUnit where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnit::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffReviewUnit where U: core::convert::From<T>
+pub fn termrock::widgets::DiffReviewUnit::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffReviewUnit where U: core::convert::Into<T>
+pub type termrock::widgets::DiffReviewUnit::Error = core::convert::Infallible
+pub fn termrock::widgets::DiffReviewUnit::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffReviewUnit where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffReviewUnit::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffReviewUnit::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffReviewUnit where T: core::clone::Clone
+pub type termrock::widgets::DiffReviewUnit::Owned = T
+pub fn termrock::widgets::DiffReviewUnit::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffReviewUnit::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffReviewUnit where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnit::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffReviewUnit where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnit::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffReviewUnit where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffReviewUnit::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffReviewUnit where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffReviewUnit::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffReviewUnit
+pub fn termrock::widgets::DiffReviewUnit::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffReviewUnit
 pub struct termrock::widgets::DiffSyntaxSpan<'a>
 pub termrock::widgets::DiffSyntaxSpan::_tag: core::option::Option<&'a str>
 pub termrock::widgets::DiffSyntaxSpan::end: usize
@@ -62110,6 +62641,7 @@ pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::DIALOG_NESTED_OVERLAY_PREFIX: &str
 pub const termrock::widgets::DIALOG_OVERLAY_ID: &str
+pub const termrock::widgets::DIFF_REVIEW_UNDO_LIMIT: usize
 pub const termrock::widgets::DRAWER_DEFAULT_HEIGHT: u16
 pub const termrock::widgets::DRAWER_DEFAULT_WIDTH: u16
 pub const termrock::widgets::DRAWER_FULLSCREEN_MAX_HEIGHT: u16

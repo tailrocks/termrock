@@ -1,45 +1,74 @@
 ---
 title: DiffReview
-description: Interactive hunk review veneer over DiffView.
+description: Interactive patch review on DiffView — decisions, comments, file tree, undo.
 ---
 
 # DiffReview
 
-Thin review layer over [DiffView](/docs/handbook/diff-view). Same `DiffLine` /
-`DiffHunk` projection; state wraps `DiffViewState`; paint delegates to DiffView.
-Use when Enter should surface **activate/stage** product effects.
+Interactive review **on top of** [DiffView](/docs/handbook/diff-view). TermRock
+owns selection, decisions, comments, focus regions, confirm banners, and undo
+for session review ops. You own git staging, plan apply, agent policy, and
+editor launch.
 
 ## When to use / when not
 
 | Use DiffReview | Prefer |
 |----------------|--------|
-| Interactive hunk nav + activate | — |
-| Pure read-only viewing | [DiffView](/docs/handbook/diff-view) |
+| Git / PR / agent patch review | — |
+| Plan step accept/reject list | [PlanReview](/docs/handbook/plan-review) |
+| Read-only viewing only | [DiffView](/docs/handbook/diff-view) |
 
-## Outcomes
+## Ownership
 
-Maps from `DiffViewOutcome`:
+| Concern | Owner |
+|---------|--------|
+| Surface focus | Host / scene |
+| Scroll / mode / hunk cursor | `DiffReviewState.view` (`DiffViewState`) |
+| Selection · decisions · comments · undo | `DiffReviewState` |
+| VCS / apply / editor side effects | Consumer (outcomes only) |
 
-- `HunkCursorMoved` · `HunkActivated` · `Scrolled` · `ToggleMode`
-- `CursorMoved` · `SearchChanged` · `FoldToggled` · `Cancelled` · `Ignored`
+## Outcomes (requests)
+
+- `DecisionSet` / `ApproveRequested` / `RejectRequested` / `StageRequested` /
+  `UnstageRequested` / `ApplyRequested`
+- `CommentAdded` / `CommentResolved` / `CommentRemoved` / `CommentDraftChanged`
+- `ExternalEditorRequested { path, line }`
+- `ConfirmRequired` / `ConfirmCancelled` (safe verbs, no false VCS claims)
+- `Undone` / `Redone`
+- View-forwarded: `Scrolled` · `HunkCursorMoved` · `HunkActivated` · `ToggleMode` …
+
+## Safe destructive language
+
+Bulk reject/apply shows a confirm strip: `mark rejected 3 units? Enter=yes Esc=no`.
+Verbs are `mark approved` / `request stage of` / `request apply of` — never
+“committed” or “pushed”.
 
 ## Keys
 
-Same as DiffView (`n`/`p`, `s`, `/`, `z`, Enter). Prefer
-`handle_key_lines(key, lines, hunks)` when a projection is available.
+| Key | Action |
+|-----|--------|
+| Tab | File tree · diff · comments · summary |
+| Space | Select hunk |
+| a r t T x | Approve · reject · stage · unstage · apply |
+| c | Comment · Enter commit |
+| e | External editor |
+| u | Undo review op |
+| v | View mode (split/unified) |
 
 ## Example
 
 ```rust
-use termrock::widgets::{DiffLine, DiffHunk, DiffReview, DiffReviewState};
+use termrock::widgets::{
+    DiffLine, DiffHunk, DiffReview, DiffReviewState, DiffReviewFileRow,
+};
 
-let lines = [DiffLine::added("1", "ready")];
-let hunks = [DiffHunk::new(0, 1, "@@").id("h0")];
+let files = [DiffReviewFileRow::new("a.rs", "src/a.rs").stats(2, 1)];
 let mut state = DiffReviewState::new();
-// DiffReview::new(&lines, &system).hunks(&hunks).render(area, buf, &mut state);
-let _ = (lines, hunks, state);
+// state.handle_key_lines(key, &lines, &hunks, &files);
+// DiffReview::new(&lines, &system).hunks(&hunks).files(&files).render(…);
+let _ = (files, state);
 ```
 
 ## Related
 
-DiffView · migration `0196`
+DiffView · PlanReview · migration `0197`

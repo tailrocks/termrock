@@ -41,8 +41,8 @@ use termrock::{
         InspectorPanel,
         DetailTableState, Dialog, DialogRecipe, AlertDialog, AlertDialogState, AlertKind,
         AlertScope, AlertConfirmGates, DiffHunk, DiffKind, DiffLine, DiffMode, DiffReview,
-        DiffReviewState, DiffViewState, DiffView, DiffWordKind, DiffWordSpan, Drawer, EmptyState,
-        EmptyKind, EmptyAction, EmptyDensity,
+        DiffReviewState, DiffReviewFileRow, DiffDecision, DiffReviewUnit, DiffViewState, DiffView,
+        DiffWordKind, DiffWordSpan, Drawer, EmptyState, EmptyKind, EmptyAction, EmptyDensity,
         example_empty_table, example_empty_logs, example_empty_sessions, example_empty_projects,
         example_empty_search, example_empty_permission,
         ErrorView, ErrorState, ErrorKind, ErrorRecipe, Recovery, RecoveryAction, RetrySafety,
@@ -1936,12 +1936,39 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "diff-review/hunks",
-            "Diff review hunks",
+            "Diff review workbench",
             "DiffReview",
-            "Multi-hunk projected patch with active hunk gutter.",
-            52,
-            10,
+            "File tree, decisions, summary strip over DiffView.",
+            80,
+            16,
             diff_review_hunks,
+        ),
+        Story::new(
+            "diff-review/decisions",
+            "Diff review decisions",
+            "DiffReview",
+            "Approved/staged marks and multi-select.",
+            80,
+            14,
+            diff_review_decisions,
+        ),
+        Story::new(
+            "diff-review/comments",
+            "Diff review comments",
+            "DiffReview",
+            "Comment draft and anchors on lines.",
+            72,
+            14,
+            diff_review_comments,
+        ),
+        Story::new(
+            "diff-review/confirm",
+            "Diff review confirm",
+            "DiffReview",
+            "Safe destructive confirm banner for bulk reject.",
+            72,
+            12,
+            diff_review_confirm,
         ),
         Story::new(
             "diff-review/empty",
@@ -1956,18 +1983,18 @@ pub(crate) fn stories() -> Vec<Story> {
             "diff-review/narrow",
             "Diff review narrow",
             "DiffReview",
-            "Narrow unified geometry (22 cols).",
+            "Narrow layout hides file tree (22 cols).",
             22,
-            8,
+            10,
             diff_review_hunks,
         ),
         Story::new(
             "diff-review/ascii",
             "Diff review ASCII",
             "DiffReview",
-            "ASCII hunk gutter and colorless add/remove.",
-            48,
-            8,
+            "ASCII decision glyphs and colorless paint.",
+            72,
+            12,
             diff_review_ascii,
         ),
         Story::new(
@@ -10842,48 +10869,150 @@ fn event_stream_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn diff_review_sample() -> (Vec<DiffLine<'static>>, [DiffHunk; 2]) {
+fn diff_review_sample() -> (
+    Vec<DiffLine<'static>>,
+    [DiffHunk; 2],
+    [DiffReviewFileRow<'static>; 2],
+) {
     let lines = vec![
-        DiffLine::hunk_header("h0", "@@ -1,4 +1,5 @@").hunk_id("h0"),
+        DiffLine::hunk_header("h0", "@@ -1,4 +1,5 @@")
+            .hunk_id("h0")
+            .file_id("main.rs"),
         DiffLine::context("c1", "fn main() {")
             .old_no(1)
             .new_no(1)
-            .hunk_id("h0"),
+            .hunk_id("h0")
+            .file_id("main.rs"),
         DiffLine::removed("r1", "    println!(\"hi\");")
             .old_no(2)
-            .hunk_id("h0"),
+            .hunk_id("h0")
+            .file_id("main.rs"),
         DiffLine::added("a1", "    println!(\"hello 東京\");")
             .new_no(2)
-            .hunk_id("h0"),
+            .hunk_id("h0")
+            .file_id("main.rs"),
         DiffLine::added("a2", "    // ready 🧪")
             .new_no(3)
-            .hunk_id("h0"),
+            .hunk_id("h0")
+            .file_id("main.rs"),
         DiffLine::context("c2", "}")
             .old_no(3)
             .new_no(4)
-            .hunk_id("h0"),
-        DiffLine::hunk_header("h1", "@@ -20,3 +21,3 @@").hunk_id("h1"),
-        DiffLine::removed("r2", "old").old_no(20).hunk_id("h1"),
-        DiffLine::added("a3", "new").new_no(21).hunk_id("h1"),
+            .hunk_id("h0")
+            .file_id("main.rs"),
+        DiffLine::hunk_header("h1", "@@ -20,3 +21,3 @@")
+            .hunk_id("h1")
+            .file_id("lib.rs"),
+        DiffLine::removed("r2", "old")
+            .old_no(20)
+            .hunk_id("h1")
+            .file_id("lib.rs"),
+        DiffLine::added("a3", "new")
+            .new_no(21)
+            .hunk_id("h1")
+            .file_id("lib.rs"),
         DiffLine::context("c3", "context")
             .old_no(21)
             .new_no(22)
-            .hunk_id("h1"),
+            .hunk_id("h1")
+            .file_id("lib.rs"),
     ];
     let hunks = [
-        DiffHunk::new(0, 6, "@@ -1,4 +1,5 @@").id("h0"),
-        DiffHunk::new(6, 4, "@@ -20,3 +21,3 @@").id("h1"),
+        DiffHunk::new(0, 6, "@@ -1,4 +1,5 @@")
+            .id("h0")
+            .file_id("main.rs"),
+        DiffHunk::new(6, 4, "@@ -20,3 +21,3 @@")
+            .id("h1")
+            .file_id("lib.rs"),
     ];
-    (lines, hunks)
+    let files = [
+        DiffReviewFileRow::new("main.rs", "src/main.rs").stats(2, 1),
+        DiffReviewFileRow::new("lib.rs", "src/lib.rs").stats(1, 1),
+    ];
+    (lines, hunks, files)
 }
 
 fn diff_review_hunks(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let (lines, hunks) = diff_review_sample();
+    let (lines, hunks, files) = diff_review_sample();
     let mut state = DiffReviewState::new();
     state.set_hunk_cursor(0);
     DiffReview::new(&lines, system)
         .hunks(&hunks)
-        .title("review a.rs")
+        .files(&files)
+        .title("PR · agent review")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diff_review_decisions(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (lines, hunks, files) = diff_review_sample();
+    let mut state = DiffReviewState::new();
+    state.hydrate_decision(DiffReviewUnit::hunk("h0"), DiffDecision::Approved);
+    state.hydrate_decision(DiffReviewUnit::hunk("h1"), DiffDecision::Staged);
+    // select h0 via public path
+    let _ = state.handle_key_lines(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char(' '),
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &lines,
+        &hunks,
+        &files,
+    );
+    DiffReview::new(&lines, system)
+        .hunks(&hunks)
+        .files(&files)
+        .title("decisions")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diff_review_comments(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (lines, hunks, files) = diff_review_sample();
+    let mut state = DiffReviewState::new();
+    state.view.cursor = 3;
+    state.comment_draft = Some("prefer format! here".into());
+    state.region = termrock::widgets::DiffReviewRegion::Comments;
+    DiffReview::new(&lines, system)
+        .hunks(&hunks)
+        .files(&files)
+        .title("comments")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diff_review_confirm(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (lines, hunks, files) = diff_review_sample();
+    let mut state = DiffReviewState::new();
+    let _ = state.handle_key_lines(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char(' '),
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &lines,
+        &hunks,
+        &files,
+    );
+    state.view.hunk_cursor = 1;
+    let _ = state.handle_key_lines(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char(' '),
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &lines,
+        &hunks,
+        &files,
+    );
+    let _ = state.handle_key_lines(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char('r'),
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &lines,
+        &hunks,
+        &files,
+    );
+    DiffReview::new(&lines, system)
+        .hunks(&hunks)
+        .files(&files)
+        .title("confirm reject")
         .render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -10893,11 +11022,13 @@ fn diff_review_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn diff_review_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let (lines, hunks) = diff_review_sample();
+    let (lines, hunks, files) = diff_review_sample();
     let mut state = DiffReviewState::new();
     state.set_hunk_cursor(1);
+    state.hydrate_decision(DiffReviewUnit::hunk("h1"), DiffDecision::Rejected);
     DiffReview::new(&lines, system)
         .hunks(&hunks)
+        .files(&files)
         .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);

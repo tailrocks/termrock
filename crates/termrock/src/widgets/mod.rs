@@ -483,7 +483,12 @@ pub use object_inspector::{
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,
     escape_inspect_value, filter_inspect_fields,
 };
-pub use review::{DiffReview, DiffReviewOutcome, DiffReviewState};
+pub use review::{
+    DiffComment, DiffCommentAnchor, DiffDecision, DiffDestructiveConfirm, DiffReview,
+    DiffReviewFileRow, DiffReviewOutcome, DiffReviewRegion, DiffReviewState, DiffReviewSummary,
+    DiffReviewUnit, DiffReviewUnitKind, DIFF_REVIEW_UNDO_LIMIT,
+};
+pub use review::bench as diff_review_bench;
 pub use scroll_area::{
     ScrollArea, ScrollAreaState, ScrollBarVisibility, ScrollChain, ScrollOutcome, VisibleRange,
 };

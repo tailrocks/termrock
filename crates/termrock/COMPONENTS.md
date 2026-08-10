@@ -61,9 +61,17 @@ consumers do not retain a second list-state crate or generic picker helpers.
 numbers, word spans, syntax spans, trailing-ws, file/hunk ids) plus optional
 `DiffHunk` / `DiffFile` bands. State owns Auto/Unified/Split mode (narrow forces
 unified), scroll virtualization, search, fold, cursor/hunk navigation, and
-anchors. No-color prefixes (`+`/`-`/` `) always paint. `DiffReview` is a thin
-activate/stage veneer over the same model. Distinct from `CodeBlock` (single
-snippet) and `LogStream` (severity lines).
+anchors. No-color prefixes (`+`/`-`/` `) always paint. Distinct from `CodeBlock`
+(single snippet) and `LogStream` (severity lines).
+
+`DiffReview` is interactive **patch review** on DiffView for Git, plan changes,
+and AI-agent code review. Host projects file-tree rows (`DiffReviewFileRow`) plus
+the same `DiffLine`/`DiffHunk` window. State owns focus regions (file tree ·
+diff · comments · summary), multi-select (file/hunk/line), decisions
+(`DiffDecision` by stable `DiffReviewUnit` keys), comments with anchors, draft
+comment chrome, destructive-confirm banners with safe verbs, and undo/redo of
+session review ops. Outcomes are **requests** only — TermRock never runs git or
+apply policy. Selection and comments survive mode/resize via stable ids.
 
 `LogStream` is the continuous **professional log viewer** (stern/k9s-class). Host
 projects a window of `LogLine` (id, level, text, optional timestamp/source/

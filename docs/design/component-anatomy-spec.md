@@ -1633,15 +1633,30 @@ Every component below uses sections **1–24**:
 
 ## DiffReview
 
-1. **Purpose:** Interactive hunk review veneer over DiffView (activate/stage).  
-2. **Anatomy:** delegates to DiffView.  
-3. **Public properties:** `DiffLine` + `DiffHunk` (same as DiffView).  
-4. **State:** wraps `DiffViewState`.  
-5–18. Same paint/responsive contracts as DiffView.  
-19. **Composition:** PlanReview, PR agent tools.  
-20. **Outcomes:** maps `DiffViewOutcome` → `DiffReviewOutcome`.  
-21. **Stories:** `diff-review/{hunks,empty,narrow,ascii}`  
-22–24. Same as DiffView interaction/perf with activate emphasis.
+1. **Purpose:** Interactive patch review on DiffView (Git / plan / agent).  
+2. **Anatomy:** `file_tree?` · `diff_body` · `confirm?` · `comment_draft?` · `summary`  
+3. **Public properties:** lines, hunks, `DiffReviewFileRow[]`, title, tree/summary flags.  
+4. **State:** embeds `DiffViewState`; region focus; selection; decisions; comments; undo; confirm.  
+5. **Variants:** decisions Pending/Approved/Rejected/Staged/Unstaged/Applied/Skipped.  
+6. **Sizes:** tree when width ≥ 48; summary when height ≥ 4.  
+7. **Visual states:** decision glyphs · selection marks · comment markers · confirm banner.  
+8. **Interaction:** select · decide · comment · editor · undo · region tab.  
+9. **Keyboard:** a/r/t/T/x · Space select · c comment · e editor · u undo · v mode · Tab regions.  
+10. **Mouse:** tree row · summary · DiffView body hits.  
+11. **Focus:** scene surface; review owns region + DiffView scroll/cursor.  
+12. **Disabled:** `accepts_input = false`.  
+13. **Loading:** host projects windows.  
+14. **Error:** N/A (policy on host).  
+15. **Narrow:** hide tree; unified DiffView.  
+16. **Tiny:** summary + body only.  
+17. **Unicode/ASCII:** ✓/A · ✗/R · ●/S · comment @/💬.  
+18. **Colorless:** strong marks + safe text banners.  
+19. **Composition:** DiffView; PlanReview for step lists.  
+20. **Outcomes:** request set (stage/apply/approve/reject/editor/comment/confirm/undo).  
+21. **Stories:** `diff-review/{hunks,decisions,comments,confirm,empty,narrow,ascii}`  
+22. **Snapshots:** tree, decisions, confirm, draft.  
+23. **Tests:** approve/undo, multi-reject confirm, comment, selection vs mode, tree, editor, paint.  
+24. **Perf:** O(visible); host virtualizes files/hunks; `diff_review_bench`.
 
 ## Sparkline
 
