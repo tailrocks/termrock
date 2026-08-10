@@ -1724,6 +1724,21 @@ Every component below uses sections **1–24**:
 21. **Stories:** `trace-waterfall/{basic,error,critical,zoomed,empty,narrow,ascii}`  
 22–24. Bar clamp math; 2k-span paint; expand/zoom tests.
 
+## DependencyGraph
+
+1. **Purpose:** Constrained package/service/schema/task dependency map.  
+2. **Anatomy:** chrome · filter? · graph canvas **or** tree/list body.  
+3. **Public properties:** DepNode[] · DepEdge[] (directed kind/status).  
+4. **State:** preferred/effective view, pan, selection, filter, force_tree.  
+5. **Variants:** Graph / Tree / List; auto tree when narrow or large.  
+6–10. j/k select; pan [ ] / Ctrl+hjkl; Ctrl+V view cycle.  
+11–14. No package resolve; deterministic layered layout only.  
+15–18. ASCII connectors; status letters; kind glyphs.  
+19. **Composition:** TreeTable-shaped projection; ObjectInspector fields.  
+20. **Outcomes:** Selection · Details · EdgeSelected · ViewChanged · Panned.  
+21. **Stories:** `dependency-graph/{basic,tree,list,filter,narrow,ascii}`  
+22–24. Deterministic layout; 80-node auto-tree; no cargo metadata.
+
 ## Charts (Sparkline / Chart / Gauge / Histogram)
 
 1. **Purpose:** Coherent terminal data-viz family.  

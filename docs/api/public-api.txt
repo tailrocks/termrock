@@ -14663,6 +14663,10 @@ pub const termrock::widgets::data_view_bench::ROWS_1M: u64
 pub const termrock::widgets::data_view_bench::VIEWPORT_ROWS: u16
 pub mod termrock::widgets::date_time_picker_guidance
 pub const termrock::widgets::date_time_picker_guidance::WHEN_TEXT_INPUT: &str
+pub mod termrock::widgets::dependency_graph_bench
+pub const termrock::widgets::dependency_graph_bench::EDGE_COUNT: usize
+pub const termrock::widgets::dependency_graph_bench::NODE_COUNT: usize
+pub const termrock::widgets::dependency_graph_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::diagnostic_bench
 pub const termrock::widgets::diagnostic_bench::LARGE_LIST: usize
 pub const termrock::widgets::diagnostic_bench::MAX_PAINT_CELLS: u32
@@ -18909,6 +18913,287 @@ pub unsafe fn termrock::widgets::DemoHelpAction::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DemoHelpAction
 pub fn termrock::widgets::DemoHelpAction::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DemoHelpAction
+#[non_exhaustive] pub enum termrock::widgets::DepEdgeKind
+pub termrock::widgets::DepEdgeKind::Blocks
+pub termrock::widgets::DepEdgeKind::Calls
+pub termrock::widgets::DepEdgeKind::Contains
+pub termrock::widgets::DepEdgeKind::DependsOn
+pub termrock::widgets::DepEdgeKind::Imports
+impl termrock::widgets::DepEdgeKind
+pub const fn termrock::widgets::DepEdgeKind::arrow(self, bool) -> &'static str
+pub const fn termrock::widgets::DepEdgeKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DepEdgeKind
+pub fn termrock::widgets::DepEdgeKind::clone(&self) -> termrock::widgets::DepEdgeKind
+impl core::cmp::Eq for termrock::widgets::DepEdgeKind
+impl core::cmp::PartialEq for termrock::widgets::DepEdgeKind
+pub fn termrock::widgets::DepEdgeKind::eq(&self, &termrock::widgets::DepEdgeKind) -> bool
+impl core::default::Default for termrock::widgets::DepEdgeKind
+pub fn termrock::widgets::DepEdgeKind::default() -> termrock::widgets::DepEdgeKind
+impl core::fmt::Debug for termrock::widgets::DepEdgeKind
+pub fn termrock::widgets::DepEdgeKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DepEdgeKind
+pub fn termrock::widgets::DepEdgeKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DepEdgeKind
+impl core::marker::StructuralPartialEq for termrock::widgets::DepEdgeKind
+impl core::marker::Freeze for termrock::widgets::DepEdgeKind
+impl core::marker::Send for termrock::widgets::DepEdgeKind
+impl core::marker::Sync for termrock::widgets::DepEdgeKind
+impl core::marker::Unpin for termrock::widgets::DepEdgeKind
+impl core::marker::UnsafeUnpin for termrock::widgets::DepEdgeKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DepEdgeKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DepEdgeKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DepEdgeKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DepEdgeKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DepEdgeKind where U: core::convert::From<T>
+pub fn termrock::widgets::DepEdgeKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DepEdgeKind where U: core::convert::Into<T>
+pub type termrock::widgets::DepEdgeKind::Error = core::convert::Infallible
+pub fn termrock::widgets::DepEdgeKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DepEdgeKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DepEdgeKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DepEdgeKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DepEdgeKind where T: core::clone::Clone
+pub type termrock::widgets::DepEdgeKind::Owned = T
+pub fn termrock::widgets::DepEdgeKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::DepEdgeKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DepEdgeKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DepEdgeKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DepEdgeKind where T: ?core::marker::Sized
+pub fn termrock::widgets::DepEdgeKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DepEdgeKind where T: ?core::marker::Sized
+pub fn termrock::widgets::DepEdgeKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DepEdgeKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DepEdgeKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DepEdgeKind
+pub fn termrock::widgets::DepEdgeKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DepEdgeKind
+#[non_exhaustive] pub enum termrock::widgets::DepNodeKind
+pub termrock::widgets::DepNodeKind::Module
+pub termrock::widgets::DepNodeKind::Other
+pub termrock::widgets::DepNodeKind::Package
+pub termrock::widgets::DepNodeKind::Schema
+pub termrock::widgets::DepNodeKind::Service
+pub termrock::widgets::DepNodeKind::Table
+pub termrock::widgets::DepNodeKind::Task
+impl termrock::widgets::DepNodeKind
+pub const fn termrock::widgets::DepNodeKind::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::DepNodeKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DepNodeKind
+pub fn termrock::widgets::DepNodeKind::clone(&self) -> termrock::widgets::DepNodeKind
+impl core::cmp::Eq for termrock::widgets::DepNodeKind
+impl core::cmp::PartialEq for termrock::widgets::DepNodeKind
+pub fn termrock::widgets::DepNodeKind::eq(&self, &termrock::widgets::DepNodeKind) -> bool
+impl core::default::Default for termrock::widgets::DepNodeKind
+pub fn termrock::widgets::DepNodeKind::default() -> termrock::widgets::DepNodeKind
+impl core::fmt::Debug for termrock::widgets::DepNodeKind
+pub fn termrock::widgets::DepNodeKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DepNodeKind
+pub fn termrock::widgets::DepNodeKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DepNodeKind
+impl core::marker::StructuralPartialEq for termrock::widgets::DepNodeKind
+impl core::marker::Freeze for termrock::widgets::DepNodeKind
+impl core::marker::Send for termrock::widgets::DepNodeKind
+impl core::marker::Sync for termrock::widgets::DepNodeKind
+impl core::marker::Unpin for termrock::widgets::DepNodeKind
+impl core::marker::UnsafeUnpin for termrock::widgets::DepNodeKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DepNodeKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DepNodeKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DepNodeKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DepNodeKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DepNodeKind where U: core::convert::From<T>
+pub fn termrock::widgets::DepNodeKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DepNodeKind where U: core::convert::Into<T>
+pub type termrock::widgets::DepNodeKind::Error = core::convert::Infallible
+pub fn termrock::widgets::DepNodeKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DepNodeKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DepNodeKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DepNodeKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DepNodeKind where T: core::clone::Clone
+pub type termrock::widgets::DepNodeKind::Owned = T
+pub fn termrock::widgets::DepNodeKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::DepNodeKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DepNodeKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DepNodeKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DepNodeKind where T: ?core::marker::Sized
+pub fn termrock::widgets::DepNodeKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DepNodeKind where T: ?core::marker::Sized
+pub fn termrock::widgets::DepNodeKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DepNodeKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DepNodeKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DepNodeKind
+pub fn termrock::widgets::DepNodeKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DepNodeKind
+#[non_exhaustive] pub enum termrock::widgets::DepNodeStatus
+pub termrock::widgets::DepNodeStatus::Error
+pub termrock::widgets::DepNodeStatus::Loading
+pub termrock::widgets::DepNodeStatus::Missing
+pub termrock::widgets::DepNodeStatus::Ok
+pub termrock::widgets::DepNodeStatus::Warning
+impl termrock::widgets::DepNodeStatus
+pub const fn termrock::widgets::DepNodeStatus::id(self) -> &'static str
+pub const fn termrock::widgets::DepNodeStatus::letter(self) -> char
+pub const fn termrock::widgets::DepNodeStatus::letter_ascii(self) -> char
+pub const fn termrock::widgets::DepNodeStatus::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::widgets::DepNodeStatus
+pub fn termrock::widgets::DepNodeStatus::clone(&self) -> termrock::widgets::DepNodeStatus
+impl core::cmp::Eq for termrock::widgets::DepNodeStatus
+impl core::cmp::Ord for termrock::widgets::DepNodeStatus
+pub fn termrock::widgets::DepNodeStatus::cmp(&self, &termrock::widgets::DepNodeStatus) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::DepNodeStatus
+pub fn termrock::widgets::DepNodeStatus::eq(&self, &termrock::widgets::DepNodeStatus) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::DepNodeStatus
+pub fn termrock::widgets::DepNodeStatus::partial_cmp(&self, &termrock::widgets::DepNodeStatus) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::DepNodeStatus
+pub fn termrock::widgets::DepNodeStatus::default() -> termrock::widgets::DepNodeStatus
+impl core::fmt::Debug for termrock::widgets::DepNodeStatus
+pub fn termrock::widgets::DepNodeStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DepNodeStatus
+pub fn termrock::widgets::DepNodeStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DepNodeStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::DepNodeStatus
+impl core::marker::Freeze for termrock::widgets::DepNodeStatus
+impl core::marker::Send for termrock::widgets::DepNodeStatus
+impl core::marker::Sync for termrock::widgets::DepNodeStatus
+impl core::marker::Unpin for termrock::widgets::DepNodeStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::DepNodeStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DepNodeStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DepNodeStatus
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::DepNodeStatus where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DepNodeStatus::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DepNodeStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DepNodeStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DepNodeStatus where U: core::convert::From<T>
+pub fn termrock::widgets::DepNodeStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DepNodeStatus where U: core::convert::Into<T>
+pub type termrock::widgets::DepNodeStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::DepNodeStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DepNodeStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DepNodeStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DepNodeStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DepNodeStatus where T: core::clone::Clone
+pub type termrock::widgets::DepNodeStatus::Owned = T
+pub fn termrock::widgets::DepNodeStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::DepNodeStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DepNodeStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DepNodeStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DepNodeStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::DepNodeStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DepNodeStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::DepNodeStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DepNodeStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DepNodeStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DepNodeStatus
+pub fn termrock::widgets::DepNodeStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DepNodeStatus
+#[non_exhaustive] pub enum termrock::widgets::DependencyGraphOutcome
+pub termrock::widgets::DependencyGraphOutcome::Cancelled
+pub termrock::widgets::DependencyGraphOutcome::DetailsRequested
+pub termrock::widgets::DependencyGraphOutcome::DetailsRequested::id: alloc::string::String
+pub termrock::widgets::DependencyGraphOutcome::EdgeSelected
+pub termrock::widgets::DependencyGraphOutcome::EdgeSelected::from: alloc::string::String
+pub termrock::widgets::DependencyGraphOutcome::EdgeSelected::to: alloc::string::String
+pub termrock::widgets::DependencyGraphOutcome::ExpandToggled
+pub termrock::widgets::DependencyGraphOutcome::ExpandToggled::id: alloc::string::String
+pub termrock::widgets::DependencyGraphOutcome::FilterChanged(alloc::string::String)
+pub termrock::widgets::DependencyGraphOutcome::Ignored
+pub termrock::widgets::DependencyGraphOutcome::Panned
+pub termrock::widgets::DependencyGraphOutcome::Panned::x: u16
+pub termrock::widgets::DependencyGraphOutcome::Panned::y: u16
+pub termrock::widgets::DependencyGraphOutcome::SelectionChanged
+pub termrock::widgets::DependencyGraphOutcome::SelectionChanged::id: alloc::string::String
+pub termrock::widgets::DependencyGraphOutcome::ViewChanged(termrock::widgets::DependencyGraphView)
+impl core::clone::Clone for termrock::widgets::DependencyGraphOutcome
+pub fn termrock::widgets::DependencyGraphOutcome::clone(&self) -> termrock::widgets::DependencyGraphOutcome
+impl core::cmp::Eq for termrock::widgets::DependencyGraphOutcome
+impl core::cmp::PartialEq for termrock::widgets::DependencyGraphOutcome
+pub fn termrock::widgets::DependencyGraphOutcome::eq(&self, &termrock::widgets::DependencyGraphOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::DependencyGraphOutcome
+pub fn termrock::widgets::DependencyGraphOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::DependencyGraphOutcome
+impl core::marker::Freeze for termrock::widgets::DependencyGraphOutcome
+impl core::marker::Send for termrock::widgets::DependencyGraphOutcome
+impl core::marker::Sync for termrock::widgets::DependencyGraphOutcome
+impl core::marker::Unpin for termrock::widgets::DependencyGraphOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::DependencyGraphOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DependencyGraphOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DependencyGraphOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DependencyGraphOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DependencyGraphOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::DependencyGraphOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DependencyGraphOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::DependencyGraphOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::DependencyGraphOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DependencyGraphOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DependencyGraphOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DependencyGraphOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DependencyGraphOutcome where T: core::clone::Clone
+pub type termrock::widgets::DependencyGraphOutcome::Owned = T
+pub fn termrock::widgets::DependencyGraphOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::DependencyGraphOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DependencyGraphOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DependencyGraphOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DependencyGraphOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DependencyGraphOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DependencyGraphOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DependencyGraphOutcome
+pub fn termrock::widgets::DependencyGraphOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DependencyGraphOutcome
+#[non_exhaustive] pub enum termrock::widgets::DependencyGraphView
+pub termrock::widgets::DependencyGraphView::Graph
+pub termrock::widgets::DependencyGraphView::List
+pub termrock::widgets::DependencyGraphView::Tree
+impl termrock::widgets::DependencyGraphView
+pub const fn termrock::widgets::DependencyGraphView::cycle(self) -> Self
+pub const fn termrock::widgets::DependencyGraphView::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DependencyGraphView
+pub fn termrock::widgets::DependencyGraphView::clone(&self) -> termrock::widgets::DependencyGraphView
+impl core::cmp::Eq for termrock::widgets::DependencyGraphView
+impl core::cmp::PartialEq for termrock::widgets::DependencyGraphView
+pub fn termrock::widgets::DependencyGraphView::eq(&self, &termrock::widgets::DependencyGraphView) -> bool
+impl core::default::Default for termrock::widgets::DependencyGraphView
+pub fn termrock::widgets::DependencyGraphView::default() -> termrock::widgets::DependencyGraphView
+impl core::fmt::Debug for termrock::widgets::DependencyGraphView
+pub fn termrock::widgets::DependencyGraphView::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DependencyGraphView
+pub fn termrock::widgets::DependencyGraphView::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DependencyGraphView
+impl core::marker::StructuralPartialEq for termrock::widgets::DependencyGraphView
+impl core::marker::Freeze for termrock::widgets::DependencyGraphView
+impl core::marker::Send for termrock::widgets::DependencyGraphView
+impl core::marker::Sync for termrock::widgets::DependencyGraphView
+impl core::marker::Unpin for termrock::widgets::DependencyGraphView
+impl core::marker::UnsafeUnpin for termrock::widgets::DependencyGraphView
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DependencyGraphView
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DependencyGraphView
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DependencyGraphView where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphView::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DependencyGraphView where U: core::convert::From<T>
+pub fn termrock::widgets::DependencyGraphView::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DependencyGraphView where U: core::convert::Into<T>
+pub type termrock::widgets::DependencyGraphView::Error = core::convert::Infallible
+pub fn termrock::widgets::DependencyGraphView::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DependencyGraphView where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DependencyGraphView::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DependencyGraphView::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DependencyGraphView where T: core::clone::Clone
+pub type termrock::widgets::DependencyGraphView::Owned = T
+pub fn termrock::widgets::DependencyGraphView::clone_into(&self, &mut T)
+pub fn termrock::widgets::DependencyGraphView::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DependencyGraphView where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphView::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DependencyGraphView where T: ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphView::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DependencyGraphView where T: ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphView::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DependencyGraphView where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DependencyGraphView::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DependencyGraphView
+pub fn termrock::widgets::DependencyGraphView::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DependencyGraphView
 #[non_exhaustive] pub enum termrock::widgets::DescriptionKind
 pub termrock::widgets::DescriptionKind::Error
 pub termrock::widgets::DescriptionKind::Help
@@ -22130,6 +22415,55 @@ pub unsafe fn termrock::widgets::FullscreenViewerOutcome<Id>::clone_to_uninit(&s
 impl<T> core::convert::From<T> for termrock::widgets::FullscreenViewerOutcome<Id>
 pub fn termrock::widgets::FullscreenViewerOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FullscreenViewerOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::GraphUnreadableReason
+pub termrock::widgets::GraphUnreadableReason::Forced
+pub termrock::widgets::GraphUnreadableReason::Narrow
+pub termrock::widgets::GraphUnreadableReason::TooManyNodes
+impl termrock::widgets::GraphUnreadableReason
+pub const fn termrock::widgets::GraphUnreadableReason::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::GraphUnreadableReason
+pub fn termrock::widgets::GraphUnreadableReason::clone(&self) -> termrock::widgets::GraphUnreadableReason
+impl core::cmp::Eq for termrock::widgets::GraphUnreadableReason
+impl core::cmp::PartialEq for termrock::widgets::GraphUnreadableReason
+pub fn termrock::widgets::GraphUnreadableReason::eq(&self, &termrock::widgets::GraphUnreadableReason) -> bool
+impl core::fmt::Debug for termrock::widgets::GraphUnreadableReason
+pub fn termrock::widgets::GraphUnreadableReason::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::GraphUnreadableReason
+pub fn termrock::widgets::GraphUnreadableReason::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::GraphUnreadableReason
+impl core::marker::StructuralPartialEq for termrock::widgets::GraphUnreadableReason
+impl core::marker::Freeze for termrock::widgets::GraphUnreadableReason
+impl core::marker::Send for termrock::widgets::GraphUnreadableReason
+impl core::marker::Sync for termrock::widgets::GraphUnreadableReason
+impl core::marker::Unpin for termrock::widgets::GraphUnreadableReason
+impl core::marker::UnsafeUnpin for termrock::widgets::GraphUnreadableReason
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::GraphUnreadableReason
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::GraphUnreadableReason
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::GraphUnreadableReason where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::GraphUnreadableReason::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::GraphUnreadableReason where U: core::convert::From<T>
+pub fn termrock::widgets::GraphUnreadableReason::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::GraphUnreadableReason where U: core::convert::Into<T>
+pub type termrock::widgets::GraphUnreadableReason::Error = core::convert::Infallible
+pub fn termrock::widgets::GraphUnreadableReason::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::GraphUnreadableReason where U: core::convert::TryFrom<T>
+pub type termrock::widgets::GraphUnreadableReason::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::GraphUnreadableReason::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::GraphUnreadableReason where T: core::clone::Clone
+pub type termrock::widgets::GraphUnreadableReason::Owned = T
+pub fn termrock::widgets::GraphUnreadableReason::clone_into(&self, &mut T)
+pub fn termrock::widgets::GraphUnreadableReason::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::GraphUnreadableReason where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::GraphUnreadableReason::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::GraphUnreadableReason where T: ?core::marker::Sized
+pub fn termrock::widgets::GraphUnreadableReason::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::GraphUnreadableReason where T: ?core::marker::Sized
+pub fn termrock::widgets::GraphUnreadableReason::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::GraphUnreadableReason where T: core::clone::Clone
+pub unsafe fn termrock::widgets::GraphUnreadableReason::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::GraphUnreadableReason
+pub fn termrock::widgets::GraphUnreadableReason::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::GraphUnreadableReason
 pub enum termrock::widgets::GridColumnWidth
 pub termrock::widgets::GridColumnWidth::Fixed(u16)
 pub termrock::widgets::GridColumnWidth::Min(u16)
@@ -43728,6 +44062,255 @@ pub unsafe fn termrock::widgets::DateTimePickerState::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::DateTimePickerState
 pub fn termrock::widgets::DateTimePickerState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DateTimePickerState
+pub struct termrock::widgets::DepEdge<'a>
+pub termrock::widgets::DepEdge::directed: bool
+pub termrock::widgets::DepEdge::from: &'a str
+pub termrock::widgets::DepEdge::kind: termrock::widgets::DepEdgeKind
+pub termrock::widgets::DepEdge::to: &'a str
+impl<'a> termrock::widgets::DepEdge<'a>
+pub const fn termrock::widgets::DepEdge<'a>::kind(self, termrock::widgets::DepEdgeKind) -> Self
+pub const fn termrock::widgets::DepEdge<'a>::new(&'a str, &'a str) -> Self
+pub const fn termrock::widgets::DepEdge<'a>::undirected(self) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::DepEdge<'a>
+pub fn termrock::widgets::DepEdge<'a>::clone(&self) -> termrock::widgets::DepEdge<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::DepEdge<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::DepEdge<'a>
+pub fn termrock::widgets::DepEdge<'a>::eq(&self, &termrock::widgets::DepEdge<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::DepEdge<'a>
+pub fn termrock::widgets::DepEdge<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::DepEdge<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::DepEdge<'a>
+impl<'a> core::marker::Send for termrock::widgets::DepEdge<'a>
+impl<'a> core::marker::Sync for termrock::widgets::DepEdge<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::DepEdge<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::DepEdge<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DepEdge<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DepEdge<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DepEdge<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DepEdge<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DepEdge<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::DepEdge<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DepEdge<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::DepEdge<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::DepEdge<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DepEdge<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DepEdge<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DepEdge<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DepEdge<'a> where T: core::clone::Clone
+pub type termrock::widgets::DepEdge<'a>::Owned = T
+pub fn termrock::widgets::DepEdge<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DepEdge<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DepEdge<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DepEdge<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DepEdge<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DepEdge<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DepEdge<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DepEdge<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DepEdge<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DepEdge<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DepEdge<'a>
+pub fn termrock::widgets::DepEdge<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DepEdge<'a>
+pub struct termrock::widgets::DepLayoutNode
+pub termrock::widgets::DepLayoutNode::id: alloc::string::String
+pub termrock::widgets::DepLayoutNode::layer: usize
+pub termrock::widgets::DepLayoutNode::slot: usize
+pub termrock::widgets::DepLayoutNode::x: u16
+pub termrock::widgets::DepLayoutNode::y: u16
+impl core::clone::Clone for termrock::widgets::DepLayoutNode
+pub fn termrock::widgets::DepLayoutNode::clone(&self) -> termrock::widgets::DepLayoutNode
+impl core::cmp::Eq for termrock::widgets::DepLayoutNode
+impl core::cmp::PartialEq for termrock::widgets::DepLayoutNode
+pub fn termrock::widgets::DepLayoutNode::eq(&self, &termrock::widgets::DepLayoutNode) -> bool
+impl core::fmt::Debug for termrock::widgets::DepLayoutNode
+pub fn termrock::widgets::DepLayoutNode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::DepLayoutNode
+impl core::marker::Freeze for termrock::widgets::DepLayoutNode
+impl core::marker::Send for termrock::widgets::DepLayoutNode
+impl core::marker::Sync for termrock::widgets::DepLayoutNode
+impl core::marker::Unpin for termrock::widgets::DepLayoutNode
+impl core::marker::UnsafeUnpin for termrock::widgets::DepLayoutNode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DepLayoutNode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DepLayoutNode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DepLayoutNode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DepLayoutNode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DepLayoutNode where U: core::convert::From<T>
+pub fn termrock::widgets::DepLayoutNode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DepLayoutNode where U: core::convert::Into<T>
+pub type termrock::widgets::DepLayoutNode::Error = core::convert::Infallible
+pub fn termrock::widgets::DepLayoutNode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DepLayoutNode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DepLayoutNode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DepLayoutNode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DepLayoutNode where T: core::clone::Clone
+pub type termrock::widgets::DepLayoutNode::Owned = T
+pub fn termrock::widgets::DepLayoutNode::clone_into(&self, &mut T)
+pub fn termrock::widgets::DepLayoutNode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DepLayoutNode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DepLayoutNode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DepLayoutNode where T: ?core::marker::Sized
+pub fn termrock::widgets::DepLayoutNode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DepLayoutNode where T: ?core::marker::Sized
+pub fn termrock::widgets::DepLayoutNode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DepLayoutNode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DepLayoutNode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DepLayoutNode
+pub fn termrock::widgets::DepLayoutNode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DepLayoutNode
+pub struct termrock::widgets::DepNode<'a>
+pub termrock::widgets::DepNode::detail: core::option::Option<&'a str>
+pub termrock::widgets::DepNode::enabled: bool
+pub termrock::widgets::DepNode::group: core::option::Option<&'a str>
+pub termrock::widgets::DepNode::id: &'a str
+pub termrock::widgets::DepNode::kind: termrock::widgets::DepNodeKind
+pub termrock::widgets::DepNode::label: &'a str
+pub termrock::widgets::DepNode::status: termrock::widgets::DepNodeStatus
+impl<'a> termrock::widgets::DepNode<'a>
+pub const fn termrock::widgets::DepNode<'a>::detail(self, &'a str) -> Self
+pub const fn termrock::widgets::DepNode<'a>::group(self, &'a str) -> Self
+pub const fn termrock::widgets::DepNode<'a>::kind(self, termrock::widgets::DepNodeKind) -> Self
+pub const fn termrock::widgets::DepNode<'a>::new(&'a str, &'a str) -> Self
+pub const fn termrock::widgets::DepNode<'a>::status(self, termrock::widgets::DepNodeStatus) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::DepNode<'a>
+pub fn termrock::widgets::DepNode<'a>::clone(&self) -> termrock::widgets::DepNode<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::DepNode<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::DepNode<'a>
+pub fn termrock::widgets::DepNode<'a>::eq(&self, &termrock::widgets::DepNode<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::DepNode<'a>
+pub fn termrock::widgets::DepNode<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::DepNode<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::DepNode<'a>
+impl<'a> core::marker::Send for termrock::widgets::DepNode<'a>
+impl<'a> core::marker::Sync for termrock::widgets::DepNode<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::DepNode<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::DepNode<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DepNode<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DepNode<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DepNode<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DepNode<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DepNode<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::DepNode<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DepNode<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::DepNode<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::DepNode<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DepNode<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DepNode<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DepNode<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DepNode<'a> where T: core::clone::Clone
+pub type termrock::widgets::DepNode<'a>::Owned = T
+pub fn termrock::widgets::DepNode<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DepNode<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DepNode<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DepNode<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DepNode<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DepNode<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DepNode<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DepNode<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DepNode<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DepNode<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DepNode<'a>
+pub fn termrock::widgets::DepNode<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DepNode<'a>
+pub struct termrock::widgets::DependencyGraph<'a>
+impl<'a> termrock::widgets::DependencyGraph<'a>
+pub const fn termrock::widgets::DependencyGraph<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::DependencyGraph<'a>::focused(self, bool) -> Self
+pub const fn termrock::widgets::DependencyGraph<'a>::new(&'a [termrock::widgets::DepNode<'a>], &'a [termrock::widgets::DepEdge<'a>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::DependencyGraph<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DependencyGraphState)
+pub const fn termrock::widgets::DependencyGraph<'a>::title(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::DependencyGraph<'a>
+pub fn termrock::widgets::DependencyGraph<'a>::clone(&self) -> termrock::widgets::DependencyGraph<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::DependencyGraph<'a>
+pub fn termrock::widgets::DependencyGraph<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::DependencyGraph<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::DependencyGraph<'a>
+impl<'a> core::marker::Send for termrock::widgets::DependencyGraph<'a>
+impl<'a> core::marker::Sync for termrock::widgets::DependencyGraph<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::DependencyGraph<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::DependencyGraph<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DependencyGraph<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DependencyGraph<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::DependencyGraph<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::DependencyGraph<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DependencyGraph<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::DependencyGraph<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::DependencyGraph<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DependencyGraph<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DependencyGraph<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DependencyGraph<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DependencyGraph<'a> where T: core::clone::Clone
+pub type termrock::widgets::DependencyGraph<'a>::Owned = T
+pub fn termrock::widgets::DependencyGraph<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DependencyGraph<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DependencyGraph<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraph<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DependencyGraph<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraph<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DependencyGraph<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraph<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DependencyGraph<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DependencyGraph<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DependencyGraph<'a>
+pub fn termrock::widgets::DependencyGraph<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DependencyGraph<'a>
+pub struct termrock::widgets::DependencyGraphState
+pub termrock::widgets::DependencyGraphState::ascii: bool
+pub termrock::widgets::DependencyGraphState::cursor: usize
+pub termrock::widgets::DependencyGraphState::effective_view: termrock::widgets::DependencyGraphView
+pub termrock::widgets::DependencyGraphState::filter: core::option::Option<alloc::string::String>
+pub termrock::widgets::DependencyGraphState::force_tree: bool
+pub termrock::widgets::DependencyGraphState::pan_x: u16
+pub termrock::widgets::DependencyGraphState::pan_y: u16
+pub termrock::widgets::DependencyGraphState::preferred_view: termrock::widgets::DependencyGraphView
+pub termrock::widgets::DependencyGraphState::unreadable: core::option::Option<termrock::widgets::GraphUnreadableReason>
+impl termrock::widgets::DependencyGraphState
+pub const fn termrock::widgets::DependencyGraphState::accepts_input(&self) -> bool
+pub fn termrock::widgets::DependencyGraphState::handle_key(&mut self, &[termrock::widgets::DepNode<'_>], &[termrock::widgets::DepEdge<'_>], termrock::input::KeyEvent) -> termrock::widgets::DependencyGraphOutcome
+pub fn termrock::widgets::DependencyGraphState::handle_mouse(&mut self, &[termrock::widgets::DepNode<'_>], termrock::input::MouseEvent) -> termrock::widgets::DependencyGraphOutcome
+pub fn termrock::widgets::DependencyGraphState::new() -> Self
+pub fn termrock::widgets::DependencyGraphState::select(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::DependencyGraphState::selected(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::DependencyGraphState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::DependencyGraphState::with_selected(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::DependencyGraphState
+pub fn termrock::widgets::DependencyGraphState::clone(&self) -> termrock::widgets::DependencyGraphState
+impl core::cmp::PartialEq for termrock::widgets::DependencyGraphState
+pub fn termrock::widgets::DependencyGraphState::eq(&self, &termrock::widgets::DependencyGraphState) -> bool
+impl core::default::Default for termrock::widgets::DependencyGraphState
+pub fn termrock::widgets::DependencyGraphState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::DependencyGraphState
+pub fn termrock::widgets::DependencyGraphState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::DependencyGraphState
+impl core::marker::Freeze for termrock::widgets::DependencyGraphState
+impl core::marker::Send for termrock::widgets::DependencyGraphState
+impl core::marker::Sync for termrock::widgets::DependencyGraphState
+impl core::marker::Unpin for termrock::widgets::DependencyGraphState
+impl core::marker::UnsafeUnpin for termrock::widgets::DependencyGraphState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DependencyGraphState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DependencyGraphState
+impl<T, U> core::convert::Into<U> for termrock::widgets::DependencyGraphState where U: core::convert::From<T>
+pub fn termrock::widgets::DependencyGraphState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DependencyGraphState where U: core::convert::Into<T>
+pub type termrock::widgets::DependencyGraphState::Error = core::convert::Infallible
+pub fn termrock::widgets::DependencyGraphState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DependencyGraphState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DependencyGraphState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DependencyGraphState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DependencyGraphState where T: core::clone::Clone
+pub type termrock::widgets::DependencyGraphState::Owned = T
+pub fn termrock::widgets::DependencyGraphState::clone_into(&self, &mut T)
+pub fn termrock::widgets::DependencyGraphState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DependencyGraphState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DependencyGraphState where T: ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DependencyGraphState where T: ?core::marker::Sized
+pub fn termrock::widgets::DependencyGraphState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DependencyGraphState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DependencyGraphState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DependencyGraphState
+pub fn termrock::widgets::DependencyGraphState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DependencyGraphState
 pub struct termrock::widgets::Description<'a, Id>
 impl<'a, Id> termrock::widgets::Description<'a, Id>
 pub const fn termrock::widgets::Description<'a, Id>::error(&'a str, &'a termrock::style::DesignSystem) -> Self
@@ -69204,6 +69787,10 @@ pub const termrock::widgets::DEFAULT_DEBOUNCE: core::time::Duration
 pub const termrock::widgets::DEFAULT_HISTORY_LIMIT: usize
 pub const termrock::widgets::DEFAULT_PATH_HISTORY_LIMIT: usize
 pub const termrock::widgets::DEFAULT_PROGRESS_FRAMES: [&str; 8]
+pub const termrock::widgets::DEP_GRAPH_AUTO_TREE_NODES: usize
+pub const termrock::widgets::DEP_GRAPH_CELL_H: u16
+pub const termrock::widgets::DEP_GRAPH_CELL_W: u16
+pub const termrock::widgets::DEP_GRAPH_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::DIALOG_NESTED_OVERLAY_PREFIX: &str
@@ -69356,6 +69943,7 @@ pub fn termrock::widgets::auto_bytes_per_row(u16, u8) -> u8
 pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
 pub fn termrock::widgets::breadcrumbs_from_path(&str) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
+pub fn termrock::widgets::choose_dependency_view(termrock::widgets::DependencyGraphView, usize, u16, bool) -> (termrock::widgets::DependencyGraphView, core::option::Option<termrock::widgets::GraphUnreadableReason>)
 pub fn termrock::widgets::clamp_cell_display(&str, usize) -> alloc::string::String
 pub fn termrock::widgets::cmp_process(&termrock::widgets::ProcessRow<'_>, &termrock::widgets::ProcessRow<'_>, termrock::widgets::ProcessSortKey, bool) -> core::cmp::Ordering
 pub fn termrock::widgets::code_frame_window<'a>(&'a [&'a str], &[termrock::widgets::SourceLabel<'_>], u32) -> (alloc::vec::Vec<termrock::widgets::CodeFrameLine<'a>>, bool, bool)
@@ -69379,6 +69967,8 @@ pub fn termrock::widgets::default_quick_open_intent(termrock::input::KeyEvent) -
 pub fn termrock::widgets::default_reserved_chords() -> alloc::vec::Vec<(termrock::keymap::KeyChord, alloc::string::String)>
 pub fn termrock::widgets::default_stepper_intent(termrock::input::KeyEvent, termrock::widgets::StepperOrientation) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_tree_table_intent(termrock::input::KeyEvent, termrock::widgets::TreeTableNavMode) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::widgets::dep_node_to_inspector_fields<'a>(&'a termrock::widgets::DepNode<'a>) -> alloc::vec::Vec<termrock::widgets::InspectorField<'a>>
+pub fn termrock::widgets::dependency_tree_column_model() -> termrock::widgets::ColumnModel<&'static str>
 pub fn termrock::widgets::diagnostic_summary(&[termrock::widgets::Diagnostic<'_>]) -> alloc::string::String
 pub fn termrock::widgets::diagnostics_to_gutter_marks(&[termrock::widgets::Diagnostic<'_>], bool) -> alloc::vec::Vec<termrock::widgets::CodeGutterMark>
 pub fn termrock::widgets::diagnostics_to_highlights(&[termrock::widgets::Diagnostic<'_>]) -> alloc::vec::Vec<termrock::widgets::CodeHighlight>
@@ -69466,6 +70056,8 @@ pub fn termrock::widgets::file_entries_to_tree_nodes<'a, Id: core::clone::Clone>
 pub fn termrock::widgets::file_tree_to_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::FileTreeEntry<'_, Id>], bool) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::filter_command_entries<Id: core::clone::Clone>(&[termrock::widgets::CommandEntry<Id>], &str, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>>
 pub fn termrock::widgets::filter_critical_path<'a>(&'a [termrock::widgets::TraceSpan<'a>]) -> alloc::vec::Vec<&'a termrock::widgets::TraceSpan<'a>>
+pub fn termrock::widgets::filter_dep_edges<'a>(&'a [termrock::widgets::DepEdge<'a>], &alloc::collections::btree::set::BTreeSet<&str>) -> alloc::vec::Vec<&'a termrock::widgets::DepEdge<'a>>
+pub fn termrock::widgets::filter_dep_nodes<'a>(&'a [termrock::widgets::DepNode<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::DepNode<'a>>
 pub fn termrock::widgets::filter_diff_lines<'a>(&'a [termrock::widgets::DiffLine<'a>], &str, &termrock::widgets::DiffViewState) -> alloc::vec::Vec<&'a termrock::widgets::DiffLine<'a>>
 pub fn termrock::widgets::filter_file_tree_entries<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::FileTreeEntry<'a, Id>], &str, bool, bool) -> alloc::vec::Vec<&'a termrock::widgets::FileTreeEntry<'a, Id>>
 pub fn termrock::widgets::filter_help_entries(&[termrock::widgets::HelpEntry], &str) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
@@ -69531,6 +70123,8 @@ pub fn termrock::widgets::kbd_from_chord<'a>(termrock::keymap::KeyChord, &'a mut
 pub fn termrock::widgets::keep_first_match_slice(&str, &[termrock::widgets::MatchRange], usize) -> alloc::string::String
 pub fn termrock::widgets::keyboard_help_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::KeyboardHelpPresentation
 pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>
+pub fn termrock::widgets::layout_content_size(&[termrock::widgets::DepLayoutNode]) -> (u16, u16)
+pub fn termrock::widgets::layout_dependency_layers(&[termrock::widgets::DepNode<'_>], &[termrock::widgets::DepEdge<'_>]) -> alloc::vec::Vec<termrock::widgets::DepLayoutNode>
 pub fn termrock::widgets::layout_metrics_dashboard(ratatui_core::layout::rect::Rect, usize, usize, termrock::widgets::MetricsDashboardLayoutMode) -> termrock::widgets::MetricsDashboardSlots
 pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
 pub fn termrock::widgets::line_plain(&ratatui_core::text::line::Line<'_>) -> alloc::string::String
@@ -69616,6 +70210,7 @@ pub fn termrock::widgets::preview_card_overlay_size(&termrock::widgets::PreviewC
 pub fn termrock::widgets::process_column_model() -> termrock::widgets::ColumnModel<&'static str>
 pub fn termrock::widgets::progress_steps_as_list_rows(&[termrock::widgets::ProgressStep]) -> alloc::vec::Vec<termrock::widgets::ListRow<'static, alloc::string::String>>
 pub fn termrock::widgets::progress_steps_as_timeline_events(&[termrock::widgets::ProgressStep]) -> alloc::vec::Vec<termrock::widgets::TimelineEvent<'_>>
+pub fn termrock::widgets::project_dep_tree_rows(&[termrock::widgets::DepNode<'_>], &[termrock::widgets::DepEdge<'_>], &mut alloc::vec::Vec<[alloc::string::String; 4]>) -> alloc::vec::Vec<(alloc::string::String, u16, bool, bool, core::option::Option<alloc::string::String>, usize)>
 pub fn termrock::widgets::project_index_window<'a>(&[u64], &'a str) -> alloc::vec::Vec<(u64, alloc::string::String, alloc::string::String)>
 pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>

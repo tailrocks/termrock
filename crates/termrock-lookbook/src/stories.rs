@@ -88,6 +88,8 @@ use termrock::{
         MetricsDashboard, MetricsDashboardState, MetricTile, MetricTileHealth, MetricAlert,
         MetricAlertSeverity, MetricViz,
         TraceWaterfall, TraceWaterfallState, TraceSpan, TraceSpanStatus,
+        DependencyGraph, DependencyGraphState, DepNode, DepEdge, DepNodeKind, DepNodeStatus,
+        DepEdgeKind, DependencyGraphView,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2745,6 +2747,60 @@ pub(crate) fn stories() -> Vec<Story> {
             72,
             12,
             trace_waterfall_ascii,
+        ),
+        Story::new(
+            "dependency-graph/basic",
+            "DependencyGraph basic",
+            "DependencyGraph",
+            "Layered package/service deps with ASCII connectors.",
+            72,
+            16,
+            dependency_graph_basic,
+        ),
+        Story::new(
+            "dependency-graph/tree",
+            "DependencyGraph tree fallback",
+            "DependencyGraph",
+            "TreeTable-shaped fallback view.",
+            56,
+            14,
+            dependency_graph_tree,
+        ),
+        Story::new(
+            "dependency-graph/list",
+            "DependencyGraph list",
+            "DependencyGraph",
+            "Flat list representation.",
+            56,
+            12,
+            dependency_graph_list,
+        ),
+        Story::new(
+            "dependency-graph/filter",
+            "DependencyGraph filter",
+            "DependencyGraph",
+            "Filtered node set.",
+            56,
+            12,
+            dependency_graph_filter,
+        ),
+        Story::new(
+            "dependency-graph/narrow",
+            "DependencyGraph narrow",
+            "DependencyGraph",
+            "Auto tree under 40 cols.",
+            36,
+            12,
+            dependency_graph_basic,
+        ),
+        Story::new(
+            "dependency-graph/ascii",
+            "DependencyGraph ASCII",
+            "DependencyGraph",
+            "ASCII connectors and glyphs.",
+            64,
+            14,
+            dependency_graph_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -12994,6 +13050,80 @@ fn trace_waterfall_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let mut state = TraceWaterfallState::with_selected("root");
     state.ascii = true;
     TraceWaterfall::new(&spans, system)
+        .title("ascii")
+        .ascii(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn dependency_graph_sample() -> (Vec<DepNode<'static>>, Vec<DepEdge<'static>>) {
+    let nodes = vec![
+        DepNode::new("app", "app").kind(DepNodeKind::Package).detail("0.1.0"),
+        DepNode::new("termrock", "termrock")
+            .kind(DepNodeKind::Package)
+            .detail("0.11"),
+        DepNode::new("ratatui", "ratatui").kind(DepNodeKind::Package),
+        DepNode::new("serde", "serde").kind(DepNodeKind::Package),
+        DepNode::new("api", "api-svc")
+            .kind(DepNodeKind::Service)
+            .group("runtime"),
+        DepNode::new("db", "postgres")
+            .kind(DepNodeKind::Service)
+            .status(DepNodeStatus::Warning),
+        DepNode::new("missing", "lost-crate")
+            .kind(DepNodeKind::Package)
+            .status(DepNodeStatus::Missing),
+    ];
+    let edges = vec![
+        DepEdge::new("app", "termrock"),
+        DepEdge::new("app", "serde"),
+        DepEdge::new("termrock", "ratatui"),
+        DepEdge::new("api", "db").kind(DepEdgeKind::Calls),
+        DepEdge::new("app", "api"),
+        DepEdge::new("app", "missing"),
+    ];
+    (nodes, edges)
+}
+
+fn dependency_graph_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (nodes, edges) = dependency_graph_sample();
+    let mut state = DependencyGraphState::with_selected("termrock");
+    DependencyGraph::new(&nodes, &edges, system)
+        .title("crates")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn dependency_graph_tree(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (nodes, edges) = dependency_graph_sample();
+    let mut state = DependencyGraphState::with_selected("app");
+    state.force_tree = true;
+    DependencyGraph::new(&nodes, &edges, system)
+        .title("tree")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn dependency_graph_list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (nodes, edges) = dependency_graph_sample();
+    let mut state = DependencyGraphState::new();
+    state.preferred_view = DependencyGraphView::List;
+    DependencyGraph::new(&nodes, &edges, system)
+        .title("list")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn dependency_graph_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (nodes, edges) = dependency_graph_sample();
+    let mut state = DependencyGraphState::new();
+    state.filter = Some("serde".into());
+    DependencyGraph::new(&nodes, &edges, system)
+        .title("filter")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn dependency_graph_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (nodes, edges) = dependency_graph_sample();
+    let mut state = DependencyGraphState::with_selected("app");
+    state.ascii = true;
+    DependencyGraph::new(&nodes, &edges, system)
         .title("ascii")
         .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);

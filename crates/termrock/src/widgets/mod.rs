@@ -129,6 +129,7 @@ mod schema_browser;
 mod search_results;
 mod metrics_dashboard;
 mod trace_waterfall;
+mod dependency_graph;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -247,6 +248,15 @@ pub use trace_waterfall::{
     span_bar_cols, span_to_inspector_fields, span_to_timeline_event, trace_total_ms,
 };
 pub use trace_waterfall::bench as trace_waterfall_bench;
+pub use dependency_graph::{
+    DEP_GRAPH_AUTO_TREE_NODES, DEP_GRAPH_CELL_H, DEP_GRAPH_CELL_W, DEP_GRAPH_NARROW_MAX_WIDTH,
+    DepEdge, DepEdgeKind, DepLayoutNode, DepNode, DepNodeKind, DepNodeStatus, DependencyGraph,
+    DependencyGraphOutcome, DependencyGraphState, DependencyGraphView, GraphUnreadableReason,
+    choose_dependency_view, dep_node_to_inspector_fields, dependency_tree_column_model,
+    filter_dep_edges, filter_dep_nodes, layout_content_size, layout_dependency_layers,
+    project_dep_tree_rows,
+};
+pub use dependency_graph::bench as dependency_graph_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,
