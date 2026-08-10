@@ -199,6 +199,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0183 | `v0.13.0` | [LoadingOverlay and BusyBoundary](migrations/0183-v0.13.0-loading-overlay-busy-boundary.md) |
 | 0184 | `v0.13.0` | [Offline and ReconnectingState](migrations/0184-v0.13.0-offline-reconnecting-state.md) |
 | 0185 | `v0.13.0` | [List collection view](migrations/0185-v0.13.0-list-collection-view.md) |
+| 0186 | `v0.13.0` | [VirtualList](migrations/0186-v0.13.0-virtual-list.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

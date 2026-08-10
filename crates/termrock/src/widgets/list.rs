@@ -463,6 +463,10 @@ impl<Id> ListState<Id> {
     }
 
     /// Virtualization: painted window of a larger universe.
+    ///
+    /// For million-row or streaming collections prefer
+    /// [`crate::widgets::VirtualList`] (owns [`crate::widgets::Virtualizer`]
+    /// math, overscan, sticky headers, follow-tail).
     pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
         self.virtual_window_start = window_start;
         self.virtual_total = total_len;

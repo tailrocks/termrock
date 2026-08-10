@@ -116,6 +116,7 @@ mod tree_navigation;
 mod view_state;
 mod viewport;
 mod virtual_grid;
+mod virtual_list;
 mod virtualizer;
 
 pub use crate::style::PanelChrome;
@@ -602,6 +603,11 @@ pub use viewport::Viewport;
 pub use virtual_grid::{
     GridCell, GridCellRegion, GridColumn, GridColumnWidth, GridHeaderRegion, GridRow, VirtualGrid,
     VirtualGridOutcome, VirtualGridState,
+};
+pub use virtual_list::{
+    VIRTUAL_LIST_BENCH_ROWS, VIRTUAL_LIST_DEFAULT_OVERSCAN, VirtualList, VirtualListDiagnostics,
+    VirtualListFollow, VirtualListItem, VirtualListState, VirtualPageStatus, example_project_million,
+    project_index_window,
 };
 pub use virtualizer::{
     ExtentPolicy, StickyRegion, VirtRange, VirtSlice, Virtualizer, Virtualizer2D,

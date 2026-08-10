@@ -226,6 +226,21 @@ let mut state = ListState::new(Some("a"));
 state.set_selection_mode(ListSelectionMode::Range);
 List::new(&rows, &system).comfortable().empty_message(Line::from("No items"));`,
   },
+  VirtualList: {
+    description:
+      'High-performance list for extremely large/streaming collections: shared Virtualizer (overscan, sticky, anchors, variable extents); host projects measure window only; follow-tail; async page status; O(viewport) semantics; diagnostics.',
+    primaryStory: 'virtual-list/million',
+    usage: `use termrock::widgets::{VirtualList, VirtualListState, VirtualListItem, ListRow};
+use ratatui_core::text::Line;
+
+let mut state = VirtualListState::million_fixed();
+let mut idx = Vec::new();
+state.projection_indices(&mut idx);
+let projected: Vec<_> = idx.iter().map(|&i| {
+    VirtualListItem::new(i, ListRow::item(i, Line::from(format!("row {i}"))))
+}).collect();
+VirtualList::new(&projected, &system).show_diagnostics(true).paint(area, buf, &mut state);`,
+  },
   LogPane: {
     description: 'A bounded, scrollable log buffer with freeze-on-scroll and tail following.',
     primaryStory: 'log-pane/follow',

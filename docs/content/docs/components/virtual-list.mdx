@@ -1,0 +1,76 @@
+---
+title: VirtualList
+description: 'High-performance list for huge/streaming sets — Virtualizer window, O(viewport) paint and semantics.'
+---
+
+## Previews
+
+### `virtual-list/million`
+
+1M logical rows
+
+![VirtualList — million](/component-previews/virtual-list-million.svg)
+
+### `virtual-list/follow-tail`
+
+Follow-tail stream
+
+![VirtualList — follow-tail](/component-previews/virtual-list-follow-tail.svg)
+
+### `virtual-list/loading`
+
+Async page loading
+
+![VirtualList — loading](/component-previews/virtual-list-loading.svg)
+
+## Usage
+
+```rust
+use ratatui_core::text::Line;
+use termrock::widgets::{
+    VirtualList, VirtualListState, VirtualListItem, VirtualListFollow,
+    StickyRegion, ListRow,
+};
+
+let mut state = VirtualListState::new();
+state.set_logical_len(1_000_000);
+state.set_viewport_extent(h);
+state.set_sticky(StickyRegion { leading: 1, trailing: 0 });
+state.set_follow(VirtualListFollow::Tail);
+
+let mut indices = Vec::new();
+state.projection_indices(&mut indices); // never O(N)
+let projected: Vec<_> = indices
+    .iter()
+    .map(|&i| VirtualListItem::new(i, ListRow::item(i, Line::from(format!("row {i}")))))
+    .collect();
+
+VirtualList::new(&projected, &system)
+    .show_diagnostics(true)
+    .paint(area, buf, &mut state);
+
+let d = state.diagnostics(); // visible range, semantic_count, measured_extents
+```
+
+## Rules
+
+1. Host projects **only** `projection_indices` (sticky + measure window).
+2. Semantics register projected rows only — never full `logical_len`.
+3. Prefer VirtualList over `List::set_virtual_window` for large or streaming sets.
+4. Follow-tail pins to end on growth; user scroll-up exits follow.
+5. Placeholders + `VirtualPageStatus` for async pages.
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (scroll + projected selection/typeahead) |
+| Mouse | covered (projected hit regions) |
+| Focus | covered (active in window) |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `virtual-list/million`, `follow-tail`, `loading`

@@ -55,6 +55,8 @@ use termrock::{
         KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
         MatchTruncate, PresenceStatus,
         ListRow, ListState, ListDensity, ListSelectionMode, filter_list_rows,
+        VirtualList, VirtualListState, VirtualListItem, VirtualListFollow, VirtualPageStatus,
+        StickyRegion,
         LoadingView, LoadingOverlay, BusyBoundary, BusyBoundaryState, BusyMode,
         example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
         example_busy_optimistic, example_busy_stale,
@@ -2228,6 +2230,33 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             12,
             scroll_area_follow_story,
+        ),
+        Story::new(
+            "virtual-list/million",
+            "VirtualList million-row",
+            "VirtualList",
+            "1M logical rows; O(viewport) project+paint; sticky header; diagnostics.",
+            52,
+            16,
+            virtual_list_million_story,
+        ),
+        Story::new(
+            "virtual-list/follow-tail",
+            "VirtualList follow-tail",
+            "VirtualList",
+            "Streaming tail follow with live growth.",
+            48,
+            12,
+            virtual_list_follow_tail_story,
+        ),
+        Story::new(
+            "virtual-list/loading",
+            "VirtualList page loading",
+            "VirtualList",
+            "Async page loading chrome with placeholders.",
+            48,
+            12,
+            virtual_list_loading_story,
         ),
         Story::new(
             "virtualizer/million-fixed",
@@ -10724,6 +10753,85 @@ fn status_indicator_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
             .paint(Rect::new(area.x, y, area.width, 1), frame.buffer_mut());
         y = y.saturating_add(1);
     }
+}
+
+fn virtual_list_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Panel, PanelChrome, VIRTUAL_LIST_BENCH_ROWS};
+    let mut state = VirtualListState::<u64>::million_fixed();
+    state.set_sticky(StickyRegion {
+        leading: 1,
+        trailing: 0,
+    });
+    state.set_offset(250_000);
+    state.set_viewport_extent(area.height.saturating_sub(2).max(8));
+    let mut idx = Vec::new();
+    state.projection_indices(&mut idx);
+    let projected: Vec<_> = idx
+        .iter()
+        .map(|&i| {
+            let label: &'static str = if i == 0 {
+                "★ sticky header"
+            } else {
+                // Stable short labels without leak: format into owned via Box::leak for story
+                Box::leak(format!("row {i:>9} · O(viewport)").into_boxed_str())
+            };
+            let row = if i == 0 {
+                ListRow::group_header(i, Line::from(label))
+            } else {
+                ListRow::item(i, Line::from(label))
+            };
+            VirtualListItem::new(i, row)
+        })
+        .collect();
+    let title = format!("VirtualList · {VIRTUAL_LIST_BENCH_ROWS} logical");
+    let _ = Panel::new(system)
+        .title(title.as_str())
+        .chrome(PanelChrome::Focused)
+        .paint(area, frame.buffer_mut(), None);
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    VirtualList::new(&projected, system)
+        .show_diagnostics(true)
+        .paint(inner, frame.buffer_mut(), &mut state);
+}
+
+fn virtual_list_follow_tail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = VirtualListState::<u64>::new();
+    state.set_logical_len(5000);
+    state.set_viewport_extent(area.height.max(4));
+    state.set_follow(VirtualListFollow::Tail);
+    let mut idx = Vec::new();
+    state.projection_indices(&mut idx);
+    let projected: Vec<_> = idx
+        .iter()
+        .map(|&i| {
+            let label: &'static str =
+                Box::leak(format!("stream event {i:>5}").into_boxed_str());
+            VirtualListItem::new(i, ListRow::item(i, Line::from(label)))
+        })
+        .collect();
+    VirtualList::new(&projected, system)
+        .show_diagnostics(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn virtual_list_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = VirtualListState::<u64>::new();
+    state.set_logical_len(10_000);
+    state.set_viewport_extent(area.height.max(6));
+    state.set_offset(100);
+    state.set_page_status(VirtualPageStatus::Loading);
+    let mut idx = Vec::new();
+    state.projection_indices(&mut idx);
+    let projected: Vec<_> = idx
+        .iter()
+        .map(|&i| VirtualListItem::placeholder(i, i))
+        .collect();
+    VirtualList::new(&projected, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn virtualizer_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
