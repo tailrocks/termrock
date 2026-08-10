@@ -133,6 +133,7 @@ mod activity_shelf;
 mod task_rail;
 mod subagent_card;
 mod background_task_panel;
+mod context_meter;
 mod hex_viewer;
 mod file_tree;
 mod process_table;
@@ -317,6 +318,14 @@ pub use background_task_panel::{
     background_task_to_notification, example_background_tasks,
 };
 pub use background_task_panel::bench as background_task_panel_bench;
+pub use context_meter::{
+    CONTEXT_METER_DANGER_FRACTION, CONTEXT_METER_SOURCE_CAP, CONTEXT_METER_WARN_FRACTION,
+    BudgetMeasure, BudgetPrecision, BudgetUnit, ContextBudget, ContextMeter,
+    ContextMeterOutcome, ContextMeterPresentation, ContextMeterState, ContextSource,
+    ContextSourceKind, context_budget_from_tokens, example_context_budgets, format_budget_compact,
+    format_budget_count, format_budget_percent, meter_bar,
+};
+pub use context_meter::bench as context_meter_bench;
 pub use blocks::{
     BlockChrome, OpsDashboardOutcome, OpsDashboardState, OpsRegion, ResourceBrowserOutcome,
     ResourceBrowserState, SettingsShellOutcome, SettingsShellState,

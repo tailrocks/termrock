@@ -6791,6 +6791,60 @@ pub(crate) fn stories() -> Vec<Story> {
             background_tasks_dropped_story,
         ),
         Story::new(
+            "context-meter/low-mid-high",
+            "ContextMeter pressure",
+            "ContextMeter",
+            "Low / mid / high token pressure.",
+            48,
+            6,
+            context_meter_pressure_story,
+        ),
+        Story::new(
+            "context-meter/indeterminate",
+            "ContextMeter indeterminate",
+            "ContextMeter",
+            "Unknown totals — never claim 100%.",
+            40,
+            4,
+            context_meter_indeterminate_story,
+        ),
+        Story::new(
+            "context-meter/approximate",
+            "ContextMeter approximate",
+            "ContextMeter",
+            "Approximate estimates with ~ formatting.",
+            44,
+            6,
+            context_meter_approximate_story,
+        ),
+        Story::new(
+            "context-meter/expanded",
+            "ContextMeter expanded",
+            "ContextMeter",
+            "Breakdown, threshold, compact action.",
+            48,
+            12,
+            context_meter_expanded_story,
+        ),
+        Story::new(
+            "context-meter/mono",
+            "ContextMeter mono",
+            "ContextMeter",
+            "Monochrome density bar.",
+            40,
+            3,
+            context_meter_mono_story,
+        ),
+        Story::new(
+            "context-meter/bytes",
+            "ContextMeter bytes",
+            "ContextMeter",
+            "Non-token byte budget.",
+            40,
+            4,
+            context_meter_bytes_story,
+        ),
+        Story::new(
             "blocks/form-wizard",
             "FormWizard",
             "FormWizard",
@@ -21163,6 +21217,83 @@ fn background_tasks_dropped_story(frame: &mut Frame<'_>, area: Rect, system: &De
     st.list.select(Some("b3".into())); // has dropped lines from small buffer
     st.focused = true;
     BackgroundTaskPanel::new(&tasks, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn context_meter_pressure_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+    };
+    let budgets = example_context_budgets();
+    let chunks = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(2),
+        Constraint::Length(2),
+    ])
+    .split(area);
+    for (i, b) in budgets.iter().take(2).enumerate() {
+        let mut st = ContextMeterState::new();
+        st.presentation = ContextMeterPresentation::Compact;
+        ContextMeter::new(b, system).paint(chunks[i], frame.buffer_mut(), &mut st);
+    }
+    // high pressure is index 1
+    let mut st = ContextMeterState::new();
+    ContextMeter::new(&budgets[1], system).paint(chunks[2], frame.buffer_mut(), &mut st);
+}
+
+fn context_meter_indeterminate_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+    };
+    let b = &example_context_budgets()[2];
+    let mut st = ContextMeterState::new();
+    st.presentation = ContextMeterPresentation::Expanded;
+    ContextMeter::new(b, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn context_meter_approximate_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+    };
+    let b = &example_context_budgets()[3];
+    let mut st = ContextMeterState::new();
+    st.presentation = ContextMeterPresentation::Expanded;
+    ContextMeter::new(b, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn context_meter_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+    };
+    let b = &example_context_budgets()[1];
+    let mut st = ContextMeterState::new();
+    st.focused = true;
+    st.presentation = ContextMeterPresentation::Expanded;
+    ContextMeter::new(b, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn context_meter_mono_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+    };
+    let b = &example_context_budgets()[0];
+    let mut st = ContextMeterState::new();
+    st.presentation = ContextMeterPresentation::Compact;
+    ContextMeter::new(b, system)
+        .mono(true)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn context_meter_bytes_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+    };
+    let b = &example_context_budgets()[4];
+    let mut st = ContextMeterState::new();
+    st.presentation = ContextMeterPresentation::Expanded;
+    ContextMeter::new(b, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 // ── State-axis story helpers ────────────────────────────────────────────────

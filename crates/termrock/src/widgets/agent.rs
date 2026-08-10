@@ -18,6 +18,9 @@ use crate::{
 // ── Token meter ─────────────────────────────────────────────────────────────
 
 /// Compact token/cost usage meter.
+///
+/// Prefer [`crate::widgets::ContextMeter`] for approximate precision, breakdown,
+/// compaction thresholds, and non-token budgets (migration `0225`).
 #[derive(Debug, Clone, Copy)]
 pub struct TokenMeter<'a> {
     used: u64,

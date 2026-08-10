@@ -1,0 +1,33 @@
+---
+title: ContextMeter
+description: Trustworthy context/token/resource budget with approximate precision rules.
+---
+
+# ContextMeter
+
+Budget meter for model context and other resources. Never claims 100% without a
+known limit. Approximate estimates use `~` and coarse percentages.
+
+## When to use / when not
+
+| Use ContextMeter | Prefer |
+|------------------|--------|
+| Composer/status context usage | — |
+| Simple exact tokens only | TokenMeter (thin) |
+| Generic chart series | Gauge / SegmentedMeter |
+
+## Forms
+
+| Presentation | Use |
+|--------------|-----|
+| Compact | Status bar / composer strip |
+| Expanded | Inline breakdown |
+| Popover | Host overlay detail |
+
+## Keys
+
+Enter activate · e expand · c compact · r reduce · b breakdown
+
+## Related
+
+TokenMeter · PromptComposer · migration `0225`

@@ -2389,6 +2389,33 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** clear only terminal; no process APIs  
 24. **Perf:** O(visible tasks + viewport lines)  
 
+## ContextMeter
+
+1. **Purpose:** Trustworthy context/token/resource budget display.  
+2. **Anatomy:** `bar` · `used/limit` · `%` · `sources[]` · `actions`  
+3. **Public properties:** `ContextBudget` / `BudgetMeasure` (unit, precision, sources, threshold)  
+4. **State:** Compact / Expanded / Popover  
+5. **Variants:** compact · expanded · popover · mono  
+6. **Sizes/density:** 1–2 rows compact; multi-line breakdown  
+7. **Visual states:** muted / warn@75% / danger@90%; hatch when unknown  
+8. **Interaction states:** activate · expand · compact/reduce requests  
+9. **Keyboard:** Enter · e · c · r · b · Esc  
+10. **Mouse:** click activate  
+11. **Focus:** bold / reverse  
+12. **Disabled:** accepts_input false  
+13. **Loading:** N/A (host updates measure)  
+14. **Error:** warning string; never false 100%  
+15. **Narrow:** percent/text only  
+16. **Tiny:** hatch or `—`  
+17. **Unicode/ASCII:** bar glyphs  
+18. **Colorless:** density + text only  
+19. **Composition:** StatusBar / PromptComposer; TokenMeter remains thin  
+20. **Outcomes:** Activated · ExpandToggled · CompactRequested · ReduceRequested · OpenBreakdown  
+21. **Stories:** `context-meter/{low-mid-high,indeterminate,approximate,expanded,mono,bytes}`  
+22. **Snapshots:** unknown; approx; high pressure  
+23. **Interaction tests:** never 100% without limit; approx formatting  
+24. **Perf:** O(sources cap)  
+
 ## SessionPicker
 
 1. **Purpose:** Resume/pick agent sessions.  

@@ -14669,6 +14669,8 @@ pub const termrock::widgets::commands::REFRESH: &str
 pub const termrock::widgets::commands::RETRY_FAILED: &str
 pub const termrock::widgets::commands::TIME_NEXT: &str
 pub const termrock::widgets::commands::TIME_PREV: &str
+pub mod termrock::widgets::context_meter_bench
+pub const termrock::widgets::context_meter_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::data_view_bench
 pub const termrock::widgets::data_view_bench::COLS_WIDE: usize
 pub const termrock::widgets::data_view_bench::MAX_PAINT_CELLS: u32
@@ -16980,6 +16982,111 @@ pub unsafe fn termrock::widgets::BreadcrumbsPresentation::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::widgets::BreadcrumbsPresentation
 pub fn termrock::widgets::BreadcrumbsPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::BreadcrumbsPresentation
+#[non_exhaustive] pub enum termrock::widgets::BudgetPrecision
+pub termrock::widgets::BudgetPrecision::Approximate
+pub termrock::widgets::BudgetPrecision::Exact
+pub termrock::widgets::BudgetPrecision::Unknown
+impl termrock::widgets::BudgetPrecision
+pub const fn termrock::widgets::BudgetPrecision::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::BudgetPrecision
+pub fn termrock::widgets::BudgetPrecision::clone(&self) -> termrock::widgets::BudgetPrecision
+impl core::cmp::Eq for termrock::widgets::BudgetPrecision
+impl core::cmp::PartialEq for termrock::widgets::BudgetPrecision
+pub fn termrock::widgets::BudgetPrecision::eq(&self, &termrock::widgets::BudgetPrecision) -> bool
+impl core::default::Default for termrock::widgets::BudgetPrecision
+pub fn termrock::widgets::BudgetPrecision::default() -> termrock::widgets::BudgetPrecision
+impl core::fmt::Debug for termrock::widgets::BudgetPrecision
+pub fn termrock::widgets::BudgetPrecision::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BudgetPrecision
+pub fn termrock::widgets::BudgetPrecision::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BudgetPrecision
+impl core::marker::StructuralPartialEq for termrock::widgets::BudgetPrecision
+impl core::marker::Freeze for termrock::widgets::BudgetPrecision
+impl core::marker::Send for termrock::widgets::BudgetPrecision
+impl core::marker::Sync for termrock::widgets::BudgetPrecision
+impl core::marker::Unpin for termrock::widgets::BudgetPrecision
+impl core::marker::UnsafeUnpin for termrock::widgets::BudgetPrecision
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BudgetPrecision
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BudgetPrecision
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BudgetPrecision where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BudgetPrecision::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BudgetPrecision where U: core::convert::From<T>
+pub fn termrock::widgets::BudgetPrecision::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BudgetPrecision where U: core::convert::Into<T>
+pub type termrock::widgets::BudgetPrecision::Error = core::convert::Infallible
+pub fn termrock::widgets::BudgetPrecision::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BudgetPrecision where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BudgetPrecision::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BudgetPrecision::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BudgetPrecision where T: core::clone::Clone
+pub type termrock::widgets::BudgetPrecision::Owned = T
+pub fn termrock::widgets::BudgetPrecision::clone_into(&self, &mut T)
+pub fn termrock::widgets::BudgetPrecision::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BudgetPrecision where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BudgetPrecision::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BudgetPrecision where T: ?core::marker::Sized
+pub fn termrock::widgets::BudgetPrecision::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BudgetPrecision where T: ?core::marker::Sized
+pub fn termrock::widgets::BudgetPrecision::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BudgetPrecision where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BudgetPrecision::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BudgetPrecision
+pub fn termrock::widgets::BudgetPrecision::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BudgetPrecision
+#[non_exhaustive] pub enum termrock::widgets::BudgetUnit
+pub termrock::widgets::BudgetUnit::Bytes
+pub termrock::widgets::BudgetUnit::Characters
+pub termrock::widgets::BudgetUnit::Custom
+pub termrock::widgets::BudgetUnit::Messages
+pub termrock::widgets::BudgetUnit::Tokens
+impl termrock::widgets::BudgetUnit
+pub const fn termrock::widgets::BudgetUnit::default_label(self) -> &'static str
+pub const fn termrock::widgets::BudgetUnit::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::BudgetUnit
+pub fn termrock::widgets::BudgetUnit::clone(&self) -> termrock::widgets::BudgetUnit
+impl core::cmp::Eq for termrock::widgets::BudgetUnit
+impl core::cmp::PartialEq for termrock::widgets::BudgetUnit
+pub fn termrock::widgets::BudgetUnit::eq(&self, &termrock::widgets::BudgetUnit) -> bool
+impl core::default::Default for termrock::widgets::BudgetUnit
+pub fn termrock::widgets::BudgetUnit::default() -> termrock::widgets::BudgetUnit
+impl core::fmt::Debug for termrock::widgets::BudgetUnit
+pub fn termrock::widgets::BudgetUnit::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BudgetUnit
+pub fn termrock::widgets::BudgetUnit::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BudgetUnit
+impl core::marker::StructuralPartialEq for termrock::widgets::BudgetUnit
+impl core::marker::Freeze for termrock::widgets::BudgetUnit
+impl core::marker::Send for termrock::widgets::BudgetUnit
+impl core::marker::Sync for termrock::widgets::BudgetUnit
+impl core::marker::Unpin for termrock::widgets::BudgetUnit
+impl core::marker::UnsafeUnpin for termrock::widgets::BudgetUnit
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BudgetUnit
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BudgetUnit
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BudgetUnit where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BudgetUnit::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BudgetUnit where U: core::convert::From<T>
+pub fn termrock::widgets::BudgetUnit::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BudgetUnit where U: core::convert::Into<T>
+pub type termrock::widgets::BudgetUnit::Error = core::convert::Infallible
+pub fn termrock::widgets::BudgetUnit::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BudgetUnit where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BudgetUnit::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BudgetUnit::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BudgetUnit where T: core::clone::Clone
+pub type termrock::widgets::BudgetUnit::Owned = T
+pub fn termrock::widgets::BudgetUnit::clone_into(&self, &mut T)
+pub fn termrock::widgets::BudgetUnit::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BudgetUnit where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BudgetUnit::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BudgetUnit where T: ?core::marker::Sized
+pub fn termrock::widgets::BudgetUnit::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BudgetUnit where T: ?core::marker::Sized
+pub fn termrock::widgets::BudgetUnit::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BudgetUnit where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BudgetUnit::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BudgetUnit
+pub fn termrock::widgets::BudgetUnit::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BudgetUnit
 #[non_exhaustive] pub enum termrock::widgets::BusyBoundaryOutcome
 pub termrock::widgets::BusyBoundaryOutcome::CancelRequested
 pub termrock::widgets::BusyBoundaryOutcome::Ended
@@ -19302,6 +19409,160 @@ pub unsafe fn termrock::widgets::ConnectivityPresentation::clone_to_uninit(&self
 impl<T> core::convert::From<T> for termrock::widgets::ConnectivityPresentation
 pub fn termrock::widgets::ConnectivityPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ConnectivityPresentation
+#[non_exhaustive] pub enum termrock::widgets::ContextMeterOutcome
+pub termrock::widgets::ContextMeterOutcome::Activated
+pub termrock::widgets::ContextMeterOutcome::CompactRequested
+pub termrock::widgets::ContextMeterOutcome::ExpandToggled
+pub termrock::widgets::ContextMeterOutcome::ExpandToggled::expanded: bool
+pub termrock::widgets::ContextMeterOutcome::Ignored
+pub termrock::widgets::ContextMeterOutcome::OpenBreakdown
+pub termrock::widgets::ContextMeterOutcome::ReduceRequested
+impl core::clone::Clone for termrock::widgets::ContextMeterOutcome
+pub fn termrock::widgets::ContextMeterOutcome::clone(&self) -> termrock::widgets::ContextMeterOutcome
+impl core::cmp::Eq for termrock::widgets::ContextMeterOutcome
+impl core::cmp::PartialEq for termrock::widgets::ContextMeterOutcome
+pub fn termrock::widgets::ContextMeterOutcome::eq(&self, &termrock::widgets::ContextMeterOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ContextMeterOutcome
+pub fn termrock::widgets::ContextMeterOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ContextMeterOutcome
+impl core::marker::Freeze for termrock::widgets::ContextMeterOutcome
+impl core::marker::Send for termrock::widgets::ContextMeterOutcome
+impl core::marker::Sync for termrock::widgets::ContextMeterOutcome
+impl core::marker::Unpin for termrock::widgets::ContextMeterOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ContextMeterOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ContextMeterOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ContextMeterOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ContextMeterOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ContextMeterOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ContextMeterOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ContextMeterOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ContextMeterOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ContextMeterOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ContextMeterOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ContextMeterOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ContextMeterOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ContextMeterOutcome where T: core::clone::Clone
+pub type termrock::widgets::ContextMeterOutcome::Owned = T
+pub fn termrock::widgets::ContextMeterOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ContextMeterOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ContextMeterOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ContextMeterOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ContextMeterOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ContextMeterOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ContextMeterOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ContextMeterOutcome
+pub fn termrock::widgets::ContextMeterOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ContextMeterOutcome
+#[non_exhaustive] pub enum termrock::widgets::ContextMeterPresentation
+pub termrock::widgets::ContextMeterPresentation::Compact
+pub termrock::widgets::ContextMeterPresentation::Expanded
+pub termrock::widgets::ContextMeterPresentation::Popover
+impl termrock::widgets::ContextMeterPresentation
+pub const fn termrock::widgets::ContextMeterPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ContextMeterPresentation
+pub fn termrock::widgets::ContextMeterPresentation::clone(&self) -> termrock::widgets::ContextMeterPresentation
+impl core::cmp::Eq for termrock::widgets::ContextMeterPresentation
+impl core::cmp::PartialEq for termrock::widgets::ContextMeterPresentation
+pub fn termrock::widgets::ContextMeterPresentation::eq(&self, &termrock::widgets::ContextMeterPresentation) -> bool
+impl core::default::Default for termrock::widgets::ContextMeterPresentation
+pub fn termrock::widgets::ContextMeterPresentation::default() -> termrock::widgets::ContextMeterPresentation
+impl core::fmt::Debug for termrock::widgets::ContextMeterPresentation
+pub fn termrock::widgets::ContextMeterPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ContextMeterPresentation
+pub fn termrock::widgets::ContextMeterPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ContextMeterPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::ContextMeterPresentation
+impl core::marker::Freeze for termrock::widgets::ContextMeterPresentation
+impl core::marker::Send for termrock::widgets::ContextMeterPresentation
+impl core::marker::Sync for termrock::widgets::ContextMeterPresentation
+impl core::marker::Unpin for termrock::widgets::ContextMeterPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::ContextMeterPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ContextMeterPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ContextMeterPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ContextMeterPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ContextMeterPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::ContextMeterPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ContextMeterPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::ContextMeterPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::ContextMeterPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ContextMeterPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ContextMeterPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ContextMeterPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ContextMeterPresentation where T: core::clone::Clone
+pub type termrock::widgets::ContextMeterPresentation::Owned = T
+pub fn termrock::widgets::ContextMeterPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::ContextMeterPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ContextMeterPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ContextMeterPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ContextMeterPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ContextMeterPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ContextMeterPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ContextMeterPresentation
+pub fn termrock::widgets::ContextMeterPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ContextMeterPresentation
+#[non_exhaustive] pub enum termrock::widgets::ContextSourceKind
+pub termrock::widgets::ContextSourceKind::Attachment
+pub termrock::widgets::ContextSourceKind::Cache
+pub termrock::widgets::ContextSourceKind::Message
+pub termrock::widgets::ContextSourceKind::Other
+pub termrock::widgets::ContextSourceKind::System
+pub termrock::widgets::ContextSourceKind::Tool
+impl termrock::widgets::ContextSourceKind
+pub const fn termrock::widgets::ContextSourceKind::id(self) -> &'static str
+pub const fn termrock::widgets::ContextSourceKind::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::ContextSourceKind
+pub fn termrock::widgets::ContextSourceKind::clone(&self) -> termrock::widgets::ContextSourceKind
+impl core::cmp::Eq for termrock::widgets::ContextSourceKind
+impl core::cmp::PartialEq for termrock::widgets::ContextSourceKind
+pub fn termrock::widgets::ContextSourceKind::eq(&self, &termrock::widgets::ContextSourceKind) -> bool
+impl core::default::Default for termrock::widgets::ContextSourceKind
+pub fn termrock::widgets::ContextSourceKind::default() -> termrock::widgets::ContextSourceKind
+impl core::fmt::Debug for termrock::widgets::ContextSourceKind
+pub fn termrock::widgets::ContextSourceKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ContextSourceKind
+pub fn termrock::widgets::ContextSourceKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ContextSourceKind
+impl core::marker::StructuralPartialEq for termrock::widgets::ContextSourceKind
+impl core::marker::Freeze for termrock::widgets::ContextSourceKind
+impl core::marker::Send for termrock::widgets::ContextSourceKind
+impl core::marker::Sync for termrock::widgets::ContextSourceKind
+impl core::marker::Unpin for termrock::widgets::ContextSourceKind
+impl core::marker::UnsafeUnpin for termrock::widgets::ContextSourceKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ContextSourceKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ContextSourceKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ContextSourceKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ContextSourceKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ContextSourceKind where U: core::convert::From<T>
+pub fn termrock::widgets::ContextSourceKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ContextSourceKind where U: core::convert::Into<T>
+pub type termrock::widgets::ContextSourceKind::Error = core::convert::Infallible
+pub fn termrock::widgets::ContextSourceKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ContextSourceKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ContextSourceKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ContextSourceKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ContextSourceKind where T: core::clone::Clone
+pub type termrock::widgets::ContextSourceKind::Owned = T
+pub fn termrock::widgets::ContextSourceKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::ContextSourceKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ContextSourceKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ContextSourceKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ContextSourceKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextSourceKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ContextSourceKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextSourceKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ContextSourceKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ContextSourceKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ContextSourceKind
+pub fn termrock::widgets::ContextSourceKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ContextSourceKind
 #[non_exhaustive] pub enum termrock::widgets::ControlRender
 pub termrock::widgets::ControlRender::ExpandTabs
 pub termrock::widgets::ControlRender::Placeholder
@@ -44492,6 +44753,60 @@ pub unsafe fn termrock::widgets::BreadcrumbsState::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::BreadcrumbsState
 pub fn termrock::widgets::BreadcrumbsState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::BreadcrumbsState
+pub struct termrock::widgets::BudgetMeasure
+pub termrock::widgets::BudgetMeasure::available: core::option::Option<u64>
+pub termrock::widgets::BudgetMeasure::limit: core::option::Option<u64>
+pub termrock::widgets::BudgetMeasure::precision: termrock::widgets::BudgetPrecision
+pub termrock::widgets::BudgetMeasure::unit: termrock::widgets::BudgetUnit
+pub termrock::widgets::BudgetMeasure::unit_label: core::option::Option<alloc::string::String>
+pub termrock::widgets::BudgetMeasure::used: u64
+impl termrock::widgets::BudgetMeasure
+pub fn termrock::widgets::BudgetMeasure::approximate(u64, core::option::Option<u64>, termrock::widgets::BudgetUnit) -> Self
+pub fn termrock::widgets::BudgetMeasure::fraction(&self) -> core::option::Option<f64>
+pub fn termrock::widgets::BudgetMeasure::label(&self) -> &str
+pub fn termrock::widgets::BudgetMeasure::pressure_role(&self, f64, f64) -> termrock::style::Role
+pub fn termrock::widgets::BudgetMeasure::tokens(u64, u64) -> Self
+pub fn termrock::widgets::BudgetMeasure::unknown(termrock::widgets::BudgetUnit) -> Self
+impl core::clone::Clone for termrock::widgets::BudgetMeasure
+pub fn termrock::widgets::BudgetMeasure::clone(&self) -> termrock::widgets::BudgetMeasure
+impl core::cmp::Eq for termrock::widgets::BudgetMeasure
+impl core::cmp::PartialEq for termrock::widgets::BudgetMeasure
+pub fn termrock::widgets::BudgetMeasure::eq(&self, &termrock::widgets::BudgetMeasure) -> bool
+impl core::fmt::Debug for termrock::widgets::BudgetMeasure
+pub fn termrock::widgets::BudgetMeasure::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::BudgetMeasure
+impl core::marker::Freeze for termrock::widgets::BudgetMeasure
+impl core::marker::Send for termrock::widgets::BudgetMeasure
+impl core::marker::Sync for termrock::widgets::BudgetMeasure
+impl core::marker::Unpin for termrock::widgets::BudgetMeasure
+impl core::marker::UnsafeUnpin for termrock::widgets::BudgetMeasure
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BudgetMeasure
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BudgetMeasure
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BudgetMeasure where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BudgetMeasure::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BudgetMeasure where U: core::convert::From<T>
+pub fn termrock::widgets::BudgetMeasure::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BudgetMeasure where U: core::convert::Into<T>
+pub type termrock::widgets::BudgetMeasure::Error = core::convert::Infallible
+pub fn termrock::widgets::BudgetMeasure::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BudgetMeasure where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BudgetMeasure::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BudgetMeasure::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BudgetMeasure where T: core::clone::Clone
+pub type termrock::widgets::BudgetMeasure::Owned = T
+pub fn termrock::widgets::BudgetMeasure::clone_into(&self, &mut T)
+pub fn termrock::widgets::BudgetMeasure::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BudgetMeasure where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BudgetMeasure::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BudgetMeasure where T: ?core::marker::Sized
+pub fn termrock::widgets::BudgetMeasure::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BudgetMeasure where T: ?core::marker::Sized
+pub fn termrock::widgets::BudgetMeasure::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BudgetMeasure where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BudgetMeasure::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BudgetMeasure
+pub fn termrock::widgets::BudgetMeasure::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BudgetMeasure
 pub struct termrock::widgets::BusyBoundary
 impl termrock::widgets::BusyBoundary
 pub fn termrock::widgets::BusyBoundary::paint(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::BusyBoundaryState, &termrock::style::DesignSystem, termrock::runtime::FrameTick, termrock::style::Motion)
@@ -48023,6 +48338,70 @@ pub unsafe fn termrock::widgets::ComposerSelectors<'a>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::ComposerSelectors<'a>
 pub fn termrock::widgets::ComposerSelectors<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ComposerSelectors<'a>
+pub struct termrock::widgets::ContextBudget
+pub termrock::widgets::ContextBudget::cached: core::option::Option<u64>
+pub termrock::widgets::ContextBudget::compact_action: core::option::Option<alloc::string::String>
+pub termrock::widgets::ContextBudget::compaction_threshold_pct: core::option::Option<u8>
+pub termrock::widgets::ContextBudget::measure: termrock::widgets::BudgetMeasure
+pub termrock::widgets::ContextBudget::model: core::option::Option<alloc::string::String>
+pub termrock::widgets::ContextBudget::model_limit: core::option::Option<u64>
+pub termrock::widgets::ContextBudget::pending_attachments: core::option::Option<u64>
+pub termrock::widgets::ContextBudget::reduce_action: core::option::Option<alloc::string::String>
+pub termrock::widgets::ContextBudget::sources: alloc::vec::Vec<termrock::widgets::ContextSource>
+pub termrock::widgets::ContextBudget::warning: core::option::Option<alloc::string::String>
+impl termrock::widgets::ContextBudget
+pub fn termrock::widgets::ContextBudget::at_compaction(&self) -> bool
+pub const fn termrock::widgets::ContextBudget::cached(self, u64) -> Self
+pub fn termrock::widgets::ContextBudget::compact_action(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ContextBudget::compaction_threshold_pct(self, u8) -> Self
+pub fn termrock::widgets::ContextBudget::model(self, impl core::convert::Into<alloc::string::String>, core::option::Option<u64>) -> Self
+pub fn termrock::widgets::ContextBudget::new(termrock::widgets::BudgetMeasure) -> Self
+pub const fn termrock::widgets::ContextBudget::pending_attachments(self, u64) -> Self
+pub fn termrock::widgets::ContextBudget::reduce_action(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ContextBudget::source(self, termrock::widgets::ContextSource) -> Self
+pub fn termrock::widgets::ContextBudget::tokens(u64, u64) -> Self
+pub fn termrock::widgets::ContextBudget::warn_fraction(&self) -> f64
+pub fn termrock::widgets::ContextBudget::warning(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::ContextBudget
+pub fn termrock::widgets::ContextBudget::clone(&self) -> termrock::widgets::ContextBudget
+impl core::cmp::Eq for termrock::widgets::ContextBudget
+impl core::cmp::PartialEq for termrock::widgets::ContextBudget
+pub fn termrock::widgets::ContextBudget::eq(&self, &termrock::widgets::ContextBudget) -> bool
+impl core::fmt::Debug for termrock::widgets::ContextBudget
+pub fn termrock::widgets::ContextBudget::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ContextBudget
+impl core::marker::Freeze for termrock::widgets::ContextBudget
+impl core::marker::Send for termrock::widgets::ContextBudget
+impl core::marker::Sync for termrock::widgets::ContextBudget
+impl core::marker::Unpin for termrock::widgets::ContextBudget
+impl core::marker::UnsafeUnpin for termrock::widgets::ContextBudget
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ContextBudget
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ContextBudget
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ContextBudget where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ContextBudget::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ContextBudget where U: core::convert::From<T>
+pub fn termrock::widgets::ContextBudget::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ContextBudget where U: core::convert::Into<T>
+pub type termrock::widgets::ContextBudget::Error = core::convert::Infallible
+pub fn termrock::widgets::ContextBudget::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ContextBudget where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ContextBudget::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ContextBudget::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ContextBudget where T: core::clone::Clone
+pub type termrock::widgets::ContextBudget::Owned = T
+pub fn termrock::widgets::ContextBudget::clone_into(&self, &mut T)
+pub fn termrock::widgets::ContextBudget::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ContextBudget where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ContextBudget::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ContextBudget where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextBudget::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ContextBudget where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextBudget::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ContextBudget where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ContextBudget::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ContextBudget
+pub fn termrock::widgets::ContextBudget::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ContextBudget
 pub struct termrock::widgets::ContextEstimate
 pub termrock::widgets::ContextEstimate::limit: u64
 pub termrock::widgets::ContextEstimate::used: u64
@@ -48069,6 +48448,150 @@ pub unsafe fn termrock::widgets::ContextEstimate::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ContextEstimate
 pub fn termrock::widgets::ContextEstimate::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ContextEstimate
+pub struct termrock::widgets::ContextMeter<'a>
+impl<'a> termrock::widgets::ContextMeter<'a>
+pub const fn termrock::widgets::ContextMeter<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ContextMeter<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::ContextMeter<'a>::mono(self, bool) -> Self
+pub const fn termrock::widgets::ContextMeter<'a>::new(&'a termrock::widgets::ContextBudget, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::ContextMeter<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ContextMeterState)
+pub fn termrock::widgets::ContextMeter<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ContextMeterState)
+impl<'a> core::clone::Clone for termrock::widgets::ContextMeter<'a>
+pub fn termrock::widgets::ContextMeter<'a>::clone(&self) -> termrock::widgets::ContextMeter<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ContextMeter<'a>
+pub fn termrock::widgets::ContextMeter<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ContextMeter<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ContextMeter<'a>
+impl<'a> core::marker::Send for termrock::widgets::ContextMeter<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ContextMeter<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ContextMeter<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ContextMeter<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ContextMeter<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ContextMeter<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ContextMeter<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ContextMeter<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ContextMeter<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ContextMeter<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ContextMeter<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ContextMeter<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ContextMeter<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ContextMeter<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ContextMeter<'a> where T: core::clone::Clone
+pub type termrock::widgets::ContextMeter<'a>::Owned = T
+pub fn termrock::widgets::ContextMeter<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ContextMeter<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ContextMeter<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ContextMeter<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ContextMeter<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextMeter<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ContextMeter<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextMeter<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ContextMeter<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ContextMeter<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ContextMeter<'a>
+pub fn termrock::widgets::ContextMeter<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ContextMeter<'a>
+pub struct termrock::widgets::ContextMeterState
+pub termrock::widgets::ContextMeterState::focused: bool
+pub termrock::widgets::ContextMeterState::hit: ratatui_core::layout::rect::Rect
+pub termrock::widgets::ContextMeterState::presentation: termrock::widgets::ContextMeterPresentation
+impl termrock::widgets::ContextMeterState
+pub fn termrock::widgets::ContextMeterState::handle_key(&mut self, termrock::input::KeyEvent, &termrock::widgets::ContextBudget) -> termrock::widgets::ContextMeterOutcome
+pub fn termrock::widgets::ContextMeterState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::ContextMeterOutcome
+pub fn termrock::widgets::ContextMeterState::new() -> Self
+pub fn termrock::widgets::ContextMeterState::set_accepts_input(&mut self, bool)
+pub const fn termrock::widgets::ContextMeterState::set_focused(&mut self, bool)
+pub fn termrock::widgets::ContextMeterState::toggle_expand(&mut self) -> termrock::widgets::ContextMeterOutcome
+impl core::clone::Clone for termrock::widgets::ContextMeterState
+pub fn termrock::widgets::ContextMeterState::clone(&self) -> termrock::widgets::ContextMeterState
+impl core::cmp::Eq for termrock::widgets::ContextMeterState
+impl core::cmp::PartialEq for termrock::widgets::ContextMeterState
+pub fn termrock::widgets::ContextMeterState::eq(&self, &termrock::widgets::ContextMeterState) -> bool
+impl core::default::Default for termrock::widgets::ContextMeterState
+pub fn termrock::widgets::ContextMeterState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ContextMeterState
+pub fn termrock::widgets::ContextMeterState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ContextMeterState
+impl core::marker::Freeze for termrock::widgets::ContextMeterState
+impl core::marker::Send for termrock::widgets::ContextMeterState
+impl core::marker::Sync for termrock::widgets::ContextMeterState
+impl core::marker::Unpin for termrock::widgets::ContextMeterState
+impl core::marker::UnsafeUnpin for termrock::widgets::ContextMeterState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ContextMeterState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ContextMeterState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ContextMeterState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ContextMeterState where U: core::convert::From<T>
+pub fn termrock::widgets::ContextMeterState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ContextMeterState where U: core::convert::Into<T>
+pub type termrock::widgets::ContextMeterState::Error = core::convert::Infallible
+pub fn termrock::widgets::ContextMeterState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ContextMeterState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ContextMeterState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ContextMeterState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ContextMeterState where T: core::clone::Clone
+pub type termrock::widgets::ContextMeterState::Owned = T
+pub fn termrock::widgets::ContextMeterState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ContextMeterState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ContextMeterState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ContextMeterState where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ContextMeterState where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextMeterState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ContextMeterState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ContextMeterState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ContextMeterState
+pub fn termrock::widgets::ContextMeterState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ContextMeterState
+pub struct termrock::widgets::ContextSource
+pub termrock::widgets::ContextSource::amount: u64
+pub termrock::widgets::ContextSource::id: alloc::string::String
+pub termrock::widgets::ContextSource::kind: termrock::widgets::ContextSourceKind
+pub termrock::widgets::ContextSource::label: alloc::string::String
+impl termrock::widgets::ContextSource
+pub const fn termrock::widgets::ContextSource::kind(self, termrock::widgets::ContextSourceKind) -> Self
+pub fn termrock::widgets::ContextSource::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, u64) -> Self
+impl core::clone::Clone for termrock::widgets::ContextSource
+pub fn termrock::widgets::ContextSource::clone(&self) -> termrock::widgets::ContextSource
+impl core::cmp::Eq for termrock::widgets::ContextSource
+impl core::cmp::PartialEq for termrock::widgets::ContextSource
+pub fn termrock::widgets::ContextSource::eq(&self, &termrock::widgets::ContextSource) -> bool
+impl core::fmt::Debug for termrock::widgets::ContextSource
+pub fn termrock::widgets::ContextSource::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ContextSource
+impl core::marker::Freeze for termrock::widgets::ContextSource
+impl core::marker::Send for termrock::widgets::ContextSource
+impl core::marker::Sync for termrock::widgets::ContextSource
+impl core::marker::Unpin for termrock::widgets::ContextSource
+impl core::marker::UnsafeUnpin for termrock::widgets::ContextSource
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ContextSource
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ContextSource
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ContextSource where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ContextSource::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ContextSource where U: core::convert::From<T>
+pub fn termrock::widgets::ContextSource::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ContextSource where U: core::convert::Into<T>
+pub type termrock::widgets::ContextSource::Error = core::convert::Infallible
+pub fn termrock::widgets::ContextSource::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ContextSource where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ContextSource::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ContextSource::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ContextSource where T: core::clone::Clone
+pub type termrock::widgets::ContextSource::Owned = T
+pub fn termrock::widgets::ContextSource::clone_into(&self, &mut T)
+pub fn termrock::widgets::ContextSource::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ContextSource where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ContextSource::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ContextSource where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextSource::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ContextSource where T: ?core::marker::Sized
+pub fn termrock::widgets::ContextSource::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ContextSource where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ContextSource::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ContextSource
+pub fn termrock::widgets::ContextSource::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ContextSource
 pub struct termrock::widgets::DataColumn<Id>
 pub termrock::widgets::DataColumn::editable: bool
 pub termrock::widgets::DataColumn::id: Id
@@ -76854,6 +77377,9 @@ pub const termrock::widgets::COMPLETION_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::CONTEXT_MENU_OVERLAY_ID: &str
 pub const termrock::widgets::CONTEXT_MENU_SUBMENU_PREFIX: &str
+pub const termrock::widgets::CONTEXT_METER_DANGER_FRACTION: f64
+pub const termrock::widgets::CONTEXT_METER_SOURCE_CAP: usize
+pub const termrock::widgets::CONTEXT_METER_WARN_FRACTION: f64
 pub const termrock::widgets::DATE_TIME_PICKER_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::DATE_TIME_PICKER_LIST_MAX_WIDTH: u16
 pub const termrock::widgets::DATE_TIME_PICKER_OVERLAY_ID: &str
@@ -77088,6 +77614,7 @@ pub fn termrock::widgets::completion_prefix(&str, termrock::widgets::PathStyle) 
 pub fn termrock::widgets::completion_presentation_for(ratatui_core::layout::rect::Rect) -> termrock::widgets::CompletionPresentation
 pub fn termrock::widgets::composer_chip_to_attachment(&termrock::widgets::ComposerChip) -> core::option::Option<termrock::widgets::AttachmentItem>
 pub fn termrock::widgets::composer_chip_to_paste(&termrock::widgets::ComposerChip) -> core::option::Option<termrock::widgets::PastePayload>
+pub fn termrock::widgets::context_budget_from_tokens(u64, u64) -> termrock::widgets::ContextBudget
 pub fn termrock::widgets::contract_help_entries(&[termrock::widgets::HelpEntry], usize) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::crumbs_from_labels(&[&str]) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::dashboard_panels() -> [termrock::widgets::ResizablePanelSpec; 2]
@@ -77156,6 +77683,7 @@ pub fn termrock::widgets::example_busy_stale(&termrock::style::DesignSystem) -> 
 pub fn termrock::widgets::example_citations() -> alloc::vec::Vec<termrock::widgets::CitationSource>
 pub fn termrock::widgets::example_command_catalog() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
 pub fn termrock::widgets::example_command_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
+pub fn termrock::widgets::example_context_budgets() -> alloc::vec::Vec<termrock::widgets::ContextBudget>
 pub fn termrock::widgets::example_database_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_disconnected() -> termrock::widgets::ReconnectingState
 pub fn termrock::widgets::example_docs_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
@@ -77242,6 +77770,9 @@ pub fn termrock::widgets::flatten_menu_nodes<Id: core::clone::Clone>(&[termrock:
 pub fn termrock::widgets::flatten_search_results<'a>(&'a [termrock::widgets::SearchResultGroup], &'a [termrock::widgets::SearchResultItem<'a>], &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> alloc::vec::Vec<termrock::widgets::SearchFlatRow<'a>>
 pub fn termrock::widgets::format_alternatives(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termrock::keymap::KeyBinding<A>, termrock::widgets::ChordFormat) -> alloc::string::String
+pub fn termrock::widgets::format_budget_compact(&termrock::widgets::BudgetMeasure) -> alloc::string::String
+pub fn termrock::widgets::format_budget_count(u64, termrock::widgets::BudgetPrecision) -> alloc::string::String
+pub fn termrock::widgets::format_budget_percent(core::option::Option<f64>, termrock::widgets::BudgetPrecision) -> alloc::string::String
 pub fn termrock::widgets::format_byte_hex(u8) -> alloc::string::String
 pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_cpu_pct(f64) -> alloc::string::String
@@ -77302,6 +77833,7 @@ pub fn termrock::widgets::mention_to_token_item<'a>(&'a termrock::widgets::Menti
 pub fn termrock::widgets::menu_bar_presentation_for_width(u16) -> termrock::widgets::MenuBarPresentation
 pub fn termrock::widgets::menu_items_to_nodes<Id: core::clone::Clone>(&[termrock::widgets::MenuItem<Id>]) -> alloc::vec::Vec<termrock::widgets::MenuNode<Id>>
 pub fn termrock::widgets::merge_help_entries(impl core::iter::traits::collect::IntoIterator<Item = alloc::vec::Vec<termrock::widgets::HelpEntry>>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
+pub fn termrock::widgets::meter_bar(core::option::Option<f64>, usize, bool, bool) -> alloc::string::String
 pub fn termrock::widgets::metrics_dashboard_commands() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
 pub fn termrock::widgets::min_width_for_bpr(u8, u8) -> u16
 pub fn termrock::widgets::mode_to_indicator(&termrock::widgets::AgentModeOption) -> termrock::widgets::ModeIndicator
