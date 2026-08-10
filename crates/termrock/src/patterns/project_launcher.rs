@@ -717,7 +717,9 @@ impl ProjectLauncherState {
         let qo = self.quick_open_open;
         self.search.set_focused(f == "search" && !qo);
         // List has no set_focused; paint uses focused flag
-        self.sessions.set_accepts_input(f == "sessions" && !qo);
+        let sessions_on = f == "sessions" && !qo;
+        self.sessions.set_accepts_input(sessions_on);
+        self.sessions.set_focused(sessions_on);
         self.preview.set_focus_within(f == "preview" && !qo);
         self.quick_open.set_accepts_input(qo);
         self.quick_open.set_focused(qo);
@@ -1411,6 +1413,7 @@ pub fn render_project_launcher(
     if let Some(r) = pane_area(&panes, "sessions") {
         let focused = state.focus == "sessions" && !state.quick_open_open;
         state.sessions.set_accepts_input(focused);
+        state.sessions.set_focused(focused);
         SessionPicker::new(system)
             .ascii(state.ascii)
             .colorless(state.colorless)
@@ -1778,24 +1781,42 @@ mod tests {
         let projects = example_projects();
         let sessions = example_sessions();
         st.sessions.set_sessions(sessions.clone());
+        // When projects focused, sessions must not paint/accept as focused
+        st.focus = "projects";
+        st.apply_focus_gates();
+        assert!(
+            !st.sessions.focused,
+            "sessions.focused must track focus zone (off when projects)"
+        );
+
         st.focus = "sessions";
         st.apply_focus_gates();
+        assert!(
+            st.sessions.focused,
+            "sessions.focused must be true when sessions zone active"
+        );
+        // Ensure cursor has a current session
+        let expected = st
+            .sessions
+            .current()
+            .map(|s| s.id.clone())
+            .expect("session catalog must expose current after set_sessions");
 
-        // Enter on first session
+        // Enter → real SessionPicker Opened → SessionResume { id }
+        // (requires both focused + accepts_input; gates set both)
         let out = st.handle_key(press(KeyCode::Enter), &projects, &sessions, &[]);
         assert!(
             matches!(
                 out,
-                ProjectLauncherOutcome::SessionResume { .. }
-                    | ProjectLauncherOutcome::SelectionChanged { .. }
-                    | ProjectLauncherOutcome::Child { .. }
+                ProjectLauncherOutcome::SessionResume { ref id } if id == &expected
             ),
-            "got {out:?}"
+            "workbench path must emit SessionResume for current session {expected}, got {out:?}"
         );
 
         // Global C-n for session create when not in search
         st.focus = "projects";
         st.apply_focus_gates();
+        assert!(!st.sessions.focused);
         let out = st.handle_key(
             press_mod(KeyCode::Char('n'), KeyModifiers::CONTROL),
             &projects,
@@ -1805,6 +1826,51 @@ mod tests {
         assert!(
             matches!(out, ProjectLauncherOutcome::SessionCreate { .. }),
             "got {out:?}"
+        );
+    }
+
+    #[test]
+    fn sessions_focused_tracks_focus_zone_on_paint() {
+        let system = DesignSystem::default();
+        let mut st = open();
+        let projects = example_projects();
+        let sessions = example_sessions();
+        st.focus = "projects";
+        let area = Rect::new(0, 0, 120, 36);
+        let mut buf = Buffer::empty(area);
+        render_project_launcher(
+            &mut buf,
+            area,
+            ProjectLauncherSurfaces {
+                system: &system,
+                state: &mut st,
+                projects: &projects,
+                sessions: &sessions,
+                preview: None,
+                quick_open_items: &[],
+            },
+        );
+        assert!(
+            !st.sessions.focused,
+            "paint must set_focused(false) when projects focused"
+        );
+
+        st.focus = "sessions";
+        render_project_launcher(
+            &mut buf,
+            area,
+            ProjectLauncherSurfaces {
+                system: &system,
+                state: &mut st,
+                projects: &projects,
+                sessions: &sessions,
+                preview: None,
+                quick_open_items: &[],
+            },
+        );
+        assert!(
+            st.sessions.focused,
+            "paint must set_focused(true) when sessions focused"
         );
     }
 
