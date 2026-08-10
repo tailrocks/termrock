@@ -14694,6 +14694,12 @@ pub const termrock::widgets::process_table_bench::PROCESS_COUNT: usize
 pub const termrock::widgets::process_table_bench::REFRESH_MS: u32
 pub const termrock::widgets::process_table_bench::STREAM_FRAMES: u32
 pub const termrock::widgets::process_table_bench::VIEWPORT: u16
+pub mod termrock::widgets::query_editor_bench
+pub const termrock::widgets::query_editor_bench::COMPLETION_CANDIDATES: usize
+pub const termrock::widgets::query_editor_bench::DIAGNOSTIC_COUNT: usize
+pub const termrock::widgets::query_editor_bench::DRAFT_CHARS: usize
+pub const termrock::widgets::query_editor_bench::DRAFT_LINES: usize
+pub const termrock::widgets::query_editor_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::terminal_output_bench
 pub const termrock::widgets::terminal_output_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::terminal_output_bench::MAX_PAINT_CELLS: u32
@@ -28797,6 +28803,254 @@ pub unsafe fn termrock::widgets::PromptComposerOutcome::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PromptComposerOutcome
+#[non_exhaustive] pub enum termrock::widgets::QueryEditorMode
+pub termrock::widgets::QueryEditorMode::Compact
+pub termrock::widgets::QueryEditorMode::Fullscreen
+pub termrock::widgets::QueryEditorMode::Normal
+impl termrock::widgets::QueryEditorMode
+pub const fn termrock::widgets::QueryEditorMode::cycle(self) -> Self
+pub const fn termrock::widgets::QueryEditorMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::QueryEditorMode
+pub fn termrock::widgets::QueryEditorMode::clone(&self) -> termrock::widgets::QueryEditorMode
+impl core::cmp::Eq for termrock::widgets::QueryEditorMode
+impl core::cmp::PartialEq for termrock::widgets::QueryEditorMode
+pub fn termrock::widgets::QueryEditorMode::eq(&self, &termrock::widgets::QueryEditorMode) -> bool
+impl core::default::Default for termrock::widgets::QueryEditorMode
+pub fn termrock::widgets::QueryEditorMode::default() -> termrock::widgets::QueryEditorMode
+impl core::fmt::Debug for termrock::widgets::QueryEditorMode
+pub fn termrock::widgets::QueryEditorMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::QueryEditorMode
+pub fn termrock::widgets::QueryEditorMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::QueryEditorMode
+impl core::marker::StructuralPartialEq for termrock::widgets::QueryEditorMode
+impl core::marker::Freeze for termrock::widgets::QueryEditorMode
+impl core::marker::Send for termrock::widgets::QueryEditorMode
+impl core::marker::Sync for termrock::widgets::QueryEditorMode
+impl core::marker::Unpin for termrock::widgets::QueryEditorMode
+impl core::marker::UnsafeUnpin for termrock::widgets::QueryEditorMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryEditorMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryEditorMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueryEditorMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryEditorMode where U: core::convert::From<T>
+pub fn termrock::widgets::QueryEditorMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryEditorMode where U: core::convert::Into<T>
+pub type termrock::widgets::QueryEditorMode::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryEditorMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryEditorMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryEditorMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryEditorMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryEditorMode where T: core::clone::Clone
+pub type termrock::widgets::QueryEditorMode::Owned = T
+pub fn termrock::widgets::QueryEditorMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryEditorMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryEditorMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryEditorMode where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryEditorMode where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryEditorMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryEditorMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryEditorMode
+pub fn termrock::widgets::QueryEditorMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryEditorMode
+#[non_exhaustive] pub enum termrock::widgets::QueryEditorOutcome
+pub termrock::widgets::QueryEditorOutcome::Cancelled
+pub termrock::widgets::QueryEditorOutcome::Changed
+pub termrock::widgets::QueryEditorOutcome::ClipboardCopy
+pub termrock::widgets::QueryEditorOutcome::ClipboardCopy::text: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::ClipboardPasteRequest
+pub termrock::widgets::QueryEditorOutcome::CompletionClosed
+pub termrock::widgets::QueryEditorOutcome::CompletionCommitted
+pub termrock::widgets::QueryEditorOutcome::CompletionCommitted::id: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::CompletionRequested
+pub termrock::widgets::QueryEditorOutcome::CompletionRequested::cursor: termrock::widgets::TextCursor
+pub termrock::widgets::QueryEditorOutcome::CompletionRequested::language: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::CompletionRequested::query: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::ExternalEditorRequested
+pub termrock::widgets::QueryEditorOutcome::FocusChanged(termrock::widgets::QueryFocus)
+pub termrock::widgets::QueryEditorOutcome::FormatRequested
+pub termrock::widgets::QueryEditorOutcome::FormatRequested::language: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::FormatRequested::text: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::FullscreenDismissed
+pub termrock::widgets::QueryEditorOutcome::FullscreenRequested
+pub termrock::widgets::QueryEditorOutcome::HistoryApplied
+pub termrock::widgets::QueryEditorOutcome::HistoryApplied::id: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::HistoryApplied::value: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::Ignored
+pub termrock::widgets::QueryEditorOutcome::JumpToDiagnostic
+pub termrock::widgets::QueryEditorOutcome::JumpToDiagnostic::id: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::LanguageChanged
+pub termrock::widgets::QueryEditorOutcome::LanguageChanged::id: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::ModeChanged(termrock::widgets::QueryEditorMode)
+pub termrock::widgets::QueryEditorOutcome::OpenHistory
+pub termrock::widgets::QueryEditorOutcome::OpenKeyboardHelp
+pub termrock::widgets::QueryEditorOutcome::OpenSavedQueries
+pub termrock::widgets::QueryEditorOutcome::ParameterEditRequested
+pub termrock::widgets::QueryEditorOutcome::ParameterEditRequested::name: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::RunRequested
+pub termrock::widgets::QueryEditorOutcome::RunRequested::language: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::RunRequested::selection_only: bool
+pub termrock::widgets::QueryEditorOutcome::RunRequested::text: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::SaveQueryRequested
+pub termrock::widgets::QueryEditorOutcome::SaveQueryRequested::language: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::SaveQueryRequested::name: core::option::Option<alloc::string::String>
+pub termrock::widgets::QueryEditorOutcome::SaveQueryRequested::text: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::SavedQuerySelected
+pub termrock::widgets::QueryEditorOutcome::SavedQuerySelected::id: alloc::string::String
+pub termrock::widgets::QueryEditorOutcome::Scrolled
+pub termrock::widgets::QueryEditorOutcome::StopRequested
+pub termrock::widgets::QueryEditorOutcome::StopRequested::run_id: core::option::Option<alloc::string::String>
+impl core::clone::Clone for termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorOutcome::clone(&self) -> termrock::widgets::QueryEditorOutcome
+impl core::cmp::Eq for termrock::widgets::QueryEditorOutcome
+impl core::cmp::PartialEq for termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorOutcome::eq(&self, &termrock::widgets::QueryEditorOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QueryEditorOutcome
+impl core::marker::Freeze for termrock::widgets::QueryEditorOutcome
+impl core::marker::Send for termrock::widgets::QueryEditorOutcome
+impl core::marker::Sync for termrock::widgets::QueryEditorOutcome
+impl core::marker::Unpin for termrock::widgets::QueryEditorOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::QueryEditorOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryEditorOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryEditorOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueryEditorOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryEditorOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::QueryEditorOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryEditorOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::QueryEditorOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryEditorOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryEditorOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryEditorOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryEditorOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryEditorOutcome where T: core::clone::Clone
+pub type termrock::widgets::QueryEditorOutcome::Owned = T
+pub fn termrock::widgets::QueryEditorOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryEditorOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryEditorOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryEditorOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryEditorOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryEditorOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryEditorOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryEditorOutcome
+#[non_exhaustive] pub enum termrock::widgets::QueryFocus
+pub termrock::widgets::QueryFocus::Diagnostics
+pub termrock::widgets::QueryFocus::Editor
+pub termrock::widgets::QueryFocus::Parameters
+pub termrock::widgets::QueryFocus::Results
+impl termrock::widgets::QueryFocus
+pub const fn termrock::widgets::QueryFocus::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::QueryFocus
+pub fn termrock::widgets::QueryFocus::clone(&self) -> termrock::widgets::QueryFocus
+impl core::cmp::Eq for termrock::widgets::QueryFocus
+impl core::cmp::PartialEq for termrock::widgets::QueryFocus
+pub fn termrock::widgets::QueryFocus::eq(&self, &termrock::widgets::QueryFocus) -> bool
+impl core::default::Default for termrock::widgets::QueryFocus
+pub fn termrock::widgets::QueryFocus::default() -> termrock::widgets::QueryFocus
+impl core::fmt::Debug for termrock::widgets::QueryFocus
+pub fn termrock::widgets::QueryFocus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::QueryFocus
+pub fn termrock::widgets::QueryFocus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::QueryFocus
+impl core::marker::StructuralPartialEq for termrock::widgets::QueryFocus
+impl core::marker::Freeze for termrock::widgets::QueryFocus
+impl core::marker::Send for termrock::widgets::QueryFocus
+impl core::marker::Sync for termrock::widgets::QueryFocus
+impl core::marker::Unpin for termrock::widgets::QueryFocus
+impl core::marker::UnsafeUnpin for termrock::widgets::QueryFocus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryFocus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryFocus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueryFocus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QueryFocus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryFocus where U: core::convert::From<T>
+pub fn termrock::widgets::QueryFocus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryFocus where U: core::convert::Into<T>
+pub type termrock::widgets::QueryFocus::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryFocus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryFocus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryFocus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryFocus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryFocus where T: core::clone::Clone
+pub type termrock::widgets::QueryFocus::Owned = T
+pub fn termrock::widgets::QueryFocus::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryFocus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryFocus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryFocus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryFocus where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryFocus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryFocus where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryFocus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryFocus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryFocus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryFocus
+pub fn termrock::widgets::QueryFocus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryFocus
+#[non_exhaustive] pub enum termrock::widgets::QueryRunStatus
+pub termrock::widgets::QueryRunStatus::Cancelled
+pub termrock::widgets::QueryRunStatus::Failed
+pub termrock::widgets::QueryRunStatus::Failed::message: alloc::string::String
+pub termrock::widgets::QueryRunStatus::Idle
+pub termrock::widgets::QueryRunStatus::Running
+pub termrock::widgets::QueryRunStatus::Running::run_id: alloc::string::String
+pub termrock::widgets::QueryRunStatus::Success
+pub termrock::widgets::QueryRunStatus::Success::duration_ms: core::option::Option<u64>
+pub termrock::widgets::QueryRunStatus::Success::rows: core::option::Option<u64>
+impl termrock::widgets::QueryRunStatus
+pub fn termrock::widgets::QueryRunStatus::id(&self) -> &'static str
+pub const fn termrock::widgets::QueryRunStatus::is_running(&self) -> bool
+impl core::clone::Clone for termrock::widgets::QueryRunStatus
+pub fn termrock::widgets::QueryRunStatus::clone(&self) -> termrock::widgets::QueryRunStatus
+impl core::cmp::Eq for termrock::widgets::QueryRunStatus
+impl core::cmp::PartialEq for termrock::widgets::QueryRunStatus
+pub fn termrock::widgets::QueryRunStatus::eq(&self, &termrock::widgets::QueryRunStatus) -> bool
+impl core::default::Default for termrock::widgets::QueryRunStatus
+pub fn termrock::widgets::QueryRunStatus::default() -> termrock::widgets::QueryRunStatus
+impl core::fmt::Debug for termrock::widgets::QueryRunStatus
+pub fn termrock::widgets::QueryRunStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::QueryRunStatus
+pub fn termrock::widgets::QueryRunStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::widgets::QueryRunStatus
+impl core::marker::Freeze for termrock::widgets::QueryRunStatus
+impl core::marker::Send for termrock::widgets::QueryRunStatus
+impl core::marker::Sync for termrock::widgets::QueryRunStatus
+impl core::marker::Unpin for termrock::widgets::QueryRunStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::QueryRunStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryRunStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryRunStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueryRunStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QueryRunStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryRunStatus where U: core::convert::From<T>
+pub fn termrock::widgets::QueryRunStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryRunStatus where U: core::convert::Into<T>
+pub type termrock::widgets::QueryRunStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryRunStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryRunStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryRunStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryRunStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryRunStatus where T: core::clone::Clone
+pub type termrock::widgets::QueryRunStatus::Owned = T
+pub fn termrock::widgets::QueryRunStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryRunStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryRunStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryRunStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryRunStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryRunStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryRunStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryRunStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryRunStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryRunStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryRunStatus
+pub fn termrock::widgets::QueryRunStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryRunStatus
 #[non_exhaustive] pub enum termrock::widgets::QuestionFlowOutcome<Id>
 pub termrock::widgets::QuestionFlowOutcome::Answered
 pub termrock::widgets::QuestionFlowOutcome::Answered::option: Id
@@ -55324,6 +55578,338 @@ pub unsafe fn termrock::widgets::ProvenanceHop::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ProvenanceHop
 pub fn termrock::widgets::ProvenanceHop::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ProvenanceHop
+pub struct termrock::widgets::QueryEditor<'a>
+impl<'a> termrock::widgets::QueryEditor<'a>
+pub const fn termrock::widgets::QueryEditor<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::QueryEditor<'a>::diagnostics(self, &'a [termrock::widgets::Diagnostic<'a>]) -> Self
+pub const fn termrock::widgets::QueryEditor<'a>::focused(self, bool) -> Self
+pub const fn termrock::widgets::QueryEditor<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::QueryEditor<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::QueryEditorState)
+pub fn termrock::widgets::QueryEditor<'a>::render_diagnostic_frame(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::QueryEditorState, &[termrock::widgets::SourceLabel<'a>])
+pub const fn termrock::widgets::QueryEditor<'a>::title(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::QueryEditor<'a>
+pub fn termrock::widgets::QueryEditor<'a>::clone(&self) -> termrock::widgets::QueryEditor<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::QueryEditor<'a>
+pub fn termrock::widgets::QueryEditor<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::QueryEditor<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::QueryEditor<'a>
+impl<'a> core::marker::Send for termrock::widgets::QueryEditor<'a>
+impl<'a> core::marker::Sync for termrock::widgets::QueryEditor<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::QueryEditor<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::QueryEditor<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryEditor<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryEditor<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryEditor<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::QueryEditor<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryEditor<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::QueryEditor<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryEditor<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryEditor<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryEditor<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryEditor<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryEditor<'a> where T: core::clone::Clone
+pub type termrock::widgets::QueryEditor<'a>::Owned = T
+pub fn termrock::widgets::QueryEditor<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryEditor<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryEditor<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryEditor<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryEditor<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditor<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryEditor<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditor<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryEditor<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryEditor<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryEditor<'a>
+pub fn termrock::widgets::QueryEditor<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryEditor<'a>
+pub struct termrock::widgets::QueryEditorSlots
+pub termrock::widgets::QueryEditorSlots::chrome: ratatui_core::layout::rect::Rect
+pub termrock::widgets::QueryEditorSlots::diagnostics: ratatui_core::layout::rect::Rect
+pub termrock::widgets::QueryEditorSlots::editor: ratatui_core::layout::rect::Rect
+pub termrock::widgets::QueryEditorSlots::footer: ratatui_core::layout::rect::Rect
+pub termrock::widgets::QueryEditorSlots::parameters: ratatui_core::layout::rect::Rect
+pub termrock::widgets::QueryEditorSlots::results: ratatui_core::layout::rect::Rect
+pub termrock::widgets::QueryEditorSlots::root: ratatui_core::layout::rect::Rect
+impl termrock::widgets::QueryEditorSlots
+pub const fn termrock::widgets::QueryEditorSlots::empty() -> Self
+impl core::clone::Clone for termrock::widgets::QueryEditorSlots
+pub fn termrock::widgets::QueryEditorSlots::clone(&self) -> termrock::widgets::QueryEditorSlots
+impl core::cmp::Eq for termrock::widgets::QueryEditorSlots
+impl core::cmp::PartialEq for termrock::widgets::QueryEditorSlots
+pub fn termrock::widgets::QueryEditorSlots::eq(&self, &termrock::widgets::QueryEditorSlots) -> bool
+impl core::default::Default for termrock::widgets::QueryEditorSlots
+pub fn termrock::widgets::QueryEditorSlots::default() -> termrock::widgets::QueryEditorSlots
+impl core::fmt::Debug for termrock::widgets::QueryEditorSlots
+pub fn termrock::widgets::QueryEditorSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::QueryEditorSlots
+impl core::marker::StructuralPartialEq for termrock::widgets::QueryEditorSlots
+impl core::marker::Freeze for termrock::widgets::QueryEditorSlots
+impl core::marker::Send for termrock::widgets::QueryEditorSlots
+impl core::marker::Sync for termrock::widgets::QueryEditorSlots
+impl core::marker::Unpin for termrock::widgets::QueryEditorSlots
+impl core::marker::UnsafeUnpin for termrock::widgets::QueryEditorSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryEditorSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryEditorSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueryEditorSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryEditorSlots where U: core::convert::From<T>
+pub fn termrock::widgets::QueryEditorSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryEditorSlots where U: core::convert::Into<T>
+pub type termrock::widgets::QueryEditorSlots::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryEditorSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryEditorSlots where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryEditorSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryEditorSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryEditorSlots where T: core::clone::Clone
+pub type termrock::widgets::QueryEditorSlots::Owned = T
+pub fn termrock::widgets::QueryEditorSlots::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryEditorSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryEditorSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryEditorSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryEditorSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryEditorSlots where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryEditorSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryEditorSlots
+pub fn termrock::widgets::QueryEditorSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryEditorSlots
+pub struct termrock::widgets::QueryEditorState
+pub termrock::widgets::QueryEditorState::ascii: bool
+pub termrock::widgets::QueryEditorState::completion: termrock::widgets::CompletionMenuState<alloc::string::String>
+pub termrock::widgets::QueryEditorState::completion_open: bool
+pub termrock::widgets::QueryEditorState::diagnostic_cursor: usize
+pub termrock::widgets::QueryEditorState::editor: termrock::widgets::TextAreaState
+pub termrock::widgets::QueryEditorState::editor_percent: u8
+pub termrock::widgets::QueryEditorState::focus: termrock::widgets::QueryFocus
+pub termrock::widgets::QueryEditorState::language: termrock::widgets::QueryLanguage
+pub termrock::widgets::QueryEditorState::line_numbers: bool
+pub termrock::widgets::QueryEditorState::mode: termrock::widgets::QueryEditorMode
+pub termrock::widgets::QueryEditorState::param_cursor: usize
+pub termrock::widgets::QueryEditorState::parameters: alloc::vec::Vec<termrock::widgets::QueryParameter>
+pub termrock::widgets::QueryEditorState::placeholder: alloc::string::String
+pub termrock::widgets::QueryEditorState::results: termrock::widgets::QueryResultSummary
+pub termrock::widgets::QueryEditorState::run: termrock::widgets::QueryRunStatus
+pub termrock::widgets::QueryEditorState::slots: termrock::widgets::QueryEditorSlots
+pub termrock::widgets::QueryEditorState::soft_wrap: bool
+pub termrock::widgets::QueryEditorState::title: core::option::Option<alloc::string::String>
+impl termrock::widgets::QueryEditorState
+pub const fn termrock::widgets::QueryEditorState::accepts_input(&self) -> bool
+pub fn termrock::widgets::QueryEditorState::close_completion(&mut self) -> termrock::widgets::QueryEditorOutcome
+pub const fn termrock::widgets::QueryEditorState::cursor(&self) -> termrock::widgets::TextCursor
+pub fn termrock::widgets::QueryEditorState::executable_text(&self) -> (alloc::string::String, bool)
+pub fn termrock::widgets::QueryEditorState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::Diagnostic<'_>]) -> termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::Diagnostic<'_>]) -> termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorState::insert_text(&mut self, &str)
+pub fn termrock::widgets::QueryEditorState::new() -> Self
+pub fn termrock::widgets::QueryEditorState::open_completion(&mut self) -> termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorState::request_run(&self) -> termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorState::request_stop(&self) -> termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorState::selected_text(&self) -> core::option::Option<alloc::string::String>
+pub fn termrock::widgets::QueryEditorState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::QueryEditorState::set_focus(&mut self, termrock::widgets::QueryFocus) -> termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorState::set_mode(&mut self, termrock::widgets::QueryEditorMode) -> termrock::widgets::QueryEditorOutcome
+pub fn termrock::widgets::QueryEditorState::set_parameters(&mut self, alloc::vec::Vec<termrock::widgets::QueryParameter>)
+pub fn termrock::widgets::QueryEditorState::set_results(&mut self, termrock::widgets::QueryResultSummary)
+pub fn termrock::widgets::QueryEditorState::set_run(&mut self, termrock::widgets::QueryRunStatus)
+pub fn termrock::widgets::QueryEditorState::set_text(&mut self, &str)
+pub fn termrock::widgets::QueryEditorState::text(&self) -> alloc::string::String
+pub fn termrock::widgets::QueryEditorState::with_text(impl core::convert::AsRef<str>) -> Self
+impl core::clone::Clone for termrock::widgets::QueryEditorState
+pub fn termrock::widgets::QueryEditorState::clone(&self) -> termrock::widgets::QueryEditorState
+impl core::cmp::PartialEq for termrock::widgets::QueryEditorState
+pub fn termrock::widgets::QueryEditorState::eq(&self, &termrock::widgets::QueryEditorState) -> bool
+impl core::default::Default for termrock::widgets::QueryEditorState
+pub fn termrock::widgets::QueryEditorState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::QueryEditorState
+pub fn termrock::widgets::QueryEditorState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QueryEditorState
+impl core::marker::Freeze for termrock::widgets::QueryEditorState
+impl core::marker::Send for termrock::widgets::QueryEditorState
+impl core::marker::Sync for termrock::widgets::QueryEditorState
+impl core::marker::Unpin for termrock::widgets::QueryEditorState
+impl core::marker::UnsafeUnpin for termrock::widgets::QueryEditorState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryEditorState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryEditorState
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryEditorState where U: core::convert::From<T>
+pub fn termrock::widgets::QueryEditorState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryEditorState where U: core::convert::Into<T>
+pub type termrock::widgets::QueryEditorState::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryEditorState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryEditorState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryEditorState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryEditorState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryEditorState where T: core::clone::Clone
+pub type termrock::widgets::QueryEditorState::Owned = T
+pub fn termrock::widgets::QueryEditorState::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryEditorState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryEditorState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryEditorState where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryEditorState where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryEditorState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryEditorState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryEditorState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryEditorState
+pub fn termrock::widgets::QueryEditorState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryEditorState
+pub struct termrock::widgets::QueryLanguage
+pub termrock::widgets::QueryLanguage::id: alloc::string::String
+pub termrock::widgets::QueryLanguage::label: alloc::string::String
+impl termrock::widgets::QueryLanguage
+pub fn termrock::widgets::QueryLanguage::logs() -> Self
+pub fn termrock::widgets::QueryLanguage::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::QueryLanguage::search() -> Self
+pub fn termrock::widgets::QueryLanguage::sql() -> Self
+impl core::clone::Clone for termrock::widgets::QueryLanguage
+pub fn termrock::widgets::QueryLanguage::clone(&self) -> termrock::widgets::QueryLanguage
+impl core::cmp::Eq for termrock::widgets::QueryLanguage
+impl core::cmp::PartialEq for termrock::widgets::QueryLanguage
+pub fn termrock::widgets::QueryLanguage::eq(&self, &termrock::widgets::QueryLanguage) -> bool
+impl core::default::Default for termrock::widgets::QueryLanguage
+pub fn termrock::widgets::QueryLanguage::default() -> termrock::widgets::QueryLanguage
+impl core::fmt::Debug for termrock::widgets::QueryLanguage
+pub fn termrock::widgets::QueryLanguage::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::QueryLanguage
+pub fn termrock::widgets::QueryLanguage::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::widgets::QueryLanguage
+impl core::marker::Freeze for termrock::widgets::QueryLanguage
+impl core::marker::Send for termrock::widgets::QueryLanguage
+impl core::marker::Sync for termrock::widgets::QueryLanguage
+impl core::marker::Unpin for termrock::widgets::QueryLanguage
+impl core::marker::UnsafeUnpin for termrock::widgets::QueryLanguage
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryLanguage
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryLanguage
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueryLanguage where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QueryLanguage::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryLanguage where U: core::convert::From<T>
+pub fn termrock::widgets::QueryLanguage::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryLanguage where U: core::convert::Into<T>
+pub type termrock::widgets::QueryLanguage::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryLanguage::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryLanguage where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryLanguage::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryLanguage::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryLanguage where T: core::clone::Clone
+pub type termrock::widgets::QueryLanguage::Owned = T
+pub fn termrock::widgets::QueryLanguage::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryLanguage::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryLanguage where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryLanguage::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryLanguage where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryLanguage::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryLanguage where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryLanguage::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryLanguage where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryLanguage::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryLanguage
+pub fn termrock::widgets::QueryLanguage::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryLanguage
+pub struct termrock::widgets::QueryParameter
+pub termrock::widgets::QueryParameter::name: alloc::string::String
+pub termrock::widgets::QueryParameter::required: bool
+pub termrock::widgets::QueryParameter::secret: bool
+pub termrock::widgets::QueryParameter::type_hint: core::option::Option<alloc::string::String>
+pub termrock::widgets::QueryParameter::value: alloc::string::String
+impl termrock::widgets::QueryParameter
+pub fn termrock::widgets::QueryParameter::display_chip(&self) -> alloc::string::String
+pub fn termrock::widgets::QueryParameter::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::QueryParameter::required(self) -> Self
+pub const fn termrock::widgets::QueryParameter::secret(self) -> Self
+pub fn termrock::widgets::QueryParameter::type_hint(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::QueryParameter
+pub fn termrock::widgets::QueryParameter::clone(&self) -> termrock::widgets::QueryParameter
+impl core::cmp::Eq for termrock::widgets::QueryParameter
+impl core::cmp::PartialEq for termrock::widgets::QueryParameter
+pub fn termrock::widgets::QueryParameter::eq(&self, &termrock::widgets::QueryParameter) -> bool
+impl core::fmt::Debug for termrock::widgets::QueryParameter
+pub fn termrock::widgets::QueryParameter::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QueryParameter
+impl core::marker::Freeze for termrock::widgets::QueryParameter
+impl core::marker::Send for termrock::widgets::QueryParameter
+impl core::marker::Sync for termrock::widgets::QueryParameter
+impl core::marker::Unpin for termrock::widgets::QueryParameter
+impl core::marker::UnsafeUnpin for termrock::widgets::QueryParameter
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryParameter
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryParameter
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueryParameter where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QueryParameter::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryParameter where U: core::convert::From<T>
+pub fn termrock::widgets::QueryParameter::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryParameter where U: core::convert::Into<T>
+pub type termrock::widgets::QueryParameter::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryParameter::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryParameter where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryParameter::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryParameter::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryParameter where T: core::clone::Clone
+pub type termrock::widgets::QueryParameter::Owned = T
+pub fn termrock::widgets::QueryParameter::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryParameter::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryParameter where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryParameter::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryParameter where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryParameter::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryParameter where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryParameter::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryParameter where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryParameter::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryParameter
+pub fn termrock::widgets::QueryParameter::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryParameter
+pub struct termrock::widgets::QueryResultSummary
+pub termrock::widgets::QueryResultSummary::columns: core::option::Option<u32>
+pub termrock::widgets::QueryResultSummary::has_more: bool
+pub termrock::widgets::QueryResultSummary::rows: core::option::Option<u64>
+pub termrock::widgets::QueryResultSummary::status: alloc::string::String
+impl termrock::widgets::QueryResultSummary
+pub const fn termrock::widgets::QueryResultSummary::columns(self, u32) -> Self
+pub fn termrock::widgets::QueryResultSummary::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::QueryResultSummary::rows(self, u64) -> Self
+impl core::clone::Clone for termrock::widgets::QueryResultSummary
+pub fn termrock::widgets::QueryResultSummary::clone(&self) -> termrock::widgets::QueryResultSummary
+impl core::cmp::Eq for termrock::widgets::QueryResultSummary
+impl core::cmp::PartialEq for termrock::widgets::QueryResultSummary
+pub fn termrock::widgets::QueryResultSummary::eq(&self, &termrock::widgets::QueryResultSummary) -> bool
+impl core::default::Default for termrock::widgets::QueryResultSummary
+pub fn termrock::widgets::QueryResultSummary::default() -> termrock::widgets::QueryResultSummary
+impl core::fmt::Debug for termrock::widgets::QueryResultSummary
+pub fn termrock::widgets::QueryResultSummary::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::QueryResultSummary
+impl core::marker::Freeze for termrock::widgets::QueryResultSummary
+impl core::marker::Send for termrock::widgets::QueryResultSummary
+impl core::marker::Sync for termrock::widgets::QueryResultSummary
+impl core::marker::Unpin for termrock::widgets::QueryResultSummary
+impl core::marker::UnsafeUnpin for termrock::widgets::QueryResultSummary
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueryResultSummary
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueryResultSummary
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueryResultSummary where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::QueryResultSummary::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::QueryResultSummary where U: core::convert::From<T>
+pub fn termrock::widgets::QueryResultSummary::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueryResultSummary where U: core::convert::Into<T>
+pub type termrock::widgets::QueryResultSummary::Error = core::convert::Infallible
+pub fn termrock::widgets::QueryResultSummary::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueryResultSummary where U: core::convert::TryFrom<T>
+pub type termrock::widgets::QueryResultSummary::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::QueryResultSummary::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::QueryResultSummary where T: core::clone::Clone
+pub type termrock::widgets::QueryResultSummary::Owned = T
+pub fn termrock::widgets::QueryResultSummary::clone_into(&self, &mut T)
+pub fn termrock::widgets::QueryResultSummary::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::QueryResultSummary where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::QueryResultSummary::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::QueryResultSummary where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryResultSummary::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueryResultSummary where T: ?core::marker::Sized
+pub fn termrock::widgets::QueryResultSummary::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::QueryResultSummary where T: core::clone::Clone
+pub unsafe fn termrock::widgets::QueryResultSummary::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::QueryResultSummary
+pub fn termrock::widgets::QueryResultSummary::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::QueryResultSummary
 pub struct termrock::widgets::QuestionFlow<'a, Id>
 impl<'a, Id> termrock::widgets::QuestionFlow<'a, Id>
 pub const fn termrock::widgets::QuestionFlow<'a, Id>::new(&'a [termrock::widgets::QuestionStep<'a, Id>], &'a termrock::style::DesignSystem) -> Self
@@ -56883,6 +57469,54 @@ pub unsafe fn termrock::widgets::RoleTokenSyntax<'a>::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::RoleTokenSyntax<'a>
 pub fn termrock::widgets::RoleTokenSyntax<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RoleTokenSyntax<'a>
+pub struct termrock::widgets::SavedQuery
+pub termrock::widgets::SavedQuery::id: alloc::string::String
+pub termrock::widgets::SavedQuery::language: core::option::Option<alloc::string::String>
+pub termrock::widgets::SavedQuery::name: alloc::string::String
+pub termrock::widgets::SavedQuery::preview: alloc::string::String
+impl termrock::widgets::SavedQuery
+pub fn termrock::widgets::SavedQuery::language(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SavedQuery::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::SavedQuery
+pub fn termrock::widgets::SavedQuery::clone(&self) -> termrock::widgets::SavedQuery
+impl core::cmp::Eq for termrock::widgets::SavedQuery
+impl core::cmp::PartialEq for termrock::widgets::SavedQuery
+pub fn termrock::widgets::SavedQuery::eq(&self, &termrock::widgets::SavedQuery) -> bool
+impl core::fmt::Debug for termrock::widgets::SavedQuery
+pub fn termrock::widgets::SavedQuery::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SavedQuery
+impl core::marker::Freeze for termrock::widgets::SavedQuery
+impl core::marker::Send for termrock::widgets::SavedQuery
+impl core::marker::Sync for termrock::widgets::SavedQuery
+impl core::marker::Unpin for termrock::widgets::SavedQuery
+impl core::marker::UnsafeUnpin for termrock::widgets::SavedQuery
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SavedQuery
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SavedQuery
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SavedQuery where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SavedQuery::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SavedQuery where U: core::convert::From<T>
+pub fn termrock::widgets::SavedQuery::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SavedQuery where U: core::convert::Into<T>
+pub type termrock::widgets::SavedQuery::Error = core::convert::Infallible
+pub fn termrock::widgets::SavedQuery::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SavedQuery where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SavedQuery::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SavedQuery::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SavedQuery where T: core::clone::Clone
+pub type termrock::widgets::SavedQuery::Owned = T
+pub fn termrock::widgets::SavedQuery::clone_into(&self, &mut T)
+pub fn termrock::widgets::SavedQuery::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SavedQuery where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SavedQuery::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SavedQuery where T: ?core::marker::Sized
+pub fn termrock::widgets::SavedQuery::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SavedQuery where T: ?core::marker::Sized
+pub fn termrock::widgets::SavedQuery::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SavedQuery where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SavedQuery::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SavedQuery
+pub fn termrock::widgets::SavedQuery::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SavedQuery
 pub struct termrock::widgets::ScaleDomain
 pub termrock::widgets::ScaleDomain::log: bool
 pub termrock::widgets::ScaleDomain::max: f64
@@ -66118,6 +66752,7 @@ pub fn termrock::widgets::default_quick_open_intent(termrock::input::KeyEvent) -
 pub fn termrock::widgets::default_reserved_chords() -> alloc::vec::Vec<(termrock::keymap::KeyChord, alloc::string::String)>
 pub fn termrock::widgets::default_stepper_intent(termrock::input::KeyEvent, termrock::widgets::StepperOrientation) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_tree_table_intent(termrock::input::KeyEvent, termrock::widgets::TreeTableNavMode) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::widgets::diagnostic_summary(&[termrock::widgets::Diagnostic<'_>]) -> alloc::string::String
 pub fn termrock::widgets::diagnostics_to_gutter_marks(&[termrock::widgets::Diagnostic<'_>], bool) -> alloc::vec::Vec<termrock::widgets::CodeGutterMark>
 pub fn termrock::widgets::diagnostics_to_highlights(&[termrock::widgets::Diagnostic<'_>]) -> alloc::vec::Vec<termrock::widgets::CodeHighlight>
 pub fn termrock::widgets::dialog_recipe_for_bounds(ratatui_core::layout::rect::Rect, termrock::widgets::DialogRecipe) -> termrock::widgets::DialogRecipe
@@ -66139,6 +66774,7 @@ pub fn termrock::widgets::dismiss_popover_overlay<FocusId: core::clone::Clone>(&
 pub fn termrock::widgets::dismiss_preview_card_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_quick_open_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::draft_code_frame_lines(&termrock::widgets::TextAreaState) -> alloc::vec::Vec<termrock::widgets::CodeFrameLine<'_>>
 pub fn termrock::widgets::drawer_presentation_for(ratatui_core::layout::rect::Rect, termrock::widgets::DrawerEdge, u16) -> termrock::widgets::DrawerPresentation
 pub fn termrock::widgets::dropdown_menu_presentation_for(ratatui_core::layout::rect::Rect, &[termrock::widgets::MenuNode<impl core::marker::Sized>]) -> termrock::widgets::DropdownMenuPresentation
 pub fn termrock::widgets::entries_from_keymap<A, Id, F>(&termrock::keymap::Keymap<A>, F) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A, &termrock::keymap::KeyBinding<A>) -> (Id, alloc::string::String, core::option::Option<alloc::string::String>)
@@ -66346,6 +66982,7 @@ pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::wi
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
 pub fn termrock::widgets::protocol_limitations(termrock::widgets::Platform) -> alloc::vec::Vec<&'static str>
+pub fn termrock::widgets::query_editor_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::quick_open_jump_targets<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &[(usize, ratatui_core::layout::rect::Rect)], &[char]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::quick_open_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::QuickOpenPresentation
 pub fn termrock::widgets::redact_env_value(&str, &str) -> (alloc::string::String, bool)
@@ -66359,6 +66996,7 @@ pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16)
 pub fn termrock::widgets::role_for_seed(u64) -> termrock::style::Role
 pub fn termrock::widgets::row_count(u64, u8) -> u64
 pub fn termrock::widgets::row_for_offset(u64, u8) -> u64
+pub fn termrock::widgets::saved_queries_to_history(&[termrock::widgets::SavedQuery]) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<alloc::string::String>>
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
 pub fn termrock::widgets::sidebar_presentation_for_width(u16) -> termrock::widgets::SidebarPresentation
 pub fn termrock::widgets::sort_processes_flat<'a>(alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>, termrock::widgets::ProcessSortKey, bool) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
@@ -66374,6 +67012,7 @@ pub fn termrock::widgets::syntax_role_style(&termrock::style::DesignSystem, term
 pub fn termrock::widgets::system_from_preset_id(&str) -> core::option::Option<termrock::style::DesignSystem>
 pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>
 pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<termrock::style::RolePalette>
+pub fn termrock::widgets::token_at_cursor(&termrock::widgets::TextAreaState) -> (alloc::string::String, termrock::widgets::TextCursor)
 pub fn termrock::widgets::toolbar_icon_action<'a, Id>(Id, &'a str, &'a str) -> termrock::widgets::ToolbarItem<'a, Id>
 pub fn termrock::widgets::tooltip_overlay_size(u16, u16, u16) -> termrock::interaction::OverlaySize
 pub fn termrock::widgets::window_samples(&[f64], usize) -> &[f64]

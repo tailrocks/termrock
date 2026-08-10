@@ -34,6 +34,7 @@
     "hex-viewer",
     "charts",
     "file-tree",
-    "process-table"
+    "process-table",
+    "query-editor"
   ]
 }

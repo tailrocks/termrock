@@ -70,13 +70,15 @@ use termrock::{
         LogPaneState,
         LogStream, LogStreamState, EventStream, EventStreamState, StreamEvent, EventSeverity,
         Diagnostic, DiagnosticSeverity, DiagnosticView, DiagnosticState, DiagnosticRecipe,
-        DiagnosticNote, SourceLabel, SourceRange, SuggestedFix, CodeFrame, CodeFrameLine,
+        DiagnosticNote, SourceLabel, SourceRange, SpanStyle, SuggestedFix, CodeFrame, CodeFrameLine,
         TerminalOutput, TerminalOutputState, TerminalCommandMeta, TerminalLine, TerminalRunStatus,
         TerminalEnvEntry, TerminalOutputRecipe, TerminalPaintMode,
         HexViewer, HexViewerState, HexWindow, HexEndian, HexAsciiMode,
         FileTree, FileTreeState, FileTreeEntry, FileTreeKind, FileGitStatus,
         ProcessTable, ProcessTableState, ProcessRow, ProcessKey, ProcessStatus,
         ProcessViewMode, ProcessSignal, ProcessSignalConfirm,
+        QueryEditor, QueryEditorState, QueryEditorMode, QueryFocus, QueryLanguage,
+        QueryParameter, QueryResultSummary, QueryRunStatus,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2329,6 +2331,78 @@ pub(crate) fn stories() -> Vec<Story> {
             64,
             12,
             process_table_ascii,
+        ),
+        Story::new(
+            "query-editor/basic",
+            "QueryEditor basic",
+            "QueryEditor",
+            "SQL draft with results slot chrome.",
+            72,
+            18,
+            query_editor_basic,
+        ),
+        Story::new(
+            "query-editor/running",
+            "QueryEditor running",
+            "QueryEditor",
+            "In-flight run status chrome.",
+            72,
+            16,
+            query_editor_running,
+        ),
+        Story::new(
+            "query-editor/diagnostics",
+            "QueryEditor diagnostics",
+            "QueryEditor",
+            "Diagnostic strip with severity letters.",
+            72,
+            16,
+            query_editor_diagnostics,
+        ),
+        Story::new(
+            "query-editor/parameters",
+            "QueryEditor parameters",
+            "QueryEditor",
+            "Parameter chips including secret redaction.",
+            72,
+            14,
+            query_editor_parameters,
+        ),
+        Story::new(
+            "query-editor/compact",
+            "QueryEditor compact",
+            "QueryEditor",
+            "Compact mode hides results slot.",
+            56,
+            10,
+            query_editor_compact,
+        ),
+        Story::new(
+            "query-editor/empty",
+            "QueryEditor empty",
+            "QueryEditor",
+            "Empty draft with placeholder.",
+            48,
+            10,
+            query_editor_empty,
+        ),
+        Story::new(
+            "query-editor/narrow",
+            "QueryEditor narrow",
+            "QueryEditor",
+            "Narrow query workbench (36 cols).",
+            36,
+            14,
+            query_editor_basic,
+        ),
+        Story::new(
+            "query-editor/ascii",
+            "QueryEditor ASCII",
+            "QueryEditor",
+            "ASCII focus and status glyphs.",
+            64,
+            14,
+            query_editor_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -11898,6 +11972,98 @@ fn process_table_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     state.view_mode = ProcessViewMode::Tree;
     state.ascii = true;
     ProcessTable::new(&rows, system)
+        .title("ascii")
+        .ascii(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn query_editor_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = QueryEditorState::with_text(
+        "select u.id, u.name\nfrom users u\nwhere u.active = true\nlimit 20;",
+    );
+    state.language = QueryLanguage::sql();
+    state.set_results(
+        QueryResultSummary::new("ok · 20 rows · 12ms")
+            .rows(20)
+            .columns(2),
+    );
+    state.set_parameters(vec![QueryParameter::new("limit", "20").type_hint("int")]);
+    QueryEditor::new(system)
+        .title("sql")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn query_editor_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = QueryEditorState::with_text("select count(*) from events;");
+    state.set_run(QueryRunStatus::Running {
+        run_id: "run-42".into(),
+    });
+    QueryEditor::new(system)
+        .title("running")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn query_editor_diagnostics(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    static LABELS: &[SourceLabel<'static>] = &[SourceLabel {
+        range: SourceRange {
+            start_line: 2,
+            start_col: 1,
+            end_line: 2,
+            end_col: 4,
+        },
+        label: Some("expected identifier"),
+        style: SpanStyle::Primary,
+    }];
+    let diags = [Diagnostic::new(
+        "d1",
+        DiagnosticSeverity::Error,
+        "syntax error near FROM",
+    )
+    .code("SQL-001")
+    .labels(LABELS)];
+    let mut state = QueryEditorState::with_text("select\nfrom t");
+    let _ = state.set_focus(QueryFocus::Diagnostics);
+    QueryEditor::new(system)
+        .title("diag")
+        .diagnostics(&diags)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn query_editor_parameters(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = QueryEditorState::with_text("select * from t where id = :id");
+    state.set_parameters(vec![
+        QueryParameter::new("id", "42").type_hint("uuid").required(),
+        QueryParameter::new("token", "s3cr3t").secret(),
+    ]);
+    let _ = state.set_focus(QueryFocus::Parameters);
+    QueryEditor::new(system)
+        .title("params")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn query_editor_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = QueryEditorState::with_text("select 1");
+    state.mode = QueryEditorMode::Compact;
+    QueryEditor::new(system)
+        .title("compact")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn query_editor_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = QueryEditorState::new();
+    QueryEditor::new(system)
+        .title("empty")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn query_editor_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = QueryEditorState::with_text("select 1");
+    state.ascii = true;
+    state.set_run(QueryRunStatus::Success {
+        rows: Some(1),
+        duration_ms: Some(3),
+    });
+    QueryEditor::new(system)
         .title("ascii")
         .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);

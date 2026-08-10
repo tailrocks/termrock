@@ -123,6 +123,7 @@ mod terminal_output;
 mod hex_viewer;
 mod file_tree;
 mod process_table;
+mod query_editor;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -197,6 +198,13 @@ pub use process_table::{
     process_column_model, sort_processes_flat,
 };
 pub use process_table::bench as process_table_bench;
+pub use query_editor::{
+    QueryEditor, QueryEditorMode, QueryEditorOutcome, QueryEditorSlots, QueryEditorState,
+    QueryFocus, QueryLanguage, QueryParameter, QueryResultSummary, QueryRunStatus, SavedQuery,
+    diagnostic_summary, draft_code_frame_lines, query_editor_help_entries,
+    saved_queries_to_history, token_at_cursor,
+};
+pub use query_editor::bench as query_editor_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

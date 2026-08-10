@@ -1634,6 +1634,21 @@ Every component below uses sections **1–24**:
 21. **Stories:** `process-table/{basic,tree,filter,confirm,empty,narrow,ascii}`  
 22–24. PID-reuse reconcile; 5k-row sort/paint bench constants.
 
+## QueryEditor
+
+1. **Purpose:** Code-oriented SQL/logs/search query workbench.  
+2. **Anatomy:** chrome · params? · editor · diagnostics? · results slot · footer.  
+3. **Public properties:** language, parameters, diagnostics projection, result summary.  
+4. **State:** embeds `TextAreaState`; focus zones; run status; mode; completion; slots.  
+5. **Variants:** Compact / Normal / Fullscreen; Idle/Running/Success/Failed.  
+6–10. Ctrl chords for run/stop/format/save/history/complete/focus.  
+11–14. No language server / DB driver / formatter execution.  
+15–18. ASCII focus marks; severity letters on diagnostics.  
+19. **Composition:** TextArea · CompletionMenu · Diagnostic/CodeFrame · KeyboardHelp · HistoryPicker · DataTable in results slot.  
+20. **Outcomes:** Run/Stop/Format/Save/History/Completion/JumpToDiagnostic/Focus/Mode.  
+21. **Stories:** `query-editor/{basic,running,diagnostics,parameters,compact,empty,narrow,ascii}`  
+22–24. Draft survives focus; large-draft paint; no-exec guard.
+
 ## Charts (Sparkline / Chart / Gauge / Histogram)
 
 1. **Purpose:** Coherent terminal data-viz family.  
