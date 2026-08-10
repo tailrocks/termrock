@@ -27,16 +27,17 @@
 | 2 | signup-02 — two-column with cover image | partial | `AuthEntry` + optional aside text | Cover image N/A; aside copy optional |
 | 3 | signup-03 — muted background page | covered | `AuthEntry` + design-system surface | Muted chrome via theme roles, not a second API |
 | 4 | signup-04 — form and image | partial | `AuthEntry` + optional aside text | Image N/A; same fielded gate as signup-01 |
+| 5 | signup-05 — social providers | partial | `AuthEntry` `SecondaryAction` (e.g. `oauth:…`) | Brand OAuth button grid N/A; host maps provider ids (Ctrl+O peer) |
 
 ## Counts
 
 | Status | Count |
 |--------|------:|
 | covered | 2 |
-| partial | 2 |
+| partial | 3 |
 | missing | 0 |
 | N/A | 0 |
-| **Total** | **4** |
+| **Total** | **5** |
 
 ## Port decision
 
@@ -44,8 +45,8 @@
 |-----|----------|
 | Simple / muted form pages | Ship `AuthEntry` — CLI/TUI credential gate |
 | Image / cover columns | Keep partial — optional aside strings only |
-| OAuth button grids | Host secondary actions via `SecondaryAction` ids; no fake brand paint |
-| Full blocks catalog (login siblings, dashboards) | Out of scope this goal |
+| OAuth / social (signup-05) | Host secondary actions via `SecondaryAction` ids; no fake brand paint |
+| Full blocks catalog (login siblings, dashboards) | See consolidated `shadcn-blocks-coverage.md` |
 
 ## Validation
 

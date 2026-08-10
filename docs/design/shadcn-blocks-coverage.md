@@ -6,22 +6,24 @@
 **Family detail docs (non-drift peers):**
 - Signup: `docs/design/shadcn-signup-blocks-coverage.md`
 - Login: `docs/design/shadcn-login-blocks-coverage.md`
-- Sidebar-01…07 detail: `docs/design/shadcn-sidebar-blocks-coverage.md` (extended here to 15)
+- Sidebar detail: `docs/design/shadcn-sidebar-blocks-coverage.md` (01…16)
 
 **Statuses:** `covered` | `partial` | `missing` | `N/A`
 
 ## First-party lock set
 
-Official featured + linked families only (not third-party marketplaces):
+Official featured + linked families only (not third-party marketplaces).  
+**Re-lock (2026-08 registry/category crawl + skeptic recheck):** includes `sidebar-16`
+(sticky header) and `signup-05` (social providers).
 
 | Family | IDs locked |
 |--------|------------|
 | Dashboard | `dashboard-01` |
-| Sidebar | `sidebar-01` … `sidebar-15` |
+| Sidebar | `sidebar-01` … `sidebar-16` |
 | Login | `login-01` … `login-05` |
-| Signup | `signup-01` … `signup-04` |
+| Signup | `signup-01` … `signup-05` |
 
-**Total rows:** 1 + 15 + 5 + 4 = **25**
+**Total rows:** 1 + 16 + 5 + 5 = **27**
 
 ## Matrix
 
@@ -43,33 +45,35 @@ Official featured + linked families only (not third-party marketplaces):
 | 14 | sidebar-13 | partial | Sidebar in dialog → `Dialog` / drawer | Host chrome |
 | 15 | sidebar-14 | covered | Right rail | Host places `AppShell` zone |
 | 16 | sidebar-15 | partial | Dual sidebars | Sidebar + inspector slots |
-| 17 | login-01 | covered | `AuthEntry::sign_in` | |
-| 18 | login-02 | partial | AuthEntry + aside | Image N/A |
-| 19 | login-03 | covered | AuthEntry + theme surface | |
-| 20 | login-04 | partial | AuthEntry + aside | Image N/A |
-| 21 | login-05 | covered | `AuthEntry::email_only` | |
-| 22 | signup-01 | covered | `AuthEntry` SignUp | |
-| 23 | signup-02 | partial | AuthEntry + aside | Image N/A |
-| 24 | signup-03 | covered | AuthEntry + theme | |
-| 25 | signup-04 | partial | AuthEntry + aside | Image N/A |
+| 17 | sidebar-16 | covered | Sticky header band | `AppShell` header + `Sidebar`/`Panel` title chrome (no CSS sticky) |
+| 18 | login-01 | covered | `AuthEntry::sign_in` | |
+| 19 | login-02 | partial | AuthEntry + aside | Image N/A |
+| 20 | login-03 | covered | AuthEntry + theme surface | |
+| 21 | login-04 | partial | AuthEntry + aside | Image N/A |
+| 22 | login-05 | covered | `AuthEntry::email_only` | |
+| 23 | signup-01 | covered | `AuthEntry` SignUp | |
+| 24 | signup-02 | partial | AuthEntry + aside | Image N/A |
+| 25 | signup-03 | covered | AuthEntry + theme | |
+| 26 | signup-04 | partial | AuthEntry + aside | Image N/A |
+| 27 | signup-05 | partial | AuthEntry `SecondaryAction` oauth ids | Social brand button grid N/A; host maps provider ids |
 
 ## Counts
 
 | Status | Count |
 |--------|------:|
-| covered | 14 |
-| partial | 11 |
+| covered | 15 |
+| partial | 12 |
 | missing | 0 |
 | N/A | 0 |
-| **Total** | **25** |
+| **Total** | **27** |
 
 ## Port decisions (this pass)
 
 | Gap | Decision |
 |-----|----------|
 | dashboard-01 | Ship `AppDashboard` — keyboard shell: sidebar ↔ main, rail, host main paint |
-| sidebar-08…15 | Map onto Sidebar + AppShell; partial only for web-only chrome |
-| login/signup | Prior AuthEntry work (0248–0249) |
+| sidebar-08…16 | Map onto Sidebar + AppShell; sticky header = shell header band |
+| login/signup | Prior AuthEntry work (0248–0249); signup-05 = oauth secondary actions |
 | sidebar-01…07 | Prior Sidebar work (0250) |
 
 ## Validation

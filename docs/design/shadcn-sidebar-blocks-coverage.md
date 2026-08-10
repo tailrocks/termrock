@@ -37,16 +37,17 @@ rail slots). Collapse filter: [`filter_nav_collapsed`] (migration **0250**).
 | 13 | sidebar-13 — sidebar in dialog | partial | `Dialog` / drawer | Host chrome |
 | 14 | sidebar-14 — right sidebar | covered | Host places AppShell zone | |
 | 15 | sidebar-15 — left + right | partial | Sidebar + inspector slots | |
+| 16 | sidebar-16 — sticky header | covered | AppShell header + Panel/Sidebar title | TUI sticky = fixed header band |
 
 ## Counts
 
 | Status | Count |
 |--------|------:|
-| covered | 8 |
+| covered | 9 |
 | partial | 7 |
 | missing | 0 |
 | N/A | 0 |
-| **Total** | **15** |
+| **Total** | **16** |
 
 **Consolidated SoT:** `docs/design/shadcn-blocks-coverage.md`
 
