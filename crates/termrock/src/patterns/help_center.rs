@@ -361,18 +361,22 @@ pub fn command_list_rows<'a>(commands: &'a [CommandEntry<String>]) -> Vec<ListRo
 }
 
 /// Doctor findings as list rows (host-projected report; no re-detect).
+///
+/// Row ids are `finding:{index}:{code}` so duplicate finding codes (common in
+/// doctor reports) remain navigable under List/CollectionState (stable unique ids).
 #[must_use]
 pub fn doctor_finding_rows(findings: &[DoctorFinding]) -> Vec<ListRow<'_, String>> {
     findings
         .iter()
-        .map(|f| {
+        .enumerate()
+        .map(|(i, f)| {
             let sev = match f.severity {
                 DoctorSeverity::Info => "I",
                 DoctorSeverity::Warning => "W",
                 DoctorSeverity::Error => "E",
             };
             let label = format!("[{sev}] {} — {}", f.code, f.message);
-            ListRow::item(f.code.clone(), Line::from(label))
+            ListRow::item(format!("finding:{i}:{}", f.code), Line::from(label))
         })
         .collect()
 }
@@ -383,6 +387,29 @@ pub fn component_inspect_rows(ids: &[String]) -> Vec<ListRow<'_, String>> {
     ids.iter()
         .map(|id| ListRow::item(id.clone(), Line::from(id.as_str())))
         .collect()
+}
+
+/// **Single list for paint + handle_key:** findings then component inspect rows.
+///
+/// Must stay identical in `render_help_center` and `handle_diagnostics_key` so
+/// keyboard navigation can reach painted component ids when both are present.
+#[must_use]
+pub fn diagnostics_rows<'a>(
+    doctor: Option<&'a DoctorReport>,
+    component_ids: &'a [String],
+) -> Vec<ListRow<'a, String>> {
+    let findings = doctor.map(|d| d.findings.as_slice()).unwrap_or(&[]);
+    let mut rows = doctor_finding_rows(findings);
+    if !component_ids.is_empty() {
+        if !rows.is_empty() {
+            rows.push(ListRow::group_header(
+                "g-components".into(),
+                Line::from("Components"),
+            ));
+        }
+        rows.extend(component_inspect_rows(component_ids));
+    }
+    rows
 }
 
 // ── Outcomes ────────────────────────────────────────────────────────────────
@@ -1094,11 +1121,8 @@ impl HelpCenterState {
                 _ => {}
             }
         }
-        let findings = doctor.map(|d| d.findings.as_slice()).unwrap_or(&[]);
-        let mut rows = doctor_finding_rows(findings);
-        if rows.is_empty() && !component_ids.is_empty() {
-            rows = component_inspect_rows(component_ids);
-        }
+        // Same row model as paint — findings + components (not findings-only fallback).
+        let rows = diagnostics_rows(doctor, component_ids);
         let out = self.diagnostics.handle_key(&rows, key);
         match out {
             Outcome::Ignored => HelpCenterOutcome::Ignored,
@@ -1538,14 +1562,7 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         };
         let inner = panel.paint(r, buffer);
         if !inner.is_empty() {
-            let findings = doctor.map(|d| d.findings.as_slice()).unwrap_or(&[]);
-            let mut rows = doctor_finding_rows(findings);
-            if !component_ids.is_empty() {
-                if !rows.is_empty() {
-                    // append components under separate headers via inspect rows
-                }
-                rows.extend(component_inspect_rows(component_ids));
-            }
+            let rows = diagnostics_rows(doctor, component_ids);
             if rows.is_empty() {
                 buffer.set_stringn(
                     inner.x,
@@ -2227,6 +2244,79 @@ mod tests {
                 HelpCenterOutcome::InspectComponent { ref id } if id == "keyboard-help"
             ),
             "got {out:?}"
+        );
+    }
+
+    #[test]
+    fn diagnostics_down_reaches_component_when_findings_present() {
+        let mut st = open();
+        let system = DesignSystem::default();
+        let topics = example_help_topics();
+        let help = example_help_center_entries(&system);
+        let cmds = command_entries_from_help(&help);
+        let doctor = example_help_doctor_report();
+        assert!(
+            !doctor.findings.is_empty(),
+            "need findings so both lists are painted"
+        );
+        let components = vec!["keyboard-help".into(), "command-palette".into()];
+        let rows = diagnostics_rows(Some(&doctor), &components);
+        assert!(
+            rows.iter().any(|r| r.id == "keyboard-help"),
+            "shared rows must include component ids alongside findings"
+        );
+        assert!(
+            rows.iter().any(|r| r.id.starts_with("finding:")),
+            "shared rows must include finding:* ids"
+        );
+
+        st.show_diagnostics = true;
+        st.focus = "diagnostics";
+        st.sync_diagnostics_live(Some(&doctor), &components);
+        st.apply_focus_gates();
+        // Start on first finding (list head), then Down until selection is a component id
+        st.diagnostics = ListState::new(
+            doctor
+                .findings
+                .first()
+                .map(|f| f.code.clone()),
+        );
+        let mut reached = false;
+        for _ in 0..rows.len().saturating_add(4) {
+            let _ = st.handle_key(
+                press(KeyCode::Down),
+                &topics,
+                &help,
+                &cmds,
+                Some(&doctor),
+                &components,
+            );
+            if let Some(id) = st.diagnostics.selected() {
+                if components.iter().any(|c| c == id) {
+                    reached = true;
+                    let out = st.handle_key(
+                        press(KeyCode::Char('i')),
+                        &topics,
+                        &help,
+                        &cmds,
+                        Some(&doctor),
+                        &components,
+                    );
+                    assert!(
+                        matches!(
+                            out,
+                            HelpCenterOutcome::InspectComponent { ref id } if components.contains(id)
+                        ),
+                        "i on navigated component must InspectComponent, got {out:?}"
+                    );
+                    break;
+                }
+            }
+        }
+        assert!(
+            reached,
+            "Down on diagnostics_rows must reach a painted component id when findings+components present; selected={:?}",
+            st.diagnostics.selected()
         );
     }
 
