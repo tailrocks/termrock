@@ -2148,30 +2148,30 @@ Every component below uses sections **1–24**:
 
 ## PermissionPrompt
 
-1. **Purpose:** Risk-aware permission card; **no side effects**.  
-2. **Anatomy:** `frame` · `risk_glyph` · `provenance` · `detail` · `scope` · `decision_row`  
-3. **Public properties:** system, ascii, colorless, focused  
-4. **State:** queue + **action_cursor** (default Deny) + scope + accepts_input.  
-5. **Variants:** card via OverlayStack (Alert trap High/Critical).  
-6. **Sizes/density:** Compact density; dialog size clamp.  
-7. **Visual states:** risk panel; empty ∅; action cursor marks.  
-8. **Interaction states:** move action · scope · edit · confirm · cancel.  
-9. **Keyboard:** intent map + product `n`/`e`/`p`/`[]`; **no y grant**.  
-10. **Mouse:** hit regions; click selects/confirms per law.  
-11. **Focus:** surface accepts_input; action_cursor local; Esc one layer.  
-12. **Disabled:** accepts_input false.  
-13. **Loading:** N/A (sync decide).  
-14. **Error:** risk is presentation, not validation.  
-15. **Narrow:** vertical action stack.  
-16. **Tiny:** risk title + actions.  
-17. **Unicode/ASCII:** risk glyphs + ›/`>`.  
-18. **Colorless:** strong cursor; risk glyphs remain.  
-19. **Composition:** AgentWorkbench overlay; PromptComposer gate.  
-20. **Outcomes:** Decided / Cancelled / ActionCursorMoved / ScopeChanged / StaleIgnored / …  
+1. **Purpose:** Signature trust surface (not generic Allow); **no side effects**.  
+2. **Anatomy:** `risk` · `by/via provenance` · `op/target` · `run@` · `access/dest` · `reversible` · `egress banner` · `expect` · `grant scope` · `actions`  
+3. **Public properties:** system, ascii, colorless, focused; `PermissionRequest` checklist model  
+4. **State:** FIFO queue + generation; **action_cursor** default Deny; scope once→always; edit mode  
+5. **Variants:** Overlay Alert trap High/Critical; card body  
+6. **Sizes/density:** Compact density; dialog clamp  
+7. **Visual states:** risk chrome; DATA EGRESS / DESTRUCTIVE banners; empty ∅  
+8. **Interaction states:** move action · scope · edit cmd/pattern · confirm · cancel · details  
+9. **Keyboard:** intent map + `n`/`e`/`p`/`[]`; **no y grant**  
+10. **Mouse:** action hit regions; click confirms cursor action  
+11. **Focus:** accepts_input gate; action_cursor ≠ scene focus  
+12. **Disabled:** accepts_input false blocks all keys  
+13. **Loading:** N/A  
+14. **Error:** risk presentation only  
+15. **Narrow:** vertical action stack  
+16. **Tiny:** risk title + Deny/Allow strip  
+17. **Unicode/ASCII:** risk glyphs + ›/`>`  
+18. **Colorless:** strong cursor; risk glyphs remain  
+19. **Composition:** AgentWorkbench overlay; PromptComposer gate  
+20. **Outcomes:** Decided · Cancelled · StaleIgnored · Edit* · ScopeChanged · ActionCursorMoved  
 21. **Stories:** `permission-prompt/{basic,low-read,destructive-nested,egress,narrow,unicode}`  
-22. **Snapshots:** High default selection = Deny.  
-23. **Interaction tests:** Enter on High emits Deny if default; Left/Right bounds; Esc → Deny or Cancelled per scene.  
-24. **Perf:** O(1).
+22. **Snapshots:** High/Critical default Deny; nested provenance  
+23. **Interaction tests:** stale queue; nested subagent; no process I/O; Enter=Deny  
+24. **Perf:** O(1) head paint
 
 ## QuestionFlow
 

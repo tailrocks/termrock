@@ -30382,6 +30382,7 @@ pub termrock::widgets::PermissionScope::Project
 pub termrock::widgets::PermissionScope::Session
 impl termrock::widgets::PermissionScope
 pub const termrock::widgets::PermissionScope::ALL: [Self; 4]
+pub const fn termrock::widgets::PermissionScope::allow_label(self) -> &'static str
 pub const fn termrock::widgets::PermissionScope::label(self) -> &'static str
 impl core::clone::Clone for termrock::widgets::PermissionScope
 pub fn termrock::widgets::PermissionScope::clone(&self) -> termrock::widgets::PermissionScope
@@ -62188,8 +62189,10 @@ pub termrock::widgets::PermissionProvenance::chain: alloc::vec::Vec<termrock::wi
 impl termrock::widgets::PermissionProvenance
 pub fn termrock::widgets::PermissionProvenance::display_path(&self) -> alloc::string::String
 pub fn termrock::widgets::PermissionProvenance::has_subagent(&self) -> bool
+pub fn termrock::widgets::PermissionProvenance::initiated_by(&self) -> alloc::string::String
 pub fn termrock::widgets::PermissionProvenance::leaf(&self) -> core::option::Option<&termrock::widgets::ProvenanceHop>
 pub fn termrock::widgets::PermissionProvenance::main_agent(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PermissionProvenance::nest_depth(&self) -> usize
 pub fn termrock::widgets::PermissionProvenance::push(self, termrock::widgets::ProvenanceHop) -> Self
 impl core::clone::Clone for termrock::widgets::PermissionProvenance
 pub fn termrock::widgets::PermissionProvenance::clone(&self) -> termrock::widgets::PermissionProvenance

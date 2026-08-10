@@ -1,13 +1,13 @@
 ---
 title: PermissionPrompt
-description: Trust surface for agent tools — provenance, risk, scopes, default-deny cursor, stale-safe queues.
+description: Signature trust surface — provenance, egress, scopes, default-deny, stale-safe queues.
 ---
 
 # PermissionPrompt
 
-**Purpose.** Replace vague “Allow?” prompts with a **trust surface**: who asked
-(including nested subagents/MCP), exact action/target, risk, egress, scope, and
-decisions that **never default to grant**.
+Not a generic Allow dialog. Checklist paint: **who** (leaf initiator), **via**
+provenance, **op** + target, **run @** location, **access/dest**, **reversible**,
+risk banners, expected result, grant scope once/session/project/always.
 
 ## When to use / when not
 
@@ -17,14 +17,19 @@ decisions that **never default to grant**.
 | Product settings toggles | Form / Switch |
 | Agent prompt input | [PromptComposer](/docs/handbook/prompt-composer) |
 
+## Checklist fields
+
+Initiator · provenance · action kind · target · location · accessed data ·
+destination · expected · reversible · risk · scope · prior grant · command/pattern
+
 ## Focus law
 
 | Concern | Owner |
 |---------|--------|
 | Overlay trap (High/Critical) | OverlayStack AlertDialog |
 | Surface input | Host `set_accepts_input` when overlay top |
-| Action **cursor** | `action_cursor` (default Deny) |
-| Scope cursor | `scope` via `[` `]` |
+| Action **cursor** | `action_cursor` (default **Deny**) |
+| Scope cursor | `scope` via `[` `]` → Allow once…always |
 
 Scene surface focus ≠ decision cursor.
 
@@ -36,33 +41,19 @@ Scene surface focus ≠ decision cursor.
 - `Decided { request_id, generation, action, scope, edited }`
 - `Cancelled` / `QueueChanged` / `StaleIgnored`
 
-## Intents
+## Intents / keys
 
-`default_permission_intent` — arrows/Tab, Enter, Esc, `d` toggle details.
-**No `y` grant.** Product: `n` deny, `e`/`p` edit, `[`/`]` scope.
-
-## Non-color
-
-- Risk glyphs: `i`/`!`/`!!`/`X` (ASCII) or unicode
-- Action cursor: `›` / `>`
-- Empty: `∅` / `[ ]`
-- Danger panel chrome for High/Critical
-
-## Responsive
-
-| Width | Layout |
-|-------|--------|
-| ≥ 36 | Horizontal action strip |
-| &lt; 36 | Vertical action stack |
-| Tiny height | Risk title + actions first |
+`default_permission_intent` — arrows/Tab, Enter, Esc, `d` details.
+**No `y` grant.** `n` deny · `e`/`p` edit · `[`/`]` scope.
 
 ## Safety
 
-- Default cursor **Deny** for Low/Medium/High/Critical
-- Enter on default → Deny, never Allow
+- Default cursor **Deny** for all risks
+- Enter default → Deny, never Allow
 - Esc → cancel without grant + advance queue
 - Stale generation → `StaleIgnored` (no grant)
+- Concurrent queue FIFO + monotonic generations
 
 ## Related
 
-PromptComposer · OverlayStack · migration `0077` · design `permission-prompt-premium.md`
+PromptComposer · OverlayStack · migrations `0077`, **`0226`**

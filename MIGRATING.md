@@ -239,6 +239,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0223 | `v0.13.0` | [SubagentCard delegated agent work](migrations/0223-v0.13.0-subagent-card.md) |
 | 0224 | `v0.13.0` | [BackgroundTaskPanel long-job monitor](migrations/0224-v0.13.0-background-task-panel.md) |
 | 0225 | `v0.13.0` | [ContextMeter budget display](migrations/0225-v0.13.0-context-meter.md) |
+| 0226 | `v0.13.0` | [PermissionPrompt Global trust surface](migrations/0226-v0.13.0-permission-prompt.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
