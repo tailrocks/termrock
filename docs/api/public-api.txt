@@ -44,9 +44,9 @@ warning: unresolved link to `Stack`
     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
 
 warning: unresolved link to `TaskRail`
-   --> crates/termrock/src/widgets/progress_steps.rs:928:32
+   --> crates/termrock/src/widgets/progress_steps.rs:930:32
     |
-928 | /// Project to list rows for [`TaskRail`] / List.
+930 | /// Project to list rows for [`TaskRail`] / List.
     |                                ^^^^^^^^ no item named `TaskRail` in scope
     |
     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
@@ -31616,6 +31616,214 @@ pub unsafe fn termrock::widgets::TimeDisplayFormat::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::TimeDisplayFormat
 pub fn termrock::widgets::TimeDisplayFormat::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TimeDisplayFormat
+#[non_exhaustive] pub enum termrock::widgets::TimelineOutcome<Id>
+pub termrock::widgets::TimelineOutcome::Activated(Id)
+pub termrock::widgets::TimelineOutcome::Cancelled
+pub termrock::widgets::TimelineOutcome::CompareRequested(Id)
+pub termrock::widgets::TimelineOutcome::ExpandToggled(Id)
+pub termrock::widgets::TimelineOutcome::FilterChanged(alloc::string::String)
+pub termrock::widgets::TimelineOutcome::Ignored
+pub termrock::widgets::TimelineOutcome::RestoreRequested(Id)
+pub termrock::widgets::TimelineOutcome::Scrolled
+pub termrock::widgets::TimelineOutcome::Scrolled::following: bool
+pub termrock::widgets::TimelineOutcome::Selected(Id)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TimelineOutcome<Id>
+pub fn termrock::widgets::TimelineOutcome<Id>::clone(&self) -> termrock::widgets::TimelineOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TimelineOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TimelineOutcome<Id>
+pub fn termrock::widgets::TimelineOutcome<Id>::eq(&self, &termrock::widgets::TimelineOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TimelineOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TimelineOutcome<Id>
+pub fn termrock::widgets::TimelineOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::TimelineOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TimelineOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TimelineOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TimelineOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TimelineOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TimelineOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TimelineOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TimelineOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TimelineOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TimelineOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TimelineOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TimelineOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TimelineOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TimelineOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TimelineOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TimelineOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TimelineOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TimelineOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::TimelineOutcome<Id>::Owned = T
+pub fn termrock::widgets::TimelineOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TimelineOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TimelineOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TimelineOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TimelineOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TimelineOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TimelineOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TimelineOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TimelineOutcome<Id>
+pub fn termrock::widgets::TimelineOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TimelineOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::TimelineRecipe
+pub termrock::widgets::TimelineRecipe::Detailed
+pub termrock::widgets::TimelineRecipe::GroupedDay
+pub termrock::widgets::TimelineRecipe::Rail
+impl termrock::widgets::TimelineRecipe
+pub const fn termrock::widgets::TimelineRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::TimelineRecipe
+pub fn termrock::widgets::TimelineRecipe::clone(&self) -> termrock::widgets::TimelineRecipe
+impl core::cmp::Eq for termrock::widgets::TimelineRecipe
+impl core::cmp::PartialEq for termrock::widgets::TimelineRecipe
+pub fn termrock::widgets::TimelineRecipe::eq(&self, &termrock::widgets::TimelineRecipe) -> bool
+impl core::default::Default for termrock::widgets::TimelineRecipe
+pub fn termrock::widgets::TimelineRecipe::default() -> termrock::widgets::TimelineRecipe
+impl core::fmt::Debug for termrock::widgets::TimelineRecipe
+pub fn termrock::widgets::TimelineRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TimelineRecipe
+pub fn termrock::widgets::TimelineRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TimelineRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::TimelineRecipe
+impl core::marker::Freeze for termrock::widgets::TimelineRecipe
+impl core::marker::Send for termrock::widgets::TimelineRecipe
+impl core::marker::Sync for termrock::widgets::TimelineRecipe
+impl core::marker::Unpin for termrock::widgets::TimelineRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::TimelineRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TimelineRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TimelineRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TimelineRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TimelineRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TimelineRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::TimelineRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TimelineRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::TimelineRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::TimelineRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TimelineRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TimelineRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TimelineRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TimelineRecipe where T: core::clone::Clone
+pub type termrock::widgets::TimelineRecipe::Owned = T
+pub fn termrock::widgets::TimelineRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::TimelineRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TimelineRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TimelineRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TimelineRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TimelineRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TimelineRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TimelineRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TimelineRecipe
+pub fn termrock::widgets::TimelineRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TimelineRecipe
+#[non_exhaustive] pub enum termrock::widgets::TimelineRowKind
+pub termrock::widgets::TimelineRowKind::Checkpoint
+pub termrock::widgets::TimelineRowKind::Event
+pub termrock::widgets::TimelineRowKind::Group
+impl core::clone::Clone for termrock::widgets::TimelineRowKind
+pub fn termrock::widgets::TimelineRowKind::clone(&self) -> termrock::widgets::TimelineRowKind
+impl core::cmp::Eq for termrock::widgets::TimelineRowKind
+impl core::cmp::PartialEq for termrock::widgets::TimelineRowKind
+pub fn termrock::widgets::TimelineRowKind::eq(&self, &termrock::widgets::TimelineRowKind) -> bool
+impl core::default::Default for termrock::widgets::TimelineRowKind
+pub fn termrock::widgets::TimelineRowKind::default() -> termrock::widgets::TimelineRowKind
+impl core::fmt::Debug for termrock::widgets::TimelineRowKind
+pub fn termrock::widgets::TimelineRowKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TimelineRowKind
+pub fn termrock::widgets::TimelineRowKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TimelineRowKind
+impl core::marker::StructuralPartialEq for termrock::widgets::TimelineRowKind
+impl core::marker::Freeze for termrock::widgets::TimelineRowKind
+impl core::marker::Send for termrock::widgets::TimelineRowKind
+impl core::marker::Sync for termrock::widgets::TimelineRowKind
+impl core::marker::Unpin for termrock::widgets::TimelineRowKind
+impl core::marker::UnsafeUnpin for termrock::widgets::TimelineRowKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TimelineRowKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TimelineRowKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TimelineRowKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TimelineRowKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TimelineRowKind where U: core::convert::From<T>
+pub fn termrock::widgets::TimelineRowKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TimelineRowKind where U: core::convert::Into<T>
+pub type termrock::widgets::TimelineRowKind::Error = core::convert::Infallible
+pub fn termrock::widgets::TimelineRowKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TimelineRowKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TimelineRowKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TimelineRowKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TimelineRowKind where T: core::clone::Clone
+pub type termrock::widgets::TimelineRowKind::Owned = T
+pub fn termrock::widgets::TimelineRowKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::TimelineRowKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TimelineRowKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TimelineRowKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TimelineRowKind where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineRowKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TimelineRowKind where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineRowKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TimelineRowKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TimelineRowKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TimelineRowKind
+pub fn termrock::widgets::TimelineRowKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TimelineRowKind
+#[non_exhaustive] pub enum termrock::widgets::TimelineStatus
+pub termrock::widgets::TimelineStatus::Cancelled
+pub termrock::widgets::TimelineStatus::Failed
+pub termrock::widgets::TimelineStatus::Info
+pub termrock::widgets::TimelineStatus::Pending
+pub termrock::widgets::TimelineStatus::Running
+pub termrock::widgets::TimelineStatus::Success
+pub termrock::widgets::TimelineStatus::Warning
+impl termrock::widgets::TimelineStatus
+pub const fn termrock::widgets::TimelineStatus::id(self) -> &'static str
+pub const fn termrock::widgets::TimelineStatus::letter(self) -> char
+pub const fn termrock::widgets::TimelineStatus::marker(self, bool, bool) -> &'static str
+impl core::clone::Clone for termrock::widgets::TimelineStatus
+pub fn termrock::widgets::TimelineStatus::clone(&self) -> termrock::widgets::TimelineStatus
+impl core::cmp::Eq for termrock::widgets::TimelineStatus
+impl core::cmp::PartialEq for termrock::widgets::TimelineStatus
+pub fn termrock::widgets::TimelineStatus::eq(&self, &termrock::widgets::TimelineStatus) -> bool
+impl core::default::Default for termrock::widgets::TimelineStatus
+pub fn termrock::widgets::TimelineStatus::default() -> termrock::widgets::TimelineStatus
+impl core::fmt::Debug for termrock::widgets::TimelineStatus
+pub fn termrock::widgets::TimelineStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TimelineStatus
+pub fn termrock::widgets::TimelineStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TimelineStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::TimelineStatus
+impl core::marker::Freeze for termrock::widgets::TimelineStatus
+impl core::marker::Send for termrock::widgets::TimelineStatus
+impl core::marker::Sync for termrock::widgets::TimelineStatus
+impl core::marker::Unpin for termrock::widgets::TimelineStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::TimelineStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TimelineStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TimelineStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TimelineStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TimelineStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TimelineStatus where U: core::convert::From<T>
+pub fn termrock::widgets::TimelineStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TimelineStatus where U: core::convert::Into<T>
+pub type termrock::widgets::TimelineStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::TimelineStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TimelineStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TimelineStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TimelineStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TimelineStatus where T: core::clone::Clone
+pub type termrock::widgets::TimelineStatus::Owned = T
+pub fn termrock::widgets::TimelineStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::TimelineStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TimelineStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TimelineStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TimelineStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TimelineStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TimelineStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TimelineStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TimelineStatus
+pub fn termrock::widgets::TimelineStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TimelineStatus
 #[non_exhaustive] pub enum termrock::widgets::ToastArchiveReason
 pub termrock::widgets::ToastArchiveReason::Dismissed
 pub termrock::widgets::ToastArchiveReason::Evicted
@@ -36999,6 +37207,50 @@ pub unsafe fn termrock::widgets::CheckboxState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::CheckboxState
 pub fn termrock::widgets::CheckboxState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CheckboxState
+pub struct termrock::widgets::CheckpointTimeline<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::CheckpointTimeline<'a, Id>
+pub const fn termrock::widgets::CheckpointTimeline<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::CheckpointTimeline<'a, Id>::focused(self, bool) -> Self
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::new(&'a [termrock::widgets::TimelineEvent<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::rail(self) -> Self
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TimelineState<Id>)
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::CheckpointTimeline<'a, Id>
+pub type &termrock::widgets::CheckpointTimeline<'a, Id>::State = termrock::widgets::TimelineState<Id>
+pub fn &termrock::widgets::CheckpointTimeline<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CheckpointTimeline<'a, Id>
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::clone(&self) -> termrock::widgets::CheckpointTimeline<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::CheckpointTimeline<'a, Id>
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::CheckpointTimeline<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::CheckpointTimeline<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::CheckpointTimeline<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::CheckpointTimeline<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::CheckpointTimeline<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CheckpointTimeline<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::CheckpointTimeline<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::CheckpointTimeline<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CheckpointTimeline<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::CheckpointTimeline<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CheckpointTimeline<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CheckpointTimeline<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CheckpointTimeline<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::CheckpointTimeline<'a, Id>::Owned = T
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CheckpointTimeline<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CheckpointTimeline<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CheckpointTimeline<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CheckpointTimeline<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CheckpointTimeline<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CheckpointTimeline<'a, Id>
+pub fn termrock::widgets::CheckpointTimeline<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CheckpointTimeline<'a, Id>
 pub struct termrock::widgets::Chip<'a, Id>
 pub termrock::widgets::Chip::id: Id
 impl<'a, Id: core::clone::Clone> termrock::widgets::Chip<'a, Id>
@@ -57223,93 +57475,244 @@ pub unsafe fn termrock::widgets::ThinkingBlock<'a>::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::ThinkingBlock<'a>
 pub fn termrock::widgets::ThinkingBlock<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ThinkingBlock<'a>
-pub struct termrock::widgets::Timeline<'a>
-impl<'a> termrock::widgets::Timeline<'a>
-pub const fn termrock::widgets::Timeline<'a>::new(&'a [termrock::widgets::TimelineEvent<'a>], &'a termrock::style::DesignSystem) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Timeline<'_>
-pub fn &termrock::widgets::Timeline<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::Timeline<'_>
-pub fn termrock::widgets::Timeline<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl<'a> core::clone::Clone for termrock::widgets::Timeline<'a>
-pub fn termrock::widgets::Timeline<'a>::clone(&self) -> termrock::widgets::Timeline<'a>
-impl<'a> core::fmt::Debug for termrock::widgets::Timeline<'a>
-pub fn termrock::widgets::Timeline<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::Timeline<'a>
-impl<'a> core::marker::Freeze for termrock::widgets::Timeline<'a>
-impl<'a> core::marker::Send for termrock::widgets::Timeline<'a>
-impl<'a> core::marker::Sync for termrock::widgets::Timeline<'a>
-impl<'a> core::marker::Unpin for termrock::widgets::Timeline<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Timeline<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Timeline<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Timeline<'a>
-impl<T, U> core::convert::Into<U> for termrock::widgets::Timeline<'a> where U: core::convert::From<T>
-pub fn termrock::widgets::Timeline<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Timeline<'a> where U: core::convert::Into<T>
-pub type termrock::widgets::Timeline<'a>::Error = core::convert::Infallible
-pub fn termrock::widgets::Timeline<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::Timeline<'a> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::Timeline<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::Timeline<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::Timeline<'a> where T: core::clone::Clone
-pub type termrock::widgets::Timeline<'a>::Owned = T
-pub fn termrock::widgets::Timeline<'a>::clone_into(&self, &mut T)
-pub fn termrock::widgets::Timeline<'a>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::Timeline<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::Timeline<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::Timeline<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::Timeline<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Timeline<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::Timeline<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::Timeline<'a> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::Timeline<'a>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::Timeline<'a>
-pub fn termrock::widgets::Timeline<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::Timeline<'a>
-pub struct termrock::widgets::TimelineEvent<'a>
+pub struct termrock::widgets::Timeline<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::Timeline<'a, Id>
+pub const fn termrock::widgets::Timeline<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Timeline<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Timeline<'a, Id>::focused(self, bool) -> Self
+pub const fn termrock::widgets::Timeline<'a, Id>::recipe(self, termrock::widgets::TimelineRecipe) -> Self
+pub fn termrock::widgets::Timeline<'a, Id>::render_stateful(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TimelineState<Id>)
+pub const fn termrock::widgets::Timeline<'a, Id>::with_events(&'a [termrock::widgets::TimelineEvent<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+impl<'a> termrock::widgets::Timeline<'a, ()>
+pub const fn termrock::widgets::Timeline<'a, ()>::new(&'a [termrock::widgets::TimelineEvent<'a, ()>], &'a termrock::style::DesignSystem) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Timeline<'_, ()>
+pub fn &termrock::widgets::Timeline<'_, ()>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Timeline<'_, ()>
+pub fn termrock::widgets::Timeline<'_, ()>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Timeline<'a, Id>
+pub fn termrock::widgets::Timeline<'a, Id>::clone(&self) -> termrock::widgets::Timeline<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Timeline<'a, Id>
+pub fn termrock::widgets::Timeline<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Timeline<'_, Id>
+pub type &termrock::widgets::Timeline<'_, Id>::State = termrock::widgets::TimelineState<Id>
+pub fn &termrock::widgets::Timeline<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Timeline<'_, Id>
+pub type termrock::widgets::Timeline<'_, Id>::State = termrock::widgets::TimelineState<Id>
+pub fn termrock::widgets::Timeline<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::Timeline<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::Timeline<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::Timeline<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::Timeline<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::Timeline<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Timeline<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Timeline<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::Timeline<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::Timeline<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Timeline<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::Timeline<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::Timeline<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Timeline<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Timeline<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Timeline<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Timeline<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::Timeline<'a, Id>::Owned = T
+pub fn termrock::widgets::Timeline<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Timeline<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Timeline<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Timeline<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Timeline<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Timeline<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Timeline<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::Timeline<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Timeline<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Timeline<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Timeline<'a, Id>
+pub fn termrock::widgets::Timeline<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Timeline<'a, Id>
+pub struct termrock::widgets::TimelineEvent<'a, Id>
 pub termrock::widgets::TimelineEvent::active: bool
+pub termrock::widgets::TimelineEvent::actor: core::option::Option<&'a str>
+pub termrock::widgets::TimelineEvent::correlation: core::option::Option<&'a str>
+pub termrock::widgets::TimelineEvent::detail: core::option::Option<&'a str>
+pub termrock::widgets::TimelineEvent::duration: core::option::Option<&'a str>
+pub termrock::widgets::TimelineEvent::enabled: bool
+pub termrock::widgets::TimelineEvent::expandable: bool
+pub termrock::widgets::TimelineEvent::expanded: bool
+pub termrock::widgets::TimelineEvent::group_key: core::option::Option<&'a str>
+pub termrock::widgets::TimelineEvent::id: Id
+pub termrock::widgets::TimelineEvent::kind: termrock::widgets::TimelineRowKind
+pub termrock::widgets::TimelineEvent::relative: core::option::Option<&'a str>
+pub termrock::widgets::TimelineEvent::status: termrock::widgets::TimelineStatus
 pub termrock::widgets::TimelineEvent::text: &'a str
 pub termrock::widgets::TimelineEvent::when: &'a str
-impl<'a> core::clone::Clone for termrock::widgets::TimelineEvent<'a>
-pub fn termrock::widgets::TimelineEvent<'a>::clone(&self) -> termrock::widgets::TimelineEvent<'a>
-impl<'a> core::cmp::Eq for termrock::widgets::TimelineEvent<'a>
-impl<'a> core::cmp::PartialEq for termrock::widgets::TimelineEvent<'a>
-pub fn termrock::widgets::TimelineEvent<'a>::eq(&self, &termrock::widgets::TimelineEvent<'a>) -> bool
-impl<'a> core::fmt::Debug for termrock::widgets::TimelineEvent<'a>
-pub fn termrock::widgets::TimelineEvent<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::TimelineEvent<'a>
-impl<'a> core::marker::StructuralPartialEq for termrock::widgets::TimelineEvent<'a>
-impl<'a> core::marker::Freeze for termrock::widgets::TimelineEvent<'a>
-impl<'a> core::marker::Send for termrock::widgets::TimelineEvent<'a>
-impl<'a> core::marker::Sync for termrock::widgets::TimelineEvent<'a>
-impl<'a> core::marker::Unpin for termrock::widgets::TimelineEvent<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TimelineEvent<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TimelineEvent<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TimelineEvent<'a>
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TimelineEvent<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::TimelineEvent<'a>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::TimelineEvent<'a> where U: core::convert::From<T>
-pub fn termrock::widgets::TimelineEvent<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TimelineEvent<'a> where U: core::convert::Into<T>
-pub type termrock::widgets::TimelineEvent<'a>::Error = core::convert::Infallible
-pub fn termrock::widgets::TimelineEvent<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::TimelineEvent<'a> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::TimelineEvent<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::TimelineEvent<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::TimelineEvent<'a> where T: core::clone::Clone
-pub type termrock::widgets::TimelineEvent<'a>::Owned = T
-pub fn termrock::widgets::TimelineEvent<'a>::clone_into(&self, &mut T)
-pub fn termrock::widgets::TimelineEvent<'a>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::TimelineEvent<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::TimelineEvent<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::TimelineEvent<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::TimelineEvent<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TimelineEvent<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::TimelineEvent<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::TimelineEvent<'a> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::TimelineEvent<'a>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::TimelineEvent<'a>
-pub fn termrock::widgets::TimelineEvent<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::TimelineEvent<'a>
+impl<'a, Id> termrock::widgets::TimelineEvent<'a, Id>
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::active(self) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::actor(self, &'a str) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::checkpoint(Id, &'a str, &'a str) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::correlation(self, &'a str) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::detail(self, &'a str) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::disabled(self) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::duration(self, &'a str) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::expanded(self) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::focusable(&self) -> bool
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::group(Id, &'a str) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::group_key(self, &'a str) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::relative(self, &'a str) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::set_active(self, bool) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::status(self, termrock::widgets::TimelineStatus) -> Self
+pub const fn termrock::widgets::TimelineEvent<'a, Id>::with_id(Id, &'a str, &'a str) -> Self
+impl<'a> termrock::widgets::TimelineEvent<'a, ()>
+pub const fn termrock::widgets::TimelineEvent<'a, ()>::new(&'a str, &'a str) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TimelineEvent<'a, Id>
+pub fn termrock::widgets::TimelineEvent<'a, Id>::clone(&self) -> termrock::widgets::TimelineEvent<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TimelineEvent<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TimelineEvent<'a, Id>
+pub fn termrock::widgets::TimelineEvent<'a, Id>::eq(&self, &termrock::widgets::TimelineEvent<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TimelineEvent<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TimelineEvent<'a, Id>
+pub fn termrock::widgets::TimelineEvent<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::TimelineEvent<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::TimelineEvent<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::TimelineEvent<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::TimelineEvent<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::TimelineEvent<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TimelineEvent<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TimelineEvent<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TimelineEvent<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TimelineEvent<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TimelineEvent<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TimelineEvent<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TimelineEvent<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TimelineEvent<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TimelineEvent<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TimelineEvent<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TimelineEvent<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TimelineEvent<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TimelineEvent<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::TimelineEvent<'a, Id>::Owned = T
+pub fn termrock::widgets::TimelineEvent<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TimelineEvent<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TimelineEvent<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TimelineEvent<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TimelineEvent<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineEvent<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TimelineEvent<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineEvent<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TimelineEvent<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TimelineEvent<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TimelineEvent<'a, Id>
+pub fn termrock::widgets::TimelineEvent<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TimelineEvent<'a, Id>
+pub struct termrock::widgets::TimelineRegion<Id>
+pub termrock::widgets::TimelineRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::TimelineRegion::id: Id
+pub termrock::widgets::TimelineRegion::index: usize
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TimelineRegion<Id>
+pub fn termrock::widgets::TimelineRegion<Id>::clone(&self) -> termrock::widgets::TimelineRegion<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TimelineRegion<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TimelineRegion<Id>
+pub fn termrock::widgets::TimelineRegion<Id>::eq(&self, &termrock::widgets::TimelineRegion<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TimelineRegion<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TimelineRegion<Id>
+pub fn termrock::widgets::TimelineRegion<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::TimelineRegion<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TimelineRegion<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TimelineRegion<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TimelineRegion<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TimelineRegion<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TimelineRegion<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TimelineRegion<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TimelineRegion<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TimelineRegion<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TimelineRegion<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TimelineRegion<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TimelineRegion<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TimelineRegion<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TimelineRegion<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TimelineRegion<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TimelineRegion<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TimelineRegion<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TimelineRegion<Id> where T: core::clone::Clone
+pub type termrock::widgets::TimelineRegion<Id>::Owned = T
+pub fn termrock::widgets::TimelineRegion<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TimelineRegion<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TimelineRegion<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TimelineRegion<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TimelineRegion<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineRegion<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TimelineRegion<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineRegion<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TimelineRegion<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TimelineRegion<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TimelineRegion<Id>
+pub fn termrock::widgets::TimelineRegion<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TimelineRegion<Id>
+pub struct termrock::widgets::TimelineState<Id: core::clone::Clone + core::cmp::PartialEq>
+pub termrock::widgets::TimelineState::ascii: bool
+pub termrock::widgets::TimelineState::colorless: bool
+pub termrock::widgets::TimelineState::cursor: usize
+pub termrock::widgets::TimelineState::following: bool
+pub termrock::widgets::TimelineState::logical_len: usize
+pub termrock::widgets::TimelineState::regions: alloc::vec::Vec<termrock::widgets::TimelineRegion<Id>>
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::TimelineState<Id>
+pub const fn termrock::widgets::TimelineState<Id>::cursor(&self) -> usize
+pub fn termrock::widgets::TimelineState<Id>::filter(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::TimelineState<Id>::follow(&mut self)
+pub fn termrock::widgets::TimelineState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[&termrock::widgets::TimelineEvent<'_, Id>]) -> termrock::widgets::TimelineOutcome<Id>
+pub fn termrock::widgets::TimelineState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::TimelineEvent<'_, Id>]) -> termrock::widgets::TimelineOutcome<Id>
+pub fn termrock::widgets::TimelineState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::TimelineEvent<'_, Id>]) -> termrock::widgets::TimelineOutcome<Id>
+pub fn termrock::widgets::TimelineState<Id>::is_expanded(&self, &Id) -> bool
+pub const fn termrock::widgets::TimelineState<Id>::is_following(&self) -> bool
+pub fn termrock::widgets::TimelineState<Id>::new() -> Self
+pub const fn termrock::widgets::TimelineState<Id>::offset(&self) -> usize
+pub fn termrock::widgets::TimelineState<Id>::on_append(&mut self, usize)
+pub const fn termrock::widgets::TimelineState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::TimelineState<Id>::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::TimelineState<Id>::set_checkpoint_mode(&mut self, bool)
+pub fn termrock::widgets::TimelineState<Id>::toggle_expanded(&mut self, Id) -> bool
+pub fn termrock::widgets::TimelineState<Id>::unfollow(&mut self)
+impl<Id: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq> core::clone::Clone for termrock::widgets::TimelineState<Id>
+pub fn termrock::widgets::TimelineState<Id>::clone(&self) -> termrock::widgets::TimelineState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> core::default::Default for termrock::widgets::TimelineState<Id>
+pub fn termrock::widgets::TimelineState<Id>::default() -> Self
+impl<Id: core::cmp::Eq + core::clone::Clone + core::cmp::PartialEq> core::cmp::Eq for termrock::widgets::TimelineState<Id>
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TimelineState<Id>
+pub fn termrock::widgets::TimelineState<Id>::eq(&self, &termrock::widgets::TimelineState<Id>) -> bool
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TimelineState<Id>
+impl<Id: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::widgets::TimelineState<Id>
+pub fn termrock::widgets::TimelineState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::TimelineState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TimelineState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TimelineState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TimelineState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TimelineState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TimelineState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TimelineState<Id> where Id: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::RefUnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TimelineState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TimelineState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TimelineState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TimelineState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TimelineState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TimelineState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TimelineState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TimelineState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TimelineState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TimelineState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TimelineState<Id> where T: core::clone::Clone
+pub type termrock::widgets::TimelineState<Id>::Owned = T
+pub fn termrock::widgets::TimelineState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TimelineState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TimelineState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TimelineState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TimelineState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TimelineState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TimelineState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TimelineState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TimelineState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TimelineState<Id>
+pub fn termrock::widgets::TimelineState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TimelineState<Id>
 pub struct termrock::widgets::Toast<'a>
 impl<'a> termrock::widgets::Toast<'a>
 pub const fn termrock::widgets::Toast<'a>::anchor(self, termrock::widgets::Anchor) -> Self
@@ -60901,6 +61304,7 @@ pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termr
 pub fn termrock::widgets::filter_inspect_fields<'a>(&'a [termrock::widgets::InspectorField<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::InspectorField<'a>>
 pub fn termrock::widgets::filter_list_rows<'a, Id: core::clone::Clone>(&'a [termrock::widgets::ListRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::ListRow<'a, Id>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
+pub fn termrock::widgets::filter_timeline_events<'a, Id>(&'a [termrock::widgets::TimelineEvent<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TimelineEvent<'a, Id>>
 pub fn termrock::widgets::filter_tree_table_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeTableRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeTableRow<'a, Id>>
 pub fn termrock::widgets::filter_tree_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeNode<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeNode<'a, Id>>
 pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>

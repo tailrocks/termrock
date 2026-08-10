@@ -115,6 +115,7 @@ mod tree;
 mod tree_table;
 mod key_value_table;
 mod object_inspector;
+mod timeline;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -137,7 +138,11 @@ pub use toggle::{
     ToggleGroupOutcome, ToggleGroupParts, ToggleGroupRecipe, ToggleGroupState, ToggleGroupType,
     ToggleOutcome, ToggleParts, ToggleRecipe, ToggleSize, ToggleState, ToggleValue,
 };
-pub use agent::{ThinkingBlock, Timeline, TimelineEvent, TokenMeter, ToolCard, ToolStatus};
+pub use agent::{ThinkingBlock, TokenMeter, ToolCard, ToolStatus};
+pub use timeline::{
+    CheckpointTimeline, Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineRegion,
+    TimelineRowKind, TimelineState, TimelineStatus, filter_timeline_events,
+};
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

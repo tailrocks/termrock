@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Agent-era experience widgets: tool cards, thinking, meters, timeline.
+//! Agent-era experience widgets: tool cards, thinking, meters.
+//! Timeline: [`super::timeline`].
 //!
 //! Conversation stream: [`crate::widgets::Transcript`] only (StreamView deleted).
 //! Trust / prompt: [`crate::widgets::PermissionPrompt`] / [`crate::widgets::PromptComposer`].
@@ -345,73 +346,7 @@ impl Widget for ToolCard<'_> {
     }
 }
 
-// ── Timeline ────────────────────────────────────────────────────────────────
-
-/// One timeline event.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TimelineEvent<'a> {
-    /// Time or sequence label.
-    pub when: &'a str,
-    /// Event summary.
-    pub text: &'a str,
-    /// Whether this is the active/current event.
-    pub active: bool,
-}
-
-/// Vertical activity timeline.
-#[derive(Debug, Clone, Copy)]
-pub struct Timeline<'a> {
-    events: &'a [TimelineEvent<'a>],
-    system: &'a DesignSystem,
-}
-
-impl<'a> Timeline<'a> {
-    /// Creates a timeline.
-    #[must_use]
-    pub const fn new(events: &'a [TimelineEvent<'a>], system: &'a DesignSystem) -> Self {
-        Self { events, system }
-    }
-}
-
-impl Widget for &Timeline<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        for (row, event) in self
-            .events
-            .iter()
-            .enumerate()
-            .take(usize::from(area.height))
-        {
-            let y = area.y.saturating_add(row as u16);
-            let bullet = if event.active { "●" } else { "○" };
-            let line = format!("{bullet} {}  {}", event.when, event.text);
-            let role = if event.active {
-                Role::Accent
-            } else {
-                Role::TextMuted
-            };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(role),
-            );
-        }
-    }
-}
-
-impl Widget for Timeline<'_> {
-    #[expect(
-        clippy::needless_borrows_for_generic_args,
-        reason = "explicitly delegate the owned contract to the borrowed renderer"
-    )]
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
+// Timeline lives in `timeline` module (re-exported from widgets root).
 
 #[cfg(test)]
 mod tests {

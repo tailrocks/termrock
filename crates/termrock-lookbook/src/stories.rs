@@ -111,8 +111,9 @@ use termrock::{
         PreviewCard, PreviewCardState, PreviewCardContent, PreviewLoadState, PreviewResourceKind,
         example_command_preview, example_file_preview, example_session_preview,
         example_symbol_preview,
-        ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
-        TimelineEvent, Toast, NotificationCenter, NotificationCenterState, NotificationRecipe,
+        ThemePicker, ThemePickerState, ThinkingBlock, Timeline, TimelineEvent, TimelineState,
+        TimelineRecipe, TimelineStatus, CheckpointTimeline, Toast, NotificationCenter,
+        NotificationCenterState, NotificationRecipe,
         example_notifications, Spinner, SpinnerState, ActivityIndicator, ActivityPhase,
         ProgressSteps, ProgressStepsState, ProgressStepsMode, ProgressStepsPresentation,
         ProgressStep, ProgressStepStatus, example_build_pipeline, example_agent_plan_steps,
@@ -3590,10 +3591,46 @@ pub(crate) fn stories() -> Vec<Story> {
             "timeline/basic",
             "Timeline",
             "Timeline",
-            "Activity timeline events.",
-            40,
-            4,
+            "Detailed activity timeline with live follow chrome.",
+            64,
+            10,
             timeline,
+        ),
+        Story::new(
+            "timeline/rail",
+            "Timeline rail",
+            "Timeline",
+            "Compact rail recipe for side panels.",
+            36,
+            8,
+            timeline_rail,
+        ),
+        Story::new(
+            "timeline/grouped",
+            "Timeline grouped day",
+            "Timeline",
+            "Grouped-day headers with deploy/test events.",
+            64,
+            12,
+            timeline_grouped,
+        ),
+        Story::new(
+            "timeline/streaming",
+            "Timeline streaming",
+            "Timeline",
+            "Follow-tail live stream with newest active event.",
+            56,
+            10,
+            timeline_streaming,
+        ),
+        Story::new(
+            "timeline/checkpoint",
+            "CheckpointTimeline",
+            "Timeline",
+            "Checkpoint select/restore substrate.",
+            52,
+            8,
+            timeline_checkpoint,
         ),
         Story::new(
             "prompt-composer/basic",
@@ -13837,23 +13874,111 @@ fn transcript_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn timeline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let events = [
-        TimelineEvent {
-            when: "12:01",
-            text: "Started",
-            active: false,
-        },
-        TimelineEvent {
-            when: "12:02",
-            text: "Running tests",
-            active: true,
-        },
-        TimelineEvent {
-            when: "12:03",
-            text: "Open PR",
-            active: false,
-        },
+        TimelineEvent::with_id("a", "12:01", "Started deploy")
+            .status(TimelineStatus::Success)
+            .actor("ci")
+            .relative("1h ago")
+            .duration("12s"),
+        TimelineEvent::with_id("b", "12:02", "Running tests")
+            .status(TimelineStatus::Running)
+            .active()
+            .actor("ci")
+            .correlation("trace-9"),
+        TimelineEvent::with_id("c", "12:03", "Open PR")
+            .status(TimelineStatus::Pending)
+            .actor("bot"),
     ];
-    frame.render_widget(Timeline::new(&events, system), area);
+    let mut state = TimelineState::new();
+    state.following = false;
+    state.cursor = 1;
+    frame.render_stateful_widget(
+        Timeline::with_events(&events, system).focused(true),
+        area,
+        &mut state,
+    );
+}
+
+fn timeline_rail(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let events = [
+        TimelineEvent::with_id("1", "t0", "plan"),
+        TimelineEvent::with_id("2", "t1", "tool").status(TimelineStatus::Running).active(),
+        TimelineEvent::with_id("3", "t2", "done").status(TimelineStatus::Success),
+    ];
+    let mut state = TimelineState::new();
+    state.following = false;
+    frame.render_stateful_widget(
+        Timeline::with_events(&events, system)
+            .recipe(TimelineRecipe::Rail)
+            .focused(true),
+        area,
+        &mut state,
+    );
+}
+
+fn timeline_grouped(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let events = [
+        TimelineEvent::group("d0", "Yesterday"),
+        TimelineEvent::with_id("y1", "18:00", "Nightly build")
+            .status(TimelineStatus::Success)
+            .group_key("Yesterday"),
+        TimelineEvent::group("d1", "Today"),
+        TimelineEvent::with_id("t1", "09:00", "Deploy staging")
+            .status(TimelineStatus::Success)
+            .actor("cd")
+            .group_key("Today"),
+        TimelineEvent::with_id("t2", "09:12", "Smoke tests")
+            .status(TimelineStatus::Failed)
+            .actor("ci")
+            .group_key("Today")
+            .detail("health check timeout"),
+        TimelineEvent::with_id("t3", "09:20", "Rollback")
+            .status(TimelineStatus::Warning)
+            .active()
+            .group_key("Today"),
+    ];
+    let mut state = TimelineState::new();
+    state.following = false;
+    state.cursor = 4;
+    frame.render_stateful_widget(
+        Timeline::with_events(&events, system)
+            .recipe(TimelineRecipe::GroupedDay)
+            .focused(true),
+        area,
+        &mut state,
+    );
+}
+
+fn timeline_streaming(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let events = [
+        TimelineEvent::with_id("1", "12:00:01", "session start").status(TimelineStatus::Info),
+        TimelineEvent::with_id("2", "12:00:02", "tool:search").status(TimelineStatus::Success),
+        TimelineEvent::with_id("3", "12:00:03", "tool:edit").status(TimelineStatus::Running).active(),
+        TimelineEvent::with_id("4", "12:00:04", "awaiting approval").status(TimelineStatus::Warning),
+    ];
+    let mut state = TimelineState::new();
+    state.following = true;
+    state.on_append(events.len());
+    frame.render_stateful_widget(
+        Timeline::with_events(&events, system).focused(true),
+        area,
+        &mut state,
+    );
+}
+
+fn timeline_checkpoint(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let events = [
+        TimelineEvent::checkpoint("c0", "10:00", "session open"),
+        TimelineEvent::checkpoint("c1", "10:05", "after plan").active(),
+        TimelineEvent::checkpoint("c2", "10:12", "pre-apply"),
+    ];
+    let mut state = TimelineState::new();
+    state.following = false;
+    state.cursor = 1;
+    frame.render_stateful_widget(
+        &CheckpointTimeline::new(&events, system).focused(true),
+        area,
+        &mut state,
+    );
 }
 
 fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -56,6 +56,13 @@ navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
 
+`Timeline` presents chronological events (sessions, deploys, traces, agent
+turns) with status markers, actor/relative/duration metadata, grouping,
+expansion, correlation, filters, and live-stream follow that pauses when the
+user scrolls up. Recipes: `Rail`, `Detailed`, `GroupedDay`. No-color mode uses
+status letters and ASCII markers. `CheckpointTimeline` layers restore/compare
+outcomes on the same substrate. Composes with LogStream and ProgressSteps.
+
 `ObjectInspector` is the expandable typed inspector for JSON/YAML/TOML,
 structured logs, and application trees. Host projects a flattened **visible
 expanded** node list; state owns cursor, expansion-by-path (sticky across

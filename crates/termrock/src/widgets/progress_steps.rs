@@ -40,7 +40,7 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
-use super::agent::{Timeline, TimelineEvent};
+use super::timeline::{Timeline, TimelineEvent};
 use super::list::ListRow;
 use super::stepper::StepStatus;
 
@@ -905,10 +905,12 @@ fn format_duration_ms(ms: u64) -> String {
 pub fn progress_steps_as_timeline_events(steps: &[ProgressStep]) -> Vec<TimelineEvent<'_>> {
     steps
         .iter()
-        .map(|s| TimelineEvent {
-            when: s.status.id(),
-            text: s.title.as_str(),
-            active: s.status.is_active(),
+        .map(|s| {
+            let mut ev = TimelineEvent::new(s.status.id(), s.title.as_str());
+            if s.status.is_active() {
+                ev = ev.active();
+            }
+            ev
         })
         .collect()
 }

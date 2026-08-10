@@ -1,0 +1,53 @@
+---
+title: Timeline
+description: Chronological events — deploys, sessions, traces, agent turns, checkpoints.
+---
+
+# Timeline
+
+**Purpose.** Present time-ordered events with status, actor, and optional
+grouping. Supports live streaming while preserving reading position when the
+user scrolls up.
+
+## Recipes
+
+| Recipe | Use |
+|--------|-----|
+| `Detailed` (default) | Full rows: time · actor · status · text |
+| `Rail` | Compact side-panel markers |
+| `GroupedDay` | Day/session headers |
+
+## Live stream
+
+- `TimelineState::following` defaults **true** (stick to newest).
+- Moving up / wheel-up **pauses** follow.
+- `f` or End re-follows; call `on_append(len)` after host appends.
+
+## Example
+
+```rust
+use termrock::widgets::{
+    Timeline, TimelineEvent, TimelineState, TimelineStatus, TimelineRecipe,
+};
+
+let events = [
+    TimelineEvent::with_id("a", "12:01", "Deploy")
+        .status(TimelineStatus::Success)
+        .actor("ci"),
+    TimelineEvent::with_id("b", "12:02", "Tests")
+        .status(TimelineStatus::Running)
+        .active(),
+];
+let mut state = TimelineState::new();
+// Timeline::with_events(&events, &system).recipe(TimelineRecipe::Rail)
+```
+
+## CheckpointTimeline
+
+Interactive restore substrate: Enter → `RestoreRequested`, `c` → `CompareRequested`.
+No persistence — host owns snapshots.
+
+## Related
+
+- Migration `0193-v0.13.0-timeline`
+- Compose with LogStream, ProgressSteps, task history
