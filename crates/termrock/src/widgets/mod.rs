@@ -56,6 +56,7 @@ mod list;
 mod log_pane;
 mod markdown;
 mod menu_nav;
+mod tooltip;
 mod menu_bar;
 mod sidebar;
 mod breadcrumbs;
@@ -275,9 +276,13 @@ pub use markdown::{
 };
 pub use menu_nav::{
     ContextMenu, DRAWER_OVERLAY_ID, Drawer, DrawerOutcome, DrawerState, Menu, MenuItem, MenuOutcome,
-    MenuState, POPOVER_OVERLAY_ID, Popover, TOOLTIP_OVERLAY_ID, Tooltip, TooltipState,
-    dismiss_drawer_overlay, open_drawer_overlay, open_popover_overlay, open_tooltip_overlay,
-    place_drawer, place_popover, place_tooltip,
+    MenuState, POPOVER_OVERLAY_ID, Popover, dismiss_drawer_overlay, open_drawer_overlay,
+    open_popover_overlay, place_drawer, place_popover,
+};
+pub use tooltip::{
+    TOOLTIP_DEFAULT_DELAY_MS, TOOLTIP_DEFAULT_MAX_WIDTH, TOOLTIP_OVERLAY_ID, Tooltip,
+    TooltipContent, TooltipOutcome, TooltipPrefer, TooltipState, TooltipTrigger, TooltipVariant,
+    dismiss_tooltip_overlay, open_tooltip_overlay, place_tooltip, tooltip_overlay_size,
 };
 pub use menu_bar::{
     MENU_BAR_NARROW_MAX_WIDTH, MENU_BAR_OVERLAY_ID, MENU_BAR_SUBMENU_OVERLAY_PREFIX, MenuBar,

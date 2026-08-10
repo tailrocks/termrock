@@ -28650,6 +28650,208 @@ pub unsafe fn termrock::widgets::ToolbarVariant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ToolbarVariant
 pub fn termrock::widgets::ToolbarVariant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ToolbarVariant
+#[non_exhaustive] pub enum termrock::widgets::TooltipOutcome
+pub termrock::widgets::TooltipOutcome::Disabled
+pub termrock::widgets::TooltipOutcome::EssentialRequiresNonHover
+pub termrock::widgets::TooltipOutcome::Hidden
+pub termrock::widgets::TooltipOutcome::Ignored
+pub termrock::widgets::TooltipOutcome::Pending
+pub termrock::widgets::TooltipOutcome::Shown
+impl core::clone::Clone for termrock::widgets::TooltipOutcome
+pub fn termrock::widgets::TooltipOutcome::clone(&self) -> termrock::widgets::TooltipOutcome
+impl core::cmp::Eq for termrock::widgets::TooltipOutcome
+impl core::cmp::PartialEq for termrock::widgets::TooltipOutcome
+pub fn termrock::widgets::TooltipOutcome::eq(&self, &termrock::widgets::TooltipOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::TooltipOutcome
+pub fn termrock::widgets::TooltipOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TooltipOutcome
+pub fn termrock::widgets::TooltipOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TooltipOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::TooltipOutcome
+impl core::marker::Freeze for termrock::widgets::TooltipOutcome
+impl core::marker::Send for termrock::widgets::TooltipOutcome
+impl core::marker::Sync for termrock::widgets::TooltipOutcome
+impl core::marker::Unpin for termrock::widgets::TooltipOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::TooltipOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TooltipOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TooltipOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TooltipOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TooltipOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TooltipOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::TooltipOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TooltipOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::TooltipOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::TooltipOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TooltipOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TooltipOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TooltipOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TooltipOutcome where T: core::clone::Clone
+pub type termrock::widgets::TooltipOutcome::Owned = T
+pub fn termrock::widgets::TooltipOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::TooltipOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TooltipOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TooltipOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TooltipOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TooltipOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TooltipOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TooltipOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TooltipOutcome
+pub fn termrock::widgets::TooltipOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TooltipOutcome
+#[non_exhaustive] pub enum termrock::widgets::TooltipPrefer
+pub termrock::widgets::TooltipPrefer::Above
+pub termrock::widgets::TooltipPrefer::Below
+impl termrock::widgets::TooltipPrefer
+pub const fn termrock::widgets::TooltipPrefer::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::TooltipPrefer
+pub fn termrock::widgets::TooltipPrefer::clone(&self) -> termrock::widgets::TooltipPrefer
+impl core::cmp::Eq for termrock::widgets::TooltipPrefer
+impl core::cmp::PartialEq for termrock::widgets::TooltipPrefer
+pub fn termrock::widgets::TooltipPrefer::eq(&self, &termrock::widgets::TooltipPrefer) -> bool
+impl core::default::Default for termrock::widgets::TooltipPrefer
+pub fn termrock::widgets::TooltipPrefer::default() -> termrock::widgets::TooltipPrefer
+impl core::fmt::Debug for termrock::widgets::TooltipPrefer
+pub fn termrock::widgets::TooltipPrefer::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TooltipPrefer
+pub fn termrock::widgets::TooltipPrefer::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TooltipPrefer
+impl core::marker::StructuralPartialEq for termrock::widgets::TooltipPrefer
+impl core::marker::Freeze for termrock::widgets::TooltipPrefer
+impl core::marker::Send for termrock::widgets::TooltipPrefer
+impl core::marker::Sync for termrock::widgets::TooltipPrefer
+impl core::marker::Unpin for termrock::widgets::TooltipPrefer
+impl core::marker::UnsafeUnpin for termrock::widgets::TooltipPrefer
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TooltipPrefer
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TooltipPrefer
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TooltipPrefer where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TooltipPrefer::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TooltipPrefer where U: core::convert::From<T>
+pub fn termrock::widgets::TooltipPrefer::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TooltipPrefer where U: core::convert::Into<T>
+pub type termrock::widgets::TooltipPrefer::Error = core::convert::Infallible
+pub fn termrock::widgets::TooltipPrefer::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TooltipPrefer where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TooltipPrefer::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TooltipPrefer::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TooltipPrefer where T: core::clone::Clone
+pub type termrock::widgets::TooltipPrefer::Owned = T
+pub fn termrock::widgets::TooltipPrefer::clone_into(&self, &mut T)
+pub fn termrock::widgets::TooltipPrefer::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TooltipPrefer where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TooltipPrefer::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TooltipPrefer where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipPrefer::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TooltipPrefer where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipPrefer::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TooltipPrefer where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TooltipPrefer::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TooltipPrefer
+pub fn termrock::widgets::TooltipPrefer::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TooltipPrefer
+#[non_exhaustive] pub enum termrock::widgets::TooltipTrigger
+pub termrock::widgets::TooltipTrigger::Both
+pub termrock::widgets::TooltipTrigger::Focus
+pub termrock::widgets::TooltipTrigger::Pointer
+impl termrock::widgets::TooltipTrigger
+pub const fn termrock::widgets::TooltipTrigger::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::TooltipTrigger
+pub fn termrock::widgets::TooltipTrigger::clone(&self) -> termrock::widgets::TooltipTrigger
+impl core::cmp::Eq for termrock::widgets::TooltipTrigger
+impl core::cmp::PartialEq for termrock::widgets::TooltipTrigger
+pub fn termrock::widgets::TooltipTrigger::eq(&self, &termrock::widgets::TooltipTrigger) -> bool
+impl core::default::Default for termrock::widgets::TooltipTrigger
+pub fn termrock::widgets::TooltipTrigger::default() -> termrock::widgets::TooltipTrigger
+impl core::fmt::Debug for termrock::widgets::TooltipTrigger
+pub fn termrock::widgets::TooltipTrigger::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TooltipTrigger
+pub fn termrock::widgets::TooltipTrigger::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TooltipTrigger
+impl core::marker::StructuralPartialEq for termrock::widgets::TooltipTrigger
+impl core::marker::Freeze for termrock::widgets::TooltipTrigger
+impl core::marker::Send for termrock::widgets::TooltipTrigger
+impl core::marker::Sync for termrock::widgets::TooltipTrigger
+impl core::marker::Unpin for termrock::widgets::TooltipTrigger
+impl core::marker::UnsafeUnpin for termrock::widgets::TooltipTrigger
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TooltipTrigger
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TooltipTrigger
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TooltipTrigger where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TooltipTrigger::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TooltipTrigger where U: core::convert::From<T>
+pub fn termrock::widgets::TooltipTrigger::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TooltipTrigger where U: core::convert::Into<T>
+pub type termrock::widgets::TooltipTrigger::Error = core::convert::Infallible
+pub fn termrock::widgets::TooltipTrigger::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TooltipTrigger where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TooltipTrigger::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TooltipTrigger::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TooltipTrigger where T: core::clone::Clone
+pub type termrock::widgets::TooltipTrigger::Owned = T
+pub fn termrock::widgets::TooltipTrigger::clone_into(&self, &mut T)
+pub fn termrock::widgets::TooltipTrigger::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TooltipTrigger where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TooltipTrigger::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TooltipTrigger where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipTrigger::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TooltipTrigger where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipTrigger::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TooltipTrigger where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TooltipTrigger::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TooltipTrigger
+pub fn termrock::widgets::TooltipTrigger::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TooltipTrigger
+#[non_exhaustive] pub enum termrock::widgets::TooltipVariant
+pub termrock::widgets::TooltipVariant::Plain
+pub termrock::widgets::TooltipVariant::Rich
+pub termrock::widgets::TooltipVariant::Shortcut
+impl termrock::widgets::TooltipVariant
+pub const fn termrock::widgets::TooltipVariant::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::TooltipVariant
+pub fn termrock::widgets::TooltipVariant::clone(&self) -> termrock::widgets::TooltipVariant
+impl core::cmp::Eq for termrock::widgets::TooltipVariant
+impl core::cmp::PartialEq for termrock::widgets::TooltipVariant
+pub fn termrock::widgets::TooltipVariant::eq(&self, &termrock::widgets::TooltipVariant) -> bool
+impl core::default::Default for termrock::widgets::TooltipVariant
+pub fn termrock::widgets::TooltipVariant::default() -> termrock::widgets::TooltipVariant
+impl core::fmt::Debug for termrock::widgets::TooltipVariant
+pub fn termrock::widgets::TooltipVariant::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TooltipVariant
+pub fn termrock::widgets::TooltipVariant::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TooltipVariant
+impl core::marker::StructuralPartialEq for termrock::widgets::TooltipVariant
+impl core::marker::Freeze for termrock::widgets::TooltipVariant
+impl core::marker::Send for termrock::widgets::TooltipVariant
+impl core::marker::Sync for termrock::widgets::TooltipVariant
+impl core::marker::Unpin for termrock::widgets::TooltipVariant
+impl core::marker::UnsafeUnpin for termrock::widgets::TooltipVariant
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TooltipVariant
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TooltipVariant
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TooltipVariant where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TooltipVariant::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TooltipVariant where U: core::convert::From<T>
+pub fn termrock::widgets::TooltipVariant::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TooltipVariant where U: core::convert::Into<T>
+pub type termrock::widgets::TooltipVariant::Error = core::convert::Infallible
+pub fn termrock::widgets::TooltipVariant::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TooltipVariant where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TooltipVariant::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TooltipVariant::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TooltipVariant where T: core::clone::Clone
+pub type termrock::widgets::TooltipVariant::Owned = T
+pub fn termrock::widgets::TooltipVariant::clone_into(&self, &mut T)
+pub fn termrock::widgets::TooltipVariant::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TooltipVariant where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TooltipVariant::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TooltipVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipVariant::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TooltipVariant where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipVariant::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TooltipVariant where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TooltipVariant::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TooltipVariant
+pub fn termrock::widgets::TooltipVariant::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TooltipVariant
 #[non_exhaustive] pub enum termrock::widgets::TranscriptKind
 pub termrock::widgets::TranscriptKind::Approval
 pub termrock::widgets::TranscriptKind::Assistant
@@ -50049,10 +50251,24 @@ impl<T> core::convert::From<T> for termrock::widgets::ToolbarState<Id>
 pub fn termrock::widgets::ToolbarState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ToolbarState<Id>
 pub struct termrock::widgets::Tooltip<'a>
-impl termrock::widgets::Tooltip<'_>
-pub fn termrock::widgets::Tooltip<'_>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::TooltipState)
 impl<'a> termrock::widgets::Tooltip<'a>
+pub const fn termrock::widgets::Tooltip<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Tooltip<'a>::body_content(&self) -> termrock::widgets::TooltipContent<'a>
+pub const fn termrock::widgets::Tooltip<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Tooltip<'a>::content(termrock::widgets::TooltipContent<'a>, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Tooltip<'a>::max_width(self, u16) -> Self
 pub const fn termrock::widgets::Tooltip<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Tooltip<'a>::overlay_size(&self) -> termrock::interaction::OverlaySize
+pub fn termrock::widgets::Tooltip<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::TooltipState)
+pub fn termrock::widgets::Tooltip<'a>::paint_always(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+pub fn termrock::widgets::Tooltip<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::TooltipState)
+pub const fn termrock::widgets::Tooltip<'a>::rich(self) -> Self
+pub const fn termrock::widgets::Tooltip<'a>::shortcut(self) -> Self
+pub const fn termrock::widgets::Tooltip<'a>::variant(self, termrock::widgets::TooltipVariant) -> Self
+impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Tooltip<'_>
+pub fn &termrock::widgets::Tooltip<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::Tooltip<'_>
+pub fn termrock::widgets::Tooltip<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Tooltip<'a>
 pub fn termrock::widgets::Tooltip<'a>::clone(&self) -> termrock::widgets::Tooltip<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Tooltip<'a>
@@ -50088,13 +50304,77 @@ pub unsafe fn termrock::widgets::Tooltip<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Tooltip<'a>
 pub fn termrock::widgets::Tooltip<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Tooltip<'a>
+pub struct termrock::widgets::TooltipContent<'a>
+pub termrock::widgets::TooltipContent::body: &'a str
+pub termrock::widgets::TooltipContent::essential_elsewhere: bool
+pub termrock::widgets::TooltipContent::shortcut: core::option::Option<&'a str>
+pub termrock::widgets::TooltipContent::title: core::option::Option<&'a str>
+impl<'a> termrock::widgets::TooltipContent<'a>
+pub const fn termrock::widgets::TooltipContent<'a>::essential_elsewhere(self, bool) -> Self
+pub fn termrock::widgets::TooltipContent<'a>::line_count(self, termrock::widgets::TooltipVariant) -> u16
+pub fn termrock::widgets::TooltipContent<'a>::measure_cols(self, termrock::widgets::TooltipVariant, u16) -> u16
+pub const fn termrock::widgets::TooltipContent<'a>::plain(&'a str) -> Self
+pub const fn termrock::widgets::TooltipContent<'a>::shortcut(self, &'a str) -> Self
+pub const fn termrock::widgets::TooltipContent<'a>::title(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::TooltipContent<'a>
+pub fn termrock::widgets::TooltipContent<'a>::clone(&self) -> termrock::widgets::TooltipContent<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::TooltipContent<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::TooltipContent<'a>
+pub fn termrock::widgets::TooltipContent<'a>::eq(&self, &termrock::widgets::TooltipContent<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::TooltipContent<'a>
+pub fn termrock::widgets::TooltipContent<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::TooltipContent<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::TooltipContent<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::TooltipContent<'a>
+impl<'a> core::marker::Send for termrock::widgets::TooltipContent<'a>
+impl<'a> core::marker::Sync for termrock::widgets::TooltipContent<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TooltipContent<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TooltipContent<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TooltipContent<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TooltipContent<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TooltipContent<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TooltipContent<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TooltipContent<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TooltipContent<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TooltipContent<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TooltipContent<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TooltipContent<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TooltipContent<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TooltipContent<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TooltipContent<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TooltipContent<'a> where T: core::clone::Clone
+pub type termrock::widgets::TooltipContent<'a>::Owned = T
+pub fn termrock::widgets::TooltipContent<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TooltipContent<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TooltipContent<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TooltipContent<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TooltipContent<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipContent<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TooltipContent<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TooltipContent<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TooltipContent<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TooltipContent<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TooltipContent<'a>
+pub fn termrock::widgets::TooltipContent<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TooltipContent<'a>
 pub struct termrock::widgets::TooltipState
 impl termrock::widgets::TooltipState
-pub fn termrock::widgets::TooltipState::advance(&mut self, termrock::runtime::FrameTick, bool, termrock::style::Motion)
-pub const fn termrock::widgets::TooltipState::is_visible(self) -> bool
+pub fn termrock::widgets::TooltipState::advance(&mut self, termrock::runtime::FrameTick, termrock::style::Motion) -> termrock::widgets::TooltipOutcome
+pub fn termrock::widgets::TooltipState::advance_with_triggers(&mut self, termrock::runtime::FrameTick, bool, bool, termrock::style::Motion) -> termrock::widgets::TooltipOutcome
+pub fn termrock::widgets::TooltipState::allow_show_for(&self, &termrock::widgets::TooltipContent<'_>) -> termrock::widgets::TooltipOutcome
+pub fn termrock::widgets::TooltipState::armed(&self) -> bool
+pub fn termrock::widgets::TooltipState::force_hide(&mut self)
+pub const fn termrock::widgets::TooltipState::is_disabled(&self) -> bool
+pub const fn termrock::widgets::TooltipState::is_visible(&self) -> bool
 pub const fn termrock::widgets::TooltipState::new() -> Self
-pub fn termrock::widgets::TooltipState::next_deadline(self) -> core::option::Option<std::time::Instant>
-pub fn termrock::widgets::TooltipState::tick_hover(&mut self, u64, bool)
+pub fn termrock::widgets::TooltipState::next_deadline(&self) -> core::option::Option<std::time::Instant>
+pub fn termrock::widgets::TooltipState::set_disabled(&mut self, bool)
+pub fn termrock::widgets::TooltipState::set_enforce_essential_elsewhere(&mut self, bool)
+pub fn termrock::widgets::TooltipState::set_focus_within(&mut self, bool)
+pub fn termrock::widgets::TooltipState::set_pointer_over(&mut self, bool)
+pub fn termrock::widgets::TooltipState::set_trigger(&mut self, termrock::widgets::TooltipTrigger)
+pub fn termrock::widgets::TooltipState::tick_hover(&mut self, u64, bool) -> termrock::widgets::TooltipOutcome
+pub const fn termrock::widgets::TooltipState::trigger(self, termrock::widgets::TooltipTrigger) -> Self
 pub const fn termrock::widgets::TooltipState::with_delay(core::time::Duration) -> Self
 impl core::clone::Clone for termrock::widgets::TooltipState
 pub fn termrock::widgets::TooltipState::clone(&self) -> termrock::widgets::TooltipState
@@ -50105,7 +50385,6 @@ impl core::default::Default for termrock::widgets::TooltipState
 pub fn termrock::widgets::TooltipState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::TooltipState
 pub fn termrock::widgets::TooltipState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::widgets::TooltipState
 impl core::marker::StructuralPartialEq for termrock::widgets::TooltipState
 impl core::marker::Freeze for termrock::widgets::TooltipState
 impl core::marker::Send for termrock::widgets::TooltipState
@@ -51401,6 +51680,8 @@ pub const termrock::widgets::STEPPER_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::TABS_OVERFLOW_MAX_WIDTH: u16
 pub const termrock::widgets::TABS_SELECT_MAX_WIDTH: u16
 pub const termrock::widgets::TAB_GAP: u16
+pub const termrock::widgets::TOOLTIP_DEFAULT_DELAY_MS: u64
+pub const termrock::widgets::TOOLTIP_DEFAULT_MAX_WIDTH: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str
 pub const termrock::widgets::TREE_NAV_INDENT: u16
 pub const termrock::widgets::TREE_NAV_MAX_INDENT_DEPTH: u16
@@ -51448,6 +51729,7 @@ pub fn termrock::widgets::dismiss_keyboard_help_overlay<FocusId: core::clone::Cl
 pub fn termrock::widgets::dismiss_menu_bar_overlays<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_quick_open_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::dismiss_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::entries_from_keymap<A, Id, F>(&termrock::keymap::Keymap<A>, F) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A, &termrock::keymap::KeyBinding<A>) -> (Id, alloc::string::String, core::option::Option<alloc::string::String>)
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
@@ -51566,6 +51848,7 @@ pub fn termrock::widgets::system_from_preset_id(&str) -> core::option::Option<te
 pub fn termrock::widgets::tab_at_column(&[termrock::widgets::TabCell<'_>], u16) -> core::option::Option<usize>
 pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<termrock::style::RolePalette>
 pub fn termrock::widgets::toolbar_icon_action<'a, Id>(Id, &'a str, &'a str) -> termrock::widgets::ToolbarItem<'a, Id>
+pub fn termrock::widgets::tooltip_overlay_size(u16, u16, u16) -> termrock::interaction::OverlaySize
 pub fn termrock::widgets::workbench_panels() -> [termrock::widgets::ResizablePanelSpec; 3]
 pub fn termrock::widgets::wrapped_hint_lines(&[termrock::widgets::HintSpan<'_>], u16, &termrock::style::DesignSystem) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub type termrock::widgets::AlertTone = termrock::widgets::CalloutTone

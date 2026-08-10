@@ -86,6 +86,7 @@ use termrock::{
         example_history_entries, filter_history_entries, history_redaction_secret,
         KeyboardHelp, KeyboardHelpState, example_help_entries,
         filter_help_entries,
+        Tooltip, TooltipContent, TooltipState, TooltipVariant,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -1110,6 +1111,42 @@ pub(crate) fn stories() -> Vec<Story> {
             56,
             1,
             keyboard_help_ascii,
+        ),
+        Story::new(
+            "tooltip/plain",
+            "Tooltip plain",
+            "Tooltip",
+            "Plain delayed help (forced visible for snapshot).",
+            28,
+            1,
+            tooltip_plain_story,
+        ),
+        Story::new(
+            "tooltip/shortcut",
+            "Tooltip shortcut",
+            "Tooltip",
+            "Body + shortcut chord variant.",
+            32,
+            1,
+            tooltip_shortcut_story,
+        ),
+        Story::new(
+            "tooltip/rich",
+            "Tooltip rich",
+            "Tooltip",
+            "Title + body compact rich variant.",
+            36,
+            2,
+            tooltip_rich_story,
+        ),
+        Story::new(
+            "tooltip/ascii",
+            "Tooltip ASCII",
+            "Tooltip",
+            "ASCII / colorless tooltip paint.",
+            28,
+            2,
+            tooltip_ascii_story,
         ),
         Story::new(
             "menu-bar/basic",
@@ -8170,6 +8207,61 @@ fn keyboard_help_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         .ascii(true)
         .colorless(true)
         .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tooltip_visible_state() -> TooltipState {
+    use std::time::{Duration, Instant};
+    use termrock::runtime::FrameTick;
+    use termrock::style::Motion;
+    let mut state = TooltipState::with_delay(Duration::ZERO);
+    state.set_pointer_over(true);
+    let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
+    let _ = state.advance(tick, Motion::Off);
+    state
+}
+
+fn tooltip_plain_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let state = tooltip_visible_state();
+    Tooltip::new("Truncated path help", system).paint(area, frame.buffer_mut(), &state);
+}
+
+fn tooltip_shortcut_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let state = tooltip_visible_state();
+    Tooltip::content(
+        TooltipContent::plain("Save document")
+            .shortcut("C-s")
+            .essential_elsewhere(true),
+        system,
+    )
+    .variant(TooltipVariant::Shortcut)
+    .paint(area, frame.buffer_mut(), &state);
+}
+
+fn tooltip_rich_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let state = tooltip_visible_state();
+    Tooltip::content(
+        TooltipContent::plain("Writes the buffer to disk")
+            .title("Save")
+            .shortcut("C-s")
+            .essential_elsewhere(true),
+        system,
+    )
+    .rich()
+    .paint(area, frame.buffer_mut(), &state);
+}
+
+fn tooltip_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let state = tooltip_visible_state();
+    Tooltip::content(
+        TooltipContent::plain("Status detail")
+            .title("Info")
+            .essential_elsewhere(true),
+        system,
+    )
+    .rich()
+    .ascii(true)
+    .colorless(true)
+    .paint(area, frame.buffer_mut(), &state);
 }
 
 fn menu_bar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

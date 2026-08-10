@@ -25,8 +25,6 @@ use crate::{
 pub const DRAWER_OVERLAY_ID: &str = "termrock.drawer";
 /// Default overlay id for popovers.
 pub const POPOVER_OVERLAY_ID: &str = "termrock.popover";
-/// Default overlay id for tooltips.
-pub const TOOLTIP_OVERLAY_ID: &str = "termrock.tooltip";
 
 // ── Menu ────────────────────────────────────────────────────────────────────
 
@@ -583,33 +581,12 @@ pub fn open_popover_overlay<FocusId: Clone>(
     )
 }
 
-/// Places a tooltip above `anchor` (may hide on tiny terminals).
-#[must_use]
-pub fn place_tooltip(bounds: Rect, anchor: Rect, size: OverlaySize) -> Rect {
-    if bounds.is_empty() || size.width == 0 || size.height == 0 {
-        return Rect::default();
-    }
-    place_overlay(
-        bounds,
-        Some(anchor),
-        size,
-        OverlayPolicy::for_kind(OverlayKind::Tooltip),
-    )
-}
-
-/// Opens a tooltip overlay (no input ownership; outside-click dismissible).
-pub fn open_tooltip_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-    bounds: Rect,
-    anchor: Rect,
-    size: OverlaySize,
-    opener_focus: Option<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.open(
-        bounds,
-        OverlaySpec::tooltip(TOOLTIP_OVERLAY_ID, anchor, size, opener_focus),
-    )
-}
+// Tooltip placement / open / state / paint live in `tooltip` module.
+pub use super::tooltip::{
+    TOOLTIP_DEFAULT_DELAY_MS, TOOLTIP_DEFAULT_MAX_WIDTH, TOOLTIP_OVERLAY_ID, Tooltip,
+    TooltipContent, TooltipOutcome, TooltipPrefer, TooltipState, TooltipTrigger, TooltipVariant,
+    dismiss_tooltip_overlay, open_tooltip_overlay, place_tooltip, tooltip_overlay_size,
+};
 
 /// Drawer chrome (edge panel).
 #[derive(Debug, Clone, Copy)]
@@ -675,143 +652,6 @@ impl Widget for &Popover<'_> {
             &text,
             usize::from(area.width),
             self.tokens.style(Role::Elevated),
-        );
-    }
-}
-
-/// Tooltip delay state ([`crate::runtime::Presence`] + FrameTick).
-///
-/// Not focusable until visible; cancelled hover clears presence immediately.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TooltipState {
-    presence: crate::runtime::Presence,
-    hovering: bool,
-    /// Synthetic origin for [`Self::tick_hover`] (legacy hosts).
-    synth_origin: Option<std::time::Instant>,
-    synth_elapsed_ms: u64,
-}
-
-impl Default for TooltipState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl TooltipState {
-    /// Default 400ms delay.
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            presence: crate::runtime::Presence::tooltip(std::time::Duration::from_millis(400)),
-            hovering: false,
-            synth_origin: None,
-            synth_elapsed_ms: 0,
-        }
-    }
-
-    /// Custom show delay.
-    #[must_use]
-    pub const fn with_delay(delay: std::time::Duration) -> Self {
-        Self {
-            presence: crate::runtime::Presence::tooltip(delay),
-            hovering: false,
-            synth_origin: None,
-            synth_elapsed_ms: 0,
-        }
-    }
-
-    /// Advance hover clock; shows after delay.
-    ///
-    /// Prefer [`Self::advance`] with a real [`crate::runtime::FrameTick`].
-    pub fn tick_hover(&mut self, delta_ms: u64, hovering: bool) {
-        use crate::runtime::FrameTick;
-        use crate::style::Motion;
-        use std::time::{Duration, Instant};
-        if !hovering {
-            self.hovering = false;
-            self.synth_origin = None;
-            self.synth_elapsed_ms = 0;
-            self.presence.force_hide();
-            return;
-        }
-        let origin = *self.synth_origin.get_or_insert_with(Instant::now);
-        if !self.hovering {
-            self.hovering = true;
-            self.synth_elapsed_ms = 0;
-            let tick = FrameTick::manual(origin, Duration::ZERO, Duration::ZERO);
-            self.presence.request_show(tick);
-        }
-        self.synth_elapsed_ms = self.synth_elapsed_ms.saturating_add(delta_ms);
-        let tick = FrameTick::manual(
-            origin + Duration::from_millis(self.synth_elapsed_ms),
-            Duration::from_millis(self.synth_elapsed_ms),
-            Duration::from_millis(delta_ms),
-        );
-        let _ = self.presence.advance(tick, Motion::Full);
-    }
-
-    /// FrameTick-driven advance (canonical).
-    pub fn advance(
-        &mut self,
-        tick: crate::runtime::FrameTick,
-        hovering: bool,
-        motion: crate::style::Motion,
-    ) {
-        if !hovering {
-            self.hovering = false;
-            self.synth_origin = None;
-            self.synth_elapsed_ms = 0;
-            self.presence.force_hide();
-            return;
-        }
-        if !self.hovering {
-            self.hovering = true;
-            self.presence.request_show(tick);
-        }
-        let _ = self.presence.advance(tick, motion);
-    }
-
-    #[must_use]
-    /// Visible (painted). Not focusable — tooltips never steal focus.
-    pub const fn is_visible(self) -> bool {
-        self.presence.is_visible()
-    }
-
-    /// Presence deadline for host poll (None if hidden).
-    #[must_use]
-    pub fn next_deadline(self) -> Option<std::time::Instant> {
-        self.presence.next_deadline()
-    }
-}
-
-/// Tooltip paint (never steals focus).
-#[derive(Debug, Clone, Copy)]
-pub struct Tooltip<'a> {
-    text: &'a str,
-    tokens: &'a DesignSystem,
-}
-
-impl<'a> Tooltip<'a> {
-    /// Help text.
-    #[must_use]
-    pub const fn new(text: &'a str, tokens: &'a DesignSystem) -> Self {
-        Self { text, tokens }
-    }
-}
-
-impl Tooltip<'_> {
-    /// Paint when visible (never steals focus).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &TooltipState) {
-        if !state.is_visible() || area.is_empty() {
-            return;
-        }
-        let text = take_display_cols(self.text, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &text,
-            usize::from(area.width),
-            self.tokens.style(Role::TextMuted),
         );
     }
 }

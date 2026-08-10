@@ -1,0 +1,59 @@
+---
+title: Tooltip
+description: 'Delayed non-focus-stealing contextual help with pointer/focus triggers, plain/shortcut/rich variants, reduced-motion, and essential-elsewhere policy.'
+---
+
+## Previews
+
+### `tooltip/plain`
+
+Tooltip plain
+
+![Tooltip — plain](/component-previews/tooltip-plain.svg)
+
+### `tooltip/shortcut`
+
+Tooltip shortcut
+
+![Tooltip — shortcut](/component-previews/tooltip-shortcut.svg)
+
+### `tooltip/rich`
+
+Tooltip rich
+
+![Tooltip — rich](/component-previews/tooltip-rich.svg)
+
+### `tooltip/ascii`
+
+Tooltip ASCII
+
+![Tooltip — ascii](/component-previews/tooltip-ascii.svg)
+
+## Usage
+
+```rust
+use termrock::style::{DesignSystem, Motion};
+use termrock::widgets::{Tooltip, TooltipContent, TooltipState};
+
+let mut state = TooltipState::new();
+state.set_pointer_over(hovering);
+state.set_focus_within(anchor_focused);
+let _ = state.advance(tick, motion); // Motion::Reduced → no delay
+
+Tooltip::content(
+    TooltipContent::plain("Icon meaning").essential_elsewhere(true),
+    &system,
+)
+.paint(placed_rect, buf, &state);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Pointer delay | covered |
+| Focus trigger | covered |
+| Never steals focus | covered |
+| Essential elsewhere | covered |
+| Reduced motion | covered |
+| Overlay no input | covered |

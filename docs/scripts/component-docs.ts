@@ -728,6 +728,21 @@ use termrock::style::DesignSystem;
 let system = DesignSystem::default();
 FocusLens::new(&graph, &system).mode(FocusLensMode::Combined).render(area, buf);`,
   },
+  Tooltip: {
+    description:
+      'Delayed non-focus-stealing contextual help with pointer/focus triggers, plain/shortcut/rich variants, reduced-motion, and essential-elsewhere policy.',
+    primaryStory: 'tooltip/plain',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Tooltip, TooltipContent, TooltipState};
+
+let system = DesignSystem::default();
+let mut state = TooltipState::new();
+// host: state.set_pointer_over / set_focus_within + advance(tick, motion)
+Tooltip::content(
+    TooltipContent::plain("Help").essential_elsewhere(true),
+    &system,
+).paint(area, buf, &state);`,
+  },
   KeyboardHelp: {
     description:
       'Contextual generated keyboard help from live keymaps, zones, overlays, and semantic actions — footer or searchable modal, never stale hardcoded shortcuts.',
