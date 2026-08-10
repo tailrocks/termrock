@@ -793,6 +793,33 @@ Every component below uses sections **1–24**:
 
 # 5. Forms and input
 
+## AgentStatusHeader
+
+1. **Purpose:** Compact top-level agent/session status.  
+2. **Anatomy:** work/action · connection · project/branch · mode/model · context · cost/time · actions  
+3. **Public properties:** `AgentStatusSnapshot`, actions strip, presentation  
+4. **State:** action_cursor, auto_contract, snapshot  
+5. **Variants:** Header · StatusBar (contract)  
+6. **Sizes:** 1–3 rows header; 1 row StatusBar  
+7. **Visual:** work/connection roles; action-required Warning/Danger  
+8. **Interaction:** quick actions Sessions/Model/Tasks/Help/Ack  
+9. **Keyboard:** ←/→ · Enter · s/m/t/?/c · y unbound  
+10. **Mouse:** action chip hits  
+11. **Focus:** action strip  
+12. **Disabled:** accepts_input  
+13. **Loading:** Working/Streaming  
+14. **Error:** Error work status  
+15. **Narrow:** auto StatusBar projection  
+16. **Tiny:** action + connection only via StatusBar priorities  
+17. **Unicode/ASCII:** glyphs  
+18. **Colorless:** letters/text  
+19. **Composition:** StatusBar; ContextMeter; ModeRibbon cousins  
+20. **Outcomes:** Action · ActionFocused · PresentationChanged  
+21. **Stories:** `agent-status-header/{basic,idle,narrow,unicode}`  
+22. **Snapshots:** waiting permission  
+23. **Tests:** priority, auto-contract, no provider I/O  
+24. **Perf:** O(slots)
+
 ## TextInput
 
 1. **Purpose:** Single-line grapheme-safe editor.  

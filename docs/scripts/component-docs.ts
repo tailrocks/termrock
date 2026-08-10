@@ -379,6 +379,18 @@ let pane = SplitPane::new(SplitDirection::Horizontal, 20, 20, &theme);
 let mut state = SplitPaneState::new(SplitRatio::from_percent(40));
 let layout = pane.layout(Rect::new(0, 0, 100, 24), &mut state);`,
   },
+  AgentStatusHeader: {
+    description:
+      'Compact agent/session status — actionable first; narrow contracts to StatusBar; quick actions.',
+    primaryStory: 'agent-status-header/basic',
+    usage: `use termrock::widgets::{
+    example_agent_status, AgentStatusHeader, AgentStatusHeaderState,
+};
+
+let mut state = AgentStatusHeaderState::new();
+state.set_snapshot(example_agent_status());
+AgentStatusHeader::new(&system).paint(area, buf, &mut state);`,
+  },
   StatusBar: {
     description: 'A one-row collection of prioritized, interactive status slots.',
     primaryStory: 'status-bar/basic',

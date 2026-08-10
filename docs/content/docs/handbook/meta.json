@@ -30,6 +30,7 @@
     "checkpoint-timeline",
     "session-picker",
     "prompt-queue",
+    "agent-status-header",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

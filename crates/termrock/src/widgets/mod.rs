@@ -127,6 +127,7 @@ mod timeline;
 mod checkpoint_timeline;
 mod session_picker;
 mod prompt_queue;
+mod agent_status_header;
 mod event_stream;
 mod log_stream;
 mod diagnostic;
@@ -759,6 +760,13 @@ pub use prompt_queue::{
 /// Composer bridge name for a queued prompt entry ([`PromptQueueItem`]).
 pub use prompt_queue::PromptQueueItem as QueuedPrompt;
 pub use prompt_queue::bench as prompt_queue_bench;
+pub use agent_status_header::{
+    AGENT_STATUS_ACTION_CAP, AGENT_STATUS_HEADER_ID, AGENT_STATUS_NARROW_WIDTH, AgentConnectionStatus,
+    AgentStatusAction, AgentStatusHeader, AgentStatusHeaderOutcome, AgentStatusHeaderState,
+    AgentStatusPresentation, AgentStatusSnapshot, AgentWorkStatus, example_agent_status,
+    example_agent_status_idle,
+};
+pub use agent_status_header::bench as agent_status_header_bench;
 pub use object_inspector::{
     InspectKind, InspectMode, InspectNodeStatus, InspectPresentation, InspectRegion,
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,

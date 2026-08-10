@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.75s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.80s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -14711,6 +14711,8 @@ pub mod termrock::widgets
 pub mod termrock::widgets::activity_shelf_bench
 pub const termrock::widgets::activity_shelf_bench::ITEM_COUNT: usize
 pub const termrock::widgets::activity_shelf_bench::PAINT_FRAMES: u32
+pub mod termrock::widgets::agent_status_header_bench
+pub const termrock::widgets::agent_status_header_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::attachment_chips_bench
 pub const termrock::widgets::attachment_chips_bench::ATTACHMENT_COUNT: usize
 pub const termrock::widgets::attachment_chips_bench::PAINT_FRAMES: u32
@@ -15569,6 +15571,61 @@ pub unsafe fn termrock::widgets::AgentBusyState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::AgentBusyState
 pub fn termrock::widgets::AgentBusyState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::AgentBusyState
+#[non_exhaustive] pub enum termrock::widgets::AgentConnectionStatus
+pub termrock::widgets::AgentConnectionStatus::Connecting
+pub termrock::widgets::AgentConnectionStatus::Degraded
+pub termrock::widgets::AgentConnectionStatus::Disconnected
+pub termrock::widgets::AgentConnectionStatus::Ready
+impl termrock::widgets::AgentConnectionStatus
+pub const fn termrock::widgets::AgentConnectionStatus::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::AgentConnectionStatus::id(self) -> &'static str
+pub const fn termrock::widgets::AgentConnectionStatus::is_actionable(self) -> bool
+pub const fn termrock::widgets::AgentConnectionStatus::label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::AgentConnectionStatus
+pub fn termrock::widgets::AgentConnectionStatus::clone(&self) -> termrock::widgets::AgentConnectionStatus
+impl core::cmp::Eq for termrock::widgets::AgentConnectionStatus
+impl core::cmp::PartialEq for termrock::widgets::AgentConnectionStatus
+pub fn termrock::widgets::AgentConnectionStatus::eq(&self, &termrock::widgets::AgentConnectionStatus) -> bool
+impl core::default::Default for termrock::widgets::AgentConnectionStatus
+pub fn termrock::widgets::AgentConnectionStatus::default() -> termrock::widgets::AgentConnectionStatus
+impl core::fmt::Debug for termrock::widgets::AgentConnectionStatus
+pub fn termrock::widgets::AgentConnectionStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AgentConnectionStatus
+pub fn termrock::widgets::AgentConnectionStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AgentConnectionStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::AgentConnectionStatus
+impl core::marker::Freeze for termrock::widgets::AgentConnectionStatus
+impl core::marker::Send for termrock::widgets::AgentConnectionStatus
+impl core::marker::Sync for termrock::widgets::AgentConnectionStatus
+impl core::marker::Unpin for termrock::widgets::AgentConnectionStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::AgentConnectionStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AgentConnectionStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AgentConnectionStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AgentConnectionStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AgentConnectionStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AgentConnectionStatus where U: core::convert::From<T>
+pub fn termrock::widgets::AgentConnectionStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AgentConnectionStatus where U: core::convert::Into<T>
+pub type termrock::widgets::AgentConnectionStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::AgentConnectionStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AgentConnectionStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AgentConnectionStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AgentConnectionStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AgentConnectionStatus where T: core::clone::Clone
+pub type termrock::widgets::AgentConnectionStatus::Owned = T
+pub fn termrock::widgets::AgentConnectionStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::AgentConnectionStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AgentConnectionStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AgentConnectionStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AgentConnectionStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentConnectionStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AgentConnectionStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentConnectionStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AgentConnectionStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AgentConnectionStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AgentConnectionStatus
+pub fn termrock::widgets::AgentConnectionStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AgentConnectionStatus
 #[non_exhaustive] pub enum termrock::widgets::AgentModeKind
 pub termrock::widgets::AgentModeKind::Ask
 pub termrock::widgets::AgentModeKind::Auto
@@ -15732,6 +15789,218 @@ pub unsafe fn termrock::widgets::AgentModeSelectorOutcome::clone_to_uninit(&self
 impl<T> core::convert::From<T> for termrock::widgets::AgentModeSelectorOutcome
 pub fn termrock::widgets::AgentModeSelectorOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::AgentModeSelectorOutcome
+#[non_exhaustive] pub enum termrock::widgets::AgentStatusAction
+pub termrock::widgets::AgentStatusAction::Acknowledge
+pub termrock::widgets::AgentStatusAction::Context
+pub termrock::widgets::AgentStatusAction::Help
+pub termrock::widgets::AgentStatusAction::Mode
+pub termrock::widgets::AgentStatusAction::Model
+pub termrock::widgets::AgentStatusAction::Project
+pub termrock::widgets::AgentStatusAction::Sessions
+pub termrock::widgets::AgentStatusAction::Tasks
+impl termrock::widgets::AgentStatusAction
+pub fn termrock::widgets::AgentStatusAction::default_strip() -> &'static [termrock::widgets::AgentStatusAction]
+pub const fn termrock::widgets::AgentStatusAction::id(self) -> &'static str
+pub const fn termrock::widgets::AgentStatusAction::label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::AgentStatusAction
+pub fn termrock::widgets::AgentStatusAction::clone(&self) -> termrock::widgets::AgentStatusAction
+impl core::cmp::Eq for termrock::widgets::AgentStatusAction
+impl core::cmp::PartialEq for termrock::widgets::AgentStatusAction
+pub fn termrock::widgets::AgentStatusAction::eq(&self, &termrock::widgets::AgentStatusAction) -> bool
+impl core::fmt::Debug for termrock::widgets::AgentStatusAction
+pub fn termrock::widgets::AgentStatusAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AgentStatusAction
+pub fn termrock::widgets::AgentStatusAction::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AgentStatusAction
+impl core::marker::StructuralPartialEq for termrock::widgets::AgentStatusAction
+impl core::marker::Freeze for termrock::widgets::AgentStatusAction
+impl core::marker::Send for termrock::widgets::AgentStatusAction
+impl core::marker::Sync for termrock::widgets::AgentStatusAction
+impl core::marker::Unpin for termrock::widgets::AgentStatusAction
+impl core::marker::UnsafeUnpin for termrock::widgets::AgentStatusAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AgentStatusAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AgentStatusAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AgentStatusAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AgentStatusAction where U: core::convert::From<T>
+pub fn termrock::widgets::AgentStatusAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AgentStatusAction where U: core::convert::Into<T>
+pub type termrock::widgets::AgentStatusAction::Error = core::convert::Infallible
+pub fn termrock::widgets::AgentStatusAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AgentStatusAction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AgentStatusAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AgentStatusAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AgentStatusAction where T: core::clone::Clone
+pub type termrock::widgets::AgentStatusAction::Owned = T
+pub fn termrock::widgets::AgentStatusAction::clone_into(&self, &mut T)
+pub fn termrock::widgets::AgentStatusAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AgentStatusAction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AgentStatusAction where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AgentStatusAction where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AgentStatusAction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AgentStatusAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AgentStatusAction
+pub fn termrock::widgets::AgentStatusAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AgentStatusAction
+#[non_exhaustive] pub enum termrock::widgets::AgentStatusHeaderOutcome
+pub termrock::widgets::AgentStatusHeaderOutcome::Action(termrock::widgets::AgentStatusAction)
+pub termrock::widgets::AgentStatusHeaderOutcome::ActionFocused(termrock::widgets::AgentStatusAction)
+pub termrock::widgets::AgentStatusHeaderOutcome::Focused
+pub termrock::widgets::AgentStatusHeaderOutcome::Ignored
+pub termrock::widgets::AgentStatusHeaderOutcome::PresentationChanged(termrock::widgets::AgentStatusPresentation)
+impl core::clone::Clone for termrock::widgets::AgentStatusHeaderOutcome
+pub fn termrock::widgets::AgentStatusHeaderOutcome::clone(&self) -> termrock::widgets::AgentStatusHeaderOutcome
+impl core::cmp::Eq for termrock::widgets::AgentStatusHeaderOutcome
+impl core::cmp::PartialEq for termrock::widgets::AgentStatusHeaderOutcome
+pub fn termrock::widgets::AgentStatusHeaderOutcome::eq(&self, &termrock::widgets::AgentStatusHeaderOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::AgentStatusHeaderOutcome
+pub fn termrock::widgets::AgentStatusHeaderOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::AgentStatusHeaderOutcome
+impl core::marker::Freeze for termrock::widgets::AgentStatusHeaderOutcome
+impl core::marker::Send for termrock::widgets::AgentStatusHeaderOutcome
+impl core::marker::Sync for termrock::widgets::AgentStatusHeaderOutcome
+impl core::marker::Unpin for termrock::widgets::AgentStatusHeaderOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::AgentStatusHeaderOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AgentStatusHeaderOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AgentStatusHeaderOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AgentStatusHeaderOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeaderOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AgentStatusHeaderOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::AgentStatusHeaderOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AgentStatusHeaderOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::AgentStatusHeaderOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::AgentStatusHeaderOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AgentStatusHeaderOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AgentStatusHeaderOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AgentStatusHeaderOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AgentStatusHeaderOutcome where T: core::clone::Clone
+pub type termrock::widgets::AgentStatusHeaderOutcome::Owned = T
+pub fn termrock::widgets::AgentStatusHeaderOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::AgentStatusHeaderOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AgentStatusHeaderOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeaderOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AgentStatusHeaderOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeaderOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AgentStatusHeaderOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeaderOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AgentStatusHeaderOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AgentStatusHeaderOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AgentStatusHeaderOutcome
+pub fn termrock::widgets::AgentStatusHeaderOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AgentStatusHeaderOutcome
+#[non_exhaustive] pub enum termrock::widgets::AgentStatusPresentation
+pub termrock::widgets::AgentStatusPresentation::Header
+pub termrock::widgets::AgentStatusPresentation::StatusBar
+impl termrock::widgets::AgentStatusPresentation
+pub const fn termrock::widgets::AgentStatusPresentation::for_width(u16) -> Self
+pub const fn termrock::widgets::AgentStatusPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::AgentStatusPresentation
+pub fn termrock::widgets::AgentStatusPresentation::clone(&self) -> termrock::widgets::AgentStatusPresentation
+impl core::cmp::Eq for termrock::widgets::AgentStatusPresentation
+impl core::cmp::PartialEq for termrock::widgets::AgentStatusPresentation
+pub fn termrock::widgets::AgentStatusPresentation::eq(&self, &termrock::widgets::AgentStatusPresentation) -> bool
+impl core::default::Default for termrock::widgets::AgentStatusPresentation
+pub fn termrock::widgets::AgentStatusPresentation::default() -> termrock::widgets::AgentStatusPresentation
+impl core::fmt::Debug for termrock::widgets::AgentStatusPresentation
+pub fn termrock::widgets::AgentStatusPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AgentStatusPresentation
+pub fn termrock::widgets::AgentStatusPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AgentStatusPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::AgentStatusPresentation
+impl core::marker::Freeze for termrock::widgets::AgentStatusPresentation
+impl core::marker::Send for termrock::widgets::AgentStatusPresentation
+impl core::marker::Sync for termrock::widgets::AgentStatusPresentation
+impl core::marker::Unpin for termrock::widgets::AgentStatusPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::AgentStatusPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AgentStatusPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AgentStatusPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AgentStatusPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AgentStatusPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::AgentStatusPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AgentStatusPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::AgentStatusPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::AgentStatusPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AgentStatusPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AgentStatusPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AgentStatusPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AgentStatusPresentation where T: core::clone::Clone
+pub type termrock::widgets::AgentStatusPresentation::Owned = T
+pub fn termrock::widgets::AgentStatusPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::AgentStatusPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AgentStatusPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AgentStatusPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AgentStatusPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AgentStatusPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AgentStatusPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AgentStatusPresentation
+pub fn termrock::widgets::AgentStatusPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AgentStatusPresentation
+#[non_exhaustive] pub enum termrock::widgets::AgentWorkStatus
+pub termrock::widgets::AgentWorkStatus::ActionRequired
+pub termrock::widgets::AgentWorkStatus::Error
+pub termrock::widgets::AgentWorkStatus::Idle
+pub termrock::widgets::AgentWorkStatus::Streaming
+pub termrock::widgets::AgentWorkStatus::WaitingPermission
+pub termrock::widgets::AgentWorkStatus::WaitingUser
+pub termrock::widgets::AgentWorkStatus::Working
+impl termrock::widgets::AgentWorkStatus
+pub const fn termrock::widgets::AgentWorkStatus::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::AgentWorkStatus::id(self) -> &'static str
+pub const fn termrock::widgets::AgentWorkStatus::is_actionable(self) -> bool
+pub const fn termrock::widgets::AgentWorkStatus::label(self) -> &'static str
+pub const fn termrock::widgets::AgentWorkStatus::priority(self) -> u8
+impl core::clone::Clone for termrock::widgets::AgentWorkStatus
+pub fn termrock::widgets::AgentWorkStatus::clone(&self) -> termrock::widgets::AgentWorkStatus
+impl core::cmp::Eq for termrock::widgets::AgentWorkStatus
+impl core::cmp::PartialEq for termrock::widgets::AgentWorkStatus
+pub fn termrock::widgets::AgentWorkStatus::eq(&self, &termrock::widgets::AgentWorkStatus) -> bool
+impl core::default::Default for termrock::widgets::AgentWorkStatus
+pub fn termrock::widgets::AgentWorkStatus::default() -> termrock::widgets::AgentWorkStatus
+impl core::fmt::Debug for termrock::widgets::AgentWorkStatus
+pub fn termrock::widgets::AgentWorkStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AgentWorkStatus
+pub fn termrock::widgets::AgentWorkStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AgentWorkStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::AgentWorkStatus
+impl core::marker::Freeze for termrock::widgets::AgentWorkStatus
+impl core::marker::Send for termrock::widgets::AgentWorkStatus
+impl core::marker::Sync for termrock::widgets::AgentWorkStatus
+impl core::marker::Unpin for termrock::widgets::AgentWorkStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::AgentWorkStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AgentWorkStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AgentWorkStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AgentWorkStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AgentWorkStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AgentWorkStatus where U: core::convert::From<T>
+pub fn termrock::widgets::AgentWorkStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AgentWorkStatus where U: core::convert::Into<T>
+pub type termrock::widgets::AgentWorkStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::AgentWorkStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AgentWorkStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AgentWorkStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AgentWorkStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AgentWorkStatus where T: core::clone::Clone
+pub type termrock::widgets::AgentWorkStatus::Owned = T
+pub fn termrock::widgets::AgentWorkStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::AgentWorkStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AgentWorkStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AgentWorkStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AgentWorkStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentWorkStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AgentWorkStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentWorkStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AgentWorkStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AgentWorkStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AgentWorkStatus
+pub fn termrock::widgets::AgentWorkStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AgentWorkStatus
 #[non_exhaustive] pub enum termrock::widgets::AlertDialogOutcome<Id>
 pub termrock::widgets::AlertDialogOutcome::Cancelled
 pub termrock::widgets::AlertDialogOutcome::Cancelled::id: Id
@@ -44516,6 +44785,195 @@ pub unsafe fn termrock::widgets::AgentModeSelectorState::clone_to_uninit(&self, 
 impl<T> core::convert::From<T> for termrock::widgets::AgentModeSelectorState
 pub fn termrock::widgets::AgentModeSelectorState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::AgentModeSelectorState
+pub struct termrock::widgets::AgentStatusHeader<'a>
+impl<'a> termrock::widgets::AgentStatusHeader<'a>
+pub const fn termrock::widgets::AgentStatusHeader<'a>::actions(self, bool) -> Self
+pub const fn termrock::widgets::AgentStatusHeader<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::AgentStatusHeader<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::AgentStatusHeader<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::AgentStatusHeader<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::AgentStatusHeaderState)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::AgentStatusHeader<'_>
+pub type &termrock::widgets::AgentStatusHeader<'_>::State = termrock::widgets::AgentStatusHeaderState
+pub fn &termrock::widgets::AgentStatusHeader<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::AgentStatusHeader<'_>
+pub type termrock::widgets::AgentStatusHeader<'_>::State = termrock::widgets::AgentStatusHeaderState
+pub fn termrock::widgets::AgentStatusHeader<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::AgentStatusHeader<'a>
+pub fn termrock::widgets::AgentStatusHeader<'a>::clone(&self) -> termrock::widgets::AgentStatusHeader<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::AgentStatusHeader<'a>
+pub fn termrock::widgets::AgentStatusHeader<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::AgentStatusHeader<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::AgentStatusHeader<'a>
+impl<'a> core::marker::Send for termrock::widgets::AgentStatusHeader<'a>
+impl<'a> core::marker::Sync for termrock::widgets::AgentStatusHeader<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::AgentStatusHeader<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::AgentStatusHeader<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AgentStatusHeader<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AgentStatusHeader<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::AgentStatusHeader<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::AgentStatusHeader<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AgentStatusHeader<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::AgentStatusHeader<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::AgentStatusHeader<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AgentStatusHeader<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AgentStatusHeader<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AgentStatusHeader<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AgentStatusHeader<'a> where T: core::clone::Clone
+pub type termrock::widgets::AgentStatusHeader<'a>::Owned = T
+pub fn termrock::widgets::AgentStatusHeader<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AgentStatusHeader<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AgentStatusHeader<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeader<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AgentStatusHeader<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeader<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AgentStatusHeader<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeader<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AgentStatusHeader<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AgentStatusHeader<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AgentStatusHeader<'a>
+pub fn termrock::widgets::AgentStatusHeader<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AgentStatusHeader<'a>
+pub struct termrock::widgets::AgentStatusHeaderState
+pub termrock::widgets::AgentStatusHeaderState::action_cursor: usize
+pub termrock::widgets::AgentStatusHeaderState::action_hits: alloc::vec::Vec<(termrock::widgets::AgentStatusAction, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::AgentStatusHeaderState::actions: alloc::vec::Vec<termrock::widgets::AgentStatusAction>
+pub termrock::widgets::AgentStatusHeaderState::auto_contract: bool
+pub termrock::widgets::AgentStatusHeaderState::focused: bool
+pub termrock::widgets::AgentStatusHeaderState::presentation: termrock::widgets::AgentStatusPresentation
+pub termrock::widgets::AgentStatusHeaderState::snapshot: termrock::widgets::AgentStatusSnapshot
+impl termrock::widgets::AgentStatusHeaderState
+pub fn termrock::widgets::AgentStatusHeaderState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::AgentStatusHeaderOutcome
+pub fn termrock::widgets::AgentStatusHeaderState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::AgentStatusHeaderOutcome
+pub fn termrock::widgets::AgentStatusHeaderState::new() -> Self
+pub fn termrock::widgets::AgentStatusHeaderState::project_status_slots(&mut self) -> alloc::vec::Vec<termrock::widgets::StatusSlot<'_, &str>>
+pub fn termrock::widgets::AgentStatusHeaderState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::AgentStatusHeaderState::set_actions(&mut self, alloc::vec::Vec<termrock::widgets::AgentStatusAction>)
+pub const fn termrock::widgets::AgentStatusHeaderState::set_auto_contract(&mut self, bool)
+pub const fn termrock::widgets::AgentStatusHeaderState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::AgentStatusHeaderState::set_presentation(&mut self, termrock::widgets::AgentStatusPresentation)
+pub fn termrock::widgets::AgentStatusHeaderState::set_snapshot(&mut self, termrock::widgets::AgentStatusSnapshot)
+impl core::clone::Clone for termrock::widgets::AgentStatusHeaderState
+pub fn termrock::widgets::AgentStatusHeaderState::clone(&self) -> termrock::widgets::AgentStatusHeaderState
+impl core::cmp::Eq for termrock::widgets::AgentStatusHeaderState
+impl core::cmp::PartialEq for termrock::widgets::AgentStatusHeaderState
+pub fn termrock::widgets::AgentStatusHeaderState::eq(&self, &termrock::widgets::AgentStatusHeaderState) -> bool
+impl core::default::Default for termrock::widgets::AgentStatusHeaderState
+pub fn termrock::widgets::AgentStatusHeaderState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::AgentStatusHeaderState
+pub fn termrock::widgets::AgentStatusHeaderState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::AgentStatusHeaderState
+impl core::marker::Freeze for termrock::widgets::AgentStatusHeaderState
+impl core::marker::Send for termrock::widgets::AgentStatusHeaderState
+impl core::marker::Sync for termrock::widgets::AgentStatusHeaderState
+impl core::marker::Unpin for termrock::widgets::AgentStatusHeaderState
+impl core::marker::UnsafeUnpin for termrock::widgets::AgentStatusHeaderState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AgentStatusHeaderState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AgentStatusHeaderState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AgentStatusHeaderState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeaderState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AgentStatusHeaderState where U: core::convert::From<T>
+pub fn termrock::widgets::AgentStatusHeaderState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AgentStatusHeaderState where U: core::convert::Into<T>
+pub type termrock::widgets::AgentStatusHeaderState::Error = core::convert::Infallible
+pub fn termrock::widgets::AgentStatusHeaderState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AgentStatusHeaderState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AgentStatusHeaderState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AgentStatusHeaderState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AgentStatusHeaderState where T: core::clone::Clone
+pub type termrock::widgets::AgentStatusHeaderState::Owned = T
+pub fn termrock::widgets::AgentStatusHeaderState::clone_into(&self, &mut T)
+pub fn termrock::widgets::AgentStatusHeaderState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AgentStatusHeaderState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeaderState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AgentStatusHeaderState where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeaderState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AgentStatusHeaderState where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusHeaderState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AgentStatusHeaderState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AgentStatusHeaderState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AgentStatusHeaderState
+pub fn termrock::widgets::AgentStatusHeaderState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AgentStatusHeaderState
+pub struct termrock::widgets::AgentStatusSnapshot
+pub termrock::widgets::AgentStatusSnapshot::action_detail: core::option::Option<alloc::string::String>
+pub termrock::widgets::AgentStatusSnapshot::action_required: bool
+pub termrock::widgets::AgentStatusSnapshot::agent: core::option::Option<alloc::string::String>
+pub termrock::widgets::AgentStatusSnapshot::branch: core::option::Option<alloc::string::String>
+pub termrock::widgets::AgentStatusSnapshot::connection: termrock::widgets::AgentConnectionStatus
+pub termrock::widgets::AgentStatusSnapshot::context_limit: core::option::Option<u64>
+pub termrock::widgets::AgentStatusSnapshot::context_used: core::option::Option<u64>
+pub termrock::widgets::AgentStatusSnapshot::cost: core::option::Option<alloc::string::String>
+pub termrock::widgets::AgentStatusSnapshot::elapsed: core::option::Option<alloc::string::String>
+pub termrock::widgets::AgentStatusSnapshot::mode: core::option::Option<alloc::string::String>
+pub termrock::widgets::AgentStatusSnapshot::model: core::option::Option<alloc::string::String>
+pub termrock::widgets::AgentStatusSnapshot::project: core::option::Option<alloc::string::String>
+pub termrock::widgets::AgentStatusSnapshot::queue_depth: core::option::Option<u32>
+pub termrock::widgets::AgentStatusSnapshot::session: core::option::Option<alloc::string::String>
+pub termrock::widgets::AgentStatusSnapshot::tasks_needing_input: core::option::Option<u32>
+pub termrock::widgets::AgentStatusSnapshot::work: termrock::widgets::AgentWorkStatus
+pub termrock::widgets::AgentStatusSnapshot::work_label: core::option::Option<alloc::string::String>
+impl termrock::widgets::AgentStatusSnapshot
+pub fn termrock::widgets::AgentStatusSnapshot::action_required(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::agent(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::branch(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::AgentStatusSnapshot::connection(self, termrock::widgets::AgentConnectionStatus) -> Self
+pub const fn termrock::widgets::AgentStatusSnapshot::context(self, u64, u64) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::context_text(&self) -> core::option::Option<alloc::string::String>
+pub fn termrock::widgets::AgentStatusSnapshot::cost(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::elapsed(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::mode(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::model(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::needs_attention(&self) -> bool
+pub fn termrock::widgets::AgentStatusSnapshot::new() -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::project(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::AgentStatusSnapshot::queue_depth(self, u32) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::session(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::AgentStatusSnapshot::tasks_needing_input(self, u32) -> Self
+pub const fn termrock::widgets::AgentStatusSnapshot::work(self, termrock::widgets::AgentWorkStatus) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::work_label(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AgentStatusSnapshot::work_text(&self) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::AgentStatusSnapshot
+pub fn termrock::widgets::AgentStatusSnapshot::clone(&self) -> termrock::widgets::AgentStatusSnapshot
+impl core::cmp::Eq for termrock::widgets::AgentStatusSnapshot
+impl core::cmp::PartialEq for termrock::widgets::AgentStatusSnapshot
+pub fn termrock::widgets::AgentStatusSnapshot::eq(&self, &termrock::widgets::AgentStatusSnapshot) -> bool
+impl core::default::Default for termrock::widgets::AgentStatusSnapshot
+pub fn termrock::widgets::AgentStatusSnapshot::default() -> termrock::widgets::AgentStatusSnapshot
+impl core::fmt::Debug for termrock::widgets::AgentStatusSnapshot
+pub fn termrock::widgets::AgentStatusSnapshot::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::AgentStatusSnapshot
+impl core::marker::Freeze for termrock::widgets::AgentStatusSnapshot
+impl core::marker::Send for termrock::widgets::AgentStatusSnapshot
+impl core::marker::Sync for termrock::widgets::AgentStatusSnapshot
+impl core::marker::Unpin for termrock::widgets::AgentStatusSnapshot
+impl core::marker::UnsafeUnpin for termrock::widgets::AgentStatusSnapshot
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AgentStatusSnapshot
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AgentStatusSnapshot
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AgentStatusSnapshot where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusSnapshot::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AgentStatusSnapshot where U: core::convert::From<T>
+pub fn termrock::widgets::AgentStatusSnapshot::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AgentStatusSnapshot where U: core::convert::Into<T>
+pub type termrock::widgets::AgentStatusSnapshot::Error = core::convert::Infallible
+pub fn termrock::widgets::AgentStatusSnapshot::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AgentStatusSnapshot where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AgentStatusSnapshot::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AgentStatusSnapshot::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AgentStatusSnapshot where T: core::clone::Clone
+pub type termrock::widgets::AgentStatusSnapshot::Owned = T
+pub fn termrock::widgets::AgentStatusSnapshot::clone_into(&self, &mut T)
+pub fn termrock::widgets::AgentStatusSnapshot::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AgentStatusSnapshot where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusSnapshot::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AgentStatusSnapshot where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusSnapshot::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AgentStatusSnapshot where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentStatusSnapshot::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AgentStatusSnapshot where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AgentStatusSnapshot::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AgentStatusSnapshot
+pub fn termrock::widgets::AgentStatusSnapshot::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AgentStatusSnapshot
 pub struct termrock::widgets::Alert<'a, Id>
 impl<'a, Id> termrock::widgets::Alert<'a, Id>
 pub const fn termrock::widgets::Alert<'a, Id>::actions(self, &'a [termrock::widgets::Action<'a, Id>]) -> Self
@@ -80072,6 +80530,9 @@ pub const termrock::widgets::ACTIVITY_SHELF_CHIP_CAP: usize
 pub const termrock::widgets::ACTIVITY_SHELF_CHIP_MIN_COLS: u16
 pub const termrock::widgets::ACTIVITY_SHELF_NARROW_WIDTH: u16
 pub const termrock::widgets::ACTIVITY_SHELF_TINY_WIDTH: u16
+pub const termrock::widgets::AGENT_STATUS_ACTION_CAP: usize
+pub const termrock::widgets::AGENT_STATUS_HEADER_ID: &str
+pub const termrock::widgets::AGENT_STATUS_NARROW_WIDTH: u16
 pub const termrock::widgets::ALERT_DIALOG_DEFAULT_HEIGHT: u16
 pub const termrock::widgets::ALERT_DIALOG_DEFAULT_WIDTH: u16
 pub const termrock::widgets::ALERT_DIALOG_OVERLAY_ID: &str
@@ -80404,6 +80865,8 @@ pub fn termrock::widgets::escape_raw_terminal(&str) -> alloc::string::String
 pub fn termrock::widgets::example_activities() -> alloc::vec::Vec<termrock::widgets::ActivityItem>
 pub fn termrock::widgets::example_activity_models() -> alloc::vec::Vec<termrock::widgets::ActivityModel>
 pub fn termrock::widgets::example_agent_plan_steps() -> alloc::vec::Vec<termrock::widgets::ProgressStep>
+pub fn termrock::widgets::example_agent_status() -> termrock::widgets::AgentStatusSnapshot
+pub fn termrock::widgets::example_agent_status_idle() -> termrock::widgets::AgentStatusSnapshot
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
 pub fn termrock::widgets::example_auth_required() -> termrock::widgets::ReconnectingState

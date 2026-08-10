@@ -1,0 +1,58 @@
+---
+title: AgentStatusHeader
+description: 'Compact agent/session status with StatusBar contraction.'
+---
+
+## Previews
+
+### `agent-status-header/basic`
+
+![AgentStatusHeader — basic](/component-previews/agent-status-header-basic.svg)
+
+### `agent-status-header/idle`
+
+![AgentStatusHeader — idle](/component-previews/agent-status-header-idle.svg)
+
+### `agent-status-header/narrow`
+
+![AgentStatusHeader — narrow](/component-previews/agent-status-header-narrow.svg)
+
+### `agent-status-header/unicode`
+
+![AgentStatusHeader — unicode](/component-previews/agent-status-header-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_agent_status, AgentStatusHeader, AgentStatusHeaderOutcome,
+    AgentStatusHeaderState, AgentStatusAction,
+};
+
+let mut state = AgentStatusHeaderState::new();
+state.set_snapshot(example_agent_status());
+AgentStatusHeader::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    AgentStatusHeaderOutcome::Action(AgentStatusAction::Sessions) => {}
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `agent-status-header/basic`
+- `agent-status-header/idle`
+- `agent-status-header/narrow`
+- `agent-status-header/unicode`

@@ -4649,6 +4649,33 @@ pub(crate) fn stories() -> Vec<Story> {
             prompt_composer_busy,
         ),
         Story::new(
+            "agent-status-header/basic",
+            "AgentStatusHeader",
+            "AgentStatusHeader",
+            "Action-required header with quick actions.",
+            72,
+            3,
+            agent_status_header_story,
+        ),
+        Story::new(
+            "agent-status-header/idle",
+            "AgentStatusHeader idle",
+            "AgentStatusHeader",
+            "Idle connected session chrome.",
+            72,
+            3,
+            agent_status_header_idle_story,
+        ),
+        Story::new(
+            "agent-status-header/narrow",
+            "AgentStatusHeader narrow",
+            "AgentStatusHeader",
+            "Contracts into StatusBar projection.",
+            40,
+            1,
+            agent_status_header_story,
+        ),
+        Story::new(
             "prompt-queue/compact",
             "PromptQueue compact",
             "PromptQueue",
@@ -7970,6 +7997,15 @@ pub(crate) fn stories() -> Vec<Story> {
             22,
             12,
             prompt_queue_expanded_story,
+        ),
+        Story::new(
+            "agent-status-header/unicode",
+            "Unicode AgentStatusHeader",
+            "AgentStatusHeader",
+            "Unicode-safe paint path for AgentStatusHeader.",
+            48,
+            3,
+            agent_status_header_unicode_story,
         ),
         Story::new(
             "prompt-queue/unicode",
@@ -17555,6 +17591,56 @@ fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         label: "model".into(),
     }));
     frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
+}
+
+fn agent_status_header_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_agent_status, AgentStatusHeader, AgentStatusHeaderState, AgentStatusPresentation,
+    };
+    let mut state = AgentStatusHeaderState::new();
+    state.set_snapshot(example_agent_status());
+    if area.width < 56 {
+        state.auto_contract = true;
+    } else {
+        state.presentation = AgentStatusPresentation::Header;
+        state.auto_contract = false;
+    }
+    state.focused = true;
+    frame.render_stateful_widget(&AgentStatusHeader::new(system), area, &mut state);
+}
+
+fn agent_status_header_idle_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_agent_status_idle, AgentStatusHeader, AgentStatusHeaderState,
+        AgentStatusPresentation,
+    };
+    let mut state = AgentStatusHeaderState::new();
+    state.set_snapshot(example_agent_status_idle());
+    state.presentation = AgentStatusPresentation::Header;
+    state.auto_contract = false;
+    state.focused = true;
+    frame.render_stateful_widget(&AgentStatusHeader::new(system), area, &mut state);
+}
+
+fn agent_status_header_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        AgentStatusHeader, AgentStatusHeaderState, AgentStatusPresentation, AgentStatusSnapshot,
+        AgentWorkStatus,
+    };
+    let mut state = AgentStatusHeaderState::new();
+    state.set_snapshot(
+        AgentStatusSnapshot::new()
+            .project("プロジェクト")
+            .session("検査 🔍")
+            .branch("機能")
+            .mode("編集")
+            .model("モデル")
+            .work(AgentWorkStatus::Working),
+    );
+    state.presentation = AgentStatusPresentation::Header;
+    state.auto_contract = false;
+    state.focused = true;
+    frame.render_stateful_widget(&AgentStatusHeader::new(system), area, &mut state);
 }
 
 fn prompt_queue_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
