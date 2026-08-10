@@ -1083,7 +1083,8 @@ impl<'a> LogStream<'a> {
             }
         }
 
-        // Reconnect / dropped banner
+        // Reconnect / dropped banner (steals one body row when present).
+        let mut banner_h = 0u16;
         if let Some(msg) = &state.reconnect_message {
             if y < area.bottom().saturating_sub(u16::from(show_chip)) {
                 let line = format!("! reconnect: {msg}");
@@ -1094,7 +1095,8 @@ impl<'a> LogStream<'a> {
                     usize::from(area.width),
                     self.system.style(Role::Warning),
                 );
-                // banner steals a row — reduce bottom
+                y = y.saturating_add(1);
+                banner_h = 1;
             }
         }
 
@@ -1102,7 +1104,8 @@ impl<'a> LogStream<'a> {
         let bottom = area
             .y
             .saturating_add(title_h)
-            .saturating_add(body_h)
+            .saturating_add(banner_h)
+            .saturating_add(body_h.saturating_sub(banner_h))
             .min(area.bottom().saturating_sub(u16::from(show_chip)));
 
         if view.is_empty() {
@@ -1209,46 +1212,53 @@ impl<'a> LogStream<'a> {
                     }
                 };
 
-                // H-scroll clip
-                let painted = if matches!(state.wrap, LogWrap::Wrap) {
-                    let wrapped = wrap_display_cols(&body, usize::from(area.width.max(1)));
-                    wrapped.first().cloned().unwrap_or_default()
+                let rows: Vec<String> = if matches!(state.wrap, LogWrap::Wrap) {
+                    let inner_w = usize::from(area.width.saturating_sub(1).max(1));
+                    wrap_display_cols(&body, inner_w)
                 } else {
                     let skip = usize::from(state.h_offset);
                     let chars: String = body.chars().skip(skip).collect();
-                    take_display_cols(&chars, usize::from(area.width)).to_string()
+                    vec![take_display_cols(&chars, usize::from(area.width.saturating_sub(1))).to_string()]
                 };
 
-                let gutter = if cursor && surface {
-                    if ascii { ">" } else { "›" }
-                } else {
-                    " "
-                };
-                buffer.set_stringn(
-                    area.x,
-                    py,
-                    gutter,
-                    1,
-                    if cursor {
-                        self.system.style(Role::Accent)
+                let row0 = py;
+                for (ri, painted) in rows.iter().enumerate() {
+                    if py >= bottom {
+                        break;
+                    }
+                    let gutter = if ri == 0 && cursor && surface {
+                        if ascii { ">" } else { "›" }
+                    } else if ri == 0 {
+                        " "
                     } else {
-                        style
-                    },
-                );
-                buffer.set_stringn(
-                    area.x.saturating_add(1),
-                    py,
-                    take_display_cols(&painted, usize::from(area.width.saturating_sub(1))),
-                    usize::from(area.width.saturating_sub(1)),
-                    style,
-                );
+                        " "
+                    };
+                    buffer.set_stringn(
+                        area.x,
+                        py,
+                        gutter,
+                        1,
+                        if ri == 0 && cursor {
+                            self.system.style(Role::Accent)
+                        } else {
+                            style
+                        },
+                    );
+                    buffer.set_stringn(
+                        area.x.saturating_add(1),
+                        py,
+                        take_display_cols(painted, usize::from(area.width.saturating_sub(1))),
+                        usize::from(area.width.saturating_sub(1)),
+                        style,
+                    );
+                    py = py.saturating_add(1);
+                }
 
                 state.regions.push(LogStreamRegion {
                     id: line.id.to_string(),
                     index: i,
-                    area: Rect::new(area.x, py, area.width, 1),
+                    area: Rect::new(area.x, row0, area.width, py.saturating_sub(row0).max(1)),
                 });
-                py = py.saturating_add(1);
             }
         }
 
