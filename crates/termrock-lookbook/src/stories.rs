@@ -4649,6 +4649,33 @@ pub(crate) fn stories() -> Vec<Story> {
             prompt_composer_busy,
         ),
         Story::new(
+            "working-state-card/basic",
+            "WorkingStateCard",
+            "WorkingStateCard",
+            "Public status summary — phase, files, inspect/cancel.",
+            56,
+            12,
+            working_state_card_story,
+        ),
+        Story::new(
+            "working-state-card/waiting",
+            "WorkingStateCard waiting",
+            "WorkingStateCard",
+            "Waiting phase with public reason (not CoT).",
+            56,
+            10,
+            working_state_card_waiting_story,
+        ),
+        Story::new(
+            "working-state-card/collapsed",
+            "WorkingStateCard collapsed",
+            "WorkingStateCard",
+            "Collapsed line for ActivityShelf composition.",
+            48,
+            1,
+            working_state_card_collapsed_story,
+        ),
+        Story::new(
             "integration-status/list",
             "IntegrationStatus list",
             "IntegrationStatus",
@@ -8024,6 +8051,24 @@ pub(crate) fn stories() -> Vec<Story> {
             22,
             12,
             prompt_queue_expanded_story,
+        ),
+        Story::new(
+            "working-state-card/narrow",
+            "Narrow WorkingStateCard",
+            "WorkingStateCard",
+            "Narrow-terminal geometry (22 cols).",
+            22,
+            10,
+            working_state_card_story,
+        ),
+        Story::new(
+            "working-state-card/unicode",
+            "Unicode WorkingStateCard",
+            "WorkingStateCard",
+            "Unicode-safe paint path.",
+            40,
+            8,
+            working_state_card_unicode_story,
         ),
         Story::new(
             "integration-status/narrow",
@@ -17638,6 +17683,58 @@ fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
 }
 
+
+
+fn working_state_card_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_working_state, WorkingStateCard, WorkingStateCardState,
+        WorkingStatePresentation,
+    };
+    let mut state = WorkingStateCardState::new();
+    state.set_work(Some(example_working_state()));
+    state.presentation = WorkingStatePresentation::Expanded;
+    state.focused = true;
+    frame.render_stateful_widget(&WorkingStateCard::new(system), area, &mut state);
+}
+
+fn working_state_card_waiting_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_working_waiting, WorkingStateCard, WorkingStateCardState,
+        WorkingStatePresentation,
+    };
+    let mut state = WorkingStateCardState::new();
+    state.set_work(Some(example_working_waiting()));
+    state.presentation = WorkingStatePresentation::Expanded;
+    state.focused = true;
+    frame.render_stateful_widget(&WorkingStateCard::new(system), area, &mut state);
+}
+
+fn working_state_card_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_working_state, WorkingStateCard, WorkingStateCardState,
+        WorkingStatePresentation,
+    };
+    let mut state = WorkingStateCardState::new();
+    state.set_work(Some(example_working_state()));
+    state.presentation = WorkingStatePresentation::Collapsed;
+    state.focused = true;
+    frame.render_stateful_widget(&WorkingStateCard::new(system), area, &mut state);
+}
+
+fn working_state_card_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        WorkingPhase, WorkingResource, WorkingState, WorkingStateCard, WorkingStateCardState,
+        WorkingStatePresentation,
+    };
+    let mut state = WorkingStateCardState::new();
+    state.set_work(Some(
+        WorkingState::new("u", WorkingPhase::Searching, "ファイルを検索 🔍")
+            .resources(vec![WorkingResource::new("f", "日本語.rs")]),
+    ));
+    state.presentation = WorkingStatePresentation::Expanded;
+    state.focused = true;
+    frame.render_stateful_widget(&WorkingStateCard::new(system), area, &mut state);
+}
 
 fn integration_status_list_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{

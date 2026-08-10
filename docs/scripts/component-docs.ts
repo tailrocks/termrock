@@ -1142,6 +1142,18 @@ let theme = Theme::default();
 let items = [StreamItem { id: "u1", kind: StreamItemKind::User, text: "Hello", folded: false }];
 let stream = StreamView::new(&items, &theme);`,
   },
+  WorkingStateCard: {
+    description:
+      'Privacy-safe current agent work summary — phase, public summary, files; collapses to ActivityShelf.',
+    primaryStory: 'working-state-card/basic',
+    usage: `use termrock::widgets::{
+    example_working_state, WorkingStateCard, WorkingStateCardState,
+};
+
+let mut state = WorkingStateCardState::new();
+state.set_work(Some(example_working_state()));
+WorkingStateCard::new(&system).paint(area, buf, &mut state);`,
+  },
   ThinkingBlock: {
     description: 'Collapsible thinking/reasoning chrome.',
     primaryStory: 'thinking-block/basic',

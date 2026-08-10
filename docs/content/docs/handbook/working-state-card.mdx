@@ -1,0 +1,33 @@
+---
+title: WorkingStateCard
+description: Privacy-safe summary of current agent work — collapse into ActivityShelf.
+---
+
+# WorkingStateCard
+
+Non-invasive “what is the agent doing now” card. Host supplies a **public
+summary** only — never private chain-of-thought.
+
+## When to use / when not
+
+| Use WorkingStateCard | Prefer |
+|----------------------|--------|
+| Current turn work status | — |
+| Multi concurrent ops strip | [ActivityShelf](/docs/handbook) |
+| Raw reasoning chrome | ThinkingBlock (host policy) |
+| Session-level chrome | [AgentStatusHeader](/docs/handbook/agent-status-header) |
+
+## Phases
+
+Planning · Searching · Editing · Running · Waiting · Reviewing
+
+## Presentation
+
+| Form | Role |
+|------|------|
+| Expanded | Card with summary, files, inspect/cancel |
+| Collapsed | One line + `to_activity_item()` for ActivityShelf |
+
+## Related
+
+ActivityShelf · ThinkingBlock · migration `0234`

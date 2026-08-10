@@ -2578,6 +2578,33 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** toggle.  
 24. **Perf:** O(visible body lines).
 
+## WorkingStateCard
+
+1. **Purpose:** Privacy-safe summary of current agent work.  
+2. **Anatomy:** phase · public summary · next · resources · actions  
+3. **Public properties:** `WorkingState` (summary not CoT), presentation  
+4. **State:** expanded/collapsed, resource_cursor, action_cursor  
+5. **Variants:** Expanded · Collapsed (ActivityShelf projection)  
+6. **Sizes:** collapsed 1 row; expanded multi  
+7. **Visual:** phase roles; waiting Warning  
+8. **Interaction:** inspect · cancel · collapse · open resource  
+9. **Keyboard:** Esc collapse · i inspect · c cancel · j/k files · Enter  
+10. **Mouse:** header toggle; action/resource hits  
+11. **Focus:** action strip (Inspect preferred)  
+12. **Disabled:** accepts_input  
+13. **Loading:** Running/Editing progress  
+14. **Error:** via waiting_reason / host  
+15. **Narrow:** collapse  
+16. **Tiny:** compact line  
+17. **Unicode/ASCII:** phase glyphs  
+18. **Colorless:** letters + text  
+19. **Composition:** ActivityShelf via `to_activity_item`; not ThinkingBlock  
+20. **Outcomes:** Cancel/InspectRequested · Expanded/Collapsed · Resource*  
+21. **Stories:** `working-state-card/{basic,waiting,collapsed,narrow,unicode}`  
+22. **Snapshots:** no “thinking” in paint  
+23. **Tests:** privacy wording, shelf projection  
+24. **Perf:** O(visible resources)
+
 ## TokenMeter
 
 1. **Purpose:** Context/token usage meter.  

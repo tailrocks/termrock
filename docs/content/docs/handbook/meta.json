@@ -32,6 +32,7 @@
     "prompt-queue",
     "agent-status-header",
     "integration-status",
+    "working-state-card",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

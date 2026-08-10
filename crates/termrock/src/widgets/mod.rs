@@ -129,6 +129,7 @@ mod session_picker;
 mod prompt_queue;
 mod agent_status_header;
 mod integration_status;
+mod working_state_card;
 mod event_stream;
 mod log_stream;
 mod diagnostic;
@@ -776,6 +777,13 @@ pub use integration_status::{
     IntegrationStatusState, example_integrations,
 };
 pub use integration_status::bench as integration_status_bench;
+pub use working_state_card::{
+    WORKING_STATE_FILE_WINDOW, WORKING_STATE_OVERLAY_ID, WorkingAction, WorkingPhase,
+    WorkingResource, WorkingState, WorkingStateCard, WorkingStateCardState, WorkingStateOutcome,
+    WorkingStatePresentation, example_working_state, example_working_waiting,
+    merge_working_into_shelf, working_state_to_shelf_items,
+};
+pub use working_state_card::bench as working_state_card_bench;
 pub use object_inspector::{
     InspectKind, InspectMode, InspectNodeStatus, InspectPresentation, InspectRegion,
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,
