@@ -33,6 +33,7 @@
     "agent-status-header",
     "integration-status",
     "working-state-card",
+    "approval-queue",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

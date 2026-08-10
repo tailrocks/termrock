@@ -1476,6 +1476,18 @@ let ribbon = ModeRibbon::new(&modes, &tokens);`,
 let tokens = DesignTokens::default();
 let p = Paragraph::new("Body text", &tokens);`,
   },
+  ApprovalQueue: {
+    description:
+      'Unified inbox for permissions, questions, plans, diffs — Open default; no bulk high-risk approve.',
+    primaryStory: 'approval-queue/basic',
+    usage: `use termrock::widgets::{
+    example_approval_queue, ApprovalQueue, ApprovalQueueState,
+};
+
+let mut state = ApprovalQueueState::new();
+state.set_items(example_approval_queue());
+ApprovalQueue::new(&system).paint(area, buf, &mut state);`,
+  },
   PermissionPrompt: {
     description: 'Fail-safe permission/trust surface with default-deny focus.',
     primaryStory: 'permission-prompt/basic',

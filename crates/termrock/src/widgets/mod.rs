@@ -130,6 +130,7 @@ mod prompt_queue;
 mod agent_status_header;
 mod integration_status;
 mod working_state_card;
+mod approval_queue;
 mod event_stream;
 mod log_stream;
 mod diagnostic;
@@ -784,6 +785,14 @@ pub use working_state_card::{
     merge_working_into_shelf, working_state_to_shelf_items,
 };
 pub use working_state_card::bench as working_state_card_bench;
+pub use approval_queue::{
+    APPROVAL_QUEUE_DRAWER_OVERLAY_ID, APPROVAL_QUEUE_OVERLAY_ID, APPROVAL_QUEUE_WINDOW,
+    ApprovalAction, ApprovalBlocking, ApprovalItem, ApprovalKind, ApprovalQueue,
+    ApprovalQueueOutcome, ApprovalQueuePresentation, ApprovalQueueState,
+    approval_items_to_activity_models, approval_items_to_notifications, approval_queue_badge,
+    example_approval_queue,
+};
+pub use approval_queue::bench as approval_queue_bench;
 pub use object_inspector::{
     InspectKind, InspectMode, InspectNodeStatus, InspectPresentation, InspectRegion,
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,

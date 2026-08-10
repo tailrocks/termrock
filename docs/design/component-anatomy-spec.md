@@ -2281,6 +2281,33 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** stale queue; nested subagent; no process I/O; Enter=Deny  
 24. **Perf:** O(1) head paint
 
+## ApprovalQueue
+
+1. **Purpose:** Unified pending human decisions (permission/question/plan/diff).  
+2. **Anatomy:** safety banner · item list · preview · action strip (Open default)  
+3. **Public properties:** `ApprovalItem[]`, presentation, multi-select  
+4. **State:** view order, cursor, multi, action_cursor  
+5. **Variants:** Badge · Drawer · Full  
+6. **Sizes:** badge 1 row; list multi  
+7. **Visual:** risk roles; protocol fifo mark; multi checkbox  
+8. **Interaction:** open · safe approve · defer · dismiss · bulk Low only  
+9. **Keyboard:** j/k · Enter Open · a/A · Space · d/x · b/w/f · y unbound  
+10. **Mouse:** row + actions  
+11. **Focus:** Open default never Approve  
+12. **Disabled:** accepts_input  
+13. **Loading:** N/A (host fills items)  
+14. **Error:** high-risk BulkApproveDenied  
+15. **Narrow:** badge/drawer  
+16. **Tiny:** badge  
+17. **Unicode/ASCII:** kind glyphs  
+18. **Colorless:** letters  
+19. **Composition:** NotificationCenter · TaskRail projections; opens PermissionPrompt etc.  
+20. **Outcomes:** Open · ApproveRequested · Bulk* · Defer · Dismiss  
+21. **Stories:** `approval-queue/{basic,badge,drawer,narrow,unicode}`  
+22. **Snapshots:** high-risk head Open-only  
+23. **Tests:** no bulk high-risk; protocol FIFO; y unbound  
+24. **Perf:** O(visible)
+
 ## QuestionFlow
 
 1. **Purpose:** Multi-question agent HITL with structured answers (no workflow policy).  

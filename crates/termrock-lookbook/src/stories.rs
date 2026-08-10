@@ -4649,6 +4649,33 @@ pub(crate) fn stories() -> Vec<Story> {
             prompt_composer_busy,
         ),
         Story::new(
+            "approval-queue/basic",
+            "ApprovalQueue",
+            "ApprovalQueue",
+            "Mixed permissions/questions/plans — Open default, no bulk high-risk.",
+            64,
+            16,
+            approval_queue_story,
+        ),
+        Story::new(
+            "approval-queue/badge",
+            "ApprovalQueue badge",
+            "ApprovalQueue",
+            "Compact pending badge with high-risk count.",
+            40,
+            1,
+            approval_queue_badge_story,
+        ),
+        Story::new(
+            "approval-queue/drawer",
+            "ApprovalQueue drawer",
+            "ApprovalQueue",
+            "Drawer presentation list.",
+            48,
+            12,
+            approval_queue_drawer_story,
+        ),
+        Story::new(
             "working-state-card/basic",
             "WorkingStateCard",
             "WorkingStateCard",
@@ -8051,6 +8078,24 @@ pub(crate) fn stories() -> Vec<Story> {
             22,
             12,
             prompt_queue_expanded_story,
+        ),
+        Story::new(
+            "approval-queue/narrow",
+            "Narrow ApprovalQueue",
+            "ApprovalQueue",
+            "Narrow-terminal geometry (22 cols).",
+            22,
+            12,
+            approval_queue_story,
+        ),
+        Story::new(
+            "approval-queue/unicode",
+            "Unicode ApprovalQueue",
+            "ApprovalQueue",
+            "Unicode-safe paint path.",
+            48,
+            10,
+            approval_queue_unicode_story,
         ),
         Story::new(
             "working-state-card/narrow",
@@ -17684,6 +17729,58 @@ fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 
+
+
+fn approval_queue_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_approval_queue, ApprovalQueue, ApprovalQueuePresentation, ApprovalQueueState,
+    };
+    let mut state = ApprovalQueueState::new();
+    state.set_items(example_approval_queue());
+    state.presentation = ApprovalQueuePresentation::Full;
+    state.focused = true;
+    frame.render_stateful_widget(&ApprovalQueue::new(system), area, &mut state);
+}
+
+fn approval_queue_badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_approval_queue, ApprovalQueue, ApprovalQueuePresentation, ApprovalQueueState,
+    };
+    let mut state = ApprovalQueueState::new();
+    state.set_items(example_approval_queue());
+    state.presentation = ApprovalQueuePresentation::Badge;
+    state.focused = true;
+    frame.render_stateful_widget(&ApprovalQueue::new(system), area, &mut state);
+}
+
+fn approval_queue_drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_approval_queue, ApprovalQueue, ApprovalQueuePresentation, ApprovalQueueState,
+    };
+    let mut state = ApprovalQueueState::new();
+    state.set_items(example_approval_queue());
+    state.presentation = ApprovalQueuePresentation::Drawer;
+    state.focused = true;
+    frame.render_stateful_widget(&ApprovalQueue::new(system), area, &mut state);
+}
+
+fn approval_queue_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        ApprovalItem, ApprovalKind, ApprovalQueue, ApprovalQueuePresentation, ApprovalQueueState,
+        PermissionRisk,
+    };
+    let mut state = ApprovalQueueState::new();
+    state.set_items(vec![ApprovalItem::new(
+        "u",
+        ApprovalKind::Question,
+        "続行しますか？",
+        PermissionRisk::Low,
+    )
+    .actor("エージェント")]);
+    state.presentation = ApprovalQueuePresentation::Full;
+    state.focused = true;
+    frame.render_stateful_widget(&ApprovalQueue::new(system), area, &mut state);
+}
 
 fn working_state_card_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
