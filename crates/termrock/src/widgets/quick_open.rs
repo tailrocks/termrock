@@ -1270,11 +1270,7 @@ pub fn quick_open_jump_targets<Id: Clone>(
     for (n, (idx, rect)) in hits.iter().enumerate() {
         if let Some(item) = visible.get(*idx) {
             let badge = badges.get(n).copied().unwrap_or('?');
-            out.push(JumpTarget {
-                id: item.id.clone(),
-                area: *rect,
-                badge,
-            });
+            out.push(JumpTarget::new(item.id.clone(), *rect, badge.to_string()));
         }
     }
     out
@@ -2091,7 +2087,7 @@ mod tests {
         let badges: Vec<char> = ('a'..='z').take(s.hits.len()).collect();
         let targets = quick_open_jump_targets(&items, &s.hits, &badges);
         assert!(!targets.is_empty());
-        assert_eq!(targets[0].badge, badges[0]);
+        assert_eq!(targets[0].badge(), badges[0]);
     }
 
     #[test]

@@ -705,6 +705,29 @@ state.set_focused(true);
 let visible = state.refilter(&catalog);
 CommandPalette::new("Commands", &visible, &system).paint(area, buf, &mut state);`,
   },
+  JumpMode: {
+    description:
+      'Easymotion-style jump navigation over SemanticScene regions with prefix-free multi-key labels, role/action filters, and OverlayStack Esc restore.',
+    primaryStory: 'jump-mode/multi',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges_from_semantics};
+
+let system = DesignSystem::default();
+let targets = assign_jump_badges_from_semantics(&scene);
+let mut state = JumpOverlayState::new();
+state.open();
+JumpOverlay::from_state(&targets, &system, &state).render(area, buf);`,
+  },
+  FocusLens: {
+    description:
+      'Studio focus inspection lens: tab-order indices and focused markers over a FocusGraph without mutating widgets.',
+    primaryStory: 'focus-lens/combined',
+    usage: `use termrock::interaction::{FocusGraph, FocusLens, FocusLensMode};
+use termrock::style::DesignSystem;
+
+let system = DesignSystem::default();
+FocusLens::new(&graph, &system).mode(FocusLensMode::Combined).render(area, buf);`,
+  },
   QuickOpen: {
     description:
       'High-performance multi-provider fuzzy resource opener with async streaming, previews, query syntax, JumpMode and fullscreen integration.',

@@ -48,6 +48,8 @@
     "identity",
     "image-surface",
     "jump-overlay",
+    "focus-lens",
+    "jump-mode",
     "kbd",
     "key-value-list",
     "keybinding-recorder",

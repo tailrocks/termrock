@@ -173,6 +173,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0157 | `v0.13.0` | [MenuBar](migrations/0157-v0.13.0-menu-bar.md) |
 | 0158 | `v0.13.0` | [CommandPalette](migrations/0158-v0.13.0-command-palette.md) |
 | 0159 | `v0.13.0` | [QuickOpen](migrations/0159-v0.13.0-quick-open.md) |
+| 0160 | `v0.13.0` | [JumpMode and FocusLens](migrations/0160-v0.13.0-jump-mode-focus-lens.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

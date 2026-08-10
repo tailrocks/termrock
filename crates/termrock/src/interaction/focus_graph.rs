@@ -748,12 +748,44 @@ fn in_direction(from: (i32, i32), to: (i32, i32), dir: NavigationMove) -> bool {
     }
 }
 
+/// Focus Lens paint mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum FocusLensMode {
+    /// Tab-order indices only (default Studio debug).
+    #[default]
+    TabOrder,
+    /// Focused outline marker only.
+    FocusedOnly,
+    /// Tab order + focused marker.
+    Combined,
+}
+
+impl FocusLensMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::TabOrder => "tab-order",
+            Self::FocusedOnly => "focused-only",
+            Self::Combined => "combined",
+        }
+    }
+}
+
 /// Focus Lens: paints tab-order markers and focused outline for Studio debug.
+///
+/// Complements JumpMode: lens is **inspection** (order / focus), jump is
+/// **activation** (key labels). Neither mutates widgets beyond reading the
+/// graph / semantic scene hosts already maintain.
 #[derive(Debug, Clone, Copy)]
 pub struct FocusLens<'a, Id> {
     graph: &'a FocusGraph<Id>,
     system: &'a DesignSystem,
     show_order: bool,
+    mode: FocusLensMode,
+    ascii: bool,
+    colorless: bool,
 }
 
 impl<'a, Id> FocusLens<'a, Id> {
@@ -764,6 +796,9 @@ impl<'a, Id> FocusLens<'a, Id> {
             graph,
             system,
             show_order: true,
+            mode: FocusLensMode::Combined,
+            ascii: false,
+            colorless: false,
         }
     }
 
@@ -773,13 +808,49 @@ impl<'a, Id> FocusLens<'a, Id> {
         self.show_order = show;
         self
     }
+
+    /// Lens mode.
+    #[must_use]
+    pub const fn mode(mut self, mode: FocusLensMode) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// ASCII-only marks (`*` instead of `◈`).
+    #[must_use]
+    pub const fn ascii(mut self, on: bool) -> Self {
+        self.ascii = on;
+        self
+    }
+
+    /// Reduced-color roles (strong/muted only).
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
 }
 
 impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget for &FocusLens<'_, Id> {
     fn render(self, _area: Rect, buffer: &mut ratatui_core::buffer::Buffer) {
-        let accent = self.system.style(Role::BorderFocused);
+        let accent = if self.colorless {
+            self.system
+                .style(Role::TextStrong)
+                .add_modifier(ratatui_core::style::Modifier::REVERSED)
+        } else {
+            self.system.style(Role::BorderFocused)
+        };
         let muted = self.system.style(Role::TextMuted);
         let order = self.graph.tab_order();
+        let show_order = self.show_order
+            && matches!(
+                self.mode,
+                FocusLensMode::TabOrder | FocusLensMode::Combined
+            );
+        let show_focus = matches!(
+            self.mode,
+            FocusLensMode::FocusedOnly | FocusLensMode::Combined
+        );
         for (i, id) in order.iter().enumerate() {
             let Some(node) = self.graph.nodes().iter().find(|n| &n.id == *id) else {
                 continue;
@@ -792,7 +863,7 @@ impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget fo
             }
             let focused = self.graph.is_focused(id);
             let style = if focused { accent } else { muted };
-            if self.show_order {
+            if show_order {
                 let label = format!("{}", i + 1);
                 buffer.set_stringn(
                     area.x,
@@ -802,10 +873,15 @@ impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget fo
                     style,
                 );
             }
-            if focused {
-                // Top-left corner marker for lens.
-                let mark = "◈";
-                buffer.set_stringn(area.x, area.y, mark, 1, accent);
+            if show_focus && focused {
+                let mark = if self.ascii { "*" } else { "◈" };
+                // Prefer trailing corner when order digit already at origin.
+                let mx = if show_order && area.width > 1 {
+                    area.x.saturating_add(area.width.saturating_sub(1))
+                } else {
+                    area.x
+                };
+                buffer.set_stringn(mx, area.y, mark, 1, accent);
             }
         }
     }

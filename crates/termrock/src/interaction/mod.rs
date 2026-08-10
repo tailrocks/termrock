@@ -23,7 +23,7 @@ pub use event_result::{
     from_consumed_flag,
 };
 pub use focus_graph::{
-    FocusDebugSnapshot, FocusGraph, FocusLens, FocusNavMode, FocusNode, FocusOutcome,
+    FocusDebugSnapshot, FocusGraph, FocusLens, FocusLensMode, FocusNavMode, FocusNode, FocusOutcome,
 };
 pub use roving::{
     RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, roving_hint_keymap,

@@ -2592,6 +2592,57 @@ pub unsafe fn termrock::interaction::DismissReason::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::interaction::DismissReason
 pub fn termrock::interaction::DismissReason::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::DismissReason
+#[non_exhaustive] pub enum termrock::interaction::FocusLensMode
+pub termrock::interaction::FocusLensMode::Combined
+pub termrock::interaction::FocusLensMode::FocusedOnly
+pub termrock::interaction::FocusLensMode::TabOrder
+impl termrock::interaction::FocusLensMode
+pub const fn termrock::interaction::FocusLensMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::interaction::FocusLensMode
+pub fn termrock::interaction::FocusLensMode::clone(&self) -> termrock::interaction::FocusLensMode
+impl core::cmp::Eq for termrock::interaction::FocusLensMode
+impl core::cmp::PartialEq for termrock::interaction::FocusLensMode
+pub fn termrock::interaction::FocusLensMode::eq(&self, &termrock::interaction::FocusLensMode) -> bool
+impl core::default::Default for termrock::interaction::FocusLensMode
+pub fn termrock::interaction::FocusLensMode::default() -> termrock::interaction::FocusLensMode
+impl core::fmt::Debug for termrock::interaction::FocusLensMode
+pub fn termrock::interaction::FocusLensMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::FocusLensMode
+pub fn termrock::interaction::FocusLensMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::FocusLensMode
+impl core::marker::StructuralPartialEq for termrock::interaction::FocusLensMode
+impl core::marker::Freeze for termrock::interaction::FocusLensMode
+impl core::marker::Send for termrock::interaction::FocusLensMode
+impl core::marker::Sync for termrock::interaction::FocusLensMode
+impl core::marker::Unpin for termrock::interaction::FocusLensMode
+impl core::marker::UnsafeUnpin for termrock::interaction::FocusLensMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::FocusLensMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::FocusLensMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::FocusLensMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::FocusLensMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::FocusLensMode where U: core::convert::From<T>
+pub fn termrock::interaction::FocusLensMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::FocusLensMode where U: core::convert::Into<T>
+pub type termrock::interaction::FocusLensMode::Error = core::convert::Infallible
+pub fn termrock::interaction::FocusLensMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::FocusLensMode where U: core::convert::TryFrom<T>
+pub type termrock::interaction::FocusLensMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::FocusLensMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::FocusLensMode where T: core::clone::Clone
+pub type termrock::interaction::FocusLensMode::Owned = T
+pub fn termrock::interaction::FocusLensMode::clone_into(&self, &mut T)
+pub fn termrock::interaction::FocusLensMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::FocusLensMode where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::FocusLensMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::FocusLensMode where T: ?core::marker::Sized
+pub fn termrock::interaction::FocusLensMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::FocusLensMode where T: ?core::marker::Sized
+pub fn termrock::interaction::FocusLensMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::FocusLensMode where T: core::clone::Clone
+pub unsafe fn termrock::interaction::FocusLensMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::FocusLensMode
+pub fn termrock::interaction::FocusLensMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::FocusLensMode
 #[non_exhaustive] pub enum termrock::interaction::FocusNavMode
 pub termrock::interaction::FocusNavMode::Hybrid
 pub termrock::interaction::FocusNavMode::Linear
@@ -4731,6 +4782,9 @@ pub fn termrock::interaction::FocusGraph<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::FocusGraph<Id>
 pub struct termrock::interaction::FocusLens<'a, Id>
 impl<'a, Id> termrock::interaction::FocusLens<'a, Id>
+pub const fn termrock::interaction::FocusLens<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::interaction::FocusLens<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::interaction::FocusLens<'a, Id>::mode(self, termrock::interaction::FocusLensMode) -> Self
 pub const fn termrock::interaction::FocusLens<'a, Id>::new(&'a termrock::interaction::FocusGraph<Id>, &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::interaction::FocusLens<'a, Id>::show_order(self, bool) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::interaction::FocusLens<'a, Id>
@@ -19548,7 +19602,11 @@ impl<T> either::into_either::IntoEither for termrock::widgets::InspectorPanel
 #[non_exhaustive] pub enum termrock::widgets::JumpOutcome<Id>
 pub termrock::widgets::JumpOutcome::Activated(Id)
 pub termrock::widgets::JumpOutcome::Dismissed
+pub termrock::widgets::JumpOutcome::FilterChanged
 pub termrock::widgets::JumpOutcome::Ignored
+pub termrock::widgets::JumpOutcome::Prefix
+pub termrock::widgets::JumpOutcome::Prefix::keys: alloc::string::String
+pub termrock::widgets::JumpOutcome::Prefix::remaining: usize
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::JumpOutcome<Id>
 pub fn termrock::widgets::JumpOutcome<Id>::clone(&self) -> termrock::widgets::JumpOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::JumpOutcome<Id>
@@ -36225,9 +36283,119 @@ pub unsafe fn termrock::widgets::InspectorField<'a>::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::InspectorField<'a>
 pub fn termrock::widgets::InspectorField<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::InspectorField<'a>
+pub struct termrock::widgets::JumpCandidate<Id>
+pub termrock::widgets::JumpCandidate::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::JumpCandidate::depth: u8
+pub termrock::widgets::JumpCandidate::id: Id
+pub termrock::widgets::JumpCandidate::label: core::option::Option<alloc::string::String>
+pub termrock::widgets::JumpCandidate::role: core::option::Option<termrock::interaction::SemanticRole>
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::JumpCandidate<Id>
+pub fn termrock::widgets::JumpCandidate<Id>::clone(&self) -> termrock::widgets::JumpCandidate<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::JumpCandidate<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::JumpCandidate<Id>
+pub fn termrock::widgets::JumpCandidate<Id>::eq(&self, &termrock::widgets::JumpCandidate<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::JumpCandidate<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::JumpCandidate<Id>
+pub fn termrock::widgets::JumpCandidate<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::JumpCandidate<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::JumpCandidate<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::JumpCandidate<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::JumpCandidate<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::JumpCandidate<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::JumpCandidate<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::JumpCandidate<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::JumpCandidate<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::JumpCandidate<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::JumpCandidate<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::JumpCandidate<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::JumpCandidate<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::JumpCandidate<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::JumpCandidate<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::JumpCandidate<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::JumpCandidate<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::JumpCandidate<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::JumpCandidate<Id> where T: core::clone::Clone
+pub type termrock::widgets::JumpCandidate<Id>::Owned = T
+pub fn termrock::widgets::JumpCandidate<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::JumpCandidate<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::JumpCandidate<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::JumpCandidate<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::JumpCandidate<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::JumpCandidate<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::JumpCandidate<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::JumpCandidate<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::JumpCandidate<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::JumpCandidate<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::JumpCandidate<Id>
+pub fn termrock::widgets::JumpCandidate<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::JumpCandidate<Id>
+pub struct termrock::widgets::JumpFilter
+pub termrock::widgets::JumpFilter::action_contains: core::option::Option<alloc::string::String>
+pub termrock::widgets::JumpFilter::include_actionable: bool
+pub termrock::widgets::JumpFilter::include_disabled: bool
+pub termrock::widgets::JumpFilter::include_hidden: bool
+pub termrock::widgets::JumpFilter::label_contains: core::option::Option<alloc::string::String>
+pub termrock::widgets::JumpFilter::max_depth: core::option::Option<u8>
+pub termrock::widgets::JumpFilter::only_leaves: bool
+pub termrock::widgets::JumpFilter::roles: core::option::Option<alloc::vec::Vec<termrock::interaction::SemanticRole>>
+impl termrock::widgets::JumpFilter
+pub fn termrock::widgets::JumpFilter::action_contains(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::JumpFilter::include_disabled(self, bool) -> Self
+pub fn termrock::widgets::JumpFilter::label_contains(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::JumpFilter::max_depth(self, u8) -> Self
+pub fn termrock::widgets::JumpFilter::new() -> Self
+pub const fn termrock::widgets::JumpFilter::only_leaves(self, bool) -> Self
+pub fn termrock::widgets::JumpFilter::roles(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::interaction::SemanticRole>) -> Self
+impl core::clone::Clone for termrock::widgets::JumpFilter
+pub fn termrock::widgets::JumpFilter::clone(&self) -> termrock::widgets::JumpFilter
+impl core::cmp::Eq for termrock::widgets::JumpFilter
+impl core::cmp::PartialEq for termrock::widgets::JumpFilter
+pub fn termrock::widgets::JumpFilter::eq(&self, &termrock::widgets::JumpFilter) -> bool
+impl core::default::Default for termrock::widgets::JumpFilter
+pub fn termrock::widgets::JumpFilter::default() -> termrock::widgets::JumpFilter
+impl core::fmt::Debug for termrock::widgets::JumpFilter
+pub fn termrock::widgets::JumpFilter::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::JumpFilter
+impl core::marker::Freeze for termrock::widgets::JumpFilter
+impl core::marker::Send for termrock::widgets::JumpFilter
+impl core::marker::Sync for termrock::widgets::JumpFilter
+impl core::marker::Unpin for termrock::widgets::JumpFilter
+impl core::marker::UnsafeUnpin for termrock::widgets::JumpFilter
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::JumpFilter
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::JumpFilter
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::JumpFilter where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::JumpFilter::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::JumpFilter where U: core::convert::From<T>
+pub fn termrock::widgets::JumpFilter::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::JumpFilter where U: core::convert::Into<T>
+pub type termrock::widgets::JumpFilter::Error = core::convert::Infallible
+pub fn termrock::widgets::JumpFilter::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::JumpFilter where U: core::convert::TryFrom<T>
+pub type termrock::widgets::JumpFilter::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::JumpFilter::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::JumpFilter where T: core::clone::Clone
+pub type termrock::widgets::JumpFilter::Owned = T
+pub fn termrock::widgets::JumpFilter::clone_into(&self, &mut T)
+pub fn termrock::widgets::JumpFilter::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::JumpFilter where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::JumpFilter::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::JumpFilter where T: ?core::marker::Sized
+pub fn termrock::widgets::JumpFilter::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::JumpFilter where T: ?core::marker::Sized
+pub fn termrock::widgets::JumpFilter::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::JumpFilter where T: core::clone::Clone
+pub unsafe fn termrock::widgets::JumpFilter::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::JumpFilter
+pub fn termrock::widgets::JumpFilter::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::JumpFilter
 pub struct termrock::widgets::JumpOverlay<'a, Id>
 impl<'a, Id> termrock::widgets::JumpOverlay<'a, Id>
+pub const fn termrock::widgets::JumpOverlay<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::JumpOverlay<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::JumpOverlay<'a, Id>::dim_unmatched(self, bool) -> Self
+pub fn termrock::widgets::JumpOverlay<'a, Id>::from_state(&'a [termrock::widgets::JumpTarget<Id>], &'a termrock::style::DesignSystem, &'a termrock::widgets::JumpOverlayState) -> Self
 pub const fn termrock::widgets::JumpOverlay<'a, Id>::new(&'a [termrock::widgets::JumpTarget<Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::JumpOverlay<'a, Id>::prefix(self, &'a str) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::JumpOverlay<'a, Id>
 pub fn termrock::widgets::JumpOverlay<'a, Id>::clone(&self) -> termrock::widgets::JumpOverlay<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::JumpOverlay<'a, Id>
@@ -36269,14 +36437,23 @@ pub fn termrock::widgets::JumpOverlay<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::JumpOverlay<'a, Id>
 pub struct termrock::widgets::JumpOverlayState
 impl termrock::widgets::JumpOverlayState
-pub const fn termrock::widgets::JumpOverlayState::close(&mut self)
+pub fn termrock::widgets::JumpOverlayState::close(&mut self)
 pub fn termrock::widgets::JumpOverlayState::close_on_stack<FocusId: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub const fn termrock::widgets::JumpOverlayState::dim_unmatched(&self) -> bool
+pub fn termrock::widgets::JumpOverlayState::filter(&self) -> &termrock::widgets::JumpFilter
 pub fn termrock::widgets::JumpOverlayState::handle_click<Id: core::clone::Clone>(&mut self, ratatui_core::layout::position::Position, &[termrock::widgets::JumpTarget<Id>]) -> termrock::widgets::JumpOutcome<Id>
+pub fn termrock::widgets::JumpOverlayState::handle_intent<Id: core::clone::Clone>(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::JumpTarget<Id>]) -> termrock::widgets::JumpOutcome<Id>
 pub fn termrock::widgets::JumpOverlayState::handle_key<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &[termrock::widgets::JumpTarget<Id>]) -> termrock::widgets::JumpOutcome<Id>
+pub fn termrock::widgets::JumpOverlayState::handle_mouse<Id: core::clone::Clone>(&mut self, termrock::input::MouseEvent, &[termrock::widgets::JumpTarget<Id>]) -> termrock::widgets::JumpOutcome<Id>
 pub const fn termrock::widgets::JumpOverlayState::is_open(&self) -> bool
-pub const fn termrock::widgets::JumpOverlayState::new() -> Self
-pub const fn termrock::widgets::JumpOverlayState::open(&mut self)
+pub fn termrock::widgets::JumpOverlayState::matching<'a, Id>(&self, &'a [termrock::widgets::JumpTarget<Id>]) -> alloc::vec::Vec<&'a termrock::widgets::JumpTarget<Id>>
+pub fn termrock::widgets::JumpOverlayState::new() -> Self
+pub fn termrock::widgets::JumpOverlayState::open(&mut self)
 pub fn termrock::widgets::JumpOverlayState::open_on_stack<FocusId: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::JumpOverlayState::prefix(&self) -> &str
+pub fn termrock::widgets::JumpOverlayState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::JumpOverlayState::set_dim_unmatched(&mut self, bool)
+pub fn termrock::widgets::JumpOverlayState::set_filter<Id>(&mut self, termrock::widgets::JumpFilter) -> termrock::widgets::JumpOutcome<Id>
 impl core::clone::Clone for termrock::widgets::JumpOverlayState
 pub fn termrock::widgets::JumpOverlayState::clone(&self) -> termrock::widgets::JumpOverlayState
 impl core::cmp::Eq for termrock::widgets::JumpOverlayState
@@ -36321,8 +36498,17 @@ pub fn termrock::widgets::JumpOverlayState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::JumpOverlayState
 pub struct termrock::widgets::JumpTarget<Id>
 pub termrock::widgets::JumpTarget::area: ratatui_core::layout::rect::Rect
-pub termrock::widgets::JumpTarget::badge: char
+pub termrock::widgets::JumpTarget::depth: u8
 pub termrock::widgets::JumpTarget::id: Id
+pub termrock::widgets::JumpTarget::keys: alloc::string::String
+pub termrock::widgets::JumpTarget::label: core::option::Option<alloc::string::String>
+pub termrock::widgets::JumpTarget::role: core::option::Option<termrock::interaction::SemanticRole>
+impl<Id> termrock::widgets::JumpTarget<Id>
+pub fn termrock::widgets::JumpTarget<Id>::badge(&self) -> char
+pub const fn termrock::widgets::JumpTarget<Id>::depth(self, u8) -> Self
+pub fn termrock::widgets::JumpTarget<Id>::label(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::JumpTarget<Id>::new(Id, ratatui_core::layout::rect::Rect, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::JumpTarget<Id>::role(self, termrock::interaction::SemanticRole) -> Self
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::JumpTarget<Id>
 pub fn termrock::widgets::JumpTarget<Id>::clone(&self) -> termrock::widgets::JumpTarget<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::JumpTarget<Id>
@@ -49922,6 +50108,7 @@ pub const termrock::widgets::FILE_PICKER_PREVIEW_MIN_HEIGHT: u16
 pub const termrock::widgets::FORM_WIZARD_COMPACT_MAX_HEIGHT: u16
 pub const termrock::widgets::FORM_WIZARD_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::ICON_BUTTON_MIN_HIT: u16
+pub const termrock::widgets::JUMP_LABEL_ALPHABET: &[char]
 pub const termrock::widgets::JUMP_OVERLAY_ID: &str
 pub const termrock::widgets::KEYBINDING_SEQUENCE_SEP: &str
 pub const termrock::widgets::LARGE_PASTE_THRESHOLD: usize
@@ -49968,10 +50155,13 @@ pub fn termrock::widgets::any_dirty<Id>(&[termrock::widgets::Fieldset<'_, Id>]) 
 pub fn termrock::widgets::any_touched<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::ascii_ellipsis() -> &'static str
 pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock::interaction::HitRegion<Id>]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
-pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone
+pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
+pub fn termrock::widgets::assign_jump_labels<Id: core::clone::Clone>(impl core::iter::traits::collect::IntoIterator<Item = termrock::widgets::JumpCandidate<Id>>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
+pub fn termrock::widgets::assign_jump_labels_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, &termrock::widgets::JumpFilter) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
 pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
 pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> alloc::vec::Vec<(&'a str, &'a str)>
+pub fn termrock::widgets::collect_jump_candidates<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, &termrock::widgets::JumpFilter) -> alloc::vec::Vec<termrock::widgets::JumpCandidate<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
 pub fn termrock::widgets::command_palette_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::CommandPalettePresentation
 pub fn termrock::widgets::completion_prefix(&str, termrock::widgets::PathStyle) -> termrock::widgets::PathCompletionPrefix
 pub fn termrock::widgets::crumbs_from_labels(&[&str]) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
@@ -50013,12 +50203,14 @@ pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termr
 pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat, &str) -> alloc::string::String
 pub fn termrock::widgets::fuzzy_match_label(&str, &str) -> core::option::Option<(u32, termrock::widgets::MatchRanges)>
+pub fn termrock::widgets::generate_jump_labels(usize) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::hint_row_cols(&[termrock::widgets::HintSpan<'_>]) -> usize
 pub fn termrock::widgets::identity_seed(&str) -> u64
 pub fn termrock::widgets::initials_from_name(&str) -> alloc::string::String
 pub fn termrock::widgets::is_absolute_path(&str) -> bool
 pub fn termrock::widgets::is_paint_safe(&str) -> bool
 pub fn termrock::widgets::join_path(&str, &str, termrock::widgets::PathStyle) -> alloc::string::String
+pub fn termrock::widgets::jump_status_line(&termrock::widgets::JumpOverlayState, usize, bool) -> alloc::string::String
 pub fn termrock::widgets::kbd_from_chord<'a>(termrock::keymap::KeyChord, &'a mut alloc::string::String, &'a termrock::style::DesignSystem) -> termrock::widgets::Kbd<'a>
 pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>
 pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
@@ -50061,6 +50253,7 @@ pub fn termrock::widgets::quick_open_jump_targets<Id: core::clone::Clone>(&[term
 pub fn termrock::widgets::quick_open_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::QuickOpenPresentation
 pub fn termrock::widgets::remove_label(&str) -> alloc::string::String
 pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem)
+pub fn termrock::widgets::replay_jump_keys<Id: core::clone::Clone>(&mut termrock::widgets::JumpOverlayState, &[termrock::widgets::JumpTarget<Id>], &str) -> termrock::widgets::JumpOutcome<Id>
 pub fn termrock::widgets::required_filled<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::role_for_seed(u64) -> termrock::style::Role
@@ -50086,6 +50279,8 @@ pub type termrock::widgets::CellCoord = termrock::interaction::CellCoord
 pub type termrock::widgets::ContextMenu<'a, Id> = termrock::widgets::Menu<'a, Id>
 pub type termrock::widgets::FormField<'a, Id> = termrock::widgets::Field<'a, Id>
 pub type termrock::widgets::FormSection<'a, Id> = termrock::widgets::Fieldset<'a, Id>
+pub type termrock::widgets::JumpMode<'a, Id> = termrock::widgets::JumpOverlay<'a, Id>
+pub type termrock::widgets::JumpModeState = termrock::widgets::JumpOverlayState
 pub type termrock::widgets::SectionAction<'a> = termrock::widgets::PanelAction<'a>
 pub type termrock::widgets::SeparatorLine<'a> = termrock::widgets::Separator<'a>
 pub type termrock::widgets::SidebarItem<Id> = termrock::widgets::NavItem<Id>

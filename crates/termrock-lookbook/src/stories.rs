@@ -41,7 +41,9 @@ use termrock::{
         DiffState, DiffView, Drawer, EmptyState, ErrorView, Field, Fieldset, Form, FormState,
         FormWizard, FormWizardState, WizardStep, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
         HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
-        InspectorField, JumpOverlay, JumpTarget, Kbd, KeyValueList, KeyValueListState, KvEntry,
+        InspectorField, JumpFilter, JumpOverlay, JumpOverlayState, JumpTarget,
+        assign_jump_labels_from_semantics, generate_jump_labels, Kbd, KeyValueList,
+        KeyValueListState, KvEntry,
         KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
         MatchTruncate, PresenceStatus,
         ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
@@ -2240,6 +2242,42 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             6,
             jump_overlay,
+        ),
+        Story::new(
+            "jump-mode/multi",
+            "JumpMode multi-key",
+            "JumpMode",
+            "Prefix-free multi-key labels for dense targets.",
+            48,
+            14,
+            jump_mode_multi,
+        ),
+        Story::new(
+            "jump-mode/filter",
+            "JumpMode role filter",
+            "JumpMode",
+            "Buttons only via JumpFilter from SemanticScene.",
+            48,
+            10,
+            jump_mode_filter,
+        ),
+        Story::new(
+            "jump-mode/ascii",
+            "JumpMode ASCII",
+            "JumpMode",
+            "ASCII badges + colorless paint.",
+            40,
+            8,
+            jump_mode_ascii,
+        ),
+        Story::new(
+            "focus-lens/combined",
+            "FocusLens combined",
+            "FocusLens",
+            "Tab-order indices + focused marker.",
+            48,
+            10,
+            focus_lens_combined,
         ),
         Story::new(
             "command-palette/basic",
@@ -10531,18 +10569,154 @@ fn jump_overlay(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
     );
     let targets = [
-        JumpTarget {
-            id: "files",
-            area: Rect::new(area.x.saturating_add(2), area.y.saturating_add(1), 12, 1),
-            badge: 'f',
-        },
-        JumpTarget {
-            id: "main",
-            area: Rect::new(area.x.saturating_add(2), area.y.saturating_add(3), 12, 1),
-            badge: 'm',
-        },
+        JumpTarget::new(
+            "files",
+            Rect::new(area.x.saturating_add(2), area.y.saturating_add(1), 12, 1),
+            "f",
+        ),
+        JumpTarget::new(
+            "main",
+            Rect::new(area.x.saturating_add(2), area.y.saturating_add(3), 12, 1),
+            "m",
+        ),
     ];
+    frame.render_widget(
+        JumpOverlay::new(&targets, system).ascii(false),
+        area,
+    );
+}
+
+fn jump_mode_multi(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(
+        Panel::new(system)
+            .title("Jump multi-key")
+            .emphasis(PanelChrome::Normal),
+        area,
+    );
+    let labels = generate_jump_labels(30);
+    let targets: Vec<_> = labels
+        .iter()
+        .enumerate()
+        .map(|(i, k)| {
+            let row = (i as u16) % area.height.saturating_sub(2).max(1);
+            let col = ((i as u16) / area.height.saturating_sub(2).max(1)) * 6;
+            JumpTarget::new(
+                i,
+                Rect::new(
+                    area.x.saturating_add(1).saturating_add(col),
+                    area.y.saturating_add(1).saturating_add(row),
+                    5,
+                    1,
+                ),
+                k.clone(),
+            )
+        })
+        .collect();
+    let mut state = JumpOverlayState::new();
+    state.open();
+    // Prefix first letter of a multi-key label for dim demo
+    if let Some(t) = targets.iter().find(|t| t.keys.len() >= 2) {
+        let ch = t.keys.chars().next().unwrap();
+        let _ = state.handle_key(
+            termrock::input::KeyEvent::new(
+                termrock::input::KeyCode::Char(ch),
+                termrock::input::KeyModifiers::NONE,
+            ),
+            &targets,
+        );
+    }
+    frame.render_widget(
+        JumpOverlay::from_state(&targets, system, &state).ascii(false),
+        area,
+    );
+}
+
+fn jump_mode_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{SemanticNode, SemanticRole, SemanticScene};
+    frame.render_widget(
+        Panel::new(system)
+            .title("Jump filter: buttons")
+            .emphasis(PanelChrome::Normal),
+        area,
+    );
+    let mut scene = SemanticScene::<&str, &str>::new();
+    let _ = scene.register(
+        SemanticNode::control(
+            "run",
+            Rect::new(area.x.saturating_add(2), area.y.saturating_add(2), 8, 1),
+        )
+        .role(SemanticRole::Button)
+        .label("Run")
+        .actions(vec!["activate"]),
+    );
+    let _ = scene.register(
+        SemanticNode::control(
+            "query",
+            Rect::new(area.x.saturating_add(2), area.y.saturating_add(4), 12, 1),
+        )
+        .role(SemanticRole::Input)
+        .label("Query"),
+    );
+    let filter = JumpFilter::new().roles([SemanticRole::Button]);
+    let targets = assign_jump_labels_from_semantics(&scene, &filter);
     frame.render_widget(JumpOverlay::new(&targets, system), area);
+}
+
+fn jump_mode_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let targets = [
+        JumpTarget::new(
+            "a",
+            Rect::new(area.x.saturating_add(1), area.y.saturating_add(1), 10, 1),
+            "a",
+        ),
+        JumpTarget::new(
+            "b",
+            Rect::new(area.x.saturating_add(1), area.y.saturating_add(3), 10, 1),
+            "b",
+        ),
+    ];
+    frame.render_widget(
+        JumpOverlay::new(&targets, system).ascii(true).colorless(true),
+        area,
+    );
+}
+
+fn focus_lens_combined(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{FocusGraph, FocusLens, FocusLensMode, FocusNavMode, FocusNode};
+    let mut g = FocusGraph::new().mode(FocusNavMode::Hybrid);
+    g.register(
+        FocusNode::leaf(
+            "side",
+            Rect::new(area.x, area.y.saturating_add(1), 10, 3),
+        )
+        .tab_index(0),
+    );
+    g.register(
+        FocusNode::leaf(
+            "main",
+            Rect::new(
+                area.x.saturating_add(12),
+                area.y.saturating_add(1),
+                16,
+                5,
+            ),
+        )
+        .tab_index(1),
+    );
+    let _ = g.reconcile();
+    let _ = g.request_focus("main");
+    frame.render_widget(
+        Panel::new(system)
+            .title("FocusLens")
+            .emphasis(PanelChrome::Normal),
+        area,
+    );
+    frame.render_widget(
+        FocusLens::new(&g, system)
+            .mode(FocusLensMode::Combined)
+            .ascii(false),
+        area,
+    );
 }
 
 fn command_palette(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
