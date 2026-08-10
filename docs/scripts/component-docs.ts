@@ -492,6 +492,21 @@ state.set_today(CivilDate::new(2026, 8, 10).unwrap());
 state.set_focused(true);
 let _ = DateTimePicker::new(&system).label("Due");`,
   },
+  KeybindingRecorder: {
+    description:
+      'A settings control that captures and validates keybindings with escape law, conflicts, reserved chords, and protocol limits.',
+    primaryStory: 'keybinding-recorder/idle',
+    usage: `use termrock::input::KeyCode;
+use termrock::keymap::KeyChord;
+use termrock::style::DesignSystem;
+use termrock::widgets::{KeybindingRecorder, KeybindingRecorderState};
+
+let system = DesignSystem::default();
+let mut state = KeybindingRecorderState::new("app.save", "Save")
+    .with_chords([KeyChord::ctrl(KeyCode::Char('s'))]);
+state.set_focused(true);
+let _ = KeybindingRecorder::new(&system);`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

@@ -17,6 +17,7 @@
     "form",
     "file-picker",
     "date-time-picker",
+    "keybinding-recorder",
     "menu",
     "object-inspector",
     "log-stream",

@@ -15245,6 +15245,58 @@ pub unsafe fn termrock::widgets::BadgeVariant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::BadgeVariant
 pub fn termrock::widgets::BadgeVariant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::BadgeVariant
+#[non_exhaustive] pub enum termrock::widgets::BindingLimit
+pub termrock::widgets::BindingLimit::Conflict
+pub termrock::widgets::BindingLimit::Conflict::with: alloc::string::String
+pub termrock::widgets::BindingLimit::Empty
+pub termrock::widgets::BindingLimit::Intermediate
+pub termrock::widgets::BindingLimit::Protocol
+pub termrock::widgets::BindingLimit::Protocol::reason: alloc::string::String
+pub termrock::widgets::BindingLimit::Reserved
+pub termrock::widgets::BindingLimit::Reserved::reason: alloc::string::String
+impl termrock::widgets::BindingLimit
+pub fn termrock::widgets::BindingLimit::id(&self) -> &'static str
+pub fn termrock::widgets::BindingLimit::message(&self) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::BindingLimit
+pub fn termrock::widgets::BindingLimit::clone(&self) -> termrock::widgets::BindingLimit
+impl core::cmp::Eq for termrock::widgets::BindingLimit
+impl core::cmp::PartialEq for termrock::widgets::BindingLimit
+pub fn termrock::widgets::BindingLimit::eq(&self, &termrock::widgets::BindingLimit) -> bool
+impl core::fmt::Debug for termrock::widgets::BindingLimit
+pub fn termrock::widgets::BindingLimit::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::BindingLimit
+impl core::marker::Freeze for termrock::widgets::BindingLimit
+impl core::marker::Send for termrock::widgets::BindingLimit
+impl core::marker::Sync for termrock::widgets::BindingLimit
+impl core::marker::Unpin for termrock::widgets::BindingLimit
+impl core::marker::UnsafeUnpin for termrock::widgets::BindingLimit
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BindingLimit
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BindingLimit
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BindingLimit where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BindingLimit::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BindingLimit where U: core::convert::From<T>
+pub fn termrock::widgets::BindingLimit::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BindingLimit where U: core::convert::Into<T>
+pub type termrock::widgets::BindingLimit::Error = core::convert::Infallible
+pub fn termrock::widgets::BindingLimit::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BindingLimit where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BindingLimit::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BindingLimit::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BindingLimit where T: core::clone::Clone
+pub type termrock::widgets::BindingLimit::Owned = T
+pub fn termrock::widgets::BindingLimit::clone_into(&self, &mut T)
+pub fn termrock::widgets::BindingLimit::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BindingLimit where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BindingLimit::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BindingLimit where T: ?core::marker::Sized
+pub fn termrock::widgets::BindingLimit::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BindingLimit where T: ?core::marker::Sized
+pub fn termrock::widgets::BindingLimit::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BindingLimit where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BindingLimit::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BindingLimit
+pub fn termrock::widgets::BindingLimit::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BindingLimit
 #[non_exhaustive] pub enum termrock::widgets::BreadcrumbsOutcome<Id>
 pub termrock::widgets::BreadcrumbsOutcome::Ignored
 pub termrock::widgets::BreadcrumbsOutcome::Navigate(Id)
@@ -19190,6 +19242,113 @@ pub unsafe fn termrock::widgets::KeyValueListOutcome<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::widgets::KeyValueListOutcome<Id>
 pub fn termrock::widgets::KeyValueListOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::KeyValueListOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::KeybindingRecorderMode
+pub termrock::widgets::KeybindingRecorderMode::Idle
+pub termrock::widgets::KeybindingRecorderMode::Recording
+impl termrock::widgets::KeybindingRecorderMode
+pub const fn termrock::widgets::KeybindingRecorderMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::KeybindingRecorderMode
+pub fn termrock::widgets::KeybindingRecorderMode::clone(&self) -> termrock::widgets::KeybindingRecorderMode
+impl core::cmp::Eq for termrock::widgets::KeybindingRecorderMode
+impl core::cmp::PartialEq for termrock::widgets::KeybindingRecorderMode
+pub fn termrock::widgets::KeybindingRecorderMode::eq(&self, &termrock::widgets::KeybindingRecorderMode) -> bool
+impl core::default::Default for termrock::widgets::KeybindingRecorderMode
+pub fn termrock::widgets::KeybindingRecorderMode::default() -> termrock::widgets::KeybindingRecorderMode
+impl core::fmt::Debug for termrock::widgets::KeybindingRecorderMode
+pub fn termrock::widgets::KeybindingRecorderMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::KeybindingRecorderMode
+pub fn termrock::widgets::KeybindingRecorderMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::KeybindingRecorderMode
+impl core::marker::StructuralPartialEq for termrock::widgets::KeybindingRecorderMode
+impl core::marker::Freeze for termrock::widgets::KeybindingRecorderMode
+impl core::marker::Send for termrock::widgets::KeybindingRecorderMode
+impl core::marker::Sync for termrock::widgets::KeybindingRecorderMode
+impl core::marker::Unpin for termrock::widgets::KeybindingRecorderMode
+impl core::marker::UnsafeUnpin for termrock::widgets::KeybindingRecorderMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeybindingRecorderMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeybindingRecorderMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeybindingRecorderMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeybindingRecorderMode where U: core::convert::From<T>
+pub fn termrock::widgets::KeybindingRecorderMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeybindingRecorderMode where U: core::convert::Into<T>
+pub type termrock::widgets::KeybindingRecorderMode::Error = core::convert::Infallible
+pub fn termrock::widgets::KeybindingRecorderMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeybindingRecorderMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeybindingRecorderMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeybindingRecorderMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeybindingRecorderMode where T: core::clone::Clone
+pub type termrock::widgets::KeybindingRecorderMode::Owned = T
+pub fn termrock::widgets::KeybindingRecorderMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeybindingRecorderMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeybindingRecorderMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeybindingRecorderMode where T: ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeybindingRecorderMode where T: ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeybindingRecorderMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeybindingRecorderMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeybindingRecorderMode
+pub fn termrock::widgets::KeybindingRecorderMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeybindingRecorderMode
+#[non_exhaustive] pub enum termrock::widgets::KeybindingRecorderOutcome
+pub termrock::widgets::KeybindingRecorderOutcome::Blurred
+pub termrock::widgets::KeybindingRecorderOutcome::Changed
+pub termrock::widgets::KeybindingRecorderOutcome::ChordCaptured
+pub termrock::widgets::KeybindingRecorderOutcome::ChordCaptured::chord: termrock::keymap::KeyChord
+pub termrock::widgets::KeybindingRecorderOutcome::ChordCaptured::sequence: alloc::vec::Vec<termrock::keymap::KeyChord>
+pub termrock::widgets::KeybindingRecorderOutcome::Cleared
+pub termrock::widgets::KeybindingRecorderOutcome::Committed
+pub termrock::widgets::KeybindingRecorderOutcome::Committed::chords: alloc::vec::Vec<termrock::keymap::KeyChord>
+pub termrock::widgets::KeybindingRecorderOutcome::Ignored
+pub termrock::widgets::KeybindingRecorderOutcome::RecordingCancelled
+pub termrock::widgets::KeybindingRecorderOutcome::RecordingCancelled::restored: alloc::vec::Vec<termrock::keymap::KeyChord>
+pub termrock::widgets::KeybindingRecorderOutcome::RecordingStarted
+pub termrock::widgets::KeybindingRecorderOutcome::RestoredDefault
+pub termrock::widgets::KeybindingRecorderOutcome::RestoredDefault::chords: alloc::vec::Vec<termrock::keymap::KeyChord>
+pub termrock::widgets::KeybindingRecorderOutcome::ValidationFailed
+pub termrock::widgets::KeybindingRecorderOutcome::ValidationFailed::limit: termrock::widgets::BindingLimit
+impl core::clone::Clone for termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderOutcome::clone(&self) -> termrock::widgets::KeybindingRecorderOutcome
+impl core::cmp::Eq for termrock::widgets::KeybindingRecorderOutcome
+impl core::cmp::PartialEq for termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderOutcome::eq(&self, &termrock::widgets::KeybindingRecorderOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::KeybindingRecorderOutcome
+impl core::marker::Freeze for termrock::widgets::KeybindingRecorderOutcome
+impl core::marker::Send for termrock::widgets::KeybindingRecorderOutcome
+impl core::marker::Sync for termrock::widgets::KeybindingRecorderOutcome
+impl core::marker::Unpin for termrock::widgets::KeybindingRecorderOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::KeybindingRecorderOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeybindingRecorderOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeybindingRecorderOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeybindingRecorderOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeybindingRecorderOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::KeybindingRecorderOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeybindingRecorderOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::KeybindingRecorderOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::KeybindingRecorderOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeybindingRecorderOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeybindingRecorderOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeybindingRecorderOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeybindingRecorderOutcome where T: core::clone::Clone
+pub type termrock::widgets::KeybindingRecorderOutcome::Owned = T
+pub fn termrock::widgets::KeybindingRecorderOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeybindingRecorderOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeybindingRecorderOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeybindingRecorderOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeybindingRecorderOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeybindingRecorderOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeybindingRecorderOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeybindingRecorderOutcome
 #[non_exhaustive] pub enum termrock::widgets::KvDensity
 pub termrock::widgets::KvDensity::Dense
 pub termrock::widgets::KvDensity::Reading
@@ -34379,6 +34538,139 @@ pub unsafe fn termrock::widgets::KeyValueListState<Id>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::KeyValueListState<Id>
 pub fn termrock::widgets::KeyValueListState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::KeyValueListState<Id>
+pub struct termrock::widgets::KeybindingRecorder<'a>
+impl<'a> termrock::widgets::KeybindingRecorder<'a>
+pub const fn termrock::widgets::KeybindingRecorder<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::KeybindingRecorder<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::KeybindingRecorder<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::KeybindingRecorderState)
+pub fn termrock::widgets::KeybindingRecorder<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::KeybindingRecorderState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::KeybindingRecorder<'a>::show_hints(self, bool) -> Self
+pub const fn termrock::widgets::KeybindingRecorder<'a>::show_limits(self, bool) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::KeybindingRecorder<'_>
+pub type &termrock::widgets::KeybindingRecorder<'_>::State = termrock::widgets::KeybindingRecorderState
+pub fn &termrock::widgets::KeybindingRecorder<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::KeybindingRecorder<'_>
+pub type termrock::widgets::KeybindingRecorder<'_>::State = termrock::widgets::KeybindingRecorderState
+pub fn termrock::widgets::KeybindingRecorder<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::KeybindingRecorder<'a>
+pub fn termrock::widgets::KeybindingRecorder<'a>::clone(&self) -> termrock::widgets::KeybindingRecorder<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::KeybindingRecorder<'a>
+pub fn termrock::widgets::KeybindingRecorder<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::KeybindingRecorder<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::KeybindingRecorder<'a>
+impl<'a> core::marker::Send for termrock::widgets::KeybindingRecorder<'a>
+impl<'a> core::marker::Sync for termrock::widgets::KeybindingRecorder<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::KeybindingRecorder<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::KeybindingRecorder<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeybindingRecorder<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeybindingRecorder<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeybindingRecorder<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::KeybindingRecorder<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeybindingRecorder<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::KeybindingRecorder<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::KeybindingRecorder<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeybindingRecorder<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeybindingRecorder<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeybindingRecorder<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeybindingRecorder<'a> where T: core::clone::Clone
+pub type termrock::widgets::KeybindingRecorder<'a>::Owned = T
+pub fn termrock::widgets::KeybindingRecorder<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeybindingRecorder<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeybindingRecorder<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorder<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeybindingRecorder<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorder<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeybindingRecorder<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorder<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeybindingRecorder<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeybindingRecorder<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeybindingRecorder<'a>
+pub fn termrock::widgets::KeybindingRecorder<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeybindingRecorder<'a>
+pub struct termrock::widgets::KeybindingRecorderState
+impl termrock::widgets::KeybindingRecorderState
+pub fn termrock::widgets::KeybindingRecorderState::action_id(&self) -> &str
+pub fn termrock::widgets::KeybindingRecorderState::action_label(&self) -> &str
+pub fn termrock::widgets::KeybindingRecorderState::apply_to_keymap<A>(&self, &mut termrock::keymap::Keymap<A>, A) -> bool where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
+pub fn termrock::widgets::KeybindingRecorderState::cancel_recording(&mut self) -> termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderState::capture_bytes(&mut self, &[u8]) -> termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderState::capture_chord(&mut self, termrock::keymap::KeyChord) -> termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderState::clear(&mut self) -> termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderState::commit(&mut self) -> termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderState::default_chords(&self) -> &[termrock::keymap::KeyChord]
+pub fn termrock::widgets::KeybindingRecorderState::display_live(&self) -> alloc::string::String
+pub fn termrock::widgets::KeybindingRecorderState::display_value(&self) -> alloc::string::String
+pub fn termrock::widgets::KeybindingRecorderState::draft(&self) -> &[termrock::keymap::KeyChord]
+pub fn termrock::widgets::KeybindingRecorderState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::KeybindingRecorderOutcome
+pub const fn termrock::widgets::KeybindingRecorderState::is_recording(&self) -> bool
+pub fn termrock::widgets::KeybindingRecorderState::keymap_conflicts<'a, A>(&'a termrock::keymap::Keymap<A>) -> alloc::vec::Vec<termrock::keymap::Conflict<'a, A>> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
+pub const fn termrock::widgets::KeybindingRecorderState::last_limit(&self) -> core::option::Option<&termrock::widgets::BindingLimit>
+pub fn termrock::widgets::KeybindingRecorderState::load_from_binding<A: core::clone::Clone + 'static>(&mut self, &termrock::keymap::KeyBinding<A>)
+pub fn termrock::widgets::KeybindingRecorderState::load_occupied_from_keymap<A>(&mut self, &termrock::keymap::Keymap<A>, A, impl core::ops::function::Fn(&A) -> alloc::string::String) where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
+pub const fn termrock::widgets::KeybindingRecorderState::mode(&self) -> termrock::widgets::KeybindingRecorderMode
+pub fn termrock::widgets::KeybindingRecorderState::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::KeybindingRecorderState::pop_draft(&mut self) -> termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderState::push_reserved(&mut self, termrock::keymap::KeyChord, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::KeybindingRecorderState::restore_default(&mut self) -> termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::KeybindingRecorderState::set_focused(&mut self, bool)
+pub fn termrock::widgets::KeybindingRecorderState::set_occupied(&mut self, alloc::vec::Vec<(termrock::keymap::KeyChord, alloc::string::String)>)
+pub fn termrock::widgets::KeybindingRecorderState::set_value(&mut self, impl core::iter::traits::collect::IntoIterator<Item = termrock::keymap::KeyChord>)
+pub fn termrock::widgets::KeybindingRecorderState::soft_issues(&self, &[termrock::keymap::KeyChord]) -> alloc::vec::Vec<termrock::widgets::BindingLimit>
+pub fn termrock::widgets::KeybindingRecorderState::start_recording(&mut self) -> termrock::widgets::KeybindingRecorderOutcome
+pub fn termrock::widgets::KeybindingRecorderState::validate(&self, &[termrock::keymap::KeyChord]) -> core::result::Result<(), termrock::widgets::BindingLimit>
+pub fn termrock::widgets::KeybindingRecorderState::value(&self) -> &[termrock::keymap::KeyChord]
+pub const fn termrock::widgets::KeybindingRecorderState::with_allow_empty(self, bool) -> Self
+pub fn termrock::widgets::KeybindingRecorderState::with_chords(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::keymap::KeyChord>) -> Self
+pub fn termrock::widgets::KeybindingRecorderState::with_default(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::keymap::KeyChord>) -> Self
+pub const fn termrock::widgets::KeybindingRecorderState::with_format(self, termrock::widgets::ChordFormat) -> Self
+pub const fn termrock::widgets::KeybindingRecorderState::with_hard_conflicts(self, bool) -> Self
+pub const fn termrock::widgets::KeybindingRecorderState::with_hard_reserved(self, bool) -> Self
+pub fn termrock::widgets::KeybindingRecorderState::with_reserved(self, alloc::vec::Vec<(termrock::keymap::KeyChord, alloc::string::String)>) -> Self
+pub const fn termrock::widgets::KeybindingRecorderState::with_sequences(self, bool) -> Self
+impl core::clone::Clone for termrock::widgets::KeybindingRecorderState
+pub fn termrock::widgets::KeybindingRecorderState::clone(&self) -> termrock::widgets::KeybindingRecorderState
+impl core::cmp::Eq for termrock::widgets::KeybindingRecorderState
+impl core::cmp::PartialEq for termrock::widgets::KeybindingRecorderState
+pub fn termrock::widgets::KeybindingRecorderState::eq(&self, &termrock::widgets::KeybindingRecorderState) -> bool
+impl core::default::Default for termrock::widgets::KeybindingRecorderState
+pub fn termrock::widgets::KeybindingRecorderState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::KeybindingRecorderState
+pub fn termrock::widgets::KeybindingRecorderState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::KeybindingRecorderState
+impl core::marker::Freeze for termrock::widgets::KeybindingRecorderState
+impl core::marker::Send for termrock::widgets::KeybindingRecorderState
+impl core::marker::Sync for termrock::widgets::KeybindingRecorderState
+impl core::marker::Unpin for termrock::widgets::KeybindingRecorderState
+impl core::marker::UnsafeUnpin for termrock::widgets::KeybindingRecorderState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeybindingRecorderState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeybindingRecorderState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeybindingRecorderState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeybindingRecorderState where U: core::convert::From<T>
+pub fn termrock::widgets::KeybindingRecorderState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeybindingRecorderState where U: core::convert::Into<T>
+pub type termrock::widgets::KeybindingRecorderState::Error = core::convert::Infallible
+pub fn termrock::widgets::KeybindingRecorderState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeybindingRecorderState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeybindingRecorderState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeybindingRecorderState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeybindingRecorderState where T: core::clone::Clone
+pub type termrock::widgets::KeybindingRecorderState::Owned = T
+pub fn termrock::widgets::KeybindingRecorderState::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeybindingRecorderState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeybindingRecorderState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeybindingRecorderState where T: ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeybindingRecorderState where T: ?core::marker::Sized
+pub fn termrock::widgets::KeybindingRecorderState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeybindingRecorderState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeybindingRecorderState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeybindingRecorderState
+pub fn termrock::widgets::KeybindingRecorderState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeybindingRecorderState
 pub struct termrock::widgets::KvEntry<'a, Id>
 pub termrock::widgets::KvEntry::annotation: core::option::Option<&'a str>
 pub termrock::widgets::KvEntry::copyable: bool
@@ -46281,6 +46573,7 @@ pub const termrock::widgets::FILE_PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::FILE_PICKER_PREVIEW_MIN_HEIGHT: u16
 pub const termrock::widgets::ICON_BUTTON_MIN_HIT: u16
 pub const termrock::widgets::JUMP_OVERLAY_ID: &str
+pub const termrock::widgets::KEYBINDING_SEQUENCE_SEP: &str
 pub const termrock::widgets::LARGE_PASTE_THRESHOLD: usize
 pub const termrock::widgets::PERMISSION_OVERLAY_ID: &str
 pub const termrock::widgets::PICKER_OVERLAY_ID: &str
@@ -46308,10 +46601,12 @@ pub fn termrock::widgets::any_touched<Id>(&[termrock::widgets::Fieldset<'_, Id>]
 pub fn termrock::widgets::ascii_ellipsis() -> &'static str
 pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock::interaction::HitRegion<Id>]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone
+pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
 pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> alloc::vec::Vec<(&'a str, &'a str)>
 pub fn termrock::widgets::completion_prefix(&str, termrock::widgets::PathStyle) -> termrock::widgets::PathCompletionPrefix
 pub fn termrock::widgets::dashboard_panels() -> [termrock::widgets::ResizablePanelSpec; 2]
+pub fn termrock::widgets::default_reserved_chords() -> alloc::vec::Vec<(termrock::keymap::KeyChord, alloc::string::String)>
 pub fn termrock::widgets::dismiss_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -46361,6 +46656,7 @@ pub fn termrock::widgets::prepare_code_display(&str, usize, termrock::widgets::C
 pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
+pub fn termrock::widgets::protocol_limitations(termrock::widgets::Platform) -> alloc::vec::Vec<&'static str>
 pub fn termrock::widgets::remove_label(&str) -> alloc::string::String
 pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem)
 pub fn termrock::widgets::required_filled<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool

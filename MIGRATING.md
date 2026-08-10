@@ -163,6 +163,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0147 | `v0.13.0` | [Combobox & Autocomplete](migrations/0147-v0.13.0-combobox-autocomplete.md) |
 | 0148 | `v0.13.0` | [FilePicker](migrations/0148-v0.13.0-file-picker.md) |
 | 0149 | `v0.13.0` | [DateTimePicker](migrations/0149-v0.13.0-date-time-picker.md) |
+| 0150 | `v0.13.0` | [KeybindingRecorder](migrations/0150-v0.13.0-keybinding-recorder.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

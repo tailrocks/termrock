@@ -80,6 +80,7 @@ mod multi_select;
 mod combobox;
 mod file_picker;
 mod date_time_picker;
+mod keybinding_recorder;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -353,6 +354,11 @@ pub use date_time_picker::{
     DateTimePicker, DateTimePickerKind, DateTimePickerOutcome, DateTimePickerPresentation,
     DateTimePickerState, DateTimePickerView, DateTimeValidity, TimeDisplayFormat, WeekStart,
     guidance as date_time_picker_guidance,
+};
+pub use keybinding_recorder::{
+    KEYBINDING_SEQUENCE_SEP, BindingLimit, KeybindingRecorder, KeybindingRecorderMode,
+    KeybindingRecorderOutcome, KeybindingRecorderState, binding_from_recorder,
+    default_reserved_chords, protocol_limitations,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,

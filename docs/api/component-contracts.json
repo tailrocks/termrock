@@ -423,6 +423,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "KeybindingRecorder": {
+    "keyboard": "covered",
+    "mouse": "caller-owned",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "TextInput": {
     "keyboard": "covered",
     "mouse": "caller-owned",

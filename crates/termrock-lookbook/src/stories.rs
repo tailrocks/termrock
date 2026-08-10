@@ -68,6 +68,7 @@ use termrock::{
         FileSortKey,
         CivilDate, CivilDateRange, CivilTime, DateTimePicker, DateTimePickerKind,
         DateTimePickerState, TimeDisplayFormat,
+        KeybindingRecorder, KeybindingRecorderState,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -5088,6 +5089,42 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             14,
             multi_select_search_story,
+        ),
+        Story::new(
+            "keybinding-recorder/idle",
+            "KeybindingRecorder idle",
+            "KeybindingRecorder",
+            "Idle binding with default and restore hints.",
+            48,
+            8,
+            keybinding_recorder_idle_story,
+        ),
+        Story::new(
+            "keybinding-recorder/recording",
+            "KeybindingRecorder recording",
+            "KeybindingRecorder",
+            "Recording mode with escape-law caption.",
+            48,
+            8,
+            keybinding_recorder_recording_story,
+        ),
+        Story::new(
+            "keybinding-recorder/conflict",
+            "KeybindingRecorder conflict",
+            "KeybindingRecorder",
+            "Conflict validation against occupied chords.",
+            48,
+            8,
+            keybinding_recorder_conflict_story,
+        ),
+        Story::new(
+            "keybinding-recorder/reserved",
+            "KeybindingRecorder reserved",
+            "KeybindingRecorder",
+            "Reserved chord (Ctrl+C) blocked.",
+            48,
+            8,
+            keybinding_recorder_reserved_story,
         ),
         Story::new(
             "date-time-picker/date",
@@ -13504,6 +13541,73 @@ fn file_picker_unix_entries() -> Vec<FileEntry> {
         FileEntry::file("f4", "secret.env", "/home/u/proj/secret.env")
             .error("permission denied"),
     ]
+}
+
+fn keybinding_recorder_idle_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::input::KeyCode;
+    use termrock::keymap::KeyChord;
+    use termrock::widgets::ChordFormat;
+    let mut state = KeybindingRecorderState::new("app.save", "Save")
+        .with_chords([KeyChord::ctrl(KeyCode::Char('s'))])
+        .with_format(ChordFormat::footer())
+        .with_reserved(Vec::new());
+    state.set_focused(true);
+    KeybindingRecorder::new(system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn keybinding_recorder_recording_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::input::KeyCode;
+    use termrock::keymap::KeyChord;
+    use termrock::widgets::ChordFormat;
+    let mut state = KeybindingRecorderState::new("app.save", "Save")
+        .with_chords([KeyChord::ctrl(KeyCode::Char('s'))])
+        .with_format(ChordFormat::footer())
+        .with_sequences(true)
+        .with_reserved(Vec::new());
+    state.set_focused(true);
+    let _ = state.start_recording();
+    let _ = state.capture_chord(KeyChord::ctrl(KeyCode::Char('x')));
+    KeybindingRecorder::new(system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn keybinding_recorder_conflict_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::input::KeyCode;
+    use termrock::keymap::KeyChord;
+    use termrock::widgets::ChordFormat;
+    let mut state = KeybindingRecorderState::new("app.find", "Find")
+        .with_chords([KeyChord::plain(KeyCode::Char('/'))])
+        .with_format(ChordFormat::footer())
+        .with_sequences(false)
+        .with_reserved(Vec::new());
+    state.set_occupied(vec![(
+        KeyChord::ctrl(KeyCode::Char('s')),
+        "Save".into(),
+    )]);
+    state.set_focused(true);
+    let _ = state.start_recording();
+    let _ = state.capture_chord(KeyChord::ctrl(KeyCode::Char('s')));
+    KeybindingRecorder::new(system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn keybinding_recorder_reserved_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::input::KeyCode;
+    use termrock::keymap::KeyChord;
+    use termrock::widgets::ChordFormat;
+    let mut state = KeybindingRecorderState::new("app.interrupt", "Custom interrupt")
+        .with_format(ChordFormat::footer())
+        .with_sequences(false);
+    state.set_focused(true);
+    let _ = state.start_recording();
+    let _ = state.capture_chord(KeyChord::ctrl(KeyCode::Char('c')));
+    KeybindingRecorder::new(system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn date_time_picker_date_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
