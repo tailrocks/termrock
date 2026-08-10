@@ -422,6 +422,22 @@ let mut state = SelectState::new().with_value("apple");
 state.set_focused(true);
 let _ = Select::new(&options, &system).label("Fruit");`,
   },
+  MultiSelect: {
+    description:
+      'A searchable multi-choice selector with chip summary, select-all, max selection, and highlight≠checked.',
+    primaryStory: 'multi-select/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{MultiSelect, MultiSelectState, SelectOption};
+
+let system = DesignSystem::default();
+let options = [
+  SelectOption::option("rs", "Rust"),
+  SelectOption::option("go", "Go"),
+];
+let mut state = MultiSelectState::new().with_selected(["rs"]);
+state.set_focused(true);
+let _ = MultiSelect::new(&options, &system).label("Filters");`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

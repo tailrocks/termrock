@@ -19456,9 +19456,27 @@ impl<T> core::convert::From<T> for termrock::widgets::ModifierStyle
 pub fn termrock::widgets::ModifierStyle::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ModifierStyle
 #[non_exhaustive] pub enum termrock::widgets::MultiSelectOutcome<Id>
-pub termrock::widgets::MultiSelectOutcome::Added(Id)
+pub termrock::widgets::MultiSelectOutcome::Changed
+pub termrock::widgets::MultiSelectOutcome::Cleared
+pub termrock::widgets::MultiSelectOutcome::Closed
+pub termrock::widgets::MultiSelectOutcome::HighlightChanged
+pub termrock::widgets::MultiSelectOutcome::HighlightChanged::id: core::option::Option<Id>
 pub termrock::widgets::MultiSelectOutcome::Ignored
-pub termrock::widgets::MultiSelectOutcome::Removed(Id)
+pub termrock::widgets::MultiSelectOutcome::MaxReached
+pub termrock::widgets::MultiSelectOutcome::MaxReached::max: usize
+pub termrock::widgets::MultiSelectOutcome::Opened
+pub termrock::widgets::MultiSelectOutcome::Opened::presentation: termrock::widgets::SelectPresentation
+pub termrock::widgets::MultiSelectOutcome::PresentationChanged
+pub termrock::widgets::MultiSelectOutcome::PresentationChanged::presentation: termrock::widgets::SelectPresentation
+pub termrock::widgets::MultiSelectOutcome::RangeApplied
+pub termrock::widgets::MultiSelectOutcome::RangeApplied::ids: alloc::vec::Vec<Id>
+pub termrock::widgets::MultiSelectOutcome::SearchChanged
+pub termrock::widgets::MultiSelectOutcome::SearchChanged::query: alloc::string::String
+pub termrock::widgets::MultiSelectOutcome::SelectAll
+pub termrock::widgets::MultiSelectOutcome::SelectAll::count: usize
+pub termrock::widgets::MultiSelectOutcome::Toggled
+pub termrock::widgets::MultiSelectOutcome::Toggled::checked: bool
+pub termrock::widgets::MultiSelectOutcome::Toggled::id: Id
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MultiSelectOutcome<Id>
 pub fn termrock::widgets::MultiSelectOutcome<Id>::clone(&self) -> termrock::widgets::MultiSelectOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::MultiSelectOutcome<Id>
@@ -34463,14 +34481,28 @@ impl<T> core::convert::From<T> for termrock::widgets::ModelIndicator
 pub fn termrock::widgets::ModelIndicator::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ModelIndicator
 pub struct termrock::widgets::MultiSelect<'a, Id>
-impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::MultiSelect<'a, Id>
-pub const fn termrock::widgets::MultiSelect<'a, Id>::new(&'a [(Id, &'a str)], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::MultiSelect<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::MultiSelectState<Id>)
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display> termrock::widgets::MultiSelect<'a, Id>
+pub fn termrock::widgets::MultiSelect<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MultiSelectState<Id>)
+pub fn termrock::widgets::MultiSelect<'a, Id>::paint_stacked(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MultiSelectState<Id>)
+pub fn termrock::widgets::MultiSelect<'a, Id>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::MultiSelectState<Id>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+impl<'a, Id> termrock::widgets::MultiSelect<'a, Id>
+pub const fn termrock::widgets::MultiSelect<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::MultiSelect<'a, Id>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::MultiSelect<'a, Id>::new(&'a [termrock::widgets::SelectOption<Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::MultiSelect<'a, Id>::placeholder(self, &'a str) -> Self
+pub const fn termrock::widgets::MultiSelect<'a, Id>::show_clear(self, bool) -> Self
+pub const fn termrock::widgets::MultiSelect<'a, Id>::validation(self, termrock::widgets::Validation<'a>) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MultiSelect<'a, Id>
 pub fn termrock::widgets::MultiSelect<'a, Id>::clone(&self) -> termrock::widgets::MultiSelect<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::MultiSelect<'a, Id>
 pub fn termrock::widgets::MultiSelect<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::MultiSelect<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::MultiSelect<'_, Id>
+pub type &termrock::widgets::MultiSelect<'_, Id>::State = termrock::widgets::MultiSelectState<Id>
+pub fn &termrock::widgets::MultiSelect<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::MultiSelect<'_, Id>
+pub type termrock::widgets::MultiSelect<'_, Id>::State = termrock::widgets::MultiSelectState<Id>
+pub fn termrock::widgets::MultiSelect<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::MultiSelect<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::MultiSelect<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::MultiSelect<'a, Id> where Id: core::marker::Sync
@@ -34503,24 +34535,55 @@ pub fn termrock::widgets::MultiSelect<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MultiSelect<'a, Id>
 pub struct termrock::widgets::MultiSelectState<Id: core::clone::Clone + core::cmp::PartialEq>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::MultiSelectState<Id>
-pub fn termrock::widgets::MultiSelectState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[Id]) -> termrock::widgets::MultiSelectOutcome<Id>
-pub fn termrock::widgets::MultiSelectState<Id>::new(alloc::vec::Vec<Id>) -> Self
+pub fn termrock::widgets::MultiSelectState<Id>::clear_selection(&mut self) -> termrock::widgets::MultiSelectOutcome<Id>
+pub fn termrock::widgets::MultiSelectState<Id>::close(&mut self) -> termrock::widgets::MultiSelectOutcome<Id>
+pub const fn termrock::widgets::MultiSelectState<Id>::collection(&self) -> &termrock::interaction::CollectionState<Id>
+pub fn termrock::widgets::MultiSelectState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::SelectOption<Id>], ratatui_core::layout::rect::Rect) -> termrock::widgets::MultiSelectOutcome<Id>
+pub fn termrock::widgets::MultiSelectState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::SelectOption<Id>], ratatui_core::layout::rect::Rect) -> termrock::widgets::MultiSelectOutcome<Id>
+pub fn termrock::widgets::MultiSelectState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::SelectOption<Id>], ratatui_core::layout::rect::Rect) -> termrock::widgets::MultiSelectOutcome<Id>
+pub const fn termrock::widgets::MultiSelectState<Id>::highlight(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::MultiSelectState<Id>::is_checked(&self, &Id) -> bool
+pub const fn termrock::widgets::MultiSelectState<Id>::is_enabled(&self) -> bool
+pub const fn termrock::widgets::MultiSelectState<Id>::is_focused(&self) -> bool
+pub const fn termrock::widgets::MultiSelectState<Id>::is_open(&self) -> bool
+pub const fn termrock::widgets::MultiSelectState<Id>::max_selected(&self) -> core::option::Option<usize>
+pub fn termrock::widgets::MultiSelectState<Id>::new() -> Self
+pub fn termrock::widgets::MultiSelectState<Id>::open(&mut self, ratatui_core::layout::rect::Rect, &[termrock::widgets::SelectOption<Id>]) -> termrock::widgets::MultiSelectOutcome<Id>
+pub const fn termrock::widgets::MultiSelectState<Id>::panel_area(&self) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::MultiSelectState<Id>::presentation(&self) -> termrock::widgets::SelectPresentation
+pub const fn termrock::widgets::MultiSelectState<Id>::recipe(&self) -> termrock::widgets::SelectRecipe
+pub fn termrock::widgets::MultiSelectState<Id>::reconcile_options(&mut self, &[termrock::widgets::SelectOption<Id>])
+pub fn termrock::widgets::MultiSelectState<Id>::search_query(&self) -> &str
+pub fn termrock::widgets::MultiSelectState<Id>::select_all_visible(&mut self, &[termrock::widgets::SelectOption<Id>]) -> termrock::widgets::MultiSelectOutcome<Id>
 pub fn termrock::widgets::MultiSelectState<Id>::selected(&self) -> &[Id]
+pub const fn termrock::widgets::MultiSelectState<Id>::selection(&self) -> &termrock::widgets::Selection<Id>
+pub fn termrock::widgets::MultiSelectState<Id>::selection_mut(&mut self) -> &mut termrock::widgets::Selection<Id>
+pub const fn termrock::widgets::MultiSelectState<Id>::set_enabled(&mut self, bool)
+pub fn termrock::widgets::MultiSelectState<Id>::set_focused(&mut self, bool)
+pub const fn termrock::widgets::MultiSelectState<Id>::set_presentation(&mut self, termrock::widgets::SelectPresentation)
+pub fn termrock::widgets::MultiSelectState<Id>::set_selected(&mut self, impl core::iter::traits::collect::IntoIterator<Item = Id>)
+pub const fn termrock::widgets::MultiSelectState<Id>::trigger_area(&self) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::MultiSelectState<Id>::with_list_rows(self, u16) -> Self
+pub const fn termrock::widgets::MultiSelectState<Id>::with_max_selected(self, core::option::Option<usize>) -> Self
+pub fn termrock::widgets::MultiSelectState<Id>::with_max_summary_chips(self, usize) -> Self
+pub const fn termrock::widgets::MultiSelectState<Id>::with_recipe(self, termrock::widgets::SelectRecipe) -> Self
+pub const fn termrock::widgets::MultiSelectState<Id>::with_searchable(self, bool) -> Self
+pub fn termrock::widgets::MultiSelectState<Id>::with_selected(self, impl core::iter::traits::collect::IntoIterator<Item = Id>) -> Self
 impl<Id: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq> core::clone::Clone for termrock::widgets::MultiSelectState<Id>
 pub fn termrock::widgets::MultiSelectState<Id>::clone(&self) -> termrock::widgets::MultiSelectState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::MultiSelectState<Id>
+pub fn termrock::widgets::MultiSelectState<Id>::default() -> Self
 impl<Id: core::cmp::Eq + core::clone::Clone + core::cmp::PartialEq> core::cmp::Eq for termrock::widgets::MultiSelectState<Id>
 impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::MultiSelectState<Id>
 pub fn termrock::widgets::MultiSelectState<Id>::eq(&self, &termrock::widgets::MultiSelectState<Id>) -> bool
 impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::MultiSelectState<Id>
-impl<Id: core::default::Default + core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::MultiSelectState<Id>
-pub fn termrock::widgets::MultiSelectState<Id>::default() -> termrock::widgets::MultiSelectState<Id>
 impl<Id: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::widgets::MultiSelectState<Id>
 pub fn termrock::widgets::MultiSelectState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::widgets::MultiSelectState<Id>
+impl<Id> core::marker::Freeze for termrock::widgets::MultiSelectState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::MultiSelectState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::MultiSelectState<Id> where Id: core::marker::Sync
 impl<Id> core::marker::Unpin for termrock::widgets::MultiSelectState<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::MultiSelectState<Id>
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::MultiSelectState<Id> where Id: core::marker::UnsafeUnpin
 impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MultiSelectState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
 impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MultiSelectState<Id> where Id: core::panic::unwind_safe::UnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MultiSelectState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized

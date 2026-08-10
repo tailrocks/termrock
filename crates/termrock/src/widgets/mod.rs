@@ -76,6 +76,7 @@ mod search_input;
 mod path_input;
 mod token_field;
 mod select;
+mod multi_select;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -183,7 +184,7 @@ pub use surface::{
 };
 pub use controls::{
     Checkbox, CheckboxOutcome, CheckboxParts, CheckboxState, CheckboxValue, Combobox,
-    ComboboxOutcome, ComboboxState, MultiSelect, MultiSelectOutcome, MultiSelectState, RadioGroup,
+    ComboboxOutcome, ComboboxState, RadioGroup,
     RadioGroupOrientation, RadioGroupParts, RadioOption, RadioOptionParts, RadioOutcome,
     RadioSelectionPolicy, RadioState, Switch, SwitchOutcome, SwitchParts, SwitchRecipe, SwitchState,
 };
@@ -333,6 +334,7 @@ pub use select::{
     SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, Select, SelectOption, SelectOutcome,
     SelectPresentation, SelectRecipe, SelectRowKind, SelectState,
 };
+pub use multi_select::{MultiSelect, MultiSelectOutcome, MultiSelectState};
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,
     system_from_preset_id, theme_from_preset_id,

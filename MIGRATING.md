@@ -159,6 +159,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0143 | `v0.13.0` | [PathInput](migrations/0143-v0.13.0-path-input.md) |
 | 0144 | `v0.13.0` | [TokenField](migrations/0144-v0.13.0-token-field.md) |
 | 0145 | `v0.13.0` | [Select](migrations/0145-v0.13.0-select.md) |
+| 0146 | `v0.13.0` | [MultiSelect](migrations/0146-v0.13.0-multi-select.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

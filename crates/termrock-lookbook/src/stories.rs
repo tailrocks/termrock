@@ -62,6 +62,7 @@ use termrock::{
         PathExpect, PathFsStatus, PathInput, PathInputState, PathRisk, PathStyle,
         FieldToken, TokenField, TokenFieldState, TokenStatus,
         Select, SelectOption, SelectRecipe, SelectState,
+        MultiSelect, MultiSelectState,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -5046,6 +5047,42 @@ pub(crate) fn stories() -> Vec<Story> {
             24,
             1,
             select_compact_story,
+        ),
+        Story::new(
+            "multi-select/basic",
+            "MultiSelect",
+            "MultiSelect",
+            "Closed summary with chips.",
+            40,
+            2,
+            multi_select_basic_story,
+        ),
+        Story::new(
+            "multi-select/open",
+            "MultiSelect open",
+            "MultiSelect",
+            "Open checklist with highlight vs checks.",
+            42,
+            14,
+            multi_select_open_story,
+        ),
+        Story::new(
+            "multi-select/overflow",
+            "MultiSelect overflow",
+            "MultiSelect",
+            "Summary +N overflow chips.",
+            32,
+            2,
+            multi_select_overflow_story,
+        ),
+        Story::new(
+            "multi-select/search",
+            "MultiSelect search",
+            "MultiSelect",
+            "Searchable open multi-select.",
+            42,
+            14,
+            multi_select_search_story,
         ),
         Story::new(
             "text-input/invalid",
@@ -13265,6 +13302,81 @@ fn select_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         area,
         &mut state,
     );
+}
+
+fn multi_select_demo_options() -> Vec<SelectOption<&'static str>> {
+    vec![
+        SelectOption::group("g", "Languages"),
+        SelectOption::option("rs", "Rust"),
+        SelectOption::option("go", "Go"),
+        SelectOption::option("ts", "TypeScript"),
+        SelectOption::option("py", "Python"),
+    ]
+}
+
+fn multi_select_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let opts = multi_select_demo_options();
+    let mut state = MultiSelectState::new()
+        .with_recipe(SelectRecipe::Form)
+        .with_selected(["rs", "go"]);
+    state.set_focused(true);
+    frame.render_stateful_widget(
+        MultiSelect::new(&opts, system)
+            .label("Filters")
+            .ascii(true),
+        area,
+        &mut state,
+    );
+}
+
+fn multi_select_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let opts = multi_select_demo_options();
+    let mut state = MultiSelectState::new().with_selected(["rs"]);
+    state.set_focused(true);
+    let _ = state.open(area, &opts);
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Down,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &opts,
+        area,
+    );
+    MultiSelect::new(&opts, system)
+        .label("Filters")
+        .ascii(true)
+        .paint_stacked(area, frame.buffer_mut(), &mut state);
+}
+
+fn multi_select_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let opts = multi_select_demo_options();
+    let mut state = MultiSelectState::new()
+        .with_selected(["rs", "go", "ts", "py"])
+        .with_max_summary_chips(2);
+    state.set_focused(true);
+    frame.render_stateful_widget(
+        MultiSelect::new(&opts, system).ascii(true),
+        area,
+        &mut state,
+    );
+}
+
+fn multi_select_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let opts = multi_select_demo_options();
+    let mut state = MultiSelectState::new().with_searchable(true);
+    state.set_focused(true);
+    let _ = state.open(area, &opts);
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char('p'),
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &opts,
+        area,
+    );
+    MultiSelect::new(&opts, system)
+        .ascii(true)
+        .paint_stacked(area, frame.buffer_mut(), &mut state);
 }
 
 fn text_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

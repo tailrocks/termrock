@@ -2292,113 +2292,8 @@ impl<Id: Clone> StatefulWidget for &Switch<'_, Id> {
     }
 }
 
-// ── MultiSelect / Combobox ──────────────────────────────────────────────────
-// Single-choice Select lives in `select.rs` (CollectionState + recipes).
-
-/// Multi-select membership outcome.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum MultiSelectOutcome<Id> {
-    /// No change.
-    Ignored,
-    /// Added id.
-    Added(Id),
-    /// Removed id.
-    Removed(Id),
-}
-
-/// Multi-select state using membership set order.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct MultiSelectState<Id: Clone + PartialEq> {
-    selected: Vec<Id>,
-    focus_index: usize,
-    focused: bool,
-}
-
-impl<Id: Clone + PartialEq> MultiSelectState<Id> {
-    /// From selected ids.
-    #[must_use]
-    pub fn new(selected: Vec<Id>) -> Self {
-        Self {
-            selected,
-            focus_index: 0,
-            focused: false,
-        }
-    }
-
-    #[must_use]
-    /// Membership.
-    pub fn selected(&self) -> &[Id] {
-        &self.selected
-    }
-
-    /// Space toggles focused option.
-    pub fn handle_key(&mut self, key: KeyEvent, options: &[Id]) -> MultiSelectOutcome<Id> {
-        if !self.focused || options.is_empty() || key.kind != KeyEventKind::Press {
-            return MultiSelectOutcome::Ignored;
-        }
-        match key.code {
-            KeyCode::Down => {
-                self.focus_index = (self.focus_index + 1) % options.len();
-                MultiSelectOutcome::Ignored
-            }
-            KeyCode::Up => {
-                self.focus_index = self.focus_index.checked_sub(1).unwrap_or(options.len() - 1);
-                MultiSelectOutcome::Ignored
-            }
-            KeyCode::Char(' ') | KeyCode::Enter => {
-                let id = options[self.focus_index].clone();
-                if let Some(pos) = self.selected.iter().position(|s| s == &id) {
-                    self.selected.remove(pos);
-                    MultiSelectOutcome::Removed(id)
-                } else {
-                    self.selected.push(id.clone());
-                    MultiSelectOutcome::Added(id)
-                }
-            }
-            _ => MultiSelectOutcome::Ignored,
-        }
-    }
-}
-
-/// MultiSelect paint helper.
-#[derive(Debug, Clone, Copy)]
-pub struct MultiSelect<'a, Id> {
-    options: &'a [(Id, &'a str)],
-    tokens: &'a DesignSystem,
-}
-
-impl<'a, Id: Clone + PartialEq> MultiSelect<'a, Id> {
-    /// Options.
-    #[must_use]
-    pub const fn new(options: &'a [(Id, &'a str)], tokens: &'a DesignSystem) -> Self {
-        Self { options, tokens }
-    }
-
-    /// Render checklist.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &MultiSelectState<Id>) {
-        if area.is_empty() {
-            return;
-        }
-        let mut y = area.y;
-        for (i, (id, label)) in self.options.iter().enumerate() {
-            if y >= area.bottom() {
-                break;
-            }
-            let on = state.selected.iter().any(|s| s == id);
-            let mark = if on { "[x]" } else { "[ ]" };
-            let style = if state.focus_index == i && state.focused {
-                self.tokens.style(Role::Focus)
-            } else {
-                self.tokens.style(Role::Text)
-            };
-            let line = format!("{mark} {label}");
-            let text = take_display_cols(&line, usize::from(area.width));
-            buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
-            y = y.saturating_add(1);
-        }
-    }
-}
+// ── Combobox ────────────────────────────────────────────────────────────────
+// MultiSelect lives in `multi_select.rs` (CollectionState + Selection + chips).
 
 /// Combobox: query + results (Picker evolution). Free-text optional.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -3100,22 +2995,7 @@ mod tests {
         assert!(scene.len() >= 1);
     }
 
-    // Select open/close: see `widgets::select` module tests (CollectionState redesign).
-
-    #[test]
-    fn multiselect_toggle_membership() {
-        let opts = ["a", "b"];
-        let mut state = MultiSelectState::new(vec![]);
-        state.focused = true;
-        assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE), &opts),
-            MultiSelectOutcome::Added("a")
-        ));
-        assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE), &opts),
-            MultiSelectOutcome::Removed("a")
-        ));
-    }
+    // Select / MultiSelect: see `widgets::select` and `widgets::multi_select` tests.
 
     #[test]
     fn combobox_query_and_select() {
