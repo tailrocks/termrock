@@ -265,6 +265,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0249 | `v0.13.0` | [AuthEntry login blocks + email-only](migrations/0249-v0.13.0-auth-entry-login-email-only.md) |
 | 0250 | `v0.13.0` | [Sidebar collapse filter + sectioned nav](migrations/0250-v0.13.0-sidebar-collapse-filter.md) |
 | 0251 | `v0.13.0` | [AppDashboard + first-party blocks matrix](migrations/0251-v0.13.0-app-dashboard-blocks.md) |
+| 0252 | `v0.13.0` | [Chart area fill for shadcn charts](migrations/0252-v0.13.0-chart-area-fill.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

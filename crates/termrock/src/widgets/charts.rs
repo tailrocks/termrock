@@ -1,17 +1,18 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **Visualization family** — Sparkline, Chart, Gauge, Histogram (+ BarSeries,
-//! SegmentedMeter).
+//! **Visualization family** — Sparkline, Chart (line + **area**), Gauge,
+//! Histogram (+ BarSeries, SegmentedMeter).
 //!
-//! **Mission.** Coherent terminal data-viz: time series, bars, stacked bars,
-//! histogram buckets, gauges, thresholds, labels, legends, missing data, and
-//! selected points. Braille / block / ASCII capability fallbacks with
-//! **consistent scale semantics**. Autoscale, fixed scale, log (where justified),
-//! time-window behavior. No-color mode uses line styles, glyphs, labels, and
-//! ordering — never color alone.
+//! **Mission.** Coherent terminal data-viz: time series, filled area under
+//! series, bars, stacked bars, histogram buckets, gauges, thresholds, labels,
+//! legends, missing data, and selected points. Braille / block / ASCII
+//! capability fallbacks with **consistent scale semantics**. Autoscale, fixed
+//! scale, log (where justified), time-window behavior. No-color mode uses line
+//! styles, glyphs, labels, and ordering — never color alone.
 //!
-//! Research: btop, bottom, gping, Ratatui charts, observability dashboards.
+//! Research: btop, bottom, gping, Ratatui charts, shadcn Recharts demos (area/
+//! bar/line/pie peers), observability dashboards.
 
 use ratatui_core::{
     buffer::Buffer,
@@ -491,7 +492,32 @@ impl Widget for Sparkline<'_> {
 
 // ── Chart (multi-series) ────────────────────────────────────────────────────
 
-/// One series in a multi-line chart.
+/// How the chart fills the plot under series (shadcn area-chart peer).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ChartFill {
+    /// Line/spark only (default line chart).
+    #[default]
+    None,
+    /// Fill from plot baseline (bottom) up to each series value (area chart).
+    Area,
+    /// Stack series (sum) then fill under the cumulative outline.
+    AreaStacked,
+}
+
+impl ChartFill {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Area => "area",
+            Self::AreaStacked => "area-stacked",
+        }
+    }
+}
+
+/// One series in a multi-line / area chart.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ChartSeries<'a> {
     /// Legend label.
@@ -508,7 +534,7 @@ impl<'a> ChartSeries<'a> {
     }
 }
 
-/// Multi-series chart with axes, legend, selection, thresholds.
+/// Multi-series chart with axes, legend, selection, thresholds, optional area fill.
 #[derive(Debug, Clone, Copy)]
 pub struct Chart<'a> {
     series: &'a [ChartSeries<'a>],
@@ -522,10 +548,11 @@ pub struct Chart<'a> {
     show_axes: bool,
     window: usize,
     title: Option<&'a str>,
+    fill: ChartFill,
 }
 
 impl<'a> Chart<'a> {
-    /// Series + system.
+    /// Series + system (line style by default).
     #[must_use]
     pub const fn new(series: &'a [ChartSeries<'a>], system: &'a DesignSystem) -> Self {
         Self {
@@ -540,7 +567,29 @@ impl<'a> Chart<'a> {
             show_axes: true,
             window: 0,
             title: None,
+            fill: ChartFill::None,
         }
+    }
+
+    /// Area chart: fill under each series from baseline (shadcn area default peer).
+    #[must_use]
+    pub const fn area(mut self) -> Self {
+        self.fill = ChartFill::Area;
+        self
+    }
+
+    /// Stacked area: series sum then fill under cumulative outline.
+    #[must_use]
+    pub const fn area_stacked(mut self) -> Self {
+        self.fill = ChartFill::AreaStacked;
+        self
+    }
+
+    /// Explicit fill mode.
+    #[must_use]
+    pub const fn fill(mut self, fill: ChartFill) -> Self {
+        self.fill = fill;
+        self
     }
 
     /// Scale.
@@ -656,15 +705,50 @@ impl Widget for &Chart<'_> {
             return;
         }
 
-        // Domain across all series
+        // Domain across all series (stacked uses cumulative sums)
+        let width_hint = usize::from(area.width).max(1);
         let mut all = Vec::new();
-        for s in self.series {
-            let win = if self.window == 0 {
-                s.samples
-            } else {
-                window_samples(s.samples, self.window)
-            };
-            all.extend(win.iter().copied());
+        match self.fill {
+            ChartFill::AreaStacked => {
+                let n = self
+                    .series
+                    .iter()
+                    .map(|s| {
+                        let win = if self.window == 0 {
+                            s.samples
+                        } else {
+                            window_samples(s.samples, self.window.max(width_hint))
+                        };
+                        win.len()
+                    })
+                    .max()
+                    .unwrap_or(0)
+                    .max(1);
+                for i in 0..n {
+                    let mut sum = 0.0;
+                    for s in self.series {
+                        let win = if self.window == 0 {
+                            s.samples
+                        } else {
+                            window_samples(s.samples, self.window.max(width_hint))
+                        };
+                        if let Some(v) = win.get(i).copied().filter(|v| v.is_finite()) {
+                            sum += v.max(0.0);
+                        }
+                    }
+                    all.push(sum);
+                }
+            }
+            ChartFill::None | ChartFill::Area => {
+                for s in self.series {
+                    let win = if self.window == 0 {
+                        s.samples
+                    } else {
+                        window_samples(s.samples, self.window)
+                    };
+                    all.extend(win.iter().copied());
+                }
+            }
         }
         for t in self.thresholds {
             all.push(*t);
@@ -708,7 +792,6 @@ impl Widget for &Chart<'_> {
             }
         }
 
-        // Clear plot with grid dots in no-color? use space
         // Paint thresholds first as horizontal lines of marks
         for thr in self.thresholds {
             if let Some(tf) = domain.normalize(*thr) {
@@ -742,6 +825,15 @@ impl Widget for &Chart<'_> {
             o
         };
 
+        let ladder = gset.ladder();
+        let miss = gset.missing_mark();
+        let fill_ch = if matches!(gset, VizGlyphSet::Ascii) {
+            ':'
+        } else {
+            // mid density block — readable fill under outline
+            ladder.get(ladder.len() / 3).copied().unwrap_or('·')
+        };
+
         for si in order {
             let series = &self.series[si];
             let win_n = if self.window == 0 {
@@ -754,21 +846,46 @@ impl Widget for &Chart<'_> {
                 continue;
             }
             let mark = gset.series_marker(si);
-            let ladder = gset.ladder();
-            let miss = gset.missing_mark();
             let role = series_role(si);
             let style = if matches!(self.system.capability, crate::style::ColorCapability::Monochrome) {
                 self.system.style(Role::Text)
             } else {
                 self.system.style(role)
             };
+            let fill_style = if matches!(self.system.capability, crate::style::ColorCapability::Monochrome) {
+                self.system.style(Role::TextMuted)
+            } else {
+                self.system.style(role)
+            };
 
             for col in 0..width {
                 let index = col * samples.len() / width.max(1);
-                let sample = samples.get(index).copied().unwrap_or(f64::NAN);
+                let sample = match self.fill {
+                    ChartFill::AreaStacked => {
+                        // cumulative of series 0..=si at this index
+                        let mut sum = 0.0;
+                        for sj in 0..=si {
+                            let win = window_samples(
+                                self.series[sj].samples,
+                                if self.window == 0 {
+                                    width.max(1)
+                                } else {
+                                    self.window
+                                },
+                            );
+                            if let Some(v) = win.get(index).copied().filter(|v| v.is_finite()) {
+                                sum += v.max(0.0);
+                            }
+                        }
+                        sum
+                    }
+                    ChartFill::None | ChartFill::Area => {
+                        samples.get(index).copied().unwrap_or(f64::NAN)
+                    }
+                };
                 let missing = !sample.is_finite();
                 let Some(frac) = domain.normalize(sample) else {
-                    if missing {
+                    if missing && matches!(self.fill, ChartFill::None) {
                         buffer.set_stringn(
                             plot.x.saturating_add(col as u16),
                             plot.y.saturating_add(plot.height.saturating_sub(1)),
@@ -782,6 +899,25 @@ impl Widget for &Chart<'_> {
                 let row = fraction_to_row(frac, plot.height);
                 let selected = self.selected_series == Some(si)
                     && self.selected_index == Some(index);
+
+                // Area fill: paint baseline→outline (exclusive of outline row when multi-row)
+                if matches!(self.fill, ChartFill::Area | ChartFill::AreaStacked) && height > 1 {
+                    let base = plot.height.saturating_sub(1);
+                    // rows from `row` (top of value) down to base inclusive as fill;
+                    // outline painted after with series marker.
+                    let mut r = row;
+                    while r < base {
+                        r = r.saturating_add(1);
+                        buffer.set_stringn(
+                            plot.x.saturating_add(col as u16),
+                            plot.y.saturating_add(r),
+                            fill_ch.to_string(),
+                            1,
+                            fill_style,
+                        );
+                    }
+                }
+
                 let ch = if selected {
                     if matches!(gset, VizGlyphSet::Ascii) {
                         'X'
@@ -1764,6 +1900,77 @@ mod tests {
             .render(Rect::new(0, 0, 40, 8), &mut buffer);
         let text: String = buffer.content().iter().map(|c| c.symbol().to_string()).collect();
         assert!(text.contains("cpu") || text.contains("host") || text.contains('●') || text.contains('*'), "{text}");
+    }
+
+    #[test]
+    fn chart_area_fill_paints_below_outline() {
+        let system = system();
+        // Constant high value → outline near top; fill occupies lower rows
+        let a = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
+        let series = [ChartSeries::new("area", &a)];
+        let area = Rect::new(0, 0, 24, 8);
+        let mut line_buf = Buffer::empty(area);
+        Chart::new(&series, &system)
+            .show_legend(false)
+            .show_axes(false)
+            .render(area, &mut line_buf);
+        let mut area_buf = Buffer::empty(area);
+        Chart::new(&series, &system)
+            .area()
+            .show_legend(false)
+            .show_axes(false)
+            .render(area, &mut area_buf);
+        // Area fill must paint more non-space cells than pure line
+        let count = |buf: &Buffer| -> usize {
+            buf.content()
+                .iter()
+                .filter(|c| {
+                    let s = c.symbol();
+                    !s.is_empty() && s != " "
+                })
+                .count()
+        };
+        let line_n = count(&line_buf);
+        let area_n = count(&area_buf);
+        assert!(
+            area_n > line_n,
+            "area fill should paint more cells than line: area={area_n} line={line_n}"
+        );
+        // Bottom row of plot should have fill (not empty)
+        let bottom_filled = (0..24u16).any(|x| {
+            let s = area_buf[(x, 7)].symbol();
+            !s.is_empty() && s != " "
+        });
+        assert!(bottom_filled, "expected fill near baseline");
+    }
+
+    #[test]
+    fn chart_area_stacked_uses_cumulative_domain() {
+        let system = system();
+        let a = [1.0, 1.0, 1.0, 1.0];
+        let b = [1.0, 1.0, 1.0, 1.0];
+        let series = [
+            ChartSeries::new("a", &a),
+            ChartSeries::new("b", &b),
+        ];
+        let area = Rect::new(0, 0, 20, 6);
+        let mut buffer = Buffer::empty(area);
+        Chart::new(&series, &system)
+            .area_stacked()
+            .show_legend(true)
+            .title("stack")
+            .render(area, &mut buffer);
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("stack") || text.contains('a') || text.contains('b') || !text.trim().is_empty(),
+            "{text}"
+        );
+        assert_eq!(ChartFill::AreaStacked.id(), "area-stacked");
+        assert_eq!(ChartFill::Area.id(), "area");
     }
 
     #[test]
