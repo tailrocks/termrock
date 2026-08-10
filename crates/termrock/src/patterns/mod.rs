@@ -18,6 +18,7 @@ mod file_manager;
 mod git_workbench;
 mod observability_dashboard;
 mod ops_dashboard;
+mod help_center;
 mod project_launcher;
 mod resource_browser;
 mod settings_screen;
@@ -81,6 +82,15 @@ pub use project_launcher::{
     ProjectLocation, ProjectPathStatus, PROJECT_LAUNCHER_SEARCH_HEIGHT,
 };
 pub use project_launcher::bench as project_launcher_bench;
+pub use help_center::{
+    burst_help_topics, command_entries_from_help, command_list_rows, component_inspect_rows,
+    doctor_finding_rows, example_help_center_commands, example_help_center_entries,
+    example_help_doctor_report, example_help_topics, filter_help_topics, help_center_layout,
+    help_center_layout_density, help_topic_rows, render_help_center, seed_compact_mode,
+    seed_diagnostics_state, HelpCenterDensity, HelpCenterMode, HelpCenterOutcome, HelpCenterPane,
+    HelpCenterState, HelpCenterSurfaces, HelpTopic, HelpTopicGroup, HELP_CENTER_SEARCH_HEIGHT,
+};
+pub use help_center::bench as help_center_bench;
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,
     AppShellSlots, AppShellZone,

@@ -1754,6 +1754,100 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "help-center".into(),
+            title: "Help Center / Command Reference".into(),
+            description: "Contextual product help: SearchInput, topic nav, KeyboardHelp (live HelpEntry/keymap SoT), command list from HelpEntry, MarkdownView body, DoctorReport diagnostics, registry inspect; compact overlay + full docs; host owns markdown and command execution.".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::help_center".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/help_center.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec!["termrock/Panel".into()];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("Workbench".into());
+                c.min_width = Some(40);
+                c.min_height = Some(12);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "search".into(),
+                    label: "Search".into(),
+                },
+                AnatomyPartRef {
+                    id: "nav".into(),
+                    label: "Topic nav".into(),
+                },
+                AnatomyPartRef {
+                    id: "keyboard".into(),
+                    label: "Keyboard map".into(),
+                },
+                AnatomyPartRef {
+                    id: "commands".into(),
+                    label: "Command reference".into(),
+                },
+                AnatomyPartRef {
+                    id: "body".into(),
+                    label: "Markdown body".into(),
+                },
+                AnatomyPartRef {
+                    id: "diagnostics".into(),
+                    label: "Doctor diagnostics".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "full".into(),
+                    description: "Full documentation".into(),
+                },
+                VariantRef {
+                    id: "compact".into(),
+                    description: "Compact overlay".into(),
+                },
+                VariantRef {
+                    id: "narrow".into(),
+                    description: "No keyboard pane".into(),
+                },
+            ],
+            outcomes: vec![
+                OutcomeRef {
+                    id: "TopicOpened".into(),
+                },
+                OutcomeRef {
+                    id: "CommandRun".into(),
+                },
+                OutcomeRef {
+                    id: "DoctorOpened".into(),
+                },
+                OutcomeRef {
+                    id: "LinkFollowed".into(),
+                },
+            ],
+            stories: vec![
+                "help-center/basic".into(),
+                "help-center/compact".into(),
+                "help-center/narrow".into(),
+                "help-center/doctor".into(),
+                "help-center/unicode".into(),
+            ],
+            tests: vec!["patterns::help_center".into()],
+            migration: Some("migrations/0245-v0.13.0-help-center-command-reference.md".into()),
+            provenance: prov("crates/termrock/src/patterns/help_center.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 

@@ -7062,6 +7062,51 @@ pub(crate) fn stories() -> Vec<Story> {
             project_launcher_unicode,
         ),
         Story::new(
+            "help-center/basic",
+            "Help center full docs",
+            "HelpCenter",
+            "Full multi-pane help + keyboard + commands.",
+            120,
+            40,
+            help_center_basic,
+        ),
+        Story::new(
+            "help-center/compact",
+            "Help center compact",
+            "HelpCenter",
+            "Compact overlay mode.",
+            72,
+            20,
+            help_center_compact,
+        ),
+        Story::new(
+            "help-center/narrow",
+            "Help center narrow",
+            "HelpCenter",
+            "Narrow density — keyboard collapsed.",
+            70,
+            24,
+            help_center_narrow,
+        ),
+        Story::new(
+            "help-center/doctor",
+            "Help center doctor",
+            "HelpCenter",
+            "Diagnostics pane with doctor findings.",
+            100,
+            32,
+            help_center_doctor,
+        ),
+        Story::new(
+            "help-center/unicode",
+            "Help center unicode",
+            "HelpCenter",
+            "Unicode topic paint path.",
+            100,
+            28,
+            help_center_unicode,
+        ),
+        Story::new(
             "permission-prompt/basic",
             "Permission prompt",
             "PermissionPrompt",
@@ -25516,6 +25561,90 @@ fn project_launcher_inline(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 
 fn project_launcher_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_project_launcher_story(frame, area, system, ProjectLauncherStoryKind::Unicode);
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum HelpCenterStoryKind {
+    Basic,
+    Compact,
+    Narrow,
+    Doctor,
+    Unicode,
+}
+
+fn paint_help_center_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    kind: HelpCenterStoryKind,
+) {
+    use termrock::patterns::{
+        command_entries_from_help, example_help_center_entries, example_help_doctor_report,
+        example_help_topics, render_help_center, seed_compact_mode, seed_diagnostics_state,
+        HelpCenterDensity, HelpCenterState, HelpCenterSurfaces,
+    };
+
+    let mut state = match kind {
+        HelpCenterStoryKind::Compact => HelpCenterState::compact(),
+        _ => HelpCenterState::new(),
+    };
+    match kind {
+        HelpCenterStoryKind::Narrow => {
+            state.density = Some(HelpCenterDensity::Narrow);
+        }
+        HelpCenterStoryKind::Compact => {
+            seed_compact_mode(&mut state);
+        }
+        HelpCenterStoryKind::Doctor => {
+            seed_diagnostics_state(&mut state);
+        }
+        HelpCenterStoryKind::Basic | HelpCenterStoryKind::Unicode => {}
+    }
+    if kind == HelpCenterStoryKind::Unicode {
+        state.selected_topic = Some("unicode".into());
+    } else {
+        state.selected_topic = Some("getting-started".into());
+    }
+
+    let topics = example_help_topics();
+    let help = example_help_center_entries(system);
+    let cmds = command_entries_from_help(&help);
+    let doctor = example_help_doctor_report();
+    let components = vec!["keyboard-help".into(), "command-palette".into()];
+
+    render_help_center(
+        frame.buffer_mut(),
+        area,
+        HelpCenterSurfaces {
+            system,
+            state: &mut state,
+            topics: &topics,
+            help_entries: &help,
+            commands: &cmds,
+            doctor: Some(&doctor),
+            component_ids: &components,
+        },
+    );
+}
+
+fn help_center_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_help_center_story(frame, area, system, HelpCenterStoryKind::Basic);
+}
+
+fn help_center_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_help_center_story(frame, area, system, HelpCenterStoryKind::Compact);
+}
+
+fn help_center_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_help_center_story(frame, area, system, HelpCenterStoryKind::Narrow);
+}
+
+fn help_center_doctor(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_help_center_story(frame, area, system, HelpCenterStoryKind::Doctor);
+}
+
+fn help_center_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_help_center_story(frame, area, system, HelpCenterStoryKind::Unicode);
 }
 
 #[derive(Clone, Copy)]
