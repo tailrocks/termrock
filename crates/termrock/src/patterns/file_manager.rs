@@ -798,8 +798,9 @@ impl FileManagerState {
             "cancel",
         );
         self.alert.set_title("Conflict");
-        self.alert
-            .set_action_labels("Overwrite", "Skip");
+        self.alert.set_action_labels("Overwrite", "Skip");
+        // DialogState defaults open; re-assert open + input after rebuild.
+        self.alert.set_accepts_input(true);
         self.apply_focus_gates();
     }
 
@@ -821,6 +822,7 @@ impl FileManagerState {
             "cancel",
         );
         self.alert.set_title("Delete");
+        self.alert.set_accepts_input(true);
         self.apply_focus_gates();
     }
 
@@ -1111,8 +1113,14 @@ impl FileManagerState {
     ) -> FileManagerOutcome {
         let is_press = key.kind == KeyEventKind::Press;
 
+        // While rename draft, filter typing, or inline delete confirm is active,
+        // FileTree owns the keyboard — do not steal x/v/p for cut/paste/preview.
+        let tree_owns_typing = self.tree.draft.is_some()
+            || self.tree.filter.is_some()
+            || self.tree.pending_confirm.is_some();
+
         // Workbench-level cut / paste (FileTree owns yank path-copy as `y`)
-        if is_press && key.modifiers.is_empty() {
+        if is_press && key.modifiers.is_empty() && !tree_owns_typing {
             match key.code {
                 KeyCode::Char('x') => {
                     let paths = self.selected_paths(entries);
@@ -1971,20 +1979,35 @@ mod tests {
 
         let out = st.handle_key(press(KeyCode::Char('r')), &entries, &ops, &[]);
         assert!(
-            matches!(out, FileManagerOutcome::Tree { .. })
-                || matches!(out, FileManagerOutcome::RenameRequested { .. }),
-            "rename draft start: {out:?}"
+            st.tree.draft.is_some(),
+            "rename must open draft, got {out:?}"
         );
-        // type new name + enter
-        if st.tree.draft.is_some() {
-            let _ = st.handle_key(press(KeyCode::Char('x')), &entries, &ops, &[]);
-            // backspace noise ok; commit
-            let out = st.handle_key(press(KeyCode::Enter), &entries, &ops, &[]);
-            assert!(
-                matches!(out, FileManagerOutcome::RenameRequested { .. }),
-                "got {out:?}"
-            );
-        }
+        let before = st.tree.draft.as_ref().unwrap().name.clone();
+        // Type `x` into draft — must NOT steal to cut/ClipboardSet
+        let out = st.handle_key(press(KeyCode::Char('x')), &entries, &ops, &[]);
+        assert!(
+            !matches!(out, FileManagerOutcome::ClipboardSet { .. }),
+            "draft typing must not become cut: {out:?}"
+        );
+        let after = st
+            .tree
+            .draft
+            .as_ref()
+            .map(|d| d.name.clone())
+            .expect("draft must remain open while typing");
+        assert_eq!(
+            after,
+            format!("{before}x"),
+            "draft must receive char x"
+        );
+        let out = st.handle_key(press(KeyCode::Enter), &entries, &ops, &[]);
+        assert!(
+            matches!(
+                out,
+                FileManagerOutcome::RenameRequested { ref to, .. } if to.ends_with('x')
+            ),
+            "got {out:?}"
+        );
 
         st.tree.select(Some("Cargo.toml".into()));
         let out = st.handle_key(press(KeyCode::Char('d')), &entries, &ops, &[]);
@@ -2092,35 +2115,30 @@ mod tests {
         let entries = example_file_entries();
         let ops = example_empty_ops();
         seed_delete_confirm(&mut st);
+        assert!(matches!(st.dialog, FileManagerDialog::ConfirmDelete { .. }));
+        // Safe default is cancel — move action cursor to confirm, then Enter.
+        let out = st.handle_key(press(KeyCode::Right), &entries, &ops, &[]);
+        assert!(
+            matches!(out, FileManagerOutcome::Ignored),
+            "focus move maps to Ignored, got {out:?}"
+        );
+        assert_eq!(
+            st.alert.action_cursor().copied(),
+            Some("confirm"),
+            "Right must focus destructive confirm"
+        );
         let out = st.handle_key(press(KeyCode::Enter), &entries, &ops, &[]);
         assert!(
-            matches!(out, FileManagerOutcome::DeleteRequested { ref ids } if ids.len() == 2)
-                || matches!(out, FileManagerOutcome::Ignored)
-                || matches!(out, FileManagerOutcome::ConfirmCancelled)
-                || matches!(out, FileManagerOutcome::ConfirmDestructive { .. }),
-            "got {out:?}"
+            matches!(
+                out,
+                FileManagerOutcome::DeleteRequested { ref ids } if ids.len() == 2
+            ),
+            "workbench path must emit DeleteRequested for 2 paths, got {out:?}"
         );
-        // If alert needs focus dance, force confirm path
-        if !matches!(out, FileManagerOutcome::DeleteRequested { .. }) {
-            seed_delete_confirm(&mut st);
-            // AlertDialog confirm via explicit outcome path
-            st.close_dialog();
-            let paths = vec!["tmp/a".into(), "tmp/b".into()];
-            assert!(matches!(
-                FileManagerOutcome::DeleteRequested {
-                    ids: paths.clone()
-                },
-                FileManagerOutcome::DeleteRequested { .. }
-            ));
-            // Real path: open + map confirmed
-            st.open_delete_confirm(paths.clone());
-            let out = st.alert.handle_key(press(KeyCode::Enter));
-            if matches!(out, AlertDialogOutcome::Confirmed { .. }) {
-                st.close_dialog();
-                let final_out = FileManagerOutcome::DeleteRequested { ids: paths };
-                assert!(matches!(final_out, FileManagerOutcome::DeleteRequested { .. }));
-            }
-        }
+        assert!(
+            matches!(st.dialog, FileManagerDialog::None),
+            "dialog must close after confirm"
+        );
     }
 
     #[test]
