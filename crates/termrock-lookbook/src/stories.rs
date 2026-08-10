@@ -2349,14 +2349,41 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "toast/success",
+            "Toast success",
             "Toast",
-            "Toast",
-            "Caller-owned transient message.",
+            "Caller-owned transient success message (default top-right).",
             34,
             4,
             toast,
         )
         .with_interactor(toast_interactor),
+        Story::new(
+            "toast/kinds",
+            "Toast kinds",
+            "Toast",
+            "Info/success/warning/error/progress/undo stacked kinds.",
+            48,
+            16,
+            toast_kinds_story,
+        ),
+        Story::new(
+            "toast/stack",
+            "Toast stack",
+            "Toast",
+            "ToastQueue multi-notification stack with priority.",
+            40,
+            14,
+            toast_stack_story,
+        ),
+        Story::new(
+            "toast/persistent",
+            "Toast persistent",
+            "Toast",
+            "Persistent toast until host dismiss (no TTL).",
+            36,
+            4,
+            toast_persistent_story,
+        ),
         Story::new(
             "backdrop/basic",
             "Backdrop",
@@ -11422,6 +11449,73 @@ fn diff(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn toast(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
         Toast::new(system, "Updated", Severity::Success).anchor(Anchor::TopRight),
+        area,
+    );
+}
+
+fn toast_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ToastKind, ToastQueue, ToastSpec, ToastStack};
+    use std::time::{Duration, Instant};
+    use termrock::runtime::FrameTick;
+    let mut q = ToastQueue::new();
+    q.set_anchor(Anchor::TopRight);
+    let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
+    let _ = q.push(
+        tick,
+        ToastSpec::message("i", "Heads up").severity(Severity::Info),
+    );
+    let _ = q.push(
+        tick,
+        ToastSpec::message("s", "Saved").severity(Severity::Success),
+    );
+    let _ = q.push(
+        tick,
+        ToastSpec::message("w", "Disk low").severity(Severity::Warning),
+    );
+    let _ = q.push(
+        tick,
+        ToastSpec::message("e", "Failed").severity(Severity::Error),
+    );
+    let _ = q.push(
+        tick,
+        ToastSpec::message("p", "Uploading").progress(45).group("up"),
+    );
+    let _ = q.push(
+        tick,
+        ToastSpec::message("u", "Deleted draft").undo("Undo"),
+    );
+    let _ = ToastKind::Undo;
+    ToastStack::new(system).paint(area, frame.buffer_mut(), &mut q);
+}
+
+fn toast_stack_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ToastPriority, ToastQueue, ToastSpec, ToastStack};
+    use std::time::{Duration, Instant};
+    use termrock::runtime::FrameTick;
+    let mut q = ToastQueue::new();
+    q.set_max_visible(4);
+    q.set_anchor(Anchor::BottomRight);
+    let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
+    let _ = q.push(
+        tick,
+        ToastSpec::message("1", "Agent finished step 1").priority(ToastPriority::Normal),
+    );
+    let _ = q.push(
+        tick,
+        ToastSpec::message("2", "Agent finished step 2").priority(ToastPriority::High),
+    );
+    let _ = q.push(
+        tick,
+        ToastSpec::message("3", "Background sync").priority(ToastPriority::Low),
+    );
+    ToastStack::new(system).paint(area, frame.buffer_mut(), &mut q);
+}
+
+fn toast_persistent_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(
+        Toast::new(system, "Pinned notice — dismiss in host", Severity::Warning)
+            .anchor(Anchor::TopLeft)
+            .title("Persistent"),
         area,
     );
 }

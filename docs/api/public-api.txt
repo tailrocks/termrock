@@ -58,7 +58,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 8 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.33s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.91s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -15183,13 +15183,20 @@ pub termrock::widgets::Anchor::BottomLeft
 pub termrock::widgets::Anchor::BottomRight
 pub termrock::widgets::Anchor::TopLeft
 pub termrock::widgets::Anchor::TopRight
+impl termrock::widgets::Anchor
+pub const fn termrock::widgets::Anchor::id(self) -> &'static str
+pub const fn termrock::widgets::Anchor::stacks_down(self) -> bool
 impl core::clone::Clone for termrock::widgets::Anchor
 pub fn termrock::widgets::Anchor::clone(&self) -> termrock::widgets::Anchor
 impl core::cmp::Eq for termrock::widgets::Anchor
 impl core::cmp::PartialEq for termrock::widgets::Anchor
 pub fn termrock::widgets::Anchor::eq(&self, &termrock::widgets::Anchor) -> bool
+impl core::default::Default for termrock::widgets::Anchor
+pub fn termrock::widgets::Anchor::default() -> termrock::widgets::Anchor
 impl core::fmt::Debug for termrock::widgets::Anchor
 pub fn termrock::widgets::Anchor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::Anchor
+pub fn termrock::widgets::Anchor::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for termrock::widgets::Anchor
 impl core::marker::StructuralPartialEq for termrock::widgets::Anchor
 impl core::marker::Freeze for termrock::widgets::Anchor
@@ -26868,13 +26875,22 @@ pub termrock::widgets::Severity::Error
 pub termrock::widgets::Severity::Info
 pub termrock::widgets::Severity::Success
 pub termrock::widgets::Severity::Warning
+impl termrock::widgets::Severity
+pub const fn termrock::widgets::Severity::glyph_ascii(self) -> &'static str
+pub const fn termrock::widgets::Severity::glyph_unicode(self) -> &'static str
+pub const fn termrock::widgets::Severity::id(self) -> &'static str
+pub const fn termrock::widgets::Severity::role(self) -> termrock::style::Role
 impl core::clone::Clone for termrock::widgets::Severity
 pub fn termrock::widgets::Severity::clone(&self) -> termrock::widgets::Severity
 impl core::cmp::Eq for termrock::widgets::Severity
 impl core::cmp::PartialEq for termrock::widgets::Severity
 pub fn termrock::widgets::Severity::eq(&self, &termrock::widgets::Severity) -> bool
+impl core::default::Default for termrock::widgets::Severity
+pub fn termrock::widgets::Severity::default() -> termrock::widgets::Severity
 impl core::fmt::Debug for termrock::widgets::Severity
 pub fn termrock::widgets::Severity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::Severity
+pub fn termrock::widgets::Severity::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for termrock::widgets::Severity
 impl core::marker::StructuralPartialEq for termrock::widgets::Severity
 impl core::marker::Freeze for termrock::widgets::Severity
@@ -29037,9 +29053,117 @@ pub unsafe fn termrock::widgets::TimeDisplayFormat::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::TimeDisplayFormat
 pub fn termrock::widgets::TimeDisplayFormat::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TimeDisplayFormat
+#[non_exhaustive] pub enum termrock::widgets::ToastArchiveReason
+pub termrock::widgets::ToastArchiveReason::Dismissed
+pub termrock::widgets::ToastArchiveReason::Evicted
+pub termrock::widgets::ToastArchiveReason::Expired
+pub termrock::widgets::ToastArchiveReason::HostArchived
+impl core::clone::Clone for termrock::widgets::ToastArchiveReason
+pub fn termrock::widgets::ToastArchiveReason::clone(&self) -> termrock::widgets::ToastArchiveReason
+impl core::cmp::Eq for termrock::widgets::ToastArchiveReason
+impl core::cmp::PartialEq for termrock::widgets::ToastArchiveReason
+pub fn termrock::widgets::ToastArchiveReason::eq(&self, &termrock::widgets::ToastArchiveReason) -> bool
+impl core::fmt::Debug for termrock::widgets::ToastArchiveReason
+pub fn termrock::widgets::ToastArchiveReason::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToastArchiveReason
+pub fn termrock::widgets::ToastArchiveReason::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToastArchiveReason
+impl core::marker::StructuralPartialEq for termrock::widgets::ToastArchiveReason
+impl core::marker::Freeze for termrock::widgets::ToastArchiveReason
+impl core::marker::Send for termrock::widgets::ToastArchiveReason
+impl core::marker::Sync for termrock::widgets::ToastArchiveReason
+impl core::marker::Unpin for termrock::widgets::ToastArchiveReason
+impl core::marker::UnsafeUnpin for termrock::widgets::ToastArchiveReason
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastArchiveReason
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastArchiveReason
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToastArchiveReason where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastArchiveReason::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastArchiveReason where U: core::convert::From<T>
+pub fn termrock::widgets::ToastArchiveReason::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastArchiveReason where U: core::convert::Into<T>
+pub type termrock::widgets::ToastArchiveReason::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastArchiveReason::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastArchiveReason where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastArchiveReason::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastArchiveReason::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastArchiveReason where T: core::clone::Clone
+pub type termrock::widgets::ToastArchiveReason::Owned = T
+pub fn termrock::widgets::ToastArchiveReason::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastArchiveReason::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastArchiveReason where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastArchiveReason::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastArchiveReason where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastArchiveReason::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastArchiveReason where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastArchiveReason::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastArchiveReason where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastArchiveReason::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastArchiveReason
+pub fn termrock::widgets::ToastArchiveReason::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastArchiveReason
+#[non_exhaustive] pub enum termrock::widgets::ToastKind
+pub termrock::widgets::ToastKind::Error
+pub termrock::widgets::ToastKind::Info
+pub termrock::widgets::ToastKind::Progress
+pub termrock::widgets::ToastKind::Success
+pub termrock::widgets::ToastKind::Undo
+pub termrock::widgets::ToastKind::Warning
+impl termrock::widgets::ToastKind
+pub const fn termrock::widgets::ToastKind::from_severity(termrock::widgets::Severity) -> Self
+pub const fn termrock::widgets::ToastKind::glyph_ascii(self) -> &'static str
+pub const fn termrock::widgets::ToastKind::glyph_unicode(self) -> &'static str
+pub const fn termrock::widgets::ToastKind::id(self) -> &'static str
+pub const fn termrock::widgets::ToastKind::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::widgets::ToastKind
+pub fn termrock::widgets::ToastKind::clone(&self) -> termrock::widgets::ToastKind
+impl core::cmp::Eq for termrock::widgets::ToastKind
+impl core::cmp::PartialEq for termrock::widgets::ToastKind
+pub fn termrock::widgets::ToastKind::eq(&self, &termrock::widgets::ToastKind) -> bool
+impl core::default::Default for termrock::widgets::ToastKind
+pub fn termrock::widgets::ToastKind::default() -> termrock::widgets::ToastKind
+impl core::fmt::Debug for termrock::widgets::ToastKind
+pub fn termrock::widgets::ToastKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToastKind
+pub fn termrock::widgets::ToastKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToastKind
+impl core::marker::StructuralPartialEq for termrock::widgets::ToastKind
+impl core::marker::Freeze for termrock::widgets::ToastKind
+impl core::marker::Send for termrock::widgets::ToastKind
+impl core::marker::Sync for termrock::widgets::ToastKind
+impl core::marker::Unpin for termrock::widgets::ToastKind
+impl core::marker::UnsafeUnpin for termrock::widgets::ToastKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToastKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastKind where U: core::convert::From<T>
+pub fn termrock::widgets::ToastKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastKind where U: core::convert::Into<T>
+pub type termrock::widgets::ToastKind::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastKind where T: core::clone::Clone
+pub type termrock::widgets::ToastKind::Owned = T
+pub fn termrock::widgets::ToastKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastKind where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastKind
+pub fn termrock::widgets::ToastKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastKind
 #[non_exhaustive] pub enum termrock::widgets::ToastLifetime
 pub termrock::widgets::ToastLifetime::ExpiresAfter(core::time::Duration)
 pub termrock::widgets::ToastLifetime::Persistent
+impl termrock::widgets::ToastLifetime
+pub const fn termrock::widgets::ToastLifetime::default_ttl() -> Self
 impl core::clone::Clone for termrock::widgets::ToastLifetime
 pub fn termrock::widgets::ToastLifetime::clone(&self) -> termrock::widgets::ToastLifetime
 impl core::cmp::Eq for termrock::widgets::ToastLifetime
@@ -29083,6 +29207,124 @@ pub unsafe fn termrock::widgets::ToastLifetime::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ToastLifetime
 pub fn termrock::widgets::ToastLifetime::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ToastLifetime
+#[non_exhaustive] pub enum termrock::widgets::ToastOutcome
+pub termrock::widgets::ToastOutcome::ActionActivated
+pub termrock::widgets::ToastOutcome::ActionActivated::action: alloc::string::String
+pub termrock::widgets::ToastOutcome::ActionActivated::id: alloc::string::String
+pub termrock::widgets::ToastOutcome::Archived
+pub termrock::widgets::ToastOutcome::Archived::id: alloc::string::String
+pub termrock::widgets::ToastOutcome::Deduplicated
+pub termrock::widgets::ToastOutcome::Deduplicated::id: alloc::string::String
+pub termrock::widgets::ToastOutcome::Dismissed
+pub termrock::widgets::ToastOutcome::Dismissed::id: alloc::string::String
+pub termrock::widgets::ToastOutcome::Expired
+pub termrock::widgets::ToastOutcome::Expired::id: alloc::string::String
+pub termrock::widgets::ToastOutcome::Ignored
+pub termrock::widgets::ToastOutcome::Paused
+pub termrock::widgets::ToastOutcome::Replaced
+pub termrock::widgets::ToastOutcome::Replaced::id: alloc::string::String
+pub termrock::widgets::ToastOutcome::Replaced::previous_id: alloc::string::String
+pub termrock::widgets::ToastOutcome::Resumed
+pub termrock::widgets::ToastOutcome::Shown
+pub termrock::widgets::ToastOutcome::Shown::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::ToastOutcome
+pub fn termrock::widgets::ToastOutcome::clone(&self) -> termrock::widgets::ToastOutcome
+impl core::cmp::Eq for termrock::widgets::ToastOutcome
+impl core::cmp::PartialEq for termrock::widgets::ToastOutcome
+pub fn termrock::widgets::ToastOutcome::eq(&self, &termrock::widgets::ToastOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::ToastOutcome
+pub fn termrock::widgets::ToastOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToastOutcome
+impl core::marker::Freeze for termrock::widgets::ToastOutcome
+impl core::marker::Send for termrock::widgets::ToastOutcome
+impl core::marker::Sync for termrock::widgets::ToastOutcome
+impl core::marker::Unpin for termrock::widgets::ToastOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::ToastOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToastOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::ToastOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::ToastOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastOutcome where T: core::clone::Clone
+pub type termrock::widgets::ToastOutcome::Owned = T
+pub fn termrock::widgets::ToastOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastOutcome
+pub fn termrock::widgets::ToastOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastOutcome
+#[non_exhaustive] pub enum termrock::widgets::ToastPriority
+pub termrock::widgets::ToastPriority::Critical
+pub termrock::widgets::ToastPriority::High
+pub termrock::widgets::ToastPriority::Low
+pub termrock::widgets::ToastPriority::Normal
+impl termrock::widgets::ToastPriority
+pub const fn termrock::widgets::ToastPriority::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ToastPriority
+pub fn termrock::widgets::ToastPriority::clone(&self) -> termrock::widgets::ToastPriority
+impl core::cmp::Eq for termrock::widgets::ToastPriority
+impl core::cmp::Ord for termrock::widgets::ToastPriority
+pub fn termrock::widgets::ToastPriority::cmp(&self, &termrock::widgets::ToastPriority) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::ToastPriority
+pub fn termrock::widgets::ToastPriority::eq(&self, &termrock::widgets::ToastPriority) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::ToastPriority
+pub fn termrock::widgets::ToastPriority::partial_cmp(&self, &termrock::widgets::ToastPriority) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::ToastPriority
+pub fn termrock::widgets::ToastPriority::default() -> termrock::widgets::ToastPriority
+impl core::fmt::Debug for termrock::widgets::ToastPriority
+pub fn termrock::widgets::ToastPriority::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToastPriority
+pub fn termrock::widgets::ToastPriority::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToastPriority
+impl core::marker::StructuralPartialEq for termrock::widgets::ToastPriority
+impl core::marker::Freeze for termrock::widgets::ToastPriority
+impl core::marker::Send for termrock::widgets::ToastPriority
+impl core::marker::Sync for termrock::widgets::ToastPriority
+impl core::marker::Unpin for termrock::widgets::ToastPriority
+impl core::marker::UnsafeUnpin for termrock::widgets::ToastPriority
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastPriority
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastPriority
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::ToastPriority where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastPriority::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToastPriority where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastPriority::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastPriority where U: core::convert::From<T>
+pub fn termrock::widgets::ToastPriority::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastPriority where U: core::convert::Into<T>
+pub type termrock::widgets::ToastPriority::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastPriority::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastPriority where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastPriority::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastPriority::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastPriority where T: core::clone::Clone
+pub type termrock::widgets::ToastPriority::Owned = T
+pub fn termrock::widgets::ToastPriority::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastPriority::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastPriority where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastPriority::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastPriority where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastPriority::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastPriority where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastPriority::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastPriority where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastPriority::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastPriority
+pub fn termrock::widgets::ToastPriority::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastPriority
 #[non_exhaustive] pub enum termrock::widgets::ToggleGroupOrientation
 pub termrock::widgets::ToggleGroupOrientation::Horizontal
 pub termrock::widgets::ToggleGroupOrientation::Vertical
@@ -52168,10 +52410,16 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TimelineEvent<'a>
 pub struct termrock::widgets::Toast<'a>
 impl<'a> termrock::widgets::Toast<'a>
 pub const fn termrock::widgets::Toast<'a>::anchor(self, termrock::widgets::Anchor) -> Self
+pub const fn termrock::widgets::Toast<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Toast<'a>::kind(self, termrock::widgets::ToastKind) -> Self
 pub const fn termrock::widgets::Toast<'a>::margins(self, u16, u16) -> Self
 pub const fn termrock::widgets::Toast<'a>::new(&'a termrock::style::DesignSystem, &'a str, termrock::widgets::Severity) -> Self
+pub fn termrock::widgets::Toast<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+pub const fn termrock::widgets::Toast<'a>::progress(self, u8) -> Self
 pub fn termrock::widgets::Toast<'a>::rect(&self, ratatui_core::layout::rect::Rect) -> core::option::Option<ratatui_core::layout::rect::Rect>
 pub const fn termrock::widgets::Toast<'a>::style(self, ratatui_core::style::Style) -> Self
+pub const fn termrock::widgets::Toast<'a>::title(self, &'a str) -> Self
+pub const fn termrock::widgets::Toast<'a>::undo(self, &'a str) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Toast<'_>
 pub fn &termrock::widgets::Toast<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::widgets::Toast<'_>
@@ -52211,14 +52459,238 @@ pub unsafe fn termrock::widgets::Toast<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Toast<'a>
 pub fn termrock::widgets::Toast<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Toast<'a>
+pub struct termrock::widgets::ToastArchive
+pub termrock::widgets::ToastArchive::announcement: alloc::string::String
+pub termrock::widgets::ToastArchive::id: alloc::string::String
+pub termrock::widgets::ToastArchive::kind: termrock::widgets::ToastKind
+pub termrock::widgets::ToastArchive::message: alloc::string::String
+pub termrock::widgets::ToastArchive::reason: termrock::widgets::ToastArchiveReason
+pub termrock::widgets::ToastArchive::title: core::option::Option<alloc::string::String>
+impl core::clone::Clone for termrock::widgets::ToastArchive
+pub fn termrock::widgets::ToastArchive::clone(&self) -> termrock::widgets::ToastArchive
+impl core::cmp::Eq for termrock::widgets::ToastArchive
+impl core::cmp::PartialEq for termrock::widgets::ToastArchive
+pub fn termrock::widgets::ToastArchive::eq(&self, &termrock::widgets::ToastArchive) -> bool
+impl core::fmt::Debug for termrock::widgets::ToastArchive
+pub fn termrock::widgets::ToastArchive::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToastArchive
+impl core::marker::Freeze for termrock::widgets::ToastArchive
+impl core::marker::Send for termrock::widgets::ToastArchive
+impl core::marker::Sync for termrock::widgets::ToastArchive
+impl core::marker::Unpin for termrock::widgets::ToastArchive
+impl core::marker::UnsafeUnpin for termrock::widgets::ToastArchive
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastArchive
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastArchive
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToastArchive where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastArchive::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastArchive where U: core::convert::From<T>
+pub fn termrock::widgets::ToastArchive::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastArchive where U: core::convert::Into<T>
+pub type termrock::widgets::ToastArchive::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastArchive::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastArchive where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastArchive::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastArchive::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastArchive where T: core::clone::Clone
+pub type termrock::widgets::ToastArchive::Owned = T
+pub fn termrock::widgets::ToastArchive::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastArchive::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastArchive where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastArchive::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastArchive where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastArchive::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastArchive where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastArchive::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastArchive where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastArchive::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastArchive
+pub fn termrock::widgets::ToastArchive::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastArchive
+pub struct termrock::widgets::ToastQueue
+impl termrock::widgets::ToastQueue
+pub fn termrock::widgets::ToastQueue::activate_action(&mut self, &str, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::ToastOutcome
+pub fn termrock::widgets::ToastQueue::advance(&mut self, termrock::runtime::FrameTick) -> alloc::vec::Vec<termrock::widgets::ToastOutcome>
+pub const fn termrock::widgets::ToastQueue::anchor(&self) -> termrock::widgets::Anchor
+pub fn termrock::widgets::ToastQueue::dismiss(&mut self, &str) -> termrock::widgets::ToastOutcome
+pub fn termrock::widgets::ToastQueue::drain_missed(&mut self) -> alloc::vec::Vec<termrock::widgets::ToastArchive>
+pub const fn termrock::widgets::ToastQueue::generation(&self) -> u64
+pub fn termrock::widgets::ToastQueue::is_empty(&self) -> bool
+pub const fn termrock::widgets::ToastQueue::is_paused(&self) -> bool
+pub fn termrock::widgets::ToastQueue::latest_announcement(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::ToastQueue::len(&self) -> usize
+pub fn termrock::widgets::ToastQueue::live_ids(&self) -> impl core::iter::traits::iterator::Iterator<Item = &str>
+pub fn termrock::widgets::ToastQueue::missed(&self) -> &[termrock::widgets::ToastArchive]
+pub fn termrock::widgets::ToastQueue::missed_len(&self) -> usize
+pub fn termrock::widgets::ToastQueue::new() -> Self
+pub fn termrock::widgets::ToastQueue::next_deadline(&self) -> core::option::Option<std::time::Instant>
+pub fn termrock::widgets::ToastQueue::push(&mut self, termrock::runtime::FrameTick, termrock::widgets::ToastSpec) -> termrock::widgets::ToastOutcome
+pub fn termrock::widgets::ToastQueue::region_at(&self, u16, u16) -> core::option::Option<&str>
+pub fn termrock::widgets::ToastQueue::set_anchor(&mut self, termrock::widgets::Anchor)
+pub fn termrock::widgets::ToastQueue::set_margins(&mut self, u16, u16)
+pub fn termrock::widgets::ToastQueue::set_max_visible(&mut self, usize)
+pub fn termrock::widgets::ToastQueue::set_paused(&mut self, bool) -> termrock::widgets::ToastOutcome
+impl core::clone::Clone for termrock::widgets::ToastQueue
+pub fn termrock::widgets::ToastQueue::clone(&self) -> termrock::widgets::ToastQueue
+impl core::cmp::Eq for termrock::widgets::ToastQueue
+impl core::cmp::PartialEq for termrock::widgets::ToastQueue
+pub fn termrock::widgets::ToastQueue::eq(&self, &termrock::widgets::ToastQueue) -> bool
+impl core::default::Default for termrock::widgets::ToastQueue
+pub fn termrock::widgets::ToastQueue::default() -> Self
+impl core::fmt::Debug for termrock::widgets::ToastQueue
+pub fn termrock::widgets::ToastQueue::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToastQueue
+impl core::marker::Freeze for termrock::widgets::ToastQueue
+impl core::marker::Send for termrock::widgets::ToastQueue
+impl core::marker::Sync for termrock::widgets::ToastQueue
+impl core::marker::Unpin for termrock::widgets::ToastQueue
+impl core::marker::UnsafeUnpin for termrock::widgets::ToastQueue
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastQueue
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastQueue
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToastQueue where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastQueue::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastQueue where U: core::convert::From<T>
+pub fn termrock::widgets::ToastQueue::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastQueue where U: core::convert::Into<T>
+pub type termrock::widgets::ToastQueue::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastQueue::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastQueue where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastQueue::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastQueue::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastQueue where T: core::clone::Clone
+pub type termrock::widgets::ToastQueue::Owned = T
+pub fn termrock::widgets::ToastQueue::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastQueue::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastQueue where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastQueue::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastQueue where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastQueue::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastQueue where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastQueue::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastQueue where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastQueue::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastQueue
+pub fn termrock::widgets::ToastQueue::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastQueue
+pub struct termrock::widgets::ToastSpec
+pub termrock::widgets::ToastSpec::announcement: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToastSpec::archive_on_expire: bool
+pub termrock::widgets::ToastSpec::dedup_key: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToastSpec::group_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToastSpec::id: alloc::string::String
+pub termrock::widgets::ToastSpec::kind: termrock::widgets::ToastKind
+pub termrock::widgets::ToastSpec::lifetime: termrock::widgets::ToastLifetime
+pub termrock::widgets::ToastSpec::message: alloc::string::String
+pub termrock::widgets::ToastSpec::priority: termrock::widgets::ToastPriority
+pub termrock::widgets::ToastSpec::progress: core::option::Option<u8>
+pub termrock::widgets::ToastSpec::replace_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToastSpec::title: core::option::Option<alloc::string::String>
+pub termrock::widgets::ToastSpec::undo_label: core::option::Option<alloc::string::String>
+impl termrock::widgets::ToastSpec
+pub fn termrock::widgets::ToastSpec::announce_text(&self) -> &str
+pub fn termrock::widgets::ToastSpec::announcement(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ToastSpec::dedup_key(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ToastSpec::group(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ToastSpec::kind(self, termrock::widgets::ToastKind) -> Self
+pub const fn termrock::widgets::ToastSpec::lifetime(self, termrock::widgets::ToastLifetime) -> Self
+pub fn termrock::widgets::ToastSpec::message(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ToastSpec::persistent(self) -> Self
+pub const fn termrock::widgets::ToastSpec::priority(self, termrock::widgets::ToastPriority) -> Self
+pub const fn termrock::widgets::ToastSpec::progress(self, u8) -> Self
+pub fn termrock::widgets::ToastSpec::replace(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::ToastSpec::severity(self, termrock::widgets::Severity) -> Self
+pub fn termrock::widgets::ToastSpec::title(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ToastSpec::undo(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::ToastSpec
+pub fn termrock::widgets::ToastSpec::clone(&self) -> termrock::widgets::ToastSpec
+impl core::cmp::Eq for termrock::widgets::ToastSpec
+impl core::cmp::PartialEq for termrock::widgets::ToastSpec
+pub fn termrock::widgets::ToastSpec::eq(&self, &termrock::widgets::ToastSpec) -> bool
+impl core::fmt::Debug for termrock::widgets::ToastSpec
+pub fn termrock::widgets::ToastSpec::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ToastSpec
+impl core::marker::Freeze for termrock::widgets::ToastSpec
+impl core::marker::Send for termrock::widgets::ToastSpec
+impl core::marker::Sync for termrock::widgets::ToastSpec
+impl core::marker::Unpin for termrock::widgets::ToastSpec
+impl core::marker::UnsafeUnpin for termrock::widgets::ToastSpec
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastSpec
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastSpec
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToastSpec where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToastSpec::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastSpec where U: core::convert::From<T>
+pub fn termrock::widgets::ToastSpec::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastSpec where U: core::convert::Into<T>
+pub type termrock::widgets::ToastSpec::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastSpec::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastSpec where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastSpec::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastSpec::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastSpec where T: core::clone::Clone
+pub type termrock::widgets::ToastSpec::Owned = T
+pub fn termrock::widgets::ToastSpec::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastSpec::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastSpec where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastSpec::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastSpec where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastSpec::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastSpec where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastSpec::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastSpec where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastSpec::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastSpec
+pub fn termrock::widgets::ToastSpec::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastSpec
+pub struct termrock::widgets::ToastStack<'a>
+impl<'a> termrock::widgets::ToastStack<'a>
+pub const fn termrock::widgets::ToastStack<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ToastStack<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::ToastStack<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToastQueue)
+impl<'a> core::clone::Clone for termrock::widgets::ToastStack<'a>
+pub fn termrock::widgets::ToastStack<'a>::clone(&self) -> termrock::widgets::ToastStack<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::ToastStack<'a>
+pub fn termrock::widgets::ToastStack<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::ToastStack<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::ToastStack<'a>
+impl<'a> core::marker::Send for termrock::widgets::ToastStack<'a>
+impl<'a> core::marker::Sync for termrock::widgets::ToastStack<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::ToastStack<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::ToastStack<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToastStack<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToastStack<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToastStack<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::ToastStack<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToastStack<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::ToastStack<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::ToastStack<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToastStack<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToastStack<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToastStack<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToastStack<'a> where T: core::clone::Clone
+pub type termrock::widgets::ToastStack<'a>::Owned = T
+pub fn termrock::widgets::ToastStack<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToastStack<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToastStack<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToastStack<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToastStack<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastStack<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToastStack<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::ToastStack<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToastStack<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToastStack<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToastStack<'a>
+pub fn termrock::widgets::ToastStack<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToastStack<'a>
 pub struct termrock::widgets::ToastState
 impl termrock::widgets::ToastState
 pub fn termrock::widgets::ToastState::advance(&mut self, termrock::runtime::FrameTick)
 pub const fn termrock::widgets::ToastState::dismiss(&mut self)
 pub const fn termrock::widgets::ToastState::is_focusable(self) -> bool
+pub const fn termrock::widgets::ToastState::is_paused(self) -> bool
 pub fn termrock::widgets::ToastState::is_visible(&self, termrock::runtime::FrameTick) -> bool
+pub const fn termrock::widgets::ToastState::lifetime(self) -> termrock::widgets::ToastLifetime
 pub const fn termrock::widgets::ToastState::new(termrock::widgets::ToastLifetime) -> Self
 pub fn termrock::widgets::ToastState::next_deadline(&self) -> core::option::Option<std::time::Instant>
+pub fn termrock::widgets::ToastState::set_paused(&mut self, bool)
 pub fn termrock::widgets::ToastState::show(&mut self, termrock::runtime::FrameTick)
 impl core::clone::Clone for termrock::widgets::ToastState
 pub fn termrock::widgets::ToastState::clone(&self) -> termrock::widgets::ToastState
@@ -54866,6 +55338,11 @@ pub const termrock::widgets::STEPPER_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::TABS_OVERFLOW_MAX_WIDTH: u16
 pub const termrock::widgets::TABS_SELECT_MAX_WIDTH: u16
 pub const termrock::widgets::TAB_GAP: u16
+pub const termrock::widgets::TOAST_DEFAULT_H_MARGIN: u16
+pub const termrock::widgets::TOAST_DEFAULT_MAX_VISIBLE: usize
+pub const termrock::widgets::TOAST_DEFAULT_TTL: core::time::Duration
+pub const termrock::widgets::TOAST_DEFAULT_V_MARGIN: u16
+pub const termrock::widgets::TOAST_STACK_GAP: u16
 pub const termrock::widgets::TOOLTIP_DEFAULT_DELAY_MS: u64
 pub const termrock::widgets::TOOLTIP_DEFAULT_MAX_WIDTH: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str

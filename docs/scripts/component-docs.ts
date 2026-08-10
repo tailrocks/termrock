@@ -641,18 +641,24 @@ let mut state = TextInputState::new("").with_max_graphemes(80);
 let changed = state.apply(EditAction::Insert('a'));`,
   },
   Toast: {
-    description: 'A transient severity notification with reusable placement and deterministic lifetime state.',
+    description:
+      'Transient notifications with priority, queue/dedup/replace, timeout pause, progress/undo kinds, and missed-item archive for NotificationCenter — never steals keyboard focus.',
     primaryStory: 'toast/success',
-    usage: `use ratatui_core::layout::Rect;
-use std::time::Duration;
-use termrock::{Theme, widgets::{Anchor, Severity, Toast, ToastLifetime, ToastState}};
+    usage: `use termrock::style::DesignSystem;
+use termrock::runtime::FrameTick;
+use termrock::widgets::{
+    Anchor, Severity, Toast, ToastLifetime, ToastQueue, ToastSpec, ToastStack, TOAST_DEFAULT_TTL,
+};
+use std::time::{Duration, Instant};
 
-let theme = Theme::default();
-let toast = Toast::new(&theme, "Saved", Severity::Success)
-    .anchor(Anchor::BottomRight)
-    .margins(1, 1);
-let state = ToastState::new(ToastLifetime::ExpiresAfter(Duration::from_secs(2)));
-let rect = toast.rect(Rect::new(0, 0, 80, 24));`,
+let system = DesignSystem::default();
+let toast = Toast::new(&system, "Saved", Severity::Success).anchor(Anchor::TopRight);
+let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
+let mut queue = ToastQueue::new();
+let _ = queue.push(tick, ToastSpec::message("s", "Saved").severity(Severity::Success));
+ToastStack::new(&system).paint(area, buf, &mut queue);
+// missed: queue.drain_missed() → NotificationCenter
+let _ = (toast, TOAST_DEFAULT_TTL, ToastLifetime::default_ttl());`,
   },
   Tree: {
     description: 'A navigable flattened hierarchy with disclosure and multi-select support.',
