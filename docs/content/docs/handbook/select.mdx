@@ -1,0 +1,41 @@
+---
+title: Select
+description: Single-choice select with CollectionState list, value≠highlight, and popover/fullscreen.
+---
+
+# Select
+
+**Purpose.** Compact form/toolbar control that opens a navigable option list.
+
+## Value vs highlight
+
+| | Meaning |
+|--|---------|
+| `value()` | Committed selection |
+| `highlight()` | Open-list keyboard cursor |
+
+Esc closes without committing. Enter commits highlight.
+
+## Host overlay
+
+```rust
+match state.handle_key(key, &options, bounds) {
+    SelectOutcome::Opened { presentation } => match presentation {
+        SelectPresentation::Popover => open_popover_overlay(...),
+        SelectPresentation::Fullscreen => { /* fullscreen panel */ }
+        _ => {}
+    },
+    SelectOutcome::ValueChanged { id } => host.set(id),
+    _ => {}
+}
+```
+
+## Recipes
+
+- **Inline** — default field
+- **Form** — label row
+- **Compact** — toolbar
+
+## Related
+
+RadioGroup · Picker · CollectionState · Popover · migration `0145`

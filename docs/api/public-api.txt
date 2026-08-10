@@ -22276,10 +22276,19 @@ impl<T> core::convert::From<T> for termrock::widgets::SegmentedPresentation
 pub fn termrock::widgets::SegmentedPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedPresentation
 #[non_exhaustive] pub enum termrock::widgets::SelectOutcome<Id>
-pub termrock::widgets::SelectOutcome::CloseMenu
+pub termrock::widgets::SelectOutcome::Changed
+pub termrock::widgets::SelectOutcome::Closed
+pub termrock::widgets::SelectOutcome::HighlightChanged
+pub termrock::widgets::SelectOutcome::HighlightChanged::id: core::option::Option<Id>
 pub termrock::widgets::SelectOutcome::Ignored
-pub termrock::widgets::SelectOutcome::OpenMenu
-pub termrock::widgets::SelectOutcome::Selected(Id)
+pub termrock::widgets::SelectOutcome::Opened
+pub termrock::widgets::SelectOutcome::Opened::presentation: termrock::widgets::SelectPresentation
+pub termrock::widgets::SelectOutcome::PresentationChanged
+pub termrock::widgets::SelectOutcome::PresentationChanged::presentation: termrock::widgets::SelectPresentation
+pub termrock::widgets::SelectOutcome::SearchChanged
+pub termrock::widgets::SelectOutcome::SearchChanged::query: alloc::string::String
+pub termrock::widgets::SelectOutcome::ValueChanged
+pub termrock::widgets::SelectOutcome::ValueChanged::id: Id
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SelectOutcome<Id>
 pub fn termrock::widgets::SelectOutcome<Id>::clone(&self) -> termrock::widgets::SelectOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SelectOutcome<Id>
@@ -22320,6 +22329,158 @@ pub unsafe fn termrock::widgets::SelectOutcome<Id>::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::SelectOutcome<Id>
 pub fn termrock::widgets::SelectOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SelectOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::SelectPresentation
+pub termrock::widgets::SelectPresentation::Closed
+pub termrock::widgets::SelectPresentation::Fullscreen
+pub termrock::widgets::SelectPresentation::Popover
+impl termrock::widgets::SelectPresentation
+pub const fn termrock::widgets::SelectPresentation::id(self) -> &'static str
+pub const fn termrock::widgets::SelectPresentation::is_open(self) -> bool
+impl core::clone::Clone for termrock::widgets::SelectPresentation
+pub fn termrock::widgets::SelectPresentation::clone(&self) -> termrock::widgets::SelectPresentation
+impl core::cmp::Eq for termrock::widgets::SelectPresentation
+impl core::cmp::PartialEq for termrock::widgets::SelectPresentation
+pub fn termrock::widgets::SelectPresentation::eq(&self, &termrock::widgets::SelectPresentation) -> bool
+impl core::default::Default for termrock::widgets::SelectPresentation
+pub fn termrock::widgets::SelectPresentation::default() -> termrock::widgets::SelectPresentation
+impl core::fmt::Debug for termrock::widgets::SelectPresentation
+pub fn termrock::widgets::SelectPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SelectPresentation
+pub fn termrock::widgets::SelectPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SelectPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::SelectPresentation
+impl core::marker::Freeze for termrock::widgets::SelectPresentation
+impl core::marker::Send for termrock::widgets::SelectPresentation
+impl core::marker::Sync for termrock::widgets::SelectPresentation
+impl core::marker::Unpin for termrock::widgets::SelectPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::SelectPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SelectPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SelectPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SelectPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SelectPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SelectPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::SelectPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SelectPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::SelectPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::SelectPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SelectPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SelectPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SelectPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SelectPresentation where T: core::clone::Clone
+pub type termrock::widgets::SelectPresentation::Owned = T
+pub fn termrock::widgets::SelectPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::SelectPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SelectPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SelectPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SelectPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SelectPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SelectPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SelectPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SelectPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SelectPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SelectPresentation
+pub fn termrock::widgets::SelectPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SelectPresentation
+#[non_exhaustive] pub enum termrock::widgets::SelectRecipe
+pub termrock::widgets::SelectRecipe::Compact
+pub termrock::widgets::SelectRecipe::Form
+pub termrock::widgets::SelectRecipe::Inline
+impl termrock::widgets::SelectRecipe
+pub const fn termrock::widgets::SelectRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SelectRecipe
+pub fn termrock::widgets::SelectRecipe::clone(&self) -> termrock::widgets::SelectRecipe
+impl core::cmp::Eq for termrock::widgets::SelectRecipe
+impl core::cmp::PartialEq for termrock::widgets::SelectRecipe
+pub fn termrock::widgets::SelectRecipe::eq(&self, &termrock::widgets::SelectRecipe) -> bool
+impl core::default::Default for termrock::widgets::SelectRecipe
+pub fn termrock::widgets::SelectRecipe::default() -> termrock::widgets::SelectRecipe
+impl core::fmt::Debug for termrock::widgets::SelectRecipe
+pub fn termrock::widgets::SelectRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SelectRecipe
+pub fn termrock::widgets::SelectRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SelectRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::SelectRecipe
+impl core::marker::Freeze for termrock::widgets::SelectRecipe
+impl core::marker::Send for termrock::widgets::SelectRecipe
+impl core::marker::Sync for termrock::widgets::SelectRecipe
+impl core::marker::Unpin for termrock::widgets::SelectRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::SelectRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SelectRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SelectRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SelectRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SelectRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SelectRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::SelectRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SelectRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::SelectRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::SelectRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SelectRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SelectRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SelectRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SelectRecipe where T: core::clone::Clone
+pub type termrock::widgets::SelectRecipe::Owned = T
+pub fn termrock::widgets::SelectRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::SelectRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SelectRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SelectRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SelectRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::SelectRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SelectRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::SelectRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SelectRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SelectRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SelectRecipe
+pub fn termrock::widgets::SelectRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SelectRecipe
+#[non_exhaustive] pub enum termrock::widgets::SelectRowKind
+pub termrock::widgets::SelectRowKind::Group
+pub termrock::widgets::SelectRowKind::Option
+pub termrock::widgets::SelectRowKind::Separator
+impl core::clone::Clone for termrock::widgets::SelectRowKind
+pub fn termrock::widgets::SelectRowKind::clone(&self) -> termrock::widgets::SelectRowKind
+impl core::cmp::Eq for termrock::widgets::SelectRowKind
+impl core::cmp::PartialEq for termrock::widgets::SelectRowKind
+pub fn termrock::widgets::SelectRowKind::eq(&self, &termrock::widgets::SelectRowKind) -> bool
+impl core::default::Default for termrock::widgets::SelectRowKind
+pub fn termrock::widgets::SelectRowKind::default() -> termrock::widgets::SelectRowKind
+impl core::fmt::Debug for termrock::widgets::SelectRowKind
+pub fn termrock::widgets::SelectRowKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SelectRowKind
+pub fn termrock::widgets::SelectRowKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SelectRowKind
+impl core::marker::StructuralPartialEq for termrock::widgets::SelectRowKind
+impl core::marker::Freeze for termrock::widgets::SelectRowKind
+impl core::marker::Send for termrock::widgets::SelectRowKind
+impl core::marker::Sync for termrock::widgets::SelectRowKind
+impl core::marker::Unpin for termrock::widgets::SelectRowKind
+impl core::marker::UnsafeUnpin for termrock::widgets::SelectRowKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SelectRowKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SelectRowKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SelectRowKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SelectRowKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SelectRowKind where U: core::convert::From<T>
+pub fn termrock::widgets::SelectRowKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SelectRowKind where U: core::convert::Into<T>
+pub type termrock::widgets::SelectRowKind::Error = core::convert::Infallible
+pub fn termrock::widgets::SelectRowKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SelectRowKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SelectRowKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SelectRowKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SelectRowKind where T: core::clone::Clone
+pub type termrock::widgets::SelectRowKind::Owned = T
+pub fn termrock::widgets::SelectRowKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::SelectRowKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SelectRowKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SelectRowKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SelectRowKind where T: ?core::marker::Sized
+pub fn termrock::widgets::SelectRowKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SelectRowKind where T: ?core::marker::Sized
+pub fn termrock::widgets::SelectRowKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SelectRowKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SelectRowKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SelectRowKind
+pub fn termrock::widgets::SelectRowKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SelectRowKind
 #[non_exhaustive] pub enum termrock::widgets::SelectablePolicy
 pub termrock::widgets::SelectablePolicy::Copyable
 pub termrock::widgets::SelectablePolicy::None
@@ -38660,21 +38821,34 @@ impl<T> core::convert::From<T> for termrock::widgets::SegmentedMeter<'a>
 pub fn termrock::widgets::SegmentedMeter<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SegmentedMeter<'a>
 pub struct termrock::widgets::Select<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display> termrock::widgets::Select<'a, Id>
+pub fn termrock::widgets::Select<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SelectState<Id>)
+pub fn termrock::widgets::Select<'a, Id>::paint_stacked(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SelectState<Id>)
+pub fn termrock::widgets::Select<'a, Id>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::SelectState<Id>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 impl<'a, Id> termrock::widgets::Select<'a, Id>
-pub const fn termrock::widgets::Select<'a, Id>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::Select<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SelectState<Id>, core::option::Option<&str>)
+pub const fn termrock::widgets::Select<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Select<'a, Id>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::Select<'a, Id>::new(&'a [termrock::widgets::SelectOption<Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Select<'a, Id>::placeholder(self, &'a str) -> Self
+pub const fn termrock::widgets::Select<'a, Id>::validation(self, termrock::widgets::Validation<'a>) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Select<'a, Id>
 pub fn termrock::widgets::Select<'a, Id>::clone(&self) -> termrock::widgets::Select<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Select<'a, Id>
 pub fn termrock::widgets::Select<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Select<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Select<'_, Id>
+pub type &termrock::widgets::Select<'_, Id>::State = termrock::widgets::SelectState<Id>
+pub fn &termrock::widgets::Select<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Select<'_, Id>
+pub type termrock::widgets::Select<'_, Id>::State = termrock::widgets::SelectState<Id>
+pub fn termrock::widgets::Select<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Select<'a, Id>
-impl<'a, Id> core::marker::Send for termrock::widgets::Select<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Send for termrock::widgets::Select<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::Select<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::Select<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::Unpin for termrock::widgets::Select<'a, Id>
 impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::Select<'a, Id>
 impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Select<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Select<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Select<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
 impl<T, U> core::convert::Into<U> for termrock::widgets::Select<'a, Id> where U: core::convert::From<T>
 pub fn termrock::widgets::Select<'a, Id>::into(self) -> U
 impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Select<'a, Id> where U: core::convert::Into<T>
@@ -38698,13 +38872,92 @@ pub unsafe fn termrock::widgets::Select<'a, Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Select<'a, Id>
 pub fn termrock::widgets::Select<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Select<'a, Id>
+pub struct termrock::widgets::SelectOption<Id>
+pub termrock::widgets::SelectOption::description: core::option::Option<alloc::string::String>
+pub termrock::widgets::SelectOption::disabled: bool
+pub termrock::widgets::SelectOption::id: Id
+pub termrock::widgets::SelectOption::kind: termrock::widgets::SelectRowKind
+pub termrock::widgets::SelectOption::label: alloc::string::String
+impl<Id> termrock::widgets::SelectOption<Id>
+pub fn termrock::widgets::SelectOption<Id>::description(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::SelectOption<Id>::disabled(self, bool) -> Self
+pub fn termrock::widgets::SelectOption<Id>::group(Id, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::SelectOption<Id>::is_option(&self) -> bool
+pub fn termrock::widgets::SelectOption<Id>::option(Id, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SelectOption<Id>::separator(Id) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SelectOption<Id>
+pub fn termrock::widgets::SelectOption<Id>::clone(&self) -> termrock::widgets::SelectOption<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SelectOption<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SelectOption<Id>
+pub fn termrock::widgets::SelectOption<Id>::eq(&self, &termrock::widgets::SelectOption<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SelectOption<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SelectOption<Id>
+pub fn termrock::widgets::SelectOption<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::SelectOption<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::SelectOption<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SelectOption<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SelectOption<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SelectOption<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SelectOption<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SelectOption<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SelectOption<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SelectOption<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SelectOption<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SelectOption<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SelectOption<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SelectOption<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SelectOption<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SelectOption<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SelectOption<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SelectOption<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SelectOption<Id> where T: core::clone::Clone
+pub type termrock::widgets::SelectOption<Id>::Owned = T
+pub fn termrock::widgets::SelectOption<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SelectOption<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SelectOption<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SelectOption<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SelectOption<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SelectOption<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SelectOption<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SelectOption<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SelectOption<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SelectOption<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SelectOption<Id>
+pub fn termrock::widgets::SelectOption<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SelectOption<Id>
 pub struct termrock::widgets::SelectState<Id>
-impl<Id: core::clone::Clone> termrock::widgets::SelectState<Id>
-pub fn termrock::widgets::SelectState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[Id]) -> termrock::widgets::SelectOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::SelectState<Id>
+pub fn termrock::widgets::SelectState<Id>::close(&mut self) -> termrock::widgets::SelectOutcome<Id>
+pub fn termrock::widgets::SelectState<Id>::collection_items(&[termrock::widgets::SelectOption<Id>]) -> alloc::vec::Vec<termrock::interaction::CollectionItem<Id>>
+pub fn termrock::widgets::SelectState<Id>::commit_highlight(&mut self) -> termrock::widgets::SelectOutcome<Id>
+pub fn termrock::widgets::SelectState<Id>::filter_options<'a>(&'a [termrock::widgets::SelectOption<Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::SelectOption<Id>>
+pub fn termrock::widgets::SelectState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::SelectOption<Id>], ratatui_core::layout::rect::Rect) -> termrock::widgets::SelectOutcome<Id>
+pub fn termrock::widgets::SelectState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::SelectOption<Id>], ratatui_core::layout::rect::Rect) -> termrock::widgets::SelectOutcome<Id>
+pub fn termrock::widgets::SelectState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::SelectOption<Id>], ratatui_core::layout::rect::Rect) -> termrock::widgets::SelectOutcome<Id>
+pub fn termrock::widgets::SelectState<Id>::open(&mut self, ratatui_core::layout::rect::Rect, &[termrock::widgets::SelectOption<Id>]) -> termrock::widgets::SelectOutcome<Id>
+pub fn termrock::widgets::SelectState<Id>::presentation_for_bounds(ratatui_core::layout::rect::Rect, bool) -> termrock::widgets::SelectPresentation
+pub fn termrock::widgets::SelectState<Id>::reconcile_options(&mut self, &[termrock::widgets::SelectOption<Id>])
+impl<Id> termrock::widgets::SelectState<Id>
+pub const fn termrock::widgets::SelectState<Id>::collection(&self) -> &termrock::interaction::CollectionState<Id>
+pub const fn termrock::widgets::SelectState<Id>::highlight(&self) -> core::option::Option<&Id>
+pub const fn termrock::widgets::SelectState<Id>::is_enabled(&self) -> bool
+pub const fn termrock::widgets::SelectState<Id>::is_focused(&self) -> bool
 pub const fn termrock::widgets::SelectState<Id>::is_open(&self) -> bool
-pub fn termrock::widgets::SelectState<Id>::new(core::option::Option<Id>) -> Self
-pub fn termrock::widgets::SelectState<Id>::selected(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::SelectState<Id>::set_focused(&mut self, bool)
+pub fn termrock::widgets::SelectState<Id>::new() -> Self
+pub const fn termrock::widgets::SelectState<Id>::panel_area(&self) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::SelectState<Id>::presentation(&self) -> termrock::widgets::SelectPresentation
+pub const fn termrock::widgets::SelectState<Id>::recipe(&self) -> termrock::widgets::SelectRecipe
+pub fn termrock::widgets::SelectState<Id>::search_query(&self) -> &str
+pub const fn termrock::widgets::SelectState<Id>::set_enabled(&mut self, bool)
+pub fn termrock::widgets::SelectState<Id>::set_focused(&mut self, bool)
+pub const fn termrock::widgets::SelectState<Id>::set_presentation(&mut self, termrock::widgets::SelectPresentation)
+pub fn termrock::widgets::SelectState<Id>::set_value(&mut self, core::option::Option<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
+pub const fn termrock::widgets::SelectState<Id>::trigger_area(&self) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::SelectState<Id>::value(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::SelectState<Id>::with_list_rows(self, u16) -> Self
+pub const fn termrock::widgets::SelectState<Id>::with_recipe(self, termrock::widgets::SelectRecipe) -> Self
+pub const fn termrock::widgets::SelectState<Id>::with_searchable(self, bool) -> Self
+pub fn termrock::widgets::SelectState<Id>::with_value(self, Id) -> Self where Id: core::clone::Clone + core::cmp::PartialEq
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SelectState<Id>
 pub fn termrock::widgets::SelectState<Id>::clone(&self) -> termrock::widgets::SelectState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SelectState<Id>
@@ -38713,6 +38966,8 @@ pub fn termrock::widgets::SelectState<Id>::eq(&self, &termrock::widgets::SelectS
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SelectState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SelectState<Id>
 pub fn termrock::widgets::SelectState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::SelectState<Id>
+pub fn termrock::widgets::SelectState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::widgets::SelectState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::widgets::SelectState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::widgets::SelectState<Id> where Id: core::marker::Sync
@@ -44345,6 +44600,8 @@ pub const termrock::widgets::PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::POPOVER_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
+pub const termrock::widgets::SELECT_FULLSCREEN_MAX_HEIGHT: u16
+pub const termrock::widgets::SELECT_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::SLIDER_MIN_TRACK: u16
 pub const termrock::widgets::SLIDER_NUMERIC_FALLBACK_WIDTH: u16
 pub const termrock::widgets::TAB_GAP: u16

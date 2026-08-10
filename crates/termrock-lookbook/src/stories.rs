@@ -61,6 +61,7 @@ use termrock::{
         SearchFilterChip, SearchInput, SearchInputState, SearchStatus,
         PathExpect, PathFsStatus, PathInput, PathInputState, PathRisk, PathStyle,
         FieldToken, TokenField, TokenFieldState, TokenStatus,
+        Select, SelectOption, SelectRecipe, SelectState,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -5009,6 +5010,42 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             2,
             token_field_multiselect_story,
+        ),
+        Story::new(
+            "select/basic",
+            "Select",
+            "Select",
+            "Closed form select with value.",
+            36,
+            2,
+            select_basic_story,
+        ),
+        Story::new(
+            "select/open",
+            "Select open",
+            "Select",
+            "Open list with groups and highlight.",
+            40,
+            12,
+            select_open_story,
+        ),
+        Story::new(
+            "select/search",
+            "Select search",
+            "Select",
+            "Searchable open list.",
+            40,
+            12,
+            select_search_story,
+        ),
+        Story::new(
+            "select/compact",
+            "Select compact",
+            "Select",
+            "Toolbar compact recipe.",
+            24,
+            1,
+            select_compact_story,
         ),
         Story::new(
             "text-input/invalid",
@@ -13152,6 +13189,82 @@ fn token_field_multiselect_story(frame: &mut Frame<'_>, area: Rect, system: &Des
         .label("Filters")
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn select_demo_options() -> Vec<SelectOption<&'static str>> {
+    vec![
+        SelectOption::group("g1", "Fruits"),
+        SelectOption::option("apple", "Apple").description("crisp"),
+        SelectOption::option("banana", "Banana"),
+        SelectOption::separator("s1"),
+        SelectOption::group("g2", "Other"),
+        SelectOption::option("date", "Date"),
+    ]
+}
+
+fn select_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let opts = select_demo_options();
+    let mut state = SelectState::new()
+        .with_recipe(SelectRecipe::Form)
+        .with_value("apple");
+    state.set_focused(true);
+    frame.render_stateful_widget(
+        Select::new(&opts, system).label("Fruit").ascii(true),
+        area,
+        &mut state,
+    );
+}
+
+fn select_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let opts = select_demo_options();
+    let mut state = SelectState::new().with_value("apple");
+    state.set_focused(true);
+    let _ = state.open(area, &opts);
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Down,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &opts,
+        area,
+    );
+    Select::new(&opts, system)
+        .label("Fruit")
+        .ascii(true)
+        .paint_stacked(area, frame.buffer_mut(), &mut state);
+}
+
+fn select_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let opts = select_demo_options();
+    let mut state = SelectState::new().with_searchable(true);
+    state.set_focused(true);
+    let _ = state.open(area, &opts);
+    let _ = state.search_query(); // ensure API
+    // seed filter via public insert on open search
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char('b'),
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &opts,
+        area,
+    );
+    Select::new(&opts, system)
+        .ascii(true)
+        .paint_stacked(area, frame.buffer_mut(), &mut state);
+}
+
+fn select_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let opts = select_demo_options();
+    let mut state = SelectState::new()
+        .with_recipe(SelectRecipe::Compact)
+        .with_value("banana");
+    state.set_focused(true);
+    frame.render_stateful_widget(
+        Select::new(&opts, system).ascii(true),
+        area,
+        &mut state,
+    );
 }
 
 fn text_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

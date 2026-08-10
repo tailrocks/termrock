@@ -406,6 +406,22 @@ state.set_focused(true);
 let _ = state.push_token(FieldToken::new("1".into(), "alice@ex.com"));
 let _ = TokenField::new(&system).label("To").placeholder("Add…");`,
   },
+  Select: {
+    description:
+      'A single-choice select with CollectionState navigation, value≠highlight, recipes, and popover/fullscreen.',
+    primaryStory: 'select/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Select, SelectOption, SelectState};
+
+let system = DesignSystem::default();
+let options = [
+  SelectOption::option("apple", "Apple"),
+  SelectOption::option("banana", "Banana"),
+];
+let mut state = SelectState::new().with_value("apple");
+state.set_focused(true);
+let _ = Select::new(&options, &system).label("Fruit");`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

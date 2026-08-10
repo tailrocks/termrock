@@ -75,6 +75,7 @@ mod number_input;
 mod search_input;
 mod path_input;
 mod token_field;
+mod select;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -184,8 +185,7 @@ pub use controls::{
     Checkbox, CheckboxOutcome, CheckboxParts, CheckboxState, CheckboxValue, Combobox,
     ComboboxOutcome, ComboboxState, MultiSelect, MultiSelectOutcome, MultiSelectState, RadioGroup,
     RadioGroupOrientation, RadioGroupParts, RadioOption, RadioOptionParts, RadioOutcome,
-    RadioSelectionPolicy, RadioState, Select, SelectOutcome, SelectState, Switch, SwitchOutcome,
-    SwitchParts, SwitchRecipe, SwitchState,
+    RadioSelectionPolicy, RadioState, Switch, SwitchOutcome, SwitchParts, SwitchRecipe, SwitchState,
 };
 pub use data_table::{DataTable, DataTableOutcome, DataTableState, DataTableToolbar};
 pub use data_view::bench as data_view_bench;
@@ -328,6 +328,10 @@ pub use path_input::{
 pub use token_field::{
     CommitSeparators, DuplicatePolicy, FieldToken, TokenField, TokenFieldOutcome, TokenFieldParts,
     TokenFieldState, TokenFieldZone,
+};
+pub use select::{
+    SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, Select, SelectOption, SelectOutcome,
+    SelectPresentation, SelectRecipe, SelectRowKind, SelectState,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,

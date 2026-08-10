@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `Collapsible`, `CommandPalette`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `Form`, `FormWizard`, `Heading`, `HighlightedText`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `ResizablePanelGroup`, `QuestionFlow`, `RangeSlider`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
+The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `Collapsible`, `CommandPalette`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `Form`, `FormWizard`, `Heading`, `HighlightedText`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `ResizablePanelGroup`, `QuestionFlow`, `RangeSlider`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
 
 `ScrollArea` / `ScrollAreaState` is the canonical scrolling primitive: dual-axis
 offsets, wheel/page/intents, scrollbar chrome, follow-tail with paused unseen
@@ -113,6 +113,11 @@ separators, paste multi-value, Backspace-remove, Left/Right across tokens and
 draft (one surface focus), Alt-reorder, multi-select, duplicate policy,
 overflow `+N`, and completion requests for async suggestions. `TokenStrip`
 remains the projection-only strip.
+
+`Select` is the single-choice form control: closed trigger + open list on
+`CollectionState` (value ≠ highlight), groups/separators, optional search,
+typeahead, recipes (inline/form/compact), and popover vs fullscreen for tiny
+terminals. Host places overlays from `Opened` / `PresentationChanged` outcomes.
 
 `Picker` composes query editing, a caller-filtered stable-ID `List`,
 ID-sticky/index-fallback reconciliation, empty state, and semantic outcomes.
